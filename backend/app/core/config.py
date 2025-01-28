@@ -1,15 +1,22 @@
-# backend/app/core/config.py
 
 import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "My Project"
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "mysql+pymysql://your_user:your_password@db/your_database")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key")
-    # Добавьте другие настройки по необходимости
+    DB_USER: str = "root"
+    DB_PASSWORD: str = "root"
+    DB_HOST: str = "localhost"
+    DB_PORT: str = "3306"
+    DB_NAME: str = "mydatabase"
+
+    SECRET_KEY: str = "CHANGE_ME"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     class Config:
-        case_sensitive = True
+        # Можно указать env_file=".env", если вы используете .env
+        env_file = None
 
+
+# Создаём единственный объект настроек, который будем импортировать
 settings = Settings()

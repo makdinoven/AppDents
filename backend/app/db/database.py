@@ -3,13 +3,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
-# Создание двигателя SQLAlchemy
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+DATABASE_URL = (
+    f"mysql+pymysql://{settings.DB_USER}:{settings.DB_PASSWORD}"
+    f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+)
 
-# Создание сессии
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Зависимость для получения сессии
+
 def get_db():
     db = SessionLocal()
     try:

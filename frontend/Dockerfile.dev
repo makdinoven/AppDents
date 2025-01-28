@@ -1,19 +1,16 @@
-# frontend/Dockerfile.dev
-
 FROM node:22-alpine
 
 # Установка рабочей директории
-WORKDIR /app
+WORKDIR /frontend
 
 # Копирование package.json и package-lock.json
-COPY package.json package-lock.json ./
+COPY /frontend/package*.json ./
 
 # Установка зависимостей
 RUN npm install
 
 # Копирование исходного кода
-COPY ./src ./src
-COPY ./public ./public
+COPY /frontend .
 
 # Установка переменных окружения для React
 ENV CHOKIDAR_USEPOLLING=true

@@ -1,30 +1,23 @@
-# backend/app/main.py
 
+import uvicorn
 from fastapi import FastAPI
-from app.api import test
-from app.core.config import settings
-from fastapi.middleware.cors import CORSMiddleware
+from app.models.models import Base
+from app.db.database import engine
+from app.api import test, users
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="Описание вашего проекта",
-    version="1.0.0",
-)
 
-# Настройка CORS
-origins = [
-    "http://localhost",
-    "http://localhost:3000",
-    "http://your_domain.com",  # Замените на ваш домен
-]
+def create_app() -> FastAPI:
+    app = FastAPI(title="My Courses API")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  # Разрешенные источники
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    # Создаём таблицы (только если не используете Alembic)
+    Base.metadata.create_all(bind=engine)
 
-# Подключение маршрутов
-app.include_router(test.router, tags=["Test"])
+    # Подключаем роуты
+    app.include_router(test.router, prefix="")  # /test
+    app.include_router(users.router, prefix="/users")  # /users
+
+    return app
+
+
+app = create_app()
+
