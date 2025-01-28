@@ -1,22 +1,29 @@
+# app/core/config.py
 
 import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "root"
-    DB_HOST: str = "localhost"
+    # MySQL / БД
+    MYSQL_ROOT_PASSWORD: str = "root"
+    MYSQL_USER: str = "dev_user"
+    MYSQL_PASSWORD: str = "dev_password"
+    MYSQL_DATABASE: str = "dev_database"
+    DB_HOST: str = "mysql"
     DB_PORT: str = "3306"
-    DB_NAME: str = "mydatabase"
+    DB_USER: str = "dev_user"
+    DB_PASSWORD: str = "dev_password"
+    DB_NAME: str = "dev_database"
 
-    SECRET_KEY: str = "CHANGE_ME"
-    ALGORITHM: str = "HS256"
+    # JWT
+    SECRET_KEY: str = "DEV_SUPER_SECRET"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     class Config:
-        # Можно указать env_file=".env", если вы используете .env
-        env_file = None
+        # Настраиваем pydantic для чтения файла .env
+        # Или оставляем None, если полагаемся только на Docker окружение
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
-
-# Создаём единственный объект настроек, который будем импортировать
+# Инициализируем единый объект настроек, который будем импортировать в коде
 settings = Settings()
