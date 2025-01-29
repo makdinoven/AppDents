@@ -9,3 +9,8 @@ class TestResponse(BaseModel):
 @router.get("/test/", response_model=TestResponse)
 def read_test_slash():
     return {"message": "Hello, World!"}
+
+
+@router.get("/test", response_model=TestResponse)
+def read_test_no_slash():
+    return {"message": "Hello, World!"}
