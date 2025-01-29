@@ -1,11 +1,18 @@
 FROM nginx:stable-alpine
 
-# Удалим дефолтный конфиг (по желанию)
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Копируем наш prod.conf в дефолтное место
+# Копируем конфиг
 COPY ./prod.conf /etc/nginx/conf.d/default.conf
 
+# Создаём папку для сертификатов
+RUN mkdir /etc/nginx/certs
+
+# Копируем файлы .crt и .key
+COPY ./certs/fullchain.crt /etc/nginx/certs/fullchain.crt
+COPY ./certs/privkey.key   /etc/nginx/certs/privkey.key
+
 EXPOSE 80
+EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]
