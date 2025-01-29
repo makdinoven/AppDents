@@ -13,4 +13,4 @@ def read_test_slash():
 
 @router.get("/test", response_model=TestResponse)
 def read_test_no_slash():
-    return {"message": "Hello, World! Test GitHubActions!"}
+    return {"message": "Hello, World! Test GitHubActions again!"}
