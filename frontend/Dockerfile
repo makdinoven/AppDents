@@ -10,6 +10,7 @@ RUN npm run build  # создает папку dist
 FROM nginx:stable-alpine
 RUN rm /etc/nginx/conf.d/default.conf
 
+COPY default.conf /etc/nginx/conf.d/default.conf
 # Копируем финальную сборку (dist) внутрь Nginx
 COPY --from=build /frontend/dist /usr/share/nginx/html
 
