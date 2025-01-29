@@ -37,7 +37,7 @@ class Course(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
-    description = Column(String)
+    description = Column(String(255))
     price = Column(Numeric(10, 2), nullable=False, default=0.00)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
