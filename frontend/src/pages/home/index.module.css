@@ -1,0 +1,9 @@
+.image {
+  position: absolute;
+  top: 50px;
+}
+
+.feedbackIcon {
+  align-items: flex-end;
+  align-self: flex-end;
+}

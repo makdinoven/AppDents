@@ -1,50 +1,50 @@
-# React + TypeScript + Vite
+# Web Component
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a [Next.js](https://nextjs.org/) web application starter,
+designed to streamline the development of web frontends by addressing common setup and infrastructure tasks,
+allowing developers to focus on unique features and business logic.
 
-Currently, two official plugins are available:
+For more detailed information,
+refer to the [API section in Ship documentation](https://ship.paralect.com/docs/web/overview).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Getting Started
 
-## Expanding the ESLint configuration
+### Running the Application
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+You can start the application in two ways:
 
-- Configure the top-level `parserOptions` property like this:
+1. **Independent Start**: Navigate to the `web` folder and run:
+   ```sh
+   pnpm run dev
+   ```
+2. **Root Start**: From the root of the project, run:
+   ```sh
+   pnpm start
+   ```
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Features
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Styling
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+- Leverage [Mantine](https://mantine.dev/) for robust UI development. Detailed styling guide available [here](https://ship.paralect.com/docs/web/styling).
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+### API Interactions
+
+- Manage API calls efficiently using [Axios](https://axios-http.com/) and handle server state with [@tanstack/react-query](https://tanstack.com/query). Details on API interactions are [here](https://ship.paralect.com/docs/web/calling-api).
+
+### Form Handling
+
+- Implement forms using [React Hook Form](https://react-hook-form.com/) integrated with [Zod](https://zod.dev/) for schema validation. Explore more on form handling [here](https://ship.paralect.com/docs/web/forms).
+
+### Services
+
+- Use built-in service architecture for clean separation of concerns. Service implementation details can be found [here](https://ship.paralect.com/docs/web/services).
+
+### Environment Variables
+
+- Secure and manage application configuration using environment-specific `.env` files. Learn about managing environment variables [here](https://ship.paralect.com/docs/web/environment-variables).
+
+## Development Tools
+
+- **Linting and Formatting**: Enforce coding standards using [ESLint](https://eslint.org/) and [Prettier](https://prettier.io/).
+- **TypeScript**: Leverage TypeScript for safer and more reliable coding thanks to static type checking.

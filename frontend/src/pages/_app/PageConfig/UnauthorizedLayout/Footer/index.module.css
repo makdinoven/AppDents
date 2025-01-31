@@ -1,0 +1,8 @@
+.footer {
+  position: relative;
+  border: none !important;
+  background-color: var(--mantine-color-text-8);
+  padding: 27px 0 0 20px;
+  border-top-left-radius: 30px;
+  border-top-right-radius: 30px;
+}
