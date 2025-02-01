@@ -1,0 +1,8 @@
+.main {
+  @media (max-width: $mantine-breakpoint-xs) {
+    padding-top: 59px;
+  }
+}
+
+.center {
+}

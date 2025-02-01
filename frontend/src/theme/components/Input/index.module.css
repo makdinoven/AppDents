@@ -1,0 +1,18 @@
+.input {
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--mantine-color-background-3);
+  border-radius: 0;
+  padding: 5px 0;
+  height: 31px;
+  caret-color: var(--mantine-color-background-2);
+  color: var(--mantine-color-background-3);
+  font-size: 20px;
+  line-height: 26.04px;
+
+  &::placeholder {
+    color: var(--mantine-color-background-2);
+    font-size: 20px;
+    line-height: 26.04px;
+  }
+}

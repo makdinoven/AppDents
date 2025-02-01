@@ -1,0 +1,18 @@
+.icon {
+  &.primary {
+    color: black;
+  }
+  &.back {
+    color: #edf8ff;
+  }
+  &.inherit {
+    color: inherit;
+  }
+
+  &.secondary {
+    color: var(--token-color-secondary-gray);
+  }
+  &.main {
+    color: var(--token-color-main);
+  }
+}
