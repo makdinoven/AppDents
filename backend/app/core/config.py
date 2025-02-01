@@ -6,14 +6,14 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     # MySQL / БД
     MYSQL_ROOT_PASSWORD: str = "root"
-    MYSQL_USER: str = "dev_user"
-    MYSQL_PASSWORD: str = "dev_password"
-    MYSQL_DATABASE: str = "dev_database"
+    MYSQL_USER: str = "admin"
+    MYSQL_PASSWORD: str = "mysqlpassword"
+    MYSQL_DATABASE: str = "dentsdatabase"
     DB_HOST: str = "mysql"
     DB_PORT: str = "3306"
-    DB_USER: str = "dev_user"
-    DB_PASSWORD: str = "dev_password"
-    DB_NAME: str = "dev_database"
+    DB_USER: str = "admin"
+    DB_PASSWORD: str = "mysqlpassword"
+    DB_NAME: str = "dentsdatabase"
 
     # JWT
     SECRET_KEY: str = "DEV_SUPER_SECRET"
