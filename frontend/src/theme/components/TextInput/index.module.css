@@ -1,0 +1,11 @@
+.error {
+  color: var(--mantine-color-red-6);
+}
+.root {
+  &[data-size='xs'] {
+    .input {
+      height: 24px !important;
+      min-height: 24px !important;
+    }
+  }
+}
