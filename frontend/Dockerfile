@@ -2,6 +2,7 @@
 FROM node:20-alpine AS build
 WORKDIR /frontend
 COPY package*.json ./
+RUN npm install pnpm
 RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build  # создает папку dist

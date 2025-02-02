@@ -1,0 +1,48 @@
+.root {
+  transition: all 0.2s ease-in-out;
+
+  &:disabled,
+  &[data-disabled] {
+    background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  }
+
+  &[data-variant="filled"] {
+    background-color: var(--mantine-color-text-8);
+    color: var(--mantine-color-background-3);
+
+    &:hover {
+      background-color: var(--mantine-color-background-3);
+      border: 1px solid var(--mantine-color-text-8);
+      color: var(--mantine-color-text-8);
+
+      & svg {
+        fill: var(--mantine-color-text-8);
+      }
+    }
+
+    &:active {
+      background-color: var(--mantine-color-text-8);
+      color: var(--mantine-color-background-3);
+    }
+  }
+
+  &[data-variant="outline-light"] {
+    background: none;
+    border-radius: 40px;
+    border: 1px solid var(--mantine-color-background-3);
+
+    & .label {
+      color: var(--mantine-color-background-3);
+      font-size: medium;
+      font-weight: 400;
+    }
+
+    &:hover {
+      background-color: var(--mantine-color-background-3);
+
+      & .label {
+        color: var(--mantine-color-text-8);
+      }
+    }
+  }
+}

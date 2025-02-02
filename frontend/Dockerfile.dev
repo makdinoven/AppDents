@@ -7,6 +7,7 @@ WORKDIR /frontend
 COPY /frontend/package*.json ./
 
 # Установка зависимостей
+RUN npm install pnpm
 RUN npm install
 
 # Копирование исходного кода
@@ -16,4 +17,4 @@ COPY /frontend .
 ENV CHOKIDAR_USEPOLLING=true
 
 # Команда запуска разработческого сервера
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

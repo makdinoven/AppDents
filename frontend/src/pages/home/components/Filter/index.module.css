@@ -1,0 +1,24 @@
+.menuItem {
+  background: none;
+  color: var(--mantine-color-body);
+  border: 1px solid var(--mantine-color-body);
+  border-radius: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.menuLabel {
+  background: none;
+  color: var(--mantine-color-body);
+  border: 1px solid var(--mantine-color-body);
+  border-radius: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+}
+.menuLabelSelected {
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-main-3);
+  border: 1px solid var(--mantine-color-main-3);
+}

@@ -1,0 +1,136 @@
+.root {
+  transition: all 0.2s ease-in-out;
+  height: 60px;
+  padding: 10px;
+
+  & [data-position="right"] {
+    width: 40px;
+    height: 40px;
+
+    & svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    height: 40px;
+
+    & [data-position="right"] {
+      width: 20px;
+      height: 20px;
+
+      & svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+
+
+  &:disabled,
+  &[data-disabled] {
+    background-color: light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+  }
+
+  &[data-variant="filled"] {
+    background-color: var(--mantine-color-text-8);
+    border-radius: 40px;
+
+    & .label {
+      color: var(--mantine-color-background-3);
+      font-size: medium;
+      font-weight: 400;
+    }
+
+    & [data-position="right"] {
+      border-radius: 100%;
+      background-color: var(--mantine-color-background-3);
+      color: var(--mantine-color-text-8);
+    }
+
+    &:hover {
+      background-color: var(--mantine-color-background-3);
+      border: 1px solid var(--mantine-color-text-8);
+
+      & .label {
+        color: var(--mantine-color-text-8);
+      }
+
+      & [data-position="right"] {
+        border-radius: 100%;
+        background-color: var(--mantine-color-text-8);
+        color: var(--mantine-color-background-3);
+      }
+    }
+
+    &:active {
+      background-color: var(--mantine-color-text-8);
+
+    & .label {
+      color: var(--mantine-color-background-3);
+      font-size: medium;
+      font-weight: 400;
+    }
+
+    & [data-position="right"] {
+      border-radius: 100%;
+      color: var(--mantine-color-background-3);
+    }
+    }
+  }
+
+  &[data-variant="outline-light"] {
+    background: none;
+    border-radius: 40px;
+    border: 1px solid var(--mantine-color-background-3);
+
+    & .label {
+      color: var(--mantine-color-background-3);
+      font-size: medium;
+      font-weight: 400;
+    }
+
+    &:hover {
+      background-color: var(--mantine-color-background-3);
+
+      & .label {
+        color: var(--mantine-color-text-8);
+      }
+    }
+  }
+
+  &[data-variant="outline-bottom"] {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    background: none;
+    border-radius: 0;
+    border-bottom: 1px solid var(--mantine-color-text-8);
+    padding: 4px;
+    width: fit-content;
+
+    & .label {
+      color: var(--mantine-color-text-8);
+      font-size: medium;
+      font-weight: 400;
+    }
+
+    & [data-position="right"] {
+      color: var(--mantine-color-text-8);
+    }
+
+    &:hover {
+      & [data-position="right"] {
+        margin-left: 30px;
+      }
+    }
+
+    &:active {
+      & [data-position="right"] {
+       display: none;
+      }
+    }
+  }
+}

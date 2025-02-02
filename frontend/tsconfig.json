@@ -1,7 +1,16 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
+  "extends": "./tsconfig/nextjs.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": "src"
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.json",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "next.config.js",
+    "postcss.config.js"
   ]
 }
