@@ -1,23 +1,34 @@
-# app/core/config.py
+
 
 import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
     # MySQL / БД
-    MYSQL_ROOT_PASSWORD: str = "root"
-    MYSQL_USER: str = "admin"
-    MYSQL_PASSWORD: str = "mysqlpassword"
-    MYSQL_DATABASE: str = "dentsdatabase"
-    DB_HOST: str = "mysql"
-    DB_PORT: str = "3306"
-    DB_USER: str = "admin"
-    DB_PASSWORD: str = "mysqlpassword"
-    DB_NAME: str = "dentsdatabase"
+    MYSQL_ROOT_PASSWORD: str
+    MYSQL_USER: str
+    MYSQL_PASSWORD: str
+    MYSQL_DATABASE: str
+    DB_HOST: str
+    DB_PORT: str
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_NAME: str
+
+    # Настройки почтового сервера:
+    EMAIL_HOST: str = "hostch02.fornex.host"
+    EMAIL_PORT: int = 465
+    EMAIL_USERNAME: str = "info@d-is.org"
+    EMAIL_PASSWORD: str = "Iveter88=*"
+    EMAIL_SENDER: str = "info@d-is.org"
 
     # JWT
     SECRET_KEY: str = "DEV_SUPER_SECRET"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
+    STRIPE_SECRET_KEY: str
+    STRIPE_PUBLISHABLE_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
 
     class Config:
         # Настраиваем pydantic для чтения файла .env

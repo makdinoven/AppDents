@@ -46,3 +46,5 @@ class UserAddCourse(BaseModel):
     course_id: int
     price_at_purchase: float
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr

@@ -7,6 +7,7 @@ services:
     restart: always
     volumes:
       - ./backend/app:/app/app
+      - ./backend/app/alembic/versions:/app/alembic/versions
       - /app/venv
     env_file:
         - .env

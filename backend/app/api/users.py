@@ -3,7 +3,7 @@ import secrets
 import string
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -20,6 +20,12 @@ from app.models.models import User
 
 from app.schemas.course import CourseResponse
 
+from ..dependencies.role_checker import require_roles
+
+from ..dependencies.auth import get_current_user
+from ..schemas.user import ForgotPasswordRequest
+from ..utils.email_sender import send_password_to_user, send_recovery_email
+
 router = APIRouter()
 
 def generate_random_password(length=12) -> str:
@@ -29,34 +35,16 @@ def generate_random_password(length=12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
-    """
-    Извлекаем JWT из заголовка Authorization, валидируем,
-    возвращаем объект пользователя. Если нет прав, выбрасываем 401.
-    """
-    auth_header = request.headers.get("Authorization")
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    scheme, _, token = auth_header.partition(" ")
-    if scheme.lower() != "bearer":
-        raise HTTPException(status_code=401, detail="Invalid auth scheme")
-
-    try:
-        token_data = decode_access_token(token)
-    except:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    user = db.query(User).get(token_data.user_id)
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    return user
 
 @router.post("/register", response_model=UserRead)
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+def register(
+    user_data: UserCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     """
-    Регистрируем пользователя, генерируем пароль, отправляем на почту (или нет).
+    Регистрирует нового пользователя, генерирует случайный пароль,
+    сохраняет его в БД в зашифрованном виде и отправляет письмо с паролем.
     """
     existing_user = get_user_by_email(db, user_data.email)
     if existing_user:
@@ -65,14 +53,14 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Пользователь с таким email уже существует"
         )
 
-    # Генерируем пароль
+    # Генерируем новый пароль
     random_pass = generate_random_password()
 
-    # Создаём запись в БД (по умолчанию role="user")
+    # Создаем пользователя (пароль сохраняется зашифрованным)
     user = create_user(db, email=user_data.email, password=random_pass, name=user_data.name or "")
 
-    # Отправляем пароль на почту (заглушка, нужно подключать реальную логику):
-    # send_password_to_user(user.email, random_pass)
+    # Добавляем задачу отправки письма в фон
+    background_tasks.add_task(send_password_to_user, user.email, random_pass)
 
     return user
 
@@ -96,16 +84,6 @@ def get_me(current_user: User = Depends(get_current_user)):
     """
     return current_user
 
-@router.get("/admin-only")
-def admin_only(current_user: User = Depends(get_current_user)):
-    """
-    Пример эндпоинта только для админа.
-    """
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied. Admins only.")
-    return {"message": "Hello, Admin!"}
-
-# --- Новые маршруты для управления пользователями ---
 
 # Поиск пользователей по части email
 @router.get("/search", response_model=list[UserRead], summary="Поиск пользователей по email")
@@ -115,7 +93,7 @@ def search_users(email: str = Query(..., description="Часть email для п
 
 # Изменение роли пользователя
 @router.put("/{user_id}/role", response_model=UserRead, summary="Изменить роль пользователя")
-def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depends(get_db)):
+def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     try:
         user = update_user_role(db, user_id, role_data.role)
         return user
@@ -124,7 +102,7 @@ def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depe
 
 # Изменение имени пользователя
 @router.put("/{user_id}/name", response_model=UserRead, summary="Изменить имя пользователя")
-def change_user_name(user_id: int, name_data: UserUpdateName, db: Session = Depends(get_db)):
+def change_user_name(user_id: int, name_data: UserUpdateName, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     try:
         user = update_user_name(db, user_id, name_data.name)
         return user
@@ -133,7 +111,7 @@ def change_user_name(user_id: int, name_data: UserUpdateName, db: Session = Depe
 
 # Изменение пароля пользователя (новый пароль хэшируется и сохраняется)
 @router.put("/{user_id}/password", response_model=UserRead, summary="Изменить пароль пользователя")
-def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Session = Depends(get_db)):
+def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         user = update_user_password(db, user_id, password_data.password)
         return user
@@ -142,7 +120,7 @@ def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Se
 
 # Добавление курса пользователю (создаётся запись в таблице UserCourses)
 @router.post("/{user_id}/courses", summary="Добавить курс пользователю")
-def add_course(user_id: int, course_data: UserAddCourse, db: Session = Depends(get_db)):
+def add_course(user_id: int, course_data: UserAddCourse, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         user_course = add_course_to_user(db, user_id, course_data.course_id, course_data.price_at_purchase)
         return {"message": "Курс успешно добавлен пользователю", "user_course_id": user_course.id}
@@ -170,3 +148,24 @@ def get_purchased_courses(current_user: User = Depends(get_current_user)):
     """
     purchased_courses = [user_course.course for user_course in current_user.courses]
     return purchased_courses
+
+@router.post("/forgot-password", summary="Восстановление пароля", response_model=dict)
+def forgot_password(
+    forgot_data: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Принимает email пользователя.
+    Если пользователь найден, генерирует новый пароль, обновляет его в БД
+    (в зашифрованном виде) и отправляет письмо с новым паролем на указанный адрес.
+    Возвращает одно и то же сообщение вне зависимости от того, найден пользователь или нет.
+    """
+    user = get_user_by_email(db, forgot_data.email)
+    if user:
+        new_password = generate_random_password()
+        # Обновляем пароль пользователя (функция обновления должна хэшировать пароль)
+        update_user_password(db, user.id, new_password)
+        # Отправляем новый пароль на почту в фоне
+        background_tasks.add_task(send_recovery_email, user.email, new_password)
+    return {"message": "New password send successfully"}
