@@ -1,6 +1,10 @@
 .image {
   position: absolute;
-  top: 50px;
+  top: 110px;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    top: 50px;
+  }
 }
 
 .feedbackIcon {

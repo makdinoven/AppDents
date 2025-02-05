@@ -1,8 +1,15 @@
-.main {
+.shell {
+  padding-top: 21px;
+  
   @media (max-width: $mantine-breakpoint-xs) {
     padding-top: 59px;
   }
 }
 
-.center {
+.main {
+  padding: 40px 88px;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    padding: 47px 20px 0;
+  }
 }

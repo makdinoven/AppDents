@@ -10,11 +10,11 @@ interface UnauthorizedLayoutProps {
 }
 
 const UnauthorizedLayout: FC<UnauthorizedLayoutProps> = ({ children }) => (
-  <AppShell component={Stack} className={classes.main} bg="background.3">
+  <AppShell component={Stack} className={classes.shell} bg="background.3">
     <Header />
 
-    <AppShell.Main pt={47} px={20}>
-      <Center px={20}>{children}</Center>
+    <AppShell.Main className={classes.main}>
+      <Center>{children}</Center>
     </AppShell.Main>
 
     <Footer />

@@ -15,4 +15,13 @@
     font-size: 20px;
     line-height: 26.04px;
   }
+
+  &[data-variant="dark"] {
+    caret-color: var(--mantine-color-text-8);
+    color: var(--mantine-color-text-8);
+
+    &::placeholder {
+      color: var(--mantine-color-secondaryGray-5);
+    }
+  }
 }

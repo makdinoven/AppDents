@@ -5,4 +5,17 @@
   padding: 27px 0 0 20px;
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
+  display: flex;
+  z-index: 99;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    flex-direction: column;
+  }
+}
+
+.stack {
+  padding-bottom: 64px;
+  @media (max-width: $mantine-breakpoint-xs) {
+    padding-bottom: 0px;
+  }
 }

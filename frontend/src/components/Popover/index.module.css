@@ -1,0 +1,96 @@
+.content {
+  height: 668px;
+  max-height: 90vh;
+  border-radius: 40px;
+  width: 100% !important;
+  background: transparent;
+  max-width: calc(100% - 88px - 88px);
+  border: none;
+  overflow: hidden;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    max-width: calc(100% - 40px);
+  }
+
+  & .body {
+    height: 100%;
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: start;
+    align-self: start;
+    flex-direction: column;
+    background-color: var(--mantine-color-main-3);
+    border: none;
+    position: relative;
+
+    border-top-right-radius: 20px;
+
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
+  }
+
+  &[data-variant="top-end"] {
+    .body {
+      height: auto;
+      border-bottom-left-radius: 0px;
+      border-bottom-right-radius: 20px;
+    }
+  }
+
+  & .header {
+    background-color: var(--mantine-color-main-3);
+    flex: 1;
+    position: relative;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 20px;
+  
+      &::before {
+        content: "";
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        bottom: 0px;
+        right: -40px;
+        border-bottom-left-radius: 20px;
+        box-shadow:-15px 15px 0 2px var(--mantine-color-main-3);
+    }
+  }
+
+  & .footer {
+    padding-top: 20px;
+    background-color: var(--mantine-color-main-3);
+    flex: 1;
+    position: relative;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 20px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+  
+      &::before {
+        content: "";
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        top: 0px;
+        right: -40px;
+        border-top-left-radius: 20px;
+        box-shadow: -15px -15px 0 2px  var(--mantine-color-main-3);
+    }
+  }
+}
+
+.closeButton {
+  min-width: 46px;
+  min-height: 46px;
+  position: relative;
+  top: 20px;
+  left: 20px;
+  z-index: 1;
+}
+
+.root {
+  height: 100%;
+}
+

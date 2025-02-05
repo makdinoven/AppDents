@@ -20,9 +20,11 @@ const Search: FC<SearchProps> = ({ setParams }) => {
 
   return (
     <TextInput
+      flex={1}
       miw={255}
       maw="100%"
       size="xs"
+      variant="dark"
       value={search}
       onChange={setSearch}
       placeholder="Search courses..."

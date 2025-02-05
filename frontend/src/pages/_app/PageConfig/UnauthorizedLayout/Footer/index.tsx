@@ -1,10 +1,7 @@
 import React, { FC, memo } from 'react';
-import Link from 'next/link';
 import { Anchor, AppShell, Divider, Group, Stack, Text, Title } from '@mantine/core';
 
 import { WhiteLogoImage } from 'public/images';
-
-import { RoutePath } from 'routes';
 
 import Icon, { IconType } from 'components/Icon';
 import classes from './index.module.css';
@@ -41,14 +38,14 @@ const PRODUCT_ROUTES = [
 
 const Footer: FC = () => (
   <AppShell.Footer className={classes.footer}>
-    <Stack pr={20} gap={10}>
-      <Group align="flex-start">
-        <Stack w={150} gap={10}>
+    <Stack pr={20} gap={10} flex={1} className={classes.stack}>
+      <Group align="flex-start" wrap="nowrap" gap={40}>
+        <Stack miw={150} gap={10}>
           <Title order={3} c="background.3">
             CONTACTS
           </Title>
           <Text size="md" c="background.3">
-            X44G+755 - Mina <br /> Jebel Ali - Jabal Ali <br /> Industrial Second <br /> - Dubai - UAE
+            X44G+755 - Mina Jebel Ali - Jabal Ali Industrial Second - Dubai - UAE
           </Text>
           <Text size="md" c="background.3">
             +971 55 633 5434
@@ -60,7 +57,7 @@ const Footer: FC = () => (
           </Anchor>
         </Stack>
 
-        <Group gap={0} align="center" w="80%" flex={1} wrap="nowrap">
+        <Group gap={0} align="center" w="80%" flex={1} wrap="nowrap" miw={160}>
           <Divider color="background.3" orientation="horizontal" w="80%" maw={600} />
           <Icon type={IconType.CircleArrow} size={33} color="back" />
         </Group>
@@ -75,7 +72,7 @@ const Footer: FC = () => (
           </Title>
 
           {POLITIES_ROUTES.map(({ href, title }) => (
-            <Anchor underline="never" href={href}>
+            <Anchor key={title} underline="never" href={href}>
               <Text c="background.3" size="md">
                 {title}
               </Text>
@@ -89,7 +86,7 @@ const Footer: FC = () => (
           </Title>
 
           {PRODUCT_ROUTES.map(({ href, title }) => (
-            <Anchor underline="never" href={href}>
+            <Anchor key={title} underline="never" href={href}>
               <Text c="background.3" size="md">
                 {title}
               </Text>
@@ -99,7 +96,7 @@ const Footer: FC = () => (
       </Group>
     </Stack>
 
-    <Group justify="flex-end" align="center" mt="-25px" ml="-20px">
+    <Group justify="flex-end" align="flex-end" mt="-25px" ml="-20px">
       <WhiteLogoImage />
     </Group>
   </AppShell.Footer>

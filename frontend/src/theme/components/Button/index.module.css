@@ -3,9 +3,31 @@
   height: 60px;
   padding: 10px;
 
+  & [data-position="right"] {
+    width: 40px;
+    height: 40px;
+
+    & svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
   @media (max-width: $mantine-breakpoint-xs) {
     height: 40px;
+
+    & [data-position="right"] {
+      width: 20px;
+      height: 20px;
+
+      & svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
+
+
 
   &:disabled,
   &[data-disabled] {
@@ -97,6 +119,14 @@
 
     & [data-position="right"] {
       color: var(--mantine-color-text-8);
+      
+      width: 20px;
+      height: 20px;
+
+      & svg {
+        width: 20px;
+        height: 20px;
+      }
     }
 
     &:hover {

@@ -9,6 +9,8 @@ import {
   CircleXIcon,
   DialogIcon,
   ArrowIcon,
+  ChevronCompactLeftIcon,
+  CircleArrowThinIcon,
 } from 'public/icons';
 
 import classes from './index.module.css';
@@ -21,11 +23,13 @@ export enum IconType {
   Arrow = 'arrow',
   CircleX = 'circle-x',
   Dialog = 'dialog',
+  ChevronCompactLeft = 'chevron-compact-left',
+  CircleArrowThin = 'circle-arrow-thin',
 }
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   type: IconType;
-  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit';
+  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green';
   width?: number;
   height?: number;
   size?: number;
@@ -45,6 +49,7 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
         [classes.main]: color === 'main',
         [classes.back]: color === 'back',
         [classes.inherit]: color === 'inherit',
+        [classes.green]: color === 'green',
       },
       className,
     ),
@@ -71,6 +76,12 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
 
     case IconType.Arrow:
       return <ArrowIcon {...iconProps} />;
+
+    case IconType.ChevronCompactLeft:
+      return <ChevronCompactLeftIcon {...iconProps} />;
+
+    case IconType.CircleArrowThin:
+      return <CircleArrowThinIcon {...iconProps} />;
 
     default:
       return null;
