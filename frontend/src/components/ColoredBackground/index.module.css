@@ -1,0 +1,80 @@
+.root {
+  height: 100%;
+  max-height: 100%;
+  border-radius: 40px;
+  width: 100% !important;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 40px;
+  position: relative;
+
+  .children {
+    position: absolute;
+    height: 100%;
+    z-index: 10;
+    padding: 0 20px;
+  }
+
+  & .leftTopBox {
+    display: flex;
+    align-self: start;
+    background-color: var(--mantine-color-main-3);
+    border-top-right-radius: 40px;
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      bottom: 0px;
+      right: -80px;
+      border-bottom-left-radius: 40px;
+      box-shadow:-15px 15px 0 2px var(--mantine-color-main-3);
+  }
+  }
+
+  & .rightBottomBox {
+    display: flex;
+    align-self: flex-end;
+    background-color: var(--mantine-color-main-3);
+    border-bottom-right-radius: 40px;
+    border-bottom-left-radius: 40px;
+    position: relative;
+    right: 0;
+
+    &::before {
+      content: "";
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      top: 0px;
+      left: -80px;
+      border-top-right-radius: 40px;
+      box-shadow: 15px -15px 0 2px var(--mantine-color-main-3);
+  }
+  }
+
+  & .body {
+    flex: 1;
+    max-height: 100%;
+    width: 100%;
+    padding-bottom: 20px;
+    display: flex;
+    justify-content: start;
+    align-self: start;
+    flex-direction: column;
+    background-color: var(--mantine-color-main-3);
+    border: none;
+    position: relative;
+
+    border-top-right-radius: 40px;
+
+    border-bottom-left-radius: 40px;
+  }
+}

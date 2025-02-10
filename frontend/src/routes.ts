@@ -11,6 +11,8 @@ export enum LayoutType {
 export enum RoutePath {
   Profile = '/profile',
   Home = '/',
+  Courses = '/courses',
+  Course = '/courses/[id]',
   NotFound = '/404',
 }
 
@@ -29,7 +31,17 @@ export const routesConfiguration: RoutesConfiguration = {
 
   [RoutePath.Home]: {
     scope: ScopeType.PUBLIC,
-    layout: LayoutType.UNAUTHORIZED,
+    layout: LayoutType.MAIN,
+  },
+
+  [RoutePath.Courses]: {
+    scope: ScopeType.PUBLIC,
+    layout: LayoutType.MAIN,
+  },
+
+  [RoutePath.Course]: {
+    scope: ScopeType.PUBLIC,
+    layout: LayoutType.MAIN,
   },
 
   [RoutePath.NotFound]: {},
