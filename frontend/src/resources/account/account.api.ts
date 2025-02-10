@@ -5,24 +5,22 @@ import { apiService } from 'services';
 import queryClient from 'query-client';
 
 import { ApiError } from 'types';
-import { User } from './account.types';
 
-const BASE_URL = '/users';
+type User = {};
 
 export const useSignIn = <T>() =>
-  useMutation<{ access_token: string; token_type: string }, ApiError, T>({
-    mutationFn: (data: T) => apiService.post(`${BASE_URL}/login`, data),
+  useMutation<User, ApiError, T>({
+    mutationFn: (data: T) => apiService.post('/account/sign-in', data),
     onSuccess: (data) => {
-      localStorage.setItem('token', data.access_token);
+      queryClient.setQueryData(['account'], data);
     },
   });
 
 export const useSignOut = () =>
   useMutation<void, ApiError>({
-    mutationFn: () => Promise.resolve(),
+    mutationFn: () => apiService.post('/account/sign-out'),
     onSuccess: () => {
       queryClient.setQueryData(['account'], null);
-      localStorage.clear();
     },
   });
 
@@ -32,7 +30,7 @@ export const useSignUp = <T>() => {
   }
 
   return useMutation<SignUpResponse, ApiError, T>({
-    mutationFn: (data: T) => apiService.post(`${BASE_URL}/register`, data),
+    mutationFn: (data: T) => apiService.post('/account/sign-up', data),
   });
 };
 
@@ -54,7 +52,7 @@ export const useResendEmail = <T>() =>
 export const useGet = (options: Partial<UseQueryOptions<User>> = {}) =>
   useQuery<User>({
     queryKey: ['account'],
-    queryFn: () => apiService.get(`${BASE_URL}/me`),
+    queryFn: () => apiService.get('/account'),
     staleTime: 5 * 1000,
     ...options,
   });

@@ -12,14 +12,14 @@ const greenStyleSettings = {
   textColor: 'text.8',
   backgroundMobileSrc: '/images/green-course-preview-background.svg',
   backgroundDesktopSrc: '/images/green-course-preview-background-desktop.svg',
-  color: '#7FDFD5',
+  color: 'main.3',
 };
 
 const blueStyleSettings = {
   textColor: 'secondaryBlue.5',
   backgroundMobileSrc: '/images/blue-course-preview-background.svg',
   backgroundDesktopSrc: '/images/blue-course-preview-background-desktop.svg',
-  color: '#79CEE7',
+  color: 'secondarySkyBlue.4',
 };
 
 const getPreviewStyle = (index: number) => (index % 2 === 0 ? greenStyleSettings : blueStyleSettings);
@@ -51,7 +51,7 @@ const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
 
   const marginTop = () => {
     if (isMobile) {
-      return index ? '-50px' : 0;
+      return index ? '-30px' : 0;
     }
     return index && index !== 1 ? '-30px' : 0;
   };

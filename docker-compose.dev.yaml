@@ -6,12 +6,13 @@ services:
     container_name: backend_dev
     restart: always
     volumes:
-      - ./backend/app:/app/app  # Монтирование кода для автоматической перезагрузки
+      - ./backend/app:/app/app
+      - ./backend/app/alembic/versions:/app/alembic/versions
       - /app/venv
     env_file:
-        - .env.dev
-    expose:
-      - "8000"
+        - .env
+    ports:
+      - "8000:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -51,11 +52,13 @@ services:
     build:
       context: .
       dockerfile: ./mysql/Dockerfile
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mydatabase
-      MYSQL_USER: myuser
-      MYSQL_PASSWORD: mypassword
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
     ports:

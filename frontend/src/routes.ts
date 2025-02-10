@@ -31,17 +31,17 @@ export const routesConfiguration: RoutesConfiguration = {
 
   [RoutePath.Home]: {
     scope: ScopeType.PUBLIC,
-    layout: LayoutType.MAIN,
+    layout: LayoutType.UNAUTHORIZED,
   },
 
   [RoutePath.Courses]: {
     scope: ScopeType.PUBLIC,
-    layout: LayoutType.MAIN,
+    layout: LayoutType.UNAUTHORIZED,
   },
 
   [RoutePath.Course]: {
     scope: ScopeType.PUBLIC,
-    layout: LayoutType.MAIN,
+    layout: LayoutType.UNAUTHORIZED,
   },
 
   [RoutePath.NotFound]: {},

@@ -1,5 +1,6 @@
 import { FileRejection } from '@mantine/dropzone';
 import { showNotification } from '@mantine/notifications';
+import { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 
 import { ApiError } from 'types';
 
@@ -9,22 +10,37 @@ type ValidationErrors = {
 
 interface ErrorData {
   errors?: ValidationErrors;
-  detail: string;
 }
 
-export const handleApiError = (
+export const handleApiError = <TFieldValues extends FieldValues>(
   e: ApiError,
-  // setError?: UseFormSetError<TFieldValues>,
+  setError?: UseFormSetError<TFieldValues>,
 ) => {
   const data = e.data as ErrorData;
 
-  if (!data?.errors && !data.detail) return;
+  if (!data?.errors) return;
 
-  showNotification({
-    title: 'Error',
-    message: data.detail,
-    color: 'red',
-  });
+  const { global, ...errors } = data.errors;
+
+  if (global) {
+    showNotification({
+      title: 'Error',
+      message: global,
+      color: 'red',
+    });
+  }
+
+  if (setError) {
+    Object.keys(errors).forEach((key) => {
+      let message = errors[key];
+
+      if (Array.isArray(message)) {
+        message = message.join(' ');
+      }
+
+      setError(key as Path<TFieldValues>, { message }, { shouldFocus: true });
+    });
+  }
 };
 
 enum ErrorCode {
