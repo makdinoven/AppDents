@@ -3,19 +3,22 @@ import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "root"
-    DB_HOST: str = "localhost"
-    DB_PORT: str = "3306"
-    DB_NAME: str = "mydatabase"
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
+    DB_NAME: str
 
-    SECRET_KEY: str = "CHANGE_ME"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+
+    STRIPE_SECRET_KEY: str
+    STRIPE_PUBLISHABLE_KEY: str
+    STRIPE_WEBHOOK_SECRET: str
 
     class Config:
-        # Можно указать env_file=".env", если вы используете .env
-        env_file = None
+        env_file = ".env"
 
 
 # Создаём единственный объект настроек, который будем импортировать
