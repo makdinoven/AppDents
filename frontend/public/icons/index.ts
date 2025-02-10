@@ -8,6 +8,3 @@ export { default as CircleXIcon } from './circle-x.svg';
 export { default as DialogIcon } from './dialog.svg';
 export { default as ArrowIcon } from './arrow.svg';
 export { default as ChevronCompactLeftIcon } from './chevron-compact-left.svg';
-export { default as AvatarIcon } from './avatar.svg';
-export { default as CircleFilledAvatarIcon } from './circle-filled-avatar.svg';
-export { default as CircleAvatarIcon } from './circle-avatar.svg';

@@ -1,10 +1,7 @@
 import React, { FC, memo } from 'react';
-import Link from 'next/link';
 import { Anchor, AppShell, Divider, Group, Stack, Text, Title } from '@mantine/core';
 
 import { WhiteLogoImage } from 'public/images';
-
-import { RoutePath } from 'routes';
 
 import Icon, { IconType } from 'components/Icon';
 import classes from './index.module.css';

@@ -4,7 +4,6 @@
   "description": "Next.js web",
   "author": "Dentist",
   "license": "MIT",
-  "proxy": "http://localhost:8000",
   "scripts": {
     "build": "next build",
     "dev": "next dev -p 3002",

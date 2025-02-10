@@ -18,4 +18,3 @@ docker-compose.override.yml
 .env
 
 frontend/.next/
-frontend/package-lock.json
