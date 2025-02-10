@@ -1,9 +1,10 @@
 import { FC, useLayoutEffect, useState } from 'react';
-import { ActionIcon, Menu, Text } from '@mantine/core';
+import { Box, Stack, Title } from '@mantine/core';
 import { useDebouncedValue, useInputState, useSetState } from '@mantine/hooks';
 import cx from 'clsx';
 
 import Icon, { IconType } from 'components/Icon';
+import Popover from 'components/Popover';
 import classes from './index.module.css';
 
 interface FilterProps {
@@ -11,7 +12,7 @@ interface FilterProps {
 }
 
 const Filter: FC<FilterProps> = ({ setParams }) => {
-  const [opened, setOpened] = useState(false);
+  const [isPopoverOpened, setIsPopoverOpened] = useState(false);
   const [search] = useInputState('');
 
   const [debouncedSearch] = useDebouncedValue(search, 500);
@@ -21,31 +22,28 @@ const Filter: FC<FilterProps> = ({ setParams }) => {
   }, [debouncedSearch, setParams]);
 
   return (
-    <Menu shadow="md" width={200} floatingStrategy="absolute" opened={opened} onChange={setOpened}>
-      <Menu.Target>
-        <ActionIcon variant="transparent">
-          <Icon size={28} type={opened ? IconType.FilledFilter : IconType.Filter} color="main" />
-        </ActionIcon>
-      </Menu.Target>
-
-      <Menu.Dropdown w="96vw" bg="main.3">
-        <ActionIcon variant="transparent" w={45} h={45}>
-          <Icon type={IconType.CircleX} color="back" size={45} />
-        </ActionIcon>
-
+    <Popover
+      target={
+        <Title order={3} c="text.8">
+          <Icon size={28} type={isPopoverOpened ? IconType.FilledFilter : IconType.Filter} color="main" />
+        </Title>
+      }
+      onOpen={() => setIsPopoverOpened(true)}
+      onClose={() => setIsPopoverOpened(false)}
+      floatingSizes={{ w: 43, h: 43 }}
+    >
+      <Stack w="100%">
         {Array.from({ length: 5 }).map((_, index) => (
-          <Menu.Item
+          <Box
             // eslint-disable-next-line react/no-array-index-key
             key={index}
-            classNames={{
-              itemLabel: cx(classes.menuLabel, { [classes.menuLabelSelected]: !index }),
-            }}
+            className={cx(classes.menuLabel, { [classes.menuLabelSelected]: !index })}
           >
-            <Text size="md">Text {`${index}`}</Text>
-          </Menu.Item>
+            <Title order={3}>Text {`${index}`}</Title>
+          </Box>
         ))}
-      </Menu.Dropdown>
-    </Menu>
+      </Stack>
+    </Popover>
   );
 };
 export default Filter;

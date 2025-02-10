@@ -21,10 +21,3 @@ export type ListParams<T, F> = {
   filter?: T;
   sort?: SortParams<F>;
 };
-
-export enum ModalId {
-  SIGN_IN = 'sign-in-modal',
-  SIGN_UP = 'sign-up-modal',
-  RESET_PASSWORD = 'password-reset-modal',
-  FEEDBACK_FORM = 'feedback-form-modal',
-}

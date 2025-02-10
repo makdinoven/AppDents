@@ -2,7 +2,6 @@ import Head from 'next/head';
 import { Button, Input, Stack, Title, Text } from '@mantine/core';
 
 import { RoutePath } from 'routes';
-import Modal from 'components/Modal';
 import { FC, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -15,10 +14,10 @@ import classes from './index.module.css';
 // type SignInParamsWithCredentials = SignInParams & { credentials?: string };
 
 type ResetPasswordModalProps = {
-  onClose: () => void;
+  onClose?: () => void;
 };
 
-const ResetPasswordModal: FC<ResetPasswordModalProps> = ({ onClose }) => {
+const ResetPasswordModal: FC<ResetPasswordModalProps> = () => {
   const [isSubmitted] = useState(false);
   const router = useRouter();
 
@@ -72,31 +71,29 @@ const ResetPasswordModal: FC<ResetPasswordModalProps> = ({ onClose }) => {
   }
 
   return (
-    <Modal onClose={onClose}>
-      <Stack miw={246} gap={35} justify="center" align="center">
-        <Stack gap={40} justify="center" align="center" w="100%">
-          <Title order={2} c="background.3" w="fit-content">
-            PASSWORD RESET
-          </Title>
+    <Stack miw={246} gap={35} justify="center" align="center">
+      <Stack gap={40} justify="center" align="center" w="100%">
+        <Title order={2} c="background.3" w="fit-content">
+          PASSWORD RESET
+        </Title>
 
-          <form className={classes.form}>
-            <Input
-              {...register('email')}
-              placeholder="Mail..."
-              // error={errors.email?.message}
-            />
+        <form className={classes.form}>
+          <Input
+            {...register('email')}
+            placeholder="Mail..."
+            // error={errors.email?.message}
+          />
 
-            <Button variant="outline-light" type="submit" loading={false} fullWidth mt={32}>
-              RESET
-            </Button>
-          </form>
-        </Stack>
-
-        <Text size="lg" c="background.3" w="70%">
-          A new password will be sent to your e-mail
-        </Text>
+          <Button variant="outline-light" type="submit" loading={false} fullWidth mt={32}>
+            RESET
+          </Button>
+        </form>
       </Stack>
-    </Modal>
+
+      <Text size="lg" c="background.3" w="70%">
+        A new password will be sent to your e-mail
+      </Text>
+    </Stack>
   );
 };
 export default ResetPasswordModal;

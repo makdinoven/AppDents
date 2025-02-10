@@ -5,6 +5,7 @@
   &.back {
     color: #edf8ff;
   }
+
   &.inherit {
     color: inherit;
   }
@@ -12,7 +13,22 @@
   &.secondary {
     color: var(--token-color-secondary-gray);
   }
+
   &.main {
     color: var(--token-color-main);
+  }
+
+  &.green {
+    color: var(--mantine-color-text-8);
+  }
+
+  &.greenBackground {
+    color: #edf8ff;
+
+    & svg circle {
+      fill: var(--mantine-color-text-8);
+      stroke: var(--mantine-color-text-8);
+    }
+
   }
 }
