@@ -188,7 +188,6 @@ class Landing(Base):
     id = Column(Integer, primary_key=True, index=True)
     language = Column(Enum(LanguageEnum, name="lang_enum"), nullable=False)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
-
     title = Column(String(255), nullable=False)
     tag = Column(String(255), nullable=True)
     main_image = Column(String(255), nullable=True)
@@ -196,6 +195,7 @@ class Landing(Base):
     old_price = Column(Numeric(10, 2), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)
     main_text = Column(Text, nullable=True)
+    slug = Column(String(255), nullable=True)
 
     # Связь many-to-many с авторами
     authors = relationship(
