@@ -80,10 +80,10 @@ const Home: NextPage = () => {
 
           <Stack className={classes.feedbackIcon} gap={4}>
             <Box>
-              <Text size="lg" c="text.8" span fz={16}>
+              <Text size="lg" c="text.8" span>
                 Best{' '}
               </Text>
-              <Text size="lg" c="main.3" span fz={16}>
+              <Text size="lg" c="main.3" span>
                 prices
               </Text>
             </Box>

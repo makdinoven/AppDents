@@ -1,7 +1,7 @@
 .root {
   transition: all 0.2s ease-in-out;
   height: 60px;
-  padding: 10px;
+  padding: 10px 10px 10px 20px;
 
   & [data-position="right"] {
     width: 40px;
@@ -15,6 +15,7 @@
 
   @media (max-width: $mantine-breakpoint-xs) {
     height: 40px;
+    padding: 10px;
 
     & [data-position="right"] {
       width: 20px;
@@ -48,6 +49,10 @@
       border-radius: 100%;
       background-color: var(--mantine-color-background-3);
       color: var(--mantine-color-text-8);
+
+      & svg circle {
+        r: inherit;
+      }
     }
 
     &:hover {
@@ -62,6 +67,10 @@
         border-radius: 100%;
         background-color: var(--mantine-color-text-8);
         color: var(--mantine-color-background-3);
+
+        & svg circle {
+          r: inherit;
+        }
       }
     }
 
@@ -77,6 +86,10 @@
     & [data-position="right"] {
       border-radius: 100%;
       color: var(--mantine-color-background-3);
+
+      & svg circle {
+        r: 9.5px;
+      }
     }
     }
   }

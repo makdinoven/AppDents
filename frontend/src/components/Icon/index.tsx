@@ -11,6 +11,9 @@ import {
   ArrowIcon,
   ChevronCompactLeftIcon,
   CircleArrowThinIcon,
+  AvatarIcon,
+  CircleFilledAvatarIcon,
+  CircleAvatarIcon,
 } from 'public/icons';
 
 import classes from './index.module.css';
@@ -25,11 +28,14 @@ export enum IconType {
   Dialog = 'dialog',
   ChevronCompactLeft = 'chevron-compact-left',
   CircleArrowThin = 'circle-arrow-thin',
+  Avatar = 'avatar',
+  CircleFilledAvatar = 'circle-filled-avatar',
+  CircleAvatar = 'circle-avatar',
 }
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   type: IconType;
-  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green';
+  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green' | 'greenBackground';
   width?: number;
   height?: number;
   size?: number;
@@ -50,6 +56,7 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
         [classes.back]: color === 'back',
         [classes.inherit]: color === 'inherit',
         [classes.green]: color === 'green',
+        [classes.greenBackground]: color === 'greenBackground',
       },
       className,
     ),
@@ -82,6 +89,15 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
 
     case IconType.CircleArrowThin:
       return <CircleArrowThinIcon {...iconProps} />;
+
+    case IconType.Avatar:
+      return <AvatarIcon {...iconProps} />;
+
+    case IconType.CircleFilledAvatar:
+      return <CircleFilledAvatarIcon {...iconProps} />;
+
+    case IconType.CircleAvatar:
+      return <CircleAvatarIcon {...iconProps} />;
 
     default:
       return null;
