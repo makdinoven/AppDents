@@ -4,6 +4,8 @@ from app.models.models import Base
 from app.db.database import engine
 from app.api import test, users, landings, authors, courses, payments
 from fastapi.middleware.cors import CORSMiddleware
+from .db.database import init_db
+
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -23,6 +25,10 @@ def create_app() -> FastAPI:
     app.include_router(authors.router, prefix="/authors", tags=["Authors"])
     app.include_router(courses.router, prefix="/courses", tags=["Courses"])
     app.include_router(payments.router, prefix="/payments", tags=["Payments"])
+
+    @app.on_event("startup")
+    async def startup_event():
+        init_db()
 
     return app
 
