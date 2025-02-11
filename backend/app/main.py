@@ -1,9 +1,8 @@
 from sys import prefix
-from fastapi import FastAPI
+from fastapi import FastAPI, CORSMiddleware
 from app.models.models import Base
 from app.db.database import engine
 from app.api import test, users, landings, authors, courses, payments
-from fastapi.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
     app = FastAPI()
