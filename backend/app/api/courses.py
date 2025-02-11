@@ -26,7 +26,7 @@ from ..db.database import get_db
 router = APIRouter()
 
 # --- Эндпоинты для Курсов ---
-@router.post("/", response_model=CourseResponse, summary="Создать курс")
+@router.post("/", response_model=CourseResponse, summary="Create course")
 def create_course_endpoint(course: CourseCreate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         new_course = create_course(db, course)
@@ -34,12 +34,12 @@ def create_course_endpoint(course: CourseCreate, db: Session = Depends(get_db),c
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.get("/", response_model=List[CourseResponse], summary="Список курсов")
+@router.get("/", response_model=List[CourseResponse], summary="List courses")
 def list_courses_endpoint(db: Session = Depends(get_db)):
     courses = list_courses(db)
     return courses
 
-@router.get("/{course_id}", response_model=CourseResponse, summary="Получить курс")
+@router.get("/{course_id}", response_model=CourseResponse, summary="Get course")
 def get_course_endpoint(course_id: int, db: Session = Depends(get_db)):
     try:
         course = get_course(db, course_id)
@@ -47,7 +47,7 @@ def get_course_endpoint(course_id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
-@router.put("/{course_id}", response_model=CourseResponse, summary="Обновить курс")
+@router.put("/{course_id}", response_model=CourseResponse, summary="Update course")
 def update_course_endpoint(course_id: int, course: CourseUpdate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         updated_course = update_course(db, course_id, course)
@@ -55,7 +55,7 @@ def update_course_endpoint(course_id: int, course: CourseUpdate, db: Session = D
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.delete("/{course_id}", response_model=CourseResponse, summary="Удалить курс")
+@router.delete("/{course_id}", response_model=CourseResponse, summary="Delete course")
 def delete_course_endpoint(course_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         deleted_course = delete_course(db, course_id)
@@ -64,7 +64,7 @@ def delete_course_endpoint(course_id: int, db: Session = Depends(get_db),current
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 # --- Эндпоинты для Секций ---
-@router.post("/{course_id}/sections", response_model=SectionResponse, summary="Создать секцию курса")
+@router.post("/{course_id}/sections", response_model=SectionResponse, summary="Create section")
 def create_section_endpoint(course_id: int, section: SectionCreate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         new_section = create_section(db, course_id, section)
@@ -72,7 +72,7 @@ def create_section_endpoint(course_id: int, section: SectionCreate, db: Session 
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.put("/{course_id}/sections/{section_id}", response_model=SectionResponse, summary="Обновить секцию курса")
+@router.put("/{course_id}/sections/{section_id}", response_model=SectionResponse, summary="Update section")
 def update_section_endpoint(course_id: int, section_id: int, section: SectionUpdate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         updated_section = update_section(db, section_id, section)
@@ -80,7 +80,7 @@ def update_section_endpoint(course_id: int, section_id: int, section: SectionUpd
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.delete("/{course_id}/sections/{section_id}", response_model=SectionResponse, summary="Удалить секцию курса")
+@router.delete("/{course_id}/sections/{section_id}", response_model=SectionResponse, summary="Delete section")
 def delete_section_endpoint(course_id: int, section_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         deleted_section = delete_section(db, section_id)
@@ -89,11 +89,10 @@ def delete_section_endpoint(course_id: int, section_id: int, db: Session = Depen
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 # --- Эндпоинты для Модулей (вложенные в секцию) ---
-@router.post("/{course_id}/sections/{section_id}/modules", response_model=dict, summary="Создать модуль в секции")
+@router.post("/{course_id}/sections/{section_id}/modules", response_model=dict, summary="Create section in course")
 def create_module_endpoint(course_id: int, section_id: int, module: ModuleCreate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         new_module = create_module(db, section_id, module)
-        # Для ответа можно вернуть словарь или использовать схему ответа, если она уже есть
         return {
             "id": new_module.id,
             "title": new_module.title,
@@ -105,7 +104,7 @@ def create_module_endpoint(course_id: int, section_id: int, module: ModuleCreate
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.put("/{course_id}/sections/{section_id}/modules/{module_id}", response_model=dict, summary="Обновить модуль")
+@router.put("/{course_id}/sections/{section_id}/modules/{module_id}", response_model=dict, summary="Update module")
 def update_module_endpoint(course_id: int, section_id: int, module_id: int, module: ModuleUpdate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         updated_module = update_module(db, module_id, module)
@@ -120,7 +119,7 @@ def update_module_endpoint(course_id: int, section_id: int, module_id: int, modu
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-@router.delete("/{course_id}/sections/{section_id}/modules/{module_id}", response_model=dict, summary="Удалить модуль")
+@router.delete("/{course_id}/sections/{section_id}/modules/{module_id}", response_model=dict, summary="Delete module")
 def delete_module_endpoint(course_id: int, section_id: int, module_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
         deleted_module = delete_module(db, module_id)
@@ -139,8 +138,8 @@ def delete_module_endpoint(course_id: int, section_id: int, module_id: int, db: 
 @router.get(
     "/search_modules",
     response_model=List[ModuleResponse],
-    summary="Поиск модулей",
-    description="Ищет модули по названию (регистронезависимый поиск)."
+    summary="Search modules",
+    description="Searching modules by name"
 )
 def search_modules_endpoint(query: str = Query(..., description="Строка для поиска модулей по названию"), db: Session = Depends(get_db)):
     modules = search_modules(db, query)
@@ -149,8 +148,8 @@ def search_modules_endpoint(query: str = Query(..., description="Строка д
 @router.get(
     "/search_courses",
     response_model=List[CourseResponse],
-    summary="Поиск курсов",
-    description="Ищет курсы по названию (регистронезависимый поиск)."
+    summary="Search courses",
+    description="Searching courses by name"
 )
 def search_courses_endpoint(query: str = Query(..., description="Строка для поиска курсов по названию"), db: Session = Depends(get_db)):
     courses = search_courses(db, query)
