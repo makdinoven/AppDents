@@ -1,0 +1,89 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - prod
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_prod
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - prod
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./frontend:/frontend
+    working_dir: /frontend
+    command: sh -c "npm install --legacy-peer-deps && npm run dev"
+    ports:
+      - "5173:3002"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    restart: always
+    networks:
+      - prod
+
+  adminer:
+    image: adminer
+    container_name: adminer_prod
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - prod
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.prod
+    container_name: nginx_prod
+    restart: always
+    depends_on:
+      - backend
+      - frontend
+      - adminer
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - prod
+
+networks:
+  prod:
+    driver: bridge
+
+volumes:
+  mysql_data_prod:

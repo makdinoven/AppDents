@@ -1,26 +1,22 @@
-# backend/Dockerfile.dev
-
 FROM python:3.12-slim
 
-# Установка зависимостей системы
+# 1. Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
     gcc \
     libmariadb-dev-compat \
     libmariadb-dev \
-    pkg-config \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
-# Установка рабочей директории
+
+# 2. Установка рабочей директории
 WORKDIR /app
 
-# Копирование и установка зависимостей Python
+# 3. Копируем requirements.txt и устанавливаем пакеты
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование исходного кода
-COPY ./app /app/app
+# 4. Копируем исходный код
+COPY . .
 
-# Установка переменных окружения для разработки
 ENV PYTHONUNBUFFERED=1
 
-# Команда запуска с перезагрузкой
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
