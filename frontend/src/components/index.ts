@@ -6,3 +6,4 @@ export { default as ResetPasswordModal } from './ResetPasswordModal';
 export { default as Popover } from './Popover';
 export { default as ColoredPaper } from './ColoredBackground';
 export { default as CoursePreview } from './CoursePreview';
+export { default as DividerTitle } from './DividerTitle';

@@ -11,3 +11,8 @@ export { default as ChevronCompactLeftIcon } from './chevron-compact-left.svg';
 export { default as AvatarIcon } from './avatar.svg';
 export { default as CircleFilledAvatarIcon } from './circle-filled-avatar.svg';
 export { default as CircleAvatarIcon } from './circle-avatar.svg';
+export { default as ClockIcon } from './clock.svg';
+export { default as BookIcon } from './book.svg';
+export { default as PercentIcon } from './percent.svg';
+export { default as MoneyIcon } from './money.svg';
+export { default as GlassesIcon } from './glasses.svg';

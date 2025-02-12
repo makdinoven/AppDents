@@ -43,7 +43,7 @@ const PageConfig: FC<PageConfigProps> = ({ children }) => {
     Scope = scopeToComponent[ScopeType.PRIVATE];
   }
 
-  if (route === RoutePath.Home && !account) {
+  if (route === RoutePath.Home || (route === RoutePath.Course && !account)) {
     Scope = scopeToComponent[ScopeType.PUBLIC];
     Layout = layoutToComponent[LayoutType.UNAUTHORIZED];
   }

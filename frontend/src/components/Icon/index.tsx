@@ -14,6 +14,11 @@ import {
   AvatarIcon,
   CircleFilledAvatarIcon,
   CircleAvatarIcon,
+  ClockIcon,
+  BookIcon,
+  GlassesIcon,
+  MoneyIcon,
+  PercentIcon,
 } from 'public/icons';
 
 import classes from './index.module.css';
@@ -31,11 +36,16 @@ export enum IconType {
   Avatar = 'avatar',
   CircleFilledAvatar = 'circle-filled-avatar',
   CircleAvatar = 'circle-avatar',
+  Clock = 'clock',
+  Book = 'book',
+  Glasses = 'glasses',
+  Money = 'money',
+  Percent = 'percent',
 }
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   type: IconType;
-  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green' | 'greenBackground';
+  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green' | 'greenBackground' | 'secondaryBlue';
   width?: number;
   height?: number;
   size?: number;
@@ -57,6 +67,7 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
         [classes.inherit]: color === 'inherit',
         [classes.green]: color === 'green',
         [classes.greenBackground]: color === 'greenBackground',
+        [classes.secondaryBlue]: color === 'secondaryBlue',
       },
       className,
     ),
@@ -98,6 +109,21 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
 
     case IconType.CircleAvatar:
       return <CircleAvatarIcon {...iconProps} />;
+
+    case IconType.Clock:
+      return <ClockIcon {...iconProps} />;
+
+    case IconType.Book:
+      return <BookIcon {...iconProps} />;
+
+    case IconType.Glasses:
+      return <GlassesIcon {...iconProps} />;
+
+    case IconType.Money:
+      return <MoneyIcon {...iconProps} />;
+
+    case IconType.Percent:
+      return <PercentIcon {...iconProps} />;
 
     default:
       return null;

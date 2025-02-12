@@ -11,10 +11,11 @@ import { BlackLogoImage } from 'public/images';
 import { Icon } from 'components';
 import { IconType } from 'components/Icon';
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const Header: FC = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   const { data: account } = accountApi.useGet();
 

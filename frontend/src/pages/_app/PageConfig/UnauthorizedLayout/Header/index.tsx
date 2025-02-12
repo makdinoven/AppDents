@@ -9,10 +9,11 @@ import { Popover } from 'components';
 import AuthPopover from 'components/AuthPopover';
 
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const Header: FC = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   const floatingSizes = isMobile ? { w: 89, h: 58 } : { w: 133, h: 70, offset: -55 };
 

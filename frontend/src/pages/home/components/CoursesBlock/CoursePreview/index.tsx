@@ -6,6 +6,7 @@ import Icon, { IconType } from 'components/Icon';
 
 import { useRouter } from 'next/router';
 import { RoutePath } from 'routes';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const greenStyleSettings = {
@@ -43,7 +44,8 @@ interface CoursePreviewProps {
 }
 
 const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
+
   const sizes = isMobile ? mobileSizes : desktopSizes;
   const router = useRouter();
 
@@ -99,4 +101,5 @@ const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
     </Box>
   );
 };
+
 export default CoursePreview;
