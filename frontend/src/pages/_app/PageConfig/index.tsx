@@ -31,17 +31,21 @@ const PageConfig: FC<PageConfigProps> = ({ children }) => {
   if (isAccountLoading) return null;
 
   const { scope, layout } = routesConfiguration[route as RoutePath] || {};
-  const Scope = scope ? scopeToComponent[scope] : Fragment;
-  const Layout = layout ? layoutToComponent[layout] : Fragment;
+  let Scope = scope ? scopeToComponent[scope] : Fragment;
+  let Layout = layout ? layoutToComponent[layout] : Fragment;
 
   if (scope === ScopeType.PRIVATE && !account) {
-    // push(RoutePath.SignIn);
+    push(RoutePath.Home);
     return null;
   }
 
   if (scope === ScopeType.PUBLIC && account) {
-    push(RoutePath.Home);
-    return null;
+    Scope = scopeToComponent[ScopeType.PRIVATE];
+  }
+
+  if (route === RoutePath.Home || (route === RoutePath.Course && !account)) {
+    Scope = scopeToComponent[ScopeType.PUBLIC];
+    Layout = layoutToComponent[LayoutType.UNAUTHORIZED];
   }
 
   return (
