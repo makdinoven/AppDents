@@ -10,13 +10,25 @@ from .db.database import init_db
 def create_app() -> FastAPI:
     app = FastAPI()
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    origins = [
+    "http://localhost",
+    "http://localhost:3000",
+    "http://localhost:5173",    
+    "http://127.0.0.1",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "https://dent-s.com",
+    "https://www.dent-s.com",
+    "https://mail.dent-s.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,          
+    allow_credentials=True,          
+    allow_methods=["*"],             
+    allow_headers=["*"],          
+)
 
     # Подключаем роуты
     app.include_router(test.router, prefix="")
