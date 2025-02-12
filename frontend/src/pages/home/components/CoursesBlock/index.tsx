@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import { Divider, Grid, Group, Stack, Text } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import CoursePreview from './CoursePreview';
 
 const courses = [{}, {}, {}, {}];
@@ -19,7 +20,7 @@ const changeOrder = (index: number) => {
 interface CourseBlockProps {}
 
 const CourseList: FC<CourseBlockProps> = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   return (
     <Stack gap={20}>

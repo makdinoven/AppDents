@@ -1,26 +1,25 @@
 import { FC, ReactElement } from 'react';
-import { AppShell, Stack } from '@mantine/core';
-
-import { accountApi } from 'resources/account';
+import { AppShell, Center, Stack } from '@mantine/core';
 
 import Header from './Header';
+
+import classes from './index.module.css';
+import Footer from '../components/Footer';
 
 interface MainLayoutProps {
   children: ReactElement;
 }
 
-const MainLayout: FC<MainLayoutProps> = ({ children }) => {
-  const { data: account } = accountApi.useGet();
+const MainLayout: FC<MainLayoutProps> = ({ children }) => (
+  <AppShell component={Stack} className={classes.shell} bg="background.3">
+    <Header />
 
-  if (!account) return null;
+    <AppShell.Main className={classes.main}>
+      <Center>{children}</Center>
+    </AppShell.Main>
 
-  return (
-    <AppShell component={Stack} bg="background.3">
-      <Header />
-
-      <AppShell.Main p={32}>{children}</AppShell.Main>
-    </AppShell>
-  );
-};
+    <Footer />
+  </AppShell>
+);
 
 export default MainLayout;
