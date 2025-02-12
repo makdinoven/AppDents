@@ -15,8 +15,8 @@ router = APIRouter()
 @router.post(
     "/",
     response_model=LandingDetailResponse,
-    summary="Добавить новый лендинг",
-    description="Создает новый лендинг с указанными данными: название, цены, изображение, программу курса, модули, лекторов и привязку к курсу."
+    summary="Add new landing",
+    description="Create a new landing with input data",
 )
 def add_landing(landing: LandingCreate, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     try:
@@ -28,7 +28,7 @@ def add_landing(landing: LandingCreate, db: Session = Depends(get_db),current_ad
 @router.get(
     "/",
     response_model=List[LandingCardResponse],
-    summary="Получить карточки лендингов",
+    summary="Get all landings cards",
     description="Возвращает список лендингов с краткой информацией: тег, название, изображение и список авторов."
 )
 def list_landings(db: Session = Depends(get_db)):
