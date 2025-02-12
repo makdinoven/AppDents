@@ -5,6 +5,7 @@ import { WhiteLogoImage } from 'public/images';
 
 import Icon, { IconType } from 'components/Icon';
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const POLITIES_ROUTES = [
@@ -38,7 +39,7 @@ const PRODUCT_ROUTES = [
 ];
 
 const Footer: FC = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   return (
     <AppShell.Footer className={classes.footer}>

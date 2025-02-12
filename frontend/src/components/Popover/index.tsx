@@ -57,13 +57,7 @@ const Popover: FC<PopoverProps> = ({
         </Tooltip>
       </PopoverMantine.Target>
 
-      <PopoverMantine.Dropdown
-        autoFocus={opened}
-        p={0}
-        className={classes.content}
-        mod={{ variant: position }}
-        onBlur={close}
-      >
+      <PopoverMantine.Dropdown autoFocus={opened} p={0} className={classes.content} mod={{ variant: position }}>
         <Group justify="space-between" gap={0}>
           <Box className={classes.header} h={floatingSizes?.h || 0}>
             <ActionIcon className={classes.closeButton} variant="transparent" onClick={close}>

@@ -7,6 +7,7 @@ import { RoutePath } from 'routes';
 import { useMediaQuery } from '@mantine/hooks';
 import { accountApi } from 'resources/account';
 import { CoursePreview } from 'components';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const testCourse = {
@@ -54,7 +55,7 @@ const testCourse = {
 };
 
 const Profile = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
   const router = useRouter();
 
   const { data: account } = accountApi.useGet();
