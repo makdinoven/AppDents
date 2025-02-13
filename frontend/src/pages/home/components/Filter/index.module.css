@@ -1,3 +1,10 @@
+.stack {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 20px;
+  padding: 20px 190px 60px;
+}
+
 .menuItem {
   background: none;
   color: var(--mantine-color-body);
@@ -19,6 +26,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  text-transform: uppercase;
+  display: grid;
 
   @media (max-width: $mantine-breakpoint-xs) {
     height: 40px;
