@@ -196,6 +196,7 @@ class Landing(Base):
     old_price = Column(Numeric(10, 2), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)
     main_text = Column(Text, nullable=True)
+    slug = Column(String(255), nullable=True)
 
     # Связь many-to-many с авторами
     authors = relationship(

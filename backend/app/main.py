@@ -1,8 +1,9 @@
 from sys import prefix
-from fastapi import FastAPI, CORSMiddleware
+from fastapi import FastAPI
 from app.models.models import Base
 from app.db.database import engine
-from app.api import test, users, landings, authors, courses, payments
+from app.api import test, users, landings, authors, courses, payments, parser
+from fastapi.middleware.cors import  CORSMiddleware
 
 def create_app() -> FastAPI:
     app = FastAPI()
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
     app.include_router(authors.router, prefix="/authors", tags=["Authors"])
     app.include_router(courses.router, prefix="/courses", tags=["Courses"])
     app.include_router(payments.router, prefix="/payments", tags=["Payments"])
+    app.include_router(parser.router, prefix="/parser", tags=["Parser"])
 
     return app
 
