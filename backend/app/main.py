@@ -1,7 +1,4 @@
-from sys import prefix
 from fastapi import FastAPI
-from app.models.models import Base
-from app.db.database import engine
 from app.api import test, users, landings, authors, courses, payments
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
@@ -22,13 +19,13 @@ def create_app() -> FastAPI:
     "https://mail.dent-s.com",
 ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,          
-    allow_credentials=True,          
-    allow_methods=["*"],             
-    allow_headers=["*"],          
-)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     # Подключаем роуты
     app.include_router(test.router, prefix="")
