@@ -13,7 +13,9 @@ import classes from './index.module.css';
 
 // type SignInParamsWithCredentials = SignInParams & { credentials?: string };
 
-type ResetPasswordModalProps = {};
+type ResetPasswordModalProps = {
+  onClose?: () => void;
+};
 
 const ResetPasswordModal: FC<ResetPasswordModalProps> = () => {
   const [isSubmitted] = useState(false);

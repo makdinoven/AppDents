@@ -4,6 +4,7 @@ import Head from 'next/head';
 
 import Icon, { IconType } from 'components/Icon';
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 import CoursesButton from './components/CoursesButton';
 import Search from './components/Search';
@@ -12,7 +13,7 @@ import CoursesBlock from './components/CoursesBlock';
 import FeedbackButton from './components/FeedbackButton';
 
 const Home: NextPage = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   return (
     <>
@@ -29,16 +30,16 @@ const Home: NextPage = () => {
 
         <Stack pos="relative" gap={0}>
           <Group wrap="nowrap">
-            <Title order={1} tt="uppercase" c="text.8">
+            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="text.8">
               Online
             </Title>
-            <Title order={1} tt="uppercase" c="main.3">
+            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="main.3">
               dental
             </Title>
           </Group>
 
           <Box className={classes.image}>
-            <Title order={1} tt="uppercase" c="text.8">
+            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="text.8">
               school
             </Title>
           </Box>
@@ -80,10 +81,10 @@ const Home: NextPage = () => {
 
           <Stack className={classes.feedbackIcon} gap={4}>
             <Box>
-              <Text size="lg" c="text.8" span fz={16}>
+              <Text size="lg" c="text.8" span>
                 Best{' '}
               </Text>
-              <Text size="lg" c="main.3" span fz={16}>
+              <Text size="lg" c="main.3" span>
                 prices
               </Text>
             </Box>

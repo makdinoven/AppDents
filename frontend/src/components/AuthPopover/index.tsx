@@ -1,7 +1,7 @@
 import ResetPasswordModal from 'components/ResetPasswordModal';
 import SignInModal from 'components/SignInModal';
 import SignUpModal from 'components/SignUpModal';
-import { useState } from 'react';
+import { FC, useState } from 'react';
 
 export enum SCREEN {
   LOGIN = 'login',
@@ -9,7 +9,11 @@ export enum SCREEN {
   RESET_PASSWORD = 'reset-password',
 }
 
-const AuthPopover = () => {
+interface AuthPopoverProps {
+  onClose?: () => void;
+}
+
+const AuthPopover: FC<AuthPopoverProps> = () => {
   const [screen, setScreen] = useState(SCREEN.LOGIN);
 
   switch (screen) {
