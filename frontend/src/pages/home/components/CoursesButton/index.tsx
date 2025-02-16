@@ -2,12 +2,13 @@ import { FC } from 'react';
 import { ActionIcon, Stack, Text } from '@mantine/core';
 import Icon, { IconType } from 'components/Icon';
 import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 interface CoursesButtonProps {}
 
 const CoursesButton: FC<CoursesButtonProps> = () => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   return (
     <ActionIcon pos="absolute" variant="transparent" size="lg" onClick={undefined} className={classes.actionIcon}>

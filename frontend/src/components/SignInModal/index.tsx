@@ -3,15 +3,18 @@ import { Button, Group, Input, Stack, Title, Text } from '@mantine/core';
 import { FC } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { handleApiError } from 'utils';
+import { ApiError } from 'types';
+import { signInSchema } from 'resources/account/account.schemas';
+import { accountApi } from 'resources/account';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/router';
 import classes from './index.module.css';
-
-// import { signInSchema } from 'schemas';
-// import { SignInParams } from 'types';
-
-// type SignInParamsWithCredentials = SignInParams & { credentials?: string };
 
 type SignInModalProps = {
   setScreen: (screen: SCREEN) => void;
+  onClose?: () => void;
 };
 
 enum SCREEN {
@@ -20,15 +23,28 @@ enum SCREEN {
   RESET_PASSWORD = 'reset-password',
 }
 
+type SignInParams = z.infer<typeof signInSchema>;
+
 const SignInModal: FC<SignInModalProps> = ({ setScreen }) => {
-  const { register } = useForm<{ email: string; password: string }>();
+  const router = useRouter();
 
-  // const { mutate: signIn, isPending: isSignInPending } = accountApi.useSignIn();
+  const {
+    register,
+    formState: { errors },
+    handleSubmit,
+  } = useForm<SignInParams>({
+    resolver: zodResolver(signInSchema),
+  });
 
-  // const onSubmit = (data: unknown) =>
-  //   signIn(data, {
-  //     onError: (e) => handleApiError(e, setError),
-  //   });
+  const { mutate: signIn, isPending: isSignInPending } = accountApi.useSignIn();
+
+  const onSubmit = (data: unknown) =>
+    signIn(data, {
+      onError: (e: ApiError) => handleApiError(e),
+      onSuccess: () => {
+        router.reload();
+      },
+    });
 
   return (
     <Stack miw={246} gap={35} justify="center" align="center">
@@ -37,19 +53,15 @@ const SignInModal: FC<SignInModalProps> = ({ setScreen }) => {
           LOG IN
         </Title>
 
-        <form className={classes.form}>
+        <form className={classes.form} onSubmit={handleSubmit(onSubmit)}>
           <Stack gap={20}>
-            <Input
-              {...register('email')}
-              placeholder="Mail..."
-              // error={errors.email?.message}
-            />
+            <Input {...register('email')} placeholder="Mail..." error={errors.email?.message} />
 
             <Input
               {...register('password')}
               placeholder="Password..."
               type="password"
-              // error={errors.password?.message}
+              error={errors.password?.message}
             />
 
             {/* {errors.credentials && (
@@ -60,7 +72,7 @@ const SignInModal: FC<SignInModalProps> = ({ setScreen }) => {
           </Stack>
 
           <Stack align="flex-end" gap={14}>
-            <Button variant="outline-light" type="submit" loading={false} fullWidth mt={32}>
+            <Button variant="outline-light" type="submit" loading={isSignInPending} fullWidth mt={32}>
               LOG IN
             </Button>
 

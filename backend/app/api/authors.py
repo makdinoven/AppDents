@@ -14,8 +14,8 @@ router = APIRouter()
 @router.post(
     "/",
     response_model=AuthorResponse,
-    summary="Добавить нового автора",
-    description="Создает нового автора с указанными данными."
+    summary="Add new  author",
+    description="Create a new author with input data."
 )
 def add_author(author: AuthorCreate, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     try:
@@ -27,8 +27,8 @@ def add_author(author: AuthorCreate, db: Session = Depends(get_db), current_admi
 @router.put(
     "/{author_id}",
     response_model=AuthorResponse,
-    summary="Обновить данные автора",
-    description="Обновляет данные существующего автора по его идентификатору."
+    summary="Update author",
+    description="Update author using id"
 )
 def update_author_endpoint(author_id: int, author: AuthorUpdate, db: Session = Depends(get_db)):
     try:
@@ -40,8 +40,8 @@ def update_author_endpoint(author_id: int, author: AuthorUpdate, db: Session = D
 @router.delete(
     "/{author_id}",
     response_model=AuthorResponse,
-    summary="Удалить автора",
-    description="Удаляет автора по его идентификатору."
+    summary="Delete author",
+    description="Delete author using id"
 )
 def delete_author_endpoint(author_id: int, db: Session = Depends(get_db)):
     try:
@@ -53,8 +53,8 @@ def delete_author_endpoint(author_id: int, db: Session = Depends(get_db)):
 @router.get(
     "/search",
     response_model=List[AuthorResponse],
-    summary="Поиск авторов",
-    description="Ищет авторов по имени. При передаче параметра 'query' возвращает список авторов, имя которых содержит заданную строку."
+    summary="Search authors",
+    description="Search authors by name."
 )
 def search_authors_endpoint(query: str = Query(..., description="Строка для поиска по имени автора"), db: Session = Depends(get_db)):
     authors = search_authors(db, query)

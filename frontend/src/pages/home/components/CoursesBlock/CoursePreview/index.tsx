@@ -6,20 +6,21 @@ import Icon, { IconType } from 'components/Icon';
 
 import { useRouter } from 'next/router';
 import { RoutePath } from 'routes';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
 const greenStyleSettings = {
   textColor: 'text.8',
   backgroundMobileSrc: '/images/green-course-preview-background.svg',
   backgroundDesktopSrc: '/images/green-course-preview-background-desktop.svg',
-  color: 'main.3',
+  color: '#7FDFD5',
 };
 
 const blueStyleSettings = {
   textColor: 'secondaryBlue.5',
   backgroundMobileSrc: '/images/blue-course-preview-background.svg',
   backgroundDesktopSrc: '/images/blue-course-preview-background-desktop.svg',
-  color: 'secondarySkyBlue.4',
+  color: '#79CEE7',
 };
 
 const getPreviewStyle = (index: number) => (index % 2 === 0 ? greenStyleSettings : blueStyleSettings);
@@ -43,7 +44,8 @@ interface CoursePreviewProps {
 }
 
 const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
-  const isMobile = useMediaQuery('(max-width: 400px)');
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
+
   const sizes = isMobile ? mobileSizes : desktopSizes;
   const router = useRouter();
 
@@ -51,7 +53,7 @@ const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
 
   const marginTop = () => {
     if (isMobile) {
-      return index ? '-30px' : 0;
+      return index ? '-50px' : 0;
     }
     return index && index !== 1 ? '-30px' : 0;
   };
@@ -99,4 +101,5 @@ const CoursePreview: FC<CoursePreviewProps> = ({ index }) => {
     </Box>
   );
 };
+
 export default CoursePreview;

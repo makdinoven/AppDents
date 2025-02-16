@@ -11,6 +11,14 @@ import {
   ArrowIcon,
   ChevronCompactLeftIcon,
   CircleArrowThinIcon,
+  AvatarIcon,
+  CircleFilledAvatarIcon,
+  CircleAvatarIcon,
+  ClockIcon,
+  BookIcon,
+  GlassesIcon,
+  MoneyIcon,
+  PercentIcon,
 } from 'public/icons';
 
 import classes from './index.module.css';
@@ -25,11 +33,19 @@ export enum IconType {
   Dialog = 'dialog',
   ChevronCompactLeft = 'chevron-compact-left',
   CircleArrowThin = 'circle-arrow-thin',
+  Avatar = 'avatar',
+  CircleFilledAvatar = 'circle-filled-avatar',
+  CircleAvatar = 'circle-avatar',
+  Clock = 'clock',
+  Book = 'book',
+  Glasses = 'glasses',
+  Money = 'money',
+  Percent = 'percent',
 }
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   type: IconType;
-  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green';
+  color?: 'primary' | 'secondary-gray' | 'main' | 'back' | 'inherit' | 'green' | 'greenBackground' | 'secondaryBlue';
   width?: number;
   height?: number;
   size?: number;
@@ -50,6 +66,8 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
         [classes.back]: color === 'back',
         [classes.inherit]: color === 'inherit',
         [classes.green]: color === 'green',
+        [classes.greenBackground]: color === 'greenBackground',
+        [classes.secondaryBlue]: color === 'secondaryBlue',
       },
       className,
     ),
@@ -82,6 +100,30 @@ const Icon: FC<IconProps> = ({ type, className, size = 16, width, height, color 
 
     case IconType.CircleArrowThin:
       return <CircleArrowThinIcon {...iconProps} />;
+
+    case IconType.Avatar:
+      return <AvatarIcon {...iconProps} />;
+
+    case IconType.CircleFilledAvatar:
+      return <CircleFilledAvatarIcon {...iconProps} />;
+
+    case IconType.CircleAvatar:
+      return <CircleAvatarIcon {...iconProps} />;
+
+    case IconType.Clock:
+      return <ClockIcon {...iconProps} />;
+
+    case IconType.Book:
+      return <BookIcon {...iconProps} />;
+
+    case IconType.Glasses:
+      return <GlassesIcon {...iconProps} />;
+
+    case IconType.Money:
+      return <MoneyIcon {...iconProps} />;
+
+    case IconType.Percent:
+      return <PercentIcon {...iconProps} />;
 
     default:
       return null;

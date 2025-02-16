@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 import config from 'config';
 
@@ -49,6 +49,17 @@ class ApiClient {
     this._handlers = new Map<keyof EventHandlers, Set<EventHandler>>();
     this._api = axios.create(axiosConfig);
 
+    this._api.interceptors.request.use((conf: InternalAxiosRequestConfig<unknown>) => {
+      const token = localStorage.getItem('token');
+
+      if (token) {
+        // eslint-disable-next-line no-param-reassign
+        conf.headers.Authorization = `Bearer ${token}`;
+      }
+
+      return conf;
+    });
+
     this._api.interceptors.response.use(
       (response: AxiosResponse) => response.data,
       (error) => {
@@ -61,8 +72,7 @@ class ApiClient {
         const apiError = new ApiError(errorResponse.data, errorResponse.status, errorResponse.statusText);
 
         const errorHandlers = this._handlers.get('error') as Set<ApiErrorHandler>;
-
-        errorHandlers.forEach((handler) => handler(apiError));
+        errorHandlers?.forEach((handler) => handler(apiError));
 
         throw apiError;
       },
@@ -95,6 +105,10 @@ class ApiClient {
       method: 'post',
       url,
       data,
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       ...requestConfig,
     });
   }
