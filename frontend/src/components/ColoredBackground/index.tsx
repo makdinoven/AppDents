@@ -7,20 +7,39 @@ import classes from './index.module.css';
 type ColoredPaperProps = {
   children: ReactNode;
   rightTopOffset?: { w: number; h: number };
+  leftTopOffset?: { w: number; h: number };
   leftBottomOffset?: { w: number; h: number };
   childrenClassName?: string;
+  color?: 'main' | 'secondarySkyBlue' | 'glass';
 };
 
-const ColoredPaper = ({ children, rightTopOffset, leftBottomOffset, childrenClassName }: ColoredPaperProps) => (
-  <Paper className={classes.root}>
+const ColoredPaper = ({
+  children,
+  rightTopOffset,
+  leftBottomOffset,
+  leftTopOffset,
+  color = 'main',
+  childrenClassName,
+}: ColoredPaperProps) => (
+  <Paper
+    className={clsx(classes.root, {
+      [classes.secondarySkyBlue]: color === 'secondarySkyBlue',
+      [classes.glass]: color === 'glass',
+    })}
+  >
     <Box className={clsx(classes.children, childrenClassName)}>{children}</Box>
     <Box
-      className={classes.leftTopBox}
+      className={clsx({ [classes.leftTopBox]: !!rightTopOffset })}
       w={rightTopOffset ? `calc(100% - ${rightTopOffset.w}px` : '0px'}
       h={rightTopOffset ? `${rightTopOffset.h}px` : '0px'}
     />
+    <Box
+      className={clsx({ [classes.rightTopBox]: !!leftTopOffset })}
+      w={leftTopOffset ? `calc(100% - ${leftTopOffset.w}px` : '0px'}
+      h={leftTopOffset ? `${leftTopOffset.h}px` : '0px'}
+    />
 
-    <Box className={classes.body} />
+    <Box className={clsx(classes.body, { [classes.borderTopRight]: !!leftTopOffset })} />
 
     <Box
       className={classes.rightBottomBox}

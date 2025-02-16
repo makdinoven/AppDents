@@ -1,9 +1,10 @@
 import { FC, ReactElement } from 'react';
 import { AppShell, Center, Stack } from '@mantine/core';
 
-import classes from './index.module.css';
 import Header from './Header';
-import Footer from './Footer';
+
+import classes from './index.module.css';
+import Footer from '../components/Footer';
 
 interface UnauthorizedLayoutProps {
   children: ReactElement;
