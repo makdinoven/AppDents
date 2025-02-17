@@ -3,14 +3,25 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from ..dependencies.role_checker import require_roles
-from ..models.models import User
-from ..schemas.landing import LandingCreate, LandingCardResponse, LandingDetailResponse, LandingUpdate, LanguageEnum
+from ..models.models import User, Tag
+from ..schemas.landing import LandingCreate, LandingCardResponse, LandingDetailResponse, LandingUpdate, LanguageEnum, \
+    TagResponse
 from ..services.landing_service import create_landing, get_landing_cards, get_landing_by_id, update_landing, \
     delete_landing, get_landings_by_language, search_landings
 from ..db.database import get_db
 from typing import List
 
 router = APIRouter()
+
+@router.get(
+    "/tags",
+    response_model=List[TagResponse],
+    summary="Получить список тегов",
+    description="Возвращает список всех тегов"
+)
+def list_tags(db: Session = Depends(get_db)):
+    tags = db.query(Tag).all()
+    return tags
 
 @router.post(
     "/",
@@ -39,10 +50,20 @@ def list_landings(db: Session = Depends(get_db)):
     "/{language}",
     response_model=List[LandingCardResponse],
     summary="Получить лендинги по языку",
-    description="Возвращает список лендингов, отфильтрованных по заданному языку (en, es, ru)."
+    description=(
+        "Возвращает список лендингов, отфильтрованных по заданному языку (en, es, ru). "
+        "Параметры skip и limit позволяют реализовать пагинацию. "
+        "Например, при limit=30 и skip=0 возвращаются первые 30 записей, "
+        "а при skip=30 — следующие 30, и т.д."
+    )
 )
-def list_landings_by_language(language: LanguageEnum, db: Session = Depends(get_db)):
-    landings = get_landings_by_language(db, language)
+def list_landings_by_language(
+    language: LanguageEnum,
+    skip: int = Query(0, ge=0, description="Количество пропускаемых записей для пагинации"),
+    limit: int = Query(30, ge=1, description="Количество записей на страницу"),
+    db: Session = Depends(get_db)
+):
+    landings = get_landings_by_language(db, language, skip=skip, limit=limit)
     return landings
 
 @router.get(
