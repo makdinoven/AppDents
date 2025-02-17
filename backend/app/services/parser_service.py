@@ -1,5 +1,6 @@
 # services/parser_service.py
 import re
+import unicodedata
 from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -13,85 +14,120 @@ def parse_and_save(html_content: str, language: LanguageEnum):
     # ============================
     # 1. Извлечение данных для лендинга
     # ============================
-    # Заголовок лендинга: ищем блок с field="title" и классом, содержащим "t017__title"
+    # Заголовок лендинга: ищем элемент с field="title" и классом, содержащим "t017__title"
     title_tag = soup.find("div", attrs={"field": "title", "class": lambda v: v and "t017__title" in v})
     raw_landing_title = title_tag.get_text() if title_tag else "Без названия"
-    landing_title = " ".join(raw_landing_title.split())  # удаляем лишние пробелы и переносы
+    landing_title = " ".join(raw_landing_title.split())
 
-    # Основной текст (описание курса: содержимое блока с field="bdescr")
-    bdescr_tag = soup.find(attrs={"field": "bdescr"})
-    raw_main_text = bdescr_tag.get_text() if bdescr_tag else ""
+    # Основной текст: сначала пытаемся найти текст в блоке внутри контейнера t510__textwrapper с field="li_title__6597513368620"
+    main_text_tag = soup.select_one("div.t510__textwrapper div[field='li_title__6597513368620']")
+    if main_text_tag is None:
+        main_text_tag = soup.find(attrs={"field": "bdescr"})
+    raw_main_text = main_text_tag.get_text() if main_text_tag else ""
     main_text = " ".join(raw_main_text.split())
 
-    # Общая длительность курса (из элемента с field="li_title__0267814275022")
+    # Общая длительность: пробуем сначала field="li_title__0267814275022", если нет – field="li_title__7984859014012"
+    # Общая длительность курса: ищем сначала блок с field="li_title__0267814275022", если не найден – с field="li_title__7984859014012"
+    # Общая длительность курса: ищем сначала блок с field="li_title__0267814275022", если не найден – с field="li_title__7984859014012"
     landing_duration = ""
     duration_tag = soup.find(attrs={"field": "li_title__0267814275022"})
+    if duration_tag is None:
+        duration_tag = soup.find(attrs={"field": "li_title__7984859014012"})
     if duration_tag:
         raw_duration_text = duration_tag.get_text()
         landing_duration = " ".join(raw_duration_text.split())
-        m = re.search(r'Duration:\s*(.+)', landing_duration)
+        # Обновленное регулярное выражение для английского, русского и испанского вариантов:
+        m = re.search(r'(?:Duration:|Продолжительность:|Duración:)\s*(.+)', landing_duration)
         if m:
             landing_duration = m.group(1).strip()
         else:
             landing_duration = ""
 
-    # Извлечение цен из блока с классом t185__text и field="text"
+    # Извлечение цен
     price = ""
     old_price = ""
+    # 1. Попытка из блока t185__text (field="text")
     price_info_tag = soup.find("div", class_="t185__text", attrs={"field": "text"})
     if price_info_tag:
         raw_price_text = price_info_tag.get_text()
         price_text = " ".join(raw_price_text.split())
         numbers = re.findall(r'\d+', price_text)
         if len(numbers) >= 2:
-            price = numbers[0]  # новая цена
-            old_price = numbers[1]  # старая цена
+            price = numbers[0]
+            old_price = numbers[1]
+    # 2. Если не нашли, пробуем из блока t142__wraptwo
+    if not price and not old_price:
+        price_alt_tag = soup.find("div", class_="t142__wraptwo")
+        if price_alt_tag:
+            span_tag = price_alt_tag.find("span", class_="t142__text")
+            if span_tag:
+                raw_alt_price = span_tag.get_text()
+                normalized = unicodedata.normalize('NFKD', raw_alt_price)
+                alt_numbers = re.findall(r'\d+', normalized)
+                if len(alt_numbers) >= 2:
+                    # Если больше двух чисел, объединяем все, кроме последнего, для old_price
+                    if len(alt_numbers) > 2:
+                        old_price = "".join(alt_numbers[:-1])
+                        price = alt_numbers[-1]
+                    else:
+                        old_price = alt_numbers[0]
+                        price = alt_numbers[1]
 
-    # Извлечение основной картинки (из тега <img> с классом, содержащим t1066__img)
+    # Извлечение основной картинки из тега, содержащего "t1066__img"
     main_image = ""
     img_tag = soup.find("img", class_=lambda v: v and "t1066__img" in v)
     if img_tag:
         main_image = img_tag.get("data-original") or img_tag.get("src") or ""
 
+    # Создание объекта лендинга; для поля tag (теперь tag_id) передаем None
     landing_obj = Landing(
         language=language,
         course_id=None,
         title=landing_title,
-        tag="",
+        tag_id=None,
         main_image=main_image,
         duration=landing_duration,
         old_price=old_price if old_price else None,
         price=price if price else None,
-        main_text=main_text,
-        # Если в вашей модели нет поля slug, его не передаем!
+        main_text=main_text
     )
 
     # ============================
     # 2. Извлечение модулей
     # ============================
-    # Информация о модулях извлекается в два этапа:
-    # а) Из блоков с классом "t812__pricelist-item" получаем название и длительность
+    modules = []
+    # a) Из блоков с классом "t812__pricelist-item"
     module_info_blocks = soup.select("div.t812__pricelist-item")
     modules_info = []
-    for block in module_info_blocks:
-        title_div = block.find("div", class_="t812__pricelist-item__title")
-        raw_title = title_div.get_text() if title_div else ""
-        mod_title = " ".join(raw_title.split())
-        price_div = block.find("div", class_="t812__pricelist-item__price")
-        raw_mod_duration = price_div.get_text() if price_div else ""
-        mod_duration = " ".join(raw_mod_duration.split())
-        modules_info.append({"title": mod_title, "duration": mod_duration})
+    if module_info_blocks:
+        for block in module_info_blocks:
+            title_div = block.find("div", class_="t812__pricelist-item__title")
+            raw_title = title_div.get_text() if title_div else ""
+            mod_title = " ".join(raw_title.split())
+            price_div = block.find("div", class_="t812__pricelist-item__price")
+            raw_mod_duration = price_div.get_text() if price_div else ""
+            mod_duration = " ".join(raw_mod_duration.split())
+            modules_info.append({"title": mod_title, "duration": mod_duration})
+    else:
+        # b) Если блоков t812 нет, пробуем из блоков с классом "t230"
+        module_container_blocks = soup.select("div.t230")
+        for block in module_container_blocks:
+            title_elem = block.find("div", class_="t230__title", attrs={"field": "title"})
+            if not title_elem:
+                continue
+            raw_title = title_elem.get_text() if title_elem else ""
+            mod_title = " ".join(raw_title.split())
+            modules_info.append({"title": mod_title, "duration": ""})
 
-    # б) Из блоков с классом "t230__text" (field="text") получаем программный текст
+    # Программный текст для модулей из блоков с классом "t230__text" (field="text")
     program_text_blocks = soup.select("div.t230__text[field='text']")
     program_texts = []
     for block in program_text_blocks:
         raw_text = block.get_text(separator=" ", strip=True)
-        # Извлекаем программный текст до маркера "Duration:" (если он есть)
         program_text = raw_text.split("Duration:")[0].strip()
         program_texts.append(program_text)
 
-    # в) Из блоков с классом "t230__wrap-video" извлекаем ссылки на короткие видео
+    # Ссылки на короткие видео из блоков "t230__wrap-video"
     video_blocks = soup.select("div.t230__wrap-video div.t-video-lazyload")
     video_links = []
     for vb in video_blocks:
@@ -100,12 +136,10 @@ def parse_and_save(html_content: str, language: LanguageEnum):
         else:
             video_links.append("")
 
-    # Определяем количество модулей по минимальному числу найденных элементов
     num_modules = min(len(modules_info), len(program_texts), len(video_links))
-    modules = []
     for i in range(num_modules):
         mod = Module(
-            section_id=None,  # Привяжем ниже
+            section_id=None,
             title=modules_info[i]["title"],
             duration=modules_info[i]["duration"],
             program_text=program_texts[i],
@@ -117,7 +151,7 @@ def parse_and_save(html_content: str, language: LanguageEnum):
     # ============================
     # 3. Создание курса и секции
     # ============================
-    # Название секции будет таким же, как название курса/лендинга
+    # Название секции совпадает с названием курса/лендинга
     course_obj = Course(
         name=landing_title,
         description=main_text
@@ -134,7 +168,7 @@ def parse_and_save(html_content: str, language: LanguageEnum):
     # 4. Извлечение авторов
     # ============================
     authors = []
-    # Сначала пытаемся найти блоки типа 1 (множественные авторы) – с классом "t524__wrappercenter"
+    # Сначала ищем блоки типа 1 (множественные авторы) – с классом "t524__wrappercenter"
     type1_author_blocks = soup.find_all("div", class_="t524__wrappercenter")
     if type1_author_blocks:
         for block in type1_author_blocks:
@@ -158,7 +192,7 @@ def parse_and_save(html_content: str, language: LanguageEnum):
                 photo=author_photo
             ))
     else:
-        # Если блоков типа 1 нет, пытаемся найти тип 2 (один автор) – блок с классом "t545"
+        # Если блоков типа 1 нет, ищем тип 2 (один автор) – блок с классом "t545"
         type2_author_block = soup.find("div", class_="t545")
         if type2_author_block:
             name_tag = type2_author_block.find("div", attrs={"field": "title"},
@@ -202,7 +236,6 @@ def parse_and_save(html_content: str, language: LanguageEnum):
 
     try:
         with db.begin():
-            # Если лендинг с таким же заголовком и языком уже существует, откатываем транзакцию
             existing = db.query(Landing).filter(
                 Landing.title == landing_title,
                 Landing.language == language
@@ -217,7 +250,6 @@ def parse_and_save(html_content: str, language: LanguageEnum):
             db.add(landing_obj)
             for author in authors:
                 db.add(author)
-        # Если блок with завершился без ошибок – транзакция зафиксирована
     except Exception as e:
         db.rollback()
         raise e
