@@ -20,7 +20,6 @@ import classes from './index.module.css';
 type PopoverProps = {
   children: ReactNode;
   target: ReactNode;
-  variant?: 'top-right' | 'bottom-right';
   position?: FloatingPosition;
   tooltip?: string;
   buttonProps?: Omit<ButtonProps, 'children'>;
@@ -59,7 +58,7 @@ const Popover: FC<PopoverProps> = ({
 
       <PopoverMantine.Dropdown autoFocus={opened} p={0} className={classes.content} mod={{ variant: position }}>
         <Group justify="space-between" gap={0}>
-          <Box className={classes.header} h={floatingSizes?.h || 0}>
+          <Box className={classes.header} h={floatingSizes?.h || 45}>
             <ActionIcon className={classes.closeButton} variant="transparent" onClick={close}>
               <Icon type={IconType.CircleX} color="back" size={45} />
             </ActionIcon>
