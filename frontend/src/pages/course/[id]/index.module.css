@@ -1,0 +1,62 @@
+.root {
+  gap: 38px;
+  width: 100%;
+  align-items: self-start;
+  padding-bottom: 340px;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    gap: 35px;
+    padding-bottom: 127px;
+  }
+}
+
+.main {
+  gap: 140px;
+  width: 100%;
+  align-items: self-start;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    gap: 80px;
+  }
+}
+
+.info {
+  width: 100%;
+  gap: 140px;
+
+  @media (max-width: $mantine-breakpoint-xs) {
+    gap: 80px;
+  }
+}
+
+.buyBtn {
+  gap: 40px;
+  
+  @media (max-width: $mantine-breakpoint-xs) {
+    width: 100%;
+  }
+}
+
+.buyBtnText {
+  width: 80%;
+  
+  @media (max-width: $mantine-breakpoint-xs) {
+    width: 100%;
+  }
+}
+
+.courseProgram {
+  gap: 40px;
+  
+  @media (max-width: $mantine-breakpoint-xs) {
+    width: 100%;
+  }
+}
+
+.coursesStack {
+  gap: 203px;
+  
+  @media (max-width: $mantine-breakpoint-xs) {
+    gap: 130px;
+  }
+}
