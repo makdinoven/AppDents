@@ -7,3 +7,5 @@ export { default as Popover } from './Popover';
 export { default as ColoredPaper } from './ColoredBackground';
 export { default as CoursePreview } from './CoursePreview';
 export { default as DividerTitle } from './DividerTitle';
+export { default as PurchaseModal } from './PurchaseModal';
+export { default as BackButton } from './BackButton';

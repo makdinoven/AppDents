@@ -1,20 +1,35 @@
-FROM node:22-alpine
+FROM node:22-alpine AS builder
 
-# Установка рабочей директории
 WORKDIR /frontend
 
-# Копирование package.json и package-lock.json
+ARG API_URL
+ARG WEB_URL
+
+ENV API_URL=$API_URL
+ENV WEB_URL=$WEB_URL
+
 COPY /frontend/package*.json ./
+COPY /frontend/pnpm-lock.yaml ./
 
-# Установка зависимостей
-RUN npm install pnpm
-RUN npm install
+RUN apk update && apk add --no-cache libc6-compat
+RUN npm install --global --no-update-notifier --no-fund pnpm@9.5.0
 
-# Копирование исходного кода
+RUN pnpm fetch
+
 COPY /frontend .
 
-# Установка переменных окружения для React
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+
+WORKDIR /frontend
+
+COPY --from=builder /frontend/package.json ./
+COPY --from=builder /frontend/.next ./.next
+COPY --from=builder /frontend/public ./public
+
 ENV CHOKIDAR_USEPOLLING=true
 
-# Команда запуска разработческого сервера
-CMD ["pnpm", "run", "dev"]
+EXPOSE 3002
+
+CMD ["pnpm", "run", "start"]

@@ -1,21 +1,15 @@
-import { Group, Text, Grid } from '@mantine/core';
+import { Group, Text, Grid, Stack } from '@mantine/core';
 import Icon, { IconType } from 'components/Icon';
 
-// import { useMediaQuery } from '@mantine/hooks';
-// import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
+import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
+import { DividerTitle } from 'components';
 
-// type HeaderProps = {
-//   course: {
-//     name: string;
-//     description: string;
-//   };
-// };
+type InfoItemProps = { icon: IconType; text: string; isMobile?: boolean };
 
-type InfoItemProps = { icon: IconType; text: string };
-
-const InfoItem = ({ icon, text }: InfoItemProps) => (
-  <Group wrap="nowrap" gap={43}>
-    <Icon type={icon} size={58} color="secondaryBlue" style={{ minWidth: 58 }} />
+const InfoItem = ({ icon, text, isMobile }: InfoItemProps) => (
+  <Group wrap="nowrap" gap={isMobile ? 20 : 43}>
+    <Icon type={icon} size={isMobile ? 33 : 58} color="secondaryBlue" style={{ minWidth: isMobile ? 33 : 58 }} />
 
     <Text size="xl" c="secondaryBlue.5">
       {text}
@@ -24,7 +18,7 @@ const InfoItem = ({ icon, text }: InfoItemProps) => (
 );
 
 const ShortInfoSection = () => {
-  // const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   const infoData: { icon: IconType; text: string }[] = [
     {
@@ -50,13 +44,17 @@ const ShortInfoSection = () => {
   ];
 
   return (
-    <Grid columns={3}>
-      {infoData.map(({ icon, text }, index) => (
-        <Grid.Col span={1} order={index + 1}>
-          <InfoItem icon={icon} text={text} />
-        </Grid.Col>
-      ))}
-    </Grid>
+    <Stack gap={40}>
+      <DividerTitle maw="80%">About this course</DividerTitle>
+
+      <Grid columns={isMobile ? 1 : 3}>
+        {infoData.map(({ icon, text }, index) => (
+          <Grid.Col span={1} order={index + 1}>
+            <InfoItem icon={icon} text={text} isMobile={isMobile} />
+          </Grid.Col>
+        ))}
+      </Grid>
+    </Stack>
   );
 };
 
