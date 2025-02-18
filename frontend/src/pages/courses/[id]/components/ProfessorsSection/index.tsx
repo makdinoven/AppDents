@@ -1,8 +1,9 @@
-import { Grid } from '@mantine/core';
+import { Grid, Stack } from '@mantine/core';
 
-// import { useMediaQuery } from '@mantine/hooks';
-// import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
+import { useMediaQuery } from '@mantine/hooks';
+import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import ProfessorCard from 'components/ProfessorCard';
+import { DividerTitle } from 'components';
 
 // type HeaderProps = {
 //   course: {
@@ -12,7 +13,7 @@ import ProfessorCard from 'components/ProfessorCard';
 // };
 
 const ProfessorsSection = () => {
-  // const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${MOBILE_SCREEN_PX}px)`);
 
   const infoData: { fullName: string; description: string }[] = [
     {
@@ -48,13 +49,17 @@ const ProfessorsSection = () => {
   ];
 
   return (
-    <Grid columns={2}>
-      {infoData.map(({ fullName, description }, index) => (
-        <Grid.Col span={1} order={index + 1}>
-          <ProfessorCard description={description} fullName={fullName} url="" />
-        </Grid.Col>
-      ))}
-    </Grid>
+    <Stack gap={40}>
+      <DividerTitle maw="80%">Professors</DividerTitle>
+
+      <Grid columns={isMobile ? 1 : 2}>
+        {infoData.map(({ fullName, description }, index) => (
+          <Grid.Col span={1} order={index + 1}>
+            <ProfessorCard description={description} fullName={fullName} url="" isMobile={isMobile} />
+          </Grid.Col>
+        ))}
+      </Grid>
+    </Stack>
   );
 };
 
