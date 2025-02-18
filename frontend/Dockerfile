@@ -33,3 +33,7 @@ ENV CHOKIDAR_USEPOLLING=true
 EXPOSE 3002
 
 CMD ["pnpm", "run", "start"]
+
+
+
+
