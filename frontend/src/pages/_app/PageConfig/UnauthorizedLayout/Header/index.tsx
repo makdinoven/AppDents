@@ -18,7 +18,7 @@ const Header: FC = () => {
   const floatingSizes = isMobile ? { w: 89, h: 58 } : { w: 133, h: 70, offset: -55 };
 
   return (
-    <AppShell.Header className={classes.header}>
+    <AppShell.Header className={classes.header} bg="transparent">
       <Group justify="space-between" align="center" w="100%">
         <Anchor component={Link} href={RoutePath.Home} className={classes.logo}>
           <BlackLogoImage />
