@@ -10,6 +10,6 @@
   padding: 40px 88px;
 
   @media (max-width: $mantine-breakpoint-xs) {
-    padding: 47px 20px 0;
+    padding: 20px 20px 0;
   }
 }

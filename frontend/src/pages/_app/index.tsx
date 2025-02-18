@@ -23,6 +23,10 @@ const App: FC<AppProps> = ({ Component, pageProps }) => (
   <>
     <Head>
       <title>DIS</title>
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, orientation=portrait"
+      />
     </Head>
 
     <QueryClientProvider client={queryClient}>

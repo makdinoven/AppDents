@@ -19,12 +19,7 @@ module.exports = {
   },
   reactStrictMode: true,
   output: 'standalone',
-  experimental: {
-    // this includes files from the monorepo base two directories up
-    outputFileTracingRoot: join(__dirname, '../../'),
-  },
   pageExtensions: ['page.tsx', 'api.ts'],
-  transpilePackages: ['app-constants', 'schemas', 'types'],
   i18n: {
     locales: ['en-US'],
     defaultLocale: 'en-US',
