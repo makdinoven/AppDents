@@ -16,8 +16,8 @@ export enum LayoutTheme {
 export enum RoutePath {
   Profile = '/profile',
   Home = '/',
-  Courses = '/courses',
-  Course = '/courses/[id]',
+  Courses = '/course',
+  Course = '/course/[id]',
   NotFound = '/404',
 }
 
