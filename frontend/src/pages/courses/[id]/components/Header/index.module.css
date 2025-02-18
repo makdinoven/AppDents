@@ -1,4 +1,12 @@
-.childrenClassName {
-  position: relative;
-  top: 161px;
+.imageBox {
+  position: absolute;
+  top: 10px;
+  z-index: 10;
+  padding: 10px;
 }
+
+.childrenClassName {
+  position: absolute;
+}
+
+

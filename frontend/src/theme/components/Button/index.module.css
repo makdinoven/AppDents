@@ -38,6 +38,7 @@
   &[data-variant="filled"] {
     background-color: var(--mantine-color-text-8);
     border-radius: 40px;
+    border: 1px solid var(--mantine-color-text-8);
 
     & .label {
       color: var(--mantine-color-background-3);
