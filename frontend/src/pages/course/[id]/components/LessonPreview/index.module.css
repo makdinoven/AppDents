@@ -1,0 +1,5 @@
+.videoBox {
+  border-radius: 40px;
+  border: 10px solid var(--mantine-color-main-3);
+  overflow: hidden;
+}
