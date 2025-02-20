@@ -64,7 +64,7 @@ def register(
     random_pass = generate_random_password()
 
     # Создаем пользователя (пароль сохраняется в зашифрованном виде)
-    user = create_user(db, email=user_data.email, password=random_pass, name=user_data.name or "")
+    user = create_user(db, email=user_data.email, password=random_pass)
 
     # Фоновая задача для отправки письма (в будущем будет отправка пароля по почте)
     background_tasks.add_task(send_password_to_user, user.email, random_pass)
