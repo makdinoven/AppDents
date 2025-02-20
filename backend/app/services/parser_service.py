@@ -1,8 +1,13 @@
 # services/parser_service.py
+import asyncio
+import json
+import logging
 import re
 import unicodedata
 from bs4 import BeautifulSoup
-from sqlalchemy import create_engine
+from rapidfuzz import fuzz
+from sqlalchemy import create_engine, select, or_
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from ..models.models import Landing, Course, Section, Module, Author, LanguageEnum
 from ..core.config import settings
@@ -255,3 +260,192 @@ def parse_and_save(html_content: str, language: LanguageEnum):
         raise e
     finally:
         db.close()
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+# Порог схожести (от 0 до 100)
+FUZZY_THRESHOLD = 79.36
+
+
+def extract_lessons_from_dump_content(content: str) -> list:
+    """
+    Принимает содержимое SQL-дампа (как строку) и извлекает уроки.
+    Возвращает список словарей с ключами:
+      - course_id, course_name, lesson_name, video_link
+    """
+    lessons_list = []
+    logger.debug("Начало извлечения уроков из дампа.")
+    record_pattern = re.compile(
+        r"\(\s*(\d+)\s*,\s*'(.*?)'\s*,\s*'(.*?)'\s*,\s*'((?:\\.|[^'])*)'\s*\)",
+        re.DOTALL
+    )
+    matches = list(record_pattern.finditer(content))
+    logger.debug("Найдено %d записей в дампе.", len(matches))
+
+    for match in matches:
+        course_id = match.group(1)
+        course_name = match.group(2)
+        lessons_json_str = match.group(4)
+        logger.debug("Обработка записи курса: id=%s, name=%s", course_id, course_name)
+
+        try:
+            unescaped = lessons_json_str.encode('utf-8').decode('unicode_escape')
+            logger.debug("Unescaped JSON (первые 100 символов): %s", unescaped[:100])
+        except Exception as e:
+            logger.error("Ошибка при unescape JSON для курса '%s': %s", course_name, e)
+            continue
+
+        stripped = unescaped.lstrip()
+        if stripped.startswith("{'"):
+            logger.debug("Обнаружены одинарные кавычки, выполняется замена ключей на двойные.")
+            unescaped = re.sub(r"(?<=\{|,)\s*'([^']+)'\s*:", r'"\1":', unescaped)
+            logger.debug("После замены (первые 100 символов): %s", unescaped[:100])
+
+        try:
+            lessons_data = json.loads(unescaped)
+            logger.debug("JSON успешно распарсен.")
+        except Exception as e:
+            logger.error("Ошибка парсинга JSON для курса '%s': %s", course_name, e)
+            continue
+
+        if isinstance(lessons_data, dict):
+            sections = lessons_data.values()
+            logger.debug("JSON имеет тип dict, секций: %d", len(lessons_data))
+        elif isinstance(lessons_data, list):
+            sections = lessons_data
+            logger.debug("JSON имеет тип list, секций: %d", len(lessons_data))
+        else:
+            logger.error("Непредвиденная структура JSON для курса '%s': %s", course_name, type(lessons_data))
+            continue
+
+        for section in sections:
+            lessons = section.get("lessons", [])
+            logger.debug("Найдено %d уроков в секции.", len(lessons))
+            for lesson in lessons:
+                lesson_name = lesson.get("lesson_name")
+                video_link = lesson.get("video_link")
+                if lesson_name and video_link:
+                    lessons_list.append({
+                        "course_id": course_id,
+                        "course_name": course_name,
+                        "lesson_name": lesson_name,
+                        "video_link": video_link
+                    })
+                    logger.debug("Извлечен урок: '%s' с ссылкой: %s", lesson_name, video_link)
+                else:
+                    logger.warning("Пропущен урок, отсутствует lesson_name или video_link.")
+
+    logger.debug("Извлечение уроков завершено. Всего уроков: %d", len(lessons_list))
+    return lessons_list
+
+
+async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> dict:
+    """
+    Асинхронно сравнивает lesson_name из дампа с полным значением title из таблицы Module,
+    используя нечеткое сравнение.
+
+    Выбираются только те модули, у которых поле full_video_link пустое и которые принадлежат лендингам с языком en.
+    Если совпадение выше порога, обновляется поле full_video_link модуля.
+
+    Для уроков, где обновление не произошло, сохраняется информация о лучшем совпадении.
+    В конце список неприсвоенных уроков сортируется по best_score (по убыванию).
+
+    Возвращает словарь с количеством обновленных записей, списком неприсвоенных уроков
+    и количеством записей, для которых обновление не произошло.
+    """
+    updated_count = 0
+    unmatched_details = []
+    logger.debug("Начало асинхронного обновления модулей в базе данных.")
+
+    # Выбираем только модули, у которых full_video_link пустое и лендинг с языком en
+    result = await db.execute(
+        select(Module)
+        .join(Module.section)
+        .join(Section.course)
+        .join(Course.landing)
+        .filter(
+            or_(Module.full_video_link == None, Module.full_video_link == ''),
+            Landing.language == LanguageEnum.EN
+        )
+    )
+    modules = result.scalars().all()
+    logger.debug("Получено модулей из базы (только пустые full_video_link и en лендинги): %d", len(modules))
+
+    for lesson in lessons_list:
+        lesson_name = lesson["lesson_name"]
+        video_link = lesson["video_link"]
+        logger.debug("Сопоставление урока '%s' с выбранными модулями.", lesson_name)
+        best_match = None
+        best_score = 0
+
+        # Асинхронно вычисляем fuzzy-сравнение для каждого модуля
+        tasks = [
+            asyncio.to_thread(
+                fuzz.ratio,
+                lesson_name,
+                module.title
+            )
+            for module in modules
+        ]
+        scores = await asyncio.gather(*tasks)
+        for i, score in enumerate(scores):
+            if score > best_score:
+                best_score = score
+                best_match = modules[i]
+
+        logger.debug("Лучшее совпадение для '%s': %s с score %d",
+                     lesson_name,
+                     best_match.title if best_match else None,
+                     best_score)
+        if best_match and best_score >= FUZZY_THRESHOLD:
+            logger.info("Обновление модуля '%s' - назначение full_video_link: %s", best_match.title, video_link)
+            best_match.full_video_link = video_link
+            db.add(best_match)
+            updated_count += 1
+        else:
+            detail = {
+                "lesson_name": lesson_name,
+                "video_link": video_link,
+                "best_match_title": best_match.title if best_match else None,
+                "best_score": best_score
+            }
+            unmatched_details.append(detail)
+            logger.warning("Не найдено подходящего совпадения для урока '%s'. Лучшее совпадение: %s с score %d",
+                           lesson_name,
+                           best_match.title if best_match else "Нет",
+                           best_score)
+
+    # Сортировка неприсвоенных уроков по best_score (по убыванию)
+    unmatched_details = sorted(unmatched_details, key=lambda x: x["best_score"], reverse=True)
+
+    await db.commit()
+    logger.debug("Асинхронное обновление модулей завершено. Изменений сохранено в базе.")
+    logger.debug("Список неприсвоенных уроков (отсортированный по best_score): %s", unmatched_details)
+
+    not_updated_count = len(unmatched_details)
+    return {
+        "updated": updated_count,
+        "unmatched": unmatched_details,
+        "not_updated_count": not_updated_count
+    }
+
+
+async def process_dump_and_update_from_content(file_content: str, db: AsyncSession) -> dict:
+    """
+    Асинхронно обрабатывает содержимое SQL-дампа, извлекает уроки и обновляет таблицу Module.
+    """
+    logger.debug("Начало асинхронной обработки содержимого дампа.")
+    lessons_list = extract_lessons_from_dump_content(file_content)
+    logger.debug("Извлечение уроков завершено. Всего извлечено: %d", len(lessons_list))
+    result = await update_modules_from_lessons(lessons_list, db)
+    logger.debug("Асинхронный процесс обновления завершён. Результат: %s", result)
+    return result
