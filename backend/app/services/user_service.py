@@ -16,11 +16,10 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_user(db: Session, email: str, password: str, name: str = "", role: str = "user") -> User:
+def create_user(db: Session, email: str, password: str, role: str = "user") -> User:
     user = User(
         email=email,
         hashed_password=hash_password(password),
-        name=name,
         role=role
     )
     db.add(user)
@@ -88,24 +87,6 @@ def update_user_role(db: Session, user_id: int, new_role: str) -> User:
     db.refresh(user)
     return user
 
-def update_user_name(db: Session, user_id: int, new_name: str) -> User:
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "code": "USER_NOT_FOUND",
-                    "message": "User not found",
-                    "translation_key": "error.user_not_found",
-                    "params": {"user_id": user_id}
-                }
-            }
-        )
-    user.name = new_name
-    db.commit()
-    db.refresh(user)
-    return user
 
 def update_user_password(db: Session, user_id: int, new_password: str) -> User:
     user = get_user_by_id(db, user_id)

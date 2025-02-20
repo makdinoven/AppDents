@@ -119,15 +119,6 @@ def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depe
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-# Изменение имени пользователя
-@router.put("/{user_id}/name", response_model=UserRead, summary="Изменить имя пользователя")
-def change_user_name(user_id: int, name_data: UserUpdateName, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
-    try:
-        user = update_user_name(db, user_id, name_data.name)
-        return user
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
 # Изменение пароля пользователя (новый пароль хэшируется и сохраняется)
 @router.put("/{user_id}/password", response_model=UserRead, summary="Изменить пароль пользователя")
 def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):

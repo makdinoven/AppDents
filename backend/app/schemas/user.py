@@ -4,7 +4,6 @@ from typing import Optional
 
 class UserBase(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
 
 # При регистрации пользователь НЕ вводит пароль:
 class UserCreate(UserBase):
@@ -17,7 +16,6 @@ class UserLogin(BaseModel):
 class UserRead(BaseModel):
     id: int
     email: EmailStr
-    name: Optional[str] = None
     role: str
 
     class Config:
