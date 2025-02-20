@@ -69,15 +69,25 @@ def list_landings_by_language(
 @router.get(
     "/{landing_id}",
     response_model=LandingDetailResponse,
-    summary="Получить информацию о лендинге",
-    description="Возвращает полную информацию о лендинге по его идентификатору."
+    summary="Get landing details",
+    description="Returns full information about the landing page by its identifier."
 )
 def get_landing(landing_id: int, db: Session = Depends(get_db)):
     try:
         landing = get_landing_by_id(db, landing_id)
         return landing
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "LANDING_NOT_FOUND",
+                    "message": "Landing page not found",
+                    "translation_key": "error.landing_not_found",
+                    "params": {"landing_id": landing_id}
+                }
+            }
+        )
 
 @router.put(
     "/{landing_id}",
@@ -108,9 +118,24 @@ def delete_landing_endpoint(landing_id: int, db: Session = Depends(get_db),curre
 @router.get(
     "/search",
     response_model=List[LandingCardResponse],
-    summary="Поиск лендингов",
-    description="Ищет лендинги по названию (регистронезависимый поиск)."
+    summary="Search landings",
+    description="Searching landing pages by name (case-insensitive search)."
 )
-def search_landings_endpoint(query: str = Query(..., description="Строка для поиска лендингов по названию"), db: Session = Depends(get_db)):
+def search_landings_endpoint(
+    query: str = Query(..., description="Search string for landing pages by name"),
+    db: Session = Depends(get_db)
+):
     landings = search_landings(db, query)
+    if not landings:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "LANDINGS_NOT_FOUND",
+                    "message": "No landing pages found matching the query",
+                    "translation_key": "error.landings_not_found",
+                    "params": {"query": query}
+                }
+            }
+        )
     return landings

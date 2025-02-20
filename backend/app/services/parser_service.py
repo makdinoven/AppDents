@@ -273,7 +273,15 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 # Порог схожести (от 0 до 100)
-FUZZY_THRESHOLD = 79.36
+FUZZY_THRESHOLD = 74.9
+
+
+def normalize_text(text: str) -> str:
+    """
+    Приводит строку к нижнему регистру и удаляет все символы, не являющиеся латинскими буквами или цифрами.
+    Это включает удаление пробелов, тире, нижних подчёркиваний и других спецсимволов.
+    """
+    return re.sub(r'[^a-z0-9]', '', text.lower())
 
 
 def extract_lessons_from_dump_content(content: str) -> list:
@@ -351,15 +359,15 @@ def extract_lessons_from_dump_content(content: str) -> list:
 async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> dict:
     """
     Асинхронно сравнивает lesson_name из дампа с полным значением title из таблицы Module,
-    используя нечеткое сравнение.
+    используя нечеткое сравнение после нормализации строк (приведение к нижнему регистру и удаление спецсимволов).
 
-    Выбираются только те модули, у которых поле full_video_link пустое и которые принадлежат лендингам с языком en.
+    Выбираются только те модули, у которых поле full_video_link пустое и лендинг с языком en.
     Если совпадение выше порога, обновляется поле full_video_link модуля.
 
     Для уроков, где обновление не произошло, сохраняется информация о лучшем совпадении.
     В конце список неприсвоенных уроков сортируется по best_score (по убыванию).
 
-    Возвращает словарь с количеством обновленных записей, списком неприсвоенных уроков
+    Возвращает словарь с количеством обновленных записей, отсортированным списком неприсвоенных уроков
     и количеством записей, для которых обновление не произошло.
     """
     updated_count = 0
@@ -378,7 +386,7 @@ async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> d
         )
     )
     modules = result.scalars().all()
-    logger.debug("Получено модулей из базы (только пустые full_video_link и en лендинги): %d", len(modules))
+    logger.debug("Получено модулей из базы (пустые full_video_link и en лендинги): %d", len(modules))
 
     for lesson in lessons_list:
         lesson_name = lesson["lesson_name"]
@@ -387,12 +395,13 @@ async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> d
         best_match = None
         best_score = 0
 
-        # Асинхронно вычисляем fuzzy-сравнение для каждого модуля
+        # Приводим lesson_name к нормализованной форме
+        normalized_lesson = normalize_text(lesson_name)
         tasks = [
             asyncio.to_thread(
                 fuzz.ratio,
-                lesson_name,
-                module.title
+                normalized_lesson,
+                normalize_text(module.title)
             )
             for module in modules
         ]
