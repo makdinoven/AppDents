@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 
 import { accountApi } from 'resources/account';
 
-import { LayoutType, RoutePath, routesConfiguration, ScopeType } from 'routes';
+import { LayoutTheme, LayoutType, RoutePath, routesConfiguration, ScopeType } from 'routes';
 
 import MainLayout from './MainLayout';
 import PrivateScope from './PrivateScope';
@@ -30,7 +30,7 @@ const PageConfig: FC<PageConfigProps> = ({ children }) => {
 
   if (isAccountLoading) return null;
 
-  const { scope, layout } = routesConfiguration[route as RoutePath] || {};
+  const { scope, layout, theme, mobileTheme } = routesConfiguration[route as RoutePath] || {};
   let Scope = scope ? scopeToComponent[scope] : Fragment;
   let Layout = layout ? layoutToComponent[layout] : Fragment;
 
@@ -50,7 +50,9 @@ const PageConfig: FC<PageConfigProps> = ({ children }) => {
 
   return (
     <Scope>
-      <Layout>{children}</Layout>
+      <Layout theme={theme || LayoutTheme.MAIN} mobileTheme={mobileTheme}>
+        {children}
+      </Layout>
     </Scope>
   );
 };

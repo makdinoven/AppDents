@@ -36,7 +36,7 @@ const CourseList: FC<CourseBlockProps> = () => {
 
       <Grid columns={isMobile ? 1 : 2}>
         {courses.slice(0, isMobile ? 2 : 4).map((c, index) => (
-          <Grid.Col key={index} span={1}>
+          <Grid.Col span={1}>
             <CoursePreview index={changeOrder(index)} />
           </Grid.Col>
         ))}

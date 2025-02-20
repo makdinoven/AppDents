@@ -30,16 +30,16 @@ const Home: NextPage = () => {
 
         <Stack pos="relative" gap={0}>
           <Group wrap="nowrap">
-            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="text.8">
+            <Title order={1} tt="uppercase" c="text.8">
               Online
             </Title>
-            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="main.3">
+            <Title order={1} tt="uppercase" c="main.3">
               dental
             </Title>
           </Group>
 
           <Box className={classes.image}>
-            <Title style={{ userSelect: 'none' }}  order={1} tt="uppercase" c="text.8">
+            <Title order={1} tt="uppercase" c="text.8">
               school
             </Title>
           </Box>
