@@ -3,14 +3,13 @@ import secrets
 import string
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.user_service import (
     create_user, authenticate_user, create_access_token, decode_access_token,
-    get_user_by_email, get_user_by_id, search_users_by_email, update_user_role,
-    update_user_name, update_user_password, add_course_to_user
+    get_user_by_email, get_user_by_id, search_users_by_email, update_user_role, update_user_password, add_course_to_user
 )
 from app.schemas.user import (
     UserCreate, UserLogin, UserRead, Token,
