@@ -23,4 +23,3 @@ jobs:
           script: |
             cd /var/www/AppDents
             git pull origin main
-            docker compose up --build -d
