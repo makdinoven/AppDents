@@ -151,6 +151,21 @@ def search_modules_endpoint(query: str = Query(..., description="Строка д
     summary="Search courses",
     description="Searching courses by name"
 )
-def search_courses_endpoint(query: str = Query(..., description="Строка для поиска курсов по названию"), db: Session = Depends(get_db)):
+def search_courses_endpoint(
+    query: str = Query(..., description="Search string for courses by name"),
+    db: Session = Depends(get_db)
+):
     courses = search_courses(db, query)
+    if not courses:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "COURSES_NOT_FOUND",
+                    "message": "No courses found matching the query",
+                    "translation_key": "error.courses_not_found",
+                    "params": {"query": query}
+                }
+            }
+        )
     return courses
