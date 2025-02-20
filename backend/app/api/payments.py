@@ -115,3 +115,4 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db), backgr
             print("Error adding course to user:", e)
 
     return {"status": "success"}
+

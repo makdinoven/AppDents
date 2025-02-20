@@ -1,8 +1,18 @@
+import logging
 import zipfile
 from io import BytesIO
 from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Query
-from ..services.parser_service import parse_and_save
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ..services.parser_service import parse_and_save, process_dump_and_update_from_content
 from ..models.models import LanguageEnum
+import io
+import pandas as pd
+from fastapi import FastAPI, Depends, Response
+from sqlalchemy.orm import Session
+from ..db.database import get_db, get_async_db
+from ..models.models import Landing
 
 router = APIRouter()
 
@@ -49,3 +59,60 @@ async def parse_zip(
         "processed": processed_count,
         "errors": error_count
     }
+
+app = FastAPI()
+
+@router.get("/export")
+def export_to_excel(db: Session = Depends(get_db)):
+    # Делаем запрос: выбираем нужные поля
+    results = db.query(Landing.title, Landing.old_price, Landing.price).all()
+
+    # Преобразуем результат в DataFrame
+    df = pd.DataFrame(results, columns=["Название курса", "Старая цена", "Цена"])
+
+    # Записываем DataFrame в Excel в памяти
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name="Лендинги")
+    output.seek(0)
+
+    headers = {
+        'Content-Disposition': 'attachment; filename="data.xlsx"'
+    }
+    return Response(
+        content=output.getvalue(),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers=headers
+    )
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+@router.post("/update-modules")
+async def update_modules(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Эндпоинт принимает SQL-дамп в виде загружаемого файла
+    и асинхронно обновляет поле full_video_link в таблице Module,
+    используя нечеткое сопоставление lesson_name и очищенного title.
+    """
+    try:
+        logger.debug("Получен файл дампа через API.")
+        file_content = (await file.read()).decode("utf-8")
+        logger.debug("Содержимое файла прочитано и декодировано.")
+        # Передаём оба аргумента: содержимое и объект db
+        result = await process_dump_and_update_from_content(file_content, db)
+        logger.debug("Асинхронная обработка дампа завершена, отправляем результат: %s", result)
+    except Exception as e:
+        logger.error("Ошибка в эндпоинте /update-modules: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
+    return result
