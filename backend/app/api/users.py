@@ -23,7 +23,7 @@ from app.schemas.course import CourseResponse
 from ..dependencies.role_checker import require_roles
 
 from ..dependencies.auth import get_current_user
-from ..schemas.user import ForgotPasswordRequest
+from ..schemas.user import ForgotPasswordRequest, UserRegistrationResponse
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
 router = APIRouter()
@@ -36,7 +36,7 @@ def generate_random_password(length=12) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-@router.post("/register", response_model=UserRead)
+@router.post("/register", response_model=UserRegistrationResponse)
 def register(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
@@ -45,24 +45,28 @@ def register(
     """
     Регистрирует нового пользователя, генерирует случайный пароль,
     сохраняет его в БД в зашифрованном виде и отправляет письмо с паролем.
+    На этапе разработки возвращает пароль в ответе.
     """
     existing_user = get_user_by_email(db, user_data.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Пользователь с таким email уже существует"
+            detail="User {} already exists".format(user_data.email)
         )
 
     # Генерируем новый пароль
     random_pass = generate_random_password()
 
-    # Создаем пользователя (пароль сохраняется зашифрованным)
+    # Создаем пользователя (пароль сохраняется в зашифрованном виде)
     user = create_user(db, email=user_data.email, password=random_pass, name=user_data.name or "")
 
-    # Добавляем задачу отправки письма в фон
+    # Фоновая задача для отправки письма (в будущем будет отправка пароля по почте)
     background_tasks.add_task(send_password_to_user, user.email, random_pass)
 
-    return user
+    # Преобразуем пользователя в pydantic-схему и добавляем пароль в ответ
+    user_read = UserRead.from_orm(user)
+    return {**user_read.dict(), "password": random_pass}
+
 
 @router.post("/login", response_model=Token)
 def login(user_data: UserLogin, db: Session = Depends(get_db)):

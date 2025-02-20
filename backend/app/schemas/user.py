@@ -48,3 +48,6 @@ class UserAddCourse(BaseModel):
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
+
+class UserRegistrationResponse(UserRead):
+    password: str

@@ -189,13 +189,17 @@ class Landing(Base):
     language = Column(Enum(LanguageEnum, name="lang_enum"), nullable=False)
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     title = Column(String(255), nullable=False)
-    tag = Column(String(255), nullable=True)
+    tag_id = Column(Integer, ForeignKey("tags.id"), nullable=True)
     main_image = Column(String(255), nullable=True)
     duration = Column(String(50), nullable=True)
     old_price = Column(Numeric(10, 2), nullable=True)
     price = Column(Numeric(10, 2), nullable=True)
     main_text = Column(Text, nullable=True)
     slug = Column(String(255), nullable=True)
+    sales_count = Column(Integer, nullable=False, default=0)
+
+    # Связь с таблицей тегов
+    tag = relationship("Tag", back_populates="landings")
 
     # Связь many-to-many с авторами
     authors = relationship(
@@ -208,3 +212,15 @@ class Landing(Base):
 
     def __repr__(self):
         return f"<Landing(id={self.id}, title='{self.title}', lang={self.language})>"
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, nullable=False)
+
+    # Один тег может быть привязан к нескольким лендингам
+    landings = relationship("Landing", back_populates="tag")
+
+    def __repr__(self):
+        return f"<Tag(id={self.id}, name='{self.name}')>"
