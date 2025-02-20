@@ -1,8 +1,8 @@
-# schemas/landings.py
 from pydantic import BaseModel
 from typing import List, Optional
 from decimal import Decimal
 from enum import Enum
+
 class LanguageEnum(str, Enum):
     EN = "en"
     ES = "es"
@@ -24,10 +24,11 @@ class LandingCreate(BaseModel):
     main_image: Optional[str] = None
     main_text: Optional[str] = None         # Программа курса
     language: LanguageEnum
-    tag: Optional[str] = None
+    tag_id: Optional[int] = None            # Заменили: вместо tag (строка) передаём id тега
     course_id: int                          # Привязка лендинга к курсу
     modules: Optional[List[ModuleCreate]] = []  # Список модулей (уроков)
     authors: Optional[List[int]] = []           # Список id лекторов (авторов)
+    sales_count: Optional[int] = 0          # Новое поле для ввода числа продаж (по умолчанию 0)
 
 # Схема для обновления лендинга (все поля опциональные)
 class LandingUpdate(BaseModel):
@@ -37,10 +38,11 @@ class LandingUpdate(BaseModel):
     main_image: Optional[str] = None
     main_text: Optional[str] = None
     language: Optional[LanguageEnum] = None
-    tag: Optional[str] = None
+    tag_id: Optional[int] = None            # Заменили: вместо tag (строка) передаём id тега
     course_id: Optional[int] = None
     modules: Optional[List[ModuleCreate]] = None
     authors: Optional[List[int]] = None
+    sales_count: Optional[int] = None       # Новое поле для обновления числа продаж вручную
 
 # Схема для ответа по автору (лектору)
 class AuthorResponse(BaseModel):
@@ -53,10 +55,11 @@ class AuthorResponse(BaseModel):
 # Схема для карточки лендинга (краткое представление)
 class LandingCardResponse(BaseModel):
     id: int
-    tag: Optional[str] = None
+    tag: Optional[str] = None               # Если нужно отдавать только имя тега
     title: str
     main_image: Optional[str] = None
     authors: List[AuthorResponse] = []
+    sales_count: int                      # Добавили число продаж в ответ (можно указать как Optional, если требуется)
 
     class Config:
         orm_mode = True
@@ -87,15 +90,29 @@ class LandingDetailResponse(BaseModel):
     id: int
     language: LanguageEnum
     title: str
-    tag: Optional[str] = None
+    tag: Optional[str] = None               # Отдавать имя тега, можно сформировать через relationship в модели
     main_image: Optional[str] = None
     duration: Optional[str] = None
     old_price: Optional[Decimal] = None
     price: Optional[Decimal] = None
     main_text: Optional[str] = None
+    sales_count: int                      # Новое поле для числа продаж
     course: CourseResponse
     authors: List[AuthorResponse] = []
     modules: List[ModuleResponse] = []
+
+    class Config:
+        orm_mode = True
+
+# Схемы для тегов
+class TagBase(BaseModel):
+    name: str
+
+class TagCreate(TagBase):
+    pass
+
+class TagResponse(TagBase):
+    id: int
 
     class Config:
         orm_mode = True

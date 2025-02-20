@@ -13,3 +13,7 @@ stripe
 beautifulsoup4==4.12.2
 lxml==5.2.0
 python-multipart
+pandas
+openpyxl
+rapidfuzz
+aiomysql
