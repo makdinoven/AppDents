@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 import { RoutePath } from 'routes';
 import { useMediaQuery } from '@mantine/hooks';
 import { accountApi } from 'resources/account';
-import { CoursePreview } from 'components';
+import { BackButton, CoursePreview } from 'components';
 import { MOBILE_SCREEN_PX } from 'resources/app/app.constants';
 import classes from './index.module.css';
 
@@ -77,15 +77,7 @@ const Profile = () => {
 
       <Stack className={classes.main}>
         <Stack className={classes.header}>
-          <Button
-            variant="transparent"
-            onClick={() => router.push(RoutePath.Home)}
-            leftSection={<Icon type={IconType.ChevronCompactLeft} size={35} />}
-          >
-            <Text size="xl" c="text.8">
-              Back
-            </Text>
-          </Button>
+          <BackButton onClick={() => router.push(RoutePath.Home)} />
 
           <Stack w="100%" gap={40}>
             <Group wrap="nowrap">

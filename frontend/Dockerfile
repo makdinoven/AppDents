@@ -1,41 +1,39 @@
-# # Этап 1: Сборка
-# FROM node:20-alpine AS build
-# WORKDIR /frontend
-# COPY package*.json ./
-# RUN npm install pnpm
-# RUN npm install --legacy-peer-deps
-# COPY . .
-# # RUN npm run build  # создает папку dist
+FROM node:22-alpine AS builder
 
-# # Этап 2: Подготовка минимального образа с nginx
-# FROM nginx:stable-alpine
-# RUN rm /etc/nginx/conf.d/default.conf
-
-# COPY default.conf /etc/nginx/conf.d/default.conf
-# # Копируем финальную сборку (dist) внутрь Nginx
-# # COPY --from=build /frontend/dist /usr/share/nginx/html
-
-# EXPOSE 3002
-# # CMD ["nginx", "-g", "daemon off;"]
-# CMD ["pnpm", "run", "dev"]
-
-FROM node:22-alpine
-
-# Установка рабочей директории
 WORKDIR /frontend
 
-# Копирование package.json и package-lock.json
-COPY /package*.json ./
+ARG API_URL
+ARG WEB_URL
 
-# Установка зависимостей
-RUN npm install pnpm
-RUN npm install
+ENV API_URL=$API_URL
+ENV WEB_URL=$WEB_URL
 
-# Копирование исходного кода
-COPY . .
+COPY /frontend/package*.json ./
+COPY /frontend/pnpm-lock.yaml ./
 
-# Установка переменных окружения для React
+RUN apk update && apk add --no-cache libc6-compat
+RUN npm install --global --no-update-notifier --no-fund pnpm@9.5.0
+
+RUN pnpm fetch
+
+COPY /frontend .
+
+RUN pnpm build
+
+FROM node:22-alpine AS runner
+
+WORKDIR /frontend
+
+COPY --from=builder /frontend/package.json ./
+COPY --from=builder /frontend/.next ./.next
+COPY --from=builder /frontend/public ./public
+
 ENV CHOKIDAR_USEPOLLING=true
 
-# Команда запуска разработческого сервера
-CMD ["pnpm", "run", "dev"]
+EXPOSE 3002
+
+CMD ["pnpm", "run", "start"]
+
+
+
+

@@ -5,11 +5,6 @@ import { useForm } from 'react-hook-form';
 
 import classes from './index.module.css';
 
-// import { signInSchema } from 'schemas';
-// import { SignInParams } from 'types';
-
-// type SignInParamsWithCredentials = SignInParams & { credentials?: string };
-
 type FeedbackFormModalProps = {};
 
 const FeedbackFormModal: FC<FeedbackFormModalProps> = () => {
