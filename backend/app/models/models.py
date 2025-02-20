@@ -196,7 +196,6 @@ class Landing(Base):
     price = Column(Numeric(10, 2), nullable=True)
     main_text = Column(Text, nullable=True)
     slug = Column(String(255), nullable=True)
-    # Новое поле для количества продаж
     sales_count = Column(Integer, nullable=False, default=0)
 
     # Связь с таблицей тегов
