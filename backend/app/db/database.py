@@ -1,5 +1,6 @@
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from ..core.config import settings
 from ..models.models import Base
@@ -39,3 +40,16 @@ def init_db():
 
     # Создаём все таблицы, определённые в Base
     Base.metadata.create_all(bind=engine)
+
+    # Асинхронное подключение к БД
+ASYNC_DATABASE_URL = (
+     f"mysql+aiomysql://{settings.DB_USER}:{settings.DB_PASSWORD}"
+     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+)
+
+async_engine = create_async_engine(ASYNC_DATABASE_URL, echo=False)
+AsyncSessionLocal = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
+
+async def get_async_db():
+    async with AsyncSessionLocal() as session:
+        yield session
