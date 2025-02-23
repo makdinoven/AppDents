@@ -34,9 +34,6 @@ class TokenData(BaseModel):
 class UserUpdateRole(BaseModel):
     role: str
 
-class UserUpdateName(BaseModel):
-    name: str
-
 class UserUpdatePassword(BaseModel):
     password: str
 
