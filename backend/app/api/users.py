@@ -3,7 +3,7 @@ import secrets
 import string
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -13,7 +13,7 @@ from app.services.user_service import (
 )
 from app.schemas.user import (
     UserCreate, UserLogin, UserRead, Token,
-    UserUpdateRole, UserUpdateName, UserUpdatePassword, UserAddCourse
+    UserUpdateRole, UserUpdatePassword, UserAddCourse
 )
 from app.models.models import User
 
@@ -24,9 +24,11 @@ from ..dependencies.role_checker import require_roles
 from ..dependencies.auth import get_current_user
 from ..schemas.user import ForgotPasswordRequest, UserRegistrationResponse
 from ..utils.email_sender import send_password_to_user, send_recovery_email
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 router = APIRouter()
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 def generate_random_password(length=12) -> str:
     """
     Генерация случайного пароля заданной длины.
@@ -75,8 +77,8 @@ def register(
 
 
 @router.post("/login", response_model=Token)
-def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    user = authenticate_user(db, user_data.email, user_data.password)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,9 +92,10 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
             },
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # Генерируем JWT
+    # Генерация JWT
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
+
 
 
 @router.get("/me", response_model=UserRead)
@@ -101,7 +104,6 @@ def get_me(current_user: User = Depends(get_current_user)):
     Возвращает текущего пользователя (информация из JWT).
     """
     return current_user
-
 
 # Поиск пользователей по части email
 @router.get("/search", response_model=list[UserRead], summary="Поиск пользователей по email")
@@ -117,6 +119,7 @@ def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depe
         return user
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
 
 # Изменение пароля пользователя (новый пароль хэшируется и сохраняется)
 @router.put("/{user_id}/password", response_model=UserRead, summary="Изменить пароль пользователя")
