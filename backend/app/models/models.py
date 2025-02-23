@@ -34,7 +34,7 @@ class User(Base):
     courses = relationship("UserCourses", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, email='{self.email}')>"
+        return f"<User(id={self.id}, email='{self.email}', name='{self.name}')>"
 
 
 class UserCourses(Base):
@@ -167,8 +167,8 @@ class Module(Base):
     id = Column(Integer, primary_key=True, index=True)
     section_id = Column(Integer, ForeignKey("sections.id"), nullable=False)
     title = Column(String(255), nullable=False)
-    short_video_link = Column(String(500), nullable=True)
-    full_video_link = Column(String(500), nullable=True)
+    short_video_link = Column(String(255), nullable=True)
+    full_video_link = Column(String(255), nullable=True)
     program_text = Column(Text, nullable=True)
     duration = Column(String(50), nullable=True)
 
