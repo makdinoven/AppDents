@@ -116,3 +116,10 @@ class TagResponse(TagBase):
 
     class Config:
         orm_mode = True
+
+class LandingMinimalResponse(BaseModel):
+    id: int
+    title: str
+
+    class Config:
+        orm_mode = True
