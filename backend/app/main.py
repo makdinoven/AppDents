@@ -2,7 +2,7 @@ from sys import prefix
 from fastapi import FastAPI
 from app.models.models import Base
 from app.db.database import engine
-from app.api import test, users, landings, authors, courses, payments, parser
+from app.api import test, users, landings, authors, courses, payments, parser, cleaner, transfer
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
 
@@ -26,6 +26,8 @@ def create_app() -> FastAPI:
     app.include_router(courses.router, prefix="/courses", tags=["Courses"])
     app.include_router(payments.router, prefix="/payments", tags=["Payments"])
     app.include_router(parser.router, prefix="/parser", tags=["Parser"])
+    app.include_router(cleaner.router, prefix="/cleaner", tags=["Cleaner"])
+    app.include_router(transfer.router, prefix="/transfer", tags=["Transfer"])
 
     @app.on_event("startup")
     async def startup_event():
