@@ -3,9 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from ..dependencies.role_checker import require_roles
-from ..models.models import User, Tag
+from ..models.models import User, Tag, Landing
 from ..schemas.landing import LandingCreate, LandingCardResponse, LandingDetailResponse, LandingUpdate, LanguageEnum, \
-    TagResponse
+    TagResponse, LandingMinimalResponse
 from ..services.landing_service import create_landing, get_landing_cards, get_landing_by_id, update_landing, \
     delete_landing, get_landings_by_language, search_landings
 from ..db.database import get_db
@@ -139,3 +139,15 @@ def search_landings_endpoint(
             }
         )
     return landings
+
+@router.get(
+    "/minimal",
+    response_model=List[LandingMinimalResponse],
+    summary="Получить список лендингов (id и название)",
+    description="Возвращает список всех лендингов с их идентификаторами и названиями."
+)
+def list_minimal_landings(db: Session = Depends(get_db)):
+    # Получаем только поля id и title
+    landings = db.query(Landing).with_entities(Landing.id, Landing.title).all()
+    # Преобразуем результат в список словарей (если нужно)
+    return [{"id": landing.id, "title": landing.title} for landing in landings]
