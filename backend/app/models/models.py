@@ -200,6 +200,10 @@ class Landing(Base):
     # Связь с таблицей тегов
     tag = relationship("Tag", back_populates="landings")
 
+    @property
+    def tag_name(self):
+        return self.tag.name if self.tag else None
+
     # Связь many-to-many с авторами
     authors = relationship(
         "Author",
