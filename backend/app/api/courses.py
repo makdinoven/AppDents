@@ -474,3 +474,78 @@ def update_full_course(
                 }
             }
         )
+@router.get(
+    "/full/{course_id}",
+    response_model=CourseFullResponse,
+    summary="Получить полный курс с лендингом, секциями и модулями",
+    description=(
+        "Возвращает полный объект курса, включающий лендинг, секции и модули, "
+        "со структурой, соответствующей агрегированным данным для обновления (PUT)."
+    )
+)
+def get_full_course(
+    course_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        course = get_course(db, course_id)
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": {
+                        "code": "COURSE_NOT_FOUND",
+                        "message": "Курс не найден",
+                        "translation_key": "error.course_not_found",
+                        "params": {"course_id": course_id}
+                    }
+                }
+            )
+
+        # Формируем ответ согласно схеме CourseFullResponse
+        response = {
+            "course_name": course.name,
+            "course_description": course.description,
+            "landing": {
+                "landing_title": course.landing.title if course.landing else None,
+                "landing_old_price": course.landing.old_price if course.landing else None,
+                "landing_price": course.landing.price if course.landing else None,
+                "landing_main_image": course.landing.main_image if course.landing else None,
+                "landing_main_text": course.landing.main_text if course.landing else None,
+                "landing_language": course.landing.language if course.landing else None,
+                "landing_tag_id": course.landing.tag_id if course.landing else None,
+                "landing_authors": [author.id for author in course.landing.authors] if course.landing and course.landing.authors else [],
+                "landing_sales_count": course.landing.sales_count if course.landing else 0,
+            },
+            "sections": [
+                {
+                    "section_id": section.id,
+                    "section_title": section.name,
+                    "modules": [
+                        {
+                            "module_id": module.id,
+                            "module_title": module.title,
+                            "module_short_video_link": module.short_video_link,
+                            "module_full_video_link": module.full_video_link,
+                            "module_program_text": module.program_text,
+                            "module_duration": module.duration,
+                        }
+                        for module in section.modules
+                    ]
+                }
+                for section in course.sections
+            ]
+        }
+        return response
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "COURSE_FULL_GET_ERROR",
+                    "message": str(e),
+                    "translation_key": "error.course_full_get_error",
+                    "params": {"course_id": course_id}
+                }
+            }
+        )
