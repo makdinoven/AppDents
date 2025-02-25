@@ -67,7 +67,7 @@ def list_landings_by_language(
     return landings
 
 @router.get(
-    "/{landing_id}",
+    "detail/{landing_id}",
     response_model=LandingDetailResponse,
     summary="Get landing details",
     description="Returns full information about the landing page by its identifier."
