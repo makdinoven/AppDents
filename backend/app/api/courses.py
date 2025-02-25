@@ -19,7 +19,7 @@ from ..schemas.course import (
 from ..schemas.landing import ModuleResponse, LandingCreate
 from ..services.course_service import create_course, update_course, delete_course, get_course, list_courses, \
     search_courses
-from ..services.landing_service import create_landing
+from ..services.landing_service import create_landing, update_landing
 from ..services.section_service import create_section, update_section, delete_section
 from ..services.module_service import create_module, update_module, delete_module, search_modules
 from ..db.database import get_db
@@ -293,28 +293,21 @@ def create_full_course(
         current_admin: User = Depends(require_roles("admin"))
 ):
     try:
-        # 1. Создаем курс с базовыми данными
+        # 1. Создаем курс
         new_course = create_course(
             db,
             CourseCreate(name=full_data.name, description=full_data.description)
         )
 
-        # 2. Создаем лендинг с привязкой авторов и других полей.
-        # Обратите внимание, что в схеме лендинга поле "authors" (список id) передается вместе с остальными данными.
-        landing_data = full_data.landing.dict()
-        landing_data["course_id"] = new_course.id
-        new_landing = create_landing(db, LandingCreate(**landing_data))
+        # 2. Создаем лендинг, так как для нового курса он отсутствует
+        from ..schemas.landing import LandingCreate
+        landing_create_dict = full_data.landing.dict()
+        landing_create_dict["course_id"] = new_course.id  # гарантированно устанавливаем course_id
+        new_landing = create_landing(db, LandingCreate(**landing_create_dict))
         new_course.landing = new_landing
-        # Функция create_landing уже содержит следующий блок:
-        # if landing_data.authors:
-        #     authors = db.query(Author).filter(Author.id.in_(landing_data.authors)).all()
-        #     if not authors:
-        #         raise ValueError("Не найден ни один из указанных лекторов")
-        #     landing.authors.extend(authors)
-        #
-        # Таким образом, если full_data.landing.authors содержит список id, авторы будут привязаны к лендингу.
 
-        # 3. Создаем секции и модули.
+        # 3. Создаем секции и модули
+        from ..schemas.course import SectionCreate, ModuleCreate
         for section_data in full_data.sections or []:
             new_section = create_section(db, new_course.id, SectionCreate(name=section_data.name))
             for module_data in section_data.modules or []:
@@ -333,4 +326,3 @@ def create_full_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
