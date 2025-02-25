@@ -53,6 +53,48 @@ class CourseResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class ModuleFullData(BaseModel):
+    title: str
+    short_video_link: Optional[str] = None
+    full_video_link: Optional[str] = None
+    program_text: Optional[str] = None
+    duration: Optional[str] = None
+
+class SectionFullData(BaseModel):
+    name: str
+    modules: Optional[List[ModuleFullData]] = None
+
+    @validator("modules", pre=True, always=True)
+    def set_modules(cls, v):
+        return v or []
+
+class LandingFullData(BaseModel):
+    title: str
+    old_price: Optional[Decimal] = None
+    price: Decimal
+    main_image: Optional[str] = None
+    main_text: Optional[str] = None
+    language: LanguageEnum
+    tag_id: Optional[int] = None
+    authors: Optional[List[int]] = None  # список id авторов
+    sales_count: Optional[int] = 0
+
+    @validator("authors", pre=True, always=True)
+    def set_authors(cls, v):
+        return v or []
+
+class CourseFullData(BaseModel):
+    name: str
+    description: Optional[str] = None
+    landing: LandingFullData
+    sections: Optional[List[SectionFullData]] = None
+
+    @validator("sections", pre=True, always=True)
+    def set_sections(cls, v):
+        return v or []
+
+# ========= Выходные схемы =========
+
 class ModuleFullResponse(BaseModel):
     module_id: int
     module_title: str
