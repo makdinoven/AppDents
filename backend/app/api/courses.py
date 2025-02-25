@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from ..dependencies.role_checker import require_roles
-from ..models.models import User
+from ..models.models import User, Section, Module
 from ..schemas.course import (
     CourseCreate,
     CourseUpdate,
@@ -13,7 +13,7 @@ from ..schemas.course import (
     SectionUpdate,
     SectionResponse,
     ModuleCreate,
-    ModuleUpdate,
+    ModuleUpdate, CourseFullUpdate,
     # Модель ответа для модуля переиспользуется из schemas.landing (ModuleResponse)
 )
 from ..schemas.landing import ModuleResponse
@@ -169,3 +169,95 @@ def search_courses_endpoint(
             }
         )
     return courses
+
+@router.put("/full/{course_id}", response_model=CourseResponse, summary="Полное обновление курса")
+def update_full_course(
+    course_id: int,
+    course_data: CourseFullUpdate,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    try:
+        course = get_course(db, course_id)
+        # Обновляем основные поля курса
+        course.name = course_data.name
+        course.description = course_data.description
+
+        # Для контроля секций, которые пришли в обновлении
+        input_section_ids = set()
+
+        # Обработка секций
+        for section_data in course_data.sections:
+            if section_data.id:
+                input_section_ids.add(section_data.id)
+                # Найти существующую секцию
+                section = db.query(Section).filter(
+                    Section.id == section_data.id, Section.course_id == course_id
+                ).first()
+                if section:
+                    section.name = section_data.name
+
+                    # Обработка модулей внутри секции
+                    input_module_ids = set()
+                    for module_data in section_data.modules:
+                        if module_data.id:
+                            input_module_ids.add(module_data.id)
+                            module = db.query(Module).filter(
+                                Module.id == module_data.id, Module.section_id == section.id
+                            ).first()
+                            if module:
+                                module.title = module_data.title
+                                module.short_video_link = module_data.short_video_link
+                                module.full_video_link = module_data.full_video_link
+                                module.program_text = module_data.program_text
+                                module.duration = module_data.duration
+                        else:
+                            # Создание нового модуля
+                            new_module = Module(
+                                section_id=section.id,
+                                title=module_data.title,
+                                short_video_link=module_data.short_video_link,
+                                full_video_link=module_data.full_video_link,
+                                program_text=module_data.program_text,
+                                duration=module_data.duration
+                            )
+                            db.add(new_module)
+
+                    # Удаляем модули, которых нет в обновлении
+                    for module in section.modules:
+                        if module.id not in input_module_ids:
+                            db.delete(module)
+                else:
+                    raise HTTPException(status_code=404, detail=f"Секция с id {section_data.id} не найдена")
+            else:
+                # Создание новой секции
+                new_section = Section(
+                    course_id=course.id,
+                    name=section_data.name
+                )
+                db.add(new_section)
+                db.flush()  # Для получения new_section.id
+
+                # Создание модулей для новой секции
+                for module_data in section_data.modules:
+                    new_module = Module(
+                        section_id=new_section.id,
+                        title=module_data.title,
+                        short_video_link=module_data.short_video_link,
+                        full_video_link=module_data.full_video_link,
+                        program_text=module_data.program_text,
+                        duration=module_data.duration
+                    )
+                    db.add(new_module)
+
+        # Удаляем секции, которых нет в обновлении
+        for section in course.sections:
+            if section.id not in input_section_ids:
+                db.delete(section)
+
+        db.commit()
+        db.refresh(course)
+        return course
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

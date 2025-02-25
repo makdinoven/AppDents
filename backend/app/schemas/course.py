@@ -50,3 +50,21 @@ class CourseResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ModuleFullUpdate(BaseModel):
+    id: Optional[int]  # Если передан – обновляем, иначе создаём новый модуль
+    title: str
+    short_video_link: Optional[str] = None
+    full_video_link: Optional[str] = None
+    program_text: Optional[str] = None
+    duration: Optional[str] = None
+
+class SectionFullUpdate(BaseModel):
+    id: Optional[int]  # Аналогично, если id указан – обновляем секцию
+    name: str
+    modules: Optional[List[ModuleFullUpdate]] = []
+
+class CourseFullUpdate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    sections: Optional[List[SectionFullUpdate]] = []
