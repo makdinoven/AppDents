@@ -170,7 +170,11 @@ def search_courses_endpoint(
         )
     return courses
 
-@router.put("/full/{course_id}", response_model=CourseResponse, summary="Полное обновление курса")
+@router.put("/full/{course_id}", response_model=CourseResponse, summary="Полное обновление курса",description=(
+        "Этот эндпоинт обновляет данные курса, включая его секции и модули. "
+        "Если в теле запроса передан `id` секции или модуля, происходит обновление, "
+        "иначе создаются новые записи. Объекты, отсутствующие в запросе, будут удалены."
+    ))
 def update_full_course(
     course_id: int,
     course_data: CourseFullUpdate,
