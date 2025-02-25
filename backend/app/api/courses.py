@@ -298,31 +298,97 @@ def create_full_course(
             db,
             CourseCreate(name=full_data.name, description=full_data.description)
         )
+        if not new_course or not new_course.id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": {
+                        "code": "COURSE_CREATE_ERROR",
+                        "message": "Не удалось создать курс",
+                        "translation_key": "error.course_create_error",
+                        "params": {}
+                    }
+                }
+            )
 
-        # 2. Создаем лендинг, так как для нового курса он отсутствует
+        # Если по каким-либо причинам у нового курса уже есть лендинг, удаляем его
+        if new_course.landing:
+            db.delete(new_course.landing)
+            db.flush()
+
+        # 2. Создаем лендинг с установкой course_id
         from ..schemas.landing import LandingCreate
         landing_create_dict = full_data.landing.dict()
-        landing_create_dict["course_id"] = new_course.id  # гарантированно устанавливаем course_id
+        landing_create_dict["course_id"] = new_course.id
         new_landing = create_landing(db, LandingCreate(**landing_create_dict))
+        if not new_landing or not new_landing.id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "error": {
+                        "code": "LANDING_CREATE_ERROR",
+                        "message": "Не удалось создать лендинг",
+                        "translation_key": "error.landing_create_error",
+                        "params": {"course_id": new_course.id}
+                    }
+                }
+            )
         new_course.landing = new_landing
 
         # 3. Создаем секции и модули
         from ..schemas.course import SectionCreate, ModuleCreate
         for section_data in full_data.sections or []:
             new_section = create_section(db, new_course.id, SectionCreate(name=section_data.name))
-            for module_data in section_data.modules or []:
-                module_create = ModuleCreate(
-                    title=module_data.title,
-                    short_video_link=module_data.short_video_link,
-                    full_video_link=module_data.full_video_link,
-                    program_text=module_data.program_text,
-                    duration=module_data.duration
+            if not new_section or not new_section.id:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "error": {
+                            "code": "SECTION_CREATE_ERROR",
+                            "message": f"Не удалось создать секцию '{section_data.name}'",
+                            "translation_key": "error.section_create_error",
+                            "params": {"course_id": new_course.id}
+                        }
+                    }
                 )
-                create_module(db, new_section.id, module_create)
+            for module_data in section_data.modules or []:
+                new_module = create_module(
+                    db,
+                    new_section.id,
+                    ModuleCreate(
+                        title=module_data.title,
+                        short_video_link=module_data.short_video_link,
+                        full_video_link=module_data.full_video_link,
+                        program_text=module_data.program_text,
+                        duration=module_data.duration
+                    )
+                )
+                if not new_module or not new_module.id:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail={
+                            "error": {
+                                "code": "MODULE_CREATE_ERROR",
+                                "message": f"Не удалось создать модуль '{module_data.title}'",
+                                "translation_key": "error.module_create_error",
+                                "params": {"section_id": new_section.id}
+                            }
+                        }
+                    )
 
         db.commit()
         db.refresh(new_course)
         return new_course
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "COURSE_FULL_CREATE_ERROR",
+                    "message": str(e),
+                    "translation_key": "error.course_full_create_error",
+                    "params": {}
+                }
+            }
+        )
