@@ -69,6 +69,16 @@ class ModuleResponse(BaseModel):
     id: int
     title: str
     short_video_link: Optional[str] = None
+    program_text: Optional[str] = None
+    duration: Optional[str] = None
+
+    class Config:
+        orm_mode = True
+
+class ModuleResponseFull(BaseModel):
+    id: int
+    title: str
+    short_video_link: Optional[str] = None
     full_video_link: Optional[str] = None
     program_text: Optional[str] = None
     duration: Optional[str] = None
