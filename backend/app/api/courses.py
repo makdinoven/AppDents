@@ -279,18 +279,18 @@ def update_full_course(
 
 @router.post(
     "/full",
-    response_model=CourseResponse,
+    response_model=CourseFullResponse,
     summary="Создать курс с лендингом, секциями и модулями",
     description=(
-            "Создает новый курс и автоматически генерирует для него лендинг, секции и модули. "
-            "Также привязывает авторов к лендингу (если передан список id) и устанавливает остальные поля лендинга, "
-            "такие как тег, изображение, описание, цены и т.д. Все данные передаются агрегированно."
+        "Создает новый курс и автоматически генерирует для него лендинг, секции и модули. "
+        "Также привязывает авторов к лендингу (если передан список id) и устанавливает остальные поля лендинга, "
+        "такие как тег, изображение, описание, цены и т.д. Все данные передаются агрегированно."
     )
 )
 def create_full_course(
-        full_data: CourseFullData,
-        db: Session = Depends(get_db),
-        current_admin: User = Depends(require_roles("admin"))
+    full_data: CourseFullData,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     try:
         # 1. Создаем курс
