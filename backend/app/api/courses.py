@@ -13,7 +13,7 @@ from ..schemas.course import (
     SectionUpdate,
     SectionResponse,
     ModuleCreate,
-    ModuleUpdate, CourseFullUpdate, CourseFullData,
+    ModuleUpdate, CourseFullResponse, CourseFullData,
     # Модель ответа для модуля переиспользуется из schemas.landing (ModuleResponse)
 )
 from ..schemas.landing import ModuleResponse, LandingCreate
@@ -171,112 +171,6 @@ def search_courses_endpoint(
         )
     return courses
 
-@router.put(
-    "/full/{course_id}",
-    response_model=CourseResponse,
-    summary="Полное обновление курса с лендингом, секциями и модулями",
-    description=(
-        "Обновляет данные курса, лендинга (включая привязку авторов), секций и модулей за один запрос. "
-        "Если в теле запроса передан `id` секции или модуля, происходит обновление, иначе создаются новые записи. "
-        "Объекты, отсутствующие в запросе, будут удалены."
-    )
-)
-def update_full_course(
-    course_id: int,
-    full_data: CourseFullData,
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(require_roles("admin"))
-):
-    try:
-        # Обновляем основные поля курса
-        course = get_course(db, course_id)
-        course.name = full_data.name
-        course.description = full_data.description
-
-        # Обновляем лендинг
-        if course.landing:
-            from ..schemas.landing import LandingUpdate
-            landing_update_data = LandingUpdate(**full_data.landing.dict())
-            update_landing(db, course.landing.id, landing_update_data)
-        else:
-            from ..schemas.landing import LandingCreate
-            landing_create_dict = full_data.landing.dict()
-            landing_create_dict["course_id"] = course.id
-            new_landing = create_landing(db, LandingCreate(**landing_create_dict))
-            course.landing = new_landing
-
-        # Обработка секций и модулей
-        input_section_ids = set()
-        for section_data in full_data.sections or []:
-            if section_data.id:
-                input_section_ids.add(section_data.id)
-                section = db.query(Section).filter(
-                    Section.id == section_data.id, Section.course_id == course_id
-                ).first()
-                if section:
-                    section.name = section_data.name
-
-                    # Обработка модулей внутри секции
-                    input_module_ids = set()
-                    for module_data in section_data.modules or []:
-                        if module_data.id:
-                            input_module_ids.add(module_data.id)
-                            module = db.query(Module).filter(
-                                Module.id == module_data.id, Module.section_id == section.id
-                            ).first()
-                            if module:
-                                module.title = module_data.title
-                                module.short_video_link = module_data.short_video_link
-                                module.full_video_link = module_data.full_video_link
-                                module.program_text = module_data.program_text
-                                module.duration = module_data.duration
-                        else:
-                            new_module = Module(
-                                section_id=section.id,
-                                title=module_data.title,
-                                short_video_link=module_data.short_video_link,
-                                full_video_link=module_data.full_video_link,
-                                program_text=module_data.program_text,
-                                duration=module_data.duration
-                            )
-                            db.add(new_module)
-                    # Удаляем модули, отсутствующие в запросе
-                    for module in list(section.modules):
-                        if module.id not in input_module_ids:
-                            db.delete(module)
-                else:
-                    raise HTTPException(status_code=404, detail=f"Секция с id {section_data.id} не найдена")
-            else:
-                # Создаем новую секцию
-                new_section = Section(
-                    course_id=course.id,
-                    name=section_data.name
-                )
-                db.add(new_section)
-                db.flush()  # Чтобы получить new_section.id
-                for module_data in section_data.modules or []:
-                    new_module = Module(
-                        section_id=new_section.id,
-                        title=module_data.title,
-                        short_video_link=module_data.short_video_link,
-                        full_video_link=module_data.full_video_link,
-                        program_text=module_data.program_text,
-                        duration=module_data.duration
-                    )
-                    db.add(new_module)
-        # Удаляем секции, которых нет в обновлении
-        for section in list(course.sections):
-            if section.id not in input_section_ids:
-                db.delete(section)
-
-        db.commit()
-        db.refresh(course)
-        return course
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-
-
 @router.post(
     "/full",
     response_model=CourseFullResponse,
@@ -317,7 +211,7 @@ def create_full_course(
             db.flush()
 
         # 2. Создаем лендинг с установкой course_id
-        from ..schemas.landing import LandingCreate
+        from ..schemas.landing import LandingCreate  # входящая схема для лендинга
         landing_create_dict = full_data.landing.dict()
         landing_create_dict["course_id"] = new_course.id
         new_landing = create_landing(db, LandingCreate(**landing_create_dict))
@@ -378,7 +272,42 @@ def create_full_course(
 
         db.commit()
         db.refresh(new_course)
-        return new_course
+
+        # Преобразуем ORM-объект в схему CourseFullResponse
+        response = CourseFullResponse(
+            course_name=new_course.name,
+            course_description=new_course.description,
+            landing={
+                "landing_title": new_course.landing.title,
+                "landing_old_price": new_course.landing.old_price,
+                "landing_price": new_course.landing.price,
+                "landing_main_image": new_course.landing.main_image,
+                "landing_main_text": new_course.landing.main_text,
+                "landing_language": new_course.landing.language,
+                "landing_tag_id": new_course.landing.tag_id,
+                "landing_authors": [author.id for author in new_course.landing.authors] if new_course.landing.authors else [],
+                "landing_sales_count": new_course.landing.sales_count,
+            },
+            sections=[
+                {
+                    "section_id": section.id,
+                    "section_title": section.name,
+                    "modules": [
+                        {
+                            "module_id": module.id,
+                            "module_title": module.title,
+                            "module_short_video_link": module.short_video_link,
+                            "module_full_video_link": module.full_video_link,
+                            "module_program_text": module.program_text,
+                            "module_duration": module.duration,
+                        }
+                        for module in section.modules
+                    ]
+                }
+                for section in new_course.sections
+            ]
+        )
+        return response
     except Exception as e:
         db.rollback()
         raise HTTPException(
@@ -388,6 +317,159 @@ def create_full_course(
                     "code": "COURSE_FULL_CREATE_ERROR",
                     "message": str(e),
                     "translation_key": "error.course_full_create_error",
+                    "params": {}
+                }
+            }
+        )
+
+@router.put(
+    "/full/{course_id}",
+    response_model=CourseFullResponse,
+    summary="Полное обновление курса с лендингом, секциями и модулями",
+    description=(
+        "Обновляет данные курса, лендинга (включая привязку авторов), секций и модулей за один запрос. "
+        "Если в теле запроса передан id секции или модуля, происходит обновление, иначе создаются новые записи. "
+        "Объекты, отсутствующие в запросе, будут удалены."
+    )
+)
+def update_full_course(
+    course_id: int,
+    full_data: CourseFullData,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    try:
+        # Обновляем основные поля курса
+        course = get_course(db, course_id)
+        course.name = full_data.name
+        course.description = full_data.description
+
+        # Обновляем лендинг
+        if course.landing:
+            from ..schemas.landing import LandingUpdate
+            landing_update_data = full_data.landing.dict()
+            # Не допускаем изменение course_id в лендинге
+            landing_update_data["course_id"] = course.id
+            update_landing(db, course.landing.id, LandingUpdate(**landing_update_data))
+        else:
+            from ..schemas.landing import LandingCreate
+            landing_create_dict = full_data.landing.dict()
+            landing_create_dict["course_id"] = course.id
+            new_landing = create_landing(db, LandingCreate(**landing_create_dict))
+            course.landing = new_landing
+
+        # Обработка секций и модулей
+        input_section_ids = set()
+        for section_data in full_data.sections or []:
+            if hasattr(section_data, "id") and section_data.id:
+                input_section_ids.add(section_data.id)
+                section = db.query(Section).filter(
+                    Section.id == section_data.id, Section.course_id == course_id
+                ).first()
+                if section:
+                    section.name = section_data.name
+                    input_module_ids = set()
+                    for module_data in section_data.modules or []:
+                        if hasattr(module_data, "id") and module_data.id:
+                            input_module_ids.add(module_data.id)
+                            module = db.query(Module).filter(
+                                Module.id == module_data.id, Module.section_id == section.id
+                            ).first()
+                            if module:
+                                module.title = module_data.title
+                                module.short_video_link = module_data.short_video_link
+                                module.full_video_link = module_data.full_video_link
+                                module.program_text = module_data.program_text
+                                module.duration = module_data.duration
+                        else:
+                            new_module = Module(
+                                section_id=section.id,
+                                title=module_data.title,
+                                short_video_link=module_data.short_video_link,
+                                full_video_link=module_data.full_video_link,
+                                program_text=module_data.program_text,
+                                duration=module_data.duration
+                            )
+                            db.add(new_module)
+                    # Удаляем модули, отсутствующие в обновлении
+                    for module in list(section.modules):
+                        if module.id not in input_module_ids:
+                            db.delete(module)
+                else:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Секция с id {section_data.id} не найдена"
+                    )
+            else:
+                # Создаем новую секцию
+                new_section = Section(
+                    course_id=course.id,
+                    name=section_data.name
+                )
+                db.add(new_section)
+                db.flush()  # чтобы получить new_section.id
+                for module_data in section_data.modules or []:
+                    new_module = Module(
+                        section_id=new_section.id,
+                        title=module_data.title,
+                        short_video_link=module_data.short_video_link,
+                        full_video_link=module_data.full_video_link,
+                        program_text=module_data.program_text,
+                        duration=module_data.duration
+                    )
+                    db.add(new_module)
+        # Удаляем секции, которых нет в обновлении
+        for section in list(course.sections):
+            if section.id not in input_section_ids:
+                db.delete(section)
+
+        db.commit()
+        db.refresh(course)
+
+        # Формируем ответ по схеме CourseFullResponse
+        response = CourseFullResponse(
+            course_name=course.name,
+            course_description=course.description,
+            landing={
+                "landing_title": course.landing.title,
+                "landing_old_price": course.landing.old_price,
+                "landing_price": course.landing.price,
+                "landing_main_image": course.landing.main_image,
+                "landing_main_text": course.landing.main_text,
+                "landing_language": course.landing.language,
+                "landing_tag_id": course.landing.tag_id,
+                "landing_authors": [author.id for author in course.landing.authors] if course.landing.authors else [],
+                "landing_sales_count": course.landing.sales_count,
+            },
+            sections=[
+                {
+                    "section_id": section.id,
+                    "section_title": section.name,
+                    "modules": [
+                        {
+                            "module_id": module.id,
+                            "module_title": module.title,
+                            "module_short_video_link": module.short_video_link,
+                            "module_full_video_link": module.full_video_link,
+                            "module_program_text": module.program_text,
+                            "module_duration": module.duration,
+                        }
+                        for module in section.modules
+                    ]
+                }
+                for section in course.sections
+            ]
+        )
+        return response
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "COURSE_FULL_UPDATE_ERROR",
+                    "message": str(e),
+                    "translation_key": "error.course_full_update_error",
                     "params": {}
                 }
             }
