@@ -103,6 +103,9 @@ class LandingDetailResponse(BaseModel):
 
     class Config:
         orm_mode = True
+        fields = {
+            'tag': {'alias': 'tag_name'}
+        }
 
 # Схемы для тегов
 class TagBase(BaseModel):
