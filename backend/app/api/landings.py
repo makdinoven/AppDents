@@ -47,7 +47,7 @@ def list_landings(db: Session = Depends(get_db)):
     return landings
 
 @router.get(
-    "/{language}",
+    "language/{language}",
     response_model=List[LandingCardResponse],
     summary="Получить лендинги по языку",
     description=(
@@ -67,7 +67,7 @@ def list_landings_by_language(
     return landings
 
 @router.get(
-    "detail/{landing_id}",
+    "/detail/{landing_id}",
     response_model=LandingDetailResponse,
     summary="Get landing details",
     description="Returns full information about the landing page by its identifier."
