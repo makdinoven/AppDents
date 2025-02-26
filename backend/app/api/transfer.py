@@ -267,76 +267,561 @@ async def update_landings_courseid(db: AsyncSession = Depends(get_async_db)):
         logger.error(f"Error updating landing course_id: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/update-modules-full-video-link")
-async def update_modules_full_video_link(db: AsyncSession = Depends(get_async_db)):
+
+@router.post("/update-course-modules-full-video-link")
+async def update_course_modules_full_video_link(db: AsyncSession = Depends(get_async_db)):
     """
-    Для каждого курса извлекает JSON из столбца lessons (таблица course).
-    В этом JSON находятся секции, а в каждой секции – список уроков с полями
-    "video_link" (или "link") и "lesson_name" (или "name"). Для каждого урока
-    обновляет поле full_video_link в таблице modules, где title совпадает с lesson_name
-    и модуль принадлежит секции с нужным course_id.
+    Для каждого курса из таблицы course:
+      - Извлекает JSON из поля lessons.
+      - Обрабатывает различные структуры JSON:
+           • Если JSON – словарь, то итерация по его значениям;
+           • Если JSON – список, итерация по элементам.
+      - Для каждого секционного объекта извлекает имя секции (ключ "section_name", по умолчанию "Default Section").
+      - Ищет в таблице sections запись с course_id = текущему курсу и TRIM(name)=section_name.
+      - Для каждого урока (ключ "lessons" – массив) извлекает:
+            • название урока (ключ "lesson_name" или "name"),
+            • ссылку (ключ "video_link" или "link").
+      - Затем обновляет в таблице modules для найденной секции (section_id), где TRIM(title)=названию урока, поле full_video_link.
+    Если модуль не найден или данные отсутствуют, выводит предупреждение в лог.
+    Возвращает JSON с количеством обновлённых модулей.
     """
     try:
-        updated_count = 0
+        updated_total = 0
         result = await db.execute(text("SELECT id, lessons FROM course"))
         courses = result.mappings().all()
         logger.info("Найдено курсов: %d", len(courses))
+
         for course in courses:
             course_id = course["id"]
-            lessons_json = course["lessons"]
+            lessons_json = course.get("lessons")
             if not lessons_json:
+                logger.info(f"Курс id={course_id} не содержит данных в lessons")
                 continue
+
             try:
                 lessons_data = json.loads(lessons_json)
             except Exception as e:
-                logger.error(f"Ошибка парсинга JSON для курса id={course_id}: {e}")
+                logger.error(f"Ошибка парсинга lessons для курса id={course_id}: {e}")
                 continue
 
-            # Если lessons_data – словарь, берём значения, если список – итерация напрямую
+            # Определяем, по какому объекту итерировать секции
             if isinstance(lessons_data, dict):
-                sections = lessons_data.values()
+                sections_iter = lessons_data.values()
             elif isinstance(lessons_data, list):
-                sections = lessons_data
+                sections_iter = lessons_data
             else:
-                logger.error(f"Неожиданный тип lessons для курса id={course_id}: {type(lessons_data)}")
+                logger.warning(f"Неожиданный тип lessons для курса id={course_id}: {type(lessons_data)}")
                 continue
 
-            for section in sections:
-                if not isinstance(section, dict):
+            for sec in sections_iter:
+                if not isinstance(sec, dict):
                     continue
-                lessons_list = section.get("lessons", [])
-                for lesson in lessons_list:
+                section_name = (sec.get("section_name") or "Default Section").strip()
+                # Ищем секцию в таблице sections по course_id и TRIM(name)
+                sec_result = await db.execute(
+                    text("SELECT id FROM sections WHERE course_id = :course_id AND TRIM(name) = :section_name"),
+                    {"course_id": course_id, "section_name": section_name}
+                )
+                sec_row = sec_result.fetchone()
+                if not sec_row:
+                    logger.warning(f"Секция '{section_name}' не найдена для курса id={course_id}")
+                    continue
+                section_id = sec_row[0]
+
+                lessons_arr = sec.get("lessons", [])
+                if not isinstance(lessons_arr, list):
+                    logger.warning(f"Уроки в секции '{section_name}' курса id={course_id} не являются списком")
+                    continue
+
+                for lesson in lessons_arr:
                     if not isinstance(lesson, dict):
                         continue
-                    # Пытаемся взять ссылку из video_link, если отсутствует – из link
-                    video_link = (lesson.get("video_link") or lesson.get("link") or "").strip()
-                    # Аналогично, берем название урока
                     lesson_name = (lesson.get("lesson_name") or lesson.get("name") or "").strip()
-                    if not video_link or not lesson_name:
+                    if not lesson_name:
+                        logger.warning(f"Пустое название урока в курсе id={course_id}, секция '{section_name}'")
+                        continue
+                    # Получаем ссылку: проверяем сначала "video_link", затем "link"
+                    video_link = (lesson.get("video_link") or lesson.get("link") or "").strip()
+                    if not video_link:
+                        logger.warning(
+                            f"Пустая ссылка для урока '{lesson_name}' в курсе id={course_id}, секция '{section_name}'")
                         continue
 
                     update_query = text("""
                         UPDATE modules
                         SET full_video_link = :video_link
-                        WHERE title = :lesson_name
-                          AND section_id IN (
-                              SELECT id FROM sections WHERE course_id = :course_id
-                          )
+                        WHERE section_id = :section_id AND TRIM(title) = :lesson_name
                     """)
                     res = await db.execute(update_query, {
                         "video_link": video_link,
-                        "lesson_name": lesson_name,
-                        "course_id": course_id
+                        "section_id": section_id,
+                        "lesson_name": lesson_name
                     })
-                    # Суммируем количество затронутых строк
-                    updated_count += res.rowcount if res.rowcount is not None else 0
+                    rowcount = res.rowcount if res.rowcount is not None else 0
+                    if rowcount == 0:
+                        logger.warning(
+                            f"Модуль не найден для урока '{lesson_name}' (курс id={course_id}, секция '{section_name}')")
+                    else:
+                        logger.info(
+                            f"Обновлён модуль для урока '{lesson_name}' (курс id={course_id}, секция '{section_name}')")
+                    updated_total += rowcount
 
         await db.commit()
         return JSONResponse({
-            "status": "Modules full_video_link updated",
-            "updated_count": updated_count
+            "status": "Course modules full_video_link updated",
+            "updated_count": updated_total
         })
     except Exception as e:
         await db.rollback()
-        logger.error(f"Ошибка обновления full_video_link: {e}")
+        logger.error(f"Ошибка обновления course modules full_video_link: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/verify-landing-modules-short-video-link")
+async def verify_landing_modules_short_video_link(db: AsyncSession = Depends(get_async_db)):
+    """
+    Проходит по всем лендингам (из целевой таблицы landing), для которых course_id != 0,
+    извлекает исходное поле lessons_info из таблицы landings (через JOIN по id)
+    и для каждого урока ищет соответствующий модуль (сравнивая TRIM(title) с именем урока).
+    Если значение short_video_link в модуле не совпадает с ожидаемым (из JSON: "video_link" или "link"),
+    то фиксирует несовпадение.
+
+    Возвращает JSON с количеством проверенных модулей, числом несовпадений и списком несовпадений.
+    """
+    try:
+        mismatches = []
+        total_modules_checked = 0
+
+        # Получаем данные из целевой таблицы landing с данными из исходной таблицы landings
+        query = text("""
+            SELECT l.id, l.course_id, ls.lessons_info
+            FROM landing l
+            JOIN landings ls ON ls.id = l.id
+            WHERE l.course_id != 0;
+        """)
+        result = await db.execute(query)
+        records = result.mappings().all()
+        logger.info("Найдено лендингов для проверки: %d", len(records))
+
+        for record in records:
+            landing_id = record["id"]
+            course_id = record["course_id"]
+            lessons_info = record.get("lessons_info") or "{}"
+            try:
+                lessons_data = json.loads(lessons_info)
+            except Exception as e:
+                logger.error(f"Ошибка парсинга lessons_info для лендинга id={landing_id}: {e}")
+                continue
+
+            # lessons_data может быть dict или list
+            if isinstance(lessons_data, dict):
+                lessons_iterable = lessons_data.values()
+            elif isinstance(lessons_data, list):
+                lessons_iterable = lessons_data
+            else:
+                lessons_iterable = []
+
+            for lesson in lessons_iterable:
+                if not isinstance(lesson, dict):
+                    continue
+                expected_link = (lesson.get("video_link") or lesson.get("link") or "").strip()
+                lesson_name = (lesson.get("lesson_name") or lesson.get("name") or "").strip()
+                if not lesson_name:
+                    logger.warning(f"Пустое название урока в лендинге id={landing_id}")
+                    continue
+
+                # Ищем модуль, принадлежащий секциям данного курса, где TRIM(title) = lesson_name
+                mod_query = text("""
+                    SELECT id, short_video_link, title
+                    FROM modules
+                    WHERE section_id IN (
+                        SELECT id FROM sections WHERE course_id = :course_id
+                    )
+                    AND TRIM(title) = :lesson_name
+                """)
+                mod_result = await db.execute(mod_query, {"course_id": course_id, "lesson_name": lesson_name})
+                modules = mod_result.mappings().all()
+                total_modules_checked += len(modules)
+                for mod in modules:
+                    actual_link = (mod.get("short_video_link") or "").strip()
+                    if actual_link != expected_link:
+                        mismatches.append({
+                            "landing_id": landing_id,
+                            "course_id": course_id,
+                            "module_id": mod["id"],
+                            "lesson_name": lesson_name,
+                            "expected_link": expected_link,
+                            "actual_link": actual_link
+                        })
+
+        return JSONResponse({
+            "status": "Verification completed",
+            "total_modules_checked": total_modules_checked,
+            "mismatches_found": len(mismatches),
+            "mismatches": mismatches
+        })
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Ошибка проверки landing modules short_video_link: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/check-migration")
+async def check_migration(db: AsyncSession = Depends(get_async_db)):
+    """
+    Сверяет количество секций и модулей, ожидаемых исходя из данных в таблице course (поле lessons),
+    с фактическими значениями в целевых таблицах courses, sections и modules.
+    Дополнительно считает, сколько курсов имеют нулевые ожидаемые или фактические значения.
+    Возвращает JSON со сравнением по каждому курсу и сводной статистикой.
+    """
+    try:
+        # 1. Извлекаем исходные данные из таблицы course
+        result_source = await db.execute(text("SELECT id, lessons FROM course"))
+        source_courses = result_source.mappings().all()
+
+        expected = {}
+        for row in source_courses:
+            course_id = row["id"]
+            lessons_json = row["lessons"] or "{}"
+            try:
+                lessons_data = json.loads(lessons_json)
+            except Exception as e:
+                logger.error(f"Ошибка парсинга lessons для курса id={course_id}: {e}")
+                lessons_data = {}
+
+            expected_section_count = 0
+            expected_module_count = 0
+            if isinstance(lessons_data, dict):
+                for sec in lessons_data.values():
+                    expected_section_count += 1
+                    lessons_arr = sec.get("lessons", [])
+                    if isinstance(lessons_arr, list):
+                        expected_module_count += len(lessons_arr)
+            elif isinstance(lessons_data, list):
+                expected_section_count = len(lessons_data)
+                for sec in lessons_data:
+                    lessons_arr = sec.get("lessons", [])
+                    if isinstance(lessons_arr, list):
+                        expected_module_count += len(lessons_arr)
+            else:
+                logger.warning(f"Неожиданный тип lessons для курса id={course_id}: {type(lessons_data)}")
+
+            expected[course_id] = {
+                "expected_sections": expected_section_count,
+                "expected_modules": expected_module_count
+            }
+
+        # 2. Извлекаем фактические данные из целевых таблиц
+        result_target = await db.execute(text("""
+            SELECT c.id AS course_id, 
+                   COUNT(DISTINCT s.id) AS section_count, 
+                   COUNT(m.id) AS module_count
+            FROM courses c
+            LEFT JOIN sections s ON s.course_id = c.id
+            LEFT JOIN modules m ON m.section_id = s.id
+            GROUP BY c.id
+        """))
+        target_counts = result_target.mappings().all()
+        actual = {}
+        for row in target_counts:
+            course_id = row["course_id"]
+            actual[course_id] = {
+                "actual_sections": row["section_count"],
+                "actual_modules": row["module_count"]
+            }
+
+        # 3. Формируем сравнение для каждого курса и одновременно считаем курсы с нулевыми значениями
+        comparison = []
+        zero_expected_sections = 0
+        zero_expected_modules = 0
+        zero_actual_sections = 0
+        zero_actual_modules = 0
+
+        for course_id, exp in expected.items():
+            act = actual.get(course_id, {"actual_sections": 0, "actual_modules": 0})
+            if exp["expected_sections"] == 0:
+                zero_expected_sections += 1
+            if exp["expected_modules"] == 0:
+                zero_expected_modules += 1
+            if act["actual_sections"] == 0:
+                zero_actual_sections += 1
+            if act["actual_modules"] == 0:
+                zero_actual_modules += 1
+
+            comparison.append({
+                "course_id": course_id,
+                "expected_sections": exp["expected_sections"],
+                "expected_modules": exp["expected_modules"],
+                "actual_sections": act["actual_sections"],
+                "actual_modules": act["actual_modules"]
+            })
+
+        summary = {
+            "total_courses": len(expected),
+            "courses_with_zero_expected_sections": zero_expected_sections,
+            "courses_with_zero_expected_modules": zero_expected_modules,
+            "courses_with_zero_actual_sections": zero_actual_sections,
+            "courses_with_zero_actual_modules": zero_actual_modules
+        }
+
+        return JSONResponse({
+            "comparison": comparison,
+            "summary": summary
+        })
+    except Exception as e:
+        logger.error(f"Ошибка в check_migration: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/update-sections-from-course")
+async def update_sections_from_course(db: AsyncSession = Depends(get_async_db)):
+    """
+    Для каждого курса (из таблицы course) извлекает JSON из столбца lessons,
+    затем для каждой секции (ключ "section_name") проверяет, существует ли запись в таблице sections с
+    соответствующим course_id и именем (TRIM(name)). Если такой записи нет – вставляет новую.
+
+    Возвращает сводную информацию по количеству обработанных курсов и добавленных секций.
+    """
+    try:
+        total_courses = 0
+        new_sections_added = 0
+
+        # Извлекаем все курсы с полем lessons из исходной таблицы course
+        result = await db.execute(text("SELECT id, lessons FROM course"))
+        courses = result.mappings().all()
+        total_courses = len(courses)
+        logger.info("Найдено курсов: %d", total_courses)
+
+        for course in courses:
+            course_id = course["id"]
+            lessons_json = course.get("lessons")
+            if not lessons_json:
+                logger.info(f"Курс id={course_id} не содержит данных в lessons")
+                continue
+
+            try:
+                lessons_data = json.loads(lessons_json)
+            except Exception as e:
+                logger.error(f"Ошибка парсинга lessons для курса id={course_id}: {e}")
+                continue
+
+            # lessons_data может быть либо dict, либо list
+            if isinstance(lessons_data, dict):
+                sections_iterable = lessons_data.values()
+            elif isinstance(lessons_data, list):
+                sections_iterable = lessons_data
+            else:
+                logger.warning(f"Неожиданный тип lessons для курса id={course_id}: {type(lessons_data)}")
+                continue
+
+            for sec in sections_iterable:
+                if not isinstance(sec, dict):
+                    continue
+                section_name = (sec.get("section_name") or "Default Section").strip()
+                # Проверяем наличие секции в целевой таблице sections для данного курса
+                check_query = text("""
+                    SELECT id FROM sections 
+                    WHERE course_id = :course_id AND TRIM(name) = :section_name
+                """)
+                res = await db.execute(check_query, {"course_id": course_id, "section_name": section_name})
+                existing_section = res.scalar()
+                if not existing_section:
+                    # Если секция не найдена – вставляем новую запись
+                    insert_query = text("""
+                        INSERT INTO sections (course_id, name)
+                        VALUES (:course_id, :section_name)
+                    """)
+                    await db.execute(insert_query, {"course_id": course_id, "section_name": section_name})
+                    new_sections_added += 1
+                    logger.info(f"Добавлена новая секция '{section_name}' для курса id={course_id}")
+
+        await db.commit()
+        return JSONResponse({
+            "status": "Sections update completed",
+            "total_courses_processed": total_courses,
+            "new_sections_added": new_sections_added
+        })
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Ошибка обновления секций: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/update-landing-modules-short-video-link-from-mismatches")
+async def update_landing_modules_short_video_link_from_mismatches(db: AsyncSession = Depends(get_async_db)):
+    """
+    Обновляет поле short_video_link для модулей, используя ожидаемые ссылки из JSON‑поля lessons_info
+    лендингов. Для каждого лендинга (где course_id != 0) извлекается lessons_info из исходной таблицы landings
+    (через JOIN с таблицей landing), затем для каждого урока ищется соответствующий модуль (по совпадению TRIM(title)
+    с именем урока, принадлежащего секциям данного курса). Если значение short_video_link в модуле не соответствует
+    ожидаемому, выполняется обновление.
+
+    Возвращает JSON с количеством обновлённых модулей.
+    """
+    try:
+        updated_total = 0
+
+        # Извлекаем лендинги с course_id != 0, объединяя данные из таблицы landing и исходной таблицы landings
+        query = text("""
+            SELECT l.id AS landing_id, l.course_id, ls.lessons_info
+            FROM landing l
+            JOIN landings ls ON ls.id = l.id
+            WHERE l.course_id != 0;
+        """)
+        result = await db.execute(query)
+        records = result.mappings().all()
+        logger.info("Найдено лендингов для проверки: %d", len(records))
+
+        for record in records:
+            landing_id = record["landing_id"]
+            course_id = record["course_id"]
+            lessons_info = record.get("lessons_info") or "{}"
+            try:
+                lessons_data = json.loads(lessons_info)
+            except Exception as e:
+                logger.error(f"Ошибка парсинга lessons_info для лендинга id={landing_id}: {e}")
+                continue
+
+            # lessons_data может быть словарём или списком
+            if isinstance(lessons_data, dict):
+                lessons_iterable = lessons_data.values()
+            elif isinstance(lessons_data, list):
+                lessons_iterable = lessons_data
+            else:
+                logger.warning(f"Неожиданный тип lessons_info для лендинга id={landing_id}: {type(lessons_data)}")
+                continue
+
+            for lesson in lessons_iterable:
+                if not isinstance(lesson, dict):
+                    continue
+                lesson_name = (lesson.get("lesson_name") or lesson.get("name") or "").strip()
+                expected_link = (lesson.get("video_link") or lesson.get("link") or "").strip()
+                if not lesson_name:
+                    logger.warning(f"Пустое название урока в лендинге id={landing_id}")
+                    continue
+                if not expected_link:
+                    logger.warning(f"Пустая ссылка для урока '{lesson_name}' в лендинге id={landing_id}")
+                    continue
+
+                # Обновляем соответствующий модуль:
+                # Ищем модуль, принадлежащий секциям данного курса, где TRIM(title) совпадает с lesson_name
+                update_query = text("""
+                    UPDATE modules
+                    SET short_video_link = :expected_link
+                    WHERE section_id IN (
+                        SELECT id FROM sections WHERE course_id = :course_id
+                    )
+                    AND TRIM(title) = :lesson_name
+                """)
+                res = await db.execute(update_query, {
+                    "expected_link": expected_link,
+                    "course_id": course_id,
+                    "lesson_name": lesson_name
+                })
+                if res.rowcount and res.rowcount > 0:
+                    logger.info(f"Обновлён модуль для урока '{lesson_name}' (landing id={landing_id})")
+                    updated_total += res.rowcount
+                else:
+                    logger.warning(f"Модуль не найден для урока '{lesson_name}' (landing id={landing_id})")
+
+        await db.commit()
+        return JSONResponse({
+            "status": "Modules short_video_link updated from mismatches",
+            "updated_count": updated_total
+        })
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Ошибка обновления short_video_link: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/update-landing-modules-program-text")
+async def update_landing_modules_program_text(db: AsyncSession = Depends(get_async_db)):
+    """
+    Для каждого лендинга с ненулевым course_id:
+      - Извлекаем lessons_info (JSON) из исходной таблицы landings,
+      - Для каждого урока извлекаем значение поля "program"
+        и, если оно непустое, ищем в таблице modules модуль, принадлежащий к секциям
+        курса (по course_id) с совпадающим (TRIM) названием урока (поле title).
+      - Обновляем найденному модулю поле program_text.
+    Возвращает JSON с количеством обновлённых модулей.
+    """
+    try:
+        updated_total = 0
+
+        # Извлекаем лендинги с course_id != 0, объединяя данные из таблиц landing и landings
+        query = text("""
+            SELECT l.id AS landing_id, l.course_id, ls.lessons_info
+            FROM landing l
+            JOIN landings ls ON ls.id = l.id
+            WHERE l.course_id != 0;
+        """)
+        result = await db.execute(query)
+        records = result.mappings().all()
+        logger.info("Найдено лендингов для проверки: %d", len(records))
+
+        for record in records:
+            landing_id = record["landing_id"]
+            course_id = record["course_id"]
+            lessons_info = record.get("lessons_info") or "{}"
+            try:
+                lessons_data = json.loads(lessons_info)
+            except Exception as e:
+                logger.error(f"Ошибка парсинга lessons_info для лендинга id={landing_id}: {e}")
+                continue
+
+            # lessons_data может быть dict или list – определяем итератор
+            if isinstance(lessons_data, dict):
+                lessons_iter = lessons_data.values()
+            elif isinstance(lessons_data, list):
+                lessons_iter = lessons_data
+            else:
+                logger.warning(f"Неожиданный тип lessons_info для лендинга id={landing_id}: {type(lessons_data)}")
+                continue
+
+            for lesson in lessons_iter:
+                if not isinstance(lesson, dict):
+                    continue
+                # Извлекаем название урока
+                lesson_name = (lesson.get("lesson_name") or lesson.get("name") or "").strip()
+                if not lesson_name:
+                    logger.warning(f"Пустое название урока в лендинге id={landing_id}")
+                    continue
+                # Извлекаем значение program
+                program_text = (lesson.get("program") or "").strip()
+                if not program_text:
+                    logger.warning(f"Пустое значение program для урока '{lesson_name}' в лендинге id={landing_id}")
+                    continue
+
+                # Обновляем модуль: ищем модуль в таблице modules, принадлежащий секциям с course_id = :course_id,
+                # где TRIM(title) совпадает с lesson_name
+                update_query = text("""
+                    UPDATE modules
+                    SET program_text = :program_text
+                    WHERE section_id IN (
+                        SELECT id FROM sections WHERE course_id = :course_id
+                    )
+                    AND TRIM(title) = :lesson_name
+                """)
+                res = await db.execute(update_query, {
+                    "program_text": program_text,
+                    "course_id": course_id,
+                    "lesson_name": lesson_name
+                })
+                if res.rowcount and res.rowcount > 0:
+                    logger.info(f"Обновлён модуль для урока '{lesson_name}' (landing id={landing_id})")
+                    updated_total += res.rowcount
+                else:
+                    logger.warning(f"Модуль не найден для урока '{lesson_name}' (landing id={landing_id})")
+
+        await db.commit()
+        return JSONResponse({
+            "status": "Modules program_text updated from lessons_info",
+            "updated_count": updated_total
+        })
+
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Ошибка обновления program_text в модулях: {e}")
         raise HTTPException(status_code=500, detail=str(e))
