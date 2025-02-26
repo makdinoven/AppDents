@@ -275,31 +275,31 @@ def create_full_course(
 
         # Преобразуем ORM-объект в схему CourseFullResponse
         response = CourseFullResponse(
-            course_name=new_course.name,
-            course_description=new_course.description,
+            name=new_course.name,
+            description=new_course.description,
             landing={
-                "landing_title": new_course.landing.title,
-                "landing_old_price": new_course.landing.old_price,
-                "landing_price": new_course.landing.price,
-                "landing_main_image": new_course.landing.main_image,
-                "landing_main_text": new_course.landing.main_text,
-                "landing_language": new_course.landing.language,
-                "landing_tag_id": new_course.landing.tag_id,
-                "landing_authors": [author.id for author in new_course.landing.authors] if new_course.landing.authors else [],
-                "landing_sales_count": new_course.landing.sales_count,
+                "title": new_course.landing.title,
+                "old_price": new_course.landing.old_price,
+                "price": new_course.landing.price,
+                "main_image": new_course.landing.main_image,
+                "main_text": new_course.landing.main_text,
+                "language": new_course.landing.language,
+                "tag_id": new_course.landing.tag_id,
+                "authors": [author.id for author in new_course.landing.authors] if new_course.landing.authors else [],
+                "sales_count": new_course.landing.sales_count,
             },
             sections=[
                 {
-                    "section_id": section.id,
-                    "section_title": section.name,
+                    "id": section.id,
+                    "title": section.name,
                     "modules": [
                         {
-                            "module_id": module.id,
-                            "module_title": module.title,
-                            "module_short_video_link": module.short_video_link,
-                            "module_full_video_link": module.full_video_link,
-                            "module_program_text": module.program_text,
-                            "module_duration": module.duration,
+                            "id": module.id,
+                            "title": module.title,
+                            "short_video_link": module.short_video_link,
+                            "full_video_link": module.full_video_link,
+                            "program_text": module.program_text,
+                            "duration": module.duration,
                         }
                         for module in section.modules
                     ]
@@ -428,31 +428,31 @@ def update_full_course(
 
         # Формируем ответ по схеме CourseFullResponse
         response = CourseFullResponse(
-            course_name=course.name,
-            course_description=course.description,
+            name=course.name,
+            description=course.description,
             landing={
-                "landing_title": course.landing.title,
-                "landing_old_price": course.landing.old_price,
-                "landing_price": course.landing.price,
-                "landing_main_image": course.landing.main_image,
-                "landing_main_text": course.landing.main_text,
-                "landing_language": course.landing.language,
-                "landing_tag_id": course.landing.tag_id,
-                "landing_authors": [author.id for author in course.landing.authors] if course.landing.authors else [],
-                "landing_sales_count": course.landing.sales_count,
+                "title": course.landing.title,
+                "old_price": course.landing.old_price,
+                "price": course.landing.price,
+                "main_image": course.landing.main_image,
+                "main_text": course.landing.main_text,
+                "language": course.landing.language,
+                "tag_id": course.landing.tag_id,
+                "authors": [author.id for author in course.landing.authors] if course.landing.authors else [],
+                "sales_count": course.landing.sales_count,
             },
             sections=[
                 {
-                    "section_id": section.id,
-                    "section_title": section.name,
+                    "id": section.id,
+                    "title": section.name,
                     "modules": [
                         {
-                            "module_id": module.id,
-                            "module_title": module.title,
-                            "module_short_video_link": module.short_video_link,
-                            "module_full_video_link": module.full_video_link,
-                            "module_program_text": module.program_text,
-                            "module_duration": module.duration,
+                            "id": module.id,
+                            "title": module.title,
+                            "hort_video_link": module.short_video_link,
+                            "full_video_link": module.full_video_link,
+                            "program_text": module.program_text,
+                            "duration": module.duration,
                         }
                         for module in section.modules
                     ]
@@ -504,31 +504,31 @@ def get_full_course(
 
         # Формируем ответ согласно схеме CourseFullResponse
         response = {
-            "course_name": course.name,
-            "course_description": course.description,
+            "name": course.name,
+            "description": course.description,
             "landing": {
-                "landing_title": course.landing.title if course.landing else None,
-                "landing_old_price": course.landing.old_price if course.landing else None,
-                "landing_price": course.landing.price if course.landing else None,
-                "landing_main_image": course.landing.main_image if course.landing else None,
-                "landing_main_text": course.landing.main_text if course.landing else None,
-                "landing_language": course.landing.language if course.landing else None,
-                "landing_tag_id": course.landing.tag_id if course.landing else None,
-                "landing_authors": [author.id for author in course.landing.authors] if course.landing and course.landing.authors else [],
-                "landing_sales_count": course.landing.sales_count if course.landing else 0,
+                "title": course.landing.title if course.landing else None,
+                "old_price": course.landing.old_price if course.landing else None,
+                "price": course.landing.price if course.landing else None,
+                "main_image": course.landing.main_image if course.landing else None,
+                "main_text": course.landing.main_text if course.landing else None,
+                "language": course.landing.language if course.landing else None,
+                "tag_id": course.landing.tag_id if course.landing else None,
+                "authors": [author.id for author in course.landing.authors] if course.landing and course.landing.authors else [],
+                "sales_count": course.landing.sales_count if course.landing else 0,
             },
             "sections": [
                 {
-                    "section_id": section.id,
-                    "section_title": section.name,
+                    "id": section.id,
+                    "title": section.name,
                     "modules": [
                         {
-                            "module_id": module.id,
-                            "module_title": module.title,
-                            "module_short_video_link": module.short_video_link,
-                            "module_full_video_link": module.full_video_link,
-                            "module_program_text": module.program_text,
-                            "module_duration": module.duration,
+                            "id": module.id,
+                            "title": module.title,
+                            "short_video_link": module.short_video_link,
+                            "full_video_link": module.full_video_link,
+                            "program_text": module.program_text,
+                            "duration": module.duration,
                         }
                         for module in section.modules
                     ]
