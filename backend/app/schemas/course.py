@@ -67,7 +67,7 @@ class SectionFullData(BaseModel):
     name: str
     modules: Optional[List[ModuleFullData]] = None
 
-    @validator("modules", pre=True, always=True, check_fields=False)
+    @validator("modules", pre=True, always=True)
     def set_modules(cls, v):
         return v or []
 
@@ -82,7 +82,7 @@ class LandingFullData(BaseModel):
     authors: Optional[List[int]] = None  # список id авторов
     sales_count: Optional[int] = 0
 
-    @validator("authors", pre=True, always=True, check_fields=False)
+    @validator("authors", pre=True, always=True)
     def set_authors(cls, v):
         return v or []
 
@@ -92,7 +92,7 @@ class CourseFullData(BaseModel):
     landing: LandingFullData
     sections: Optional[List[SectionFullData]] = None
 
-    @validator("sections", pre=True, always=True, check_fields=False)
+    @validator("sections", pre=True, always=True)
     def set_sections(cls, v):
         return v or []
 
@@ -114,7 +114,7 @@ class SectionFullResponse(BaseModel):
     section_title: str
     modules: List[ModuleFullResponse] = None
 
-    @validator("modules", pre=True, always=True, check_fields=False)
+    @validator("modules", pre=True, always=True)
     def set_modules(cls, v):
         return v or []
 
@@ -132,7 +132,7 @@ class LandingFullResponse(BaseModel):
     landing_authors: List[int] = None
     landing_sales_count: int = 0
 
-    @validator("landing_authors", pre=True, always=True, check_fields=False)
+    @validator("landing_authors", pre=True, always=True)
     def set_authors(cls, v):
         return v or []
 
@@ -145,7 +145,7 @@ class CourseFullResponse(BaseModel):
     landing: LandingFullResponse
     sections: List[SectionFullResponse] = None
 
-    @validator("sections", pre=True, always=True, check_fields=False)
+    @validator("sections", pre=True, always=True)
     def set_sections(cls, v):
         return v or []
 
