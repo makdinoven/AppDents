@@ -3,9 +3,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
-from ..schemas.landing import ModuleResponse, LanguageEnum  # Переиспользуем схему ответа для модуля из landing.py
+from ..schemas.landing import ModuleResponse, LanguageEnum
 
-# --- Модули ---
 class ModuleCreate(BaseModel):
     title: str
     short_video_link: Optional[str] = None
@@ -53,6 +52,10 @@ class CourseResponse(BaseModel):
     class Config:
         orm_mode = True
 
+# ----------------- АГРЕГИРОВАННЫЕ СХЕМЫ -----------------
+
+# Входные агрегированные схемы для POST/PUT запросов
+
 class ModuleFullData(BaseModel):
     title: str
     short_video_link: Optional[str] = None
@@ -64,7 +67,7 @@ class SectionFullData(BaseModel):
     name: str
     modules: Optional[List[ModuleFullData]] = None
 
-    @validator("modules", pre=True, always=True)
+    @validator("modules", pre=True, always=True, check_fields=False)
     def set_modules(cls, v):
         return v or []
 
@@ -79,7 +82,7 @@ class LandingFullData(BaseModel):
     authors: Optional[List[int]] = None  # список id авторов
     sales_count: Optional[int] = 0
 
-    @validator("authors", pre=True, always=True)
+    @validator("authors", pre=True, always=True, check_fields=False)
     def set_authors(cls, v):
         return v or []
 
@@ -89,19 +92,19 @@ class CourseFullData(BaseModel):
     landing: LandingFullData
     sections: Optional[List[SectionFullData]] = None
 
-    @validator("sections", pre=True, always=True)
+    @validator("sections", pre=True, always=True, check_fields=False)
     def set_sections(cls, v):
         return v or []
 
-# ========= Выходные схемы =========
+# Выходные агрегированные схемы для формирования ответа
 
 class ModuleFullResponse(BaseModel):
-    id: int
-    title: str
-    hort_video_link: Optional[str] = None
-    full_video_link: Optional[str] = None
-    program_text: Optional[str] = None
-    uration: Optional[str] = None
+    module_id: int
+    module_title: str
+    module_short_video_link: Optional[str] = None
+    module_full_video_link: Optional[str] = None
+    module_program_text: Optional[str] = None
+    module_duration: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -111,7 +114,7 @@ class SectionFullResponse(BaseModel):
     section_title: str
     modules: List[ModuleFullResponse] = None
 
-    @validator("modules", pre=True, always=True)
+    @validator("modules", pre=True, always=True, check_fields=False)
     def set_modules(cls, v):
         return v or []
 
@@ -119,17 +122,17 @@ class SectionFullResponse(BaseModel):
         orm_mode = True
 
 class LandingFullResponse(BaseModel):
-    title: str
-    old_price: Optional[Decimal] = None
-    rice: Decimal
-    main_image: Optional[str] = None
-    main_text: Optional[str] = None
-    language: LanguageEnum
-    tag_id: Optional[int] = None
-    authors: List[int] = None
-    sales_count: int = 0
+    landing_title: str
+    landing_old_price: Optional[Decimal] = None
+    landing_price: Decimal
+    landing_main_image: Optional[str] = None
+    landing_main_text: Optional[str] = None
+    landing_language: LanguageEnum
+    landing_tag_id: Optional[int] = None
+    landing_authors: List[int] = None
+    landing_sales_count: int = 0
 
-    @validator("landing_authors", pre=True, always=True)
+    @validator("landing_authors", pre=True, always=True, check_fields=False)
     def set_authors(cls, v):
         return v or []
 
@@ -137,12 +140,12 @@ class LandingFullResponse(BaseModel):
         orm_mode = True
 
 class CourseFullResponse(BaseModel):
-    name: str
-    description: Optional[str] = None
+    course_name: str
+    course_description: Optional[str] = None
     landing: LandingFullResponse
     sections: List[SectionFullResponse] = None
 
-    @validator("sections", pre=True, always=True)
+    @validator("sections", pre=True, always=True, check_fields=False)
     def set_sections(cls, v):
         return v or []
 
