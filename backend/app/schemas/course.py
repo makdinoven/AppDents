@@ -129,12 +129,8 @@ class LandingFullResponse(BaseModel):
     main_text: Optional[str] = None
     language: LanguageEnum
     tag_id: Optional[int] = None
-    authors: List[int] = None
+    authors: List[int] = Field(default_factory=list)
     sales_count: int = 0
-
-    @validator("landing_authors", pre=True, always=True)
-    def set_authors(cls, v):
-        return v or []
 
     class Config:
         orm_mode = True
