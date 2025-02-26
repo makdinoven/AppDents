@@ -825,3 +825,107 @@ async def update_landing_modules_program_text(db: AsyncSession = Depends(get_asy
         await db.rollback()
         logger.error(f"Ошибка обновления program_text в модулях: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+@router.post("/update-landing-modules-from-lessons-info")
+async def update_landing_modules_from_lessons_info(db: AsyncSession = Depends(get_async_db)):
+    """
+    Для каждого лендинга из таблицы landings:
+      - Извлекает JSON из поля lessons_info и поле linked_courses.
+      - Определяет course_id, взяв первый элемент JSON-массива linked_courses.
+      - Для каждого урока из lessons_info (JSON) извлекает название (ключ "lesson_name" или "name"), длительность (ключ "duration")
+        и программу (ключ "program").
+      - Обновляет в таблице modules (для модулей, принадлежащих секциям курса с найденным course_id) поля duration и program_text,
+        если TRIM(title) совпадает с названием урока.
+    Возвращает JSON с количеством обновлённых модулей.
+    """
+    try:
+        updated_total = 0
+        # Выбираем лендинги, у которых lessons_info не NULL, а также поле linked_courses для получения course_id
+        result = await db.execute(
+            text("SELECT id, lessons_info, linked_courses FROM landings WHERE lessons_info IS NOT NULL"))
+        landings = result.mappings().all()
+        logger.info("Найдено лендингов для обновления: %d", len(landings))
+
+        for landing in landings:
+            landing_id = landing["id"]
+            lessons_info = landing["lessons_info"]
+            linked_courses = landing.get("linked_courses", "[]")
+
+            # Определяем course_id из linked_courses
+            try:
+                linked_list = json.loads(linked_courses)
+                if isinstance(linked_list, list) and len(linked_list) > 0:
+                    course_id = linked_list[0]
+                else:
+                    logger.warning(f"Лендинг id={landing_id} не содержит элементов в linked_courses")
+                    continue
+            except Exception as e:
+                logger.error(f"Ошибка парсинга linked_courses для лендинга id={landing_id}: {e}")
+                continue
+
+            # Если lessons_info приходит как строка, парсим JSON
+            if isinstance(lessons_info, str):
+                try:
+                    lessons_data = json.loads(lessons_info)
+                except Exception as e:
+                    logger.error(f"Ошибка парсинга lessons_info для лендинга id={landing_id}: {e}")
+                    continue
+            else:
+                lessons_data = lessons_info
+
+            # Определяем итератор уроков: если словарь – берем значения, если список – просто итерируем по списку
+            if isinstance(lessons_data, dict):
+                lessons_iter = lessons_data.values()
+            elif isinstance(lessons_data, list):
+                lessons_iter = lessons_data
+            else:
+                logger.warning(f"Неожиданный тип lessons_info для лендинга id={landing_id}: {type(lessons_data)}")
+                continue
+
+            for lesson in lessons_iter:
+                if not isinstance(lesson, dict):
+                    continue
+                lesson_name = (lesson.get("lesson_name") or lesson.get("name") or "").strip()
+                if not lesson_name:
+                    logger.warning(f"Пустое название урока в лендинге id={landing_id}")
+                    continue
+
+                duration = lesson.get("duration", "").strip()
+                program_text = lesson.get("program", "").strip()
+
+                # Обновляем модуль: выбираем модуль по совпадению названия (после TRIM)
+                update_query = text("""
+                    UPDATE modules
+                    SET duration = :duration, program_text = :program_text
+                    WHERE section_id IN (
+                        SELECT id FROM sections WHERE course_id = :course_id
+                    )
+                    AND TRIM(title) = :lesson_name
+                """)
+                res = await db.execute(update_query, {
+                    "duration": duration,
+                    "program_text": program_text,
+                    "course_id": course_id,
+                    "lesson_name": lesson_name
+                })
+                rowcount = res.rowcount if res.rowcount is not None else 0
+                if rowcount == 0:
+                    logger.warning(f"Модуль не найден для урока '{lesson_name}' в лендинге id={landing_id}")
+                else:
+                    logger.info(f"Обновлён модуль для урока '{lesson_name}' в лендинге id={landing_id}")
+                updated_total += rowcount
+
+        await db.commit()
+        return JSONResponse({
+            "status": "Modules duration and program_text updated",
+            "updated_count": updated_total
+        })
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Ошибка обновления модулей: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
