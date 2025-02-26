@@ -96,12 +96,12 @@ class CourseFullData(BaseModel):
 # ========= Выходные схемы =========
 
 class ModuleFullResponse(BaseModel):
-    module_id: int
-    module_title: str
-    module_short_video_link: Optional[str] = None
-    module_full_video_link: Optional[str] = None
-    module_program_text: Optional[str] = None
-    module_duration: Optional[str] = None
+    id: int
+    title: str
+    hort_video_link: Optional[str] = None
+    full_video_link: Optional[str] = None
+    program_text: Optional[str] = None
+    uration: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -119,15 +119,15 @@ class SectionFullResponse(BaseModel):
         orm_mode = True
 
 class LandingFullResponse(BaseModel):
-    landing_title: str
-    landing_old_price: Optional[Decimal] = None
-    landing_price: Decimal
-    landing_main_image: Optional[str] = None
-    landing_main_text: Optional[str] = None
-    landing_language: LanguageEnum
-    landing_tag_id: Optional[int] = None
-    landing_authors: List[int] = None
-    landing_sales_count: int = 0
+    title: str
+    old_price: Optional[Decimal] = None
+    rice: Decimal
+    main_image: Optional[str] = None
+    main_text: Optional[str] = None
+    language: LanguageEnum
+    tag_id: Optional[int] = None
+    authors: List[int] = None
+    sales_count: int = 0
 
     @validator("landing_authors", pre=True, always=True)
     def set_authors(cls, v):
@@ -137,8 +137,8 @@ class LandingFullResponse(BaseModel):
         orm_mode = True
 
 class CourseFullResponse(BaseModel):
-    course_name: str
-    course_description: Optional[str] = None
+    name: str
+    description: Optional[str] = None
     landing: LandingFullResponse
     sections: List[SectionFullResponse] = None
 
