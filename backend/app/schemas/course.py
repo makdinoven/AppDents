@@ -136,8 +136,8 @@ class LandingFullResponse(BaseModel):
         orm_mode = True
 
 class CourseFullResponse(BaseModel):
-    course_name: str
-    course_description: Optional[str] = None
+    name: str
+    description: Optional[str] = None
     landing: LandingFullResponse
     sections: List[SectionFullResponse] = None
 
