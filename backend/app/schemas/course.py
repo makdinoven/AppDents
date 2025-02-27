@@ -1,10 +1,9 @@
-# schemas/course.py
 from decimal import Decimal
-
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from ..schemas.landing import ModuleResponse, LanguageEnum
 
+# --- Модули ---
 class ModuleCreate(BaseModel):
     title: str
     short_video_link: Optional[str] = None
@@ -111,7 +110,7 @@ class ModuleFullResponse(BaseModel):
 
 class SectionFullResponse(BaseModel):
     id: int
-    title: str
+    name: str
     modules: List[ModuleFullResponse] = None
 
     @validator("modules", pre=True, always=True)

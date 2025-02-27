@@ -184,7 +184,7 @@ def search_courses_endpoint(
 def create_full_course(
     full_data: CourseFullData,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(require_roles("admin"))
+    current_admin: any = Depends(require_roles("admin"))
 ):
     try:
         # 1. Создаем курс
@@ -273,7 +273,7 @@ def create_full_course(
         db.commit()
         db.refresh(new_course)
 
-        # Преобразуем ORM-объект в схему CourseFullResponse
+        # Формируем ответ по схеме CourseFullResponse
         response = CourseFullResponse(
             name=new_course.name,
             description=new_course.description,
@@ -291,7 +291,7 @@ def create_full_course(
             sections=[
                 {
                     "id": section.id,
-                    "title": section.name,
+                    "name": section.name,
                     "modules": [
                         {
                             "id": module.id,
@@ -336,7 +336,7 @@ def update_full_course(
     course_id: int,
     full_data: CourseFullData,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(require_roles("admin"))
+    current_admin: any = Depends(require_roles("admin"))
 ):
     try:
         # Обновляем основные поля курса
@@ -348,7 +348,6 @@ def update_full_course(
         if course.landing:
             from ..schemas.landing import LandingUpdate
             landing_update_data = full_data.landing.dict()
-            # Не допускаем изменение course_id в лендинге
             landing_update_data["course_id"] = course.id
             update_landing(db, course.landing.id, LandingUpdate(**landing_update_data))
         else:
@@ -438,18 +437,18 @@ def update_full_course(
                 "main_text": course.landing.main_text,
                 "language": course.landing.language,
                 "tag_id": course.landing.tag_id,
-                "authors": [author.id for author in course.landing.authors] if course.landing.authors else [],
+                "authors": [author.id for author in course.landing.authors] if course.landing and course.landing.authors else [],
                 "sales_count": course.landing.sales_count,
             },
             sections=[
                 {
                     "id": section.id,
-                    "title": section.name,
+                    "name": section.name,
                     "modules": [
                         {
                             "id": module.id,
                             "title": module.title,
-                            "hort_video_link": module.short_video_link,
+                            "short_video_link": module.short_video_link,
                             "full_video_link": module.full_video_link,
                             "program_text": module.program_text,
                             "duration": module.duration,
@@ -474,6 +473,7 @@ def update_full_course(
                 }
             }
         )
+
 @router.get(
     "/full/{course_id}",
     response_model=CourseFullResponse,
@@ -520,7 +520,7 @@ def get_full_course(
             "sections": [
                 {
                     "id": section.id,
-                    "title": section.name,
+                    "name": section.name,
                     "modules": [
                         {
                             "id": module.id,
