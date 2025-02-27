@@ -63,6 +63,7 @@ class ModuleFullData(BaseModel):
     duration: Optional[str] = None
 
 class SectionFullData(BaseModel):
+    id: int
     name: str
     modules: Optional[List[ModuleFullData]] = None
 
