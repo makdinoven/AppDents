@@ -68,8 +68,6 @@ class AuthorIdName(BaseModel):
     class Config:
         orm_mode = True
 
-router = APIRouter()
-
 @router.get(
     "/list",
     response_model=List[AuthorIdName],
