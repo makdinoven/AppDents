@@ -2,6 +2,7 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from ..schemas.author import AuthorCreate, AuthorUpdate, AuthorResponse
 from ..services.author_service import create_author, update_author, delete_author, search_authors
@@ -60,13 +61,23 @@ def search_authors_endpoint(query: str = Query(..., description="Строка д
     authors = search_authors(db, query)
     return authors
 
+class AuthorIdName(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+router = APIRouter()
+
 @router.get(
     "/list",
-    response_model=List[int],
-    summary="List all authors IDs",
-    description="Возвращает список id всех авторов"
+    response_model=List[AuthorIdName],
+    summary="List all authors (id and name)",
+    description="Возвращает список авторов с их id и именем"
 )
 def list_authors(db: Session = Depends(get_db)):
-    authors = db.query(Author).all()
-    author_ids = [author.id for author in authors]
-    return author_ids
+    authors = db.query(Author.id, Author.name).all()
+    # Преобразуем список кортежей в список словарей для валидации pydantic
+    result = [{"id": author.id, "name": author.name} for author in authors]
+    return result
