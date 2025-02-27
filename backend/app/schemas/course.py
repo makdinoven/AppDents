@@ -136,7 +136,6 @@ class LandingFullResponse(BaseModel):
         orm_mode = True
 
 class CourseFullResponse(BaseModel):
-    id: int
     name: str
     description: Optional[str] = None
     landing: LandingFullResponse
