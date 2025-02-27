@@ -7,7 +7,7 @@ from ..schemas.author import AuthorCreate, AuthorUpdate, AuthorResponse
 from ..services.author_service import create_author, update_author, delete_author, search_authors
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models import User
+from ..models.models import User, Author
 
 router = APIRouter()
 
@@ -59,3 +59,14 @@ def delete_author_endpoint(author_id: int, db: Session = Depends(get_db)):
 def search_authors_endpoint(query: str = Query(..., description="Строка для поиска по имени автора"), db: Session = Depends(get_db)):
     authors = search_authors(db, query)
     return authors
+
+@router.get(
+    "/list",
+    response_model=List[int],
+    summary="List all authors IDs",
+    description="Возвращает список id всех авторов"
+)
+def list_authors(db: Session = Depends(get_db)):
+    authors = db.query(Author).all()
+    author_ids = [author.id for author in authors]
+    return author_ids
