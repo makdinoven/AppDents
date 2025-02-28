@@ -1,0 +1,17 @@
+.edit_landing {
+  @include flex-column;
+  gap: 30px;
+
+  h2 {
+    text-align: center;
+    @include clamped-h2;
+  }
+
+  .selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 2fr 2fr;
+    gap: 20px;
+
+
+  }
+}

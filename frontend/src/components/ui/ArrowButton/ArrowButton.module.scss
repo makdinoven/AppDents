@@ -1,0 +1,84 @@
+.btn {
+  @include clamped-p2;
+  background-color: $accent;
+  color: $text-color;
+  padding: clamp(9.5px, 2vw,12.5px)  clamp(10px, 2vw,20px);
+  border-radius: 40px;
+  min-width: clamp(200px,35vw,400px);
+  text-align: left;
+  @include transition();
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-transform: uppercase;
+
+  svg {
+    width: clamp(20px, 4vw, 35px);
+    height: clamp(20px, 4vw, 35px);
+
+    circle {
+      @include transition();
+      fill: $background-color;
+    }
+
+    path {
+      @include transition();
+      fill: $accent;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      outline: 1px solid $accent;
+      color: $accent;
+
+      svg {
+        circle {
+          fill: $accent;
+        }
+
+        path {
+          fill: $background-color;
+        }
+      }
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      background-color: $background-color;
+      outline: 1px solid $accent;
+      color: $accent;
+
+      svg {
+        circle {
+          fill: $accent;
+        }
+
+        path {
+          fill: $background-color;
+        }
+      }
+    }
+  }
+
+  &:active {
+    background-color: $accent;
+    color: $text-color;
+
+    circle {
+      fill: transparent;
+      stroke: $background-color;
+      stroke-width: 1px;
+      border-radius: 100%;
+    }
+
+    path {
+      fill: $background-color;
+    }
+  }
+
+
+
+}

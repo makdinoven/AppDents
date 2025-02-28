@@ -1,0 +1,10 @@
+.item {
+  @include clamped-h3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 20px;
+  padding:  20px;
+  color: $accent;
+  border: 1px solid $accent;
+}

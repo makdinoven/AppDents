@@ -1,0 +1,51 @@
+.header {
+  margin-bottom: 40px;
+}
+
+.content {
+  @include container;
+  @include flex-center;
+  padding-top: 20px;
+  justify-content: space-between;
+}
+
+.login_btn {
+  color: $text-color-accent;
+  @include clamped-h3;
+  text-transform: uppercase;
+  @include transition();
+  @include flex-center;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      color: $primary;
+    }
+  }
+}
+
+.login_btn_active {
+  color: $primary;
+}
+
+@media (max-width: 576px) {
+  .header {
+    margin-bottom: 47px;
+  }
+
+  .content {
+    padding-top: 60px;
+  }
+
+  .logo {
+    svg {
+      width: 48px;
+      height: 30px;
+    }
+  }
+}

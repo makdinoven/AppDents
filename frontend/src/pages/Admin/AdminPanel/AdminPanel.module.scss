@@ -1,0 +1,34 @@
+.list_header {
+  display: flex;
+  gap: 40px;
+
+  div {
+    flex: 1;
+  }
+}
+
+.admin {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+
+.title {
+  @include clamped-h2;
+  text-align: center;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: left;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  .list_header {
+    margin-bottom: 20px;
+  }
+}

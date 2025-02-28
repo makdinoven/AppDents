@@ -1,0 +1,168 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  margin-bottom: 130px;
+
+  @media (max-width: 576px) {
+    gap: 44px;
+  }
+
+}
+
+.highlight {
+  color: $primary;
+}
+
+.hero_top {
+  display: flex;
+  justify-content: space-between;
+  gap: 37px;
+}
+
+.filter_btn {
+  @include flex-center;
+  height: 100%;
+
+  svg {
+    stroke-width: 2;
+    stroke: $primary;
+    width: clamp(28px,5vw,44px);
+    height: clamp(25px,5vw,39px);
+    fill: transparent;
+    @include transition();
+
+    @media (hover: hover) {
+      &:hover {
+        fill: $primary;
+      }
+    }
+
+    @media (hover: none) {
+      &:active {
+        fill: $primary;
+      }
+    }
+
+    @media (max-width: 576px) {
+      stroke-width: 1;
+    }
+  }
+}
+
+.filter_btn_active {
+  svg {
+    fill: $primary;
+
+  }
+}
+
+.hero_content {
+  position: relative;
+
+  .img_wrapper {
+    position: relative;
+
+    .glass_block {
+      cursor: pointer;
+      @include accent-glass;
+      position: absolute;
+      border-radius: 20px;
+      left: 29px;
+      top: clamp(30px,12vw,150px);
+      height: clamp(107px,26vw,236px);
+      width: clamp(137px,30vw,329px);
+      padding: 26px 42px 36px 33px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: start;
+
+      p {
+        @include clamped-p2;
+        color: $text-color;
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          svg {
+            transform: translateX(10px);
+          }
+        }
+      }
+
+      svg {
+        @include transition(transform);
+        aspect-ratio: 1/1;
+        width: clamp(27px,9vw,92px);
+        stroke-width: 2;
+      }
+
+      @media (max-width: 920px) {
+        padding: 20px;
+      }
+
+      @media (max-width: 576px) {
+        left: 13px;
+        top: clamp(30px,24vw,150px);
+        padding: 15px 12px;
+
+        svg {
+          stroke-width: 1;
+        }
+      }
+    }
+  }
+
+  img {
+    object-fit: cover;
+    height: 100%;
+    width: 100%;
+    margin-top: clamp(45px, 13%, 135px);
+    z-index: 1;
+    user-select: none;
+  }
+
+  h1 {
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    top: 0;
+    position: absolute;
+
+    .title_first_line {
+      width: 100%;
+      display: flex;
+      gap: clamp(10px, 3vw, 20px);
+    }
+
+  }
+}
+
+.hero_bottom {
+  p {
+    @include clamped-p2;
+  }
+
+  .btn_wrapper {
+    position: relative;
+    display: flex;
+    margin-bottom: 20px;
+    @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
+
+    @media (max-width: 576px) {
+      margin-bottom: unset;
+    }
+  }
+
+  .bottom_desc {
+    margin-bottom: clamp(20px, 3vw,30px);
+    max-width: 40%;
+  }
+
+  .bottom_secondary_desc {
+  text-align: right;
+  }
+}
+
