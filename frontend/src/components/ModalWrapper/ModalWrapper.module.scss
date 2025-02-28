@@ -1,0 +1,120 @@
+$content-padding-x: clamp(20px, 3vw,32px);
+$content-padding-y: clamp(18px, 2vw,26px);
+
+.modal_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+}
+
+.modal_overlay.fadeIn {
+  @include fadeIn();
+}
+
+.modal_overlay.fadeOut {
+  @include fadeOut();
+}
+
+
+.modal_container {
+  @include container;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.modal_header{
+  position: relative;
+  background: $primary;
+}
+
+.topRight {
+  border-top-left-radius: 40px;
+  border-top-right-radius: 20px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    bottom: 0px;
+    right: -40px;
+    border-bottom-left-radius: 20px;
+    box-shadow: -15px 15px 0 2px $primary;
+    pointer-events: none;
+  }
+}
+
+.bottomRight {
+  border-bottom-left-radius: 40px;
+  border-bottom-right-radius: 20px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    top: 0px;
+    right: -40px;
+    border-top-left-radius: 20px;
+    box-shadow: -15px -15px 0 2px $primary;
+    pointer-events: none;
+  }
+}
+
+.modal_bottom{
+  position: relative;
+  background: $primary;
+}
+
+.modal_body {
+  min-height: 495px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: $primary;
+  padding: calc($content-padding-y + 10px) $content-padding-x;
+  border-radius: 40px;
+  width: 100%;
+  flex: 1;
+  color: $text-color;
+}
+
+h3 {
+  @include clamped-h2;
+  text-transform: uppercase;
+}
+
+.close_button {
+  position: absolute;
+  top: $content-padding-y;
+  left: $content-padding-x;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1;
+
+  svg {
+    width: clamp(45px, 4vw,56px);
+    height: clamp(45px, 4vw,56px);
+
+    circle,path {
+      @include transition();
+    }
+
+    &:hover {
+      circle {
+        stroke: $accent;
+      }
+      path {
+        fill: $accent;
+      }
+    }
+  }
+}

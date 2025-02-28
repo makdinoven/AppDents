@@ -1,0 +1,25 @@
+.btn {
+  @include clamped-h4;
+  @include transition;
+  display: block;
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px solid $accent;
+  border-radius: 40px;
+  padding: 5px 20px;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $text-color;
+      background-color: $primary;
+      border-color: $primary;
+    }
+  }
+}
+
+.active {
+  color: $text-color;
+  background-color: $primary;
+  border-color: $primary;
+  padding: 5px 50px;
+}

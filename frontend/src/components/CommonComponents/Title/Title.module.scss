@@ -1,0 +1,5 @@
+.title {
+  line-height: 100%;
+  text-transform: uppercase;
+  @include clamped-h1;
+}
