@@ -275,6 +275,7 @@ def create_full_course(
 
         # Формируем ответ по схеме CourseFullResponse
         response = CourseFullResponse(
+            id=new_course.id,
             name=new_course.name,
             description=new_course.description,
             landing={
@@ -427,6 +428,7 @@ def update_full_course(
 
         # Формируем ответ по схеме CourseFullResponse
         response = CourseFullResponse(
+            id=course.id,
             name=course.name,
             description=course.description,
             landing={
@@ -504,6 +506,7 @@ def get_full_course(
 
         # Формируем ответ согласно схеме CourseFullResponse
         response = {
+            "id": course.id,
             "name": course.name,
             "description": course.description,
             "landing": {
