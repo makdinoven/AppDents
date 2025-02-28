@@ -1,0 +1,122 @@
+@import "@fontsource/rethink-sans/index.css";
+@import "@fontsource/roboto/index.css";
+
+body {
+  font-family: $font-family;
+  background-color: $background-color;
+  color: $text-color-accent;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  font-size: 26px;
+}
+
+p {
+  margin: 0;
+  padding: 0;
+  color: inherit;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  user-select: none;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+button,
+input {
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  appearance: none;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  border: none;
+  outline: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  appearance: none;
+}
+
+input,
+textarea {
+  border-radius: 0;
+  background-color: transparent;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 1.2px solid $quaternary;
+  border-radius: 6px;
+  outline-offset: 3px;
+}
+
+
+input::placeholder {
+  color: $quaternary;
+}
+

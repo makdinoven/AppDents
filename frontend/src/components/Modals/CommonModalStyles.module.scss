@@ -1,0 +1,84 @@
+.modal {
+  width: 100%;
+  max-width: clamp(246px, 30vw, 400px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+
+  a {
+    @include clamped-p3;
+    text-decoration: underline;
+    @include transition(color);
+
+    &:hover {
+      color: $accent;
+
+      &::after {
+        color: $accent;
+      }
+    }
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    width: 100%;
+
+    .input_wrapper {
+      @include clamped-p1;
+      @include horizontal-line($color: $text-color, $bottom: 0, $left: 0);
+      position: relative;
+      padding-bottom: 5px;
+
+      .error_message {
+        color: $error-color;
+        display: block;
+        width: 100%;
+        text-align: right;
+        position: absolute;
+        bottom: -20px;
+        @include clamped-err;
+      }
+
+      &.error {
+        &::after {
+          background-color: $error-color;
+        }
+      }
+
+      input {
+        border-radius: 5px;
+        width: 100%;
+        &::placeholder {
+          color: $background-color;
+          opacity: 0.6;
+        }
+      }
+    }
+  }
+
+  .modal_bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+
+    span {
+      @include clamped-p2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 7px;
+      text-align: center;
+
+      a {
+        @include clamped-p2;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
