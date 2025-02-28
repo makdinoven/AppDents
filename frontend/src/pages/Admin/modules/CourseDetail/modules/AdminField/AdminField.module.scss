@@ -1,0 +1,35 @@
+.field_wrapper {
+  @include clamped-p2;
+  @include flex-column;
+  position: relative;
+  gap: 5px;
+
+  input,textarea,select {
+    border: 1px solid $accent;
+    border-radius: 10px;
+    width: 100%;
+    padding: 10px;
+  }
+
+  textarea {
+    min-height: 100px;
+    height: 200px;
+    resize: vertical;
+  }
+
+  .error_message {
+    color: $error-color;
+    display: block;
+    width: 100%;
+    text-align: right;
+    position: absolute;
+    bottom: -20px;
+    @include clamped-err;
+  }
+
+  &.error {
+    &::after {
+      background-color: $error-color;
+    }
+  }
+}

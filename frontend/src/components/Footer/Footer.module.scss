@@ -1,0 +1,64 @@
+$row-gap: clamp(20px, 5vw,43px);
+
+.footer {
+  background-color: $accent;
+  color: $text-color;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+
+  background-image: url("/src/assets/footer_logo.svg");
+  background-repeat: no-repeat;
+  background-size: clamp(320px, 50vw, 520px);
+  background-position: bottom right;
+}
+
+.content {
+  @include container;
+  padding-top: 25px;
+  padding-bottom: 65px;
+  display: flex;
+  row-gap: $row-gap;
+  column-gap: clamp(40px, 5vw,60px);
+  flex-wrap: wrap;
+
+  @media (max-width: 490px) {
+    padding-bottom: 150px;
+  }
+
+
+  .list{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &:first-child {
+    width: 100%;
+    @include horizontal-line($color: $background-color, $bottom: calc(#{$row-gap} / 2 - #{$row-gap}));
+
+    &::after {
+      max-width: clamp(40%,50vw,55%);
+    }
+
+    li {
+      max-width: 40%;
+    }
+  }
+
+  li {
+    a {
+      @include transition(color);
+      &:hover {
+        color: $primary;
+      }
+    }
+  }
+
+    .list_title {
+      @include clamped-h4;
+    }
+
+    .list_item {
+      @include clamped-p3;
+    }
+  }
+}
