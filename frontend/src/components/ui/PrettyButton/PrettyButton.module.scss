@@ -1,0 +1,87 @@
+.btn {
+  @include clamped-h4;
+  @include transition();
+  background-color: $accent;
+  color: $text-color;
+  padding: 5px 25px;
+  border-radius: 40px;
+  min-width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      outline: 1px solid $accent;
+      color: $accent;
+    }
+  }
+
+  @media (hover: none) {
+    &:active {
+      background-color: $background-color;
+      outline: 1px solid $accent;
+      color: $accent;
+    }
+  }
+
+  &:active {
+    background-color: $accent;
+    color: $text-color;
+  }
+
+  &.danger {
+    background-color: $background-color;
+    outline: 1px solid $error-color;
+    color: $error-color;
+
+    @media (hover: hover) {
+      &:hover {
+        background-color: $error-color;
+        outline: 1px solid $error-color;
+        color: $text-color;
+      }
+    }
+
+    @media (hover: none) {
+      &:active {
+        background-color: $error-color;
+        outline: 1px solid $error-color;
+        color: $text-color;
+      }
+    }
+
+    &:active {
+      background-color: $background-color;
+      outline: 1px solid $error-color;
+      color: $error-color;
+    }
+  }
+
+  &.primary {
+    background-color: $primary;
+
+    @media (hover: hover) {
+      &:hover {
+        background-color: $background-color;
+        outline: 1px solid $primary;
+        color: $primary;
+      }
+    }
+
+    @media (hover: none) {
+      &:active {
+        background-color: $background-color;
+        outline: 1px solid $primary;
+        color: $primary;
+      }
+    }
+
+    &:active {
+      background-color: $primary;
+      color: $text-color;
+    }
+  }
+}
