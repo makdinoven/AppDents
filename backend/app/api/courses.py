@@ -549,3 +549,99 @@ def get_full_course(
                 }
             }
         )
+
+@router.delete(
+    "/full/{course_id}",
+    response_model=CourseFullResponse,
+    summary="Полное удаление курса с лендингом, секциями и модулями",
+    description=(
+        "Удаляет курс и все связанные с ним объекты: лендинг, секции, модули, а также "
+        "привязки лендинга к курсу и авторов к лендингу."
+    )
+)
+def delete_full_course(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_admin: any = Depends(require_roles("admin"))
+):
+    try:
+        # Находим курс по идентификатору
+        course = get_course(db, course_id)
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": {
+                        "code": "COURSE_NOT_FOUND",
+                        "message": "Курс не найден",
+                        "translation_key": "error.course_not_found",
+                        "params": {"course_id": course_id}
+                    }
+                }
+            )
+
+        # Сохраняем данные курса для формирования ответа до удаления
+        response_data = {
+            "id": course.id,
+            "name": course.name,
+            "description": course.description,
+            "landing": {
+                "title": course.landing.title if course.landing else None,
+                "old_price": course.landing.old_price if course.landing else None,
+                "price": course.landing.price if course.landing else None,
+                "main_image": course.landing.main_image if course.landing else None,
+                "main_text": course.landing.main_text if course.landing else None,
+                "language": course.landing.language if course.landing else None,
+                "tag_id": course.landing.tag_id if course.landing else None,
+                "authors": [author.id for author in course.landing.authors] if course.landing and course.landing.authors else [],
+                "sales_count": course.landing.sales_count if course.landing else 0,
+            },
+            "sections": [
+                {
+                    "id": section.id,
+                    "name": section.name,
+                    "modules": [
+                        {
+                            "id": module.id,
+                            "title": module.title,
+                            "short_video_link": module.short_video_link,
+                            "full_video_link": module.full_video_link,
+                            "program_text": module.program_text,
+                            "duration": module.duration,
+                        }
+                        for module in section.modules
+                    ]
+                }
+                for section in course.sections
+            ]
+        }
+
+        # Если у курса есть лендинг, сначала удаляем привязку авторов и сам лендинг
+        if course.landing:
+            course.landing.authors = []  # очищаем связь many-to-many
+            db.delete(course.landing)
+
+        # Удаляем секции и модули
+        for section in course.sections:
+            for module in section.modules:
+                db.delete(module)
+            db.delete(section)
+
+        # Удаляем сам курс
+        db.delete(course)
+        db.commit()
+
+        return response_data
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "COURSE_FULL_DELETE_ERROR",
+                    "message": str(e),
+                    "translation_key": "error.course_full_delete_error",
+                    "params": {"course_id": course_id}
+                }
+            }
+        )
