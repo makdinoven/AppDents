@@ -18,7 +18,11 @@ const Hero = () => {
     <>
       <section className={s.hero}>
         <div className={s.hero_top}>
-          <Search placeholder={t("searchCourses")} onChange={handleSearch} />
+          <Search
+            value={""}
+            placeholder={t("searchCourses")}
+            onChange={handleSearch}
+          />
           {/*<UnstyledButton*/}
           {/*  ref={triggerRef}*/}
           {/*  onClick={() => setIsModalOpen(true)}*/}
