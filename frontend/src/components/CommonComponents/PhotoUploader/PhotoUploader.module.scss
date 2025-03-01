@@ -30,12 +30,12 @@
 }
 
 .photo_preview {
-  max-width: 512px;
-  min-width: 256px;
+  max-width: 700px;
+  min-width: 400px;
   height: 265px;
   border-radius: 20px;
   overflow: hidden;
-  border: 1px solid $accent;
+  outline: 1px solid $accent;
 
   img {
     object-fit: contain;

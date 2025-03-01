@@ -15,6 +15,10 @@ interface MultiSelectProps<T> {
 }
 
 const customStyles = {
+  placeholder: (provided: any) => ({
+    ...provided,
+    color: "#5B6968",
+  }),
   singleValue: (provided: any) => ({
     ...provided,
     color: "#01433D",
@@ -41,12 +45,12 @@ const customStyles = {
     "&:hover": { borderColor: "#01433D" },
     "&:focus": {
       borderColor: "#01433D",
-      outline: "none",
+      outline: "2px solid #01433D",
       boxShadow: "none",
     },
     "&:active": {
       borderColor: "#01433D",
-      outline: "none",
+      outline: "2px solid #01433D",
       boxShadow: "none",
     },
   }),
@@ -67,7 +71,9 @@ const customStyles = {
     margin: "4px 0",
     borderRadius: "10px",
     transition: "all 0.15s ease-in-out",
-    "&:hover": { backgroundColor: "#7FDFD5", color: "#EDF8FF" },
+    "&:hover": state.isSelected
+      ? { backgroundColor: "#7FDFD5", color: "#EDF8FF" }
+      : { backgroundColor: "#01433D", color: "#EDF8FF" },
   }),
   multiValue: (provided: any) => ({
     ...provided,

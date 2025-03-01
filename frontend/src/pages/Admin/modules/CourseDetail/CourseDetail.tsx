@@ -11,9 +11,6 @@ import EditLanding from "../EditLanding/EditLanding.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import EditCourse from "../EditCourse/EditCourse.tsx";
-import { AppDispatchType } from "../../../../store/store.ts";
-import { useDispatch } from "react-redux";
-import { getMe } from "../../../../store/actions/userActions.ts";
 
 const initialSection = {
   name: "New Section",
@@ -28,7 +25,6 @@ const initialModule = {
 };
 
 const CourseDetail = () => {
-  const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const navigateBack = () => navigate(-1);
   const { courseId } = useParams();
@@ -55,7 +51,6 @@ const CourseDetail = () => {
     sectionId?: number,
     moduleId?: number,
   ) => {
-    dispatch(getMe());
     const isConfirmed = confirm(
       `Are you sure you want to delete this ${itemType}?`,
     );
@@ -72,7 +67,6 @@ const CourseDetail = () => {
   };
 
   const handleAddSection = async () => {
-    dispatch(getMe());
     setLoading(true);
     try {
       const response = await adminApi.addCourseSection(
@@ -88,7 +82,6 @@ const CourseDetail = () => {
   };
 
   const handleAddModule = async (sectionId: number) => {
-    dispatch(getMe());
     try {
       const response = await adminApi.addCourseModule(
         courseId,
@@ -181,7 +174,6 @@ const CourseDetail = () => {
   };
 
   const handleSave = async () => {
-    dispatch(getMe());
     try {
       await adminApi.updateCourse(courseId, course);
       navigateBack();

@@ -1,5 +1,5 @@
 import s from "./PhotoUploader.module.scss";
-import initialPhoto from "../../../../assets/no-pictures.png";
+import initialPhoto from "../../../assets/no-pictures.png";
 import { useState } from "react";
 
 const PhotoUploader = ({
