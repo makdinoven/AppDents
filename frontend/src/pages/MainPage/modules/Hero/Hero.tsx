@@ -7,6 +7,8 @@ import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useRef, useState } from "react";
 import ModalWrapper from "../../../../components/ModalWrapper/ModalWrapper.tsx";
 import Search from "../../../../components/ui/Search/Search.tsx";
+import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
+import HeroBackground from "/src/assets/hero-background.webp";
 
 const Hero = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,10 +46,10 @@ const Hero = () => {
           <div className={s.img_wrapper}>
             <picture>
               <source
-                srcSet="/src/assets/hero-background-mobile.webp"
+                srcSet={HeroBackgroundMobile}
                 media="(max-width: 576px)"
               />
-              <img src="/src/assets/hero-background.webp" alt="Image" />
+              <img src={HeroBackground} alt="" />
             </picture>
             <div className={s.glass_block}>
               <CircleArrow />
