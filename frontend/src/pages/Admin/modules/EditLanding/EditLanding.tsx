@@ -7,7 +7,7 @@ import MultiSelect from "../../../../components/CommonComponents/MultiSelect/Mul
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import PhotoUploader from "../PhotoUploader/PhotoUploader.tsx";
+import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
 
 const languages = [
   { label: "English", value: "en" },
