@@ -44,7 +44,7 @@ services:
     container_name: frontend_prod
     restart: always
     ports:
-      - "3002:80"   # Прокидываем порт 80 контейнера на 3002 хоста
+      - "3002:80"
     networks:
       - prod
 
