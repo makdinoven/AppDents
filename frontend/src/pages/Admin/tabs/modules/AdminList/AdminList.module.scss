@@ -1,0 +1,15 @@
+.list_header {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 40px;
+
+  div {
+    flex: 1;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

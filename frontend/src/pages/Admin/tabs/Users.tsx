@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 // import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import PanelItem from "./PanelItem/PanelItem.tsx";
-import s from "../AdminPanel.module.scss";
-import Search from "../../../../components/ui/Search/Search.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import { useSearch } from "../../../../common/hooks/useSearch.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PanelItem from "./modules/PanelItem/PanelItem.tsx";
+import s from "../AdminPanel/AdminPanel.module.scss";
+import Search from "../../../components/ui/Search/Search.tsx";
+import { Path } from "../../../routes/routes.ts";
+import { useSearch } from "../../../common/hooks/useSearch.ts";
+import Loader from "../../../components/ui/Loader/Loader.tsx";
+import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
 

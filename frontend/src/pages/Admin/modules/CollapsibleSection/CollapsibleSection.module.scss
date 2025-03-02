@@ -1,0 +1,29 @@
+.section {
+  @include flex-column;
+  gap: 40px;
+}
+
+.section_header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.section_name {
+  @include flex-column;
+  gap: 5px;
+}
+
+.section_closed {
+  @include horizontal-line($bottom: 0, $left: 0, $z:0);
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 20px;
+  gap: 15px;
+
+  span {
+    color: $primary;
+  }
+}
+

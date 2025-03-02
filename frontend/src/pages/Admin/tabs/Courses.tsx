@@ -2,11 +2,11 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   createCourse,
   getCourses,
-} from "../../../../store/actions/adminActions.ts";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import AdminList from "./AdminList.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import { CourseType } from "../../types.ts";
+} from "../../../store/actions/adminActions.ts";
+import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import AdminList from "./modules/AdminList/AdminList.tsx";
+import { Path } from "../../../routes/routes.ts";
+import { CourseType } from "../types.ts";
 
 const initialCourse: CourseType = {
   name: "New Course",

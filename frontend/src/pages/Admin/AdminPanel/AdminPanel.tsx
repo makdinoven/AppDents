@@ -1,11 +1,12 @@
 import s from "./AdminPanel.module.scss";
 import { useLocation, useNavigate } from "react-router-dom";
-import Courses from "./modules/Courses.tsx";
+import Courses from "../tabs/Courses.tsx";
 import TabButton from "../../../components/ui/TabButton/TabButton.tsx";
 import { useEffect, useState } from "react";
-import Users from "./modules/Users.tsx";
+import Users from "../tabs/Users.tsx";
 import { t } from "i18next";
-import Authors from "./modules/Authors.tsx";
+import Authors from "../tabs/Authors.tsx";
+import Landings from "../tabs/Landings.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -15,6 +16,11 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
+    {
+      name: "landings",
+      label: t("admin.landings"),
+      component: <Landings />,
+    },
     {
       name: "courses",
       label: t("admin.courses"),

@@ -1,7 +1,6 @@
 import s from "./EditLanding.module.scss";
 import AdminField from "../CourseDetail/modules/AdminField/AdminField.tsx";
 import { LandingType } from "../../types.ts";
-import { Trans } from "react-i18next";
 import { t } from "i18next";
 import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
@@ -17,17 +16,17 @@ const languages = [
 
 const EditLanding = ({
   landing,
-  setCourse,
+  setLanding,
 }: {
   landing: LandingType;
-  setCourse?: any;
+  setLanding?: any;
 }) => {
   const [authors, setAuthors] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
 
   const handleChange = (e: any) => {
     const { name, value } = e;
-    setCourse((prev: any) => {
+    setLanding((prev: any) => {
       if (!prev) return prev;
       return { ...prev, landing: { ...prev.landing, [name]: value } };
     });
@@ -58,9 +57,6 @@ const EditLanding = ({
 
   return (
     <div className={s.edit_landing}>
-      <h2>
-        <Trans i18nKey={"admin.landings.edit"} />
-      </h2>
       <AdminField
         type="input"
         id="title"
@@ -81,13 +77,6 @@ const EditLanding = ({
         title={t("admin.landings.mainImage")}
         label={t("admin.landings.mainImage.choose")}
       />
-      {/*<AdminField*/}
-      {/*  type="input"*/}
-      {/*  id="main_image"*/}
-      {/*  label={t("admin.landings.mainImage")}*/}
-      {/*  value={landing.main_image}*/}
-      {/*  onChange={handleChange}*/}
-      {/*/>*/}
       <div className={s.selects}>
         <AdminField
           type="input"
@@ -125,6 +114,7 @@ const EditLanding = ({
           labelKey="name"
         />
         <MultiSelect
+          isSearchable={false}
           id={"language"}
           options={languages}
           placeholder={"Choose a language"}
