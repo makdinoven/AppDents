@@ -8,7 +8,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AdminPanel from "../pages/Admin/AdminPanel/AdminPanel.tsx";
 import CourseDetail from "../pages/Admin/modules/CourseDetail/CourseDetail.tsx";
 import AdminPage from "../pages/Admin/AdminPage.tsx";
-import Courses from "../pages/Admin/AdminPanel/modules/Courses.tsx";
+import LandingDetail from "../pages/Admin/modules/LandingDetail/LandingDetail.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -21,10 +21,13 @@ export const AppRoutes: FC = () => {
 
         <Route path={Path.admin} element={<AdminPage />}>
           <Route index element={<AdminPanel />} />
-          <Route path={Path.adminCourses} element={<Courses />} />
           <Route
             path={`${Path.courseDetail}/:courseId?`}
             element={<CourseDetail />}
+          />
+          <Route
+            path={`${Path.landingDetail}/:landingId?`}
+            element={<LandingDetail />}
           />
           {/*<Route path="*" element={<Navigate to={Path.admin} replace />} />*/}
         </Route>

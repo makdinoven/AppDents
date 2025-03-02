@@ -1,19 +1,23 @@
-export interface ModuleType {
+export interface LessonType {
   id: number;
-  title: string;
-  duration: string;
-  full_video_link: string;
-  program_text: string;
-  short_video_link: string;
+  lesson_name: string;
+  video_link: string;
 }
 
 export interface SectionType {
   id: number;
-  name: string;
-  modules: ModuleType[];
+  section_name: string;
+  lessons: LessonType[];
+}
+
+export interface CourseType {
+  course_name: string;
+  course_description: string;
+  sections: SectionType[];
 }
 
 export interface LandingType {
+  id: number;
   title: string;
   old_price: number;
   price: number;
@@ -23,11 +27,4 @@ export interface LandingType {
   tag_id: number;
   authors: [];
   sales_count: number;
-}
-
-export interface CourseType {
-  name: string;
-  description: string;
-  landing: LandingType;
-  sections: SectionType[];
 }

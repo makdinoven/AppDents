@@ -111,7 +111,7 @@ $font-sz-err-mob: 12px;
     position: absolute;
 
     @if $top != null {
-      bottom: $top;
+      top: $top;
     }
 
     @if $bottom != null {
@@ -126,10 +126,10 @@ $font-sz-err-mob: 12px;
 
     @if $transform != null {
       @if $transform == y50 {
-        transform: translateY(50%);
+        transform: translateY(-50%);
       }
       @if $transform == x50 {
-        transform: translateX(50%);
+        transform: translateX(-50%);
       }
     }
 
