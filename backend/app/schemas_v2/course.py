@@ -17,7 +17,7 @@ class CourseDetailResponse(BaseModel):
     name: str
     description: Optional[str] = ""
     # Поле sections теперь соответствует секциям, хранящимся как словарь (ключ – номер секции, значение – Section)
-    sections: Dict[str, Section]
+    sections: List[str, Section]
 
     class Config:
         orm_mode = True
@@ -26,7 +26,7 @@ class CourseDetailResponse(BaseModel):
 class CourseUpdate(BaseModel):
     name: str
     description: Optional[str] = ""
-    sections: Dict[str, Section]
+    sections: List[str, Section]
 
     class Config:
         orm_mode = True
@@ -42,7 +42,7 @@ class CourseListResponse(BaseModel):
 class CourseCreate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = ""
-    sections: Optional[Dict[str, Section]]
+    sections: Optional[List[str, Section]]
 
     class Config:
         orm_mode = True
