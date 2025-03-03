@@ -5,8 +5,9 @@ from ..db.database import get_db
 from ..dependencies.access_course import get_course_detail_with_access
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Course, User
+from ..services_v2.course_service import create_course
 from ..services_v2.course_service import list_courses, get_course_detail, update_course
-from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate
+from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate
 
 router = APIRouter()
 
@@ -57,3 +58,34 @@ def update_course_full(
 ):
     updated_course = update_course(db, course_id, update_data)
     return updated_course
+
+@router.post("/", response_model=CourseListResponse)
+def create_new_course(
+    course_data: CourseCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Создает новый курс.
+    Тело запроса должно соответствовать структуре:
+    {
+      "name": "Advanced Surgical Guides - All on X",  // опционально
+      "description": "Описание курса",                // опционально
+      "lessons": {
+          "1": {
+              "section_name": "Module 1: Introduction",
+              "lessons": [
+                  { "video_link": "https://...", "lesson_name": "Lesson 1 ..." },
+                  ...
+              ]
+          },
+          "2": { ... }
+      }
+    }
+    Если ни одно поле не передано, то по умолчанию:
+      name = "Course name"
+      description = ""
+      lessons = {}
+    В ответе возвращается id и name нового курса.
+    """
+    new_course = create_course(db, course_data)
+    return new_course
