@@ -22,4 +22,5 @@ jobs:
           skip_host_key_check: true
           script: |
             cd /var/www/AppDents
-            git pull origin main
+            git pull --no-rebase -s recursive -X theirs origin main
+            docker compose up --build -d
