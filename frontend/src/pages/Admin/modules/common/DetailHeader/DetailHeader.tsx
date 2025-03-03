@@ -1,6 +1,6 @@
 import s from "./DetailHeader.module.scss";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { useNavigate } from "react-router-dom";
 
 const DetailHeader = ({ title }: { title: string }) => {

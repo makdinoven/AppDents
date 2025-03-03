@@ -1,7 +1,7 @@
 import s from "./AdminPanel.module.scss";
 import { useLocation, useNavigate } from "react-router-dom";
 import Courses from "../tabs/Courses.tsx";
-import TabButton from "../../../components/ui/TabButton/TabButton.tsx";
+import FilterButton from "../../../components/ui/FilterButton/FilterButton.tsx";
 import { useEffect, useState } from "react";
 import Users from "../tabs/Users.tsx";
 import { t } from "i18next";
@@ -38,7 +38,7 @@ const AdminPanel = () => {
     <div className={s.admin}>
       <div className={s.tabs}>
         {tabs.map((tab) => (
-          <TabButton
+          <FilterButton
             key={tab.name}
             text={tab.label}
             isActive={activeTab === tab.name}

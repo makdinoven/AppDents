@@ -1,7 +1,7 @@
 import s from "../CourseDetail/CourseDetail.module.scss";
 import EditLanding from "../EditLanding/EditLanding.tsx";
-import DetailHeader from "../DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../DetailBottom/DetailBottom.tsx";
+import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Trans } from "react-i18next";

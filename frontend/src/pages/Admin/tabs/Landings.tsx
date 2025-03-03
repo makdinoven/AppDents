@@ -1,6 +1,6 @@
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
-import AdminList from "./modules/AdminList/AdminList.tsx";
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../routes/routes.ts";
 
 // const initialLanding: LandingType = {

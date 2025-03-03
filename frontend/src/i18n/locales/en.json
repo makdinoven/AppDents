@@ -11,6 +11,7 @@
   "main.hero.bestPrices.lastPart": " prices",
   "main.ourCurses": "Our curses",
   "main.viewCourse" : "View course",
+  "main.noCourses" : "No courses found",
 
   "footer.contacts.title": "Contacts",
   "footer.contacts.address": "X44G+755 - Mina Jebel Ali - Jabal Ali Industrial Second - Dubai - UAE",
@@ -42,6 +43,14 @@
   "password" : "Password...",
   "open": "open",
   "viewCourse": "View course",
+
+  "tag.allCourses": "All courses",
+  "tag.surgery": "Surgery",
+  "tag.orthodontics": "Orthodontics",
+
+  "tag.common.popular": "Popular",
+  "tag.common.bestPrices": "Best prices",
+  "tag.common.new": "New",
 
   "errMessage.email.empty": "Email must not be empty",
   "errMessage.email.valid": "Please enter a valid email",

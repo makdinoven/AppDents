@@ -9,8 +9,8 @@ import { Trans } from "react-i18next";
 import { t } from "i18next";
 import EditCourse from "../EditCourse/EditCourse.tsx";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import DetailHeader from "../DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../DetailBottom/DetailBottom.tsx";
+import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
 
 const initialCourse = {
   course_name: "initialCourse",

@@ -1,5 +1,5 @@
 import s from "./EditCourse.module.scss";
-import AdminField from "../CourseDetail/modules/AdminField/AdminField.tsx";
+import AdminField from "../common/AdminField/AdminField.tsx";
 import { t } from "i18next";
 
 const EditCourse = ({

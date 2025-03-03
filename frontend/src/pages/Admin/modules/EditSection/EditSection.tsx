@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { SectionType } from "../../types.ts";
-import CollapsibleSection from "../CollapsibleSection/CollapsibleSection.tsx";
+import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
 
 const EditSection = ({
   section,

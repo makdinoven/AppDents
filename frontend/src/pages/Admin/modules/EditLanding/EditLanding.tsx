@@ -1,5 +1,5 @@
 import s from "./EditLanding.module.scss";
-import AdminField from "../CourseDetail/modules/AdminField/AdminField.tsx";
+import AdminField from "../common/AdminField/AdminField.tsx";
 import { LandingType } from "../../types.ts";
 import { t } from "i18next";
 import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";

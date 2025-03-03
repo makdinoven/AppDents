@@ -1,9 +1,32 @@
+.courses {
+  @include flex-column;
+  gap: 60px;
+}
+
 .courses_header {
+  @include flex-column;
+  gap: 40px;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  justify-content: left;
+  flex-wrap: wrap;
+}
+
+.line {
+  height: 2px;
+  position: relative;
+  display: block;
+  @include horizontal-line($right: 0, $width: 85%, $bottom: 0);
+}
+
+.title_wrapper {
   display: flex;
   max-width: clamp(816px,20vw, 100%);
   position: relative;
   z-index: 1;
-  margin-bottom: 60px;
   @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
   h3 {
     margin-left: clamp(28.5px,7vw,104px);
@@ -23,6 +46,11 @@
   margin-bottom: 72px;
 }
 
+.no_courses {
+  display: flex;
+  justify-content: center;
+}
+
 
 @media(max-width: 1024px) {
   .list {
@@ -32,8 +60,8 @@
 }
 
 @media(max-width: 576px) {
-  .courses_header {
-    margin-bottom: 40px;
+  .courses {
+    gap: 40px;
   }
 
   .list {

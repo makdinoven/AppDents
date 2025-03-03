@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 // import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import PanelItem from "./modules/PanelItem/PanelItem.tsx";
+import PanelItem from "../modules/common/PanelItem/PanelItem.tsx";
 import s from "../AdminPanel/AdminPanel.module.scss";
 import Search from "../../../components/ui/Search/Search.tsx";
 import { Path } from "../../../routes/routes.ts";
