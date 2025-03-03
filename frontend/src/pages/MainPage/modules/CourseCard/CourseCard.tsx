@@ -31,7 +31,7 @@ const CourseCard = ({
   }, []);
 
   const setCardColor = () => {
-    if (screenWidth < 721) {
+    if (screenWidth < 577) {
       return index % 2 === 0 ? s.blue : "";
     } else {
       return index % 4 === 0 || index % 4 === 3 ? "" : s.blue;
@@ -48,12 +48,22 @@ const CourseCard = ({
           <Trans i18nKey={"viewCourse"} />
           <Arrow />
         </Link>
-        <div className={s.card_bottom}>
-          <div
-            style={{ backgroundImage: `url(${photo})` }}
-            className={s.photo}
-          ></div>
-        </div>
+        {screenWidth > 1024 ? (
+          <div className={s.card_bottom}>
+            <div
+              style={{ backgroundImage: `url(${photo})` }}
+              className={s.photo}
+            ></div>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{ backgroundImage: `url(${photo})` }}
+              className={s.photo}
+            ></div>
+            <div className={s.card_bottom}></div>
+          </>
+        )}
       </div>
     </li>
   );

@@ -20,8 +20,23 @@
   grid-template-columns: 1fr 1fr;
   column-gap: 24px;
   row-gap: 30px;
+  margin-bottom: 72px;
+}
 
-  @media (max-width: 720px) {
+
+@media(max-width: 1024px) {
+  .list {
+    row-gap: 12px;
+    margin-bottom: 46px;
+  }
+}
+
+@media(max-width: 576px) {
+  .courses_header {
+    margin-bottom: 40px;
+  }
+
+  .list {
     grid-template-columns: 1fr;
   }
 }

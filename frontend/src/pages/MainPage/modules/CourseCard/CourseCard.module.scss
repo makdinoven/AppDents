@@ -45,6 +45,8 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
 }
 
 .card_header {
+  display: flex;
+  align-items: end;
   position: relative;
   text-transform: uppercase;
   width: $card_header-width;
@@ -83,7 +85,7 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
     position: absolute;
     left: $padding-left;
     bottom: $card-body-padding-bottom-initial;
-    width: 194px;
+    width: clamp(128px, 18vw, 194px);
     @include clamped-p2;
     @include horizontal-line($bottom: -2px, $height: 1.5px, $left:0, $width: 100%);
 
@@ -93,7 +95,14 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
 
     svg {
       @include transition();
+      width: 20px;
+      height: 20px;
       transform: translateX(0);
+
+      @media(max-width: 720px) {
+        width: 13px;
+        height: 13px;
+      }
     }
 
     &:hover {
@@ -200,4 +209,45 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
       background-image: url("/src/assets/tooth-blue.svg");
     }
   }
+}
+
+
+@media(max-width: 1024px) {
+
+}
+
+@media(max-width: 1024px) {
+  .card_header {
+    padding-left: 11px;
+    height: 45px;
+  }
+
+  .card_body {
+    padding: 5px 45px 228px 11px;
+
+    .photo {
+      width: calc(100% - 22px);
+      height: 169px;
+      bottom: 45px;
+      right: 11px;
+
+      &::before {
+        top: unset;
+        bottom: -50px;
+      }
+    }
+
+    a {
+      left: 11px;
+      bottom: 14px;
+    }
+
+    .card_bottom {
+      height: 46px;
+      bottom: -46px;
+    }
+
+  }
+
+
 }
