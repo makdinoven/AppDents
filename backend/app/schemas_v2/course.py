@@ -9,15 +9,15 @@ class Lesson(BaseModel):
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
     section_name: str = ""
-    lessons: List[Lesson]
+    sections: List[Lesson]
 
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = ""
-    # Поле lessons теперь соответствует секциям, хранящимся как словарь (ключ – номер секции, значение – Section)
-    lessons: Dict[str, Section]
+    # Поле sections теперь соответствует секциям, хранящимся как словарь (ключ – номер секции, значение – Section)
+    sections: Dict[str, Section]
 
     class Config:
         orm_mode = True
@@ -26,7 +26,7 @@ class CourseDetailResponse(BaseModel):
 class CourseUpdate(BaseModel):
     name: str
     description: Optional[str] = ""
-    lessons: Dict[str, Section]
+    sections: Dict[str, Section]
 
     class Config:
         orm_mode = True
@@ -35,6 +35,14 @@ class CourseUpdate(BaseModel):
 class CourseListResponse(BaseModel):
     id: int
     name: str
+
+    class Config:
+        orm_mode = True
+
+class CourseCreate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = ""
+    sections: Optional[Dict[str, Section]]
 
     class Config:
         orm_mode = True

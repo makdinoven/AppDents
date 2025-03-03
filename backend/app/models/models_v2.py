@@ -31,7 +31,7 @@ class Course(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
     description = Column(Text)
-    lessons = Column(JSON)
+    sections = Column(JSON)
 
     # Связь с пользователями, купившими курс
     users = relationship("User", secondary=users_courses, back_populates="courses")
