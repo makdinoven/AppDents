@@ -3,6 +3,7 @@
   max-width: clamp(816px,20vw, 100%);
   position: relative;
   z-index: 1;
+  margin-bottom: 60px;
   @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
   h3 {
     margin-left: clamp(28.5px,7vw,104px);
@@ -11,5 +12,16 @@
     color: $primary;
     background-color: $background-color;
     padding: 0 clamp(5px, 1vw,10px);
+  }
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 24px;
+  row-gap: 30px;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
   }
 }

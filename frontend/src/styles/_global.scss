@@ -104,8 +104,6 @@ $font-sz-err-mob: 12px;
   $transform: null,
   $z: 1
 ) {
-  position: relative;
-
   &::after {
     content: "";
     position: absolute;
@@ -137,6 +135,7 @@ $font-sz-err-mob: 12px;
     height: $height;
     background-color: $color;
     z-index: $z;
+    border-radius: 10px;
 
     @media (max-width: 576px) {
       height: 1px;
