@@ -23,7 +23,7 @@ def get_course_listing(
     courses = list_courses(db, skip=skip, limit=limit)
     return courses
 
-@router.get("/{course_id}", response_model=CourseDetailResponse)
+@router.get("/detail/{course_id}", response_model=CourseDetailResponse)
 def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
     course = get_course_detail(db, course_id)
     # Если sections хранится как словарь, преобразуем его в список
