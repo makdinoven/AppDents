@@ -3,8 +3,8 @@ from typing import Optional, List, Dict
 
 # Схема для элемента урока
 class Lesson(BaseModel):
-    video_link: str = ''
-    lesson_name: str = ''
+    video_link: str = ""
+    lesson_name: str = ""
 
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
