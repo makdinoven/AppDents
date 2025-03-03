@@ -4,7 +4,7 @@ import {
   getCourses,
 } from "../../../store/actions/adminActions.ts";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import AdminList from "./modules/AdminList/AdminList.tsx";
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../routes/routes.ts";
 import { CourseType } from "../types.ts";
 

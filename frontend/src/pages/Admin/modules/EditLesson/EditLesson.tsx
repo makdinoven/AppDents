@@ -1,6 +1,6 @@
 import { LessonType, SectionType } from "../../types.ts";
 import { useState } from "react";
-import CollapsibleSection from "../CollapsibleSection/CollapsibleSection.tsx";
+import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
 
 const EditLesson = ({
   type = "course",

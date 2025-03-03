@@ -1,11 +1,11 @@
 import Hero from "./modules/Hero/Hero.tsx";
-import CoursesList from "./modules/CoursesList/CoursesList.tsx";
+import Courses from "./modules/Courses/Courses.tsx";
 
 const MainPage = () => {
   return (
     <>
       <Hero />
-      <CoursesList />
+      <Courses />
     </>
   );
 };
