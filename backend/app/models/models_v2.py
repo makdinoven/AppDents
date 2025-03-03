@@ -45,7 +45,6 @@ class Landing(Base):
     new_price = Column(String(255))
     course_program = Column(Text)
     lessons_info = Column(JSON)
-    linked_courses = Column(JSON)
     preview_photo = Column(String(255), default='')
     tag_id = Column(Integer, ForeignKey('tags.id'))
     sales_count = Column(Integer, default=0)

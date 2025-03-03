@@ -9,7 +9,7 @@ class Lesson(BaseModel):
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
     section_name: str = ""
-    sections: Optional[List[Lesson]]
+    lessons: Optional[List[Lesson]]
 
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):

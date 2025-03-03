@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, List, Any
 
 class LessonInfoItem(BaseModel):
     link: Optional[str] = ""
@@ -22,12 +22,12 @@ class LandingDetailResponse(BaseModel):
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
-    # lessons_info теперь имеет строго заданную структуру – словарь, где ключ – строка (например, "lesson1"), а значение – LessonInfoItem
-    lessons_info: Optional[Dict[str, LessonInfoItem]]
-    linked_courses: Optional[Dict[str, Any]]
+    lessons_info: Optional[Dict[str, LessonInfoItem]] = {}
     preview_photo: Optional[str] = ""
     tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
+    author_ids: Optional[List[int]] = []
+    course_ids: Optional[List[int]] = []
 
     class Config:
         orm_mode = True
@@ -40,10 +40,11 @@ class LandingCreate(BaseModel):
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
     lessons_info: Optional[Dict[str, LessonInfoItem]] = {}
-    linked_courses: Optional[Dict[str, Any]] = {}
     preview_photo: Optional[str] = ""
     tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
+    author_ids: Optional[List[int]] = []  # для привязки авторов
+    course_ids: Optional[List[int]] = []  # для привязки курсов
 
     class Config:
         orm_mode = True
@@ -56,10 +57,11 @@ class LandingUpdate(BaseModel):
     new_price: Optional[str] = None
     course_program: Optional[str] = None
     lessons_info: Optional[Dict[str, LessonInfoItem]] = None
-    linked_courses: Optional[Dict[str, Any]] = None
     preview_photo: Optional[str] = None
     tag_id: Optional[int] = None
     sales_count: Optional[int] = None
+    author_ids: Optional[List[int]] = None
+    course_ids: Optional[List[int]] = None
 
     class Config:
         orm_mode = True
