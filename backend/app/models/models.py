@@ -26,6 +26,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    name = Column(String(255))
     role = Column(String(50), nullable=False, server_default="user")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -167,8 +168,8 @@ class Module(Base):
     id = Column(Integer, primary_key=True, index=True)
     section_id = Column(Integer, ForeignKey("sections.id"), nullable=False)
     title = Column(String(255), nullable=False)
-    short_video_link = Column(String(255), nullable=True)
-    full_video_link = Column(String(255), nullable=True)
+    short_video_link = Column(String(500), nullable=True)
+    full_video_link = Column(String(500), nullable=True)
     program_text = Column(Text, nullable=True)
     duration = Column(String(50), nullable=True)
 
@@ -199,10 +200,6 @@ class Landing(Base):
 
     # Связь с таблицей тегов
     tag = relationship("Tag", back_populates="landings")
-
-    @property
-    def tag_name(self):
-        return self.tag.name if self.tag else None
 
     # Связь many-to-many с авторами
     authors = relationship(

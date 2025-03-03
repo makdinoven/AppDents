@@ -273,32 +273,15 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 # Порог схожести (от 0 до 100)
-FUZZY_THRESHOLD = 57.3
+FUZZY_THRESHOLD = 74.9
 
 
 def normalize_text(text: str) -> str:
     """
-    Приводит строку к нижнему регистру и удаляет все символы, кроме латинских букв и цифр.
-    Это позволяет сравнивать «очищённые» строки.
+    Приводит строку к нижнему регистру и удаляет все символы, не являющиеся латинскими буквами или цифрами.
+    Это включает удаление пробелов, тире, нижних подчёркиваний и других спецсимволов.
     """
     return re.sub(r'[^a-z0-9]', '', text.lower())
-
-
-def find_lessons_recursively(obj) -> list:
-    """
-    Рекурсивно обходит объект (dict или list) и собирает все объекты,
-    в которых присутствуют одновременно ключи "lesson_name" и "video_link".
-    """
-    lessons = []
-    if isinstance(obj, dict):
-        if "lesson_name" in obj and "video_link" in obj:
-            lessons.append(obj)
-        for value in obj.values():
-            lessons.extend(find_lessons_recursively(value))
-    elif isinstance(obj, list):
-        for item in obj:
-            lessons.extend(find_lessons_recursively(item))
-    return lessons
 
 
 def extract_lessons_from_dump_content(content: str) -> list:
@@ -342,22 +325,32 @@ def extract_lessons_from_dump_content(content: str) -> list:
             logger.error("Ошибка парсинга JSON для курса '%s': %s", course_name, e)
             continue
 
-        # Используем рекурсивный обход для поиска всех уроков
-        lessons_found = find_lessons_recursively(lessons_data)
-        logger.debug("Найдено уроков рекурсивно: %d", len(lessons_found))
-        for lesson in lessons_found:
-            lesson_name = lesson.get("lesson_name")
-            video_link = lesson.get("video_link")
-            if lesson_name and video_link:
-                lessons_list.append({
-                    "course_id": course_id,
-                    "course_name": course_name,
-                    "lesson_name": lesson_name,
-                    "video_link": video_link
-                })
-                logger.debug("Извлечен урок: '%s' с ссылкой: %s", lesson_name, video_link)
-            else:
-                logger.warning("Пропущен урок, отсутствует lesson_name или video_link.")
+        if isinstance(lessons_data, dict):
+            sections = lessons_data.values()
+            logger.debug("JSON имеет тип dict, секций: %d", len(lessons_data))
+        elif isinstance(lessons_data, list):
+            sections = lessons_data
+            logger.debug("JSON имеет тип list, секций: %d", len(lessons_data))
+        else:
+            logger.error("Непредвиденная структура JSON для курса '%s': %s", course_name, type(lessons_data))
+            continue
+
+        for section in sections:
+            lessons = section.get("lessons", [])
+            logger.debug("Найдено %d уроков в секции.", len(lessons))
+            for lesson in lessons:
+                lesson_name = lesson.get("lesson_name")
+                video_link = lesson.get("video_link")
+                if lesson_name and video_link:
+                    lessons_list.append({
+                        "course_id": course_id,
+                        "course_name": course_name,
+                        "lesson_name": lesson_name,
+                        "video_link": video_link
+                    })
+                    logger.debug("Извлечен урок: '%s' с ссылкой: %s", lesson_name, video_link)
+                else:
+                    logger.warning("Пропущен урок, отсутствует lesson_name или video_link.")
 
     logger.debug("Извлечение уроков завершено. Всего уроков: %d", len(lessons_list))
     return lessons_list
@@ -366,7 +359,7 @@ def extract_lessons_from_dump_content(content: str) -> list:
 async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> dict:
     """
     Асинхронно сравнивает lesson_name из дампа с полным значением title из таблицы Module,
-    используя нечеткое сравнение после нормализации строк с помощью fuzz.token_sort_ratio.
+    используя нечеткое сравнение после нормализации строк (приведение к нижнему регистру и удаление спецсимволов).
 
     Выбираются только те модули, у которых поле full_video_link пустое и лендинг с языком en.
     Если совпадение выше порога, обновляется поле full_video_link модуля.
@@ -402,13 +395,11 @@ async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> d
         best_match = None
         best_score = 0
 
+        # Приводим lesson_name к нормализованной форме
         normalized_lesson = normalize_text(lesson_name)
-        # Лог для отладки
-        logger.debug("Нормализованное значение урока: '%s'", normalized_lesson)
-
         tasks = [
             asyncio.to_thread(
-                fuzz.token_sort_ratio,
+                fuzz.ratio,
                 normalized_lesson,
                 normalize_text(module.title)
             )
@@ -419,6 +410,7 @@ async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> d
             if score > best_score:
                 best_score = score
                 best_match = modules[i]
+
         logger.debug("Лучшее совпадение для '%s': %s с score %d",
                      lesson_name,
                      best_match.title if best_match else None,
@@ -441,10 +433,13 @@ async def update_modules_from_lessons(lessons_list: list, db: AsyncSession) -> d
                            best_match.title if best_match else "Нет",
                            best_score)
 
+    # Сортировка неприсвоенных уроков по best_score (по убыванию)
     unmatched_details = sorted(unmatched_details, key=lambda x: x["best_score"], reverse=True)
+
     await db.commit()
     logger.debug("Асинхронное обновление модулей завершено. Изменений сохранено в базе.")
     logger.debug("Список неприсвоенных уроков (отсортированный по best_score): %s", unmatched_details)
+
     not_updated_count = len(unmatched_details)
     return {
         "updated": updated_count,
