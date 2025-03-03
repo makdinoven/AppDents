@@ -4,22 +4,25 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
 
-from app.core.config import settings
-from app.models.models import User, UserCourses, Course
-from app.schemas.user import TokenData
+from ..core.config import settings
+from ..models.models_v2 import User, Course  # Новая версия модели
+from ..schemas_v2.user import TokenData
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, password: str) -> bool:
+    return pwd_context.verify(plain_password, password)
 
-def create_user(db: Session, email: str, password: str, name: str = "", role: str = "user") -> User:
+def create_user(db: Session, email: str, password: str, role: str = "user") -> User:
+    """
+    Создает нового пользователя, сохраняя зашифрованный пароль в поле 'password'.
+    """
     user = User(
         email=email,
-        hashed_password=hash_password(password),
+        password=hash_password(password),
         role=role
     )
     db.add(user)
@@ -28,7 +31,7 @@ def create_user(db: Session, email: str, password: str, name: str = "", role: st
     return user
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.query(User).filter_by(email=email).first()
+    return db.query(User).filter(User.email == email).first()
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:
     return db.query(User).filter(User.id == user_id).first()
@@ -54,14 +57,14 @@ def decode_access_token(token: str) -> TokenData:
         if user_id is None:
             raise JWTError("No user_id in token")
         return TokenData(user_id=user_id)
-    except JWTError:
-        raise
+    except JWTError as e:
+        raise e
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
     user = get_user_by_email(db, email)
     if not user:
         return None
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password):
         return None
     return user
 
@@ -87,7 +90,6 @@ def update_user_role(db: Session, user_id: int, new_role: str) -> User:
     db.refresh(user)
     return user
 
-
 def update_user_password(db: Session, user_id: int, new_password: str) -> User:
     user = get_user_by_id(db, user_id)
     if not user:
@@ -102,12 +104,17 @@ def update_user_password(db: Session, user_id: int, new_password: str) -> User:
                 }
             }
         )
-    user.hashed_password = hash_password(new_password)
+    user.password = hash_password(new_password)
     db.commit()
     db.refresh(user)
     return user
 
-def add_course_to_user(db: Session, user_id: int, course_id: int, price_at_purchase: float) -> UserCourses:
+def add_course_to_user(db: Session, user_id: int, course_id: int) -> None:
+    """
+    Добавляет курс пользователю, используя ORM-связь many-to-many через ассоциативную таблицу users_courses.
+    Предполагается, что в модели User определено:
+      courses = relationship("Course", secondary=users_courses, back_populates="users")
+    """
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
@@ -134,8 +141,7 @@ def add_course_to_user(db: Session, user_id: int, course_id: int, price_at_purch
                 }
             }
         )
-    user_course = UserCourses(user_id=user_id, course_id=course_id, price_at_purchase=price_at_purchase)
-    db.add(user_course)
-    db.commit()
-    db.refresh(user_course)
-    return user_course
+    # Добавляем курс через ORM-отношения
+    if course not in user.courses:
+        user.courses.append(course)
+        db.commit()
