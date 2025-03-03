@@ -8,9 +8,9 @@ from ..models.models_v2 import Course, User
 from ..services_v2.course_service import list_courses, get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate
 
-router = APIRouter(prefix="/courses", tags=["courses"])
+router = APIRouter()
 
-@router.get("/", response_model=List[CourseListResponse])
+@router.get("/list", response_model=List[CourseListResponse])
 def get_course_listing(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, gt=0),
@@ -22,7 +22,7 @@ def get_course_listing(
     courses = list_courses(db, skip=skip, limit=limit)
     return courses
 
-@router.get("/{course_id}", response_model=CourseDetailResponse)
+@router.get("/detail/{course_id}", response_model=CourseDetailResponse)
 def get_course_by_id(course_id: int, db: Session = Depends(get_db), Course : Course = Depends(get_course_detail_with_access)):
     """
     Возвращает детальную информацию о курсе.
