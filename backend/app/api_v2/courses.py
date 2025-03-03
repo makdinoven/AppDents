@@ -23,32 +23,23 @@ def get_course_listing(
     courses = list_courses(db, skip=skip, limit=limit)
     return courses
 
-@router.get("/detail/{course_id}", response_model=CourseDetailResponse)
-def get_course_by_id(course_id: int, db: Session = Depends(get_db), Course : Course = Depends(get_course_detail_with_access)):
-    """
-    Возвращает детальную информацию о курсе.
-    Формат ответа:
-    {
-      "id": 30,
-      "name": "Advanced Surgical Guides - All on X",
-      "description": "Add Description",
-      "lessons": {
-         "1": {
-           "section_name": "Module 1: Introduction",
-           "lessons": [
-              { "video_link": "https://play.boomstream.com/iKaAnlOc", "lesson_name": "Lesson 1: Implant Ninja introduces Digital Guru" },
-              { "video_link": "https://play.boomstream.com/wi7ofFLA", "lesson_name": "Lesson 2: Welcome to the Course! Implant Ninja" },
-              { "video_link": "new link", "lesson_name": "new lesson" },
-              { "video_link": "https://play.boomstream.com/bKHzDTwg", "lesson_name": "Lesson 3: Superfast overview..." }
-           ]
-         },
-         "2": { ... },
-         ...
-      }
-    }
-    """
+@router.get("/{course_id}", response_model=CourseDetailResponse)
+def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
     course = get_course_detail(db, course_id)
-    return course
+    # Если sections хранится как словарь, преобразуем его в список
+    sections = course.sections
+    if isinstance(sections, dict):
+        sections_list = [{k: v} for k, v in sections.items()]
+    elif isinstance(sections, list):
+        sections_list = sections
+    else:
+        sections_list = []
+    return {
+        "id": course.id,
+        "name": course.name,
+        "description": course.description,
+        "sections": sections_list
+    }
 
 @router.put("/{course_id}", response_model=CourseDetailResponse)
 def update_course_full(
