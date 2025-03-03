@@ -53,32 +53,7 @@ def get_course_by_id(course_id: int, db: Session = Depends(get_db), Course : Cou
 def update_course_full(
     course_id: int,
     update_data: CourseUpdate,
-    db: Session = Depends(get_db),
-    current_admin: User = Depends(require_roles("admin"))
+    db: Session = Depends(get_db)
 ):
-    """
-    Обновляет курс полностью.
-    PUT запрос должен содержать:
-    {
-      "name": "Advanced Surgical Guides - All on X",
-      "description": "",
-      "lessons": {
-         "1": {
-             "section_name": "Module 1: Introduction",
-             "lessons": [
-                { "video_link": "https://play.boomstream.com/iKaAnlOc", "lesson_name": "Lesson 1: Implant Ninja introduces Digital Guru" },
-                { "video_link": "https://play.boomstream.com/wi7ofFLA", "lesson_name": "Lesson 2: Welcome to the Course! Implant Ninja" },
-                { "video_link": "https://play.boomstream.com/bKHzDTwg", "lesson_name": "Lesson 3: Superfast overview..." }
-             ]
-         },
-         "2": { ... },
-         ...
-      }
-    }
-    Все значения из PUT запроса записываются напрямую в поля модели:
-      - name → name,
-      - description → description,
-      - lessons → lessons.
-    """
     updated_course = update_course(db, course_id, update_data)
     return updated_course

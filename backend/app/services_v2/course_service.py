@@ -16,7 +16,7 @@ def get_course_detail(db: Session, course_id: int) -> Course:
 def update_course(db: Session, course_id: int, update_data: CourseUpdate) -> Course:
     """
     Обновляет курс: название, описание и lessons (секции).
-    Значения из PUT запроса (name, description, lessons) напрямую записываются в поля модели.
+    Значения из PUT запроса (name, description, lessons) записываются напрямую в поля модели.
     При этом lessons преобразуется из dict[str, Section] в dict[str, dict],
     чтобы объект Section стал нативным dict для JSON.
     """
@@ -25,7 +25,7 @@ def update_course(db: Session, course_id: int, update_data: CourseUpdate) -> Cou
         raise HTTPException(status_code=404, detail="Course not found")
     course.name = update_data.name
     course.description = update_data.description
-    # Преобразование lessons: для каждого ключа вызываем .dict() у объекта Section
+    # Преобразуем каждое значение секции через .dict()
     course.lessons = {k: v.dict() for k, v in update_data.lessons.items()} if update_data.lessons else {}
     db.commit()
     db.refresh(course)
