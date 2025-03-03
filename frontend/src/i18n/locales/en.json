@@ -41,6 +41,7 @@
   "email" : "Email...",
   "password" : "Password...",
   "open": "open",
+  "viewCourse": "View course",
 
   "errMessage.email.empty": "Email must not be empty",
   "errMessage.email.valid": "Please enter a valid email",

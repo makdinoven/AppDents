@@ -1,6 +1,5 @@
 import s from "../CourseDetail/CourseDetail.module.scss";
 import EditLanding from "../EditLanding/EditLanding.tsx";
-import { LandingType } from "../../types.ts";
 import DetailHeader from "../DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
@@ -11,7 +10,7 @@ import { t } from "i18next";
 import EditLesson from "../EditLesson/EditLesson.tsx";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 
-const initialLanding: LandingType = {
+const initialLanding = {
   id: 1,
   title: "TEST",
   old_price: 0,
@@ -22,34 +21,34 @@ const initialLanding: LandingType = {
   tag_id: 1,
   authors: [],
   sales_count: 0,
+  lessons: [
+    {
+      id: 1,
+      program_text: "",
+      short_link: "",
+      duration: "",
+      lesson_name: "Introducing Invisalign® System",
+    },
+    {
+      id: 2,
+      program_text: "",
+      short_link: "",
+      duration: "",
+      lesson_name: "Introducing Invisalign® System 2",
+    },
+  ],
 };
-
-const initialLessons = [
-  {
-    id: 1,
-    video_link: "https://play.boomstream.com/2TVBV98F",
-    lesson_name: "Introducing Invisalign® System",
-  },
-  {
-    id: 2,
-    video_link: "https://play.boomstream.com/Pe80MGMv",
-    lesson_name:
-      "How to fill an Invisalign® prescription: Enhancing communication and predictability",
-  },
-];
 
 const LandingDetail = () => {
   const { landingId } = useParams();
   // const [loading, setLoading] = useState<boolean>(false);
   const [landing, setLanding] = useState<any | null>(null);
-  const [lessons, setLessons] = useState<any | null>(null);
   const handleSave = () => {};
 
   useEffect(() => {
     if (landingId) {
       // fetchCourseData();
       setLanding(initialLanding);
-      setLessons(initialLessons);
       // setLoading(false);
     }
   }, [landingId]);
@@ -77,8 +76,8 @@ const LandingDetail = () => {
                 onClick={() => console.log("add lesson")}
               />
             </div>
-            {lessons.length > 0 ? (
-              lessons.map((lesson: any, index: number) => (
+            {landing.lessons.length > 0 ? (
+              landing.lessons.map((lesson: any, index: number) => (
                 <EditLesson
                   type={"landing"}
                   key={index}

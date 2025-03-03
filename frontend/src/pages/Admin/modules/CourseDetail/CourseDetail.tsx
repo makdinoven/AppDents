@@ -24,32 +24,6 @@ const initialCourse = {
             video_link: "https://play.boomstream.com/2TVBV98F",
             lesson_name: "Introducing Invisalign® System",
           },
-          {
-            video_link: "https://play.boomstream.com/Pe80MGMv",
-            lesson_name:
-              "How to fill an Invisalign® prescription: Enhancing communication and predictability",
-          },
-          {
-            video_link: "https://play.boomstream.com/7dqvxgmB",
-            lesson_name: "Attachments - Conventional or Optimized?",
-          },
-          {
-            video_link: "https://play.boomstream.com/4FnHP7ZH",
-            lesson_name:
-              "How to use 3D tools to enhance, accelerate and increase Clincheck predictability",
-          },
-          {
-            video_link: "https://play.boomstream.com/V3uR1jYW",
-            lesson_name: "Class 3 treatment with Invisalign®",
-          },
-          {
-            video_link: "https://play.boomstream.com/KRE640Dm",
-            lesson_name: "Open bite treatment with Invisalign®",
-          },
-          {
-            video_link: "https://play.boomstream.com/uxSbyPD3",
-            lesson_name: "Class 2 treatment with Invisalign®",
-          },
         ],
       },
     },
