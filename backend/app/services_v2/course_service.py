@@ -34,8 +34,8 @@ def update_course(db: Session, course_id: int, update_data: CourseUpdate) -> Cou
 def create_course(db: Session, course_data: CourseCreate) -> Course:
     # Создаем курс с переданными значениями или пустыми значениями, если не переданы
     new_course = Course(
-        name = course_data.name if course_data.name else "",
-        description = course_data.description if course_data.description else "",
+        name = course_data.name if course_data.name else " ",
+        description = course_data.description if course_data.description else " ",
         sections = course_data.sections if course_data.sections else {}
     )
     db.add(new_course)
