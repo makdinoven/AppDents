@@ -12,46 +12,56 @@ import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
 
-const initialCourse = {
-  course_name: "initialCourse",
-  course_description: "",
-  sections: [
-    {
-      1: {
-        section_name: "Invisalign Online Mentoring Program by Doctor Paiva",
-        lessons: [
-          {
-            video_link: "https://play.boomstream.com/2TVBV98F",
-            lesson_name: "Introducing Invisalign® System",
-          },
-        ],
-      },
-    },
-    {
-      2: {
-        section_name: "2 section",
-        lessons: [
-          {
-            video_link: "https://play.boomstream.com/2TVBV98F",
-            lesson_name: "Introducing Invisalign® System",
-          },
-        ],
-      },
-    },
-  ],
-};
+// const initialCourse = {
+//   name: "initialCourse",
+//   description: "",
+//   sections: [
+//     {
+//       1: {
+//         section_name: "Invisalign Online Mentoring Program by Doctor Paiva",
+//         lessons: [
+//           {
+//             1: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//             2: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//           },
+//         ],
+//       },
+//     },
+//     {
+//       2: {
+//         section_name: "2 section",
+//         lessons: [
+//           {
+//             1: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//             2: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//           },
+//         ],
+//       },
+//     },
+//   ],
+// };
 
 const CourseDetail = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
-  // const [loading, setLoading] = useState<boolean>(false);
+  // const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (courseId) {
-      // fetchCourseData();
-      const normalizedCourse = normalizeCourse(initialCourse);
-      setCourse(normalizedCourse);
+      fetchCourseData();
       // setLoading(false);
     }
   }, [courseId]);
@@ -91,14 +101,14 @@ const CourseDetail = () => {
     };
   };
 
-  // const fetchCourseData = async () => {
-  //   try {
-  //     const res = await adminApi.getCourse(courseId);
-  //     setCourse(res.data);
-  //   } catch (error) {
-  //     console.error("Error fetching course:", error);
-  //   }
-  // };
+  const fetchCourseData = async () => {
+    try {
+      const res = await adminApi.getCourse(courseId);
+      setCourse(normalizeCourse(res.data));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const updateCourseState = (callback: (prev: any) => any) => {
     setCourse((prev: any) => (prev ? callback(prev) : prev));
@@ -195,12 +205,12 @@ const CourseDetail = () => {
   const handleSave = async () => {
     console.log("handleSave", denormalizeCourse(course));
 
-    // try {
-    //   await adminApi.updateCourse(courseId, course);
-    //   navigateBack();
-    // } catch (error) {
-    //   console.error("Error updating course:", error);
-    // }
+    try {
+      await adminApi.updateCourse(courseId, denormalizeCourse(course));
+      navigate(-1);
+    } catch (error) {
+      console.error("Error updating course:", error);
+    }
   };
 
   return (
@@ -222,7 +232,7 @@ const CourseDetail = () => {
                 onClick={() => handleAddItem("section")}
               />
             </div>
-            {course.sections.length > 0 ? (
+            {course?.sections.length > 0 ? (
               course.sections.map((section: any) => (
                 <EditSection
                   key={section.id}

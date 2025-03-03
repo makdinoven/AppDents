@@ -23,19 +23,19 @@ const EditCourse = ({
       <AdminField
         type="input"
         inputType="text"
-        id="course_name"
+        id="name"
         label={t("admin.courses.name")}
         placeholder={t("admin.courses.name.placeholder")}
-        value={course?.course_name}
+        value={course?.name}
         onChange={handleChange}
       />
       <AdminField
         type="textarea"
         inputType="text"
-        id="course_description"
+        id="description"
         placeholder={t("admin.courses.description.placeholder")}
         label={t("admin.courses.description")}
-        value={course?.course_description}
+        value={course?.description}
         onChange={handleChange}
       />
     </div>

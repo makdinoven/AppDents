@@ -11,8 +11,8 @@ export interface SectionType {
 }
 
 export interface CourseType {
-  course_name: string;
-  course_description: string;
+  name: string;
+  description: string;
   sections: SectionType[];
 }
 

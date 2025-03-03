@@ -60,6 +60,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       ) : filteredItems.length > 0 ? (
         filteredItems.map((item) => (
           <PanelItem
+            id={item.id}
             name={item[itemName]}
             key={item.id}
             link={itemLink(item)}
