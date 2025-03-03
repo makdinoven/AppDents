@@ -2,10 +2,19 @@
   @include clamped-h3;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
   border-radius: 20px;
   padding:  20px;
   color: $accent;
   gap: 30px;
   border: 1px solid $accent;
+
+  div {
+    display: flex;
+    gap: 15px;
+    span {
+      color: $primary;
+    }
+  }
+
 }

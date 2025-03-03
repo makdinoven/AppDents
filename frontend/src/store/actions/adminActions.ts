@@ -19,9 +19,9 @@ export const getCourses = createAppAsyncThunk(
 
 export const createCourse = createAppAsyncThunk(
   "admin/createCourse",
-  async (newCourse: any, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await adminApi.createCourse(newCourse);
+      const res = await adminApi.createCourse();
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }

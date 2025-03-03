@@ -1,12 +1,8 @@
 import s from "./AdminPanel.module.scss";
 import { useLocation, useNavigate } from "react-router-dom";
-import Courses from "../tabs/Courses.tsx";
 import FilterButton from "../../../components/ui/FilterButton/FilterButton.tsx";
 import { useEffect, useState } from "react";
-import Users from "../tabs/Users.tsx";
-import { t } from "i18next";
-import Authors from "../tabs/Authors.tsx";
-import Landings from "../tabs/Landings.tsx";
+import Courses from "../tabs/Courses.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -16,18 +12,18 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
-    {
-      name: "landings",
-      label: t("admin.landings"),
-      component: <Landings />,
-    },
+    // {
+    //   name: "landings",
+    //   label: "admin.landings",
+    //   component: <Landings />,
+    // },
     {
       name: "courses",
-      label: t("admin.courses"),
+      label: "admin.courses",
       component: <Courses />,
     },
-    { name: "users", label: t("admin.users"), component: <Users /> },
-    { name: "authors", label: t("admin.authors"), component: <Authors /> },
+    // { name: "users", label: "admin.users", component: <Users /> },
+    // { name: "authors", label: "admin.authors", component: <Authors /> },
   ];
 
   useEffect(() => {

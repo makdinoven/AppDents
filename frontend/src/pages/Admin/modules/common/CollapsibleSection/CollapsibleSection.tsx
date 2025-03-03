@@ -28,8 +28,16 @@ const CollapsibleSection = ({
       {!isOpen ? (
         <div className={s.section_closed}>
           <div className={s.section_name}>
-            <Trans i18nKey={`${title}.one`} /> {data.id && data.id}
-            <span>{data.name}</span>
+            {/*<Trans i18nKey={`${title}.one`} /> {data.id && data.id}*/}
+            <span>
+              {data.name ? (
+                data.name
+              ) : (
+                <span>
+                  <Trans i18nKey={`${title}.no`} />{" "}
+                </span>
+              )}
+            </span>
           </div>
           <PrettyButton text={t("open")} onClick={toggleOpen} />
         </div>

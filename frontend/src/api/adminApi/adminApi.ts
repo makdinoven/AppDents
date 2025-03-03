@@ -4,19 +4,23 @@ import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 export const adminApi = {
   getCoursesList() {
     try {
-      return instance.get("courses/", { headers: getAuthHeaders() });
+      return instance.get("courses/list?skip=0&limit=500", {
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       return Promise.reject(error);
     }
   },
 
   getCourse(id: any) {
-    return instance.get(`courses/full/${id}`);
+    return instance.get(`courses/detail/${id}`, {
+      headers: getAuthHeaders(),
+    });
   },
 
-  createCourse(data: any) {
+  createCourse() {
     try {
-      return instance.post(`courses/full`, data, {
+      return instance.post(`courses/`, {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -36,7 +40,7 @@ export const adminApi = {
 
   updateCourse(id: any, data: any) {
     try {
-      return instance.put(`courses/full/${id}`, data, {
+      return instance.put(`courses/${id}`, data, {
         headers: getAuthHeaders(),
       });
     } catch (error) {

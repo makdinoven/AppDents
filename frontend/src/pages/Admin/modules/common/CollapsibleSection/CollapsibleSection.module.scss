@@ -11,6 +11,13 @@
 .section_name {
   @include flex-column;
   gap: 5px;
+
+  span {
+    span {
+      color: $accent;
+      opacity: 0.5;
+    }
+  }
 }
 
 .section_closed {
