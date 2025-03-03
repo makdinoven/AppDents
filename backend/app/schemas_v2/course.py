@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, List
+from typing import Optional, List, Dict
 
 # Схема для элемента урока
 class Lesson(BaseModel):
@@ -9,15 +9,15 @@ class Lesson(BaseModel):
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
     section_name: str = ""
-    lessons: Optional[List[Lesson]]
+    lessons: Optional[List[Lesson]] = []
 
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = ""
-    # Поле sections теперь соответствует секциям, хранящимся как словарь (ключ – номер секции, значение – Section)
-    sections: List[str, Section]
+    # Теперь sections возвращается как список объектов, например: [{ "1": { ... } }, { "2": { ... } }]
+    sections: List[Dict[str, Section]]
 
     class Config:
         orm_mode = True
@@ -26,7 +26,7 @@ class CourseDetailResponse(BaseModel):
 class CourseUpdate(BaseModel):
     name: str
     description: Optional[str] = ""
-    sections: List[str, Section]
+    sections: List[Dict[str, Section]]
 
     class Config:
         orm_mode = True
@@ -39,10 +39,11 @@ class CourseListResponse(BaseModel):
     class Config:
         orm_mode = True
 
+# Схема для создания курса (POST запрос)
 class CourseCreate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = ""
-    sections: Optional[List[str, Section]]
+    sections: Optional[List[Dict[str, Section]]] = []
 
     class Config:
         orm_mode = True
