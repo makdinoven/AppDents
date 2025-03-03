@@ -19,25 +19,29 @@ def get_landing_listing(
 @router.get("/detail/{landing_id}", response_model=LandingDetailResponse)
 def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     landing = get_landing_detail(db, landing_id)
-    # Для вывода добавляем массивы id авторов и курсов из ассоциаций
-    author_ids = [author.id for author in landing.authors] if landing.authors else []
-    course_ids = [course.id for course in landing.courses] if landing.courses else []
-    # Можно сконструировать итоговый словарь, добавив эти поля
-    landing_data = {
+    # Если lessons_info хранится как словарь, преобразуем его в список
+    lessons = landing.lessons_info
+    if isinstance(lessons, dict):
+        lessons_list = [{k: v} for k, v in lessons.items()]
+    elif isinstance(lessons, list):
+        lessons_list = lessons
+    else:
+        lessons_list = []
+    # Собираем итоговый ответ
+    return {
         "id": landing.id,
         "page_name": landing.page_name,
         "landing_name": landing.landing_name,
         "old_price": landing.old_price,
         "new_price": landing.new_price,
         "course_program": landing.course_program,
-        "lessons_info": landing.lessons_info,
+        "lessons_info": lessons_list,
         "preview_photo": landing.preview_photo,
         "tag_id": landing.tag_id,
         "sales_count": landing.sales_count,
-        "author_ids": author_ids,
-        "course_ids": course_ids
+        "author_ids": [author.id for author in landing.authors] if landing.authors else [],
+        "course_ids": [course.id for course in landing.courses] if landing.courses else []
     }
-    return landing_data
 
 @router.post("/", response_model=LandingListResponse)
 def create_new_landing(
@@ -45,7 +49,10 @@ def create_new_landing(
     db: Session = Depends(get_db)
 ):
     new_landing = create_landing(db, landing_data)
-    return new_landing
+    return {
+        "id": new_landing.id,
+        "landing_name": new_landing.landing_name
+    }
 
 @router.put("/{landing_id}", response_model=LandingDetailResponse)
 def update_landing_full(
@@ -54,20 +61,24 @@ def update_landing_full(
     db: Session = Depends(get_db)
 ):
     updated_landing = update_landing(db, landing_id, update_data)
-    author_ids = [author.id for author in updated_landing.authors] if updated_landing.authors else []
-    course_ids = [course.id for course in updated_landing.courses] if updated_landing.courses else []
-    landing_data = {
+    lessons = updated_landing.lessons_info
+    if isinstance(lessons, dict):
+        lessons_list = [{k: v} for k, v in lessons.items()]
+    elif isinstance(lessons, list):
+        lessons_list = lessons
+    else:
+        lessons_list = []
+    return {
         "id": updated_landing.id,
         "page_name": updated_landing.page_name,
         "landing_name": updated_landing.landing_name,
         "old_price": updated_landing.old_price,
         "new_price": updated_landing.new_price,
         "course_program": updated_landing.course_program,
-        "lessons_info": updated_landing.lessons_info,
+        "lessons_info": lessons_list,
         "preview_photo": updated_landing.preview_photo,
         "tag_id": updated_landing.tag_id,
         "sales_count": updated_landing.sales_count,
-        "author_ids": author_ids,
-        "course_ids": course_ids
+        "author_ids": [author.id for author in updated_landing.authors] if updated_landing.authors else [],
+        "course_ids": [course.id for course in updated_landing.courses] if updated_landing.courses else []
     }
-    return landing_data

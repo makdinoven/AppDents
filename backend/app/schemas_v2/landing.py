@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
+from typing import Optional, List, Dict, Any
 
 class LessonInfoItem(BaseModel):
     link: Optional[str] = ""
@@ -22,7 +22,8 @@ class LandingDetailResponse(BaseModel):
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
-    lessons_info: Optional[Dict[str, LessonInfoItem]] = {}
+    # lessons_info теперь возвращается как список объектов, где каждый объект имеет один ключ (например, "lesson1")
+    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
     tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
@@ -32,31 +33,30 @@ class LandingDetailResponse(BaseModel):
     class Config:
         orm_mode = True
 
-# Схема для создания лендинга (POST)
 class LandingCreate(BaseModel):
     page_name: Optional[str] = ""
     landing_name: Optional[str] = ""
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
-    lessons_info: Optional[Dict[str, LessonInfoItem]] = {}
+    # Входной формат для lessons_info – список объектов
+    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
     tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
-    author_ids: Optional[List[int]] = []  # для привязки авторов
-    course_ids: Optional[List[int]] = []  # для привязки курсов
+    author_ids: Optional[List[int]] = []
+    course_ids: Optional[List[int]] = []
 
     class Config:
         orm_mode = True
 
-# Схема для обновления лендинга (PUT)
 class LandingUpdate(BaseModel):
     page_name: Optional[str] = None
     landing_name: Optional[str] = None
     old_price: Optional[str] = None
     new_price: Optional[str] = None
     course_program: Optional[str] = None
-    lessons_info: Optional[Dict[str, LessonInfoItem]] = None
+    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = None
     preview_photo: Optional[str] = None
     tag_id: Optional[int] = None
     sales_count: Optional[int] = None
