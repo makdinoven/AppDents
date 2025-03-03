@@ -1,7 +1,7 @@
 from sys import prefix
 from fastapi import FastAPI
 # from app.api import test, users, landings, authors, courses, payments, parser, cleaner, transfer
-from .api_v2 import cleaner, users, courses
+from .api_v2 import cleaner, users, courses, landings
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
 
@@ -31,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(cleaner.router, prefix="/cleaner", tags=["cleaner"])
     app.include_router(users.router, prefix="/users", tags=["users"])
     app.include_router(courses.router, prefix="/courses", tags=["courses"])
+    app.include_router(landings.router, prefix="/landings", tags=["landings"])
 
     @app.on_event("startup")
     async def startup_event():
