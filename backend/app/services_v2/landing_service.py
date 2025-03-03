@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List
-from ..models.models_v2 import Landing
+from ..models.models_v2 import Landing, Author, Course
 from ..schemas_v2.landing import LandingCreate, LandingUpdate
 
 def list_landings(db: Session, skip: int = 0, limit: int = 10) -> List[Landing]:
@@ -21,12 +21,21 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         new_price = landing_data.new_price,
         course_program = landing_data.course_program,
         lessons_info = landing_data.lessons_info,
-        linked_courses = landing_data.linked_courses,
         preview_photo = landing_data.preview_photo,
         tag_id = landing_data.tag_id,
         sales_count = landing_data.sales_count
     )
     db.add(new_landing)
+    db.commit()
+    db.refresh(new_landing)
+    # Привязка авторов через ассоциативную таблицу landing_authors
+    if landing_data.author_ids:
+        authors = db.query(Author).filter(Author.id.in_(landing_data.author_ids)).all()
+        new_landing.authors = authors
+    # Привязка курсов через ассоциативную таблицу landing_course
+    if landing_data.course_ids:
+        courses = db.query(Course).filter(Course.id.in_(landing_data.course_ids)).all()
+        new_landing.courses = courses
     db.commit()
     db.refresh(new_landing)
     # Если landing_name не задано, обновляем его автоматически
@@ -52,14 +61,18 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
         landing.course_program = update_data.course_program
     if update_data.lessons_info is not None:
         landing.lessons_info = update_data.lessons_info
-    if update_data.linked_courses is not None:
-        landing.linked_courses = update_data.linked_courses
     if update_data.preview_photo is not None:
         landing.preview_photo = update_data.preview_photo
     if update_data.tag_id is not None:
         landing.tag_id = update_data.tag_id
     if update_data.sales_count is not None:
         landing.sales_count = update_data.sales_count
+    if update_data.author_ids is not None:
+        authors = db.query(Author).filter(Author.id.in_(update_data.author_ids)).all()
+        landing.authors = authors
+    if update_data.course_ids is not None:
+        courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
+        landing.courses = courses
     db.commit()
     db.refresh(landing)
     return landing
