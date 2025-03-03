@@ -3,12 +3,12 @@ from typing import Optional, Dict, List
 
 # Схема для элемента урока
 class Lesson(BaseModel):
-    video_link: str
-    lesson_name: str
+    video_link: str = ''
+    lesson_name: str = ''
 
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
-    section_name: str
+    section_name: str = ""
     lessons: List[Lesson]
 
 # Схема для детального отображения курса (GET ответ)
