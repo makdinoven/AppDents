@@ -41,7 +41,7 @@ class CourseListResponse(BaseModel):
 
 # Схема для создания курса (POST запрос)
 class CourseCreate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = ""
     description: Optional[str] = ""
     sections: Optional[List[Dict[str, Section]]] = []
 

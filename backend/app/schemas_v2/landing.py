@@ -17,7 +17,8 @@ class LandingListResponse(BaseModel):
 
 class LandingDetailResponse(BaseModel):
     id: int
-    page_name: Optional[str] = None
+    language: str
+    page_name: Optional[str] = ""
     landing_name: Optional[str] = ""
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
@@ -35,6 +36,7 @@ class LandingDetailResponse(BaseModel):
 
 class LandingCreate(BaseModel):
     page_name: Optional[str] = ""
+    language: Optional[str] = "EN"
     landing_name: Optional[str] = ""
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
@@ -51,15 +53,16 @@ class LandingCreate(BaseModel):
         orm_mode = True
 
 class LandingUpdate(BaseModel):
-    page_name: Optional[str] = None
-    landing_name: Optional[str] = None
-    old_price: Optional[str] = None
-    new_price: Optional[str] = None
-    course_program: Optional[str] = None
-    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = None
-    preview_photo: Optional[str] = None
+    page_name: Optional[str] = ""
+    language: Optional[str] = "EN"
+    landing_name: Optional[str] = ""
+    old_price: Optional[str] = ""
+    new_price: Optional[str] = ""
+    course_program: Optional[str] = ""
+    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = ""
+    preview_photo: Optional[str] = ""
     tag_id: Optional[int] = None
-    sales_count: Optional[int] = None
+    sales_count: Optional[int] = ""
     author_ids: Optional[List[int]] = None
     course_ids: Optional[List[int]] = None
 
