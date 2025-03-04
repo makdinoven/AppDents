@@ -65,3 +65,10 @@ class LandingUpdate(BaseModel):
 
     class Config:
         orm_mode = True
+
+class TagResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True

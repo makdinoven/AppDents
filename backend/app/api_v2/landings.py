@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User
+from ..models.models_v2 import User, Tag
 from ..services_v2.landing_service  import list_landings, get_landing_detail, create_landing, update_landing
-from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate
+from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
 
 router = APIRouter()
 
@@ -86,3 +86,8 @@ def update_landing_full(
         "author_ids": [author.id for author in updated_landing.authors] if updated_landing.authors else [],
         "course_ids": [course.id for course in updated_landing.courses] if updated_landing.courses else []
     }
+
+@router.get("/tags", response_model=List[TagResponse])
+def get_all_tags(db: Session = Depends(get_db)):
+    tags = db.query(Tag).all()
+    return tags
