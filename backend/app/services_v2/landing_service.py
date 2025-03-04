@@ -76,3 +76,13 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
     db.commit()
     db.refresh(landing)
     return landing
+
+def delete_landing(db: Session, landing_id: int) -> None:
+    landing = db.query(Landing).filter(Landing.id == landing_id).first()
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+    # Очистка связей с курсами (через landing_course) и с авторами (через landing_authors)
+    landing.courses = []
+    landing.authors = []
+    db.delete(landing)
+    db.commit()
