@@ -34,6 +34,7 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     return {
         "id": landing.id,
         "page_name": landing.page_name,
+        "language": landing.language,
         "landing_name": landing.landing_name,
         "old_price": landing.old_price,
         "new_price": landing.new_price,
@@ -76,6 +77,7 @@ def update_landing_full(
     return {
         "id": updated_landing.id,
         "page_name": updated_landing.page_name,
+        "language": updated_landing.language,
         "landing_name": updated_landing.landing_name,
         "old_price": updated_landing.old_price,
         "new_price": updated_landing.new_price,

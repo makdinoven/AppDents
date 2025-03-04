@@ -16,6 +16,7 @@ def get_landing_detail(db: Session, landing_id: int) -> Landing:
 def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
     new_landing = Landing(
         page_name = landing_data.page_name,
+        language = landing_data.language,
         landing_name = landing_data.landing_name,
         old_price = landing_data.old_price,
         new_price = landing_data.new_price,
@@ -51,6 +52,8 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
         raise HTTPException(status_code=404, detail="Landing not found")
     if update_data.page_name is not None:
         landing.page_name = update_data.page_name
+    if update_data.language is not None:
+        landing.language = update_data.language
     if update_data.landing_name is not None:
         landing.landing_name = update_data.landing_name
     if update_data.old_price is not None:
