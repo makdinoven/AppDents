@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from ..db.database import get_db
+from ..dependencies.role_checker import require_roles
+from ..models.models_v2 import User
 from ..services_v2.landing_service  import list_landings, get_landing_detail, create_landing, update_landing
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate
 
@@ -46,7 +48,8 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=LandingListResponse)
 def create_new_landing(
     landing_data: LandingCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     new_landing = create_landing(db, landing_data)
     return {
@@ -58,7 +61,8 @@ def create_new_landing(
 def update_landing_full(
     landing_id: int,
     update_data: LandingUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     updated_landing = update_landing(db, landing_id, update_data)
     lessons = updated_landing.lessons_info
