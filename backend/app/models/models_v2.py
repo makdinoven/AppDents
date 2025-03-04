@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -39,6 +39,7 @@ class Course(Base):
 class Landing(Base):
     __tablename__ = 'landings'
     id = Column(Integer, primary_key=True)
+    language = Column(Enum('EN', 'RU', 'ES', name='landing_language'), nullable=False, server_default='EN')
     page_name = Column(String(255))
     landing_name = Column(Text)
     old_price = Column(String(255))
