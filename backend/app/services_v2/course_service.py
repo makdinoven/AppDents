@@ -48,3 +48,12 @@ def create_course(db: Session, course_data: CourseCreate) -> Course:
         db.commit()
         db.refresh(new_course)
     return new_course
+
+def delete_course(db: Session, course_id: int) -> None:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    # Очистка связей с пользователями (ассоциативная таблица users_courses)
+    course.users = []
+    db.delete(course)
+    db.commit()

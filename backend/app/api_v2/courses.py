@@ -5,7 +5,7 @@ from ..db.database import get_db
 from ..dependencies.access_course import get_course_detail_with_access
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Course, User
-from ..services_v2.course_service import create_course
+from ..services_v2.course_service import create_course, delete_course
 from ..services_v2.course_service import list_courses, get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate
 
@@ -95,3 +95,8 @@ def create_new_course(
     """
     new_course = create_course(db, course_data)
     return new_course
+
+@router.delete("/{course_id}", response_model=dict)
+def delete_course_route(course_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
+    delete_course(db, course_id)
+    return {"detail": "Course deleted successfully"}

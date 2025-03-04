@@ -4,7 +4,8 @@ from typing import List
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag
-from ..services_v2.landing_service  import list_landings, get_landing_detail, create_landing, update_landing
+from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
+    delete_landing
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
 
 router = APIRouter()
@@ -91,3 +92,8 @@ def update_landing_full(
 def get_all_tags(db: Session = Depends(get_db)):
     tags = db.query(Tag).all()
     return tags
+
+@router.delete("/{landing_id}", response_model=dict)
+def delete_landing_route(landing_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
+    delete_landing(db, landing_id)
+    return {"detail": "Landing deleted successfully"}
