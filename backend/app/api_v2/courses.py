@@ -24,7 +24,7 @@ def get_course_listing(
     return courses
 
 @router.get("/detail/{course_id}", response_model=CourseDetailResponse)
-def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
+def get_course_by_id(course_id: int, db: Session = Depends(get_db), course : Course = Depends(get_course_detail_with_access)):
     course = get_course_detail(db, course_id)
     # Если sections хранится как словарь, преобразуем его в список
     sections = course.sections
@@ -45,15 +45,30 @@ def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
 def update_course_full(
     course_id: int,
     update_data: CourseUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     updated_course = update_course(db, course_id, update_data)
-    return updated_course
+    sections = updated_course.sections
+    if isinstance(sections, dict):
+        sections_list = [{k: v} for k, v in sections.items()]
+    elif isinstance(sections, list):
+        sections_list = sections
+    else:
+        sections_list = []
+    return {
+        "id": updated_course.id,
+        "name": updated_course.name,
+        "description": updated_course.description,
+        "sections": sections_list
+    }
+
 
 @router.post("/", response_model=CourseListResponse)
 def create_new_course(
     course_data: CourseCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Создает новый курс.
