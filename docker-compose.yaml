@@ -78,6 +78,8 @@ services:
       - "443:443"
     networks:
       - prod
+    volumes:
+      - ./assets:/assets
 
 networks:
   prod:
