@@ -7,16 +7,20 @@ interface FieldProps {
   type: "textarea" | "input";
   value?: string | number;
   onChange: (value: string) => void;
+  onBlur?: any;
   inputType?: string;
   label?: React.ReactNode;
   error?: string;
+  placeholder?: string;
 }
 
 const AdminField: React.FC<FieldProps> = ({
+  placeholder,
   id,
   type,
   value,
   onChange,
+  onBlur,
   label,
   error,
   inputType,
@@ -32,22 +36,26 @@ const AdminField: React.FC<FieldProps> = ({
 
       {type === "textarea" ? (
         <textarea
+          placeholder={placeholder}
           id={id}
           name={id}
           value={value}
           onChange={handleChange}
+          onBlur={onBlur}
           {...props}
           className={s.textarea}
         />
       ) : (
         <input
+          placeholder={placeholder}
           type={inputType}
           id={id}
           name={id}
           value={value}
-          onChange={handleChange}
-          {...props}
           className={s.input}
+          onChange={handleChange}
+          onBlur={onBlur}
+          {...props}
         />
       )}
 

@@ -33,6 +33,7 @@ $row-gap: clamp(20px, 5vw,43px);
 
   &:first-child {
     width: 100%;
+    position: relative;
     @include horizontal-line($color: $background-color, $bottom: calc(#{$row-gap} / 2 - #{$row-gap}));
 
     &::after {

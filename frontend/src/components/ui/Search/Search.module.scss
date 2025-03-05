@@ -1,6 +1,7 @@
 $input-wrapper-pb: clamp(4px,1vw,10px);
 
 .input_wrapper {
+  position: relative;
   @include horizontal-line($z: 2, $bottom: 0, $left:0);
   @include clamped-h4;
   padding-bottom: $input-wrapper-pb;

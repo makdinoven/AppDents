@@ -1,4 +1,5 @@
-import s from "./TabButton.module.scss";
+import s from "./FilterButton.module.scss";
+import { Trans } from "react-i18next";
 
 interface TabButtonProps {
   text: string;
@@ -6,14 +7,14 @@ interface TabButtonProps {
   onClick?: () => void;
 }
 
-const TabButton = ({ onClick, text, isActive }: TabButtonProps) => {
+const FilterButton = ({ onClick, text, isActive }: TabButtonProps) => {
   return (
     <button
       onClick={onClick}
       className={`${s.btn} ${isActive ? s.active : ""}`}
     >
-      {text}
+      <Trans i18nKey={text} />
     </button>
   );
 };
-export default TabButton;
+export default FilterButton;

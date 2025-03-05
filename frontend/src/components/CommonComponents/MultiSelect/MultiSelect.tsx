@@ -12,6 +12,7 @@ interface MultiSelectProps<T> {
   onChange: (e: { name: string; value: string | string[] }) => void;
   valueKey: keyof T;
   labelKey: keyof T;
+  isSearchable?: boolean;
 }
 
 const customStyles = {
@@ -73,7 +74,7 @@ const customStyles = {
     transition: "all 0.15s ease-in-out",
     "&:hover": state.isSelected
       ? { backgroundColor: "#7FDFD5", color: "#EDF8FF" }
-      : { backgroundColor: "#01433D", color: "#EDF8FF" },
+      : { backgroundColor: "rgba(127,223,213,0.6)", color: "#01433D" },
   }),
   multiValue: (provided: any) => ({
     ...provided,
@@ -104,10 +105,11 @@ const MultiSelect = <T extends { [key: string]: any }>({
   onChange,
   valueKey,
   labelKey,
+  isSearchable,
 }: MultiSelectProps<T>) => {
   const formattedOptions = options.map((option) => ({
     value: option[valueKey] as string,
-    label: option[labelKey] as string,
+    label: t(option[labelKey]) as string,
   }));
 
   const selectedOption = isMultiple
@@ -120,6 +122,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
     <div className={s.multi_select}>
       <label htmlFor={id}>{label}</label>
       <Select
+        isSearchable={isSearchable}
         id={id}
         name={id}
         isMulti={isMultiple}

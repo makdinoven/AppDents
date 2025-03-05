@@ -104,14 +104,12 @@ $font-sz-err-mob: 12px;
   $transform: null,
   $z: 1
 ) {
-  position: relative;
-
   &::after {
     content: "";
     position: absolute;
 
     @if $top != null {
-      bottom: $top;
+      top: $top;
     }
 
     @if $bottom != null {
@@ -126,10 +124,10 @@ $font-sz-err-mob: 12px;
 
     @if $transform != null {
       @if $transform == y50 {
-        transform: translateY(50%);
+        transform: translateY(-50%);
       }
       @if $transform == x50 {
-        transform: translateX(50%);
+        transform: translateX(-50%);
       }
     }
 
@@ -137,6 +135,7 @@ $font-sz-err-mob: 12px;
     height: $height;
     background-color: $color;
     z-index: $z;
+    border-radius: 10px;
 
     @media (max-width: 576px) {
       height: 1px;

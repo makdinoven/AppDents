@@ -4,19 +4,23 @@ import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 export const adminApi = {
   getCoursesList() {
     try {
-      return instance.get("courses/", { headers: getAuthHeaders() });
+      return instance.get("courses/list?skip=0&limit=500", {
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       return Promise.reject(error);
     }
   },
 
   getCourse(id: any) {
-    return instance.get(`courses/full/${id}`);
+    return instance.get(`courses/detail/${id}`, {
+      headers: getAuthHeaders(),
+    });
   },
 
   createCourse(data: any) {
     try {
-      return instance.post(`courses/full`, data, {
+      return instance.post(`courses/`, data, {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -26,7 +30,7 @@ export const adminApi = {
 
   deleteCourse(id: any) {
     try {
-      return instance.delete(`courses/full/${id}`, {
+      return instance.delete(`courses/${id}`, {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -36,7 +40,7 @@ export const adminApi = {
 
   updateCourse(id: any, data: any) {
     try {
-      return instance.put(`courses/full/${id}`, data, {
+      return instance.put(`courses/${id}`, data, {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -44,9 +48,9 @@ export const adminApi = {
     }
   },
 
-  addCourseSection(id: any, data: any) {
+  getLandingsList() {
     try {
-      return instance.post(`courses/${id}/sections`, data, {
+      return instance.get("landings/list?skip=0&limit=500", {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -54,23 +58,15 @@ export const adminApi = {
     }
   },
 
-  addCourseModule(courseId: any, sectionId: any, data: any) {
-    try {
-      return instance.post(
-        `courses/${courseId}/sections/${sectionId}/modules`,
-        data,
-        {
-          headers: getAuthHeaders(),
-        },
-      );
-    } catch (error) {
-      return Promise.reject(error);
-    }
+  getLanding(id: any) {
+    return instance.get(`landings/detail/${id}`, {
+      headers: getAuthHeaders(),
+    });
   },
 
-  deleteCourseSection(courseId: any, sectionId: any) {
+  createLanding(data: any) {
     try {
-      return instance.delete(`courses/${courseId}/sections/${sectionId}`, {
+      return instance.post(`landings/`, data, {
         headers: getAuthHeaders(),
       });
     } catch (error) {
@@ -78,14 +74,21 @@ export const adminApi = {
     }
   },
 
-  deleteCourseModule(courseId: any, sectionId: any, moduleId: any) {
+  deleteLanding(id: any) {
     try {
-      return instance.delete(
-        `courses/${courseId}/sections/${sectionId}/modules/${moduleId}`,
-        {
-          headers: getAuthHeaders(),
-        },
-      );
+      return instance.delete(`landings/${id}`, {
+        headers: getAuthHeaders(),
+      });
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
+
+  updateLanding(id: any, data: any) {
+    try {
+      return instance.put(`landings/${id}`, data, {
+        headers: getAuthHeaders(),
+      });
     } catch (error) {
       return Promise.reject(error);
     }
@@ -101,7 +104,7 @@ export const adminApi = {
 
   getAuthors() {
     try {
-      return instance.get("authors/list");
+      return instance.get("authors/");
     } catch (error) {
       return Promise.reject(error);
     }
