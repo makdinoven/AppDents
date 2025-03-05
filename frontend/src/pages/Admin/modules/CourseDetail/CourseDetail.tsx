@@ -1,184 +1,200 @@
 import s from "./CourseDetail.module.scss";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import EditSection from "../EditSection/EditSection.tsx";
-import EditModule from "../EditModule/EditModule.tsx";
-import { CourseType, ModuleType, SectionType } from "../../types.ts";
+import EditLesson from "../EditLesson/EditLesson.tsx";
 import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import EditLanding from "../EditLanding/EditLanding.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import EditCourse from "../EditCourse/EditCourse.tsx";
+import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
 
-const initialSection = {
-  name: "New Section",
-};
-
-const initialModule = {
-  title: "New Module",
-  short_video_link: "",
-  full_video_link: "",
-  program_text: "",
-  duration: "",
-};
+// const initialCourse = {
+//   name: "initialCourse",
+//   description: "",
+//   sections: [
+//     {
+//       1: {
+//         section_name: "Invisalign Online Mentoring Program by Doctor Paiva",
+//         lessons: [
+//           {
+//             1: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//             2: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//           },
+//         ],
+//       },
+//     },
+//     {
+//       2: {
+//         section_name: "2 section",
+//         lessons: [
+//           {
+//             1: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//             2: {
+//               video_link: "https://play.boomstream.com/2TVBV98F",
+//               lesson_name: "Introducing Invisalign® System",
+//             },
+//           },
+//         ],
+//       },
+//     },
+//   ],
+// };
 
 const CourseDetail = () => {
-  const navigate = useNavigate();
-  const navigateBack = () => navigate(-1);
   const { courseId } = useParams();
-  const [course, setCourse] = useState<CourseType | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [course, setCourse] = useState<any | null>(null);
+  // const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (courseId) {
       fetchCourseData();
+      // setLoading(false);
     }
   }, [courseId]);
+
+  const normalizeCourse = (course: any) => {
+    return {
+      ...course,
+      sections: course.sections.map((sectionObj: any) => {
+        const sectionId = Object.keys(sectionObj)[0];
+        return {
+          id: Number(sectionId),
+          section_name: sectionObj[sectionId].section_name,
+          lessons: sectionObj[sectionId].lessons.map(
+            (lesson: any, index: number) => ({
+              id: index + 1,
+              lesson_name: lesson.lesson_name,
+              video_link: lesson.video_link,
+            }),
+          ),
+        };
+      }),
+    };
+  };
+
+  const denormalizeCourse = (course: any) => {
+    return {
+      ...course,
+      sections: course.sections.map((section: any) => ({
+        [section.id]: {
+          section_name: section.section_name,
+          lessons: section.lessons.map((lesson: any) => {
+            const { id, ...rest } = lesson;
+            return rest;
+          }),
+        },
+      })),
+    };
+  };
 
   const fetchCourseData = async () => {
     try {
       const res = await adminApi.getCourse(courseId);
-      setCourse(res.data);
+      setCourse(normalizeCourse(res.data));
     } catch (error) {
-      console.error("Error fetching course:", error);
+      console.error(error);
     }
   };
 
-  const deleteItem = (
-    itemType: "course" | "section" | "module",
+  const updateCourseState = (callback: (prev: any) => any) => {
+    setCourse((prev: any) => (prev ? callback(prev) : prev));
+  };
+
+  const handleAddItem = (
+    itemType: "section" | "lesson",
     sectionId?: number,
-    moduleId?: number,
   ) => {
-    const isConfirmed = confirm(
-      `Are you sure you want to delete this ${itemType}?`,
-    );
-
-    if (isConfirmed) {
-      if (itemType === "course") {
-        handleDeleteCourse();
-      } else if (itemType === "section") {
-        handleDeleteSection(sectionId!);
-      } else if (itemType === "module") {
-        handleDeleteModule(sectionId!, moduleId!);
+    updateCourseState((prev) => {
+      if (itemType === "section") {
+        return {
+          ...prev,
+          sections: [
+            ...prev.sections,
+            {
+              id: prev.sections.length + 1,
+              section_name: "New Section",
+              lessons: [],
+            },
+          ],
+        };
+      } else if (itemType === "lesson" && sectionId) {
+        return {
+          ...prev,
+          sections: prev.sections.map((section: any) =>
+            section.id === sectionId
+              ? {
+                  ...section,
+                  lessons: [
+                    ...section.lessons,
+                    {
+                      id: section.lessons.length + 1,
+                      lesson_name: "New Lesson",
+                      video_link: "",
+                    },
+                  ],
+                }
+              : section,
+          ),
+        };
       }
-    }
+      return prev;
+    });
   };
 
-  const handleAddSection = async () => {
-    setLoading(true);
-    try {
-      const response = await adminApi.addCourseSection(
-        courseId,
-        initialSection,
-      );
-      updateStateWithNewItem("section", response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error adding section:", error);
-      setLoading(false);
-    }
-  };
+  const handleDeleteItem = (
+    itemType: "course" | "section" | "lesson",
+    sectionId?: number,
+    lessonId?: number,
+  ) => {
+    if (!confirm(`Are you sure you want to delete this ${itemType}?`)) return;
 
-  const handleAddModule = async (sectionId: number) => {
-    try {
-      const response = await adminApi.addCourseModule(
-        courseId,
-        sectionId,
-        initialModule,
-      );
-      updateStateWithNewItem("module", response.data, sectionId);
-    } catch (error) {
-      console.error("Error adding module:", error);
-    }
+    if (itemType === "course") return handleDeleteCourse();
+
+    updateCourseState((prev) => {
+      if (itemType === "section") {
+        return {
+          ...prev,
+          sections: prev.sections.filter((s: any) => s.id !== sectionId),
+        };
+      } else if (itemType === "lesson" && sectionId) {
+        return {
+          ...prev,
+          sections: prev.sections.map((section: any) =>
+            section.id === sectionId
+              ? {
+                  ...section,
+                  lessons: section.lessons.filter(
+                    (l: any) => l.id !== lessonId,
+                  ),
+                }
+              : section,
+          ),
+        };
+      }
+      return prev;
+    });
   };
 
   const handleDeleteCourse = async () => {
     try {
       await adminApi.deleteCourse(courseId);
-      navigateBack();
+      navigate(-1);
     } catch (error) {
       console.error("Error deleting course:", error);
-    }
-  };
-
-  const handleDeleteSection = async (sectionId: number) => {
-    try {
-      await adminApi.deleteCourseSection(courseId, sectionId);
-      updateStateAfterDelete("section", sectionId);
-    } catch (error) {
-      console.error("Error deleting section:", error);
-    }
-  };
-
-  const handleDeleteModule = async (sectionId: number, moduleId: number) => {
-    try {
-      await adminApi.deleteCourseModule(courseId, sectionId, moduleId);
-      updateStateAfterDelete("module", sectionId, moduleId);
-    } catch (error) {
-      console.error("Error deleting module:", error);
-    }
-  };
-
-  const updateStateAfterDelete = (
-    itemType: "section" | "module",
-    sectionId: number,
-    moduleId?: number,
-  ) => {
-    setCourse((prev) => {
-      if (!prev) return prev;
-
-      if (itemType === "section") {
-        return {
-          ...prev,
-          sections: prev.sections.filter((section) => section.id !== sectionId),
-        };
-      } else if (itemType === "module" && moduleId) {
-        const updatedSections = prev.sections.map((section) =>
-          section.id === sectionId
-            ? {
-                ...section,
-                modules: section.modules.filter(
-                  (module) => module.id !== moduleId,
-                ),
-              }
-            : section,
-        );
-        return { ...prev, sections: updatedSections };
-      }
-      return prev;
-    });
-  };
-
-  const updateStateWithNewItem = (
-    itemType: "section" | "module",
-    newItem: any,
-    sectionId?: number,
-  ) => {
-    setCourse((prev) => {
-      if (!prev) return prev;
-
-      if (itemType === "section") {
-        return { ...prev, sections: [...prev.sections, newItem] };
-      } else if (itemType === "module" && sectionId) {
-        const updatedSections = prev.sections.map((section) =>
-          section.id === sectionId
-            ? { ...section, modules: [...section.modules, newItem] }
-            : section,
-        );
-        return { ...prev, sections: updatedSections };
-      }
-      return prev;
-    });
-  };
-
-  const handleSave = async () => {
-    try {
-      await adminApi.updateCourse(courseId, course);
-      navigateBack();
-    } catch (error) {
-      console.error("Error updating course:", error);
     }
   };
 
@@ -186,68 +202,68 @@ const CourseDetail = () => {
     console.log(course);
   }, [course]);
 
+  const handleSave = async () => {
+    try {
+      await adminApi.updateCourse(courseId, denormalizeCourse(course));
+      navigate(-1);
+    } catch (error) {
+      console.error("Error updating course:", error);
+    }
+  };
+
   return (
-    <div className={s.course_detail}>
-      <div className={s.course_detail_header}>
-        <PrettyButton text={"back"} onClick={() => navigateBack()} />
-      </div>
+    <div className={s.detail_container}>
+      <DetailHeader title={"admin.courses.update"} />
       {!course ? (
         <Loader />
       ) : (
         <>
           <EditCourse course={course} setCourse={setCourse} />
-          <EditLanding landing={course.landing} setCourse={setCourse} />
-          <div className={s.sections}>
-            <div className={s.sections_header}>
+          <div className={s.list}>
+            <div className={s.list_header}>
               <h2>
                 <Trans i18nKey={"admin.sections"} />
               </h2>
               <PrettyButton
                 variant={"primary"}
                 text={t("admin.sections.add")}
-                loading={loading}
-                onClick={() => handleAddSection()}
+                onClick={() => handleAddItem("section")}
               />
             </div>
-            {course.sections.length > 0 ? (
-              course.sections.map((section: SectionType, index: number) => (
+            {course?.sections.length > 0 ? (
+              course.sections.map((section: any) => (
                 <EditSection
                   key={section.id}
                   section={section}
-                  index={index + 1}
                   setCourse={setCourse}
-                  handleDelete={() => deleteItem("section", section.id)}
+                  handleDelete={() => handleDeleteItem("section", section.id)}
                 >
-                  <div className={s.modules}>
-                    <div className={s.sections_header}>
+                  <div className={s.inner_list}>
+                    <div className={s.list_header}>
                       <h2>
-                        <Trans i18nKey={"admin.modules"} />
+                        <Trans i18nKey={"admin.lessons"} />
                       </h2>
                       <PrettyButton
                         variant={"primary"}
-                        loading={loading}
-                        text={t("admin.modules.add")}
-                        onClick={() => handleAddModule(section.id)}
+                        text={t("admin.lessons.add")}
+                        onClick={() => handleAddItem("lesson", section.id)}
                       />
                     </div>
-                    {section.modules.length > 0 ? (
-                      section.modules.map(
-                        (module: ModuleType, index: number) => (
-                          <EditModule
-                            key={module.id}
-                            section={section}
-                            module={module}
-                            index={index + 1}
-                            setCourse={setCourse}
-                            handleDelete={() =>
-                              deleteItem("module", section.id, module.id)
-                            }
-                          />
-                        ),
-                      )
+                    {section.lessons.length > 0 ? (
+                      section.lessons.map((lesson: any, index: number) => (
+                        <EditLesson
+                          key={index}
+                          section={section}
+                          lesson={lesson}
+                          setCourse={setCourse}
+                          handleDelete={() =>
+                            handleDeleteItem("lesson", section.id, lesson.id)
+                          }
+                        />
+                      ))
                     ) : (
                       <div>
-                        <Trans i18nKey={"admin.sections.noModules"} />
+                        <Trans i18nKey={"admin.sections.noLessons"} />
                       </div>
                     )}
                   </div>
@@ -259,18 +275,11 @@ const CourseDetail = () => {
               </div>
             )}
           </div>
-          <div className={s.course_detail_bottom}>
-            <PrettyButton
-              variant={"primary"}
-              text={t("admin.save")}
-              onClick={handleSave}
-            />
-            <PrettyButton
-              variant={"danger"}
-              text={t("admin.courses.delete")}
-              onClick={() => deleteItem("course")}
-            />
-          </div>
+          <DetailBottom
+            deleteLabel={"admin.courses.delete"}
+            handleSave={handleSave}
+            handleDelete={() => handleDeleteItem("course")}
+          />
         </>
       )}
     </div>

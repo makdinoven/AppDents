@@ -6,7 +6,7 @@
   text-transform: uppercase;
   border: 1px solid $accent;
   border-radius: 40px;
-  padding: 5px 20px;
+  padding: 3px 30px;
 
   @media (hover: hover) {
     &:hover {
@@ -21,5 +21,5 @@
   color: $text-color;
   background-color: $primary;
   border-color: $primary;
-  padding: 5px 50px;
+  padding: 3px 60px;
 }

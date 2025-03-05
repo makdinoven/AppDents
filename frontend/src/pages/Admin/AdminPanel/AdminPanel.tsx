@@ -1,27 +1,30 @@
 import s from "./AdminPanel.module.scss";
 import { useLocation, useNavigate } from "react-router-dom";
-import Courses from "./modules/Courses.tsx";
-import TabButton from "../../../components/ui/TabButton/TabButton.tsx";
+import FilterButton from "../../../components/ui/FilterButton/FilterButton.tsx";
 import { useEffect, useState } from "react";
-import Users from "./modules/Users.tsx";
-import { t } from "i18next";
-import Authors from "./modules/Authors.tsx";
+import Courses from "../tabs/Courses.tsx";
+import Landings from "../tabs/Landings.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get("tab") || "courses";
+  const initialTab = queryParams.get("tab") || "landings";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
     {
+      name: "landings",
+      label: "admin.landings",
+      component: <Landings />,
+    },
+    {
       name: "courses",
-      label: t("admin.courses"),
+      label: "admin.courses",
       component: <Courses />,
     },
-    { name: "users", label: t("admin.users"), component: <Users /> },
-    { name: "authors", label: t("admin.authors"), component: <Authors /> },
+    // { name: "users", label: "admin.users", component: <Users /> },
+    // { name: "authors", label: "admin.authors", component: <Authors /> },
   ];
 
   useEffect(() => {
@@ -32,7 +35,7 @@ const AdminPanel = () => {
     <div className={s.admin}>
       <div className={s.tabs}>
         {tabs.map((tab) => (
-          <TabButton
+          <FilterButton
             key={tab.name}
             text={tab.label}
             isActive={activeTab === tab.name}

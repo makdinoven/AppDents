@@ -1,19 +1,9 @@
-.course_detail {
+.detail_container {
   @include flex-column;
   gap: 80px;
-
-  h1 {
-    text-align: center;
-    @include clamped-h2;
-  }
 }
 
-.course_name_description {
-  @include flex-column;
-  gap: 30px;
-}
-
-.sections {
+.list {
   @include flex-column;
   gap: 40px;
 
@@ -23,59 +13,13 @@
   }
 }
 
-.section {
-  @include flex-column;
-  gap: 40px;
-}
-
-.section_header {
-  display: flex;
-  justify-content: space-between;
-}
-
-.section_name_description {
-  @include flex-column;
-  gap: 20px;
-}
-
-.section_name {
-  @include flex-column;
-  gap: 5px;
-}
-
-.section_closed {
-  @include horizontal-line($bottom: 0, $left: 0, $z:0);
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 20px;
-  gap: 15px;
-
-  span {
-    color: $primary;
-  }
-}
-
-.sections_header {
-  display: flex;
-  justify-content: space-between;
-}
-
-.modules {
+.inner_list {
   @include flex-column;
   gap: 40px;
   padding: 0 40px;
 }
 
-.module {
-  @include flex-column;
-  gap: 20px;
-}
-
-.course_detail_bottom {
-  min-height: 52px;
+.list_header {
   display: flex;
   justify-content: space-between;
 }
-
