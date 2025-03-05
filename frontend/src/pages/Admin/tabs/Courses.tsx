@@ -2,27 +2,14 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   createCourse,
   getCourses,
-} from "../../../../store/actions/adminActions.ts";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import AdminList from "./AdminList.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import { CourseType } from "../../types.ts";
+} from "../../../store/actions/adminActions.ts";
+import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
+import { Path } from "../../../routes/routes.ts";
 
-const initialCourse: CourseType = {
-  name: "New Course",
+const initialCourse = {
+  name: "New course",
   description: "",
-  landing: {
-    title: "",
-    old_price: 0,
-    price: 0,
-    main_image: "",
-    main_text: "",
-    language: "en",
-    tag_id: 1,
-    authors: [],
-    sales_count: 0,
-  },
-  sections: [],
 };
 
 const Courses = () => {

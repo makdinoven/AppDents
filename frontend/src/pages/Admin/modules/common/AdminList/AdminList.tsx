@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import s from "../AdminPanel.module.scss";
-import Search from "../../../../components/ui/Search/Search.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import { useSearch } from "../../../../common/hooks/useSearch.ts";
+import s from "./AdminList.module.scss";
+import Search from "../../../../../components/ui/Search/Search.tsx";
+import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import { useSearch } from "../../../../../common/hooks/useSearch.ts";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
-import PanelItem from "./PanelItem/PanelItem.tsx";
+import PanelItem from "../PanelItem/PanelItem.tsx";
 
 interface AdminListProps<T> {
   items: T[];
@@ -60,6 +60,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       ) : filteredItems.length > 0 ? (
         filteredItems.map((item) => (
           <PanelItem
+            id={item.id}
             name={item[itemName]}
             key={item.id}
             link={itemLink(item)}

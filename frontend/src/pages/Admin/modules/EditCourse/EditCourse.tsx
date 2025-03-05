@@ -1,14 +1,12 @@
-import s from "../CourseDetail/CourseDetail.module.scss";
-import { Trans } from "react-i18next";
-import AdminField from "../CourseDetail/modules/AdminField/AdminField.tsx";
+import s from "./EditCourse.module.scss";
+import AdminField from "../common/AdminField/AdminField.tsx";
 import { t } from "i18next";
-import { CourseType } from "../../types.ts";
 
 const EditCourse = ({
   course,
   setCourse,
 }: {
-  course: CourseType;
+  course: any;
   setCourse?: any;
 }) => {
   const handleChange = (e: any) => {
@@ -21,29 +19,26 @@ const EditCourse = ({
   };
 
   return (
-    <>
-      <div className={s.course_name_description}>
-        <h1>
-          <Trans i18nKey={"admin.courses.update"} />
-        </h1>
-        <AdminField
-          type="input"
-          inputType="text"
-          id="name"
-          label={t("admin.courses.name")}
-          value={course?.name}
-          onChange={handleChange}
-        />
-        <AdminField
-          type="textarea"
-          inputType="text"
-          id="description"
-          label={t("admin.courses.description")}
-          value={course?.description}
-          onChange={handleChange}
-        />
-      </div>
-    </>
+    <div className={s.edit_course}>
+      <AdminField
+        type="input"
+        inputType="text"
+        id="name"
+        label={t("admin.courses.name")}
+        placeholder={t("admin.courses.name.placeholder")}
+        value={course?.name}
+        onChange={handleChange}
+      />
+      <AdminField
+        type="textarea"
+        inputType="text"
+        id="description"
+        placeholder={t("admin.courses.description.placeholder")}
+        label={t("admin.courses.description")}
+        value={course?.description}
+        onChange={handleChange}
+      />
+    </div>
   );
 };
 

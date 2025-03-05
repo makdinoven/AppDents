@@ -11,6 +11,5 @@ export const Path = {
   userDetail: "/admin/user",
   authorDetail: "/admin/author",
   adminLandings: "/admin/landings",
-  adminCourses: "/admin/courses",
   adminUsers: "/admin/users",
 };
