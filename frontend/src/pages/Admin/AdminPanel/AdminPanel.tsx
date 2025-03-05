@@ -3,20 +3,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import FilterButton from "../../../components/ui/FilterButton/FilterButton.tsx";
 import { useEffect, useState } from "react";
 import Courses from "../tabs/Courses.tsx";
+import Landings from "../tabs/Landings.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get("tab") || "courses";
+  const initialTab = queryParams.get("tab") || "landings";
   const [activeTab, setActiveTab] = useState(initialTab);
 
   const tabs = [
-    // {
-    //   name: "landings",
-    //   label: "admin.landings",
-    //   component: <Landings />,
-    // },
+    {
+      name: "landings",
+      label: "admin.landings",
+      component: <Landings />,
+    },
     {
       name: "courses",
       label: "admin.courses",

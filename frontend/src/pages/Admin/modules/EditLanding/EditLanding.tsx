@@ -3,79 +3,73 @@ import AdminField from "../common/AdminField/AdminField.tsx";
 import { LandingType } from "../../types.ts";
 import { t } from "i18next";
 import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { useEffect, useState } from "react";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
-
-const languages = [
-  { label: "English", value: "en" },
-  { label: "Russian", value: "ru" },
-  { label: "Spanish", value: "es" },
-];
 
 const EditLanding = ({
   landing,
   setLanding,
+  authors,
+  languages,
+  tags,
+  courses,
 }: {
+  authors: any[];
+  languages: any[];
+  tags: any[];
+  courses: any[];
   landing: LandingType;
   setLanding?: any;
 }) => {
-  const [authors, setAuthors] = useState<any[]>([]);
-  const [tags, setTags] = useState<any[]>([]);
-
   const handleChange = (e: any) => {
     const { name, value } = e;
     setLanding((prev: any) => {
       if (!prev) return prev;
-      return { ...prev, landing: { ...prev.landing, [name]: value } };
+      return { ...prev, ...prev.landing, [name]: value };
     });
   };
-
-  const fetchAuthors = async () => {
-    try {
-      const res = await adminApi.getAuthors();
-      setAuthors(res.data);
-    } catch (error) {
-      console.error("Error fetching authors", error);
-    }
-  };
-
-  const fetchTags = async () => {
-    try {
-      const res = await mainApi.getTags();
-      setTags(res.data);
-    } catch (error) {
-      console.error("Error fetching tags", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchAuthors();
-    fetchTags();
-  }, []);
 
   return (
     <div className={s.edit_landing}>
       <AdminField
         type="input"
-        id="title"
+        id="landing_name"
+        placeholder={t("admin.landings.title.placeholder")}
         label={t("admin.landings.title")}
-        value={landing.title}
+        value={landing.landing_name}
         onChange={handleChange}
       />
       <AdminField
         type="textarea"
-        id="main_text"
-        label={t("admin.landings.mainText")}
-        value={landing.main_text}
+        id="course_program"
+        placeholder={t("admin.landings.courseProgram.placeholder")}
+        label={t("admin.landings.courseProgram")}
+        value={landing.course_program}
+        onChange={handleChange}
+      />
+      <AdminField
+        type="input"
+        id="page_name"
+        placeholder={t("admin.landings.pageName.placeholder")}
+        label={t("admin.landings.pageName")}
+        value={landing.page_name}
         onChange={handleChange}
       />
       <PhotoUploader
-        url={landing.main_image}
-        id="main_image"
+        url={landing.preview_photo}
+        id="preview_photo"
         title={t("admin.landings.mainImage")}
         label={t("admin.landings.mainImage.choose")}
+      />
+      <MultiSelect
+        id={"course_ids"}
+        options={courses}
+        placeholder={"Choose an course"}
+        label={t("admin.landings.courses")}
+        selectedValue={landing.course_ids}
+        isMultiple={true}
+        onChange={handleChange}
+        valueKey="id"
+        labelKey="name"
       />
       <div className={s.selects}>
         <AdminField
@@ -89,9 +83,9 @@ const EditLanding = ({
         <AdminField
           type="input"
           inputType="number"
-          id="price"
+          id="new_price"
           label={t("admin.landings.price")}
-          value={landing.price}
+          value={landing.new_price}
           onChange={handleChange}
         />
         <AdminField
@@ -127,11 +121,11 @@ const EditLanding = ({
         />
       </div>
       <MultiSelect
-        id={"authors"}
+        id={"author_ids"}
         options={authors}
         placeholder={"Choose an author"}
         label={t("admin.landings.authors")}
-        selectedValue={landing.authors}
+        selectedValue={landing.author_ids}
         isMultiple={true}
         onChange={handleChange}
         valueKey="id"

@@ -1,4 +1,4 @@
-import { LessonType, SectionType } from "../../types.ts";
+import { SectionType } from "../../types.ts";
 import { useState } from "react";
 import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
 
@@ -6,19 +6,17 @@ const EditLesson = ({
   type = "course",
   section,
   lesson,
-  defaultOpen = false,
   setCourse,
   handleDelete,
 }: {
   type?: "landing" | "course";
   section?: SectionType;
-  lesson: LessonType;
-  defaultOpen?: boolean;
+  lesson: any;
   index?: number;
   setCourse: any;
   handleDelete: any;
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [isOpen, setIsOpen] = useState(false);
 
   const toggleOpen = () => {
     setIsOpen(!isOpen);
@@ -44,7 +42,18 @@ const EditLesson = ({
     });
   };
 
-  const handleChangeLanding = () => {};
+  const handleChangeLanding = (e: any) => {
+    const { name, value } = e;
+    setCourse((prev: any) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        lessons_info: prev.lessons_info.map((l: any) =>
+          l.id === lesson.id ? { ...l, [name]: value } : l,
+        ),
+      };
+    });
+  };
 
   const courseFields = [
     {
@@ -63,19 +72,19 @@ const EditLesson = ({
 
   const landingFields = [
     {
-      id: "lesson_name",
+      id: "name",
       label: "title",
       placeholder: "title.placeholder",
       inputType: "text",
     },
     {
-      id: "program_text",
+      id: "program",
       label: "programText",
       placeholder: "programText.placeholder",
       type: "textarea",
     },
     {
-      id: "short_link",
+      id: "link",
       label: "shortLink",
       placeholder: "shortLink.placeholder",
       inputType: "text",
@@ -86,17 +95,34 @@ const EditLesson = ({
       placeholder: "duration.placeholder",
       inputType: "text",
     },
+    {
+      id: "lecturer",
+      label: "lecturer",
+      placeholder: "lecturer.placeholder",
+      inputType: "text",
+    },
   ];
 
   return (
     <CollapsibleSection
       title="admin.lessons"
-      data={{
-        id: lesson.id,
-        name: lesson.lesson_name,
-        lesson_name: lesson.lesson_name,
-        video_link: lesson.video_link,
-      }}
+      data={
+        type === "course"
+          ? {
+              id: lesson.id,
+              name: lesson.lesson_name,
+              lesson_name: lesson.lesson_name,
+              video_link: lesson.video_link,
+            }
+          : {
+              id: lesson.id,
+              name: lesson.name,
+              link: lesson.link,
+              duration: lesson.duration,
+              lecturer: lesson.lecturer,
+              program: lesson.program,
+            }
+      }
       fields={type === "course" ? courseFields : landingFields}
       isOpen={isOpen}
       toggleOpen={toggleOpen}

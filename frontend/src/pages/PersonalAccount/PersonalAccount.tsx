@@ -1,10 +1,10 @@
-import Button from "../../components/ui/Button/Button.tsx";
 import { useDispatch } from "react-redux";
 import { logout } from "../../store/slices/userSlice.ts";
 import { t } from "i18next";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
 import { useNavigate } from "react-router-dom";
+import s from "./PersonalAccount.module.scss";
 // import { AppRootStateType } from "../../store/store.ts";
 // import { useEffect } from "react";
 
@@ -24,11 +24,14 @@ const PersonalAccountPage = () => {
   // }, [role]);
 
   return (
-    <>
-      personal page
-      <Button text={t("logout")} onClick={handleLogout} />
+    <div className={s.profile_page}>
       <PrettyButton text={"admin"} onClick={() => navigate(Path.admin)} />
-    </>
+      <PrettyButton
+        variant={"danger"}
+        text={t("logout")}
+        onClick={handleLogout}
+      />
+    </div>
   );
 };
 
