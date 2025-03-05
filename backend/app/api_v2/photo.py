@@ -4,7 +4,7 @@ import shutil
 from fastapi import APIRouter, UploadFile, File, HTTPException, status
 
 
-router = APIRouter(prefix="/upload", tags=["upload"])
+router = APIRouter()
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./assets/img/preview_img")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
