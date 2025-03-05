@@ -11,6 +11,7 @@ class LessonInfoItem(BaseModel):
 class LandingListResponse(BaseModel):
     id: int
     landing_name: str
+    page_name: str
 
     class Config:
         orm_mode = True
