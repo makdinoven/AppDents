@@ -1,9 +1,11 @@
+from http.client import HTTPException
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag
+from ..models.models_v2 import User, Tag, Landing
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
@@ -31,6 +33,34 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     else:
         lessons_list = []
     # Собираем итоговый ответ
+    return {
+        "id": landing.id,
+        "page_name": landing.page_name,
+        "language": landing.language,
+        "landing_name": landing.landing_name,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_program": landing.course_program,
+        "lessons_info": lessons_list,
+        "preview_photo": landing.preview_photo,
+        "tag_id": landing.tag_id,
+        "sales_count": landing.sales_count,
+        "author_ids": [author.id for author in landing.authors] if landing.authors else [],
+        "course_ids": [course.id for course in landing.courses] if landing.courses else []
+    }
+
+@router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
+def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
+    landing = db.query(Landing).filter(Landing.page_name == page_name).first()
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+    lessons = landing.lessons_info
+    if isinstance(lessons, dict):
+        lessons_list = [{k: v} for k, v in lessons.items()]
+    elif isinstance(lessons, list):
+        lessons_list = lessons
+    else:
+        lessons_list = []
     return {
         "id": landing.id,
         "page_name": landing.page_name,
