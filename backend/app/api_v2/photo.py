@@ -6,7 +6,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, status
 
 router = APIRouter()
 
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./assets/img/preview_img")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "/var/www/AppDents/assets/img/preview_img")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif"}
