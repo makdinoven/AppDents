@@ -8,6 +8,6 @@
     "types": ["vite/client", "node"],
     "strict": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": true
+    "noUnusedParameters": false
   }
 }
