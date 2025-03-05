@@ -1,7 +1,10 @@
 export interface LessonType {
   id: number;
-  lesson_name: string;
-  video_link: string;
+  name: string;
+  link: string;
+  lecturer: string;
+  duration: string;
+  program: string;
 }
 
 export interface SectionType {
@@ -18,13 +21,21 @@ export interface CourseType {
 
 export interface LandingType {
   id: number;
-  title: string;
+  landing_name: string;
+  page_name: string;
   old_price: number;
-  price: number;
-  main_image: string;
-  main_text: string;
+  new_price: number;
+  course_program: string;
   language: string;
   tag_id: number;
-  authors: [];
   sales_count: number;
+  preview_photo: string;
+  course_ids: [];
+  author_ids: [];
+  lessons_info: LessonType[];
+}
+
+export interface LandingFromListType {
+  id: number;
+  landing_name: string;
 }

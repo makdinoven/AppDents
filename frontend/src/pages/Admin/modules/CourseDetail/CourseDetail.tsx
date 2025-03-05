@@ -203,8 +203,6 @@ const CourseDetail = () => {
   }, [course]);
 
   const handleSave = async () => {
-    console.log("handleSave", denormalizeCourse(course));
-
     try {
       await adminApi.updateCourse(courseId, denormalizeCourse(course));
       navigate(-1);

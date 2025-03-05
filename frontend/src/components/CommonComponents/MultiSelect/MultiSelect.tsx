@@ -109,7 +109,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
 }: MultiSelectProps<T>) => {
   const formattedOptions = options.map((option) => ({
     value: option[valueKey] as string,
-    label: option[labelKey] as string,
+    label: t(option[labelKey]) as string,
   }));
 
   const selectedOption = isMultiple
