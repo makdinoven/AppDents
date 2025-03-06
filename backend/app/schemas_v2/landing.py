@@ -27,7 +27,6 @@ class LandingDetailResponse(BaseModel):
     # lessons_info теперь возвращается как список объектов, где каждый объект имеет один ключ (например, "lesson1")
     lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
-    tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
@@ -46,7 +45,6 @@ class LandingCreate(BaseModel):
     # Входной формат для lessons_info – список объектов
     lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
-    tag_id: Optional[int] = None
     sales_count: Optional[int] = 0
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
@@ -64,7 +62,6 @@ class LandingUpdate(BaseModel):
     course_program: Optional[str] = ""
     lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = ""
     preview_photo: Optional[str] = ""
-    tag_id: Optional[int] = None
     sales_count: Optional[int] = ""
     author_ids: Optional[List[int]] = None
     course_ids: Optional[List[int]] = None
