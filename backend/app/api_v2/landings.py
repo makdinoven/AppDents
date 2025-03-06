@@ -106,7 +106,9 @@ def create_new_landing(
     new_landing = create_landing(db, landing_data)
     return {
         "id": new_landing.id,
-        "landing_name": new_landing.landing_name
+        "landing_name": new_landing.landing_name,
+        "page_name": new_landing.page_name,
+        "language": new_landing.language
     }
 
 @router.put("/{landing_id}", response_model=LandingDetailResponse)
