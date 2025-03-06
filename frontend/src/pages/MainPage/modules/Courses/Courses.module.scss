@@ -22,22 +22,6 @@
   @include horizontal-line($right: 0, $width: 85%, $bottom: 0);
 }
 
-.title_wrapper {
-  display: flex;
-  max-width: clamp(816px,20vw, 100%);
-  position: relative;
-  z-index: 1;
-  @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
-  h3 {
-    margin-left: clamp(28.5px,7vw,104px);
-    display: inline-block;
-    @include clamped-p1;
-    color: $primary;
-    background-color: $background-color;
-    padding: 0 clamp(5px, 1vw,10px);
-  }
-}
-
 .list {
   display: grid;
   grid-template-columns: 1fr 1fr;
