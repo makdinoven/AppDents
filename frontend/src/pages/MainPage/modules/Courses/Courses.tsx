@@ -3,6 +3,8 @@ import { Trans } from "react-i18next";
 import CourseCard from "../CourseCard/CourseCard.tsx";
 import { useEffect, useState } from "react";
 import FilterButton from "../../../../components/ui/FilterButton/FilterButton.tsx";
+import CourseCardImg from "/src/assets/course-card.png";
+import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 
 const initialCourses = [
   {
@@ -11,7 +13,7 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Surgery",
     link: "string",
-    photo: "/src/assets/course-card.png",
+    photo: CourseCardImg,
   },
   {
     id: "2",
@@ -19,7 +21,7 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Orthodontics",
     link: "string",
-    photo: "/src/assets/course-card.png",
+    photo: CourseCardImg,
   },
   {
     id: "3",
@@ -27,7 +29,7 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Orthodontics",
     link: "string",
-    photo: "/src/assets/course-card.png",
+    photo: CourseCardImg,
   },
   {
     id: "4",
@@ -35,7 +37,7 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Surgery",
     link: "string",
-    photo: "/src/assets/course-card.png",
+    photo: CourseCardImg,
   },
 ];
 
@@ -70,11 +72,7 @@ const Courses = () => {
   return (
     <section className={s.courses}>
       <div className={s.courses_header}>
-        <div className={s.title_wrapper}>
-          <h3>
-            <Trans i18nKey={"main.ourCurses"} />
-          </h3>
-        </div>
+        <SectionHeader name={"main.ourCurses"} />
         <div className={s.filters}>
           {initialFilters.tags.map((filter) => (
             <FilterButton
