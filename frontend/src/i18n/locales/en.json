@@ -25,6 +25,9 @@
   "footer.home": "Home Page",
   "footer.tour": "Tour",
   "footer.templates": "Templates",
+  "buy": "Buy",
+  "buyFor": "Buy for",
+  "etAl": "et. al.",
 
   "nothingFound" : "Nothing found",
   "searchCourses": "Search courses...",
@@ -56,6 +59,15 @@
   "tag.digital_dentistry": "Digital dentistry",
   "tag.pediatric_dentistry": "Pediatric dentistry",
   "tag.management": "Management",
+
+  "landing.about": "About this course",
+  "landing.access": "Access to the course is not limited in time",
+  "landing.lessons": "lessons",
+  "landing.professors": "professors",
+  "landing.discount": "discount",
+  "landing.savings": "savings",
+  "landing.courseProgram": "Course program",
+  "landing.fullCourseProgram": "The full course program",
 
 
   "tag.common.popular": "Popular",
