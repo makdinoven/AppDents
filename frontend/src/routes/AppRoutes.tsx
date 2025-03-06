@@ -15,8 +15,10 @@ export const AppRoutes: FC = () => {
     <Routes>
       <Route path={Path.main} element={<Layout />}>
         <Route path=":modalType?" element={<MainPage />} />
-        <Route path={`${Path.landing}/:modalType?`} element={<Landing />} />
-
+        <Route
+          path={`${Path.landing}/:landingPath?/:modalType?`}
+          element={<Landing />}
+        />
         <Route path={Path.profile} element={<PersonalAccount />} />
 
         <Route path={Path.admin} element={<AdminPage />}>

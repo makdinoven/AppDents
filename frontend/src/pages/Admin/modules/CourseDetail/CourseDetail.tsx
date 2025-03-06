@@ -11,6 +11,10 @@ import EditCourse from "../EditCourse/EditCourse.tsx";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
+import {
+  denormalizeCourse,
+  normalizeCourse,
+} from "../../../../common/helpers/helpers.ts";
 
 // const initialCourse = {
 //   name: "initialCourse",
@@ -65,41 +69,6 @@ const CourseDetail = () => {
       // setLoading(false);
     }
   }, [courseId]);
-
-  const normalizeCourse = (course: any) => {
-    return {
-      ...course,
-      sections: course.sections.map((sectionObj: any) => {
-        const sectionId = Object.keys(sectionObj)[0];
-        return {
-          id: Number(sectionId),
-          section_name: sectionObj[sectionId].section_name,
-          lessons: sectionObj[sectionId].lessons.map(
-            (lesson: any, index: number) => ({
-              id: index + 1,
-              lesson_name: lesson.lesson_name,
-              video_link: lesson.video_link,
-            }),
-          ),
-        };
-      }),
-    };
-  };
-
-  const denormalizeCourse = (course: any) => {
-    return {
-      ...course,
-      sections: course.sections.map((section: any) => ({
-        [section.id]: {
-          section_name: section.section_name,
-          lessons: section.lessons.map((lesson: any) => {
-            const { id, ...rest } = lesson;
-            return rest;
-          }),
-        },
-      })),
-    };
-  };
 
   const fetchCourseData = async () => {
     try {

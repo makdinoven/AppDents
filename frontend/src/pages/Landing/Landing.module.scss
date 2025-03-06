@@ -1,0 +1,22 @@
+.landing {
+    @include flex-column;
+    gap: 140px;
+}
+
+.hero {
+    position: relative;
+    h1 {
+        text-align: right;
+    }
+
+    .card {
+        z-index: -1;
+        min-width: 610px;
+        min-height: 582px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: $primary;
+        border-radius: 40px;
+    }
+}
