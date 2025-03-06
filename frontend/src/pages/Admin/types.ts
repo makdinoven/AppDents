@@ -27,7 +27,7 @@ export interface LandingType {
   new_price: number;
   course_program: string;
   language: string;
-  tag_id: number;
+  tag_ids: [];
   sales_count: number;
   preview_photo: string;
   course_ids: [];

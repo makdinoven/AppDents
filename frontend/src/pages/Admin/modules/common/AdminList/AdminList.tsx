@@ -7,6 +7,7 @@ import { useSearch } from "../../../../../common/hooks/useSearch.ts";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
 import PanelItem from "../PanelItem/PanelItem.tsx";
+import { Path } from "../../../../../routes/routes.ts";
 
 interface AdminListProps<T> {
   items: T[];
@@ -62,6 +63,9 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
           <PanelItem
             id={item.id}
             name={item[itemName]}
+            landingPath={
+              item.page_name ? `${Path.landing}/${item.page_name}` : undefined
+            }
             key={item.id}
             link={itemLink(item)}
           />

@@ -60,24 +60,13 @@ const EditLanding = ({
         title={t("admin.landings.mainImage")}
         label={t("admin.landings.mainImage.choose")}
       />
-      <MultiSelect
-        id={"course_ids"}
-        options={courses}
-        placeholder={"Choose an course"}
-        label={t("admin.landings.courses")}
-        selectedValue={landing.course_ids}
-        isMultiple={true}
-        onChange={handleChange}
-        valueKey="id"
-        labelKey="name"
-      />
       <div className={s.selects}>
         <AdminField
           type="input"
           inputType="number"
           id="old_price"
           label={t("admin.landings.oldPrice")}
-          value={landing.old_price}
+          value={landing.old_price ?? ""}
           onChange={handleChange}
         />
         <AdminField
@@ -85,7 +74,7 @@ const EditLanding = ({
           inputType="number"
           id="new_price"
           label={t("admin.landings.price")}
-          value={landing.new_price}
+          value={landing.new_price ?? ""}
           onChange={handleChange}
         />
         <AdminField
@@ -93,19 +82,8 @@ const EditLanding = ({
           inputType="number"
           id="sales_count"
           label={t("admin.landings.salesCount")}
-          value={landing.sales_count}
+          value={landing.sales_count ?? ""}
           onChange={handleChange}
-        />
-        <MultiSelect
-          id={"tag_id"}
-          options={tags}
-          placeholder={"Choose a tag"}
-          label={t("admin.landings.tag")}
-          selectedValue={landing.tag_id}
-          isMultiple={false}
-          onChange={handleChange}
-          valueKey="id"
-          labelKey="name"
         />
         <MultiSelect
           isSearchable={false}
@@ -120,6 +98,28 @@ const EditLanding = ({
           labelKey="label"
         />
       </div>
+      <MultiSelect
+        id={"course_ids"}
+        options={courses}
+        placeholder={"Choose an course"}
+        label={t("admin.landings.courses")}
+        selectedValue={landing.course_ids}
+        isMultiple={true}
+        onChange={handleChange}
+        valueKey="id"
+        labelKey="name"
+      />
+      <MultiSelect
+        id={"tag_ids"}
+        options={tags}
+        placeholder={"Choose a tag"}
+        label={t("admin.landings.tags")}
+        selectedValue={landing.tag_ids}
+        isMultiple={true}
+        onChange={handleChange}
+        valueKey="id"
+        labelKey="name"
+      />
       <MultiSelect
         id={"author_ids"}
         options={authors}
