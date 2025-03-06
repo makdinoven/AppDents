@@ -23,7 +23,6 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         course_program = landing_data.course_program,
         lessons_info = landing_data.lessons_info,
         preview_photo = landing_data.preview_photo,
-        tag_id = landing_data.tag_id,
         sales_count = landing_data.sales_count
     )
     db.add(new_landing)
@@ -70,11 +69,6 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
         ]
     if update_data.preview_photo is not None:
         landing.preview_photo = update_data.preview_photo
-    if update_data.tag_id is not None:
-        tag = db.query(Tag).filter(Tag.id == update_data.tag_id).first()
-        if not tag:
-            raise HTTPException(status_code=400, detail="Tag not found")
-        landing.tag_id = update_data.tag_id
     if update_data.sales_count is not None:
         landing.sales_count = update_data.sales_count
     if update_data.language is not None:

@@ -7,8 +7,7 @@ from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing
 from ..schemas_v2 import landing
-from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
-    delete_landing
+from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, delete_landing
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
 
 router = APIRouter()
@@ -33,6 +32,14 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
         lessons_list = lessons
     else:
         lessons_list = []
+    authors_list = [
+        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo}
+        for author in landing.authors
+    ] if landing.authors else []
+    tags_list = [
+        {"id": tag.id, "name": tag.name}
+        for tag in landing.tags
+    ] if landing.tags else []
     # Собираем итоговый ответ
     return {
         "id": landing.id,
@@ -47,7 +54,9 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
         "sales_count": landing.sales_count,
         "author_ids": [author.id for author in landing.authors] if landing.authors else [],
         "course_ids": [course.id for course in landing.courses] if landing.courses else [],
-        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else []
+        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else [],
+        "authors": authors_list,  # Новое поле с подробностями об авторах
+        "tags": tags_list  # Новое поле с подробностями о тегах
     }
 
 @router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
@@ -62,6 +71,14 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
         lessons_list = lessons
     else:
         lessons_list = []
+    authors_list = [
+        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo}
+        for author in landing.authors
+    ] if landing.authors else []
+    tags_list = [
+        {"id": tag.id, "name": tag.name}
+        for tag in landing.tags
+    ] if landing.tags else []
     return {
         "id": landing.id,
         "page_name": landing.page_name,
@@ -75,7 +92,9 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
         "sales_count": landing.sales_count,
         "author_ids": [author.id for author in landing.authors] if landing.authors else [],
         "course_ids": [course.id for course in landing.courses] if landing.courses else [],
-        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else []
+        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else [],
+        "authors": authors_list,  # Новое поле с подробностями об авторах
+        "tags": tags_list  # Новое поле с подробностями о тегах
     }
 
 @router.post("/", response_model=LandingListResponse)

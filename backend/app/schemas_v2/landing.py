@@ -1,6 +1,15 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
+from .author import AuthorResponse
+
+class TagResponse(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 class LessonInfoItem(BaseModel):
     link: Optional[str] = ""
     name: Optional[str] = ""
@@ -31,6 +40,8 @@ class LandingDetailResponse(BaseModel):
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
     tag_ids: Optional[List[int]] = []
+    authors: Optional[List[AuthorResponse]] = []
+    tags: Optional[List[TagResponse]] = []
 
     class Config:
         orm_mode = True
@@ -70,9 +81,3 @@ class LandingUpdate(BaseModel):
     class Config:
         orm_mode = True
 
-class TagResponse(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        orm_mode = True
