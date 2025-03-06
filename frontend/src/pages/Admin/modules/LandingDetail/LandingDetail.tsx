@@ -11,6 +11,10 @@ import EditLesson from "../EditLesson/EditLesson.tsx";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import {
+  denormalizeLessons,
+  normalizeLessons,
+} from "../../../../common/helpers/helpers.ts";
 
 const languages = [
   { label: "English", value: "EN" },
@@ -51,7 +55,6 @@ const LandingDetail = () => {
         ...landingRes.data,
         lessons_info: normalizeLessons(landingRes.data.lessons_info),
       });
-
       setTags(tagsRes.data);
       setCourses(coursesRes.data);
       setAuthors(authorsRes.data);
@@ -61,36 +64,6 @@ const LandingDetail = () => {
       setLoading(false);
     }
   };
-
-  function normalizeLessons(lessons: any[]): any[] {
-    return lessons.map((lessonObj, index) => {
-      const key = Object.keys(lessonObj)[0];
-      const lesson = lessonObj[key];
-
-      return {
-        id: index + 1,
-        program: lesson.program || "",
-        link: lesson.link || "",
-        duration: lesson.duration || "",
-        name: lesson.name || "",
-        lecturer: lesson.lecturer || "",
-      };
-    });
-  }
-
-  function denormalizeLessons(lessons: any) {
-    return lessons.map((lesson: any, index: number) => {
-      return {
-        [`lesson${index + 1}`]: {
-          link: lesson.link || "",
-          name: lesson.name || "",
-          program: lesson.program || "",
-          duration: lesson.duration || "",
-          lecturer: lesson.lecturer || "",
-        },
-      };
-    });
-  }
 
   const handleAddLesson = () => {
     setLanding((prev: any) => {
@@ -118,20 +91,6 @@ const LandingDetail = () => {
     }
   };
 
-  const handleSave = async () => {
-    const denormalizedLanding = {
-      ...landing,
-      lessons_info: denormalizeLessons(landing?.lessons_info),
-    };
-    console.log(denormalizedLanding);
-    try {
-      await adminApi.updateLanding(landingId, denormalizedLanding);
-      navigate(-1);
-    } catch (error) {
-      console.error("Error updating course:", error);
-    }
-  };
-
   const handleDeleteItem = (
     itemType: "landing" | "lesson",
     lessonId?: number,
@@ -148,6 +107,20 @@ const LandingDetail = () => {
           lessons_info: prev.lessons_info.filter((l: any) => l.id !== lessonId),
         };
       });
+    }
+  };
+
+  const handleSave = async () => {
+    const denormalizedLanding = {
+      ...landing,
+      lessons_info: denormalizeLessons(landing?.lessons_info),
+    };
+    console.log(denormalizedLanding);
+    try {
+      await adminApi.updateLanding(landingId, denormalizedLanding);
+      navigate(-1);
+    } catch (error) {
+      console.error("Error updating course:", error);
     }
   };
 
