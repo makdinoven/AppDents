@@ -43,6 +43,7 @@
   "password" : "Password...",
   "open": "open",
   "viewCourse": "View course",
+  "onlineCourse": "Online course",
 
   "tag.allCourses": "All courses",
   "tag.surgery": "Surgery",
@@ -132,7 +133,7 @@
   "admin.landings.oldPrice": "Old price",
   "admin.landings.price": "New price",
   "admin.landings.salesCount": "Sales count",
-  "admin.landings.tag": "Tag",
+  "admin.landings.tags": "Tags",
   "admin.landings.language": "Language",
   "admin.landings.authors": "Authors",
   "admin.landings.notFound": "No landings found",
