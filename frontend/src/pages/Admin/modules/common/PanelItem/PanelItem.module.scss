@@ -9,6 +9,12 @@
   gap: 30px;
   border: 1px solid $accent;
 
+  .buttons {
+    @include flex-column;
+    gap: 15px;
+
+  }
+
   div {
     display: flex;
     gap: 15px;
