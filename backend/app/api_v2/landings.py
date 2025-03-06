@@ -6,6 +6,7 @@ from typing import List
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing
+from ..schemas_v2 import landing
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
@@ -43,10 +44,10 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
         "course_program": landing.course_program,
         "lessons_info": lessons_list,
         "preview_photo": landing.preview_photo,
-        "tag_id": landing.tag_id,
         "sales_count": landing.sales_count,
         "author_ids": [author.id for author in landing.authors] if landing.authors else [],
-        "course_ids": [course.id for course in landing.courses] if landing.courses else []
+        "course_ids": [course.id for course in landing.courses] if landing.courses else [],
+        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else []
     }
 
 @router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
@@ -71,10 +72,10 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
         "course_program": landing.course_program,
         "lessons_info": lessons_list,
         "preview_photo": landing.preview_photo,
-        "tag_id": landing.tag_id,
         "sales_count": landing.sales_count,
         "author_ids": [author.id for author in landing.authors] if landing.authors else [],
-        "course_ids": [course.id for course in landing.courses] if landing.courses else []
+        "course_ids": [course.id for course in landing.courses] if landing.courses else [],
+        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else []
     }
 
 @router.post("/", response_model=LandingListResponse)
@@ -114,10 +115,10 @@ def update_landing_full(
         "course_program": updated_landing.course_program,
         "lessons_info": lessons_list,
         "preview_photo": updated_landing.preview_photo,
-        "tag_id": updated_landing.tag_id,
         "sales_count": updated_landing.sales_count,
         "author_ids": [author.id for author in updated_landing.authors] if updated_landing.authors else [],
-        "course_ids": [course.id for course in updated_landing.courses] if updated_landing.courses else []
+        "course_ids": [course.id for course in updated_landing.courses] if updated_landing.courses else [],
+        "tag_ids": [tag.id for tag in updated_landing.tags] if updated_landing.tags else []
     }
 
 @router.get("/tags", response_model=List[TagResponse])

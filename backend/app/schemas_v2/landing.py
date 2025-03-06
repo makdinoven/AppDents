@@ -31,6 +31,7 @@ class LandingDetailResponse(BaseModel):
     sales_count: Optional[int] = 0
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
+    tag_ids: Optional[List[int]] = []
 
     class Config:
         orm_mode = True
@@ -49,6 +50,7 @@ class LandingCreate(BaseModel):
     sales_count: Optional[int] = 0
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
+    tag_ids: Optional[List[int]] = []
 
     class Config:
         orm_mode = True
@@ -66,6 +68,7 @@ class LandingUpdate(BaseModel):
     sales_count: Optional[int] = ""
     author_ids: Optional[List[int]] = None
     course_ids: Optional[List[int]] = None
+    tag_ids: Optional[List[int]] = None
 
     class Config:
         orm_mode = True

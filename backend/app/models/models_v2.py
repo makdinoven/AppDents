@@ -26,6 +26,13 @@ landing_course = Table(
     Column('course_id', Integer, ForeignKey('courses.id'), primary_key=True)
 )
 
+landing_tags = Table(
+    'landing_tags',
+    Base.metadata,
+    Column('landing_id', Integer, ForeignKey('landings.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+)
+
 class Course(Base):
     __tablename__ = 'courses'
     id = Column(Integer, primary_key=True)
@@ -47,18 +54,19 @@ class Landing(Base):
     course_program = Column(Text)
     lessons_info = Column(JSON)
     preview_photo = Column(String(255), default='')
-    tag_id = Column(Integer, ForeignKey('tags.id'))
     sales_count = Column(Integer, default=0)
 
     # Связь с лекторами через ассоциативную таблицу
     authors = relationship("Author", secondary=landing_authors, back_populates="landings")
     # Связь с курсами через новую ассоциативную таблицу
     courses = relationship("Course", secondary=landing_course)
+    tags = relationship("Tag", secondary=landing_tags, back_populates="landings")
 
 class Tag(Base):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
+    landings = relationship("Landing", secondary=landing_tags, back_populates="tags")
 
 class Author(Base):
     __tablename__ = 'authors'
