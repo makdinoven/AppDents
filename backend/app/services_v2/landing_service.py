@@ -39,6 +39,9 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         new_landing.courses = courses
     db.commit()
     db.refresh(new_landing)
+    if landing_data.tag_ids:
+        tags = db.query(Tag).filter(Tag.id.in_(landing_data.tag_ids)).all()
+        new_landing.tags = tags
     # Если landing_name не задано, обновляем его автоматически
     if not new_landing.landing_name:
         new_landing.landing_name = f"Landing name {new_landing.id}"
@@ -82,6 +85,9 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
     if update_data.course_ids is not None:
         courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
         landing.courses = courses
+    if update_data.tag_ids is not None:
+        tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
+        landing.tags = tags
     db.commit()
     db.refresh(landing)
     return landing
@@ -95,5 +101,6 @@ def delete_landing(db: Session, landing_id: int) -> None:
     # Очистка связей с курсами (через landing_course) и с авторами (через landing_authors)
     landing.courses = []
     landing.authors = []
+    landing.tags = []
     db.delete(landing)
     db.commit()
