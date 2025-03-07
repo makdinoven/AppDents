@@ -1,3 +1,6 @@
+from datetime import time
+
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List
@@ -50,35 +53,56 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
 
 
 def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> Landing:
-    landing = db.query(Landing).filter(Landing.id == landing_id).first()
-    if not landing:
-        raise HTTPException(status_code=404, detail="Landing not found")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            # Используем with_for_update() для явной блокировки строки
+            landing = db.query(Landing).filter(Landing.id == landing_id).with_for_update().first()
+            if not landing:
+                raise HTTPException(status_code=404, detail="Landing not found")
 
-    # Обновление простых (скалярных) полей
-    for field in ["page_name", "landing_name", "old_price", "new_price",
-                  "course_program", "preview_photo", "sales_count", "language"]:
-        value = getattr(update_data, field)
-        if value is not None:
-            setattr(landing, field, value)
+            if update_data.page_name is not None:
+                landing.page_name = update_data.page_name
+            if update_data.landing_name is not None:
+                landing.landing_name = update_data.landing_name
+            if update_data.old_price is not None:
+                landing.old_price = update_data.old_price
+            if update_data.new_price is not None:
+                landing.new_price = update_data.new_price
+            if update_data.course_program is not None:
+                landing.course_program = update_data.course_program
+            if update_data.lessons_info is not None:
+                landing.lessons_info = [
+                    {k: v.dict() if hasattr(v, "dict") else v for k, v in lesson_item.items()}
+                    for lesson_item in update_data.lessons_info
+                ]
+            if update_data.preview_photo is not None:
+                landing.preview_photo = update_data.preview_photo
+            if update_data.sales_count is not None:
+                landing.sales_count = update_data.sales_count
+            if update_data.language is not None:
+                landing.language = update_data.language
+            if update_data.author_ids is not None:
+                authors = db.query(Author).filter(Author.id.in_(update_data.author_ids)).all()
+                landing.authors = authors
+            if update_data.course_ids is not None:
+                courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
+                landing.courses = courses
+            if update_data.tag_ids is not None:
+                tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
+                landing.tags = tags
 
-    # Обновление lessons_info (преобразуем объекты LessonInfoItem в словари)
-    if update_data.lessons_info is not None:
-        landing.lessons_info = [
-            {k: v.dict() if hasattr(v, "dict") else v for k, v in lesson_item.items()}
-            for lesson_item in update_data.lessons_info
-        ]
-
-    # Обновление ассоциаций через ассоциативные таблицы
-    if update_data.author_ids is not None:
-        landing.authors = db.query(Author).filter(Author.id.in_(update_data.author_ids)).all()
-    if update_data.course_ids is not None:
-        landing.courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
-    if update_data.tag_ids is not None:
-        landing.tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
-
-    db.commit()
-    db.refresh(landing)
-    return landing
+            db.commit()
+            db.refresh(landing)
+            return landing
+        except OperationalError as e:
+            db.rollback()
+            if "Lock wait timeout exceeded" in str(e):
+                if attempt < max_retries - 1:
+                    time.sleep(1)  # небольшая задержка перед повторной попыткой
+                    continue
+            raise HTTPException(status_code=500, detail=f"Update failed: {e}")
+    raise HTTPException(status_code=500, detail="Unable to update landing due to lock wait timeout")
 
 
 def delete_landing(db: Session, landing_id: int) -> None:
