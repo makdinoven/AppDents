@@ -24,3 +24,4 @@ jobs:
             cd /var/www/AppDents
             git pull --no-rebase -s recursive -X theirs origin main
             docker compose up --build -d
+            docker builder prune -f
