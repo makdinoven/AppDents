@@ -48,44 +48,37 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         db.refresh(new_landing)
     return new_landing
 
+
 def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> Landing:
     landing = db.query(Landing).filter(Landing.id == landing_id).first()
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
-    if update_data.page_name is not None:
-        landing.page_name = update_data.page_name
-    if update_data.landing_name is not None:
-        landing.landing_name = update_data.landing_name
-    if update_data.old_price is not None:
-        landing.old_price = update_data.old_price
-    if update_data.new_price is not None:
-        landing.new_price = update_data.new_price
-    if update_data.course_program is not None:
-        landing.course_program = update_data.course_program
+
+    # Обновление простых (скалярных) полей
+    for field in ["page_name", "landing_name", "old_price", "new_price",
+                  "course_program", "preview_photo", "sales_count", "language"]:
+        value = getattr(update_data, field)
+        if value is not None:
+            setattr(landing, field, value)
+
+    # Обновление lessons_info (преобразуем объекты LessonInfoItem в словари)
     if update_data.lessons_info is not None:
         landing.lessons_info = [
             {k: v.dict() if hasattr(v, "dict") else v for k, v in lesson_item.items()}
             for lesson_item in update_data.lessons_info
         ]
-    if update_data.preview_photo is not None:
-        landing.preview_photo = update_data.preview_photo
-    if update_data.sales_count is not None:
-        landing.sales_count = update_data.sales_count
-    if update_data.language is not None:
-        landing.language = update_data.language
+
+    # Обновление ассоциаций через ассоциативные таблицы
     if update_data.author_ids is not None:
-        authors = db.query(Author).filter(Author.id.in_(update_data.author_ids)).all()
-        landing.authors = authors
+        landing.authors = db.query(Author).filter(Author.id.in_(update_data.author_ids)).all()
     if update_data.course_ids is not None:
-        courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
-        landing.courses = courses
+        landing.courses = db.query(Course).filter(Course.id.in_(update_data.course_ids)).all()
     if update_data.tag_ids is not None:
-        tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
-        landing.tags = tags
+        landing.tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
+
     db.commit()
     db.refresh(landing)
     return landing
-
 
 
 def delete_landing(db: Session, landing_id: int) -> None:
