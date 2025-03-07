@@ -1,6 +1,15 @@
 @import "@fontsource/rethink-sans/index.css";
 @import "@fontsource/roboto/index.css";
 
+.highlight {
+  color: $primary;
+}
+
+.crossed {
+  text-decoration: line-through;
+}
+
+
 body {
   font-family: $font-family;
   background-color: $background-color;
