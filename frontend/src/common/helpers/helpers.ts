@@ -12,6 +12,13 @@ export const getAuthHeaders = () => {
 
 export const generateId = () => Math.floor(Math.random() * 100000);
 
+export const capitalizeText = (text: string) => {
+  return text
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 export const normalizeCourse = (course: any) => {
   return {
     ...course,

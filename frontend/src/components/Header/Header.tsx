@@ -68,7 +68,6 @@ const Header = () => {
     }
     return (
       <UnstyledButton
-        ref={triggerRef}
         onClick={() => navigate(Path.profile)}
         className={s.login_btn}
       >

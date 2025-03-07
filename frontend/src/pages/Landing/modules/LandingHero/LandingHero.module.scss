@@ -1,0 +1,173 @@
+$card-width: 610px;
+$card-height: 582px;
+
+$card-header-height: 120px;
+$card-header-width: $card-width - 325px;
+
+$card-bottom-height: 208px;
+$card-bottom-width: $card-width - 190px;
+
+$card-body-height: $card-height - $card-bottom-height - $card-header-height;
+
+$border-radius: 40px;
+$arrow-w: 66px;
+
+.hero {
+  position: relative;
+
+  .hero_top {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    align-items: end;
+    gap: 30px;
+
+    h1 {
+      display: block;
+      max-width: 918px;
+      margin-bottom: 10px;
+    }
+
+    .card_header {
+      position: relative;
+      background-color: $primary;
+      width: $card-header-width;
+      height: $card-header-height;
+      border-top-left-radius: $border-radius;
+      border-top-right-radius: $border-radius;
+      &::before {
+        z-index: -1;
+        content: "";
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        bottom: 0;
+        right: -80px;
+        border-bottom-left-radius: $border-radius;
+        box-shadow: -20px 20px 0 2px #7FDFD5;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .hero_content_wrapper {
+    display: flex;
+    gap: 20px;
+  }
+
+  .card {
+    @include flex-column;
+    width: $card-width;
+    max-height: $card-height;
+    border-radius: 40px;
+
+    .card_body {
+      position: relative;
+      min-width: $card-width;
+      height: $card-body-height;
+      width: 100%;
+      background-color: $primary;
+      border-bottom-left-radius: $border-radius;
+      border-top-right-radius: $border-radius;
+    }
+
+    .photo {
+      z-index: 2;
+      position: absolute;
+      border-radius: $border-radius;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      left: 20px;
+      right: 20px;
+      top: 50px;
+      width: $card-width - 40px;
+      height: 324px;
+      background-color: $accent-glass;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      div {
+        width: 100%;
+        height: 100%;
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: contain;
+      }
+    }
+
+    .card_bottom {
+      margin-left: auto;
+      position: relative;
+      background-color: $primary;
+      min-height: $card-bottom-height;
+      width: $card-bottom-width;
+      border-bottom-left-radius: $border-radius;
+      border-bottom-right-radius: $border-radius;
+      &::before {
+        z-index: -1;
+        content: "";
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        top: 0;
+        left: -80px;
+        border-top-right-radius: $border-radius;
+        box-shadow: 20px -20px 0 2px $primary;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .hero_content {
+    position: relative;
+    @include horizontal-line($top:0,$right:0,$width:100%);
+    padding-top: 20px;
+
+    h2 {
+      @include clamped-h2;
+      text-transform: uppercase;
+      color: $primary;
+      margin-bottom: 20px;
+    }
+
+    p {
+      @include clamped-p2;
+      margin-right: 75px;
+      margin-bottom: 95px;
+    }
+
+    .arrow {
+      display: flex;
+      justify-content: end;
+      margin-bottom: 20px;
+      height:  $arrow-w;
+      position: relative;
+      max-width: 255px;
+      @include horizontal-line($top:50%,$left:0,$width:256px - $arrow-w,$transform:y50 -2px);
+      svg {
+        height: 100%;
+        width: $arrow-w;
+        circle {
+          stroke-width: 2px;
+          stroke: $accent;
+        }
+        path {
+          fill: $accent;
+        }
+      }
+    }
+
+    .old_price {
+      text-decoration: line-through;
+    }
+
+    .new_price {
+      color: $primary;
+    }
+  }
+}

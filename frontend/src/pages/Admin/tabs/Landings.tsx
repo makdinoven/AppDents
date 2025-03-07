@@ -9,10 +9,6 @@ import {
 
 const initialLanding = {
   landing_name: "New landing",
-  tag_id: 1,
-  old_price: 0,
-  new_price: 0,
-  sales_count: 0,
 };
 
 const Landings = () => {
@@ -26,7 +22,7 @@ const Landings = () => {
     <>
       <AdminList<any>
         items={landings}
-        searchField="name"
+        searchField="landing_name"
         itemName="landing_name"
         itemLink={(landing) => `${Path.landingDetail}/${landing.id}`}
         loading={loading}
