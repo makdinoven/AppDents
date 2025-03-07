@@ -5,6 +5,7 @@ import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
 import { useNavigate } from "react-router-dom";
 import s from "./PersonalAccount.module.scss";
+import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 // import { AppRootStateType } from "../../store/store.ts";
 // import { useEffect } from "react";
 
@@ -24,14 +25,17 @@ const PersonalAccountPage = () => {
   // }, [role]);
 
   return (
-    <div className={s.profile_page}>
-      <PrettyButton text={"admin"} onClick={() => navigate(Path.admin)} />
-      <PrettyButton
-        variant={"danger"}
-        text={t("logout")}
-        onClick={handleLogout}
-      />
-    </div>
+    <>
+      <BackButton />
+      <div className={s.profile_page}>
+        <PrettyButton text={"admin"} onClick={() => navigate(Path.admin)} />
+        <PrettyButton
+          variant={"danger"}
+          text={t("logout")}
+          onClick={handleLogout}
+        />
+      </div>
+    </>
   );
 };
 

@@ -1,0 +1,8 @@
+.professors_container {
+  @include flex-column;
+  gap: 40px;
+
+  h3 {
+    text-transform: capitalize;
+  }
+}
