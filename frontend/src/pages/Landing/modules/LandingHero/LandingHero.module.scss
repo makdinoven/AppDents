@@ -74,6 +74,7 @@ $arrow-w: 66px;
     .photo {
       z-index: 2;
       position: absolute;
+      overflow: hidden;
       border-radius: $border-radius;
       display: flex;
       align-items: center;

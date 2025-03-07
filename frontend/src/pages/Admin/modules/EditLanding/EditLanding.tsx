@@ -24,7 +24,7 @@ const EditLanding = ({
     const { name, value } = e;
     setLanding((prev: any) => {
       if (!prev) return prev;
-      return { ...prev, ...prev.landing, [name]: value };
+      return { ...prev, [name]: value };
     });
   };
 
@@ -55,6 +55,7 @@ const EditLanding = ({
         onChange={handleChange}
       />
       <PhotoUploader
+        setLanding={setLanding}
         url={landing.preview_photo}
         id="preview_photo"
         title={t("admin.landings.mainImage")}
