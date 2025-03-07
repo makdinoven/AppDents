@@ -109,4 +109,12 @@ export const adminApi = {
       return Promise.reject(error);
     }
   },
+
+  uploadPhoto(file: any) {
+    try {
+      return instance.post("photo/photo", file);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  },
 };
