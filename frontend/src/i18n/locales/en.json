@@ -63,11 +63,14 @@
   "landing.about": "About this course",
   "landing.access": "Access to the course is not limited in time",
   "landing.lessons": "lessons",
+  "landing.onlineLessons": "online lessons",
   "landing.professors": "professors",
   "landing.discount": "discount",
   "landing.savings": "savings",
   "landing.courseProgram": "Course program",
   "landing.fullCourseProgram": "The full course program",
+  "landing.buyFor": "Buy for <1>${{old_price}}</1> <2>${{new_price}}</2>",
+  "landing.youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>${{new_price}}</2>, instead of the old one - ${{old_price}}",
 
 
   "tag.common.popular": "Popular",
