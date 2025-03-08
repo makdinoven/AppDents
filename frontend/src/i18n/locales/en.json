@@ -69,8 +69,12 @@
   "landing.savings": "savings",
   "landing.courseProgram": "Course program",
   "landing.fullCourseProgram": "The full course program",
-  "landing.buyFor": "Buy for <1>${{old_price}}</1> <2>${{new_price}}</2>",
-  "landing.youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>${{new_price}}</2>, instead of the old one - ${{old_price}}",
+  "landing.buyFor": "Buy for <1>{{old_price}}</1> <2>{{new_price}}</2>",
+  "landing.youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>{{new_price}}</2>, instead of the old one - {{old_price}}",
+  "landing.fiveMinuteFragment": "Here you can watch a <1>five-minute fragment</1> of the lesson",
+  "landing.durationOfLesson": "Duration of the lesson:",
+  "landing.noVideoLink": "No video link or link is not valid",
+  "landing.videoIsNotSupported": "Your browser is not supporting video",
 
 
   "tag.common.popular": "Popular",

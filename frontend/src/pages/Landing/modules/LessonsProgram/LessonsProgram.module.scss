@@ -1,4 +1,9 @@
 .lessons_container {
   @include flex-column;
   gap: 40px;
+
+  .lessons {
+    @include flex-column;
+    gap: 200px;
+  }
 }
