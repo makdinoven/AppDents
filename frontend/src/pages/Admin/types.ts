@@ -29,7 +29,9 @@ export interface LandingType {
   language: string;
   tag_ids: [];
   sales_count: number;
+  duration: string;
   preview_photo: string;
+  lessons_count: string;
   course_ids: [];
   author_ids: [];
   lessons_info: LessonType[];

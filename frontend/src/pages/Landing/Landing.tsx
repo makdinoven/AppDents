@@ -6,6 +6,7 @@ import {
   calculateDiscount,
   capitalizeText,
   getPricesData,
+  keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
@@ -63,16 +64,21 @@ const Landing = () => {
   };
 
   const aboutData = {
-    lessonsCount: `${landing?.lessons_count ? landing.lessons_count : 0} ${t("landing.lessons")}`,
+    lessonsCount: landing?.lessons_count
+      ? landing.lessons_count
+      : `0 ${t("landing.lessons")}`,
     professorsCount: `${landing?.authors.length} ${t("landing.professors")}`,
     discount: `${discountPercentage}% ${t("landing.discount")}`,
     savings: `$${landing?.old_price - landing?.new_price} ${t("landing.savings")}`,
     access: t("landing.access"),
+    duration: landing?.duration,
   };
 
   const courseProgramData = {
     name: landing?.landing_name,
-    lessonsCount: `${landing?.lessons_count ? landing.lessons_count : 0} ${t("landing.onlineLessons")}`,
+    lessonsCount: landing?.lessons_count
+      ? keepFirstTwoWithInsert(landing?.lessons_count)
+      : `0 ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
     ...getPricesData(landing),

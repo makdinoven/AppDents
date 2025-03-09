@@ -20,14 +20,5 @@
           min-width: 62px;
         }
       }
-
-      li:nth-child(3) {
-        grid-row: span 2;
-        align-self: center;
-
-        svg {
-          width: 58px;
-        }
-      }
     }
 }

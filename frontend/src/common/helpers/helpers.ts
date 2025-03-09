@@ -1,3 +1,5 @@
+import { t } from "i18next";
+
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem("access_token");
 
@@ -11,6 +13,11 @@ export const getAuthHeaders = () => {
 };
 
 export const generateId = () => Math.floor(Math.random() * 100000);
+
+export const keepFirstTwoWithInsert = (initialStr: string) => {
+  const parts = initialStr.split(" ");
+  return `${parts[0]} ${t("landing.online")} ${parts[1]}`;
+};
 
 export const processProgramText = (text: string) => {
   const lines = text.split("\n").map((line) => line.trim());
