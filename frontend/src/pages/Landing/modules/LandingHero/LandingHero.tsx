@@ -39,11 +39,17 @@ const LandingHero = ({ data }: { data: any }) => {
           </div>
           <p>{data.authors}</p>
           <ArrowButton>
-            <div>
-              <Trans i18nKey={"buyFor"} />{" "}
-              <span className={s.old_price}>${data.old_price}</span>{" "}
-              <span className={s.new_price}>${data.new_price}</span>
-            </div>
+            <Trans
+              i18nKey="landing.buyFor"
+              values={{
+                new_price: data.new_price,
+                old_price: data.old_price,
+              }}
+              components={{
+                1: <span className="crossed" />,
+                2: <span className="highlight" />,
+              }}
+            />
           </ArrowButton>
         </div>
       </div>

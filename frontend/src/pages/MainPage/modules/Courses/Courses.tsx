@@ -3,7 +3,6 @@ import { Trans } from "react-i18next";
 import CourseCard from "../CourseCard/CourseCard.tsx";
 import { useEffect, useState } from "react";
 import FilterButton from "../../../../components/ui/FilterButton/FilterButton.tsx";
-import CourseCardImg from "/src/assets/course-card.png";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 
 const initialCourses = [
@@ -13,7 +12,8 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Surgery",
     link: "string",
-    photo: CourseCardImg,
+    photo:
+      "https://dent-s.com/assets/img/preview_img/e9f108ecfe3343ed9cfac82f87f2da38.png",
   },
   {
     id: "2",
@@ -21,7 +21,8 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Orthodontics",
     link: "string",
-    photo: CourseCardImg,
+    photo:
+      "https://dent-s.com/assets/img/preview_img/e9f108ecfe3343ed9cfac82f87f2da38.png",
   },
   {
     id: "3",
@@ -29,7 +30,8 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Orthodontics",
     link: "string",
-    photo: CourseCardImg,
+    photo:
+      "https://dent-s.com/assets/img/preview_img/e9f108ecfe3343ed9cfac82f87f2da38.png",
   },
   {
     id: "4",
@@ -37,7 +39,8 @@ const initialCourses = [
     description: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
     tag: "Surgery",
     link: "string",
-    photo: CourseCardImg,
+    photo:
+      "https://dent-s.com/assets/img/preview_img/e9f108ecfe3343ed9cfac82f87f2da38.png",
   },
 ];
 

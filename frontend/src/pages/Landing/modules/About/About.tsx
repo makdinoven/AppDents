@@ -7,30 +7,24 @@ import Dollar from "../../../../common/Icons/Dollar.tsx";
 import Clock from "../../../../common/Icons/Clock.tsx";
 
 const About = ({ data }: { data: any }) => {
+  const aboutItems = [
+    { Icon: Book, text: data.lessonsCount },
+    { Icon: Percent, text: data.discount },
+    { Icon: Clock, text: data.access },
+    { Icon: Glasses, text: data.professorsCount },
+    { Icon: Dollar, text: data.savings },
+  ];
+
   return (
     <section className={s.about}>
       <SectionHeader name={"landing.about"} />
       <ul>
-        <li className={s.about_item}>
-          <Book />
-          {data.lessonsCount}
-        </li>
-        <li className={s.about_item}>
-          <Glasses />
-          {data.professorsCount}
-        </li>
-        <li className={s.about_item}>
-          <Percent />
-          {data.discount}
-        </li>
-        <li className={s.about_item}>
-          <Dollar />
-          {data.savings}
-        </li>
-        <li className={s.about_item}>
-          <Clock />
-          {data.access}
-        </li>
+        {aboutItems.map((item, index) => (
+          <li key={index} className={s.about_item}>
+            <item.Icon />
+            {item.text}
+          </li>
+        ))}
       </ul>
     </section>
   );

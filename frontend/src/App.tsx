@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AppDispatchType } from "./store/store.ts";
 import { useDispatch } from "react-redux";
 import { getMe } from "./store/actions/userActions.ts";
+import ScrollToTop from "./common/helpers/ScrollToTop.tsx";
 
 function App() {
   const dispatch = useDispatch<AppDispatchType>();
@@ -11,7 +12,12 @@ function App() {
     dispatch(getMe());
   }, [dispatch]);
 
-  return <AppRoutes />;
+  return (
+    <>
+      <ScrollToTop />
+      <AppRoutes />
+    </>
+  );
 }
 
 export default App;
