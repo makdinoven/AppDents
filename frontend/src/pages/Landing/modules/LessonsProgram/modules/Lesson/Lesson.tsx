@@ -52,6 +52,9 @@ const Lesson = ({ lesson, old_price, new_price }: any) => {
                 <Trans i18nKey={"landing.durationOfLesson"} /> {lesson.duration}
               </span>
             )}
+            {lesson.lecturer && (
+              <span className={s.lecturer}>{lesson.lecturer}</span>
+            )}
           </div>
           <ArrowButton>
             <Trans
