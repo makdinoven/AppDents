@@ -28,12 +28,12 @@ def create_app() -> FastAPI:
     # app.include_router(cleaner.router, prefix="/cleaner", tags=["Cleaner"])
     # app.include_router(transfer.router, prefix="/transfer", tags=["Transfer"])
 
-    app.include_router(cleaner.router, prefix="/cleaner", tags=["cleaner"])
-    app.include_router(users.router, prefix="/users", tags=["users"])
-    app.include_router(courses.router, prefix="/courses", tags=["courses"])
-    app.include_router(landings.router, prefix="/landings", tags=["landings"])
-    app.include_router(authors.router, prefix="/authors", tags=["authors"])
-    app.include_router(photo.router, prefix="/photo", tags=["photo"])
+    app.include_router(cleaner.router, prefix="/api/cleaner", tags=["cleaner"])
+    app.include_router(users.router, prefix="/api/users", tags=["users"])
+    app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
+    app.include_router(landings.router, prefix="/api/landings", tags=["landings"])
+    app.include_router(authors.router, prefix="/api/authors", tags=["authors"])
+    app.include_router(photo.router, prefix="/api/photo", tags=["photo"])
 
     @app.on_event("startup")
     async def startup_event():
