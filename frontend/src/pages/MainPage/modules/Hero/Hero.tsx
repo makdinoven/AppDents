@@ -62,7 +62,7 @@ const Hero = () => {
         <div className={s.hero_bottom}>
           <p className={s.bottom_desc}>
             <Trans i18nKey="main.hero.widestRange.firstPart" />
-            <span className={s.highlight}>
+            <span className="highlight">
               <Trans i18nKey="main.hero.widestRange.secondPart" />
             </span>
             <Trans i18nKey="main.hero.widestRange.lastPart" />
@@ -71,7 +71,7 @@ const Hero = () => {
             <ArrowButton text={t("main.hero.chooseCourse")} />
           </div>
           <p className={s.bottom_secondary_desc}>
-            <span className={s.highlight}>
+            <span className="highlight">
               <Trans i18nKey="main.hero.bestPrices.firstPart" />
             </span>
             <Trans i18nKey="main.hero.bestPrices.lastPart" />

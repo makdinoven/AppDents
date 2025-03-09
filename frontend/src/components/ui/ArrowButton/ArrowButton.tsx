@@ -18,13 +18,13 @@ const ArrowButton = ({
   return link ? (
     <Link className={s.btn} to={link}>
       <Trans i18nKey={text} />
-      {children && children}
+      {children && <span>{children}</span>}
       <CircleArrowSmall />
     </Link>
   ) : (
     <UnstyledButton onClick={onClick} className={s.btn}>
       <Trans i18nKey={text} />
-      {children && children}
+      {children && <span>{children}</span>}
       <CircleArrowSmall />
     </UnstyledButton>
   );

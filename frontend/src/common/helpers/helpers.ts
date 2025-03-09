@@ -12,6 +12,59 @@ export const getAuthHeaders = () => {
 
 export const generateId = () => Math.floor(Math.random() * 100000);
 
+export const processProgramText = (text: string) => {
+  const lines = text.split("\n").map((line) => line.trim());
+
+  const regularLines: string[] = [];
+  const bulletPointGroups: { text: string; points: string[] }[] = [];
+  let currentGroup: { text: string; points: string[] } | null = null;
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+
+    if (trimmedLine.startsWith("-") || trimmedLine.startsWith("–")) {
+      if (currentGroup) {
+        bulletPointGroups.push(currentGroup);
+      }
+      currentGroup = {
+        text: trimmedLine.substring(1).trim(),
+        points: [],
+      };
+    } else if (trimmedLine.startsWith("•")) {
+      if (currentGroup) {
+        currentGroup.points.push(trimmedLine.substring(1).trim());
+      }
+    } else {
+      if (currentGroup) {
+        bulletPointGroups.push(currentGroup);
+        currentGroup = null;
+      }
+      regularLines.push(trimmedLine);
+    }
+  });
+
+  if (currentGroup) {
+    bulletPointGroups.push(currentGroup);
+  }
+
+  return { regularLines, bulletPointGroups };
+};
+
+export const isValidUrl = (url: string) => {
+  const regex =
+    /^(https?:\/\/)?([a-zA-Z0-9]+[.-])*[a-zA-Z0-9]+(\.[a-zA-Z]{2,})?(:\d+)?(\/[^\s]*)?$/;
+  return regex.test(url);
+};
+
+export const getPricesData = (landing: any) => ({
+  old_price: landing?.old_price ? `$${landing?.old_price}` : "",
+  new_price: landing?.new_price ? `$${landing?.new_price}` : "",
+});
+
+export const calculateDiscount = (oldPrice: number, newPrice: number) => {
+  return Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+};
+
 export const capitalizeText = (text: string) => {
   return text
     .split(" ")
