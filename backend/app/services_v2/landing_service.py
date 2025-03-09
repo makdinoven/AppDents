@@ -26,7 +26,9 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         course_program = landing_data.course_program,
         lessons_info = landing_data.lessons_info,
         preview_photo = landing_data.preview_photo,
-        sales_count = landing_data.sales_count
+        sales_count = landing_data.sales_count,
+        duration = landing_data.duration,
+        lessons_count = landing_data.lessons_count,
     )
     db.add(new_landing)
     db.commit()
@@ -91,7 +93,10 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
             if update_data.tag_ids is not None:
                 tags = db.query(Tag).filter(Tag.id.in_(update_data.tag_ids)).all()
                 landing.tags = tags
-
+            if update_data.duration is not None:
+                landing.duration = update_data.duration
+            if update_data.lessons_count is not None:
+                landing.lessons_count = update_data.lessons_count
             db.commit()
             db.refresh(landing)
             return landing
