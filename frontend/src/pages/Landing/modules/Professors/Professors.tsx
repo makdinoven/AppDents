@@ -5,7 +5,7 @@ const Professors = ({ data }: { data: any }) => {
   return (
     <div className={s.professors_container}>
       <SectionHeader name={"landing.professors"} />
-      <ul>
+      <ul style={{ display: `${data.length <= 1 ? "flex" : "grid"}` }}>
         {data.map((professor: any) => (
           <li className={s.professor_card} key={professor.id}>
             <div className={s.photo_wrapper}>
