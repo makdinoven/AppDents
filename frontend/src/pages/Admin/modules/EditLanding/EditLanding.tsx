@@ -67,6 +67,7 @@ const EditLanding = ({
           inputType="number"
           id="old_price"
           label={t("admin.landings.oldPrice")}
+          placeholder="0"
           value={landing.old_price ?? ""}
           onChange={handleChange}
         />
@@ -74,6 +75,7 @@ const EditLanding = ({
           type="input"
           inputType="number"
           id="new_price"
+          placeholder="0"
           label={t("admin.landings.price")}
           value={landing.new_price ?? ""}
           onChange={handleChange}
@@ -82,8 +84,27 @@ const EditLanding = ({
           type="input"
           inputType="number"
           id="sales_count"
+          placeholder="0"
           label={t("admin.landings.salesCount")}
           value={landing.sales_count ?? ""}
+          onChange={handleChange}
+        />
+      </div>
+      <div className={s.selects}>
+        <AdminField
+          type="input"
+          id="lessons_count"
+          placeholder={t("admin.landings.lessonsCount.placeholder")}
+          label={t("admin.landings.lessonsCount")}
+          value={landing.lessons_count ?? ""}
+          onChange={handleChange}
+        />
+        <AdminField
+          type="input"
+          id="duration"
+          placeholder={t("admin.landings.duration.placeholder")}
+          label={t("admin.landings.duration")}
+          value={landing.duration ?? ""}
           onChange={handleChange}
         />
         <MultiSelect
