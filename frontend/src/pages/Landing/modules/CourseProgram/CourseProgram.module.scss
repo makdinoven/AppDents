@@ -127,7 +127,6 @@ $card-padding-left: 35px;
 
     .column {
       @include flex-column;
-      align-items: center;
       gap: 40px;
 
       li {

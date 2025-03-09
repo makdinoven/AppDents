@@ -30,9 +30,9 @@ const Landing = () => {
     fetchLandingData();
   }, [landingPath]);
 
-  // useEffect(() => {
-  //   console.log(landing);
-  // }, [landing]);
+  useEffect(() => {
+    console.log(landing);
+  }, [landing]);
 
   const fetchLandingData = async () => {
     try {
@@ -74,9 +74,7 @@ const Landing = () => {
     name: landing?.landing_name,
     lessonsCount: `${landing?.lessons_count ? landing.lessons_count : 0} ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
-    lessons_names: landing?.lessons_info.map(
-      (lesson: any, index: number) => `${++index}. ${lesson.name}`,
-    ),
+    lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
     ...getPricesData(landing),
   };
 
