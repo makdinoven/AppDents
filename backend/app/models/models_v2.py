@@ -55,6 +55,9 @@ class Landing(Base):
     lessons_info = Column(JSON)
     preview_photo = Column(String(255), default='')
     sales_count = Column(Integer, default=0)
+    duration = Column(String(50), default='')
+    lessons_count = Column(String(50), default='')
+
 
     # Связь с лекторами через ассоциативную таблицу
     authors = relationship("Author", secondary=landing_authors, back_populates="landings")

@@ -42,6 +42,8 @@ class LandingDetailResponse(BaseModel):
     tag_ids: Optional[List[int]] = []
     authors: Optional[List[AuthorResponse]] = []
     tags: Optional[List[TagResponse]] = []
+    duration: Optional[str] = ""
+    lessons_count: Optional[str] = ""
 
     class Config:
         orm_mode = True
@@ -60,6 +62,8 @@ class LandingCreate(BaseModel):
     author_ids: Optional[List[int]] = []
     course_ids: Optional[List[int]] = []
     tag_ids: Optional[List[int]] = []
+    duration: Optional[str] = ""
+    lessons_count: Optional[str] = ""
 
     class Config:
         orm_mode = True
@@ -77,6 +81,8 @@ class LandingUpdate(BaseModel):
     author_ids: Optional[List[int]] = None
     course_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
+    duration: Optional[str] = ""
+    lessons_count: Optional[str] = ""
 
     class Config:
         orm_mode = True
