@@ -1,0 +1,18 @@
+.line_arrow {
+  display: flex;
+
+  span {
+    position: relative;
+    width: 100%;
+    @include horizontal-line($left:0, $top: 50%, $width: 100%, $transform: y50, $color: $text-color)
+  }
+
+  svg {
+    width: 66px;
+    height: 66px;
+
+    circle {
+      stroke-width: 2px;
+    }
+  }
+}

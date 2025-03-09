@@ -1,0 +1,110 @@
+.offer_card {
+  .card_header {
+    display: flex;
+
+
+    .card_header_text {
+      padding-top: 45px;
+      padding-left: 50px;
+      min-height: 130px;
+      width: 368px;
+      color: $primary;
+      text-transform: uppercase;
+      @include clamped-h3;
+    }
+
+    .card_header_background {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      background-color: $secondary-lighter;
+      border-radius: 40px 40px 0 0;
+
+      &::before {
+        z-index: -1;
+        content: "";
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        bottom: 0;
+        left: -80px;
+        border-bottom-right-radius: 40px;
+        box-shadow: 20px 20px 0 2px $secondary-lighter;
+        pointer-events: none;
+      }
+    }
+  }
+
+  .card_body {
+    @include flex-column;
+    gap: 80px;
+    background-color: $secondary-lighter;
+    border-radius: 40px 0 40px 40px;
+    padding: 60px 60px 80px 50px;
+
+    .content {
+      @include flex-column;
+      gap: 20px;
+    }
+
+    h6 {
+      @include clamped-h2;
+      text-transform: uppercase;
+    }
+
+    p {
+      @include clamped-p2;
+    }
+
+    .line_arrow {
+      display: flex;
+      max-width: 75%;
+
+      span {
+        position: relative;
+        width: 100%;
+        @include horizontal-line($left:0, $top: 50%, $width: 100%, $transform: y50, $color: $accent)
+      }
+
+      svg {
+        width: 66px;
+        height: 66px;
+
+        circle {
+          stroke: $accent;
+          stroke-width: 2px;
+        }
+        path {
+          fill: $accent;
+        }
+
+      }
+    }
+
+    .card_bottom {
+      @include flex-column;
+      gap: 20px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card_bottom_content {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      color: $text-color;
+      text-transform: uppercase;
+      @include clamped-h2;
+
+      svg {
+        width: 40px;
+        height: 40px;
+
+        path {
+          fill: $text-color;
+        }
+      }
+    }
+  }
+}

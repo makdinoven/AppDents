@@ -62,6 +62,7 @@
 
   "landing.about": "About this course",
   "landing.access": "access is not limited in time",
+  "landing.duration": "Duration:",
   "landing.lessons": "lessons",
   "landing.onlineLessons": "online lessons",
   "landing.online": "online",
@@ -76,6 +77,8 @@
   "landing.durationOfLesson": "Duration of the lesson:",
   "landing.noVideoLink": "No video link or link is not valid",
   "landing.videoIsNotSupported": "Your browser is not supporting video",
+  "landing.specialOffer": "Special offer",
+  "landing.accessFull": "Access to the course is unlimited in time!",
 
 
   "tag.common.popular": "Popular",
