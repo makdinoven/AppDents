@@ -30,44 +30,6 @@ export const keepFirstTwoWithInsert = (initialStr: string) => {
   return `${parts[0]} ${t("landing.online")} ${parts[1]}`;
 };
 
-export const processProgramText = (text: string) => {
-  const lines = text.split("\n").map((line) => line.trim());
-
-  const regularLines: string[] = [];
-  const bulletPointGroups: { text: string; points: string[] }[] = [];
-  let currentGroup: { text: string; points: string[] } | null = null;
-
-  lines.forEach((line) => {
-    const trimmedLine = line.trim();
-
-    if (trimmedLine.startsWith("-") || trimmedLine.startsWith("–")) {
-      if (currentGroup) {
-        bulletPointGroups.push(currentGroup);
-      }
-      currentGroup = {
-        text: trimmedLine.substring(1).trim(),
-        points: [],
-      };
-    } else if (trimmedLine.startsWith("•")) {
-      if (currentGroup) {
-        currentGroup.points.push(trimmedLine.substring(1).trim());
-      }
-    } else {
-      if (currentGroup) {
-        bulletPointGroups.push(currentGroup);
-        currentGroup = null;
-      }
-      regularLines.push(trimmedLine);
-    }
-  });
-
-  if (currentGroup) {
-    bulletPointGroups.push(currentGroup);
-  }
-
-  return { regularLines, bulletPointGroups };
-};
-
 export const isValidUrl = (url: string) => {
   const regex =
     /^(https?:\/\/)?([a-zA-Z0-9]+[.-])*[a-zA-Z0-9]+(\.[a-zA-Z]{2,})?(:\d+)?(\/[^\s]*)?$/;

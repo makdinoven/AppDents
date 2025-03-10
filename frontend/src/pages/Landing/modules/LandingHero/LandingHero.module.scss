@@ -1,3 +1,13 @@
+:root {
+  --border-radius: 40px;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --border-radius: 30px;
+  }
+}
+
 $card-width: 610px;
 $card-height: 582px;
 
@@ -9,7 +19,6 @@ $card-bottom-width: $card-width - 190px;
 
 $card-body-height: $card-height - $card-bottom-height - $card-header-height;
 
-$border-radius: 40px;
 $arrow-w: 66px;
 
 .hero {
@@ -23,6 +32,7 @@ $arrow-w: 66px;
     gap: 30px;
 
     h1 {
+      text-align: right;
       display: block;
       max-width: 918px;
       margin-bottom: 10px;
@@ -31,59 +41,60 @@ $arrow-w: 66px;
     .card_header {
       position: relative;
       background-color: $primary;
-      width: $card-header-width;
-      height: $card-header-height;
-      border-top-left-radius: $border-radius;
-      border-top-right-radius: $border-radius;
-      &::before {
-        z-index: -1;
-        content: "";
-        position: absolute;
-        width: 80px;
-        height: 80px;
-        bottom: 0;
-        right: -80px;
-        border-bottom-left-radius: $border-radius;
-        box-shadow: -20px 20px 0 2px $primary;
-        pointer-events: none;
-      }
+      flex: 1;
+      min-width: 150px;
+      height: clamp(70px, 15vw, $card-header-height);
+      border-top-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
+
+      @include circle-angle
+      (
+      $bottom: 0,
+      $right: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: -20px,
+      $offset-y: 20px,
+      $shadow-color: $primary,
+      $border-bottom-left-radius: var(--border-radius)
+      );
     }
   }
 
   .hero_content_wrapper {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr ;
     gap: 20px;
   }
 
   .card {
     @include flex-column;
-    width: $card-width;
     max-height: $card-height;
-    border-radius: 40px;
+    flex: 1;
 
     .card_body {
       position: relative;
-      min-width: $card-width;
-      height: $card-body-height;
+      flex: 1;
+      min-width: 320px;
+      min-height: clamp(134px, 31vw, $card-body-height);
       width: 100%;
       background-color: $primary;
-      border-bottom-left-radius: $border-radius;
-      border-top-right-radius: $border-radius;
+      border-bottom-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
     }
 
     .photo {
       z-index: 2;
+      margin: 0 clamp(10px, 2vw, 20px);
       position: absolute;
       overflow: hidden;
-      border-radius: $border-radius;
+      border-radius: var(--border-radius);
       display: flex;
       align-items: center;
       justify-content: center;
-      left: 20px;
-      right: 20px;
-      top: 50px;
-      width: $card-width - 40px;
-      height: 324px;
+      top: clamp(20px, 5vw, 50px);
+      left: 0;
+      right: 0;
+      height: clamp(171px, 40vw, 324px);
       background-color: $accent-glass;
       backdrop-filter: blur(5px);
 
@@ -106,29 +117,28 @@ $arrow-w: 66px;
       margin-left: auto;
       position: relative;
       background-color: $primary;
-      min-height: $card-bottom-height;
-      width: $card-bottom-width;
-      border-bottom-left-radius: $border-radius;
-      border-bottom-right-radius: $border-radius;
-      &::before {
-        z-index: -1;
-        content: "";
-        position: absolute;
-        width: 80px;
-        height: 80px;
-        top: 0;
-        left: -80px;
-        border-top-right-radius: $border-radius;
-        box-shadow: 20px -20px 0 2px $primary;
-        pointer-events: none;
-      }
+      min-height: clamp(110px, 31vw, 208px);
+      width: 69%;
+      border-bottom-left-radius: var(--border-radius);
+      border-bottom-right-radius: var(--border-radius);
+
+      @include circle-angle
+      (
+      $top: 0,
+      $left: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: 20px,
+      $offset-y: -20px,
+      $shadow-color: $primary,
+      $border-top-right-radius: var(--border-radius)
+      );
     }
   }
 
   .hero_content {
     position: relative;
-    @include horizontal-line($top:0,$right:0,$width:100%);
     padding-top: 20px;
+    @include horizontal-line($top:0,$right:0,$width:100%);
 
     h2 {
       @include clamped-h2;
@@ -161,6 +171,22 @@ $arrow-w: 66px;
         path {
           fill: $accent;
         }
+      }
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .hero_content_wrapper {
+      @include flex-column;
+    }
+  }
+
+  @media (max-width: 940px) {
+    .hero_top {
+      gap: 0;
+
+      h1 {
+        max-width: 50%;
       }
     }
   }
