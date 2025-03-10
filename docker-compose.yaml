@@ -1,5 +1,4 @@
-
-version: "3.8"
+version: '3.8'
 services:
   mysql:
     image: mysql:8.0
@@ -13,20 +12,16 @@ services:
     volumes:
       - mysql_data_prod:/var/lib/mysql
     ports:
-      - 3306:3306
+      - "3306:3306"
     healthcheck:
-      test:
-        - CMD
-        - mysqladmin
-        - ping
-        - -h
-        - localhost
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 20s
     networks:
       - prod
+
   backend:
     build:
       context: ./backend
@@ -36,7 +31,7 @@ services:
     env_file:
       - .env
     ports:
-      - 8000:8000
+      - "8000:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -44,6 +39,7 @@ services:
       - prod
     volumes:
       - ./assets:/var/www/AppDents/assets
+
   frontend:
     build:
       context: ./frontend
@@ -51,20 +47,22 @@ services:
     container_name: frontend_prod
     restart: always
     ports:
-      - 3002:80
+      - "3002:80"
     networks:
       - prod
+
   adminer:
     image: adminer
     container_name: adminer_prod
     restart: always
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - prod
+
   nginx:
     build:
       context: ./nginx
@@ -76,14 +74,16 @@ services:
       - frontend
       - adminer
     ports:
-      - 80:80
-      - 443:443
+      - "80:80"
+      - "443:443"
     networks:
       - prod
     volumes:
       - ./assets:/assets
+
 networks:
   prod:
     driver: bridge
+
 volumes:
-  mysql_data_prod: null
+  mysql_data_prod:
