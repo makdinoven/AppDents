@@ -46,7 +46,6 @@ services:
       dockerfile: Dockerfile
     container_name: frontend_prod
     restart: always
-    # Здесь контейнер отдает статику на порту 80 (внутри своего образа)
     ports:
       - "3002:80"
     networks:
@@ -79,7 +78,6 @@ services:
       - "443:443"
     networks:
       - prod
-    # Больше не монтируем ./frontend/dist – все уже внутри образов
     volumes:
       - ./assets:/assets
 
