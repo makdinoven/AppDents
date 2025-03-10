@@ -143,6 +143,56 @@ $font-sz-err-mob: 12px;
   }
 }
 
+@mixin circle-angle(
+  $right: null,
+  $left: null,
+  $top: null,
+  $bottom: null,
+  $border-top-left-radius:null,
+  $border-top-right-radius: null,
+  $border-bottom-left-radius:null,
+  $border-bottom-right-radius: null,
+  $size,
+  $offset-x,
+  $offset-y,
+  $shadow-color
+) {
+  &::before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: $size;
+    height: $size;
+    @if $top != null {
+      top: $top;
+    }
+    @if $bottom != null {
+      bottom: $bottom;
+    }
+    @if $left != null {
+      left: $left;
+    }
+    @if $right != null {
+      right: $right;
+    }
+    @if $border-top-left-radius != null {
+      border-top-left-radius: $border-top-left-radius;
+    }
+    @if $border-top-right-radius != null {
+      border-top-right-radius: $border-top-right-radius;
+    }
+    @if $border-bottom-left-radius != null {
+      border-bottom-left-radius: $border-bottom-left-radius;
+    }
+    @if $border-bottom-right-radius != null {
+      border-bottom-right-radius: $border-bottom-right-radius;
+    }
+    box-shadow: $offset-x $offset-y 0 2px $shadow-color;
+    pointer-events: none;
+  }
+}
+
+
 @mixin fadeIn($duration: 0.2s, $timing: ease-in-out) {
   animation: fadeInAnim $duration $timing;
 }
