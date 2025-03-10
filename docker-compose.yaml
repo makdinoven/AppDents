@@ -80,6 +80,7 @@ services:
       - prod
     volumes:
       - ./assets:/assets
+      - ./frontend/dist:/usr/share/nginx/html:ro
 
 networks:
   prod:
