@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
-  capitalizeText,
+  formatAuthorsDesc,
   getPricesData,
+  keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
@@ -16,15 +17,12 @@ import About from "./modules/About/About.tsx";
 import CourseProgram from "./modules/CourseProgram/CourseProgram.tsx";
 import LessonsProgram from "./modules/LessonsProgram/LessonsProgram.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
+import Offer from "./modules/Offer/Offer.tsx";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
-  const discountPercentage = calculateDiscount(
-    landing?.old_price,
-    landing?.new_price,
-  );
 
   useEffect(() => {
     fetchLandingData();
@@ -49,30 +47,30 @@ const Landing = () => {
 
   const heroData = {
     landing_name: landing?.landing_name,
-    authors:
-      landing?.authors.length > 0
-        ? `By ${
-            landing?.authors
-              ?.slice(0, 3)
-              .map((author: any) => capitalizeText(author.name))
-              .join(", ") + (landing?.authors.length > 3 ? ` ${t("etAl")}` : "")
-          }`
-        : null,
+    authors: formatAuthorsDesc(landing?.authors),
     photo: landing?.preview_photo,
     ...getPricesData(landing),
   };
 
   const aboutData = {
-    lessonsCount: `${landing?.lessons_count ? landing.lessons_count : 0} ${t("landing.lessons")}`,
+    lessonsCount: landing?.lessons_count
+      ? landing.lessons_count
+      : `0 ${t("landing.lessons")}`,
     professorsCount: `${landing?.authors.length} ${t("landing.professors")}`,
-    discount: `${discountPercentage}% ${t("landing.discount")}`,
+    discount: `${calculateDiscount(
+      landing?.old_price,
+      landing?.new_price,
+    )}% ${t("landing.discount")}`,
     savings: `$${landing?.old_price - landing?.new_price} ${t("landing.savings")}`,
     access: t("landing.access"),
+    duration: `${t("landing.duration")} ${landing?.duration ? landing?.duration : "0"}`,
   };
 
   const courseProgramData = {
     name: landing?.landing_name,
-    lessonsCount: `${landing?.lessons_count ? landing.lessons_count : 0} ${t("landing.onlineLessons")}`,
+    lessonsCount: landing?.lessons_count
+      ? keepFirstTwoWithInsert(landing?.lessons_count)
+      : `0 ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
     ...getPricesData(landing),
@@ -80,6 +78,12 @@ const Landing = () => {
 
   const lessonsProgramData = {
     lessons: landing?.lessons_info,
+    ...getPricesData(landing),
+  };
+
+  const offerData = {
+    landing_name: landing?.landing_name,
+    authors: formatAuthorsDesc(landing?.authors),
     ...getPricesData(landing),
   };
 
@@ -95,7 +99,7 @@ const Landing = () => {
           <CourseProgram data={courseProgramData} />
           <LessonsProgram data={lessonsProgramData} />
           <Professors data={landing?.authors} />
-          <section className={s.offer}></section>
+          <Offer data={offerData} />
         </div>
       )}
     </>

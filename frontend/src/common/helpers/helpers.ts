@@ -1,3 +1,5 @@
+import { t } from "i18next";
+
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem("access_token");
 
@@ -11,6 +13,22 @@ export const getAuthHeaders = () => {
 };
 
 export const generateId = () => Math.floor(Math.random() * 100000);
+
+export const formatAuthorsDesc = (authors: any) => {
+  return authors?.length > 0
+    ? `By ${
+        authors
+          ?.slice(0, 3)
+          .map((author: any) => capitalizeText(author.name))
+          .join(", ") + (authors.length > 3 ? ` ${t("etAl")}` : "")
+      }`
+    : null;
+};
+
+export const keepFirstTwoWithInsert = (initialStr: string) => {
+  const parts = initialStr.split(" ");
+  return `${parts[0]} ${t("landing.online")} ${parts[1]}`;
+};
 
 export const processProgramText = (text: string) => {
   const lines = text.split("\n").map((line) => line.trim());
