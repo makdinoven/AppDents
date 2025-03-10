@@ -23,10 +23,5 @@ jobs:
           script: |
             cd /var/www/AppDents
             git pull --no-rebase -s recursive -X theirs origin main
-            # Переходим в каталог фронтенда, устанавливаем зависимости и собираем проект
-            cd frontend
-            npm install --legacy-peer-deps
-            npm run build
-            cd ..
             docker compose up --build -d
             docker builder prune -f
