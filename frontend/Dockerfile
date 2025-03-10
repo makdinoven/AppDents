@@ -1,7 +1,17 @@
+# Stage 1: сборка приложения
+FROM node:22-alpine AS builder
+WORKDIR /app
+# Копируем package.json и package-lock.json (или yarn.lock)
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
+# Копируем исходный код
+COPY . .
+# Собираем приложение – статические файлы попадут в папку dist
+RUN npm run build
+
+# Stage 2: отдача статики через Nginx
 FROM nginx:alpine
-
-# Если нужно, можно скопировать кастомную конфигурацию nginx
-# COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
-
+# Копируем собранные файлы из stage builder в стандартную папку nginx для статики
+COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
