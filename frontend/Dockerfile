@@ -13,5 +13,9 @@ RUN npm run build
 FROM nginx:alpine
 # Копируем собранные файлы из stage builder в стандартную папку nginx для статики
 COPY --from=builder /app/dist /usr/share/nginx/html
+# Копируем кастомную конфигурацию Nginx для SPA fallback
+# Если frontend.conf лежит в корне каталога фронтенда, то:
+COPY frontend.conf /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
