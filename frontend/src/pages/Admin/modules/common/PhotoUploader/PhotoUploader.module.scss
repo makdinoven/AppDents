@@ -43,3 +43,9 @@
     height: 100%;
   }
 }
+
+@media (max-width: $tablet-breakpoint) {
+  .photo_uploader {
+    flex-direction: column-reverse;
+  }
+}

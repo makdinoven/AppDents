@@ -1,6 +1,23 @@
 @import "@fontsource/rethink-sans/index.css";
 @import "@fontsource/roboto/index.css";
 
+:root {
+  --border-radius: 40px;
+  --offset: 20px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  :root {
+    --border-radius: 30px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  :root {
+    --offset: 10px;
+  }
+}
+
 .highlight {
   color: $primary;
 }
@@ -8,7 +25,6 @@
 .crossed {
   text-decoration: line-through;
 }
-
 
 body {
   font-family: $font-family;
@@ -30,7 +46,12 @@ p {
   color: inherit;
 }
 
-h1,h2,h3,h4,h5,h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0;
   padding: 0;
   color: inherit;
@@ -121,14 +142,12 @@ img {
 
 a:focus-visible,
 button:focus-visible,
-select:focus-visible, {
+select:focus-visible {
   outline: 1.2px solid $quaternary;
   border-radius: 6px;
   outline-offset: 3px;
 }
 
-
 input::placeholder {
   color: $quaternary;
 }
-

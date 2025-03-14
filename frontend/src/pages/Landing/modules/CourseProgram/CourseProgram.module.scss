@@ -1,4 +1,3 @@
-$border-radius: 40px;
 $card-padding-left: 35px;
 
 .highlight {
@@ -14,102 +13,72 @@ $card-padding-left: 35px;
     gap: 33px;
     align-items: end;
 
-    span {
+    .lessons_count {
+      @include clamped-p2;
+      min-width: fit-content;
+      text-align: center;
       padding: 4.5px 33.5px;
       border: 2px solid $accent;
-      border-radius: $border-radius;
-      margin-bottom: 40px;
+      border-radius: var(--border-radius);
+      margin: 0 clamp(0px, 0vw, 36px) clamp(15px, 3vw, 40px) 0;
     }
   }
 
   .card {
     margin-bottom: 40px;
+
+    h6 {
+      position: relative;
+      @include clamped-h2;
+      color: $text-color;
+      text-transform: uppercase;
+      @include horizontal-line($bottom: -30px, $left: 0, $width: 75%);
+    }
   }
 
   .card_header_background {
     position: relative;
-    max-width: 830px;
-    border-radius: $border-radius $border-radius 0 0;
-    @include clamped-h2;
-    padding: 70px 90px 0 $card-padding-left;
+    max-width: 910px;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    padding: clamp(57px, 2vw, 70px) 90px 0 $card-padding-left;
     background-color: $secondary-lighter;
-    color: $text-color;
-    text-transform: uppercase;
 
-    &::before {
-      z-index: -1;
-      content: "";
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      bottom: 0;
-      right: -80px;
-      border-bottom-left-radius: $border-radius;
-      box-shadow: -20px 20px 0 2px $secondary-lighter;
-      pointer-events: none;
-    }
+    @include circle-angle(
+      $bottom: 0,
+      $right: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: -20px,
+      $offset-y: 20px,
+      $shadow-color: $secondary-lighter,
+      $border-bottom-left-radius: var(--border-radius)
+    );
   }
 
   .card_body {
     @include clamped-p2;
     @include flex-column;
-    @include horizontal-line($top: 30px, $left:$card-padding-left, $width: 50%);
-    position: relative;
     gap: 30px;
-    padding-left: $card-padding-left;
-    padding-top: 60px;
+    padding: 60px $card-padding-left 0 $card-padding-left;
     background-color: $secondary-lighter;
-    border-radius: 0 $border-radius 0 0;
+    border-radius: 0 var(--border-radius) 0 0;
     min-height: 100px;
     width: 100%;
 
     .text {
       @include flex-column;
       gap: 30px;
-      padding-right: 420px;
     }
 
     .arrows_list {
       @include flex-column;
       @include clamped-p3;
-      padding-right: 50px;
       gap: 20px;
-
-      .list_item {
-        display: flex;
-        gap: 20px;
-
-        svg {
-          width: 40px;
-          height: 40px;
-
-          circle {
-            stroke-width: 3px;
-            stroke: $accent;
-          }
-
-          path {
-            stroke-width: 3px;
-            fill: $accent;
-          }
-        }
-
-        div {
-          @include flex-column;
-          justify-content: center;
-
-          ul {
-            margin-left: 30px;
-            list-style-type: disc;
-          }
-        }
-      }
     }
   }
 
   .card_bottom {
     position: relative;
-    padding-top: 80px;
+    padding-top: clamp(25px, 5.5vw, 80px);
   }
 
   .lessons_list {
@@ -120,10 +89,10 @@ $card-padding-left: 35px;
     gap: 30px;
     margin: 0 100px;
     color: $text-color;
-    padding: 50px 105px;
+    padding: clamp(30px, 4vw, 50px) clamp(30px, 6vw, 105px);
     background-color: $accent-glass;
     backdrop-filter: blur(5px);
-    border-radius: $border-radius;
+    border-radius: var(--border-radius);
 
     .column {
       @include flex-column;
@@ -133,7 +102,12 @@ $card-padding-left: 35px;
         position: relative;
 
         &:not(:last-child) {
-          @include horizontal-line($bottom: -21px, $left:0, $width: 55%, $color: $background-color);
+          @include horizontal-line(
+            $bottom: -21px,
+            $left: 0,
+            $width: 55%,
+            $color: $background-color
+          );
         }
       }
     }
@@ -147,10 +121,11 @@ $card-padding-left: 35px;
     bottom: 215px;
     width: 100%;
     background-color: $secondary-lighter;
-    border-radius: 0 0 $border-radius $border-radius;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
   }
 
   .program_p {
+    @include clamped-p2;
     max-width: 64%;
   }
 
@@ -158,11 +133,88 @@ $card-padding-left: 35px;
     position: relative;
     display: flex;
     margin-bottom: 20px;
-    @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
+    @include horizontal-line($top: 50%, $right: 0, $transform: y50, $z: -1);
+  }
 
-    @media (max-width: 576px) {
-      margin-bottom: unset;
+  @media (max-width: $middle-breakpoint) {
+    .lessons_list {
+      margin: 0 20px;
+      gap: 20px;
     }
   }
 
+  @media (max-width: $tablet-breakpoint) {
+    .card {
+      margin-bottom: 0;
+
+      h6 {
+        margin-bottom: 30px;
+      }
+    }
+
+    .card_body {
+      padding: 20px 20px 0;
+    }
+
+    .card_header {
+      gap: 12px;
+    }
+
+    .card_header_background {
+      padding: 0;
+      min-height: 70px;
+      flex: 1;
+    }
+
+    .lessons_list {
+      .column {
+        gap: 20px;
+
+        li {
+          &:not(:last-child) {
+            &::after {
+              bottom: -10px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      gap: 25px;
+    }
+
+    .lessons_list {
+      .column {
+        li {
+          &:not(:last-child) {
+            &::after {
+              width: 100%;
+            }
+          }
+        }
+      }
+    }
+
+    .card_header {
+      .lessons_count {
+        border-width: 1px;
+        padding: 9.5px 26px;
+      }
+    }
+
+    .lessons_list {
+      grid-template-columns: 1fr;
+    }
+
+    .btn_wrapper {
+      margin-bottom: unset;
+    }
+
+    .program_p {
+      max-width: 100%;
+    }
+  }
 }

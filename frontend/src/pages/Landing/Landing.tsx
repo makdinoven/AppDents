@@ -18,19 +18,23 @@ import CourseProgram from "./modules/CourseProgram/CourseProgram.tsx";
 import LessonsProgram from "./modules/LessonsProgram/LessonsProgram.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import Offer from "./modules/Offer/Offer.tsx";
+import { useTranslation } from "react-i18next";
 
 const Landing = () => {
+  const { i18n } = useTranslation();
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
 
   useEffect(() => {
     fetchLandingData();
+    return () => {
+      changeLanguage("en");
+    };
   }, [landingPath]);
-
-  useEffect(() => {
-    console.log(landing);
-  }, [landing]);
 
   const fetchLandingData = async () => {
     try {
@@ -39,6 +43,7 @@ const Landing = () => {
         ...res.data,
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
+      changeLanguage(res.data.language.toLowerCase());
       setLoading(false);
     } catch (error) {
       console.error(error);

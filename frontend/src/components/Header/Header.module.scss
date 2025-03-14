@@ -33,7 +33,7 @@
   color: $primary;
 }
 
-@media (max-width: 576px) {
+@media (max-width: $mobile-breakpoint) {
   .header {
     margin-bottom: 47px;
   }

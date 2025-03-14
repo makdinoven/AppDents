@@ -211,12 +211,7 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
   }
 }
 
-
-@media(max-width: 1024px) {
-
-}
-
-@media(max-width: 1024px) {
+@media(max-width: $middle-breakpoint) {
   .card_header {
     padding-left: 11px;
     height: 45px;

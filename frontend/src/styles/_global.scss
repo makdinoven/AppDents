@@ -1,15 +1,25 @@
-$font-family: "Rethink Sans", -apple-system, sans-serif;
-$second-family: "Roboto", -apple-system, sans-serif;
+$font-family:
+  "Rethink Sans",
+  -apple-system,
+  sans-serif;
+$second-family:
+  "Roboto",
+  -apple-system,
+  sans-serif;
 
-$background-color: #EDF8FF;
-$primary: #7FDFD5;
+$middle-breakpoint: 1024px;
+$tablet-breakpoint: 768px;
+$mobile-breakpoint: 576px;
+
+$background-color: #edf8ff;
+$primary: #7fdfd5;
 $primary-glass: rgba(127, 223, 213, 0.8);
-$accent: #01433D;
+$accent: #01433d;
 $accent-glass: rgba(1, 67, 61, 0.8);
-$secondary: #006D8D;
-$secondary-lighter: #79CEE7;
-$tertiary: #017F74;
-$quaternary: #5B6968;
+$secondary: #006d8d;
+$secondary-lighter: #79cee7;
+$tertiary: #017f74;
+$quaternary: #5b6968;
 $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #ff5c20;
@@ -27,9 +37,9 @@ $font-sz-p1-mob: 20px;
 $font-sz-p2-desk: 26px;
 $font-sz-p2-mob: 16px;
 $font-sz-p3-desk: 20px;
-$font-sz-p3-mob: 12px;
-$font-sz-err-desk: 14px;
-$font-sz-err-mob: 12px;
+$font-sz-p3-mob: 14px;
+$font-sz-err-desk: 20px;
+$font-sz-err-mob: 14px;
 
 @mixin clamped-h1 {
   font-size: clamp($font-sz-h1-mob, 10vw, $font-sz-h1-desk);
@@ -56,19 +66,17 @@ $font-sz-err-mob: 12px;
 }
 
 @mixin clamped-p3 {
-  font-size: clamp($font-sz-p3-mob, 1.5vw, $font-sz-p3-desk);
+  font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
 }
 
 @mixin clamped-err {
   font-size: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
 }
 
-
 @mixin accent-glass {
   background-color: $accent-glass;
   backdrop-filter: blur(5px);
 }
-
 
 @mixin flex-center {
   display: flex;
@@ -137,7 +145,7 @@ $font-sz-err-mob: 12px;
     z-index: $z;
     border-radius: 10px;
 
-    @media (max-width: 576px) {
+    @media (max-width: $mobile-breakpoint) {
       height: 1px;
     }
   }
@@ -148,9 +156,9 @@ $font-sz-err-mob: 12px;
   $left: null,
   $top: null,
   $bottom: null,
-  $border-top-left-radius:null,
+  $border-top-left-radius: null,
   $border-top-right-radius: null,
-  $border-bottom-left-radius:null,
+  $border-bottom-left-radius: null,
   $border-bottom-right-radius: null,
   $size,
   $offset-x,
@@ -192,7 +200,6 @@ $font-sz-err-mob: 12px;
   }
 }
 
-
 @mixin fadeIn($duration: 0.2s, $timing: ease-in-out) {
   animation: fadeInAnim $duration $timing;
 }
@@ -218,7 +225,3 @@ $font-sz-err-mob: 12px;
     opacity: 0;
   }
 }
-
-
-
-

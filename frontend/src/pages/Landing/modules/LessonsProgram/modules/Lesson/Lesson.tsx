@@ -38,23 +38,21 @@ const Lesson = ({ lesson, old_price, new_price }: any) => {
                 </p>
               )}
             </div>
-            <span>
+            <p>
               <Trans
                 i18nKey={"landing.fiveMinuteFragment"}
                 components={{
                   1: <span className="highlight" />,
                 }}
               />
-            </span>
+            </p>
             <span className={s.line}></span>
             {lesson.duration && (
-              <span>
+              <p>
                 <Trans i18nKey={"landing.durationOfLesson"} /> {lesson.duration}
-              </span>
+              </p>
             )}
-            {lesson.lecturer && (
-              <span className={s.lecturer}>{lesson.lecturer}</span>
-            )}
+            {lesson.lecturer && <p className={s.lecturer}>{lesson.lecturer}</p>}
           </div>
           <ArrowButton>
             <Trans
