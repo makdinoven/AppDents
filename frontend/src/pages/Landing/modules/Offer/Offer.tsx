@@ -25,8 +25,12 @@ const Offer = ({ data }: { data: any }) => {
           </div>
           <div className={s.card_bottom}>
             <div className={s.card_bottom_content}>
-              <Clock />
-              <Trans i18nKey="landing.accessFull"></Trans>
+              <span>
+                <Clock />
+              </span>
+              <p>
+                <Trans i18nKey="landing.accessFull"></Trans>
+              </p>
             </div>
 
             <ArrowButton>

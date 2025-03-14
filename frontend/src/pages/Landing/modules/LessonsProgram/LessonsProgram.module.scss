@@ -6,4 +6,10 @@
     @include flex-column;
     gap: 200px;
   }
+
+  @media (max-width: $tablet-breakpoint) {
+    .lessons {
+      gap: 110px;
+    }
+  }
 }

@@ -4,7 +4,7 @@
   gap: 60px;
   margin-bottom: 130px;
 
-  @media (max-width: 576px) {
+  @media (max-width: $mobile-breakpoint) {
     gap: 44px;
     margin-bottom: 100px;
   }
@@ -45,7 +45,7 @@
       }
     }
 
-    @media (max-width: 576px) {
+    @media (max-width: $mobile-breakpoint) {
       stroke-width: 1;
     }
   }
@@ -103,7 +103,7 @@
         padding: 20px;
       }
 
-      @media (max-width: 576px) {
+      @media (max-width: $mobile-breakpoint) {
         left: 13px;
         top: clamp(30px,24vw,150px);
         padding: 15px 12px;
@@ -152,7 +152,7 @@
     margin-bottom: 20px;
     @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
 
-    @media (max-width: 576px) {
+    @media (max-width: $mobile-breakpoint) {
       margin-bottom: unset;
     }
   }

@@ -36,14 +36,14 @@
 }
 
 
-@media(max-width: 1024px) {
+@media(max-width: $middle-breakpoint) {
   .list {
     row-gap: 12px;
     margin-bottom: 46px;
   }
 }
 
-@media(max-width: 576px) {
+@media(max-width: $mobile-breakpoint) {
   .courses {
     gap: 40px;
   }
