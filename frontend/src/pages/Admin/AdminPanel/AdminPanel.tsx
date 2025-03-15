@@ -4,6 +4,7 @@ import FilterButton from "../../../components/ui/FilterButton/FilterButton.tsx";
 import { useEffect, useState } from "react";
 import Courses from "../tabs/Courses.tsx";
 import Landings from "../tabs/Landings.tsx";
+import Authors from "../tabs/Authors.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -23,8 +24,8 @@ const AdminPanel = () => {
       label: "admin.courses",
       component: <Courses />,
     },
+    { name: "authors", label: "admin.authors", component: <Authors /> },
     // { name: "users", label: "admin.users", component: <Users /> },
-    // { name: "authors", label: "admin.authors", component: <Authors /> },
   ];
 
   useEffect(() => {

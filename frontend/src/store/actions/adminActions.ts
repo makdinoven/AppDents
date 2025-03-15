@@ -64,3 +64,35 @@ export const createLanding = createAppAsyncThunk(
     }
   },
 );
+
+export const getAuthors = createAppAsyncThunk(
+  "admin/getAuthors",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.getAuthorsList();
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const createAuthor = createAppAsyncThunk(
+  "admin/createAuthor",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.createAuthor(data);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);

@@ -1,7 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
+  createAuthor,
   createCourse,
   createLanding,
+  getAuthors,
   getCourses,
   getLandings,
 } from "../actions/adminActions.ts";
@@ -11,6 +13,7 @@ interface AdminState {
   courses: CourseType[];
   landings: any;
   users: [];
+  authors: any;
   loading: boolean;
   error: null;
 }
@@ -19,6 +22,7 @@ const initialState: AdminState = {
   courses: [],
   landings: [],
   users: [],
+  authors: [],
   loading: false,
   error: null,
 };
@@ -99,6 +103,43 @@ const adminSlice = createSlice({
         },
       )
       .addCase(createLanding.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+    builder
+      .addCase(getAuthors.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getAuthors.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          state.authors = action.payload.res.data.sort(
+            (a: { id: number }, b: { id: number }) => b.id - a.id,
+          );
+        },
+      )
+      .addCase(getAuthors.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+
+    builder
+      .addCase(createAuthor.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        createAuthor.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          if (action.payload) {
+            state.authors = [action.payload.res.data, ...state.authors];
+          }
+        },
+      )
+      .addCase(createAuthor.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });

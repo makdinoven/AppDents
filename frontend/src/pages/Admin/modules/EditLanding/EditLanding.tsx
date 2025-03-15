@@ -28,6 +28,13 @@ const EditLanding = ({
     });
   };
 
+  const handleUploadPhoto = (url: string) => {
+    setLanding((prev: any) => {
+      if (!prev) return prev;
+      return { ...prev, preview_photo: url };
+    });
+  };
+
   return (
     <div className={s.edit_landing}>
       <AdminField
@@ -55,7 +62,7 @@ const EditLanding = ({
         onChange={handleChange}
       />
       <PhotoUploader
-        setLanding={setLanding}
+        onUpload={handleUploadPhoto}
         url={landing.preview_photo}
         id="preview_photo"
         title={t("admin.landings.mainImage")}
@@ -89,8 +96,6 @@ const EditLanding = ({
           value={landing.sales_count ?? ""}
           onChange={handleChange}
         />
-      </div>
-      <div className={s.selects}>
         <AdminField
           type="input"
           id="lessons_count"
