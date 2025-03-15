@@ -37,6 +37,14 @@ export interface LandingType {
   lessons_info: LessonType[];
 }
 
+export interface AuthorType {
+  id: number;
+  name: string;
+  description: string;
+  photo: string;
+  language: string;
+}
+
 export interface LandingFromListType {
   id: number;
   landing_name: string;

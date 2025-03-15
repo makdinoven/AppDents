@@ -1,6 +1,10 @@
 .photo_uploader {
   display: flex;
   justify-content: space-between;
+
+  @media (max-width: $tablet-breakpoint) {
+    flex-direction: column-reverse;
+  }
 }
 
 .input_wrapper {
@@ -41,11 +45,5 @@
     object-fit: contain;
     width: 100%;
     height: 100%;
-  }
-}
-
-@media (max-width: $tablet-breakpoint) {
-  .photo_uploader {
-    flex-direction: column-reverse;
   }
 }

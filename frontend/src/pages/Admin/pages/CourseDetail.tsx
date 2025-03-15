@@ -1,20 +1,20 @@
-import s from "./CourseDetail.module.scss";
+import s from "./DetailPage.module.scss";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import EditSection from "../EditSection/EditSection.tsx";
-import EditLesson from "../EditLesson/EditLesson.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import EditSection from "../modules/EditSection/EditSection.tsx";
+import EditLesson from "../modules/EditLesson/EditLesson.tsx";
+import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
+import Loader from "../../../components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
-import EditCourse from "../EditCourse/EditCourse.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
+import EditCourse from "../modules/EditCourse/EditCourse.tsx";
+import { adminApi } from "../../../api/adminApi/adminApi.ts";
+import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import {
   denormalizeCourse,
   normalizeCourse,
-} from "../../../../common/helpers/helpers.ts";
+} from "../../../common/helpers/helpers.ts";
 
 // const initialCourse = {
 //   name: "initialCourse",
@@ -167,9 +167,9 @@ const CourseDetail = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(course);
-  }, [course]);
+  // useEffect(() => {
+  //   console.log(course);
+  // }, [course]);
 
   const handleSave = async () => {
     try {

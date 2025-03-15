@@ -1,26 +1,21 @@
-import s from "../CourseDetail/CourseDetail.module.scss";
-import EditLanding from "../EditLanding/EditLanding.tsx";
-import DetailHeader from "../common/DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../common/DetailBottom/DetailBottom.tsx";
+import s from "./DetailPage.module.scss";
+import EditLanding from "../modules/EditLanding/EditLanding.tsx";
+import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
-import EditLesson from "../EditLesson/EditLesson.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import EditLesson from "../modules/EditLesson/EditLesson.tsx";
+import Loader from "../../../components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../api/adminApi/adminApi.ts";
+import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import {
   denormalizeLessons,
   normalizeLessons,
-} from "../../../../common/helpers/helpers.ts";
-
-const languages = [
-  { label: "English", value: "EN" },
-  { label: "Russian", value: "RU" },
-  { label: "Spanish", value: "ES" },
-];
+} from "../../../common/helpers/helpers.ts";
+import { languages } from "../../../common/helpers/commonConstants.ts";
 
 const LandingDetail = () => {
   const { landingId } = useParams();
@@ -37,9 +32,9 @@ const LandingDetail = () => {
     }
   }, [landingId]);
 
-  useEffect(() => {
-    console.log(landing);
-  }, [landing]);
+  // useEffect(() => {
+  //   console.log(landing);
+  // }, [landing]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -48,7 +43,7 @@ const LandingDetail = () => {
         adminApi.getLanding(landingId),
         mainApi.getTags(),
         adminApi.getCoursesList(),
-        adminApi.getAuthors(),
+        adminApi.getAuthorsList(),
       ]);
 
       setLanding({
@@ -115,7 +110,6 @@ const LandingDetail = () => {
       ...landing,
       lessons_info: denormalizeLessons(landing?.lessons_info),
     };
-    console.log(denormalizedLanding);
     try {
       await adminApi.updateLanding(landingId, denormalizedLanding);
       navigate(-1);

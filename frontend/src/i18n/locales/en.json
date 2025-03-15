@@ -171,7 +171,15 @@
   "admin.users.notFound": "No users found",
 
   "admin.authors": "authors",
+  "admin.authors.name": "Author name",
+  "admin.authors.name.placeholder": "Enter author name...",
+  "admin.authors.description": "Author description",
+  "admin.authors.description.placeholder": "Enter author description...",
+  "admin.authors.photo": "Author photo",
+  "admin.authors.photo.placeholder": "Choose photo",
   "admin.authors.search": "Search authors...",
+  "admin.authors.delete": "Delete author",
+  "admin.authors.edit": "Edit author",
   "admin.authors.create": "Create author",
   "admin.authors.notFound": "No authors found"
 }
