@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -50,13 +51,14 @@ def delete_author_route(
     return {"detail": "Author deleted successfully"}
 
 
-def clean_name(name: str) -> str:
+def basic_clean_name(name: str) -> str:
     """
-    Удаляет из строки name приставки/суффиксы 'Dr.' или 'Prof.' (с любым регистром и пробелами).
+    Убирает из строки name приставки/суффиксы Dr./Prof. (в любом регистре) и множественные пробелы.
     Примеры:
       "Dr. Enrico Agliardi"  -> "Enrico Agliardi"
       "Filippo Fontana  Dr." -> "Filippo Fontana"
       "Kent HowellDr"        -> "Kent Howell"
+      "DrEnrico"             -> "Enrico"
     """
     # Удаляем возможные префиксы Dr./Prof. в начале
     cleaned = re.sub(r'^(?:dr\.?\s*|prof\.?\s*)+', '', name, flags=re.IGNORECASE)
@@ -66,77 +68,120 @@ def clean_name(name: str) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     return cleaned
 
+# ----- Шаг 2: функция для «глубокой» нормализации, чтобы учитывать акценты и т. д. -----
+
+def normalize_for_key(s: str) -> str:
+    """
+    Приводит строку s к виду, который максимально нейтрализует различия,
+    которые MySQL колляция (case-insensitive, accent-insensitive и т.п.) может считать «одинаковыми».
+
+    1. Удаляем префиксы Dr./Prof., лишние пробелы (через basic_clean_name).
+    2. Приводим к NFKD (или NFKC) unicode формату, чтобы отделить диакритику (акценты) от базовых символов.
+    3. Убираем все Combining Marks (напр. акценты, тильды), чтобы "Mãlo" -> "Malo".
+    4. Приводим всё к нижнему регистру.
+    5. (Опционально) можно убрать и другие невидимые символы (ZERO WIDTH SPACE и пр.).
+    """
+    # Сначала обычная очистка Dr./Prof.
+    cleaned = basic_clean_name(s)
+
+    # Нормализуем в NFKD (или NFKC — смотрите, что подходит для ваших данных)
+    normed = unicodedata.normalize('NFKD', cleaned)
+    # Убираем символы, принадлежащие категории "Mn" (Mark, Nonspacing), т.е. акценты, тильды и т.д.
+    # Превращаем результат обратно в str
+    without_accents = ''.join(ch for ch in normed if unicodedata.category(ch) != 'Mn')
+
+    # Приводим к нижнему регистру
+    lowercased = without_accents.lower()
+
+    # Можно убрать «длинные» пробелы или невидимые символы, если боитесь, что они затесались:
+    # Для простоты ограничимся trim() и заменим множественные пробелы на один
+    final = re.sub(r'\s+', ' ', lowercased).strip()
+
+    return final
+
+# ----- Основной роут -----
+
 @router.post("/remove_dr_and_prof_and_merge")
-def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
+def remove_dr_and_prof_and_merge(db: Session = Depends(get_db)):
     """
-    1. Считывает всех авторов из БД.
-    2. «Очищает» имена от 'Dr.'/'Prof.' и приводит к нижнему регистру, чтобы сформировать ключ группировки.
-    3. Для каждой группы авторов:
-        - Определяем «финальное» имя (например, делаем title() от ключа группировки).
-        - Находим «главного» автора:
-            * Если кто-то уже имеет это finаl_name — берём его.
-            * Иначе берём автора с min(id) и присваиваем ему final_name.
-        - Остальных авторов «сливаем» (обновляем landing_authors, удаляем их из authors).
-    4. Делаем commit один раз в самом конце, чтобы не было промежуточных конфликтов.
+    1. Считываем всех авторов.
+    2. Для каждого считаем «ключ нормализации» (normalize_for_key).
+    3. Группируем авторов по этому ключу.
+    4. Для каждой группы (т. е. «по сути одинаковые» имена с точки зрения колляции):
+       - Определяем «финальное» имя, которое хотим записать в authors.name,
+         например: делаем .title() от «очищенной строки без акцентов» (или оставляем как-то иначе).
+       - Проверяем, нет ли уже в базе (вне этой группы) автора с таким финальным именем:
+         * Если есть, он станет «главным».
+         * Если нет, возьмём автора с минимальным id из группы и проставим ему финальное имя.
+       - Остальных авторов в группе сливаем: переносим связи landing_authors и удаляем из authors.
+    5. Один общий commit в конце.
     """
+
     all_authors = db.query(Author).all()
 
-    # Сформируем словарь: ключ = cleaned_name.lower(), значение = список Author
-    grouped_authors = defaultdict(list)
+    # Сгруппируем их по «ключу нормализации»
+    grouped = defaultdict(list)
     for author in all_authors:
-        # Очищенное имя без Dr./Prof.
-        base_clean = clean_name(author.name)
-        # Приводим к нижнему регистру, чтобы учесть возможные отличия в регистре
-        group_key = base_clean.lower()
-        grouped_authors[group_key].append(author)
+        group_key = normalize_for_key(author.name)
+        grouped[group_key].append(author)
 
-    # Перебираем группы
-    for group_key, authors_list in grouped_authors.items():
-        # Определим «финальное» имя, которое хотим хранить в поле name
-        # Например, делаем каждое слово с заглавной буквы (title):
-        final_name = group_key.title()  # "paulo malo" -> "Paulo Malo"
+    # Готовим список всех операций по слиянию
+    for group_key, authors_list in grouped.items():
+        # Определим «очищенное» имя (без Dr./Prof., без лишних пробелов, но ещё до удаления акцентов)
+        # Можно использовать просто basic_clean_name(authors_list[0].name)
+        # Но для красоты возьмём «оригинал» первого автора, почистим Dr./Prof., пробелы:
+        raw_cleaned = basic_clean_name(authors_list[0].name)
 
-        # Ищем в этой группе автора, у которого уже установлено имя == final_name
-        main_author = None
-        for a in authors_list:
-            if a.name == final_name:
-                main_author = a
-                break
+        # Определяем «финальное» имя для записи в БД
+        # Например, сделаем каждое слово с заглавной буквы (title).
+        # Если вам важен регистр «как в оригинале», можно придумать другую логику.
+        final_name = raw_cleaned.title()
 
-        # Если в группе нет автора с таким именем, берём автора с минимальным id
-        # и назначаем ему final_name (только если не совпадает)
-        if not main_author:
+        # 1) Сначала проверяем: нет ли уже в БД (среди всех авторов, не только в этой группе)
+        #    автора с таким именем. Если он есть, возьмём его как «главного».
+        #    Почему это нужно? Потому что могли быть случаи, когда в БД уже существует
+        #    какая-то запись c name = "Paulo Malo", а наши авторы были "dr. paulo malo" и "Paulo  Malo" и т.д.
+        existing_main = (
+            db.query(Author)
+              .filter(Author.name == final_name)
+              .first()
+        )
+
+        if existing_main:
+            # Этот existing_main — может быть, даже не в нашей группе,
+            # но мы хотим «слить» наших авторов на него.
+            main_author = existing_main
+        else:
+            # Иначе берём автора с минимальным id в группе
             main_author = min(authors_list, key=lambda a: a.id)
+            # Если у него имя != final_name, назначаем
             if main_author.name != final_name:
                 main_author.name = final_name
                 db.add(main_author)
-                # Заметим, что пока не коммитим отдельно
+                # Не коммитим пока, делаем всё в одной транзакции
 
-        # Теперь сливаем остальных авторов из группы
-        for a in authors_list:
-            if a.id == main_author.id:
-                continue  # пропускаем «главного»
-
-            # Перенести все связи из landing_authors на main_author
+        # 2) Теперь переносим связи у всех остальных авторов в группе на main_author
+        for dup in authors_list:
+            if dup.id == main_author.id:
+                continue
             db.execute(
                 text("""
                     UPDATE landing_authors
                     SET author_id = :main_id
                     WHERE author_id = :dup_id
                 """),
-                {"main_id": main_author.id, "dup_id": a.id}
+                {"main_id": main_author.id, "dup_id": dup.id}
             )
-            # Удалить «дубликатного» автора
-            db.delete(a)
+            db.delete(dup)
 
-    # Теперь, когда все группы обработаны, делаем один коммит.
+    # Когда все группы обработаны, делаем один общий commit
     try:
         db.commit()
-    except Exception as e:
+    except Exception as exc:
         db.rollback()
         raise HTTPException(
             status_code=500,
-            detail=f"Ошибка при финальном сохранении: {e}"
+            detail=f"Ошибка при финальном сохранении: {exc}"
         )
 
-    return {"detail": "Очистка завершена: Dr./Prof. удалены, дубликаты объединены."}
+    return {"detail": "Очистка и слияние авторов завершены."}
