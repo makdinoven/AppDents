@@ -1,0 +1,39 @@
+.language_changer {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  @include transition();
+
+  svg {
+    path {
+      @include transition();
+      fill: $accent;
+    }
+  }
+
+  &:hover {
+    color: $primary;
+
+    svg {
+      path {
+        fill: $primary;
+      }
+    }
+  }
+
+  .language_preview {
+    @include clamped-h3;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .language_changer {
+    gap: 5px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}

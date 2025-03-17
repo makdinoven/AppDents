@@ -2,9 +2,12 @@ import s from "./Offer.module.scss";
 import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
 import { Trans } from "react-i18next";
 import Clock from "../../../../common/Icons/Clock.tsx";
-import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 
-const Offer = ({ data }: { data: any }) => {
+const Offer = ({
+  data: { landing_name, authors, renderBuyButton },
+}: {
+  data: any;
+}) => {
   return (
     <section>
       <div className={s.offer_card}>
@@ -16,8 +19,8 @@ const Offer = ({ data }: { data: any }) => {
         </div>
         <div className={s.card_body}>
           <div className={s.content}>
-            <h6>{data.landing_name}</h6>
-            <p>{data.authors}</p>
+            <h6>{landing_name}</h6>
+            <p>{authors}</p>
             <div className={s.line_arrow}>
               <span></span>
               <CircleArrow />
@@ -33,19 +36,7 @@ const Offer = ({ data }: { data: any }) => {
               </p>
             </div>
 
-            <ArrowButton onClick={data.scrollFunc}>
-              <Trans
-                i18nKey="landing.buyFor"
-                values={{
-                  new_price: data.new_price,
-                  old_price: data.old_price,
-                }}
-                components={{
-                  1: <span className="crossed" />,
-                  2: <span className="highlight" />,
-                }}
-              />
-            </ArrowButton>
+            {renderBuyButton}
           </div>
         </div>
       </div>

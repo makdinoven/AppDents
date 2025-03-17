@@ -2,11 +2,13 @@ import s from "./Professors.module.scss";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 
 const Professors = ({ data }: { data: any }) => {
+  const professors = data;
+
   return (
     <div className={s.professors_container}>
       <SectionHeader name={"landing.professors"} />
-      <ul style={{ display: `${data.length <= 1 ? "flex" : "grid"}` }}>
-        {data.map((professor: any) => (
+      <ul style={{ display: `${professors.length <= 1 ? "flex" : "grid"}` }}>
+        {professors.map((professor: any) => (
           <li className={s.professor_card} key={professor.id}>
             <div className={s.photo_wrapper}>
               <img src={professor.photo} alt="photo" />
