@@ -53,21 +53,19 @@ def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
     # Обновляем имена, удаляя префиксы и суффиксы "Dr." и "Prof."
     db.execute(text("""
         UPDATE IGNORE authors
-        SET name = TRIM(
+SET name = TRIM(
+    REGEXP_REPLACE(
+      REGEXP_REPLACE(
+         REGEXP_REPLACE(
             REGEXP_REPLACE(
-              REGEXP_REPLACE(
-                REGEXP_REPLACE(
-                  REGEXP_REPLACE(
-                    REGEXP_REPLACE(
-                      REGEXP_REPLACE(name,
-                        '^(?i)(Dr\\.?\\s*)+', ''),
-                      '(?i)(Dr\\.?\\s*)+$', ''),
-                    '^(?i)(Prof\\.?\\s*)+', ''),
-                  '(?i)(Prof\\.?\\s*)+$', ''),
-                '\\s+', ' ')
-        )
-        WHERE name REGEXP '^(?i)(Dr\\.?|Prof\\.?)' 
-           OR name REGEXP '(?i)(Dr\\.?|Prof\\.?)$';
+               REGEXP_REPLACE(name, '^(Dr\\.?\\s*)+', ''), 
+               '(Dr\\.?\\s*)+$', ''),
+            '^(Prof\\.?\\s*)+', ''),
+         '(Prof\\.?\\s*)+$', ''),
+      '\\s+', ' ')
+)
+WHERE name COLLATE utf8mb4_general_ci REGEXP '^(Dr\\.?|Prof\\.?)'
+   OR name COLLATE utf8mb4_general_ci REGEXP '(Dr\\.?|Prof\\.?)$';
     """))
     db.commit()
 
