@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -44,3 +46,61 @@ def delete_author_route(
 ):
     delete_author(db, author_id)
     return {"detail": "Author deleted successfully"}
+
+@router.post("/remove_dr_and_merge")
+def remove_dr_and_merge_authors(db: Session = Depends(get_db)):
+    """
+    1) Удаляет 'Dr.' из поля name авторов.
+    2) Находит авторов с одинаковым именем и сливает их:
+       - ссылки в landing_authors переводит на основного автора,
+       - удаляет дубликатов из authors.
+    """
+
+    # 1) Удаляем 'Dr.' (с пробелом и без) из имен авторов
+    # Используем UPDATE IGNORE, чтобы избежать Duplicate entry errors
+    db.execute("""
+        UPDATE IGNORE authors
+        SET name = TRIM(REPLACE(REPLACE(name, 'Dr. ', ''), 'Dr.', ''))
+        WHERE name LIKE '%Dr.%'
+    """)
+
+    # Фиксируем изменения
+    db.commit()
+
+    # 2) Ищем дубликаты (авторов с одинаковым именем)
+    # Забираем все id и name после удаления "Dr."
+    rows = db.execute("""
+        SELECT id, name FROM authors
+        ORDER BY name
+    """).fetchall()
+
+    # Группируем авторов по name
+    grouped_by_name = defaultdict(list)
+    for row in rows:
+        grouped_by_name[row.name].append(row.id)
+
+    # 3) Мержим дубликаты
+    # Для каждого имени, если там >1 автора, то оставляем только одного (например, с минимальным id),
+    # а остальных переводим на этого «основного» и удаляем.
+    for name, ids in grouped_by_name.items():
+        if len(ids) > 1:
+            main_id = min(ids)  # «основной» автор – с минимальным id
+            for dup_id in ids:
+                if dup_id == main_id:
+                    continue
+                # Переводим все связи с dup_id на main_id
+                # landing_authors
+                db.execute("""
+                    UPDATE landing_authors
+                    SET author_id = :main_id
+                    WHERE author_id = :dup_id
+                """, {"main_id": main_id, "dup_id": dup_id})
+
+                # Удаляем дубликата из authors
+                db.execute("""
+                    DELETE FROM authors
+                    WHERE id = :dup_id
+                """, {"dup_id": dup_id})
+    db.commit()
+
+    return {"detail": "Cleanup done. Dr. removed and duplicates merged."}
