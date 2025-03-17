@@ -14,7 +14,7 @@
   margin-bottom: 200px;
 }
 
-@media (max-width: 576px) {
+@media (max-width: $mobile-breakpoint) {
   .content {
     margin-bottom: 100px;
   }

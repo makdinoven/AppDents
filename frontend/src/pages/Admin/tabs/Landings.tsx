@@ -6,10 +6,7 @@ import {
   createLanding,
   getLandings,
 } from "../../../store/actions/adminActions.ts";
-
-const initialLanding = {
-  landing_name: "New landing",
-};
+import { initialLanding } from "../../../common/helpers/commonConstants.ts";
 
 const Landings = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);

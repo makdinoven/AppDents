@@ -6,11 +6,7 @@ import {
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../routes/routes.ts";
-
-const initialCourse = {
-  name: "New course",
-  description: "",
-};
+import { initialCourse } from "../../../common/helpers/commonConstants.ts";
 
 const Courses = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);

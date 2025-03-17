@@ -1,8 +1,8 @@
 import s from "./CourseCard.module.scss";
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import Arrow from "../../../../common/Icons/Arrow.tsx";
+import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 
 interface CourseCardProps {
   name: string;
@@ -21,14 +21,7 @@ const CourseCard = ({
   photo,
   index,
 }: CourseCardProps) => {
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setScreenWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const screenWidth = useScreenWidth();
 
   const setCardColor = () => {
     if (screenWidth < 577) {

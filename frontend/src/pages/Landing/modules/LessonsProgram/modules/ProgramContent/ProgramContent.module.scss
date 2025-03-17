@@ -1,35 +1,61 @@
 .program_content {
+  position: relative;
   @include flex-column;
   gap: 30px;
 
-    .list_item {
-      @include clamped-p3;
-      display: flex;
-      gap: 20px;
+  .list_item {
+    @include clamped-p3;
+    display: flex;
+    gap: 20px;
 
+    svg {
+      width: 40px;
+      height: 40px;
+
+      circle {
+        stroke-width: 3px;
+        stroke: $accent;
+      }
+
+      path {
+        stroke-width: 3px;
+        fill: $accent;
+      }
+    }
+
+    div {
+      @include flex-column;
+      justify-content: center;
+
+      ul {
+        margin-left: 30px;
+        list-style-type: disc;
+      }
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    .program_content {
+      gap: 20px;
+    }
+
+    .list_item {
+      gap: 10px;
       svg {
         width: 30px;
         height: 30px;
-
-        circle {
-          stroke-width: 3px;
-          stroke: $accent;
-        }
-
-        path {
-          stroke-width: 3px;
-          fill: $accent;
-        }
-      }
-
-      div {
-        @include flex-column;
-        justify-content: center;
-
-        ul {
-          margin-left: 30px;
-          list-style-type: disc;
-        }
       }
     }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    .list_item {
+      @include clamped-p2;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
 }

@@ -84,4 +84,8 @@
       color: $text-color;
     }
   }
+
+  @media (max-width: $tablet-breakpoint) {
+    min-width: 200px;
+  }
 }

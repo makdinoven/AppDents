@@ -1,109 +1,132 @@
 .offer_card {
   .card_header {
     display: flex;
+    gap: clamp(30px, 5vw, 50px);
+    min-height: clamp(70px, 15vw, 130px);
+  }
 
+  .card_header_text {
+    @include clamped-h3;
+    display: flex;
+    max-width: 60%;
+    align-items: center;
+    padding-left: clamp(24px, 2vw, 50px);
+    color: $primary;
+    text-transform: uppercase;
+  }
 
-    .card_header_text {
-      padding-top: 45px;
-      padding-left: 50px;
-      min-height: 130px;
-      width: 368px;
-      color: $primary;
-      text-transform: uppercase;
-      @include clamped-h3;
-    }
+  .card_header_background {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    background-color: $secondary-lighter;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
 
-    .card_header_background {
-      position: relative;
-      flex: 1;
-      width: 100%;
-      background-color: $secondary-lighter;
-      border-radius: 40px 40px 0 0;
-
-      &::before {
-        z-index: -1;
-        content: "";
-        position: absolute;
-        width: 80px;
-        height: 80px;
-        bottom: 0;
-        left: -80px;
-        border-bottom-right-radius: 40px;
-        box-shadow: 20px 20px 0 2px $secondary-lighter;
-        pointer-events: none;
-      }
-    }
+    @include circle-angle(
+      $bottom: 0,
+      $left: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: 20px,
+      $offset-y: 20px,
+      $shadow-color: $secondary-lighter,
+      $border-bottom-right-radius: var(--border-radius)
+    );
   }
 
   .card_body {
     @include flex-column;
     gap: 80px;
     background-color: $secondary-lighter;
-    border-radius: 40px 0 40px 40px;
+    border-radius: var(--border-radius) 0 var(--border-radius)
+      var(--border-radius);
     padding: 60px 60px 80px 50px;
 
     .content {
       @include flex-column;
       gap: 20px;
+
+      h6 {
+        @include clamped-h2;
+        text-transform: uppercase;
+      }
+
+      p {
+        @include clamped-p2;
+      }
+    }
+  }
+
+  .line_arrow {
+    display: flex;
+    max-width: 75%;
+
+    span {
+      position: relative;
+      width: 100%;
+      @include horizontal-line(
+        $left: 0,
+        $top: 50%,
+        $width: 100%,
+        $transform: y50,
+        $color: $accent
+      );
     }
 
-    h6 {
-      @include clamped-h2;
-      text-transform: uppercase;
+    svg {
+      width: 66px;
+      height: 66px;
+
+      circle {
+        stroke: $accent;
+        stroke-width: 2px;
+      }
+      path {
+        fill: $accent;
+      }
     }
+  }
+
+  .card_bottom {
+    @include flex-column;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .card_bottom_content {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: center;
 
     p {
-      @include clamped-p2;
-    }
-
-    .line_arrow {
-      display: flex;
-      max-width: 75%;
-
-      span {
-        position: relative;
-        width: 100%;
-        @include horizontal-line($left:0, $top: 50%, $width: 100%, $transform: y50, $color: $accent)
-      }
-
-      svg {
-        width: 66px;
-        height: 66px;
-
-        circle {
-          stroke: $accent;
-          stroke-width: 2px;
-        }
-        path {
-          fill: $accent;
-        }
-
-      }
-    }
-
-    .card_bottom {
-      @include flex-column;
-      gap: 20px;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .card_bottom_content {
-      display: flex;
-      gap: 20px;
-      align-items: center;
-      justify-content: center;
+      @include clamped-h2;
       color: $text-color;
       text-transform: uppercase;
-      @include clamped-h2;
+    }
 
+    svg {
+      width: 40px;
+      height: 40px;
+
+      path {
+        fill: $text-color;
+      }
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    .card_body {
+      padding: 50px 20px;
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    .line_arrow {
+      max-width: 100%;
       svg {
         width: 40px;
         height: 40px;
-
-        path {
-          fill: $text-color;
-        }
       }
     }
   }

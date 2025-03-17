@@ -1,4 +1,20 @@
 .landing {
-    @include flex-column;
-    gap: 140px;
+  @include flex-column;
+  gap: 140px;
+
+  @media (max-width: $middle-breakpoint) {
+    gap: 100px;
+
+    button {
+      width: 234px;
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    gap: 80px;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    gap: 60px;
+  }
 }

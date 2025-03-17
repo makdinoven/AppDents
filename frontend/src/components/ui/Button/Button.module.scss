@@ -23,7 +23,7 @@
     }
   }
 
-  @media (max-width: 576px) {
+  @media (max-width: $mobile-breakpoint) {
     outline: 1px solid $background-color;
   }
 }
