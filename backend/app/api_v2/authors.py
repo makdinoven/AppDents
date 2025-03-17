@@ -58,10 +58,11 @@ SET name = TRIM(
       REGEXP_REPLACE(
          REGEXP_REPLACE(
             REGEXP_REPLACE(
-               REGEXP_REPLACE(name, '^(Dr\\.?\\s*)+', ''), 
-               '(Dr\\.?\\s*)+$', ''),
-            '^(Prof\\.?\\s*)+', ''),
-         '(Prof\\.?\\s*)+$', ''),
+               REGEXP_REPLACE(name,
+                  '^(Dr\\.?)+\\s*', ''),
+               '\\s*(Dr\\.?)+$', ''),
+            '^(Prof\\.?)+\\s*', ''),
+         '\\s*(Prof\\.?)+$', ''),
       '\\s+', ' ')
 )
 WHERE name COLLATE utf8mb4_general_ci REGEXP '^(Dr\\.?|Prof\\.?)'
