@@ -6,8 +6,8 @@ interface ModalWrapperProps {
   children: ReactNode;
   isOpen: boolean;
   onClose: () => void;
-  triggerElement: HTMLElement | null;
-  cutoutPosition: "top-right" | "bottom-right";
+  triggerElement?: HTMLElement | null;
+  cutoutPosition: "top-right" | "bottom-right" | "none";
   cutoutOffsetY?: number;
   cutoutOffsetX?: number;
 }
@@ -23,13 +23,16 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [triggerTop, setTriggerTop] = useState<number | null>(null);
-  const [triggerBottom, setTriggerBottom] = useState<number | null>(null);
   const [triggerDimensions, setTriggerDimensions] = useState<{
     width: number;
     height: number;
+    x: number;
+    y: number;
   }>({
     width: 0,
     height: 0,
+    x: 0,
+    y: 0,
   });
   const isTopRight = cutoutPosition === "top-right";
   const isBottomRight = cutoutPosition === "bottom-right";
@@ -55,10 +58,11 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
         setTriggerDimensions({
           width: triggerRect.width,
           height: triggerRect.height,
+          x: triggerRect.x,
+          y: triggerRect.y,
         });
-        setTriggerTop(triggerRect.top);
-        setTriggerBottom(triggerRect.top - triggerRect.bottom);
         console.log(triggerRect);
+        setTriggerTop(triggerRect.top);
       };
 
       const resizeObserver = new ResizeObserver(updateDimensions);
@@ -100,11 +104,15 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       borderBottomRightRadius: "20px",
       borderBottomLeftRadius: "0",
     },
+    none: {
+      borderRadius: "40px",
+    },
   };
 
   const selectedModalContentStyle = {
     "top-right": modalContentStyles.topRight,
     "bottom-right": modalContentStyles.bottomRight,
+    none: modalContentStyles.none,
   }[cutoutPosition];
 
   const cutoutStyles = {
@@ -122,9 +130,9 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       <div
         className={s.modal_container}
         style={
-          isTopRight
-            ? { top: triggerTop ? `${triggerTop}px` : "50%" }
-            : { bottom: `${triggerBottom}px` }
+          cutoutPosition === "none"
+            ? { top: "50%", transform: "translateY(-50%)" }
+            : { top: triggerTop ? `${triggerTop}px` : "50%" }
         }
       >
         {isTopRight && (
@@ -145,7 +153,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           onClick={(e) => e.stopPropagation()}
           style={selectedModalContentStyle}
         >
-          {isBottomRight && (
+          {!isTopRight && (
             <button className={s.close_button} onClick={handleClose}>
               <ModalClose />
             </button>

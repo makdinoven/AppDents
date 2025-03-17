@@ -191,7 +191,7 @@ const CourseDetail = () => {
           <div className={s.list}>
             <div className={s.list_header}>
               <h2>
-                <Trans i18nKey={"admin.sections"} />
+                <Trans i18nKey={"admin.sections.sections"} />
               </h2>
               <PrettyButton
                 variant={"primary"}
@@ -210,7 +210,7 @@ const CourseDetail = () => {
                   <div className={s.inner_list}>
                     <div className={s.list_header}>
                       <h2>
-                        <Trans i18nKey={"admin.lessons"} />
+                        <Trans i18nKey={"admin.lessons.lessons"} />
                       </h2>
                       <PrettyButton
                         variant={"primary"}

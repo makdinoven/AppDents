@@ -5,8 +5,8 @@ export const emailSchema = Joi.object({
     .email({ tlds: { allow: false } })
     .required()
     .messages({
-      "string.empty": "errMessage.email.empty",
-      "string.email": "errMessage.email.valid",
-      "any.required": "errMessage.email.required",
+      "string.empty": "error.email.empty",
+      "string.email": "error.email.valid",
+      "any.required": "error.email.required",
     }),
 });

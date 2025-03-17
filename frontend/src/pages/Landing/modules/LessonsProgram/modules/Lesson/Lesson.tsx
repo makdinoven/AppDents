@@ -1,10 +1,9 @@
 import s from "./Lesson.module.scss";
 import { Trans } from "react-i18next";
-import ArrowButton from "../../../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import ProgramContent from "../ProgramContent/ProgramContent.tsx";
 import { isValidUrl } from "../../../../../../common/helpers/helpers.ts";
 
-const Lesson = ({ lesson, old_price, new_price, scrollFunc }: any) => {
+const Lesson = ({ lesson, renderBuyButton }: any) => {
   return (
     <li className={s.lesson}>
       <h5>{lesson.name}</h5>
@@ -54,19 +53,7 @@ const Lesson = ({ lesson, old_price, new_price, scrollFunc }: any) => {
             )}
             {lesson.lecturer && <p className={s.lecturer}>{lesson.lecturer}</p>}
           </div>
-          <ArrowButton onClick={scrollFunc}>
-            <Trans
-              i18nKey="landing.buyFor"
-              values={{
-                new_price: new_price,
-                old_price: old_price,
-              }}
-              components={{
-                1: <span className="crossed" />,
-                2: <span className="highlight" />,
-              }}
-            />
-          </ArrowButton>
+          {renderBuyButton}
         </div>
       </div>
     </li>

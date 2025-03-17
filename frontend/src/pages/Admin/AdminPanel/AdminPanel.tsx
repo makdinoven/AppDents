@@ -16,16 +16,16 @@ const AdminPanel = () => {
   const tabs = [
     {
       name: "landings",
-      label: "admin.landings",
+      label: "admin.landings.landings",
       component: <Landings />,
     },
     {
       name: "courses",
-      label: "admin.courses",
+      label: "admin.courses.courses",
       component: <Courses />,
     },
-    { name: "authors", label: "admin.authors", component: <Authors /> },
-    // { name: "users", label: "admin.users", component: <Users /> },
+    { name: "authors", label: "admin.authors.authors", component: <Authors /> },
+    // { name: "users", label: "admin.users.users", component: <Users /> },
   ];
 
   useEffect(() => {
