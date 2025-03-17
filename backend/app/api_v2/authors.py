@@ -48,29 +48,30 @@ def delete_author_route(
     delete_author(db, author_id)
     return {"detail": "Author deleted successfully"}
 
-@router.post("/remove_dr_and_merge")
-def remove_dr_and_merge_authors(db: Session = Depends(get_db)):
-    """
-    1) Удаляет 'Dr.' из поля name авторов.
-    2) Находит авторов с одинаковым именем и сливает их.
-    """
-    # 1) Удаляем 'Dr.' (с пробелом и без) из имен авторов
+@router.post("/remove_dr_and_prof_and_merge")
+def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
+    # Обновляем имена, удаляя префиксы и суффиксы "Dr." и "Prof."
     db.execute(text("""
         UPDATE IGNORE authors
-SET name = TRIM(
-    REGEXP_REPLACE(
-       REGEXP_REPLACE(
-          REGEXP_REPLACE(name, '(?i)\\bDr\\.?\\s*', ' '),
-          '(?i)\\bProf\\.?\\s*', ' '
-       ),
-       '\\s+', ' '
-    )
-)
-WHERE name REGEXP '(?i)\\bDr\\.?|(?i)\\bProf\\.?';
+        SET name = TRIM(
+            REGEXP_REPLACE(
+              REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                  REGEXP_REPLACE(
+                    REGEXP_REPLACE(
+                      REGEXP_REPLACE(name,
+                        '^(?i)(Dr\\.?\\s*)+', ''),
+                      '(?i)(Dr\\.?\\s*)+$', ''),
+                    '^(?i)(Prof\\.?\\s*)+', ''),
+                  '(?i)(Prof\\.?\\s*)+$', ''),
+                '\\s+', ' ')
+        )
+        WHERE name REGEXP '^(?i)(Dr\\.?|Prof\\.?)' 
+           OR name REGEXP '(?i)(Dr\\.?|Prof\\.?)$';
     """))
     db.commit()
 
-    # 2) Ищем дубликаты
+    # Далее можно найти дубликаты и слить их, как ранее
     rows = db.execute(text("""
         SELECT id, name FROM authors
         ORDER BY name
@@ -80,25 +81,23 @@ WHERE name REGEXP '(?i)\\bDr\\.?|(?i)\\bProf\\.?';
     for row in rows:
         grouped_by_name[row.name].append(row.id)
 
-    # 3) Мержим дубликаты
     for name, ids in grouped_by_name.items():
         if len(ids) > 1:
             main_id = min(ids)
             for dup_id in ids:
                 if dup_id == main_id:
                     continue
-                # Переводим все связи
+                # Переводим все связи в таблице landing_authors на основного автора
                 db.execute(text("""
                     UPDATE landing_authors
                     SET author_id = :main_id
                     WHERE author_id = :dup_id
                 """), {"main_id": main_id, "dup_id": dup_id})
-
-                # Удаляем дубликата
+                # Удаляем дубликат
                 db.execute(text("""
                     DELETE FROM authors
                     WHERE id = :dup_id
                 """), {"dup_id": dup_id})
     db.commit()
 
-    return {"detail": "Cleanup done. Dr. removed and duplicates merged."}
+    return {"detail": "Cleanup done. 'Dr.' and 'Prof.' removed and duplicates merged."}
