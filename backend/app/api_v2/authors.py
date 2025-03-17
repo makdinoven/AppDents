@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User
@@ -11,8 +11,9 @@ from ..services_v2.author_service import list_authors_simple, get_author_detail,
 router = APIRouter()
 
 @router.get("/", response_model=List[AuthorSimpleResponse])
-def get_authors(db: Session = Depends(get_db)):
-    return list_authors_simple(db)
+def get_authors(language: Optional[str] = Query(None, description="Filter by language (EN, RU, ES)"),
+                db: Session = Depends(get_db)):
+    return list_authors_simple(db, language)
 
 @router.get("/detail/{author_id}", response_model=AuthorResponse)
 def get_author(author_id: int, db: Session = Depends(get_db)):
