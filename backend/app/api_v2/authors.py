@@ -50,24 +50,30 @@ def delete_author_route(
 
 @router.post("/remove_dr_and_prof_and_merge")
 def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
-    # Обновляем имена, удаляя префиксы и суффиксы "Dr." и "Prof."
+    """
+    1) Удаляет 'Dr.' и 'Prof.' (с любыми пробелами и без них, как в начале, так и в конце) из поля name авторов.
+    2) Находит авторов с одинаковым именем после очистки и сливает их:
+       - Переносит все связи в таблице landing_authors на автора с минимальным id,
+       - Удаляет дубликаты из таблицы authors.
+    """
+    # Шаг 1: Очистка имен авторов от префиксов и суффиксов "Dr." и "Prof."
     db.execute(text("""
-     UPDATE IGNORE authors
-SET name = TRIM(
-    REGEXP_REPLACE(
-      REGEXP_REPLACE(
-        REGEXP_REPLACE(name, '^(dr\\.?|prof\\.?)[[:space:]]*', '', 1, 0, 'i'),
-        '[[:space:]]*(dr\\.?|prof\\.?)$', '', 1, 0, 'i'
-      ),
-      '[[:space:]]+', ' ', 1, 0, 'i'
-    )
-)
-WHERE name COLLATE utf8mb4_general_ci REGEXP '^(dr\\.?|prof\\.?)'
-   OR name COLLATE utf8mb4_general_ci REGEXP '(dr\\.?|prof\\.?)$';
+        UPDATE IGNORE authors
+        SET name = TRIM(
+            REGEXP_REPLACE(
+                REGEXP_REPLACE(
+                    REGEXP_REPLACE(name, '^(dr\\.?|prof\\.?)[[:space:]]*', '', 1, 0, 'i'),
+                    '[[:space:]]*(dr\\.?|prof\\.?)$', '', 1, 0, 'i'
+                ),
+                '[[:space:]]+', ' ', 1, 0, 'i'
+            )
+        )
+        WHERE name COLLATE utf8mb4_general_ci REGEXP '^(dr\\.?|prof\\.?)'
+           OR name COLLATE utf8mb4_general_ci REGEXP '(dr\\.?|prof\\.?)$';
     """))
     db.commit()
 
-    # Далее можно найти дубликаты и слить их, как ранее
+    # Шаг 2: Поиск дубликатов
     rows = db.execute(text("""
         SELECT id, name FROM authors
         ORDER BY name
@@ -77,13 +83,14 @@ WHERE name COLLATE utf8mb4_general_ci REGEXP '^(dr\\.?|prof\\.?)'
     for row in rows:
         grouped_by_name[row.name].append(row.id)
 
+    # Шаг 3: Слияние дубликатов
     for name, ids in grouped_by_name.items():
         if len(ids) > 1:
-            main_id = min(ids)
+            main_id = min(ids)  # оставляем автора с минимальным id как основного
             for dup_id in ids:
                 if dup_id == main_id:
                     continue
-                # Переводим все связи в таблице landing_authors на основного автора
+                # Переносим связи в таблице landing_authors
                 db.execute(text("""
                     UPDATE landing_authors
                     SET author_id = :main_id
