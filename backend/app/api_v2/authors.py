@@ -52,21 +52,18 @@ def delete_author_route(
 def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
     # Обновляем имена, удаляя префиксы и суффиксы "Dr." и "Prof."
     db.execute(text("""
-        UPDATE IGNORE authors
+     UPDATE IGNORE authors
 SET name = TRIM(
     REGEXP_REPLACE(
       REGEXP_REPLACE(
-         REGEXP_REPLACE(
-            REGEXP_REPLACE(
-               REGEXP_REPLACE(name,
-                  '^(Dr\\.?)+\\s*', ''),
-               '\\s*(Dr\\.?)+$', ''),
-            '^(Prof\\.?)+\\s*', ''),
-         '\\s*(Prof\\.?)+$', ''),
-      '\\s+', ' ')
+        REGEXP_REPLACE(name, '^(dr\\.?|prof\\.?)[[:space:]]*', '', 1, 0, 'i'),
+        '[[:space:]]*(dr\\.?|prof\\.?)$', '', 1, 0, 'i'
+      ),
+      '[[:space:]]+', ' ', 1, 0, 'i'
+    )
 )
-WHERE name COLLATE utf8mb4_general_ci REGEXP '^(Dr\\.?|Prof\\.?)'
-   OR name COLLATE utf8mb4_general_ci REGEXP '(Dr\\.?|Prof\\.?)$';
+WHERE name COLLATE utf8mb4_general_ci REGEXP '^(dr\\.?|prof\\.?)'
+   OR name COLLATE utf8mb4_general_ci REGEXP '(dr\\.?|prof\\.?)$';
     """))
     db.commit()
 
