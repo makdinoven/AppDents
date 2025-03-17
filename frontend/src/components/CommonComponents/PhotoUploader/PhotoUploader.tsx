@@ -8,13 +8,13 @@ const PhotoUploader = ({
   title,
   label,
   url,
-  setLanding,
+  onUpload,
 }: {
-  setLanding: any;
   id: string;
   title: string;
   label: string;
-  url: string;
+  url: string | undefined;
+  onUpload: any;
 }) => {
   const [preview, setPreview] = useState(url || initialPhoto);
 
@@ -26,11 +26,9 @@ const PhotoUploader = ({
         formData.append("file", file);
 
         const res = await adminApi.uploadPhoto(formData);
-        setPreview(res.data.url);
-        setLanding((prev: any) => {
-          if (!prev) return prev;
-          return { ...prev, preview_photo: res.data.url };
-        });
+        const uploadedUrl = res.data.url;
+        setPreview(uploadedUrl);
+        onUpload(uploadedUrl);
       } catch (error) {
         console.error("Ошибка загрузки фото:", error);
       }

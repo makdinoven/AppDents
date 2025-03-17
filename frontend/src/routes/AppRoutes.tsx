@@ -6,9 +6,10 @@ import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AdminPanel from "../pages/Admin/AdminPanel/AdminPanel.tsx";
-import CourseDetail from "../pages/Admin/modules/CourseDetail/CourseDetail.tsx";
+import CourseDetail from "../pages/Admin/pages/CourseDetail.tsx";
 import AdminPage from "../pages/Admin/AdminPage.tsx";
-import LandingDetail from "../pages/Admin/modules/LandingDetail/LandingDetail.tsx";
+import LandingDetail from "../pages/Admin/pages/LandingDetail.tsx";
+import AuthorDetail from "../pages/Admin/pages/AuthorDetail.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -31,6 +32,14 @@ export const AppRoutes: FC = () => {
             path={`${Path.landingDetail}/:landingId?`}
             element={<LandingDetail />}
           />
+          <Route
+            path={`${Path.authorDetail}/:authorId?`}
+            element={<AuthorDetail />}
+          />
+          {/*<Route*/}
+          {/*    path={`${Path.userDetail}/:landingId?`}*/}
+          {/*    element={<UserDetail />}*/}
+          {/*/>*/}
           {/*<Route path="*" element={<Navigate to={Path.admin} replace />} />*/}
         </Route>
 

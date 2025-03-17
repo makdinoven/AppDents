@@ -1,6 +1,10 @@
 .photo_uploader {
   display: flex;
   justify-content: space-between;
+
+  @media (max-width: $tablet-breakpoint) {
+    flex-direction: column-reverse;
+  }
 }
 
 .input_wrapper {

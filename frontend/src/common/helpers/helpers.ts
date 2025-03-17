@@ -27,7 +27,10 @@ export const formatAuthorsDesc = (authors: any) => {
 
 export const keepFirstTwoWithInsert = (initialStr: string) => {
   const parts = initialStr.split(" ");
-  return `${parts[0]} ${t("landing.online")} ${parts[1]}`;
+  if (parts.length < 2) return initialStr;
+  const secondWord = parts[1].endsWith(":") ? parts[1].slice(0, -1) : parts[1];
+
+  return `${parts[0]} ${t("landing.online")} ${secondWord}`;
 };
 
 export const isValidUrl = (url: string) => {

@@ -1,13 +1,3 @@
-:root {
-  --border-radius: 40px;
-}
-
-@media (max-width: 768px) {
-  :root {
-    --border-radius: 30px;
-  }
-}
-
 $card-width: 610px;
 $card-height: 582px;
 
@@ -42,27 +32,26 @@ $arrow-w: 66px;
       position: relative;
       background-color: $primary;
       flex: 1;
-      min-width: 150px;
+      //min-width: 150px;
       height: clamp(70px, 15vw, $card-header-height);
       border-top-left-radius: var(--border-radius);
       border-top-right-radius: var(--border-radius);
 
-      @include circle-angle
-      (
-      $bottom: 0,
-      $right: calc(var(--border-radius) * (-2)),
-      $size: calc(var(--border-radius) * 2),
-      $offset-x: -20px,
-      $offset-y: 20px,
-      $shadow-color: $primary,
-      $border-bottom-left-radius: var(--border-radius)
+      @include circle-angle(
+        $bottom: 0,
+        $right: calc(var(--border-radius) * (-2)),
+        $size: calc(var(--border-radius) * 2),
+        $offset-x: -20px,
+        $offset-y: 20px,
+        $shadow-color: $primary,
+        $border-bottom-left-radius: var(--border-radius)
       );
     }
   }
 
   .hero_content_wrapper {
     display: grid;
-    grid-template-columns: 1fr 1fr ;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
 
@@ -122,29 +111,28 @@ $arrow-w: 66px;
       border-bottom-left-radius: var(--border-radius);
       border-bottom-right-radius: var(--border-radius);
 
-      @include circle-angle
-      (
-      $top: 0,
-      $left: calc(var(--border-radius) * (-2)),
-      $size: calc(var(--border-radius) * 2),
-      $offset-x: 20px,
-      $offset-y: -20px,
-      $shadow-color: $primary,
-      $border-top-right-radius: var(--border-radius)
+      @include circle-angle(
+        $top: 0,
+        $left: calc(var(--border-radius) * (-2)),
+        $size: calc(var(--border-radius) * 2),
+        $offset-x: 20px,
+        $offset-y: -20px,
+        $shadow-color: $primary,
+        $border-top-right-radius: var(--border-radius)
       );
     }
   }
 
   .hero_content {
     position: relative;
-    padding-top: 20px;
-    @include horizontal-line($top:0,$right:0,$width:100%);
+    padding-top: var(--offset);
+    @include horizontal-line($top: 0, $right: 0, $width: 100%);
 
     h2 {
       @include clamped-h2;
       text-transform: uppercase;
       color: $primary;
-      margin-bottom: 20px;
+      margin-bottom: var(--offset);
     }
 
     p {
@@ -155,12 +143,18 @@ $arrow-w: 66px;
 
     .arrow {
       display: flex;
+      align-items: center;
       justify-content: end;
-      margin-bottom: 20px;
-      height:  $arrow-w;
+      margin-bottom: var(--offset);
+      height: $arrow-w;
       position: relative;
       max-width: 255px;
-      @include horizontal-line($top:50%,$left:0,$width:256px - $arrow-w,$transform:y50 -2px);
+      @include horizontal-line(
+        $top: 50%,
+        $left: 0,
+        $width: 256px - $arrow-w,
+        $transform: y50 -2px
+      );
       svg {
         height: 100%;
         width: $arrow-w;
@@ -175,9 +169,15 @@ $arrow-w: 66px;
     }
   }
 
-  @media (max-width: 1024px) {
+  @media (max-width: $middle-breakpoint) {
     .hero_content_wrapper {
       @include flex-column;
+    }
+
+    .hero_content {
+      p {
+        margin: 0 0 20px 0;
+      }
     }
   }
 
@@ -186,7 +186,19 @@ $arrow-w: 66px;
       gap: 0;
 
       h1 {
-        max-width: 50%;
+        max-width: 60%;
+      }
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    .hero_content {
+      .arrow {
+        width: 229px;
+        svg {
+          width: 40px;
+          height: 40px;
+        }
       }
     }
   }
