@@ -1,6 +1,6 @@
 import s from "./Landing.module.scss";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
@@ -8,6 +8,7 @@ import {
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
+  scrollToElementAndClick,
 } from "../../common/helpers/helpers.ts";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import Loader from "../../components/ui/Loader/Loader.tsx";
@@ -28,6 +29,8 @@ const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
 
   useEffect(() => {
     fetchLandingData();
@@ -51,8 +54,10 @@ const Landing = () => {
   };
 
   const heroData = {
+    triggerRef: triggerRef,
     landing_name: landing?.landing_name,
-    authors: formatAuthorsDesc(landing?.authors),
+    modalTitle: `${t("buy")}: ${landing?.landing_name}`,
+    authors: formattedAuthorsDesc,
     photo: landing?.preview_photo,
     ...getPricesData(landing),
   };
@@ -78,17 +83,20 @@ const Landing = () => {
       : `0 ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
+    scrollFunc: () => scrollToElementAndClick(triggerRef),
     ...getPricesData(landing),
   };
 
   const lessonsProgramData = {
     lessons: landing?.lessons_info,
+    scrollFunc: () => scrollToElementAndClick(triggerRef),
     ...getPricesData(landing),
   };
 
   const offerData = {
     landing_name: landing?.landing_name,
-    authors: formatAuthorsDesc(landing?.authors),
+    authors: formattedAuthorsDesc,
+    scrollFunc: () => scrollToElementAndClick(triggerRef),
     ...getPricesData(landing),
   };
 

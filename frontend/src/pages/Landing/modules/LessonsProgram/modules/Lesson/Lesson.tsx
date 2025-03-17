@@ -4,7 +4,7 @@ import ArrowButton from "../../../../../../components/ui/ArrowButton/ArrowButton
 import ProgramContent from "../ProgramContent/ProgramContent.tsx";
 import { isValidUrl } from "../../../../../../common/helpers/helpers.ts";
 
-const Lesson = ({ lesson, old_price, new_price }: any) => {
+const Lesson = ({ lesson, old_price, new_price, scrollFunc }: any) => {
   return (
     <li className={s.lesson}>
       <h5>{lesson.name}</h5>
@@ -54,7 +54,7 @@ const Lesson = ({ lesson, old_price, new_price }: any) => {
             )}
             {lesson.lecturer && <p className={s.lecturer}>{lesson.lecturer}</p>}
           </div>
-          <ArrowButton>
+          <ArrowButton onClick={scrollFunc}>
             <Trans
               i18nKey="landing.buyFor"
               values={{

@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState, useRef } from "react";
 import s from "./ModalWrapper.module.scss";
-import ModalClose from "../../common/Icons/ModalClose.tsx";
+import ModalClose from "../../../common/Icons/ModalClose.tsx";
 
 interface ModalWrapperProps {
   children: ReactNode;
@@ -22,7 +22,8 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   cutoutOffsetX = 40,
 }) => {
   const [isClosing, setIsClosing] = useState(false);
-  const [headerTop, setHeaderTop] = useState<number | null>(null);
+  const [triggerTop, setTriggerTop] = useState<number | null>(null);
+  const [triggerBottom, setTriggerBottom] = useState<number | null>(null);
   const [triggerDimensions, setTriggerDimensions] = useState<{
     width: number;
     height: number;
@@ -55,7 +56,9 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           width: triggerRect.width,
           height: triggerRect.height,
         });
-        setHeaderTop(triggerRect.top);
+        setTriggerTop(triggerRect.top);
+        setTriggerBottom(triggerRect.top - triggerRect.bottom);
+        console.log(triggerRect);
       };
 
       const resizeObserver = new ResizeObserver(updateDimensions);
@@ -118,7 +121,11 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     >
       <div
         className={s.modal_container}
-        style={{ top: headerTop ? `${headerTop}px` : "50%" }}
+        style={
+          isTopRight
+            ? { top: triggerTop ? `${triggerTop}px` : "50%" }
+            : { bottom: `${triggerBottom}px` }
+        }
       >
         {isTopRight && (
           <div
@@ -138,7 +145,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           onClick={(e) => e.stopPropagation()}
           style={selectedModalContentStyle}
         >
-          {!isTopRight && (
+          {isBottomRight && (
             <button className={s.close_button} onClick={handleClose}>
               <ModalClose />
             </button>
@@ -146,7 +153,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           {children}
         </div>
 
-        {!isTopRight && (
+        {isBottomRight && (
           <div
             onClick={(e) => e.stopPropagation()}
             className={`${s.modal_bottom} ${isBottomRight ? s.bottomRight : ""}`}

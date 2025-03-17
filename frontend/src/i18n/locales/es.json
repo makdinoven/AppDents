@@ -25,6 +25,7 @@
   "footer.home": "Página principal",
   "footer.tour": "Tour",
   "footer.templates": "Plantillas",
+  "pay": "Paga",
   "buy": "Comprar",
   "buyFor": "Comprar por",
   "etAl": "y otros",
@@ -60,6 +61,7 @@
   "tag.pediatric_dentistry": "Odontología pediátrica",
   "tag.management": "Gestión",
 
+  "landing.by": "Por",
   "landing.about": "Sobre el curso",
   "landing.access": "el acceso no está limitado en el tiempo",
   "landing.duration": "Duración:",

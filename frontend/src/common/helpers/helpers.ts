@@ -16,13 +16,20 @@ export const generateId = () => Math.floor(Math.random() * 100000);
 
 export const formatAuthorsDesc = (authors: any) => {
   return authors?.length > 0
-    ? `By ${
+    ? `${t("landing.by")} ${
         authors
           ?.slice(0, 3)
           .map((author: any) => capitalizeText(author.name))
           .join(", ") + (authors.length > 3 ? ` ${t("etAl")}` : "")
       }`
     : null;
+};
+
+export const scrollToElementAndClick = (triggerRef: any) => {
+  triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  setTimeout(() => {
+    triggerRef.current?.click();
+  }, 1000);
 };
 
 export const keepFirstTwoWithInsert = (initialStr: string) => {

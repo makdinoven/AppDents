@@ -25,6 +25,7 @@
   "footer.home": "Главная страница",
   "footer.tour": "Тур",
   "footer.templates": "Шаблоны",
+  "pay": "Оплатить",
   "buy": "Купить",
   "buyFor": "Купить за",
   "etAl": "и др.",
@@ -60,6 +61,7 @@
   "tag.pediatric_dentistry": "Детская стоматология",
   "tag.management": "Менеджмент",
 
+  "landing.by": "От",
   "landing.about": "О курсе",
   "landing.access": "доступ не ограничен по времени",
   "landing.duration": "Длительность:",
