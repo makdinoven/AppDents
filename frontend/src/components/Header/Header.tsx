@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import LogoIcon from "../../common/Icons/LogoIcon.tsx";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
-import ModalWrapper from "../ModalWrapper/ModalWrapper.tsx";
+import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useEffect, useRef, useState } from "react";
 import LoginModal from "../Modals/LoginModal.tsx";
 import SignUpModal from "../Modals/SignUpModal.tsx";

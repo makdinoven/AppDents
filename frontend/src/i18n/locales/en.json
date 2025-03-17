@@ -25,6 +25,7 @@
   "footer.home": "Home Page",
   "footer.tour": "Tour",
   "footer.templates": "Templates",
+  "pay": "Pay",
   "buy": "Buy",
   "buyFor": "Buy for",
   "etAl": "et al.",
@@ -60,6 +61,7 @@
   "tag.pediatric_dentistry": "Pediatric dentistry",
   "tag.management": "Management",
 
+  "landing.by": "By",
   "landing.about": "About this course",
   "landing.access": "access is not limited in time",
   "landing.duration": "Duration:",

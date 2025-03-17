@@ -4,8 +4,20 @@ import { Trans } from "react-i18next";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
 import initialPhoto from "../../../../assets/no-pictures.png";
+import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
+import PaymentModal from "../../../../components/Modals/PaymentModal.tsx";
+import { useState } from "react";
 
 const LandingHero = ({ data }: { data: any }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
   return (
     <section className={s.hero}>
       <div className={s.hero_top}>
@@ -38,7 +50,7 @@ const LandingHero = ({ data }: { data: any }) => {
             <CircleArrow />
           </div>
           <p>{data.authors}</p>
-          <ArrowButton>
+          <ArrowButton ref={data.triggerRef} onClick={handleOpenModal}>
             <Trans
               i18nKey="landing.buyFor"
               values={{
@@ -53,6 +65,17 @@ const LandingHero = ({ data }: { data: any }) => {
           </ArrowButton>
         </div>
       </div>
+      {data.triggerRef.current && isModalOpen && (
+        <ModalWrapper
+          cutoutPosition="bottom-right"
+          cutoutOffsetY={15}
+          triggerElement={data.triggerRef.current}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        >
+          <PaymentModal title={data.modalTitle} onClose={handleCloseModal} />
+        </ModalWrapper>
+      )}
     </section>
   );
 };

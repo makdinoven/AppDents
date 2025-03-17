@@ -5,7 +5,7 @@ import { Trans } from "react-i18next";
 import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useRef, useState } from "react";
-import ModalWrapper from "../../../../components/ModalWrapper/ModalWrapper.tsx";
+import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import Search from "../../../../components/ui/Search/Search.tsx";
 import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";

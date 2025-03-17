@@ -33,7 +33,7 @@ const Offer = ({ data }: { data: any }) => {
               </p>
             </div>
 
-            <ArrowButton>
+            <ArrowButton onClick={data.scrollFunc}>
               <Trans
                 i18nKey="landing.buyFor"
                 values={{

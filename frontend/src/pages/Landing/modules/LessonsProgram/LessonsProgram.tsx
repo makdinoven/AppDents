@@ -12,6 +12,7 @@ const LessonsProgram = ({ data }: { data: any }) => {
             key={index}
             old_price={data.old_price}
             new_price={data.new_price}
+            scrollFunc={data.scrollFunc}
             lesson={lesson}
           />
         ))}

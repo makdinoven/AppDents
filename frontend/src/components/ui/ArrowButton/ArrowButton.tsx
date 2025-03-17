@@ -5,11 +5,13 @@ import CircleArrowSmall from "../../../common/Icons/CircleArrowSmall.tsx";
 import { Trans } from "react-i18next";
 
 const ArrowButton = ({
+  ref,
   text,
   link,
   onClick,
   children,
 }: {
+  ref?: any;
   text?: string;
   link?: string;
   onClick?: any;
@@ -22,7 +24,7 @@ const ArrowButton = ({
       <CircleArrowSmall />
     </Link>
   ) : (
-    <UnstyledButton onClick={onClick} className={s.btn}>
+    <UnstyledButton ref={ref} onClick={onClick} className={s.btn}>
       <Trans i18nKey={text} />
       {children && <span>{children}</span>}
       <CircleArrowSmall />

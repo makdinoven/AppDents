@@ -102,8 +102,7 @@ const AuthorDetail = () => {
               options={languages}
               placeholder={"Choose a language"}
               label={t("admin.landings.language")}
-              // selectedValue={author?.language}
-              selectedValue={"EN"}
+              selectedValue={author?.language ? author?.language : "EN"}
               isMultiple={false}
               onChange={handleChange}
               valueKey="value"

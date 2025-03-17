@@ -74,7 +74,7 @@ const CourseProgram = ({ data }: { data: any }) => {
         />
       </p>
       <div className={s.btn_wrapper}>
-        <ArrowButton>
+        <ArrowButton onClick={data.scrollFunc}>
           <Trans
             i18nKey="landing.buyFor"
             values={{
