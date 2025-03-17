@@ -49,59 +49,72 @@ def delete_author_route(
     delete_author(db, author_id)
     return {"detail": "Author deleted successfully"}
 
+import re
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from collections import defaultdict
+from ..db.database import get_db
+from ..models.models_v2 import Author
+
+router = APIRouter(prefix="/authors_cleanup", tags=["authors_cleanup"])
+
 def clean_name(name: str) -> str:
-    # Удаляем префикс "Dr." или "Prof." в начале строки
+    """
+    Удаляет префиксы и суффиксы "Dr." и "Prof." (с учетом различных вариантов пробелов и регистра)
+    Например:
+      "Dr. Enrico Agliardi" -> "Enrico Agliardi"
+      "Filippo Fontana  Dr." -> "Filippo Fontana"
+      "Nate FarleyDr"       -> "Nate Farley"
+    """
+    # Удаляем префикс
     cleaned = re.sub(r'^(dr\.?\s*|prof\.?\s*)+', '', name, flags=re.IGNORECASE)
-    # Удаляем суффикс "Dr." или "Prof." в конце строки
+    # Удаляем суффикс
     cleaned = re.sub(r'(\s*(dr\.?|prof\.?))+$', '', cleaned, flags=re.IGNORECASE)
-    # Заменяем множественные пробелы одним
+    # Заменяем множественные пробелы одним и обрезаем крайние пробелы
     cleaned = re.sub(r'\s+', ' ', cleaned)
     return cleaned.strip()
 
 @router.post("/remove_dr_and_prof_and_merge")
 def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
     """
-    1. Обходит всех авторов и вычисляет очищённое имя (без префиксов/суффиксов "Dr." и "Prof.").
-    2. Группирует авторов по очищённому имени.
-    3. Для каждой группы, если найдено более одного автора, оставляет автора с минимальным id (основного),
-       обновляет его имя (если требуется), обновляет связи в таблице landing_authors для всех дубликатов и удаляет их.
+    1. Группирует всех авторов по очищённому имени (без префиксов/суффиксов "Dr." и "Prof.").
+    2. Если для одного очищённого имени найдено более одной записи, оставляет автора с минимальным id,
+       обновляет его имя (если требуется) и переводит все связи в landing_authors на него,
+       а дубликаты удаляет.
     """
     # Получаем всех авторов
     authors = db.query(Author).all()
 
-    # Группируем по очищённому имени
-    mapping = defaultdict(list)
+    # Группируем авторов по "очищённому" имени
+    grouped = defaultdict(list)
     for author in authors:
-        new_name = clean_name(author.name)
-        mapping[new_name].append(author)
+        cleaned = clean_name(author.name)
+        grouped[cleaned].append(author)
 
-    # Обрабатываем группы
-    for cleaned_name, authors_list in mapping.items():
-        if len(authors_list) > 1:
-            # Сортируем по id, чтобы выбрать автора с минимальным id как основного
+    # Обрабатываем каждую группу
+    for cleaned_name, authors_list in grouped.items():
+        if len(authors_list) == 1:
+            # Если только один автор с таким именем, обновляем его имя (если отличается)
+            author = authors_list[0]
+            if author.name != cleaned_name:
+                author.name = cleaned_name
+                db.add(author)
+        else:
+            # Если группа содержит дубликаты, оставляем автора с минимальным id
             authors_list.sort(key=lambda a: a.id)
             main_author = authors_list[0]
-            # Если имя основного автора отличается, обновляем его
             if main_author.name != cleaned_name:
                 main_author.name = cleaned_name
                 db.add(main_author)
-            # Для остальных в группе обновляем связи и удаляем запись
+            # Для остальных переводим связи и удаляем их
             for dup_author in authors_list[1:]:
-                # Обновляем связи в таблице landing_authors, заменяя dup_author.id на main_author.id
                 db.execute(text("""
                     UPDATE landing_authors
                     SET author_id = :main_id
                     WHERE author_id = :dup_id
                 """), {"main_id": main_author.id, "dup_id": dup_author.id})
-                # Удаляем дубликат
                 db.delete(dup_author)
-        else:
-            # Если группа состоит из одного автора, можно обновить его имя, если оно отличается
-            author = authors_list[0]
-            new_name = clean_name(author.name)
-            if author.name != new_name:
-                author.name = new_name
-                db.add(author)
     try:
         db.commit()
     except Exception as e:
