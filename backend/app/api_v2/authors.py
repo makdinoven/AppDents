@@ -57,8 +57,16 @@ def remove_dr_and_merge_authors(db: Session = Depends(get_db)):
     # 1) Удаляем 'Dr.' (с пробелом и без) из имен авторов
     db.execute(text("""
         UPDATE IGNORE authors
-        SET name = TRIM(REPLACE(REPLACE(name, 'Dr. ', ''), 'Dr.', ''))
-        WHERE name LIKE '%Dr.%'
+SET name = TRIM(
+    REGEXP_REPLACE(
+       REGEXP_REPLACE(
+          REGEXP_REPLACE(name, '(?i)\\bDr\\.?\\s*', ' '),
+          '(?i)\\bProf\\.?\\s*', ' '
+       ),
+       '\\s+', ' '
+    )
+)
+WHERE name REGEXP '(?i)\\bDr\\.?|(?i)\\bProf\\.?';
     """))
     db.commit()
 
