@@ -107,6 +107,7 @@ def remove_dr_and_prof_and_merge_authors(db: Session = Depends(get_db)):
                     db.rollback()
                     raise HTTPException(status_code=500, detail=f"Error updating main author: {e}")
 
+
             # Для всех остальных записей в группе обновляем связи и удаляем их
             for dup_author in group:
                 if dup_author.id == main_author.id:
