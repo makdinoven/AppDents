@@ -9,7 +9,7 @@ from ..services_v2.stripe_service import (
     handle_webhook_event
 )
 
-stripe_router = APIRouter()
+router = APIRouter()
 
 class CheckoutRequest(BaseModel):
     course_id: int         # ID курса в БД
@@ -20,7 +20,7 @@ class CheckoutRequest(BaseModel):
     success_url: str = "https://dent-s.com/"
     cancel_url: str = "https://dent-s.com/"
 
-@stripe_router.post("/checkout")
+@router.post("/checkout")
 def stripe_checkout(
     data: CheckoutRequest,
     db: Session = Depends(get_db),
@@ -53,7 +53,7 @@ def stripe_checkout(
     )
     return {"checkout_url": checkout_url}
 
-@stripe_router.post("/webhook/{region}")
+@router.post("/webhook/{region}")
 async def stripe_webhook(
     region: str,
     request: Request,
