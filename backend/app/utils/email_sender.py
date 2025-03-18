@@ -229,3 +229,51 @@ def send_successful_purchase_email(recipient_email: str, course_id: int, new_acc
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         print("Error sending purchase confirmation email:", e)
+
+def send_failed_purchase_email(recipient_email: str, course_id: int = None):
+    """
+    Отправляет письмо об ошибке при оплате.
+    """
+    smtp_server = settings.EMAIL_HOST
+    smtp_port = settings.EMAIL_PORT
+    smtp_username = settings.EMAIL_USERNAME
+    smtp_password = settings.EMAIL_PASSWORD
+    sender_email = settings.EMAIL_SENDER
+
+    subject = "Payment Failed"
+    body_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Payment Failed</title>
+      <style>
+        body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+        .container {{ background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }}
+        h2 {{ color: #333; }}
+        p {{ font-size: 16px; line-height: 1.5; color: #555; }}
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>Payment Failed</h2>
+        <p>Unfortunately, your payment could not be processed.</p>
+        {"<p>Course ID: " + str(course_id) + "</p>" if course_id else ""}
+        <p>Please try again or contact support for assistance.</p>
+      </div>
+    </body>
+    </html>
+    """
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body_html, "html"))
+
+    try:
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(smtp_username, smtp_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+    except Exception as e:
+        print("Error sending payment failed email:", e)

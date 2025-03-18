@@ -4,10 +4,54 @@ on:
   push:
     branches: [ "main" ]
 
-
 jobs:
+  # 1) Определяем, какие сервисы затронуты изменениями
+  check-changes:
+    runs-on: ubuntu-latest
+
+    # Список изменённых сервисов передадим как output этого job
+    outputs:
+      changed_services: ${{ steps.prepare.outputs.changed_services }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Detect changed folders
+        id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          # Настраиваем фильтры, указывая пути для каждого сервиса
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            nginx:
+              - 'nginx/**'
+
+      - name: Prepare changed_services output
+        id: prepare
+        run: |
+          SERVICES=""
+          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
+            SERVICES="$SERVICES backend"
+          fi
+          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
+            SERVICES="$SERVICES frontend"
+          fi
+          if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then
+            SERVICES="$SERVICES nginx"
+          fi
+          # Записываем результат в GITHUB_OUTPUT,
+          # чтобы передать в другой job.
+          echo "changed_services=$SERVICES" >> $GITHUB_OUTPUT
+
+
+  # 2) Деплой на сервер с выборочной сборкой
   deploy:
     runs-on: ubuntu-latest
+    needs: [check-changes]
 
     steps:
       - name: Check out code
@@ -22,6 +66,21 @@ jobs:
           skip_host_key_check: true
           script: |
             cd /var/www/AppDents
+
+            # Обновляем код
             git pull --no-rebase -s recursive -X theirs origin main
-            docker compose up --build -d
+
+            # Считываем список изменённых сервисов
+            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
+            if [ -n "$CHANGED_SERVICES" ]; then
+              echo "Есть изменения в: $CHANGED_SERVICES"
+              docker compose build $CHANGED_SERVICES
+            else
+              echo "Нет изменений в сервисах — пропускаем сборку."
+            fi
+
+            # Запускаем/перезапускаем весь стек
+            docker compose up -d
+
+            # Очищаем неиспользуемые сборочные кэши
             docker builder prune -f
