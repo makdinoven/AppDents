@@ -5,13 +5,13 @@ export const loginSchema = Joi.object({
     .email({ tlds: { allow: false } })
     .required()
     .messages({
-      "string.empty": "errMessage.email.empty",
-      "string.email": "errMessage.email.valid",
-      "any.required": "errMessage.email.required",
+      "string.empty": "error.email.empty",
+      "string.email": "error.email.valid",
+      "any.required": "error.email.required",
     }),
 
   password: Joi.string().required().messages({
-    "string.empty": "errMessage.password.empty",
-    "any.required": "errMessage.password.required",
+    "string.empty": "error.password.empty",
+    "any.required": "error.password.required",
   }),
 });

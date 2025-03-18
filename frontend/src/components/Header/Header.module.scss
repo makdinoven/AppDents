@@ -2,6 +2,12 @@
   margin-bottom: 40px;
 }
 
+.header_buttons {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
 .content {
   @include container;
   @include flex-center;
@@ -36,6 +42,17 @@
 @media (max-width: $mobile-breakpoint) {
   .header {
     margin-bottom: 47px;
+  }
+
+  .login_btn {
+    svg {
+      width: 35px;
+      height: 35px;
+    }
+  }
+
+  .header_buttons {
+    gap: 20px;
   }
 
   .content {

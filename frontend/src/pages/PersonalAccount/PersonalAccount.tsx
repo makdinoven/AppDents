@@ -6,17 +6,23 @@ import { Path } from "../../routes/routes.ts";
 import { useNavigate } from "react-router-dom";
 import s from "./PersonalAccount.module.scss";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import { useEffect } from "react";
+import { getMe } from "../../store/actions/userActions.ts";
+import { AppDispatchType } from "../../store/store.ts";
 // import { AppRootStateType } from "../../store/store.ts";
-// import { useEffect } from "react";
 
 const PersonalAccountPage = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatchType>();
   // const role = useSelector((state: AppRootStateType) => state.user.role);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     dispatch(logout());
   };
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
 
   // useEffect(() => {
   //   if (!role) {

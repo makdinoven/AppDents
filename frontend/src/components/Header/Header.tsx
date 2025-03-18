@@ -12,6 +12,7 @@ import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import UserIcon from "../../common/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
+// import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
@@ -83,7 +84,10 @@ const Header = () => {
           <Link className={s.logo} to="/">
             <LogoIcon />
           </Link>
-          {renderButton()}
+          <div className={s.header_buttons}>
+            {/*<LanguageChanger />*/}
+            {renderButton()}
+          </div>
         </div>
       </header>
 
