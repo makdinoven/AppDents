@@ -13,9 +13,19 @@ class Settings(BaseSettings):
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
-    STRIPE_SECRET_KEY: str
-    STRIPE_PUBLISHABLE_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
+    STRIPE_SECRET_KEY_RU: str
+    STRIPE_PUBLISHABLE_KEY_RU: str
+    STRIPE_WEBHOOK_SECRET_RU: str
+
+    # Ключи для EN
+    STRIPE_SECRET_KEY_EN: str
+    STRIPE_PUBLISHABLE_KEY_EN: str
+    STRIPE_WEBHOOK_SECRET_EN: str
+
+    # Ключи для ES
+    STRIPE_SECRET_KEY_ES: str
+    STRIPE_PUBLISHABLE_KEY_ES: str
+    STRIPE_WEBHOOK_SECRET_ES: str
 
     class Config:
         env_file = ".env"

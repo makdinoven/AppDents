@@ -1,3 +1,5 @@
+import secrets
+
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -15,6 +17,14 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, password: str) -> bool:
     return pwd_context.verify(plain_password, password)
+
+def generate_random_password() -> str:
+    """
+    Генерирует короткий случайный пароль (8-10 "символов").
+    Можно увеличить длину или
+    усложнить алгоритм, если нужно.
+    """
+    return secrets.token_urlsafe(8)
 
 def create_user(db: Session, email: str, password: str, role: str = "user") -> User:
     """
