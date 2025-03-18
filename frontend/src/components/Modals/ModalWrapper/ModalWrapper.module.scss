@@ -31,36 +31,32 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 
 .topRight {
   border-top-left-radius: 40px;
-  border-top-right-radius: 20px;
+  border-top-right-radius: 15px;
 
-  &::before {
-    content: "";
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    bottom: 0px;
-    right: -40px;
-    border-bottom-left-radius: 20px;
-    box-shadow: -15px 15px 0 2px $primary;
-    pointer-events: none;
-  }
+  @include circle-angle(
+    $bottom: 0,
+    $right: -40px,
+    $size: 40px,
+    $offset-x: -20px,
+    $offset-y: 20px,
+    $shadow-color: $primary,
+    $border-bottom-left-radius: 20px
+  );
 }
 
 .bottomRight {
   border-bottom-left-radius: 40px;
   border-bottom-right-radius: 20px;
 
-  &::before {
-    content: "";
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    top: 0px;
-    right: -40px;
-    border-top-left-radius: 20px;
-    box-shadow: -15px -15px 0 2px $primary;
-    pointer-events: none;
-  }
+  @include circle-angle(
+    $top: 0,
+    $right: -40px,
+    $size: 40px,
+    $offset-x: -20px,
+    $offset-y: 20px,
+    $shadow-color: $primary,
+    $border-top-left-radius: 20px
+  );
 }
 
 .modal_bottom {

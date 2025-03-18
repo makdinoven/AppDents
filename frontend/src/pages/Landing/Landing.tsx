@@ -1,6 +1,6 @@
 import s from "./Landing.module.scss";
 import { useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
@@ -8,7 +8,6 @@ import {
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
-  scrollToElementAndClick,
 } from "../../common/helpers/helpers.ts";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import Loader from "../../components/ui/Loader/Loader.tsx";
@@ -19,7 +18,10 @@ import CourseProgram from "./modules/CourseProgram/CourseProgram.tsx";
 import LessonsProgram from "./modules/LessonsProgram/LessonsProgram.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import Offer from "./modules/Offer/Offer.tsx";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
+import PaymentModal from "../../components/Modals/PaymentModal.tsx";
+import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 
 const Landing = () => {
   const { i18n } = useTranslation();
@@ -29,8 +31,8 @@ const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchLandingData();
@@ -38,6 +40,14 @@ const Landing = () => {
       changeLanguage("en");
     };
   }, [landingPath]);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
   const fetchLandingData = async () => {
     try {
@@ -53,20 +63,33 @@ const Landing = () => {
     }
   };
 
+  const renderBuyButton = () => (
+    <ArrowButton onClick={handleOpenModal}>
+      <Trans
+        i18nKey="landing.buyFor"
+        values={{
+          ...getPricesData(landing),
+        }}
+        components={{
+          1: <span className="crossed" />,
+          2: <span className="highlight" />,
+        }}
+      />
+    </ArrowButton>
+  );
+
   const heroData = {
-    triggerRef: triggerRef,
     landing_name: landing?.landing_name,
-    modalTitle: `${t("buy")}: ${landing?.landing_name}`,
     authors: formattedAuthorsDesc,
     photo: landing?.preview_photo,
-    ...getPricesData(landing),
+    renderBuyButton: renderBuyButton(),
   };
 
   const aboutData = {
     lessonsCount: landing?.lessons_count
       ? landing.lessons_count
-      : `0 ${t("landing.lessons")}`,
-    professorsCount: `${landing?.authors.length} ${t("landing.professors")}`,
+      : `0 ${t("landing.lessons", { count: landing?.lessons_count })}`,
+    professorsCount: `${landing?.authors.length} ${t("landing.professors", { count: landing?.authors.length })}`,
     discount: `${calculateDiscount(
       landing?.old_price,
       landing?.new_price,
@@ -83,21 +106,19 @@ const Landing = () => {
       : `0 ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
-    scrollFunc: () => scrollToElementAndClick(triggerRef),
+    renderBuyButton: renderBuyButton(),
     ...getPricesData(landing),
   };
 
   const lessonsProgramData = {
     lessons: landing?.lessons_info,
-    scrollFunc: () => scrollToElementAndClick(triggerRef),
-    ...getPricesData(landing),
+    renderBuyButton: renderBuyButton(),
   };
 
   const offerData = {
     landing_name: landing?.landing_name,
     authors: formattedAuthorsDesc,
-    scrollFunc: () => scrollToElementAndClick(triggerRef),
-    ...getPricesData(landing),
+    renderBuyButton: renderBuyButton(),
   };
 
   return (
@@ -114,6 +135,20 @@ const Landing = () => {
           <Professors data={landing?.authors} />
           <Offer data={offerData} />
         </div>
+      )}
+
+      {isModalOpen && (
+        <ModalWrapper
+          cutoutPosition="none"
+          cutoutOffsetY={15}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        >
+          <PaymentModal
+            title={`${t("buy")}: ${landing?.landing_name}`}
+            onClose={handleCloseModal}
+          />
+        </ModalWrapper>
       )}
     </>
   );
