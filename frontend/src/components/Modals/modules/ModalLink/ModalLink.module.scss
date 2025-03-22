@@ -1,0 +1,18 @@
+.link {
+  @include clamped-p3;
+  text-decoration: underline;
+  @include transition(color);
+
+  &:hover {
+    color: $accent;
+
+    &::after {
+      color: $accent;
+    }
+  }
+
+  &.uppercase {
+    @include clamped-p2;
+    text-transform: uppercase;
+  }
+}

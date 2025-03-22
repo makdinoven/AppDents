@@ -1,0 +1,39 @@
+.card {
+  min-height: 110px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 45px;
+  border-radius: 40px;
+  color: $accent;
+  background-color: $primary;
+
+  h3 {
+    @include clamped-p1;
+  }
+
+  a {
+    height: fit-content;
+    align-self: flex-end;
+  }
+
+  &.blue {
+    background-color: $secondary-lighter;
+    color: $secondary;
+    a {
+      color: $accent;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .card {
+    flex-direction: column;
+    gap: 5px;
+    padding: 20px;
+
+    a {
+      align-self: flex-start;
+    }
+  }
+}

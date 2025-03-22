@@ -34,3 +34,20 @@ export const getMe = createAppAsyncThunk(
     }
   },
 );
+
+export const getCourses = createAppAsyncThunk(
+  "user/getCourses",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await userApi.getCourses();
+
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data || "Unknown error");
+    }
+  },
+);

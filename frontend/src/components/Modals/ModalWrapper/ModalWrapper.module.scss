@@ -77,11 +77,14 @@ $content-padding-y: clamp(18px, 2vw, 26px);
   width: 100%;
   flex: 1;
   color: $text-color;
-}
 
-h3 {
-  @include clamped-h2;
-  text-transform: uppercase;
+  h3 {
+    @include clamped-h2;
+    max-width: 85%;
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
 }
 
 .close_button {

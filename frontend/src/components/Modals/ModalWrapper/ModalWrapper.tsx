@@ -3,6 +3,7 @@ import s from "./ModalWrapper.module.scss";
 import ModalClose from "../../../common/Icons/ModalClose.tsx";
 
 interface ModalWrapperProps {
+  title: string;
   children: ReactNode;
   isOpen: boolean;
   onClose: () => void;
@@ -13,6 +14,7 @@ interface ModalWrapperProps {
 }
 
 const ModalWrapper: React.FC<ModalWrapperProps> = ({
+  title,
   children,
   isOpen,
   onClose,
@@ -61,7 +63,6 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           x: triggerRect.x,
           y: triggerRect.y,
         });
-        console.log(triggerRect);
         setTriggerTop(triggerRect.top);
       };
 
@@ -158,6 +159,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
               <ModalClose />
             </button>
           )}
+          <h3>{title}</h3>
           {children}
         </div>
 

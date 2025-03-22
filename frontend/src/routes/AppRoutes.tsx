@@ -1,7 +1,7 @@
 import MainPage from "../pages/MainPage/MainPage.tsx";
 import Layout from "../components/Layout/Layout.tsx";
 import Landing from "../pages/Landing/Landing.tsx";
-import PersonalAccount from "../pages/PersonalAccount/PersonalAccount.tsx";
+import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -20,7 +20,7 @@ export const AppRoutes: FC = () => {
           path={`${Path.landing}/:landingPath?/:modalType?`}
           element={<Landing />}
         />
-        <Route path={Path.profile} element={<PersonalAccount />} />
+        <Route path={Path.profile} element={<ProfilePage />} />
 
         <Route path={Path.admin} element={<AdminPage />}>
           <Route index element={<AdminPanel />} />

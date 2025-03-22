@@ -1,5 +1,5 @@
 import React from "react";
-import s from "../CommonModalStyles.module.scss";
+import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {

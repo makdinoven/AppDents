@@ -3,10 +3,10 @@ import { Trans } from "react-i18next";
 import { t } from "i18next";
 import { useForm } from "../../common/hooks/useForm.ts";
 import { loginSchema } from "../../common/schemas/loginSchema.ts";
-import Form from "./modules/Form.tsx";
-import Input from "./modules/Input.tsx";
+import Form from "./modules/Form/Form.tsx";
+import Input from "./modules/Input/Input.tsx";
 import Button from "../ui/Button/Button.tsx";
-import ModalLink from "./modules/ModalLink.tsx";
+import ModalLink from "./modules/ModalLink/ModalLink.tsx";
 import { Path } from "../../routes/routes.ts";
 import { getMe, login } from "../../store/actions/userActions.ts";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,7 +15,7 @@ import { LoginType } from "../../api/userApi/types.ts";
 
 const LoginModal = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useDispatch<AppDispatchType>();
-  const error = useSelector((state: AppRootStateType) => state.user.error);
+  const { error } = useSelector((state: AppRootStateType) => state.user);
 
   const { values, errors, handleChange, handleSubmit } = useForm<LoginType>({
     validationSchema: loginSchema,
@@ -35,9 +35,6 @@ const LoginModal = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <div className={s.modal}>
-      <h3>
-        <Trans i18nKey={"login"} />
-      </h3>
       <Form handleSubmit={handleSubmit}>
         <>
           <Input
@@ -69,7 +66,7 @@ const LoginModal = ({ onClose }: { onClose: () => void }) => {
         )}
         <span>
           <Trans i18nKey={"firstTimeHere"} />
-          <ModalLink link={Path.signUp} text={"signup"} />
+          <ModalLink variant={"uppercase"} link={Path.signUp} text={"signup"} />
         </span>
         <ModalLink link={Path.passwordReset} text={"forgotPassword"} />
       </div>

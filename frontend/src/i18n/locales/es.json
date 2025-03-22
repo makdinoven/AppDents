@@ -48,6 +48,7 @@
   "open": "abrir",
   "viewCourse": "Ver curso",
   "onlineCourse": "Curso en línea",
+  "professors": "Profesores",
 
   "tag.allCourses": "Todos los cursos",
   "tag.surgery": "Cirugía",
@@ -72,7 +73,7 @@
   "landing.onlineLessons": "lecciones en línea",
   "landing.onlineLessons": "lecciones en línea",
   "landing.online": "en línea",
-  "landing.discount": "descuento",
+  "landing.discount": "{{count}}% descuento",
   "landing.savings": "ahorro",
   "landing.courseProgram": "Programa del curso",
   "landing.fullCourseProgram": "El programa completo del curso",

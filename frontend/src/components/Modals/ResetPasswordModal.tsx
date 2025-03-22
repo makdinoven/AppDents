@@ -1,8 +1,8 @@
 import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
-import ModalLink from "./modules/ModalLink.tsx";
-import Form from "./modules/Form.tsx";
-import Input from "./modules/Input.tsx";
+import ModalLink from "./modules/ModalLink/ModalLink.tsx";
+import Form from "./modules/Form/Form.tsx";
+import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import { useForm } from "../../common/hooks/useForm.ts";
@@ -17,9 +17,6 @@ const ResetPasswordModal = () => {
 
   return (
     <div className={s.modal}>
-      <h3>
-        <Trans i18nKey={"passwordReset"} />
-      </h3>
       <Form handleSubmit={handleSubmit}>
         <>
           <Input

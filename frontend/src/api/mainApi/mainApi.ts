@@ -2,18 +2,14 @@ import { instance } from "../api-instance.ts";
 
 export const mainApi = {
   getTags() {
-    try {
-      return instance.get("landings/tags");
-    } catch (error) {
-      return Promise.reject(error);
-    }
+    return instance.get("landings/tags");
   },
 
   getLanding(pageName: any) {
-    try {
-      return instance.get(`landings/detail/by-page/${pageName}`);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+    return instance.get(`landings/detail/by-page/${pageName}`);
+  },
+
+  buyCourse(data: any) {
+    return instance.post(`stripe/checkout`, data);
   },
 };

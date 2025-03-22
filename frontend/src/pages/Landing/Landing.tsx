@@ -1,5 +1,5 @@
 import s from "./Landing.module.scss";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
@@ -22,17 +22,30 @@ import { Trans, useTranslation } from "react-i18next";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../components/Modals/PaymentModal.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { getMe } from "../../store/actions/userActions.ts";
 
 const Landing = () => {
   const { i18n } = useTranslation();
-  const changeLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
-  };
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
   const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const changeLanguage = (lang: string) => {
+    i18n.changeLanguage(lang);
+  };
+  const { isLogged, email } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
+  const location = useLocation();
+  const currentUrl = window.location.origin + location.pathname;
+  const dispatch = useDispatch<AppDispatchType>();
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
 
   useEffect(() => {
     fetchLandingData();
@@ -63,6 +76,26 @@ const Landing = () => {
     }
   };
 
+  const handlePayment = async (form: any) => {
+    const dataToSend = {
+      ...paymentData,
+      user_email: isLogged ? email : form.email,
+    };
+    try {
+      const res = await mainApi.buyCourse(dataToSend);
+      const checkoutUrl = res.data.checkout_url;
+
+      if (checkoutUrl) {
+        window.open(checkoutUrl, "_blank");
+        handleCloseModal();
+      } else {
+        console.error("Checkout URL is missing");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const renderBuyButton = () => (
     <ArrowButton onClick={handleOpenModal}>
       <Trans
@@ -81,7 +114,7 @@ const Landing = () => {
   const heroData = {
     landing_name: landing?.landing_name,
     authors: formattedAuthorsDesc,
-    photo: landing?.preview_photo,
+    photo: landing?.preview_photo || null,
     renderBuyButton: renderBuyButton(),
   };
 
@@ -90,10 +123,9 @@ const Landing = () => {
       ? landing.lessons_count
       : `0 ${t("landing.lessons", { count: landing?.lessons_count })}`,
     professorsCount: `${landing?.authors.length} ${t("landing.professors", { count: landing?.authors.length })}`,
-    discount: `${calculateDiscount(
-      landing?.old_price,
-      landing?.new_price,
-    )}% ${t("landing.discount")}`,
+    discount: t("landing.discount", {
+      count: calculateDiscount(landing?.old_price, landing?.new_price),
+    }),
     savings: `$${landing?.old_price - landing?.new_price} ${t("landing.savings")}`,
     access: t("landing.access"),
     duration: `${t("landing.duration")} ${landing?.duration ? landing?.duration : "0"}`,
@@ -121,6 +153,15 @@ const Landing = () => {
     renderBuyButton: renderBuyButton(),
   };
 
+  const paymentData = {
+    course_id: landing?.course_ids[0],
+    course_name: landing?.landing_name,
+    price_cents: landing?.new_price * 100,
+    region: landing?.language,
+    success_url: currentUrl,
+    cancel_url: currentUrl,
+  };
+
   return (
     <>
       <BackButton />
@@ -139,15 +180,12 @@ const Landing = () => {
 
       {isModalOpen && (
         <ModalWrapper
+          title={`${t("buy")}: ${landing?.landing_name}`}
           cutoutPosition="none"
-          cutoutOffsetY={15}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         >
-          <PaymentModal
-            title={`${t("buy")}: ${landing?.landing_name}`}
-            onClose={handleCloseModal}
-          />
+          <PaymentModal isLogged={isLogged} handlePayment={handlePayment} />
         </ModalWrapper>
       )}
     </>

@@ -12,6 +12,7 @@ import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import UserIcon from "../../common/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
+import { t } from "i18next";
 // import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
@@ -77,11 +78,25 @@ const Header = () => {
     );
   };
 
+  const modalContent = modalType
+    ? {
+        login: {
+          title: t("login"),
+          component: <LoginModal onClose={handleCloseModal} />,
+        },
+        "sign-up": { title: t("signup"), component: <SignUpModal /> },
+        "password-reset": {
+          title: t("passwordReset"),
+          component: <ResetPasswordModal />,
+        },
+      }[modalType]
+    : undefined;
+
   return (
     <>
       <header className={s.header}>
         <div className={s.content}>
-          <Link className={s.logo} to="/">
+          <Link className={s.logo} to={Path.main}>
             <LogoIcon />
           </Link>
           <div className={s.header_buttons}>
@@ -91,17 +106,16 @@ const Header = () => {
         </div>
       </header>
 
-      {triggerRef.current && isModalOpen && (
+      {triggerRef.current && isModalOpen && modalContent && (
         <ModalWrapper
+          title={modalContent.title}
           cutoutPosition="top-right"
           cutoutOffsetY={15}
           triggerElement={triggerRef.current}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         >
-          {modalType === "login" && <LoginModal onClose={handleCloseModal} />}
-          {modalType === "sign-up" && <SignUpModal />}
-          {modalType === "password-reset" && <ResetPasswordModal />}
+          {modalContent.component}
         </ModalWrapper>
       )}
     </>

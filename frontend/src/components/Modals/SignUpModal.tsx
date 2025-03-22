@@ -1,10 +1,10 @@
 import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
-import ModalLink from "./modules/ModalLink.tsx";
-import Input from "./modules/Input.tsx";
+import ModalLink from "./modules/ModalLink/ModalLink.tsx";
+import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
-import Form from "./modules/Form.tsx";
+import Form from "./modules/Form/Form.tsx";
 import { useForm } from "../../common/hooks/useForm.ts";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
 import { Path } from "../../routes/routes.ts";
@@ -17,9 +17,6 @@ const SignUpModal = () => {
 
   return (
     <div className={s.modal}>
-      <h3>
-        <Trans i18nKey={"signup"} />
-      </h3>
       <Form handleSubmit={handleSubmit}>
         <>
           <Input
@@ -37,7 +34,7 @@ const SignUpModal = () => {
         <span>
           <Trans i18nKey={"alreadyHaveAccount"} />
         </span>
-        <ModalLink link={Path.login} text={"login"} />
+        <ModalLink variant={"uppercase"} link={Path.login} text={"login"} />
       </div>
     </div>
   );

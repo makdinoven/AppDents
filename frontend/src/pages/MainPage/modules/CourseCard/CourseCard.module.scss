@@ -25,7 +25,10 @@ $card-height: $initial-card-height - $card_bottom-height;
 //card body
 $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 $card-body-padding-bottom-initial: 20px;
-$card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body-padding-bottom-initial + $padding-bottom + $tooth-top);
+$card-body-padding-bottom: calc(
+  $photo-height - $card_bottom-height + $card-body-padding-bottom-initial +
+    $padding-bottom + $tooth-top
+);
 
 .card {
   @include flex-column;
@@ -40,8 +43,10 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
   }
 }
 
-.card_header,.card_body,.card_bottom {
-  background-color: $primary
+.card_header,
+.card_body,
+.card_bottom {
+  background-color: $primary;
 }
 
 .card_header {
@@ -65,7 +70,7 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
     bottom: 0;
     right: -40px;
     border-bottom-left-radius: $border-radius-small;
-    box-shadow: -15px 15px 0 2px #7FDFD5;
+    box-shadow: -15px 15px 0 2px #7fdfd5;
     pointer-events: none;
   }
 }
@@ -79,41 +84,9 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
   min-height: $card-body-height;
 
   a {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     position: absolute;
     left: $padding-left;
     bottom: $card-body-padding-bottom-initial;
-    width: clamp(128px, 18vw, 194px);
-    @include clamped-p2;
-    @include horizontal-line($bottom: -2px, $height: 1.5px, $left:0, $width: 100%);
-
-    &::after {
-      @include transition();
-    }
-
-    svg {
-      @include transition();
-      width: 20px;
-      height: 20px;
-      transform: translateX(0);
-
-      @media(max-width: 720px) {
-        width: 13px;
-        height: 13px;
-      }
-    }
-
-    &:hover {
-      svg {
-        transform: translateX(15px);
-      }
-
-      &::after {
-        width: calc(100% + 15px);
-      }
-    }
   }
 }
 
@@ -184,7 +157,9 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
     color: $secondary;
   }
 
-  .card_header,.card_body,.card_bottom {
+  .card_header,
+  .card_body,
+  .card_bottom {
     background-color: $secondary-lighter;
   }
 
@@ -202,8 +177,8 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
 
   .photo {
     &::after {
-    background-color: saturate(lighten($secondary-lighter, 10%), 35%);
-  }
+      background-color: saturate(lighten($secondary-lighter, 10%), 35%);
+    }
 
     &::before {
       background-image: url("/src/assets/tooth-blue.svg");
@@ -211,7 +186,7 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
   }
 }
 
-@media(max-width: $middle-breakpoint) {
+@media (max-width: $middle-breakpoint) {
   .card_header {
     padding-left: 11px;
     height: 45px;
@@ -241,8 +216,5 @@ $card-body-padding-bottom: calc($photo-height - $card_bottom-height + $card-body
       height: 46px;
       bottom: -46px;
     }
-
   }
-
-
 }

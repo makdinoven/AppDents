@@ -8,6 +8,7 @@
   outline: 2px solid $background-color;
   border-radius: 40px;
   padding: 5.5px;
+  min-height: clamp(40px, 10vw, 50.5px);
 
   @media (hover: hover) {
     &:hover {

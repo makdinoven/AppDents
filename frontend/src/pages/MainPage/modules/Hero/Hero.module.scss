@@ -8,7 +8,6 @@
     gap: 44px;
     margin-bottom: 100px;
   }
-
 }
 
 .highlight {
@@ -28,8 +27,8 @@
   svg {
     stroke-width: 2;
     stroke: $primary;
-    width: clamp(28px,5vw,44px);
-    height: clamp(25px,5vw,39px);
+    width: clamp(28px, 5vw, 44px);
+    height: clamp(25px, 5vw, 39px);
     fill: transparent;
     @include transition();
 
@@ -54,7 +53,6 @@
 .filter_btn_active {
   svg {
     fill: $primary;
-
   }
 }
 
@@ -70,9 +68,9 @@
       position: absolute;
       border-radius: 20px;
       left: 29px;
-      top: clamp(30px,12vw,150px);
-      height: clamp(107px,26vw,236px);
-      width: clamp(137px,30vw,329px);
+      top: clamp(30px, 12vw, 150px);
+      height: clamp(107px, 26vw, 236px);
+      width: clamp(137px, 30vw, 329px);
       padding: 26px 42px 36px 33px;
       display: flex;
       flex-direction: column;
@@ -95,7 +93,7 @@
       svg {
         @include transition(transform);
         aspect-ratio: 1/1;
-        width: clamp(27px,9vw,92px);
+        width: clamp(27px, 9vw, 92px);
         stroke-width: 2;
       }
 
@@ -105,7 +103,7 @@
 
       @media (max-width: $mobile-breakpoint) {
         left: 13px;
-        top: clamp(30px,24vw,150px);
+        top: clamp(30px, 24vw, 150px);
         padding: 15px 12px;
 
         svg {
@@ -137,7 +135,6 @@
       display: flex;
       gap: clamp(10px, 3vw, 20px);
     }
-
   }
 }
 
@@ -146,24 +143,17 @@
     @include clamped-p2;
   }
 
-  .btn_wrapper {
-    position: relative;
-    display: flex;
-    margin-bottom: 20px;
-    @include horizontal-line($top:50%, $right: 0, $transform: y50, $z: -1);
-
-    @media (max-width: $mobile-breakpoint) {
-      margin-bottom: unset;
-    }
-  }
-
   .bottom_desc {
-    margin-bottom: clamp(20px, 3vw,30px);
+    margin-bottom: clamp(20px, 3vw, 30px);
     max-width: 40%;
   }
 
   .bottom_secondary_desc {
-  text-align: right;
+    text-align: right;
+    margin-top: 20px;
+
+    @media (max-width: $mobile-breakpoint) {
+      margin-top: unset;
+    }
   }
 }
-

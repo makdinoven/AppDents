@@ -3,6 +3,7 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import { Trans } from "react-i18next";
 import ProgramContent from "../LessonsProgram/modules/ProgramContent/ProgramContent.tsx";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
 
 const CourseProgram = ({
   data: {
@@ -84,7 +85,7 @@ const CourseProgram = ({
           }}
         />
       </p>
-      <div className={s.btn_wrapper}>{renderBuyButton}</div>
+      <LineWrapper>{renderBuyButton}</LineWrapper>
     </div>
   );
 };
