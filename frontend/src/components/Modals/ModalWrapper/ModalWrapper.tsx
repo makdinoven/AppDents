@@ -3,7 +3,7 @@ import s from "./ModalWrapper.module.scss";
 import ModalClose from "../../../common/Icons/ModalClose.tsx";
 
 interface ModalWrapperProps {
-  title: string;
+  title?: string;
   children: ReactNode;
   isOpen: boolean;
   onClose: () => void;
