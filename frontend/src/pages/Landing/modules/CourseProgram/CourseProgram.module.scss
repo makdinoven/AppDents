@@ -129,13 +129,6 @@ $card-padding-left: 35px;
     max-width: 64%;
   }
 
-  .btn_wrapper {
-    position: relative;
-    display: flex;
-    margin-bottom: 20px;
-    @include horizontal-line($top: 50%, $right: 0, $transform: y50, $z: -1);
-  }
-
   @media (max-width: $middle-breakpoint) {
     .lessons_list {
       margin: 0 20px;

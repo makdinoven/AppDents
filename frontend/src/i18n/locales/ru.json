@@ -48,6 +48,7 @@
   "open": "открыть",
   "viewCourse": "Просмотреть курс",
   "onlineCourse": "Онлайн-курс",
+  "professors": "Профессоры",
 
   "tag.allCourses": "Все курсы",
   "tag.surgery": "Хирургия",
@@ -73,7 +74,7 @@
   "landing.professors_many": "профессоров",
   "landing.onlineLessons": "онлайн-уроков",
   "landing.online": "онлайн",
-  "landing.discount": "скидка",
+  "landing.discount": "скидка {{count}}%",
   "landing.savings": "экономия",
   "landing.courseProgram": "Программа курса",
   "landing.fullCourseProgram": "Полная программа курса",

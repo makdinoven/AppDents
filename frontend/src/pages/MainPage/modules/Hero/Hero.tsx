@@ -1,19 +1,15 @@
 import s from "./Hero.module.scss";
 import { t } from "i18next";
-import Title from "../../../../components/CommonComponents/Title/Title.tsx";
+import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
 import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
-import { useRef, useState } from "react";
-import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import Search from "../../../../components/ui/Search/Search.tsx";
 import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";
+import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
 
 const Hero = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-
   const handleSearch = () => {};
 
   return (
@@ -25,13 +21,6 @@ const Hero = () => {
             placeholder={t("searchCourses")}
             onChange={handleSearch}
           />
-          {/*<UnstyledButton*/}
-          {/*  ref={triggerRef}*/}
-          {/*  onClick={() => setIsModalOpen(true)}*/}
-          {/*  className={`${s.filter_btn} ${isModalOpen ? s.filter_btn_active : ""}`}*/}
-          {/*>*/}
-          {/*  <FilterIcon />*/}
-          {/*</UnstyledButton>*/}
         </div>
         <div className={s.hero_content}>
           <Title>
@@ -67,9 +56,9 @@ const Hero = () => {
             </span>
             <Trans i18nKey="main.hero.widestRange.lastPart" />
           </p>
-          <div className={s.btn_wrapper}>
+          <LineWrapper>
             <ArrowButton text={t("main.hero.chooseCourse")} />
-          </div>
+          </LineWrapper>
           <p className={s.bottom_secondary_desc}>
             <span className="highlight">
               <Trans i18nKey="main.hero.bestPrices.firstPart" />
@@ -78,14 +67,6 @@ const Hero = () => {
           </p>
         </div>
       </section>
-      <ModalWrapper
-        cutoutPosition="top-right"
-        triggerElement={triggerRef.current}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      >
-        <h2>Модалка фильтров</h2>
-      </ModalWrapper>
     </>
   );
 };

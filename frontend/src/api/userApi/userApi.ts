@@ -4,11 +4,11 @@ import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 
 export const userApi = {
   getMe() {
-    try {
-      return instance.get("users/me", { headers: getAuthHeaders() });
-    } catch (error) {
-      return Promise.reject(error);
-    }
+    return instance.get("users/me", { headers: getAuthHeaders() });
+  },
+
+  changePassword(data: ChangePasswordType) {
+    return instance.post(`users/forgot-password`, data);
   },
 
   signUp(data: SignUpType) {
@@ -29,7 +29,9 @@ export const userApi = {
     });
   },
 
-  changePassword(data: ChangePasswordType) {
-    return instance.post(`users/forgot-password`, data);
+  getCourses() {
+    return instance.get("users/me/courses", {
+      headers: getAuthHeaders(),
+    });
   },
 };

@@ -1,8 +1,6 @@
 import s from "./CourseCard.module.scss";
-import { Link } from "react-router-dom";
-import { Trans } from "react-i18next";
-import Arrow from "../../../../common/Icons/Arrow.tsx";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 
 interface CourseCardProps {
   name: string;
@@ -37,10 +35,7 @@ const CourseCard = ({
       <div className={s.card_body}>
         <h4>{name}</h4>
         <p> {description}</p>
-        <Link to={link}>
-          <Trans i18nKey={"viewCourse"} />
-          <Arrow />
-        </Link>
+        <ViewLink link={link} text={"viewCourse"} />
         {screenWidth > 1024 ? (
           <div className={s.card_bottom}>
             <div

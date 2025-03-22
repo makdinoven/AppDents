@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import s from "../CommonModalStyles.module.scss";
+import s from "./Form.module.scss";
 
 interface FormProps {
   children: ReactNode;

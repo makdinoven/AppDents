@@ -1,0 +1,14 @@
+.courses {
+  @include flex-column;
+  gap: 40px;
+}
+
+.courses_list {
+  @include flex-column;
+  gap: 20px;
+}
+
+.no_courses {
+  @include flex-center;
+  @include clamped-p2;
+}

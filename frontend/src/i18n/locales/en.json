@@ -21,6 +21,9 @@
   "open": "open",
   "viewCourse": "View course",
   "onlineCourse": "Online course",
+  "professors": "Professors",
+  "logout": "Log out",
+  "mail": "mail",
 
   "main" : {
     "title.firstPart" : "Online",
@@ -82,7 +85,7 @@
     "professors_other": "professors",
     "onlineLessons": "online lessons",
     "online": "online",
-    "discount": "discount",
+    "discount": "discount {{count}}%",
     "savings": "savings",
     "courseProgram": "Course program",
     "fullCourseProgram": "The full course program",
@@ -94,6 +97,11 @@
     "videoIsNotSupported": "Your browser is not supporting video",
     "specialOffer": "Special offer",
     "accessFull": "Access to the course is unlimited in time!"
+  },
+
+  "profile": {
+    "yourCourses": "Your curses",
+    "noCourses": "No Courses Yet"
   },
 
   "error": {

@@ -68,9 +68,9 @@ const Courses = () => {
     setActiveFilter(filter);
   };
 
-  useEffect(() => {
-    console.log(activeFilter);
-  }, [activeFilter]);
+  // useEffect(() => {
+  //   console.log(activeFilter);
+  // }, [activeFilter]);
 
   return (
     <section className={s.courses}>

@@ -1,0 +1,31 @@
+.input_wrapper {
+  @include clamped-p1;
+  @include horizontal-line($color: $text-color, $bottom: 0, $left: 0);
+  position: relative;
+  padding-bottom: 5px;
+
+  .error_message {
+    color: $error-color;
+    display: block;
+    width: 100%;
+    text-align: right;
+    position: absolute;
+    bottom: -20px;
+    @include clamped-err;
+  }
+
+  &.error {
+    &::after {
+      background-color: $error-color;
+    }
+  }
+
+  input {
+    border-radius: 5px;
+    width: 100%;
+    &::placeholder {
+      color: $background-color;
+      opacity: 0.6;
+    }
+  }
+}
