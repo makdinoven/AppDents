@@ -24,10 +24,6 @@ const AuthorDetail = () => {
     }
   }, [authorId]);
 
-  useEffect(() => {
-    console.log(author);
-  }, [author]);
-
   const fetchData = async (authorId: any) => {
     try {
       const res = await adminApi.getAuthor(authorId);
