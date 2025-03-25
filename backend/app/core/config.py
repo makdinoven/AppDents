@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     STRIPE_PUBLISHABLE_KEY_ES: str
     STRIPE_WEBHOOK_SECRET_ES: str
 
-    # EMAIL_HOST: str
-    # EMAIL_PORT: int
-    # EMAIL_USERNAME: str
-    # EMAIL_PASSWORD: str
-    # EMAIL_SENDER: str
+    EMAIL_HOST: str
+    EMAIL_PORT: int
+    EMAIL_USERNAME: str = ""
+    EMAIL_PASSWORD: str = ""
+    EMAIL_SENDER: str
 
     class Config:
         env_file = ".env"
