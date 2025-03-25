@@ -3,10 +3,10 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
-from app.services.auth import get_current_user_optional
-from app.services.stripe_service import create_checkout_session, handle_webhook_event
-from app.models.models_v2 import Course
+from ..db.database import get_db
+from ..dependencies.auth import get_current_user_optional
+from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event
+from ..models.models_v2 import Course
 
 stripe_router = APIRouter()
 
