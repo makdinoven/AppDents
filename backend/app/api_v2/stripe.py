@@ -8,7 +8,7 @@ from ..dependencies.auth import get_current_user_optional
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event
 from ..models.models_v2 import Course
 
-stripe_router = APIRouter()
+router = APIRouter()
 
 class CheckoutRequest(BaseModel):
     course_ids: list[int]         # Список ID курсов для покупки
@@ -18,7 +18,7 @@ class CheckoutRequest(BaseModel):
     success_url: str = "https://example.com/payment-success"
     cancel_url: str = "https://example.com/payment-cancel"
 
-@stripe_router.post("/checkout")
+@router.post("/checkout")
 def stripe_checkout(
     data: CheckoutRequest,
     db: Session = Depends(get_db),
@@ -62,7 +62,7 @@ def stripe_checkout(
     )
     return {"checkout_url": checkout_url}
 
-@stripe_router.post("/webhook/{region}")
+@router.post("/webhook/{region}")
 async def stripe_webhook(
     region: str,
     request: Request,
