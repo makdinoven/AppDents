@@ -3,8 +3,21 @@ import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import Arrow from "../../../common/Icons/Arrow.tsx";
 
-const ViewLink = ({ link, text }: { link: string; text: string }) => {
-  return (
+const ViewLink = ({
+  isExternal,
+  link,
+  text,
+}: {
+  isExternal?: boolean;
+  link: string;
+  text: string;
+}) => {
+  return isExternal ? (
+    <a className={s.link} href={link} target="_blank" rel="noopener noreferrer">
+      <Trans i18nKey={text} />
+      <Arrow />
+    </a>
+  ) : (
     <Link className={s.link} to={link}>
       <Trans i18nKey={text} />
       <Arrow />

@@ -19,23 +19,20 @@
   "email" : "Email...",
   "password" : "Password...",
   "open": "open",
+  "view": "View",
   "viewCourse": "View course",
+  "watchLesson": "Watch lesson",
   "onlineCourse": "Online course",
   "professors": "Professors",
   "logout": "Log out",
   "mail": "mail",
 
   "main" : {
-    "title.firstPart" : "Online",
-    "title.secondPart" : " dental ",
-    "title.lastPart" : "school",
+    "title" : "Online <1> dental </1> school",
     "hero.description": "Online courses for dentists",
-    "hero.widestRange.firstPart": "The",
-    "hero.widestRange.secondPart": " widest ",
-    "hero.widestRange.lastPart": "range of products ",
+    "hero.widestRange": "The <1>widest</1> range of products ",
     "hero.chooseCourse": "Choose your course",
-    "hero.bestPrices.firstPart": "Best",
-    "hero.bestPrices.lastPart": " prices",
+    "hero.bestPrices": "Best <1>prices</1>",
     "ourCurses": "Our curses",
     "viewCourse" : "View course",
     "noCourses" : "No courses found"
@@ -100,7 +97,7 @@
   },
 
   "profile": {
-    "yourCourses": "Your curses",
+    "yourCourses": "Your courses",
     "noCourses": "No Courses Yet"
   },
 

@@ -1,0 +1,19 @@
+.course_page {
+  @include flex-column;
+  gap: 80px;
+}
+
+.modules_list {
+  @include flex-column;
+  gap: 50px;
+
+  li {
+    @include flex-column;
+    gap: 30px;
+  }
+
+  ul {
+    @include flex-column;
+    gap: 15px;
+  }
+}

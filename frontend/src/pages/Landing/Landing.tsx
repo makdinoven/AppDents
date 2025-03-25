@@ -49,9 +49,6 @@ const Landing = () => {
 
   useEffect(() => {
     fetchLandingData();
-    return () => {
-      changeLanguage("en");
-    };
   }, [landingPath]);
 
   const handleOpenModal = () => {
@@ -154,8 +151,7 @@ const Landing = () => {
   };
 
   const paymentData = {
-    course_id: landing?.course_ids[0],
-    course_name: landing?.landing_name,
+    course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     region: landing?.language,
     success_url: currentUrl,

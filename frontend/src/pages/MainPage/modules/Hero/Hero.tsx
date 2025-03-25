@@ -24,13 +24,12 @@ const Hero = () => {
         </div>
         <div className={s.hero_content}>
           <Title>
-            <div className={s.title_first_line}>
-              <Trans i18nKey="main.title.firstPart" />
-              <span className={s.highlight}>
-                <Trans i18nKey="main.title.secondPart" />
-              </span>
-            </div>
-            <Trans i18nKey="main.title.lastPart" />
+            <Trans
+              i18nKey="main.title"
+              components={{
+                1: <span className="highlight" />,
+              }}
+            />
           </Title>
           <div className={s.img_wrapper}>
             <picture>
@@ -50,20 +49,23 @@ const Hero = () => {
         </div>
         <div className={s.hero_bottom}>
           <p className={s.bottom_desc}>
-            <Trans i18nKey="main.hero.widestRange.firstPart" />
-            <span className="highlight">
-              <Trans i18nKey="main.hero.widestRange.secondPart" />
-            </span>
-            <Trans i18nKey="main.hero.widestRange.lastPart" />
+            <Trans
+              i18nKey="main.hero.widestRange"
+              components={{
+                1: <span className="highlight" />,
+              }}
+            />
           </p>
           <LineWrapper>
             <ArrowButton text={t("main.hero.chooseCourse")} />
           </LineWrapper>
           <p className={s.bottom_secondary_desc}>
-            <span className="highlight">
-              <Trans i18nKey="main.hero.bestPrices.firstPart" />
-            </span>
-            <Trans i18nKey="main.hero.bestPrices.lastPart" />
+            <Trans
+              i18nKey="main.hero.bestPrices"
+              components={{
+                1: <span className="highlight" />,
+              }}
+            />
           </p>
         </div>
       </section>
