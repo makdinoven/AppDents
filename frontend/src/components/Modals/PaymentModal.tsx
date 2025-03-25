@@ -16,26 +16,24 @@ const PaymentModal = ({
 }) => {
   const { values, errors, handleChange, handleSubmit } =
     useForm<ChangePasswordType>({
-      validationSchema: emailSchema,
+      validationSchema: isLogged ? undefined : emailSchema,
       onSubmit: (email) => handlePayment(email),
     });
 
   return (
     <div className={s.modal}>
       <Form handleSubmit={handleSubmit}>
-        <>
-          {!isLogged && (
-            <Input
-              id="email"
-              name="email"
-              value={values.email || ""}
-              placeholder={t("email")}
-              onChange={handleChange}
-              error={errors?.email}
-            />
-          )}
-          <Button text={t("pay")} type="submit" />
-        </>
+        {!isLogged && (
+          <Input
+            id="email"
+            name="email"
+            value={values.email || ""}
+            placeholder={t("email")}
+            onChange={handleChange}
+            error={errors?.email}
+          />
+        )}
+        <Button text={t("pay")} type="submit" />
       </Form>
     </div>
   );

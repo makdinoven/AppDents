@@ -31,4 +31,12 @@
   .profile_page {
     gap: 80px;
   }
+
+  .user_info {
+    gap: 20px;
+    svg {
+      width: 60px;
+      height: 60px;
+    }
+  }
 }

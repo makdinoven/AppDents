@@ -5,6 +5,7 @@ export const Path = {
   signUp: "/sign-up",
   landing: "/course",
   profile: "/profile",
+  myCourse: "/my-course",
   admin: "/admin",
   courseDetail: "/admin/course",
   landingDetail: "/admin/landing",

@@ -16,57 +16,14 @@ import {
   normalizeCourse,
 } from "../../../common/helpers/helpers.ts";
 
-// const initialCourse = {
-//   name: "initialCourse",
-//   description: "",
-//   sections: [
-//     {
-//       1: {
-//         section_name: "Invisalign Online Mentoring Program by Doctor Paiva",
-//         lessons: [
-//           {
-//             1: {
-//               video_link: "https://play.boomstream.com/2TVBV98F",
-//               lesson_name: "Introducing Invisalign® System",
-//             },
-//             2: {
-//               video_link: "https://play.boomstream.com/2TVBV98F",
-//               lesson_name: "Introducing Invisalign® System",
-//             },
-//           },
-//         ],
-//       },
-//     },
-//     {
-//       2: {
-//         section_name: "2 section",
-//         lessons: [
-//           {
-//             1: {
-//               video_link: "https://play.boomstream.com/2TVBV98F",
-//               lesson_name: "Introducing Invisalign® System",
-//             },
-//             2: {
-//               video_link: "https://play.boomstream.com/2TVBV98F",
-//               lesson_name: "Introducing Invisalign® System",
-//             },
-//           },
-//         ],
-//       },
-//     },
-//   ],
-// };
-
 const CourseDetail = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
-  // const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (courseId) {
       fetchCourseData();
-      // setLoading(false);
     }
   }, [courseId]);
 

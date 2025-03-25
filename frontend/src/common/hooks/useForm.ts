@@ -2,7 +2,7 @@ import { useState, ChangeEvent, FormEvent } from "react";
 import Joi from "joi";
 
 interface UseFormProps<T> {
-  validationSchema: Joi.ObjectSchema;
+  validationSchema: Joi.ObjectSchema | undefined;
   onSubmit: (values: T) => void;
 }
 
@@ -20,6 +20,11 @@ export const useForm = <T extends Record<string, any>>({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!validationSchema) {
+      setErrors({});
+      return onSubmit(values);
+    }
 
     const trimmedValues = Object.keys(values).reduce(
       (acc, key) => ({
