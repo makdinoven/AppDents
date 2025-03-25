@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET_ES: str
 
     EMAIL_HOST: str
-    EMAIL_PORT: int
+    EMAIL_PORT: int = 25
     EMAIL_USERNAME: str = ""
     EMAIL_PASSWORD: str = ""
     EMAIL_SENDER: str
