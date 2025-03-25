@@ -1,3 +1,5 @@
+from typing import List
+
 import stripe
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
@@ -37,36 +39,29 @@ def get_stripe_keys_by_region(region: str) -> dict:
             "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_ES
         }
     else:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid region '{region}'. Supported: RU, EN, ES."
-        )
-
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid region '{region}'")
 
 def create_checkout_session(
     db: Session,
     email: str,
-    course_id: int,
+    course_ids: List[int],
+    product_name: str,
     price_cents: int,
-    course_name: str,
     region: str,
     success_url: str,
     cancel_url: str
 ) -> str:
-    """
-    Создаёт Stripe Checkout Session и возвращает URL, куда нужно перенаправить для оплаты.
-    """
     stripe_keys = get_stripe_keys_by_region(region)
     stripe.api_key = stripe_keys["secret_key"]
 
-    # В metadata передадим course_id, email, чтобы на вебхуке определить, кому привязывать
+    # Создаём единственный line_item с объединённым названием курсов
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
             "price_data": {
-                "currency": "usd",   # Или 'rub' для RU
-                "product_data": {"name": course_name},
-                "unit_amount": price_cents,  # цена в центах
+                "currency": "usd",   # Измените на "rub" для RU, если нужно
+                "product_data": {"name": product_name},
+                "unit_amount": price_cents,
             },
             "quantity": 1,
         }],
@@ -75,27 +70,13 @@ def create_checkout_session(
         cancel_url=cancel_url,
         customer_email=email,
         metadata={
-            "course_id": str(course_id),
-            "course_name": course_name,
-            "user_email": email,
-            "price_cents": str(price_cents),
+            "course_ids": ",".join(map(str, course_ids))
         }
     )
-
     return session.url
 
 
-def handle_webhook_event(
-    db: Session,
-    payload: bytes,
-    sig_header: str,
-    region: str
-):
-    """
-    Обработка webhook от Stripe. Сценарий:
-    - checkout.session.completed => создаём/ищем пользователя, привязываем курс, шлём успешное письмо.
-    - checkout.session.async_payment_failed / checkout.session.expired => шлём письмо о неудаче.
-    """
+def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: str):
     stripe_keys = get_stripe_keys_by_region(region)
     webhook_secret = stripe_keys["webhook_secret"]
     stripe.api_key = stripe_keys["secret_key"]
@@ -109,48 +90,35 @@ def handle_webhook_event(
     except stripe.error.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
-    event_type = event["type"]
-
-    if event_type == "checkout.session.completed":
+    if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         metadata = session.get("metadata", {})
-        email = metadata.get("user_email")
-        course_id = metadata.get("course_id")
-
-        if email and course_id:
+        course_ids_str = metadata.get("course_ids", "")
+        # Преобразуем строку "101,102,103" в список [101, 102, 103]
+        course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
+        email = session.get("customer_email")
+        if email and course_ids:
             user = get_user_by_email(db, email)
             new_user_created = False
-
+            random_pass = None
             if not user:
-                # Создаём нового пользователя с временным паролем
                 random_pass = generate_random_password()
                 try:
                     user = create_user(db, email, random_pass)
                     new_user_created = True
                 except ValueError:
-                    # если вдруг параллельно создан (race-condition),
-                    # то повторно достаём
                     user = get_user_by_email(db, email)
-
-            # Привязываем курс к пользователю
-            add_course_to_user(db, user.id, int(course_id))
-
-            # Отправляем письмо об успехе
+            for cid in course_ids:
+                add_course_to_user(db, user.id, cid)
+            # Отправка письма об успешной покупке
             send_successful_purchase_email(
                 recipient_email=email,
-                course_id=int(course_id),
+                course_id=0,  # Если требуется, можно передавать как-то список или отдельное значение
                 new_account=new_user_created,
                 password=random_pass if new_user_created else None
             )
-
-    elif event_type in ("checkout.session.async_payment_failed", "checkout.session.expired"):
+    elif event["type"] in ("checkout.session.async_payment_failed", "checkout.session.expired"):
         session = event["data"]["object"]
         email = session.get("customer_email")
-        metadata = session.get("metadata", {})
-        course_id = metadata.get("course_id")
-
         if email:
-            # Отправляем письмо о неудаче
-            send_failed_purchase_email(recipient_email=email, course_id=int(course_id) if course_id else None)
-
-    # Можно обрабатывать и другие события
+            send_failed_purchase_email(recipient_email=email, course_id=0)

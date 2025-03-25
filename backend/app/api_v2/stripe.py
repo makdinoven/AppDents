@@ -1,77 +1,72 @@
+# api/stripe_api.py
 from fastapi import APIRouter, Request, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..db.database import get_db
-from ..dependencies.auth import get_current_user_optional
-from ..models.models_v2 import Course
-from ..services_v2.stripe_service import (
-    create_checkout_session,
-    handle_webhook_event
-)
+from app.db.database import get_db
+from app.services.auth import get_current_user_optional
+from app.services.stripe_service import create_checkout_session, handle_webhook_event
+from app.models.models_v2 import Course
 
-router = APIRouter()
+stripe_router = APIRouter()
 
 class CheckoutRequest(BaseModel):
-    course_id: int         # ID курса в БД
-    price_cents: int       # Цена в центах (например, 1000 = $10.00)
-    region: str            # "RU", "EN", "ES"
-    user_email: str | None = None  # Если пользователь не авторизован, нужно ввести email
-    success_url: str = "https://dent-s.com/"
-    cancel_url: str = "https://dent-s.com/"
+    course_ids: list[int]         # Список ID курсов для покупки
+    price_cents: int              # Итоговая цена в центах (одна сумма для всех курсов)
+    region: str                   # "RU", "EN", "ES"
+    user_email: str | None = None  # Если пользователь не авторизован, email обязателен
+    success_url: str = "https://example.com/payment-success"
+    cancel_url: str = "https://example.com/payment-cancel"
 
-@router.post("/checkout")
+@stripe_router.post("/checkout")
 def stripe_checkout(
     data: CheckoutRequest,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional)
 ):
     """
-    Универсальный эндпоинт для старта Stripe Checkout.
-    1. Если пользователь авторизован, используем его email;
-       иначе — используем email из тела запроса.
-    2. Автоматически находим имя курса по course_id, вместо явной передачи с фронта.
+    Эндпоинт для старта Stripe Checkout.
+    1. Если пользователь авторизован, используем его email, иначе — берём из запроса.
+    2. Извлекаем из БД все курсы по переданным course_ids.
+    3. Формируем название продукта как объединение имён курсов.
+    4. Создаём Stripe Checkout-сессию с одним line_item (общая цена).
     """
 
-    # Если есть авторизованный пользователь, берём его email
+    # Определяем email
     if current_user:
         email = current_user.email
     else:
-        # Если пользователь не авторизован, обязателен email в запросе
         if not data.user_email:
             raise HTTPException(status_code=400, detail="Email is required for unauthenticated checkout")
         email = data.user_email
 
-    # Попытаемся получить курс из БД, чтобы узнать имя и убедиться, что он существует.
-    course = db.query(Course).filter(Course.id == data.course_id).first()
-    if not course:
-        raise HTTPException(status_code=404, detail="Course not found")
+    # Извлекаем курсы из БД
+    courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
+    if not courses or len(courses) != len(data.course_ids):
+        raise HTTPException(status_code=404, detail="One or more courses not found")
 
-    # Извлекаем имя курса
-    course_name = course.name
+    # Формируем название продукта как объединение имён курсов
+    course_names = [course.name for course in courses]
+    product_name = "Purchase: " + ", ".join(course_names)
 
-    # Создаём session
+    # Создаём Stripe Checkout-сессию с одним line_item
     checkout_url = create_checkout_session(
         db=db,
         email=email,
-        course_id=data.course_id,
+        course_ids=data.course_ids,
+        product_name=product_name,
         price_cents=data.price_cents,
-        course_name=course_name,
         region=data.region,
         success_url=data.success_url,
         cancel_url=data.cancel_url
     )
     return {"checkout_url": checkout_url}
 
-@router.post("/webhook/{region}")
+@stripe_router.post("/webhook/{region}")
 async def stripe_webhook(
     region: str,
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Stripe Webhook для обработки события успешной / неуспешной оплаты.
-    """
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
     if not sig_header:
