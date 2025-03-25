@@ -42,10 +42,6 @@ const CoursePage = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(course);
-  }, [course]);
-
   return (
     <>
       {loading ? (

@@ -36,7 +36,7 @@ body {
   font-size: 26px;
 
   ::selection {
-    background-color: $primary;
+    background-color: lighten($primary, 5%);
   }
 }
 
