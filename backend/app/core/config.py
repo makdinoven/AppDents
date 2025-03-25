@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     EMAIL_PORT: int
     EMAIL_USERNAME: str = ""
     EMAIL_PASSWORD: str = ""
-    EMAIL_SENDER: str
+    EMAIL_SENDER: str = "no-reply@dent-s.com"
 
     class Config:
         env_file = ".env"
