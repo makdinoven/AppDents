@@ -60,8 +60,15 @@ def send_password_to_user(recipient_email: str, password: str):
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(smtp_username, smtp_password)
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # Если Postfix поддерживает STARTTLS и вы хотите его использовать,
+            # можно вызвать server.starttls() после подключения.
+            # Если не требуется, оставьте как есть.
+            if smtp_port != 25:
+                server.starttls()
+            # Если аутентификация не требуется, можно пропустить login()
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         print("Error sending email:", e)
