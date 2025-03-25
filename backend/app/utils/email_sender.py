@@ -135,7 +135,6 @@ def send_recovery_email(recipient_email: str, new_password: str):
           <p>We have received a request to reset your password.</p>
           <p>Your new password is:</p>
           <p class="password">{new_password}</p>
-          <p>Please use this new password to log in.</p>
           <p>If you did not request a password reset, please contact our support team immediately.</p>
         </div>
         <div class="footer">
@@ -153,8 +152,15 @@ def send_recovery_email(recipient_email: str, new_password: str):
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(smtp_username, smtp_password)
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # Если Postfix поддерживает STARTTLS и вы хотите его использовать,
+            # можно вызвать server.starttls() после подключения.
+            # Если не требуется, оставьте как есть.
+            if smtp_port != 25:
+                server.starttls()
+            # Если аутентификация не требуется, можно пропустить login()
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         # Логирование ошибки или другая обработка
@@ -231,8 +237,15 @@ def send_successful_purchase_email(recipient_email: str, course_id: int, new_acc
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(smtp_username, smtp_password)
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # Если Postfix поддерживает STARTTLS и вы хотите его использовать,
+            # можно вызвать server.starttls() после подключения.
+            # Если не требуется, оставьте как есть.
+            if smtp_port != 25:
+                server.starttls()
+            # Если аутентификация не требуется, можно пропустить login()
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         print("Error sending purchase confirmation email:", e)
@@ -279,8 +292,15 @@ def send_failed_purchase_email(recipient_email: str, course_id: int = None):
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
-            server.login(smtp_username, smtp_password)
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # Если Postfix поддерживает STARTTLS и вы хотите его использовать,
+            # можно вызвать server.starttls() после подключения.
+            # Если не требуется, оставьте как есть.
+            if smtp_port != 25:
+                server.starttls()
+            # Если аутентификация не требуется, можно пропустить login()
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         print("Error sending payment failed email:", e)
