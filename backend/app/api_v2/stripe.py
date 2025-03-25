@@ -1,5 +1,6 @@
 # api/stripe_api.py
 from fastapi import APIRouter, Request, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
