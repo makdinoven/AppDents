@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import stripe
@@ -75,8 +76,10 @@ def create_checkout_session(
     )
     return session.url
 
+logging.basicConfig(level=logging.INFO)
 
 def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: str):
+    logging.info("Начало обработки webhook для региона: %s", region)
     stripe_keys = get_stripe_keys_by_region(region)
     webhook_secret = stripe_keys["webhook_secret"]
     stripe.api_key = stripe_keys["secret_key"]
@@ -87,12 +90,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             sig_header=sig_header,
             secret=webhook_secret
         )
+        logging.info("Webhook событие успешно проверено: %s", event["type"])
     except stripe.error.SignatureVerificationError:
+        logging.error("Неверная подпись webhook")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
         metadata = session.get("metadata", {})
+        logging.info("Получены метаданные: %s", metadata)
         course_ids_str = metadata.get("course_ids", "")
         # Преобразуем строку "101,102,103" в список [101, 102, 103]
         if isinstance(course_ids_str, str):
@@ -103,6 +109,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             course_ids = [int(cid) for cid in course_ids_str]
         else:
             course_ids = []
+        logging.info("Преобразованные course_ids: %s", course_ids)
         email = session.get("customer_email")
         if email and course_ids:
             user = get_user_by_email(db, email)
@@ -113,10 +120,14 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 try:
                     user = create_user(db, email, random_pass)
                     new_user_created = True
+                    logging.info("Создан новый пользователь с email: %s", email)
                 except ValueError:
                     user = get_user_by_email(db, email)
+                    logging.warning("Ошибка создания пользователя, использую существующего: %s", email)
             for cid in course_ids:
+                logging.info("Добавляю курс %s пользователю %s", cid, user.id)
                 add_course_to_user(db, user.id, cid)
+                logging.info("Курсы успешно добавлены пользователю %s", user.id)
             # Отправка письма об успешной покупке
             send_successful_purchase_email(
                 recipient_email=email,
