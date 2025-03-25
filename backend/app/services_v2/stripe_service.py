@@ -95,7 +95,14 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         metadata = session.get("metadata", {})
         course_ids_str = metadata.get("course_ids", "")
         # Преобразуем строку "101,102,103" в список [101, 102, 103]
-        course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
+        if isinstance(course_ids_str, str):
+            # Если данные пришли в виде строки, например "306" или "306,143"
+            course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
+        elif isinstance(course_ids_str, list):
+            # Если данные пришли в виде списка, например [306] или [306,143]
+            course_ids = [int(cid) for cid in course_ids_str]
+        else:
+            course_ids = []
         email = session.get("customer_email")
         if email and course_ids:
             user = get_user_by_email(db, email)
