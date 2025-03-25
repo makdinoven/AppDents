@@ -8,12 +8,26 @@ import Form from "./modules/Form/Form.tsx";
 import { useForm } from "../../common/hooks/useForm.ts";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
 import { Path } from "../../routes/routes.ts";
+import { userApi } from "../../api/userApi/userApi.ts";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SignUpModal = () => {
+  const [error, setError] = useState<any>(null);
+  const navigate = useNavigate();
   const { values, errors, handleChange, handleSubmit } = useForm({
     validationSchema: emailSchema,
-    onSubmit: (data) => console.log(data),
+    onSubmit: (email) => handleSignUp(email),
   });
+
+  const handleSignUp = async (email: any) => {
+    try {
+      await userApi.signUp(email);
+      navigate("/login");
+    } catch (error) {
+      setError(error);
+    }
+  };
 
   return (
     <div className={s.modal}>
@@ -31,6 +45,11 @@ const SignUpModal = () => {
         </>
       </Form>
       <div className={s.modal_bottom}>
+        {error?.response?.data?.detail?.error?.translation_key && (
+          <p className={s.error_message}>
+            <Trans i18nKey={error.response.data.detail.error.translation_key} />
+          </p>
+        )}
         <span>
           <Trans i18nKey={"alreadyHaveAccount"} />
         </span>

@@ -109,7 +109,9 @@
     "password.minLength": "Password must be at least 6 characters long",
     "password.digitUppercaseLetter": "Password must contain at least one digit and one uppercase letter",
     "password.required": "Password is required",
-    "error.invalid_credentials" : "Incorrect Email or password"
+    "invalid_credentials" : "Incorrect Email or password",
+    "user_not_found" : "User with this email is not found",
+    "email_exist" : "User with this email exist"
   },
 
   "admin": {
