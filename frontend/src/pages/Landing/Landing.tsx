@@ -25,7 +25,6 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
-import { trackEvent } from "../../common/helpers/facebookPixel.ts";
 
 const Landing = () => {
   const { i18n } = useTranslation();
@@ -82,7 +81,6 @@ const Landing = () => {
     try {
       const res = await mainApi.buyCourse(dataToSend);
       const checkoutUrl = res.data.checkout_url;
-      trackEvent("Purchase", { value: landing?.new_price, currency: "USD" });
 
       if (checkoutUrl) {
         const newTab = window.open(checkoutUrl, "_blank");
