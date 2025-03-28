@@ -83,8 +83,16 @@ const Landing = () => {
       const checkoutUrl = res.data.checkout_url;
 
       if (checkoutUrl) {
-        window.open(checkoutUrl);
-        handleCloseModal();
+        const newTab = window.open(checkoutUrl, "_blank");
+
+        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+          alert(
+            "The opening of the tab is blocked. The link will open in this tab.",
+          );
+          window.location.href = checkoutUrl;
+        } else {
+          handleCloseModal();
+        }
       } else {
         console.error("Checkout URL is missing");
       }
