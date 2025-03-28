@@ -19,6 +19,7 @@
     "joi": "^17.13.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-facebook-pixel": "^1.0.4",
     "react-i18next": "^15.4.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.5",
