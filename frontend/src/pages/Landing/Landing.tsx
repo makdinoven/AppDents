@@ -25,6 +25,7 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
+import { trackEvent } from "../../common/helpers/facebookPixel.ts";
 
 const Landing = () => {
   const { i18n } = useTranslation();
@@ -81,10 +82,16 @@ const Landing = () => {
     try {
       const res = await mainApi.buyCourse(dataToSend);
       const checkoutUrl = res.data.checkout_url;
+      trackEvent("Purchase", { value: landing?.new_price, currency: "USD" });
 
       if (checkoutUrl) {
-        window.open(checkoutUrl);
-        handleCloseModal();
+        const newTab = window.open(checkoutUrl, "_blank");
+
+        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+          window.location.href = checkoutUrl;
+        } else {
+          handleCloseModal();
+        }
       } else {
         console.error("Checkout URL is missing");
       }
