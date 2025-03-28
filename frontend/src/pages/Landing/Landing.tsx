@@ -83,7 +83,7 @@ const Landing = () => {
       const checkoutUrl = res.data.checkout_url;
 
       if (checkoutUrl) {
-        window.open(checkoutUrl, "_blank");
+        window.open(checkoutUrl);
         handleCloseModal();
       } else {
         console.error("Checkout URL is missing");
