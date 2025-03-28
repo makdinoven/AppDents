@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str = ""
     EMAIL_SENDER: str
 
+    # Facebook
+    FACEBOOK_PIXEL_ID : str
+    FACEBOOK_ACCESS_TOKEN : str
+
     class Config:
         env_file = ".env"
 
