@@ -21,6 +21,7 @@ class CheckoutRequest(BaseModel):
 @router.post("/checkout")
 def stripe_checkout(
     data: CheckoutRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional)
 ):
@@ -58,7 +59,8 @@ def stripe_checkout(
         price_cents=data.price_cents,
         region=data.region,
         success_url=data.success_url,
-        cancel_url=data.cancel_url
+        cancel_url=data.cancel_url,
+        request=request,
     )
     return {"checkout_url": checkout_url}
 
