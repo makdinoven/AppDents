@@ -170,6 +170,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
+        session_id = session["id"]
+        logging.info("Получена сессия : %s", session_id)
         metadata = session.get("metadata", {})
         logging.info("Получены метаданные: %s", metadata)
         course_ids_str = metadata.get("course_ids", "")
