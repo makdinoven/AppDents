@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from datetime import datetime
 from typing import List
@@ -22,7 +23,13 @@ from ..utils.email_sender import (
     send_successful_purchase_email,
     send_failed_purchase_email
 )
-
+def _hash_email(email: str) -> str:
+    """
+    Приводим к нижнему регистру, убираем пробелы вокруг
+    и хэшируем алгоритмом SHA-256 (hexdigest).
+    """
+    normalized = email.strip().lower()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 def _send_facebook_purchase(
         email: str,
@@ -39,12 +46,13 @@ def _send_facebook_purchase(
             logging.warning("Empty email for Facebook Purchase event")
             return
 
+        hashed_email = _hash_email(email)
         event_data = {
             "data": [{
                 "event_name": "Purchase",
                 "event_time": int(datetime.now().timestamp()),
                 "user_data": {
-                    "em": [email.lower()],
+                    "em": [hashed_email],
                     "client_ip_address": client_ip if client_ip != "0.0.0.0" else None,
                     "client_user_agent": user_agent or None,
                 },
