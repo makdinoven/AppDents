@@ -1,0 +1,11 @@
+.successPayment {
+  padding-top: 100px;
+  gap: 100px;
+  @include flex-column;
+  @include flex-center;
+}
+
+.text {
+  @include clamped-h2;
+  text-align: center;
+}

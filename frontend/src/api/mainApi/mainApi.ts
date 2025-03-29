@@ -18,4 +18,8 @@ export const mainApi = {
       fbc,
     });
   },
+
+  getTokenAfterPurchase(data: any) {
+    return instance.post(`stripe/complete-purchase`, data);
+  },
 };
