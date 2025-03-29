@@ -25,6 +25,17 @@ export const formatAuthorsDesc = (authors: any) => {
     : null;
 };
 
+const getCookie = (name: any) => {
+  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+  return match ? match[2] : null;
+};
+
+export const getFacebookData = () => {
+  const fbp = getCookie("_fbp") || "";
+  const fbc = getCookie("_fbc") || "";
+  return { fbp, fbc };
+};
+
 export const scrollToElementAndClick = (triggerRef: any) => {
   triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   setTimeout(() => {
