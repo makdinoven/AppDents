@@ -1,4 +1,5 @@
 import { instance } from "../api-instance.ts";
+import { getFacebookData } from "../../common/helpers/helpers.ts";
 
 export const mainApi = {
   getTags() {
@@ -10,6 +11,11 @@ export const mainApi = {
   },
 
   buyCourse(data: any) {
-    return instance.post(`stripe/checkout`, data);
+    const { fbp, fbc } = getFacebookData();
+    return instance.post(`stripe/checkout`, {
+      ...data,
+      fbp,
+      fbc,
+    });
   },
 };
