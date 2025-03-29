@@ -119,7 +119,7 @@ def create_checkout_session(
     client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0] or request.client.host or "0.0.0.0"
     user_agent = request.headers.get("User-Agent", "")
 
-    success_url_with_session = f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}"
+    success_url_with_session = f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
 
     metadata = {
         "course_ids": ",".join(map(str, course_ids)),
