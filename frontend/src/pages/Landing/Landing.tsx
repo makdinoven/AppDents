@@ -160,7 +160,7 @@ const Landing = () => {
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     region: landing?.language,
-    success_url: Path.successPayment,
+    success_url: `https://dent-s.com${Path.successPayment}`,
     cancel_url: currentUrl,
   };
 
