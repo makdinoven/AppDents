@@ -110,10 +110,6 @@ def complete_purchase(
     Обратите внимание: мы НЕ создаём пользователя здесь, так как логика создания
     находится в webhook-е (handle_webhook_event).
     """
-
-    if data.region:
-        stripe_keys = get_stripe_keys_by_region(data.region)
-        stripe.api_key = stripe_keys["secret_key"]
     # 1. Получаем Session от Stripe
     try:
         checkout_session = stripe.checkout.Session.retrieve(data.session_id)
