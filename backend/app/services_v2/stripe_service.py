@@ -30,7 +30,9 @@ def _send_facebook_purchase(
         currency: str,
         course_ids: list[int],
         client_ip: str,
-        user_agent: str
+        user_agent: str,
+        fbp: str | None = None,
+        fbc: str | None = None
 ):
     try:
         if not email:  # Добавляем валидацию
@@ -54,6 +56,13 @@ def _send_facebook_purchase(
                 },
             }]
         }
+
+        # Добавляем fbp / fbc в user_data, если есть
+        user_data = event_data["data"][0]["user_data"]
+        if fbp:
+            user_data["fbp"] = fbp
+        if fbc:
+            user_data["fbc"] = fbc
 
         response = requests.post(
             f"https://graph.facebook.com/v18.0/{settings.FACEBOOK_PIXEL_ID}/events",
@@ -101,6 +110,8 @@ def create_checkout_session(
     success_url: str,
     cancel_url: str,
     request: Request,
+    fbp: str | None = None,
+    fbc: str | None = None
 ) -> str:
     stripe_keys = get_stripe_keys_by_region(region)
     stripe.api_key = stripe_keys["secret_key"]
@@ -108,26 +119,33 @@ def create_checkout_session(
     client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0] or request.client.host or "0.0.0.0"
     user_agent = request.headers.get("User-Agent", "")
 
-    # Создаём единственный line_item с объединённым названием курсов
+    success_url_with_session = f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}"
+
+    metadata = {
+        "course_ids": ",".join(map(str, course_ids)),
+        "client_ip": client_ip,
+        "user_agent": user_agent
+    }
+    if fbp:
+        metadata["fbp"] = fbp
+    if fbc:
+        metadata["fbc"] = fbc
+
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{
             "price_data": {
-                "currency": "usd",   # Измените на "rub" для RU, если нужно
+                "currency": "usd",
                 "product_data": {"name": product_name},
                 "unit_amount": price_cents,
             },
             "quantity": 1,
         }],
         mode="payment",
-        success_url=success_url,
+        success_url=success_url_with_session,
         cancel_url=cancel_url,
         customer_email=email,
-        metadata={
-            "course_ids": ",".join(map(str, course_ids)),
-            "client_ip": client_ip,  # Сохраняем IP
-            "user_agent": user_agent  # Сохраняем User-Agent
-        }
+        metadata=metadata
     )
     return session.url
 
@@ -168,6 +186,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         email = session.get("customer_email")
         client_ip = metadata.get("client_ip", "0.0.0.0")  # IP из метаданных
         user_agent = metadata.get("user_agent", "")  # User-Agent из метаданных
+        fbp_value = metadata.get("fbp")
+        fbc_value = metadata.get("fbc")
         if email and course_ids:
             _send_facebook_purchase(
                 email=email,
@@ -175,7 +195,9 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 currency=session["currency"],
                 course_ids=course_ids,
                 client_ip=client_ip,
-                user_agent=user_agent
+                user_agent=user_agent,
+                fbp=fbp_value,
+                fbc=fbc_value
             )
             user = get_user_by_email(db, email)
             new_user_created = False
