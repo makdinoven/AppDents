@@ -25,6 +25,7 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
+import { Path } from "../../routes/routes.ts";
 
 const Landing = () => {
   const { i18n } = useTranslation();
@@ -159,7 +160,7 @@ const Landing = () => {
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     region: landing?.language,
-    success_url: currentUrl,
+    success_url: `https://dent-s.com${Path.successPayment}`,
     cancel_url: currentUrl,
   };
 
