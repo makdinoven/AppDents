@@ -574,3 +574,130 @@ def send_failed_purchase_email(
             server.sendmail(sender_email, recipient_email, msg.as_string())
     except Exception as e:
         print("Error sending payment failed email:", e)
+
+def send_already_owned_course_email(
+    recipient_email: str,
+    course_names: list[str],
+    region: str = "EN"
+):
+    """
+    Отправляет письмо, уведомляющее, что пользователь оплатил курсы, которые у него уже есть.
+    Предлагаем выбрать другой курс такой же стоимости, связавшись с поддержкой.
+    """
+    smtp_server = settings.EMAIL_HOST
+    smtp_port = settings.EMAIL_PORT
+    smtp_username = settings.EMAIL_USERNAME
+    smtp_password = settings.EMAIL_PASSWORD
+    sender_email = settings.EMAIL_SENDER
+
+    contact_email = "info.dis.org@gmail.com"
+    courses_str = ", ".join(course_names) if course_names else "No course name"
+
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    if region == "RU":
+        subject = "Оплаченные курсы уже есть в вашем аккаунте"
+        body_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Курсы уже есть</title>
+          <style>
+            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+            .container {{
+              background-color: #fff; padding: 20px; border-radius: 8px; 
+              box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto;
+            }}
+            h2 {{ color: #333; }}
+            p {{ font-size: 16px; line-height: 1.5; color: #555; }}
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Вы уже владеете этими курсами</h2>
+            <p>Вы оплатили курсы, которые у вас уже есть: <strong>{courses_str}</strong>.</p>
+            <p>Если хотите заменить их на другие курсы той же стоимости, свяжитесь с нами по адресу <strong>{contact_email}</strong>.</p>
+            <p>Спасибо!</p>
+          </div>
+        </body>
+        </html>
+        """
+    elif region == "ES":
+        subject = "Cursos ya adquiridos"
+        body_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Cursos ya adquiridos</title>
+          <style>
+            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+            .container {{
+              background-color: #fff; padding: 20px; border-radius: 8px;
+              box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto;
+            }}
+            h2 {{ color: #333; }}
+            p {{ font-size: 16px; line-height: 1.5; color: #555; }}
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Usted ya posee estos cursos</h2>
+            <p>Ha pagado por los cursos que ya tenía: <strong>{courses_str}</strong>.</p>
+            <p>Si desea reemplazarlos por otros cursos del mismo valor, por favor contáctenos en <strong>{contact_email}</strong>.</p>
+            <p>¡Gracias!</p>
+          </div>
+        </body>
+        </html>
+        """
+    else:
+        subject = "You Already Own These Courses"
+        body_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Already Owned Courses</title>
+          <style>
+            body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+            .container {{
+              background-color: #fff; padding: 20px; border-radius: 8px; 
+              box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto;
+            }}
+            h2 {{ color: #333; }}
+            p {{ font-size: 16px; line-height: 1.5; color: #555; }}
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>You Already Own These Courses</h2>
+            <p>You have paid for the following course(s), which you already own: <strong>{courses_str}</strong>.</p>
+            <p>If you would like to exchange them for another course of the same price, please contact us at <strong>{contact_email}</strong>.</p>
+            <p>Thank you!</p>
+          </div>
+        </body>
+        </html>
+        """
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = recipient_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body_html, "html"))
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            # Если Postfix поддерживает STARTTLS и вы хотите его использовать,
+            # можно вызвать server.starttls() после подключения.
+            # Если не требуется, оставьте как есть.
+            if smtp_port != 25:
+                server.starttls()
+            # Если аутентификация не требуется, можно пропустить login()
+            if smtp_username and smtp_password:
+                server.login(smtp_username, smtp_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+    except Exception as e:
+        print(f"Error sending already-owned-course email: {e}")
