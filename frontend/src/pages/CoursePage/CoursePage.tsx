@@ -16,6 +16,9 @@ const CoursePage = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  // const changeLanguage = (lang: string) => {
+  //   i18n.changeLanguage(lang);
+  // };
 
   useEffect(() => {
     if (courseId) {
@@ -36,6 +39,7 @@ const CoursePage = () => {
     try {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
+      // changeLanguage(res.data.language.toLowerCase());
       setLoading(false);
     } catch (error) {
       console.error(error);

@@ -13,4 +13,5 @@ export const Path = {
   authorDetail: "/admin/author",
   adminLandings: "/admin/landings",
   adminUsers: "/admin/users",
+  successPayment: "/payment-success",
 };
