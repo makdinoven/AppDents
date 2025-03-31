@@ -12,6 +12,7 @@ import LandingDetail from "../pages/Admin/pages/LandingDetail.tsx";
 import AuthorDetail from "../pages/Admin/pages/AuthorDetail.tsx";
 import CoursePage from "../pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
+import LessonPage from "../pages/LessonPage/LessonPage.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -23,7 +24,12 @@ export const AppRoutes: FC = () => {
           element={<Landing />}
         />
         <Route path={Path.profile} element={<ProfilePage />} />
-        <Route path={`${Path.myCourse}/:courseId?`} element={<CoursePage />} />
+        <Route path={`${Path.myCourse}/:courseId?`} element={<CoursePage />}>
+          <Route
+            path={`${Path.lesson}/:sectionId/:lessonId`}
+            element={<LessonPage />}
+          />
+        </Route>
         <Route path={Path.successPayment} element={<SuccessPayment />} />
 
         <Route path={Path.admin} element={<AdminPage />}>

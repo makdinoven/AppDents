@@ -9,7 +9,7 @@ const ViewLink = ({
   text,
 }: {
   isExternal?: boolean;
-  link: string;
+  link?: string;
   text: string;
 }) => {
   return isExternal ? (
@@ -18,7 +18,7 @@ const ViewLink = ({
       <Arrow />
     </a>
   ) : (
-    <Link className={s.link} to={link}>
+    <Link className={s.link} to={link ? link : ""}>
       <Trans i18nKey={text} />
       <Arrow />
     </Link>
