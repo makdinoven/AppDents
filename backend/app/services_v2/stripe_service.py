@@ -12,6 +12,7 @@ from fastapi import Request
 
 
 from ..core.config import settings
+from ..models.models_v2 import Course
 from ..services_v2.user_service import (
     get_user_by_email,
     create_user,
@@ -192,6 +193,10 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             course_ids = [int(cid) for cid in course_ids_str]
         else:
             course_ids = []
+
+        courses = db.query(Course).filter(Course.id.in_(course_ids)).all()
+        course_names = [c.name for c in courses]
+
         logging.info("Преобразованные course_ids: %s", course_ids)
         email = session.get("customer_email")
         client_ip = metadata.get("client_ip", "0.0.0.0")  # IP из метаданных
@@ -228,12 +233,22 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             # Отправка письма об успешной покупке
             send_successful_purchase_email(
                 recipient_email=email,
-                course_id=0,  # Если требуется, можно передавать как-то список или отдельное значение
+                course_names=course_names,  # Если требуется, можно передавать как-то список или отдельное значение
                 new_account=new_user_created,
-                password=random_pass if new_user_created else None
+                password=random_pass if new_user_created else None,
+                region=region
             )
     elif event["type"] in ("checkout.session.async_payment_failed", "checkout.session.expired"):
         session = event["data"]["object"]
         email = session.get("customer_email")
+        metadata = session.get("metadata", {})
+        course_ids_str = metadata.get("course_ids", "")
+        if isinstance(course_ids_str, str):
+            course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
+        else:
+            course_ids = []
+
+        courses = db.query(Course).filter(Course.id.in_(course_ids)).all()
+        course_names= [course.name for course in courses]
         if email:
-            send_failed_purchase_email(recipient_email=email, course_id=0)
+            send_failed_purchase_email(recipient_email=email, course_names=course_names, region=region)
