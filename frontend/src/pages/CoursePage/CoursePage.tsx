@@ -10,7 +10,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CourseCard from "../ProfilePage/modules/CourseCard/CourseCard.tsx";
-import { Path } from "../../routes/routes.ts";
+// import { Path } from "../../routes/routes.ts";
 
 const CoursePage = () => {
   const dispatch = useDispatch<AppDispatchType>();
