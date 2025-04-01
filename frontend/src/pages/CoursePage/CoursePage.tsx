@@ -75,7 +75,8 @@ const CoursePage = () => {
                       isEven={index % 2 === 0}
                       key={lesson.id}
                       name={lesson.lesson_name}
-                      link={`${Path.lesson}/${section.id}/${lesson.id}`}
+                      // link={`${Path.lesson}/${section.id}/${lesson.id}`}
+                      link={lesson.video_link}
                       viewText={"watchLesson"}
                     />
                   ))}

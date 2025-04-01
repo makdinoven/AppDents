@@ -16,7 +16,11 @@ const CourseCard = ({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(link);
+    if (link.startsWith("http://") || link.startsWith("https://")) {
+      window.open(link, "_blank");
+    } else {
+      navigate(link);
+    }
   };
 
   return (
