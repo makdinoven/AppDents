@@ -23,7 +23,7 @@ from ..services_v2.user_service import (
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
 def generate_random_password(length=12) -> str:
     alphabet = string.ascii_letters + string.digits
