@@ -18,3 +18,5 @@ export const initialCourse = {
 export const initialLanding = {
   landing_name: "New landing",
 };
+
+export const baseUrl = "https://dent-s.com";
