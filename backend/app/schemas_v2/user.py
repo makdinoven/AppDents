@@ -70,3 +70,30 @@ class UserShortResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UserDetailResponse(BaseModel):
+    """
+    Схема для возврата полной информации о пользователе:
+    - Основные поля (id, email, role)
+    - Список курсов (как объектов с полями id, title и т.д.)
+    """
+    id: int
+    email: EmailStr
+    role: str
+    courses: Optional[List[CourseListResponse]] = None
+
+    class Config:
+        orm_mode = True
+
+
+class UserUpdateFull(BaseModel):
+    """
+    Схема для обновления пользователя одним запросом.
+    Можно расширять при необходимости.
+    """
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
+    # Если нужно менять пароль в этом же запросе, можно добавить:
+    password: Optional[str] = None
+    # Чтобы полностью переопределять купленные курсы:
+    course_ids: Optional[List[int]] = None

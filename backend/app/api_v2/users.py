@@ -11,13 +11,14 @@ from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User
 from ..schemas_v2.course import CourseListResponse
-from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse
+from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
+    UserUpdateFull, UserDetailResponse
 from ..schemas_v2.user import UserCreate, UserRead, Token, UserUpdateRole, UserUpdatePassword, UserAddCourse, \
     UserRegistrationResponse
 from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
-    remove_course_from_user, delete_user
+    remove_course_from_user, delete_user, update_user_full, get_user_by_id
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -227,3 +228,37 @@ def get_user_details(
             }
         )
     return user
+
+@router.get("/detail/{user_id}", response_model=UserDetailResponse)
+def get_user_detail(
+    user_id: int,
+    db: Session = Depends(get_db),
+    # только админ, или пользователь сам может смотреть себя?
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Детальная информация о пользователе:
+    email, role, список курсов.
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Возвращаемый объект автоматически мапится в UserDetailResponse
+    return user
+
+# 2) Полный PUT — обновляем все поля,
+#    аналогично update_landing (вместо отдельных update_role, update_password и т.д.)
+@router.put("/{user_id}", response_model=UserDetailResponse)
+def update_user_full_route(
+    user_id: int,
+    user_data: UserUpdateFull,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Полное обновление пользователя за один раз:
+    email, role, password, привязка к списку курсов и т.д.
+    """
+    updated_user = update_user_full(db, user_id, user_data)
+    return updated_user
