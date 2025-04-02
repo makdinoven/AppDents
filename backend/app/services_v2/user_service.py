@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..models.models_v2 import User, Course
-from ..schemas_v2.user import TokenData
+from ..schemas_v2.user import TokenData, UserUpdateFull
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -177,3 +177,42 @@ def delete_user(db: Session, user_id: int) -> None:
         )
     db.delete(user)
     db.commit()
+
+
+def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
+    """
+    Полное обновление пользователя за один раз.
+    Очищаем/перезаписываем поля, включая курсы, если переданы.
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": {
+                "code": "USER_NOT_FOUND",
+                "message": "User not found",
+                "params": {"user_id": user_id}
+            }}
+        )
+
+    # Если передан email - обновляем
+    if data.email is not None:
+        user.email = data.email
+
+    # Если передана роль - обновляем
+    if data.role is not None:
+        user.role = data.role
+
+    # Если передан новый пароль - хэшируем и обновляем
+    if data.password is not None:
+        user.password = hash_password(data.password)
+
+    # Если передан список course_ids, то пересобираем "купленные" курсы
+    if data.course_ids is not None:
+        courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
+        user.courses = courses  # перезапишем полностью
+    # Если поле course_ids не пришло, то оставляем курсы без изменений.
+
+    db.commit()
+    db.refresh(user)
+    return user
