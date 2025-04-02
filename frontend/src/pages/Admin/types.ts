@@ -45,6 +45,14 @@ export interface AuthorType {
   language: string;
 }
 
+export interface UserType {
+  id: number;
+  role: string;
+  email: string;
+  password: string;
+  courses: any[];
+}
+
 export interface LandingFromListType {
   id: number;
   landing_name: string;

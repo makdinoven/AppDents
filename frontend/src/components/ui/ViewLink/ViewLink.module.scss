@@ -3,7 +3,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: clamp(128px, 18vw, 194px);
+  gap: 10px;
+  max-width: clamp(128px, 18vw, 194px);
   @include clamped-p2;
   @include horizontal-line(
     $bottom: -2px,

@@ -69,6 +69,7 @@
     "pediatric_dentistry": "Pediatric dentistry",
     "orthopedics": "orthopedics",
     "management": "Management",
+    "esthetic": "Esthetic",
     "common.popular": "Popular",
     "common.bestPrices": "Best prices",
     "common.new": "New"
@@ -119,6 +120,9 @@
 
   "admin": {
     "save": "Save changes",
+    "update": "update",
+    "view": "view",
+    "open": "open",
     "courses": {
       "courses": "courses",
       "search": "Search courses...",
@@ -191,13 +195,21 @@
       "tags": "Tags",
       "language": "Language",
       "authors": "Authors",
-      "notFound": "No landings found"
+      "notFound": "No landings found",
+      "role" : "Role"
     },
     "users": {
       "users": "users",
       "search": "Search users...",
       "create": "Create user",
-      "notFound": "No users found"
+      "edit": "Edit user",
+      "delete": "Delete user",
+      "notFound": "No users found",
+      "email": "E-mail",
+      "email.placeholder": "Enter user email...",
+      "password": "Password",
+      "password.placeholder": "Enter new password...",
+      "courses": "User courses"
     },
     "authors": {
       "authors": "authors",
