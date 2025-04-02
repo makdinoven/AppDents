@@ -103,4 +103,4 @@ class UserUpdateFull(BaseModel):
     # Если нужно менять пароль в этом же запросе, можно добавить:
     password: Optional[str] = None
     # Чтобы полностью переопределять купленные курсы:
-    course_ids: Optional[List[int]] = None
+    courses: Optional[List[int]] = None
