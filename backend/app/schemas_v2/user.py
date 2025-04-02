@@ -1,6 +1,9 @@
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
+
+from AppDents.backend.app.schemas_v2.course import CourseListResponse
+
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -46,3 +49,24 @@ class ForgotPasswordRequest(BaseModel):
 
 class UserRegistrationResponse(UserRead):
     password: str
+
+class UserCreateAdmin(BaseModel):
+    email: EmailStr
+    password: str
+    role: str
+
+class UserDetailedResponse(BaseModel):
+    id: int
+    email: EmailStr
+    role: str
+    courses: List["CourseListResponse"]  # "Forward reference" при необходимости
+
+    class Config:
+        orm_mode = True
+
+class UserShortResponse(BaseModel):
+    id: int
+    email: EmailStr
+
+    class Config:
+        orm_mode = True

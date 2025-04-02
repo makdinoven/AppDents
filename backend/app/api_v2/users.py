@@ -11,12 +11,13 @@ from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User
 from ..schemas_v2.course import CourseListResponse
-from ..schemas_v2.user import ForgotPasswordRequest
+from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse
 from ..schemas_v2.user import UserCreate, UserRead, Token, UserUpdateRole, UserUpdatePassword, UserAddCourse, \
     UserRegistrationResponse
 from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
-    get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user
+    get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
+    remove_course_from_user, delete_user
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -96,7 +97,7 @@ def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Se
     user = update_user_password(db, user_id, password_data.password)
     return user
 
-@router.post("/{user_id}/courses", summary="Добавить курс пользователю")
+@router.post("/admin/{user_id}/courses", summary="Добавить курс пользователю")
 def add_course(user_id: int, course_data: UserAddCourse, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     add_course_to_user(db, user_id, course_data.course_id)
     return {"message": "Курс успешно добавлен пользователю"}
@@ -134,3 +135,95 @@ def forgot_password(
     update_user_password(db, user.id, new_password)
     background_tasks.add_task(send_recovery_email, user.email, new_password)
     return {"message": "New password send successfully", "new_password": new_password}
+
+@router.post("/admin/users", response_model=UserRead, summary="Создать нового пользователя (Админ)")
+def create_user_admin(
+    user_data: UserCreateAdmin,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Создаёт пользователя с переданным паролем и ролью.
+    """
+    existing_user = get_user_by_email(db, user_data.email)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": {
+                    "code": "EMAIL_EXIST",
+                    "message": f"User with email {user_data.email} already exists.",
+                    "translation_key": "error.email_exist",
+                    "params": {"email": user_data.email}
+                }
+            }
+        )
+    user = create_user(db, email=user_data.email, password=user_data.password, role=user_data.role)
+    return UserRead.from_orm(user)
+
+@router.get("/admin/users",
+            response_model=List[UserShortResponse],
+            summary="Список всех пользователей (Админ)")
+def get_all_users(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Возвращает список всех пользователей: только id и email.
+    Поиск/фильтрация по email может осуществляться фронтендом.
+    """
+    # Получаем всех пользователей
+    users = db.query(User).all()
+    # Возвращаем, а Pydantic сам смапит к UserShortResponse
+    return users
+
+@router.delete("/admin/{user_id}", summary="Удалить пользователя (Админ)")
+def delete_user_route(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Полностью удаляет пользователя из БД.
+    """
+    delete_user(db, user_id)
+    return {"message": "Пользователь успешно удален"}
+
+@router.delete("/admin/{user_id}/courses/{course_id}", summary="Удалить у пользователя купленный курс (Админ)")
+def remove_user_course(
+    user_id: int,
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Удаляет у пользователя уже купленный/добавленный курс.
+    """
+    remove_course_from_user(db, user_id, course_id)
+    return {"message": "Курс успешно удален у пользователя"}
+
+@router.get("/admin/users/{user_id}",
+            response_model=UserDetailedResponse,
+            summary="Детальная информация о пользователе (Админ)")
+def get_user_details(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """
+    Возвращает полную информацию о пользователе, включая роль и купленные курсы.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "USER_NOT_FOUND",
+                    "message": "User not found",
+                    "translation_key": "error.user_not_found",
+                    "params": {"user_id": user_id}
+                }
+            }
+        )
+    return user
