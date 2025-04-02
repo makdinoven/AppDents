@@ -2,7 +2,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 
-from AppDents.backend.app.schemas_v2.course import CourseListResponse
+from ..schemas_v2.course import CourseListResponse
 
 
 class UserBase(BaseModel):
