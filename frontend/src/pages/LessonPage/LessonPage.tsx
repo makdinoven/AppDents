@@ -48,24 +48,21 @@ const LessonPage = () => {
         <div className={s.lesson_page}>
           <div className={s.video_container}>
             {isValidUrl(lesson.video_link) && lesson.video_link.length > 0 ? (
-              <video controls width={"100%"}>
-                <source src={lesson.video_link} type="video/mp4" />
-                <source
-                  src={lesson.video_link.replace(".mp4", ".webm")}
-                  type="video/webm"
-                />
-                <source
-                  src={lesson.video_link.replace(".mp4", ".ogg")}
-                  type="video/ogg"
-                />
-                <Trans i18nKey="landing.videoIsNotSupported" />
-              </video>
+              <iframe
+                src={lesson.video_link}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allow="autoplay; fullscreen"
+                allowFullScreen
+              />
             ) : (
               <p>
                 <Trans i18nKey={"landing.noVideoLink"} />
               </p>
             )}
           </div>
+
           <p>
             {t("videoFailedToLoad")}{" "}
             <a
