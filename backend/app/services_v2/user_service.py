@@ -180,10 +180,6 @@ def delete_user(db: Session, user_id: int) -> None:
 
 
 def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
-    """
-    Полное обновление пользователя за один раз.
-    Очищаем/перезаписываем поля, включая курсы, если переданы.
-    """
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
@@ -195,23 +191,29 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
             }}
         )
 
-    # Если передан email - обновляем
-    if data.email is not None:
+    # Обновляем email, если значение передано, не пустое и отличается от текущего
+    if data.email is not None and data.email.strip() and data.email != user.email:
         user.email = data.email
 
-    # Если передана роль - обновляем
-    if data.role is not None:
+    # Обновляем роль, если значение передано, не пустое и отличается
+    if data.role is not None and data.role.strip() and data.role != user.role:
         user.role = data.role
 
-    # Если передан новый пароль - хэшируем и обновляем
-    if data.password is not None:
-        user.password = hash_password(data.password)
+    # Обновляем пароль, если значение передано, не пустое и отличается от текущего
+    # Для проверки пароля нужно сравнить, например, через функцию verify_password
+    if data.password is not None and data.password.strip():
+        # Если новый пароль не совпадает с текущим (в терминах верификации)
+        if not verify_password(data.password, user.password):
+            user.password = hash_password(data.password)
 
-    # Если передан список course_ids, то пересобираем "купленные" курсы
+    # Обновляем список курсов, если course_ids переданы и отличаются от текущего списка
     if data.course_ids is not None:
-        courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
-        user.courses = courses  # перезапишем полностью
-    # Если поле course_ids не пришло, то оставляем курсы без изменений.
+        # Получаем текущие course_ids
+        current_course_ids = {course.id for course in user.courses} if user.courses else set()
+        new_course_ids = set(data.course_ids)
+        if new_course_ids != current_course_ids:
+            courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
+            user.courses = courses
 
     db.commit()
     db.refresh(user)
