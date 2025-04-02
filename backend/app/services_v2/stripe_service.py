@@ -134,7 +134,8 @@ def create_checkout_session(
     metadata = {
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
-        "user_agent": user_agent
+        "user_agent": user_agent,
+        "referer": referer or ""
     }
     if fbp:
         metadata["fbp"] = fbp
