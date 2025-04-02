@@ -210,9 +210,9 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
     if data.courses is not None:
         # Получаем текущие course_ids
         current_course_ids = {course.id for course in user.courses} if user.courses else set()
-        new_course_ids = set(data.course_ids)
+        new_course_ids = set(data.courses)
         if new_course_ids != current_course_ids:
-            courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
+            courses = db.query(Course).filter(Course.id.in_(data.courses)).all()
             user.courses = courses
 
     db.commit()
