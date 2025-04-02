@@ -1,6 +1,5 @@
-from sys import prefix
+
 from fastapi import FastAPI
-# from app.api import test, users, landings, authors, courses, payments, parser, cleaner, transfer
 from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
