@@ -1,6 +1,6 @@
 
-from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, field_validator
+from typing import Optional, List, Any
 
 from ..schemas_v2.course import CourseListResponse
 
@@ -66,7 +66,17 @@ class UserDetailedResponse(BaseModel):
 
 class UserShortResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str  # вместо EmailStr, чтобы можно было подставлять строку-заменитель
+
+    @field_validator("email", mode="before")
+    def validate_email(cls, v: Any) -> str:
+        try:
+            # Пытаемся валидировать значение как EmailStr.
+            # Если успешно, возвращаем валидное значение.
+            return EmailStr.validate(v)
+        except Exception:
+            # Если не прошло валидацию, возвращаем специальное значение.
+            return f"invalid_email: {v}"
 
     class Config:
         orm_mode = True
