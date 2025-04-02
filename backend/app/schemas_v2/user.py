@@ -87,7 +87,7 @@ class UserDetailResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
-    courses: Optional[List["CourseListResponseShort"]] = None
+    courses: Optional[List[CourseListResponseShort]] = None
 
     class Config:
         orm_mode = True
