@@ -207,7 +207,7 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
             user.password = hash_password(data.password)
 
     # Обновляем список курсов, если course_ids переданы и отличаются от текущего списка
-    if data.course_ids is not None:
+    if data.courses is not None:
         # Получаем текущие course_ids
         current_course_ids = {course.id for course in user.courses} if user.courses else set()
         new_course_ids = set(data.course_ids)
