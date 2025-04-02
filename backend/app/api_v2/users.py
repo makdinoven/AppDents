@@ -229,24 +229,6 @@ def get_user_details(
         )
     return user
 
-@router.get("/detail/{user_id}", response_model=UserDetailResponse)
-def get_user_detail(
-    user_id: int,
-    db: Session = Depends(get_db),
-    # только админ, или пользователь сам может смотреть себя?
-    current_admin: User = Depends(require_roles("admin"))
-):
-    """
-    Детальная информация о пользователе:
-    email, role, список курсов.
-    """
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    # Возвращаемый объект автоматически мапится в UserDetailResponse
-    return user
-
 # 2) Полный PUT — обновляем все поля,
 #    аналогично update_landing (вместо отдельных update_role, update_password и т.д.)
 @router.put("/{user_id}", response_model=UserDetailResponse)
