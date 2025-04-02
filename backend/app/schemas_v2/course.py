@@ -41,7 +41,6 @@ class CourseListResponse(BaseModel):
 
 class CourseListResponseShort(BaseModel):
     id: int
-    name: str
 
     class Config:
         orm_mode = True
