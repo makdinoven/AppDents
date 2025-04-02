@@ -39,6 +39,13 @@ class CourseListResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class CourseListResponseShort(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 # Схема для создания курса (POST запрос)
 class CourseCreate(BaseModel):
     name: Optional[str] = ""
