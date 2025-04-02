@@ -16,7 +16,6 @@ from ..services_v2.user_service import (
     add_course_to_user,
     generate_random_password
 )
-
 from ..utils.email_sender import (
     send_successful_purchase_email,
     send_failed_purchase_email,
@@ -80,6 +79,8 @@ def _send_facebook_purchase(
 
         if response.status_code != 200:
             logging.error(f"Facebook Pixel error: {response.status_code} - {response.text}")
+        else:
+            logging.info("Facebook event sent successfully for email: %s", email)
 
     except Exception as e:
         logging.error(f"Failed to send Facebook event: {str(e)}", exc_info=True)
@@ -125,6 +126,8 @@ def create_checkout_session(
 
     client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0] or request.client.host or "0.0.0.0"
     user_agent = request.headers.get("User-Agent", "")
+    referer = request.headers.get("Referer")
+    logging.info("Creating checkout session: email=%s, course_ids=%s, Referer=%s", email, course_ids, referer)
 
     success_url_with_session = f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
 
@@ -137,6 +140,8 @@ def create_checkout_session(
         metadata["fbp"] = fbp
     if fbc:
         metadata["fbc"] = fbc
+
+    logging.info("Metadata for Stripe session: %s", metadata)
 
     session = stripe.checkout.Session.create(
         payment_method_types=["card"],
@@ -154,6 +159,7 @@ def create_checkout_session(
         customer_email=email,
         metadata=metadata
     )
+    logging.info("Stripe session created: id=%s", session["id"])
     return session.url
 
 logging.basicConfig(level=logging.INFO)
@@ -188,12 +194,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
         else:
             course_ids = []
-
         logging.info("Преобразованные course_ids: %s", course_ids)
 
-        # Достаём курсы из БД
+        # Получаем курсы из БД и их названия
         courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
         course_names_all = [c.name for c in courses_db]
+        logging.info("Названия курсов из БД: %s", course_names_all)
 
         email = session_obj.get("customer_email")
         client_ip = metadata.get("client_ip", "0.0.0.0")
@@ -201,9 +207,10 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         fbp_value = metadata.get("fbp")
         fbc_value = metadata.get("fbc")
 
-        # Если есть email и есть курсы
         if email and course_ids:
-            # 1. Отправка события в Facebook
+            logging.info("Обработка успешной оплаты: email=%s, course_ids=%s", email, course_ids)
+
+            # 1. Отправляем событие в Facebook
             _send_facebook_purchase(
                 email=email,
                 amount=session_obj["amount_total"] / 100,
@@ -215,11 +222,10 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 fbc=fbc_value
             )
 
-            # 2. Проверяем / создаём пользователя
+            # 2. Проверяем, существует ли пользователь; если нет, создаём его
             user = get_user_by_email(db, email)
             new_user_created = False
             random_pass = None
-
             if not user:
                 random_pass = generate_random_password()
                 try:
@@ -229,36 +235,32 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 except ValueError:
                     user = get_user_by_email(db, email)
                     logging.warning("Ошибка создания пользователя, использую существующего: %s", email)
+            else:
+                logging.info("Найден существующий пользователь: %s", user.id)
 
-            # 3. Разделяем курсы на уже имеющиеся (already_owned) и новые (new_courses)
+            # 3. Разделяем курсы на уже имеющиеся и новые
             already_owned = []
             new_courses = []
             for course_obj in courses_db:
                 if course_obj in user.courses:
                     already_owned.append(course_obj)
-                    logging.info(
-                        "Пользователь %s уже имеет курс %s (ID=%s)",
-                        user.id, course_obj.name, course_obj.id
-                    )
+                    logging.info("Пользователь %s уже имеет курс %s (ID=%s)", user.id, course_obj.name, course_obj.id)
                 else:
                     add_course_to_user(db, user.id, course_obj.id)
                     new_courses.append(course_obj)
-                    logging.info(
-                        "Добавляю новый курс %s (ID=%s) пользователю %s",
-                        course_obj.name, course_obj.id, user.id
-                    )
+                    logging.info("Добавлен новый курс %s (ID=%s) пользователю %s", course_obj.name, course_obj.id, user.id)
 
-            # 4. Письмо, если некоторые курсы уже были
+            # 4. Если оплачены курсы, которые уже есть – отправляем специальное письмо
             if already_owned:
                 owned_names = [c.name for c in already_owned]
-                logging.info("Пользователь оплатил курсы, которые уже имел: %s", owned_names)
+                logging.info("Пользователь оплатил курсы, которые уже имеет: %s", owned_names)
                 send_already_owned_course_email(
                     recipient_email=email,
                     course_names=owned_names,
                     region=region,
                 )
 
-            # 5. Письмо об успешной покупке, если есть новые курсы
+            # 5. Если есть новые курсы – отправляем письмо об успешной покупке
             if new_courses:
                 new_names = [c.name for c in new_courses]
                 logging.info("Новые курсы, добавленные пользователю: %s", new_names)
@@ -269,19 +271,13 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                     password=random_pass if new_user_created else None,
                     region=region
                 )
-
         else:
-            # Логируем ситуацию, когда нет email или нет курсов
-            logging.warning(
-                "Неверные данные для session.completed: email=%s, course_ids=%s",
-                email, course_ids
-            )
+            logging.warning("Неверные данные для session.completed: email=%s, course_ids=%s", email, course_ids)
 
     elif event["type"] in ("checkout.session.async_payment_failed", "checkout.session.expired"):
         session_obj = event["data"]["object"]
         email = session_obj.get("customer_email")
         metadata = session_obj.get("metadata", {})
-
         course_ids_str = metadata.get("course_ids", "")
         if isinstance(course_ids_str, str):
             course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
@@ -292,10 +288,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         course_names = [c.name for c in courses_db]
 
         if email:
-            logging.info(
-                "Отправка письма о неуспешной оплате email=%s, курсы=%s",
-                email, course_names
-            )
+            logging.info("Отправка письма о неуспешной оплате: email=%s, курсы=%s", email, course_names)
             send_failed_purchase_email(
                 recipient_email=email,
                 course_names=course_names,
