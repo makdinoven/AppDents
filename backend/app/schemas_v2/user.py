@@ -92,6 +92,7 @@ class UserDetailResponse(BaseModel):
     class Config:
         orm_mode = True
 
+UserDetailedResponse.update_forward_refs()
 
 
 class UserUpdateFull(BaseModel):
