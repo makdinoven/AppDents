@@ -202,7 +202,7 @@ def remove_user_course(
     remove_course_from_user(db, user_id, course_id)
     return {"message": "Курс успешно удален у пользователя"}
 
-@router.get("/admin/users/{user_id}",
+@router.get("/admin/{user_id}/detail",
             response_model=UserDetailedResponse,
             summary="Детальная информация о пользователе (Админ)")
 def get_user_details(
