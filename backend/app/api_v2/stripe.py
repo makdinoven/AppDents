@@ -1,4 +1,5 @@
 # api/stripe_api.py
+import logging
 import time
 
 import stripe
@@ -36,22 +37,32 @@ def stripe_checkout(
     Если пользователь не авторизован, требует user_email.
     Принимаем fbp/fbc (из cookies на фронте) и записываем их в metadata.
     """
+
+    logging.info("Начало обработки запроса на создание Stripe сессии: %s", data.json())
     # 1. Проверяем и определяем email
     if current_user:
         email = current_user.email
+        logging.info("Аутентифицированный пользователь, email: %s", email)
     else:
         if not data.user_email:
+            logging.error("Email не передан для неавторизованного пользователя.")
             raise HTTPException(status_code=400, detail="Email is required for unauthenticated checkout")
         email = data.user_email
+        logging.info("Неавторизованный пользователь, email: %s", email)
 
     # 2. Проверяем курсы в БД
     courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
     if not courses or len(courses) != len(data.course_ids):
+        logging.error("Не найдены все курсы. Передано: %s, найдено: %s", data.course_ids,
+                      [course.id for course in courses])
         raise HTTPException(status_code=404, detail="One or more courses not found")
+    logging.info("Найдены курсы: %s", [course.id for course in courses])
 
     # 3. Формируем название продукта
     course_names = [course.name for course in courses]
     product_name = "Purchase: " + ", ".join(course_names)
+    logging.info("Сформировано название продукта: %s", product_name)
+    logging.info("Регион: %s", data.region)
 
     # 4. Вызываем функцию для создания сессии Stripe
     checkout_url = create_checkout_session(
@@ -67,6 +78,8 @@ def stripe_checkout(
         fbp=data.fbp,
         fbc=data.fbc
     )
+    logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
+
     return {"checkout_url": checkout_url}
 
 @router.post("/webhook/{region}")
