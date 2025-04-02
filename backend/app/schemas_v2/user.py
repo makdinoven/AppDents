@@ -59,10 +59,17 @@ class UserDetailedResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
-    courses: List  # "Forward reference" при необходимости
+    courses: List[int]  # "Forward reference" при необходимости
 
     class Config:
         orm_mode = True
+
+    @validator("courses", pre=True)
+    def convert_courses_to_ids(cls, value):
+        if value is None:
+            return []
+        # Если это список ORM объектов, извлекаем их ID
+        return [course.id for course in value]
 
 class UserShortResponse(BaseModel):
     id: int

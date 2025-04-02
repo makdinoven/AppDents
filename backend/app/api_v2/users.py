@@ -4,7 +4,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
@@ -214,7 +214,12 @@ def get_user_details(
     """
     Возвращает полную информацию о пользователе, включая роль и купленные курсы.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .options(joinedload(User.courses))  # Жадно загружаем связанные курсы
+        .filter(User.id == user_id)
+        .first()
+    )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
