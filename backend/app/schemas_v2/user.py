@@ -2,7 +2,7 @@
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List, Any
 
-from ..schemas_v2.course import CourseListResponse
+from ..schemas_v2.course import CourseListResponseShort
 
 
 class UserBase(BaseModel):
@@ -87,7 +87,7 @@ class UserDetailResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
-    courses: Optional[List[CourseListResponse]] = None
+    courses: Optional[List[CourseListResponseShort]] = None
 
     class Config:
         orm_mode = True
