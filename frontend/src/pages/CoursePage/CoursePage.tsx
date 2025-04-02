@@ -1,5 +1,5 @@
 import s from "./CoursePage.module.scss";
-import { useParams } from "react-router-dom";
+import { Outlet, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../common/helpers/helpers.ts";
@@ -10,10 +10,11 @@ import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CourseCard from "../ProfilePage/modules/CourseCard/CourseCard.tsx";
+// import { Path } from "../../routes/routes.ts";
 
 const CoursePage = () => {
   const dispatch = useDispatch<AppDispatchType>();
-  const { courseId } = useParams();
+  const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   // const changeLanguage = (lang: string) => {
@@ -39,12 +40,20 @@ const CoursePage = () => {
     try {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
-      // changeLanguage(res.data.language.toLowerCase());
+      // changeLanguage(res.data.region);
       setLoading(false);
     } catch (error) {
       console.error(error);
     }
   };
+
+  if (lessonId) {
+    return (
+      <>
+        <Outlet />
+      </>
+    );
+  }
 
   return (
     <>
@@ -53,16 +62,20 @@ const CoursePage = () => {
       ) : (
         <div className={s.course_page}>
           <DetailHeader title={course?.name} />
+          <Outlet />
           <ul className={s.modules_list}>
             {course.sections.map((section: any) => (
               <li key={section.id}>
-                <SectionHeader name={section.section_name} />
+                {course.sections.length > 1 && (
+                  <SectionHeader name={section.section_name} />
+                )}
                 <ul>
                   {section.lessons.map((lesson: any, index: number) => (
                     <CourseCard
                       isEven={index % 2 === 0}
                       key={lesson.id}
                       name={lesson.lesson_name}
+                      // link={`${Path.lesson}/${section.id}/${lesson.id}`}
                       link={lesson.video_link}
                       viewText={"watchLesson"}
                     />

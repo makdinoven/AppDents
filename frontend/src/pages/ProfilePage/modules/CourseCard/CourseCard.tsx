@@ -14,11 +14,10 @@ const CourseCard = ({
   isEven: boolean;
 }) => {
   const navigate = useNavigate();
-  const isExternal = link.startsWith("http");
 
   const handleClick = () => {
-    if (isExternal) {
-      window.open(link, "_blank", "noopener,noreferrer");
+    if (link.startsWith("http://") || link.startsWith("https://")) {
+      window.open(link, "_blank");
     } else {
       navigate(link);
     }
@@ -27,7 +26,7 @@ const CourseCard = ({
   return (
     <li onClick={handleClick} className={`${s.card} ${isEven ? "" : s.blue}`}>
       <h3>{name}</h3>
-      <ViewLink isExternal={isExternal} link={link} text={viewText} />
+      <ViewLink text={viewText} />
     </li>
   );
 };
