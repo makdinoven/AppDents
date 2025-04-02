@@ -59,7 +59,7 @@ class UserDetailedResponse(BaseModel):
     id: int
     email: EmailStr
     role: str
-    courses: List["CourseListResponse"]  # "Forward reference" при необходимости
+    courses: List["CourseListResponseShort"]  # "Forward reference" при необходимости
 
     class Config:
         orm_mode = True
