@@ -135,7 +135,7 @@ def get_landing_cards(
     query = db.query(Landing)
 
     if language:
-        language = language.upper()
+        language = language.upper().strip()
         query = query.filter(Landing.language == language)
     # Фильтрация по тегам (если передан список тегов)
     if tags:
