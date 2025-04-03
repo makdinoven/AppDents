@@ -179,7 +179,7 @@ def get_cards(
       - Основное изображение
       - Старая цена и новая цена
     """
-    cards = get_landing_cards(db, skip, limit, tags, sort)
+    cards = get_landing_cards(db, skip, limit, tags, sort, language)
     return cards
 
 @router.get("/search", response_model=List[LandingSearchResponse])
