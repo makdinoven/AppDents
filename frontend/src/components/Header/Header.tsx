@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import UserIcon from "../../common/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
 import { t } from "i18next";
-// import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
+import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
@@ -100,7 +100,7 @@ const Header = () => {
             <LogoIcon />
           </Link>
           <div className={s.header_buttons}>
-            {/*<LanguageChanger />*/}
+            <LanguageChanger />
             {renderButton()}
           </div>
         </div>

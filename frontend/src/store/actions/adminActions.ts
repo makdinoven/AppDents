@@ -96,3 +96,35 @@ export const createAuthor = createAppAsyncThunk(
     }
   },
 );
+
+export const getUsers = createAppAsyncThunk(
+  "admin/getUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.getUsersList();
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const createUser = createAppAsyncThunk(
+  "admin/createUser",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.createUser(data);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);

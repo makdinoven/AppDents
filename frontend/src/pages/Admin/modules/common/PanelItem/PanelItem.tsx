@@ -15,15 +15,15 @@ const PanelItem = ({ link, name, id, landingPath }: PanelItemType) => {
     return landingPath ? (
       <div className={s.buttons}>
         <Link to={link}>
-          <PrettyButton text={t("update")} />
+          <PrettyButton text={t("admin.update")} />
         </Link>
         <Link to={landingPath}>
-          <PrettyButton variant={"primary"} text={t("view")} />
+          <PrettyButton variant={"primary"} text={t("admin.view")} />
         </Link>
       </div>
     ) : (
       <Link to={link}>
-        <PrettyButton text={t("update")} />
+        <PrettyButton text={t("admin.update")} />
       </Link>
     );
   };

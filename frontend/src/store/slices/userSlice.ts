@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { getCourses, getMe, login } from "../actions/userActions.ts";
+import i18n from "i18next";
 
 interface UserState {
   email: string | null;
@@ -7,6 +8,7 @@ interface UserState {
   loading: boolean;
   error: ErrorResponse | null;
   isLogged: boolean;
+  language: string;
   courses: [];
 }
 
@@ -24,6 +26,7 @@ const initialState: UserState = {
   loading: false,
   error: null,
   isLogged: false,
+  language: "EN",
   courses: [],
 };
 
@@ -44,6 +47,12 @@ const userSlice = createSlice({
       state.error = null;
       state.isLogged = false;
       localStorage.removeItem("access_token");
+    },
+    setLanguage: (state, action: PayloadAction<string>) => {
+      const newLanguage = action.payload;
+      state.language = newLanguage;
+      localStorage.setItem("DENTS_LANGUAGE", newLanguage);
+      i18n.changeLanguage(newLanguage);
     },
   },
   extraReducers: (builder) => {
@@ -100,5 +109,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { logout } = userSlice.actions;
+export const { logout, setLanguage } = userSlice.actions;
 export const userReducer = userSlice.reducer;

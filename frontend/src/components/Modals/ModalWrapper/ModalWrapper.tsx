@@ -11,6 +11,9 @@ interface ModalWrapperProps {
   cutoutPosition: "top-right" | "bottom-right" | "none";
   cutoutOffsetY?: number;
   cutoutOffsetX?: number;
+  hasTitle?: boolean;
+  hasCloseButton?: boolean;
+  isLang?: boolean;
 }
 
 const ModalWrapper: React.FC<ModalWrapperProps> = ({
@@ -18,10 +21,13 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   children,
   isOpen,
   onClose,
+  isLang = false,
+  hasTitle = true,
+  hasCloseButton = true,
   triggerElement,
   cutoutPosition,
   cutoutOffsetY = 20,
-  cutoutOffsetX = 40,
+  cutoutOffsetX = 30,
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [triggerTop, setTriggerTop] = useState<number | null>(null);
@@ -68,14 +74,16 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 
       const resizeObserver = new ResizeObserver(updateDimensions);
       resizeObserver.observe(triggerElement);
+      window.addEventListener("resize", updateDimensions);
 
       updateDimensions();
 
       return () => {
         resizeObserver.disconnect();
+        window.removeEventListener("resize", updateDimensions);
       };
     }
-  }, [triggerElement]);
+  }, [triggerElement, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -110,11 +118,38 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     },
   };
 
-  const selectedModalContentStyle = {
+  const modalContainerStyles = isLang
+    ? {
+        maxWidth: "280px",
+        width: "fit-content",
+        top: triggerTop ? `${triggerTop}px` : "50%",
+        right: `calc(100vw - ${triggerDimensions.x + triggerDimensions.width}px)`,
+      }
+    : cutoutPosition === "none"
+      ? {
+          top: "50%",
+          transform: "translateY(-50%)",
+        }
+      : {
+          top: triggerTop ? `${triggerTop}px` : "50%",
+          padding: "0 20px",
+          marginRight: "auto",
+        };
+
+  const selectedModalBodyStyle = {
     "top-right": modalContentStyles.topRight,
     "bottom-right": modalContentStyles.bottomRight,
     none: modalContentStyles.none,
   }[cutoutPosition];
+
+  const modalBodyAdditionalStyle = isLang
+    ? { minHeight: "auto", padding: "clamp(14px, 3vw, 20px)" }
+    : { minHeight: "495px" };
+
+  const finalModalBodyStyle = {
+    ...selectedModalBodyStyle,
+    ...modalBodyAdditionalStyle,
+  };
 
   const cutoutStyles = {
     height: `calc(${triggerDimensions.height}px + ${cutoutOffsetY}px)`,
@@ -128,23 +163,18 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn}`}
       onClick={handleClose}
     >
-      <div
-        className={s.modal_container}
-        style={
-          cutoutPosition === "none"
-            ? { top: "50%", transform: "translateY(-50%)" }
-            : { top: triggerTop ? `${triggerTop}px` : "50%" }
-        }
-      >
+      <div className={s.modal_container} style={modalContainerStyles}>
         {isTopRight && (
           <div
             onClick={(e) => e.stopPropagation()}
             className={`${s.modal_header} ${s.topRight}`}
             style={cutoutStyles}
           >
-            <button className={s.close_button} onClick={handleClose}>
-              <ModalClose />
-            </button>
+            {hasCloseButton && (
+              <button className={s.close_button} onClick={handleClose}>
+                <ModalClose />
+              </button>
+            )}
           </div>
         )}
 
@@ -152,14 +182,14 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           ref={modalContentRef}
           className={s.modal_body}
           onClick={(e) => e.stopPropagation()}
-          style={selectedModalContentStyle}
+          style={finalModalBodyStyle}
         >
-          {!isTopRight && (
+          {!isTopRight && hasCloseButton && (
             <button className={s.close_button} onClick={handleClose}>
               <ModalClose />
             </button>
           )}
-          <h3>{title}</h3>
+          {hasTitle && <h3>{title}</h3>}
           {children}
         </div>
 

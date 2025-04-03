@@ -18,7 +18,7 @@ import CourseProgram from "./modules/CourseProgram/CourseProgram.tsx";
 import LessonsProgram from "./modules/LessonsProgram/LessonsProgram.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import Offer from "./modules/Offer/Offer.tsx";
-import { Trans, useTranslation } from "react-i18next";
+import { Trans } from "react-i18next";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../components/Modals/PaymentModal.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
@@ -27,17 +27,14 @@ import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { baseUrl } from "../../common/helpers/commonConstants.ts";
+import { setLanguage } from "../../store/slices/userSlice.ts";
 
 const Landing = () => {
-  const { i18n } = useTranslation();
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
   const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const changeLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
-  };
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
@@ -68,7 +65,7 @@ const Landing = () => {
         ...res.data,
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
-      changeLanguage(res.data.language.toLowerCase());
+      dispatch(setLanguage(res.data.language));
       setLoading(false);
     } catch (error) {
       console.error(error);

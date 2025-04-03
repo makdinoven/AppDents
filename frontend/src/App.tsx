@@ -6,9 +6,14 @@ import {
   initFacebookPixel,
   trackPageView,
 } from "./common/helpers/facebookPixel.ts";
+import { AppDispatchType } from "./store/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { setLanguage } from "./store/slices/userSlice.ts";
 
 function App() {
   const location = useLocation();
+  const dispatch = useDispatch<AppDispatchType>();
+  const language = useSelector((state: any) => state.user.language);
 
   useEffect(() => {
     initFacebookPixel();
@@ -17,6 +22,11 @@ function App() {
   useEffect(() => {
     trackPageView();
   }, [location.pathname]);
+
+  useEffect(() => {
+    const storedLanguage = localStorage.getItem("DENTS_LANGUAGE") || language;
+    dispatch(setLanguage(storedLanguage));
+  }, [dispatch]);
 
   return (
     <>
