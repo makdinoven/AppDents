@@ -87,3 +87,22 @@ class LandingUpdate(BaseModel):
     class Config:
         orm_mode = True
 
+class AuthorCardResponse(BaseModel):
+    id: int
+    name: str
+    photo: Optional[str] = None  # добавили фото
+
+    class Config:
+        orm_mode = True
+
+class LandingCardResponse(BaseModel):
+    first_tag: Optional[str] = None
+    landing_name: str
+    authors: List[AuthorCardResponse]
+    slug: str
+    main_image: Optional[str] = None
+    old_price: Optional[str] = None    # старая цена
+    new_price: Optional[str] = None    # новая цена
+
+    class Config:
+        orm_mode = True

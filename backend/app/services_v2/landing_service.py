@@ -1,9 +1,10 @@
 from datetime import time
 
+from sqlalchemy import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from typing import List
+from typing import List, cast, Optional
 from ..models.models_v2 import Landing, Author, Course, Tag
 from ..schemas_v2.landing import LandingCreate, LandingUpdate
 
@@ -120,3 +121,54 @@ def delete_landing(db: Session, landing_id: int) -> None:
     landing.tags = []
     db.delete(landing)
     db.commit()
+
+
+def get_landing_cards(
+        db: Session,
+        skip: int = 0,
+        limit: int = 20,
+        tags: Optional[List[str]] = None,
+        sort: Optional[str] = None  # Возможные значения: "popular", "discount", "new"
+) -> List[dict]:
+    query = db.query(Landing)
+
+    # Фильтрация по тегам (если передан список тегов)
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+
+    # Применяем сортировку по дополнительному фильтру
+    if sort:
+        if sort == "popular":
+            query = query.order_by(Landing.sales_count.desc())
+        elif sort == "discount":
+            # Вычисляем процент скидки: (old_price - new_price) / old_price * 100
+            discount_expr = ((cast(Landing.old_price, Float) - cast(Landing.new_price, Float)) / cast(Landing.old_price,
+                                                                                                      Float)) * 100
+            query = query.order_by(discount_expr.desc())
+        elif sort == "new":
+            query = query.order_by(Landing.id.desc())
+    else:
+        query = query.order_by(Landing.id)
+
+    # Пагинация
+    landings = query.offset(skip).limit(limit).all()
+
+    # Формируем карточки с нужными полями
+    cards = []
+    for landing in landings:
+        first_tag = landing.tags[0].name if landing.tags else None
+        authors = [
+            {"id": author.id, "name": author.name, "photo": author.photo}
+            for author in landing.authors
+        ]
+        card = {
+            "first_tag": first_tag,
+            "landing_name": landing.landing_name,
+            "authors": authors,
+            "slug": landing.page_name,
+            "main_image": landing.preview_photo,
+            "old_price": landing.old_price,
+            "new_price": landing.new_price,
+        }
+        cards.append(card)
+    return cards
