@@ -1,6 +1,6 @@
 from datetime import time
 
-from sqlalchemy import Float
+from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
@@ -144,11 +144,9 @@ def get_landing_cards(
         if sort == "popular":
             query = query.order_by(Landing.sales_count.desc())
         elif sort == "discount":
-            discount_expr = (
-                                    (cast(Landing.__table__.c.old_price, Float) - cast(Landing.__table__.c.new_price,
-                                                                                       Float))
-                                    / cast(Landing.__table__.c.old_price, Float)
-                            ) * 100
+            old_price_expr = cast(Landing.__table__.c.old_price, Float)
+            new_price_expr = cast(Landing.__table__.c.new_price, Float)
+            discount_expr = ((old_price_expr - new_price_expr) / old_price_expr) * 100
             query = query.order_by(discount_expr.desc())
         elif sort == "new":
             query = query.order_by(Landing.id.desc())
