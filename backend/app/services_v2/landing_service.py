@@ -144,8 +144,8 @@ def get_landing_cards(
         if sort == "popular":
             query = query.order_by(Landing.sales_count.desc())
         elif sort == "discount":
-            old_price_expr = cast(Landing.__table__.c.old_price, Float)
-            new_price_expr = cast(Landing.__table__.c.new_price, Float)
+            old_price_expr = cast(Landing.__table__.c.old_price, Float())
+            new_price_expr = cast(Landing.__table__.c.new_price, Float())
             discount_expr = ((old_price_expr - new_price_expr) / old_price_expr) * 100
             query = query.order_by(discount_expr.desc())
         elif sort == "new":
