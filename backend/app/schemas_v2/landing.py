@@ -106,3 +106,10 @@ class LandingCardResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class LandingSearchResponse(BaseModel):
+    id: int
+    landing_name: str
+
+    class Config:
+        orm_mode = True
