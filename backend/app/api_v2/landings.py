@@ -10,7 +10,7 @@ from ..schemas_v2 import landing
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
-    LandingCardResponse
+    LandingCardResponse, LandingSearchResponse
 
 router = APIRouter()
 
@@ -180,3 +180,17 @@ def get_cards(
     """
     cards = get_landing_cards(db, skip, limit, tags, sort)
     return cards
+
+@router.get("/search", response_model=List[LandingSearchResponse])
+def search_landings(
+    q: str = Query(..., min_length=1, description="Поисковый запрос по названию лендинга"),
+    db: Session = Depends(get_db)
+):
+    """
+    Поиск лендингов по названию.
+    В ответе возвращаются только id и название лендинга.
+    """
+    landings = db.query(Landing).filter(Landing.landing_name.ilike(f"%{q}%")).all()
+    if not landings:
+        raise HTTPException(status_code=404, detail="Нет лендингов, соответствующих запросу")
+    return landings
