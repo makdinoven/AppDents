@@ -27,6 +27,41 @@
   }
 }
 
+.language_changer_modal {
+  @include flex-column;
+  @include clamped-p1;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  li {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+    cursor: pointer;
+    @include transition(color);
+
+    svg {
+      path {
+        @include transition(stroke);
+        stroke: $text-color;
+      }
+    }
+
+    &:hover {
+      color: $accent;
+
+      svg {
+        path {
+          stroke: $accent;
+        }
+      }
+    }
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .language_changer {
     gap: 5px;
@@ -34,6 +69,16 @@
     svg {
       width: 20px;
       height: 20px;
+    }
+  }
+  .language_changer_modal {
+    li {
+      gap: 20px;
+      svg {
+        path {
+          stroke-width: 1px;
+        }
+      }
     }
   }
 }

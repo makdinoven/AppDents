@@ -19,7 +19,10 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 }
 
 .modal_container {
-  @include container;
+  //@include container;
+  max-width: 1280px;
+  //min-width: 360px;
+  margin-left: auto;
   width: 100%;
   position: relative;
 }
@@ -30,7 +33,7 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 }
 
 .topRight {
-  border-top-left-radius: 40px;
+  border-top-left-radius: var(--border-radius);
   border-top-right-radius: 15px;
 
   @include circle-angle(
@@ -45,7 +48,7 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 }
 
 .bottomRight {
-  border-bottom-left-radius: 40px;
+  border-bottom-left-radius: var(--border-radius);
   border-bottom-right-radius: 20px;
 
   @include circle-angle(
@@ -73,7 +76,7 @@ $content-padding-y: clamp(18px, 2vw, 26px);
   position: relative;
   background: $primary;
   padding: calc($content-padding-y + 10px) $content-padding-x;
-  border-radius: 40px;
+  border-radius: var(--border-radius);
   width: 100%;
   flex: 1;
   color: $text-color;
@@ -83,7 +86,7 @@ $content-padding-y: clamp(18px, 2vw, 26px);
     max-width: 85%;
     text-align: center;
     text-transform: uppercase;
-    margin-bottom: 40px;
+    margin-bottom: var(--border-radius);
   }
 }
 

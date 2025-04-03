@@ -13,6 +13,7 @@ import AuthorDetail from "../pages/Admin/pages/AuthorDetail.tsx";
 import CoursePage from "../pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
 import LessonPage from "../pages/LessonPage/LessonPage.tsx";
+import UserDetail from "../pages/Admin/pages/UserDetail.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -46,10 +47,10 @@ export const AppRoutes: FC = () => {
             path={`${Path.authorDetail}/:authorId?`}
             element={<AuthorDetail />}
           />
-          {/*<Route*/}
-          {/*    path={`${Path.userDetail}/:landingId?`}*/}
-          {/*    element={<UserDetail />}*/}
-          {/*/>*/}
+          <Route
+            path={`${Path.userDetail}/:userId?`}
+            element={<UserDetail />}
+          />
           {/*<Route path="*" element={<Navigate to={Path.admin} replace />} />*/}
         </Route>
 

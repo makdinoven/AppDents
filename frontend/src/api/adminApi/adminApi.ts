@@ -27,6 +27,7 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+
   getLandingsList() {
     return instance.get("landings/list?skip=0&limit=10000", {
       headers: getAuthHeaders(),
@@ -52,6 +53,7 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+
   getAuthorsList() {
     return instance.get("authors/?skip=0&limit=10000");
   },
@@ -73,9 +75,27 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+
   getUsersList() {
-    return instance.get("users/", { headers: getAuthHeaders() });
+    return instance.get("users/admin/users", { headers: getAuthHeaders() });
   },
+  getUser(id: any) {
+    return instance.get(`users/admin/${id}/detail`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateUser(id: any, data: any) {
+    return instance.put(`users/${id}`, data, { headers: getAuthHeaders() });
+  },
+  createUser(data: any) {
+    return instance.post("users/admin/users", data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  deleteUser(id: any) {
+    return instance.delete(`users/admin/${id}`, { headers: getAuthHeaders() });
+  },
+
   uploadPhoto(file: any) {
     return instance.post("photo/photo", file);
   },

@@ -3,16 +3,18 @@ import {
   createAuthor,
   createCourse,
   createLanding,
+  createUser,
   getAuthors,
   getCourses,
   getLandings,
+  getUsers,
 } from "../actions/adminActions.ts";
 import { CourseType } from "../../pages/Admin/types.ts";
 
 interface AdminState {
   courses: CourseType[];
   landings: any;
-  users: [];
+  users: any;
   authors: any;
   loading: boolean;
   error: null;
@@ -140,6 +142,44 @@ const adminSlice = createSlice({
         },
       )
       .addCase(createAuthor.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+
+    builder
+      .addCase(getUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getUsers.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          state.users = action.payload.res.data.sort(
+            (a: { id: number }, b: { id: number }) => b.id - a.id,
+          );
+        },
+      )
+      .addCase(getUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+
+    builder
+      .addCase(createUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        createUser.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          if (action.payload) {
+            state.users = [action.payload.res.data, ...state.users];
+          }
+        },
+      )
+      .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });

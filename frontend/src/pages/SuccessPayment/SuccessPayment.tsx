@@ -8,7 +8,7 @@ import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { Path } from "../../routes/routes.ts";
-import i18n from "i18next";
+import { setLanguage } from "../../store/slices/userSlice.ts";
 
 const SuccessPayment = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -17,13 +17,9 @@ const SuccessPayment = () => {
   const sessionId = searchParams.get("session_id");
   const region = searchParams.get("region");
 
-  const changeLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
-  };
-
   useEffect(() => {
     if (region) {
-      changeLanguage(region.toLowerCase());
+      dispatch(setLanguage(region));
     }
     if (sessionId) {
       getAndSetToken();

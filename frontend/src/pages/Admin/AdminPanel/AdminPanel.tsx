@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Courses from "../tabs/Courses.tsx";
 import Landings from "../tabs/Landings.tsx";
 import Authors from "../tabs/Authors.tsx";
+import Users from "../tabs/Users.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const AdminPanel = () => {
       component: <Courses />,
     },
     { name: "authors", label: "admin.authors.authors", component: <Authors /> },
-    // { name: "users", label: "admin.users.users", component: <Users /> },
+    { name: "users", label: "admin.users.users", component: <Users /> },
   ];
 
   useEffect(() => {

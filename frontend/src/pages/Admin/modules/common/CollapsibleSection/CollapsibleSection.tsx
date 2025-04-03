@@ -39,7 +39,7 @@ const CollapsibleSection = ({
               )}
             </span>
           </div>
-          <PrettyButton text={t("open")} onClick={toggleOpen} />
+          <PrettyButton text={t("admin.open")} onClick={toggleOpen} />
         </div>
       ) : (
         <div className={s.section}>
