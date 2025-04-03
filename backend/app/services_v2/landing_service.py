@@ -1,5 +1,6 @@
 from datetime import time
 
+from sqlalchemy import func
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
