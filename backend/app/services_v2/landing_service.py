@@ -144,10 +144,10 @@ def get_landing_cards(
         if sort == "popular":
             query = query.order_by(Landing.sales_count.desc())
         elif sort == "discount":
-            old_price_col = Landing.__table__.c.get('old_price')
-            new_price_col = Landing.__table__.c.get('new_price')
+            old_price_col = Landing.__table__.c.old_price
+            new_price_col = Landing.__table__.c.new_price
 
-            # Приводим колонки к числовому типу (Float)
+            # Приводим к числовому типу
             old_price_numeric = cast(old_price_col, Float)
             new_price_numeric = cast(new_price_col, Float)
 
