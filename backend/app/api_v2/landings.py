@@ -166,6 +166,7 @@ def get_cards(
     limit: int = Query(20, gt=0),
     tags: Optional[List[str]] = Query(None, description="Список тегов для фильтрации"),
     sort: Optional[str] = Query(None, description="Фильтр: popular, discount, new"),
+    language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
     db: Session = Depends(get_db)
 ):
     """

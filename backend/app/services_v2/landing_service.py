@@ -129,10 +129,13 @@ def get_landing_cards(
         skip: int = 0,
         limit: int = 20,
         tags: Optional[List[str]] = None,
-        sort: Optional[str] = None  # Возможные значения: "popular", "discount", "new"
+        sort: Optional[str] = None, # Возможные значения: "popular", "discount", "new"
+        language: Optional[str] = None
 ) -> List[dict]:
     query = db.query(Landing)
 
+    if language:
+        query = query.filter(Landing.language == language)
     # Фильтрация по тегам (если передан список тегов)
     if tags:
         query = query.join(Landing.tags).filter(Tag.name.in_(tags))
