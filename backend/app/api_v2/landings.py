@@ -2,13 +2,15 @@ from http.client import HTTPException
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing
 from ..schemas_v2 import landing
-from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, delete_landing
-from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse
+from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
+    delete_landing, get_landing_cards
+from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
+    LandingCardResponse
 
 router = APIRouter()
 
@@ -157,3 +159,24 @@ def get_all_tags(db: Session = Depends(get_db)):
 def delete_landing_route(landing_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
     delete_landing(db, landing_id)
     return {"detail": "Landing deleted successfully"}
+
+@router.get("/cards", response_model=List[LandingCardResponse])
+def get_cards(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, gt=0),
+    tags: Optional[List[str]] = Query(None, description="Список тегов для фильтрации"),
+    sort: Optional[str] = Query(None, description="Фильтр: popular, discount, new"),
+    db: Session = Depends(get_db)
+):
+    """
+    Получение карточек лендингов с пагинацией, фильтрацией по тегам и сортировкой.
+    В карточке возвращаются:
+      - Первый тег
+      - Название лендинга
+      - Все авторы (имена и фотографии)
+      - Slug (page_name)
+      - Основное изображение
+      - Старая цена и новая цена
+    """
+    cards = get_landing_cards(db, skip, limit, tags, sort)
+    return cards
