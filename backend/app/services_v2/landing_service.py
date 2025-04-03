@@ -137,13 +137,18 @@ def get_landing_cards(
         query = query.join(Landing.tags).filter(Tag.name.in_(tags))
 
     # Применяем сортировку по дополнительному фильтру
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+
     if sort:
         if sort == "popular":
             query = query.order_by(Landing.sales_count.desc())
         elif sort == "discount":
-            # Вычисляем процент скидки: (old_price - new_price) / old_price * 100
-            discount_expr = ((cast(Landing.old_price, Float) - cast(Landing.new_price, Float)) / cast(Landing.old_price,
-                                                                                                      Float)) * 100
+            # Обращаемся к колонкам через __table__.c для правильного получения столбца,
+            # а не типа
+            old_price_numeric = cast(Landing.__table__.c.old_price, Float)
+            new_price_numeric = cast(Landing.__table__.c.new_price, Float)
+            discount_expr = ((old_price_numeric - new_price_numeric) / old_price_numeric) * 100
             query = query.order_by(discount_expr.desc())
         elif sort == "new":
             query = query.order_by(Landing.id.desc())
