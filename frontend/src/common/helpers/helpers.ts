@@ -36,6 +36,17 @@ export const getFacebookData = () => {
   return { fbp, fbc };
 };
 
+export const transformTags = (
+  tags: { id: number; name: string }[],
+): { id: number; name: string; value: string }[] => {
+  const transformed = tags.map((tag) => ({
+    ...tag,
+    value: tag.name,
+  }));
+
+  return [{ id: 0, name: "tag.allCourses", value: "all" }, ...transformed];
+};
+
 export const scrollToElementAndClick = (triggerRef: any) => {
   triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   setTimeout(() => {

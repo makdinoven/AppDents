@@ -29,3 +29,25 @@
   display: flex;
   justify-content: space-between;
 }
+
+@media (max-width: $mobile-breakpoint) {
+  .inner_list {
+    padding: 0 10px;
+  }
+
+  .list_header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .list {
+    gap: 20px;
+    .two_items {
+      @include flex-column;
+    }
+  }
+
+  .detail_container {
+    gap: 40px;
+  }
+}

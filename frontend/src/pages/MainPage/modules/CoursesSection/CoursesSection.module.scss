@@ -1,0 +1,22 @@
+.courses {
+  @include flex-column;
+  gap: 60px;
+}
+
+.courses_header {
+  @include flex-column;
+  gap: 40px;
+}
+
+.line {
+  height: 2px;
+  position: relative;
+  display: block;
+  @include horizontal-line($right: 0, $width: 85%, $bottom: 0);
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .courses {
+    gap: 40px;
+  }
+}

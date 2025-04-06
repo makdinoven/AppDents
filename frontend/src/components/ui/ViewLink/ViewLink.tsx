@@ -17,11 +17,16 @@ const ViewLink = ({
       <Trans i18nKey={text} />
       <Arrow />
     </a>
-  ) : (
+  ) : link ? (
     <Link className={s.link} to={link ? link : ""}>
       <Trans i18nKey={text} />
       <Arrow />
     </Link>
+  ) : (
+    <span className={s.link}>
+      <Trans i18nKey={text} />
+      <Arrow />
+    </span>
   );
 };
 

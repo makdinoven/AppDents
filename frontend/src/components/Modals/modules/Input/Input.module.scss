@@ -1,24 +1,9 @@
 .input_wrapper {
   @include clamped-p1;
-  @include horizontal-line($color: $text-color, $bottom: 0, $left: 0);
   position: relative;
+  border-bottom: 2px solid $text-color;
   padding-bottom: 5px;
-
-  .error_message {
-    color: $error-color;
-    display: block;
-    width: 100%;
-    text-align: right;
-    position: absolute;
-    bottom: -20px;
-    @include clamped-err;
-  }
-
-  &.error {
-    &::after {
-      background-color: $error-color;
-    }
-  }
+  padding-right: 30px;
 
   input {
     border-radius: 5px;
@@ -27,5 +12,58 @@
       color: $background-color;
       opacity: 0.6;
     }
+  }
+
+  &.error {
+    border-color: $error-color;
+
+    .error_icon_wrapper {
+      position: absolute;
+      right: 0;
+      width: 30px;
+      height: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+
+      svg {
+        circle {
+          stroke: $error-color;
+        }
+        path {
+          stroke: $error-color;
+        }
+      }
+    }
+
+    .error_icon {
+      user-select: none;
+    }
+
+    .tooltip {
+      @include transition($property: opacity);
+      position: absolute;
+      bottom: 110%;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: $error-color;
+      color: $text-color;
+      padding: 6px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .error_icon_wrapper:hover .tooltip {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    border-bottom: 1px solid $text-color;
   }
 }

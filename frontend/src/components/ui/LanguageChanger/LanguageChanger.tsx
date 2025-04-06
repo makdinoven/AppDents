@@ -3,7 +3,7 @@ import LanguageIcon from "../../../common/Icons/LanguageIcon.tsx";
 import ModalWrapper from "../../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useRef, useState } from "react";
 import CheckMark from "../../../common/Icons/CheckMark.tsx";
-import { languages } from "../../../common/helpers/commonConstants.ts";
+import { LANGUAGES } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../../store/store.ts";
 import { setLanguage } from "../../../store/slices/userSlice.ts";
@@ -44,7 +44,7 @@ const LanguageChanger = () => {
         onClose={handleCloseModal}
       >
         <ul className={s.language_changer_modal}>
-          {languages.map((button) => (
+          {LANGUAGES.map((button) => (
             <li
               key={button.value}
               onClick={() => handleLanguageChange(button.value)}

@@ -2,7 +2,7 @@
   "pay": "Pay",
   "buy": "Buy",
   "buyFor": "Buy for",
-  "etAl": "et al.",
+  "etAl": "et al.",
   "nothingFound" : "Nothing found",
   "searchCourses": "Search courses...",
   "back": "Back",
@@ -17,7 +17,12 @@
   "reset": "reset",
   "update": "update",
   "email" : "Email...",
+  "yourName": "Your name...",
+  "yourOrder": "Your order",
   "password" : "Password...",
+  "seeMore": "See more",
+  "endOfList": "These are all the courses for now. More coming soon!",
+  "endOfListFilter" : "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
   "open": "open",
   "view": "View",
   "viewCourse": "View course",
@@ -29,16 +34,20 @@
   "successPayment": "Your purchase was successful. You will be redirected to your profile shortly, where you can access the course and start learning.",
   "videoFailedToLoad": "Video failed to load? Try watching it directly",
   "watchHere": "here.",
+  "total": "Total:",
+  "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
+  "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
 
   "main" : {
-    "title" : "Online <1> dental </1> school",
-    "hero.description": "Online courses for dentists",
+    "title" : "Online <1>dental</1> school",
+    "hero.description": "Online courses for\u00A0dentists",
     "hero.widestRange": "The <1>widest</1> range of products ",
     "hero.chooseCourse": "Choose your course",
     "hero.bestPrices": "Best <1>prices</1>",
     "ourCurses": "Our curses",
     "viewCourse" : "View course",
-    "noCourses" : "No courses found"
+    "noCourses" : "No courses found",
+    "noCoursesFilter": "No courses found for the filter «{{filter}}»."
   },
 
   "footer": {
@@ -107,7 +116,7 @@
 
   "error": {
     "email.empty": "Email must not be empty",
-    "email.valid": "Please enter a valid email",
+    "email.valid": "Email is not valid",
     "email.required": "Email is required",
     "password.empty": "Password must not be empty",
     "password.minLength": "Password must be at least 6 characters long",

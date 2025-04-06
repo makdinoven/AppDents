@@ -1,5 +1,5 @@
 import Hero from "./modules/Hero/Hero.tsx";
-import Courses from "./modules/Courses/Courses.tsx";
+import CoursesSection from "./modules/CoursesSection/CoursesSection.tsx";
 import { useEffect } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
@@ -15,7 +15,7 @@ const MainPage = () => {
   return (
     <>
       <Hero />
-      <Courses />
+      <CoursesSection />
     </>
   );
 };

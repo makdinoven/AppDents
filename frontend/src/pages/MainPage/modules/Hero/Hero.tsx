@@ -4,10 +4,10 @@ import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
 import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
-import Search from "../../../../components/ui/Search/Search.tsx";
 import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";
 import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
+import Search from "../../../../components/ui/Search/Search.tsx";
 
 const Hero = () => {
   const handleSearch = () => {};
