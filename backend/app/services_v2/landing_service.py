@@ -129,22 +129,20 @@ def get_landing_cards(
         skip: int = 0,
         limit: int = 20,
         tags: Optional[List[str]] = None,
-        sort: Optional[str] = None, # Возможные значения: "popular", "discount", "new"
+        sort: Optional[str] = None,  # Возможные значения: "popular", "discount", "new"
         language: Optional[str] = None
-) -> List[dict]:
+) -> dict:
     query = db.query(Landing)
 
     if language:
         language = language.upper().strip()
         query = query.filter(Landing.language == language)
+
     # Фильтрация по тегам (если передан список тегов)
     if tags:
         query = query.join(Landing.tags).filter(Tag.name.in_(tags))
 
-    # Применяем сортировку по дополнительному фильтру
-    if tags:
-        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
-
+    # Применяем сортировку
     if sort:
         if sort == "popular":
             query = query.order_by(Landing.sales_count.desc())
@@ -158,7 +156,10 @@ def get_landing_cards(
     else:
         query = query.order_by(Landing.id)
 
-    # Пагинация
+    # Подсчитываем общее число записей по фильтрам (без offset/limit)
+    total = query.distinct(Landing.id).count()
+
+    # Применяем пагинацию
     landings = query.offset(skip).limit(limit).all()
 
     # Формируем карточки с нужными полями
@@ -179,4 +180,5 @@ def get_landing_cards(
             "new_price": landing.new_price,
         }
         cards.append(card)
-    return cards
+
+    return {"total": total, "cards": cards}
