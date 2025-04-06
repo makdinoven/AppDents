@@ -113,3 +113,7 @@ class LandingSearchResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class LandingCardsResponse(BaseModel):
+    total: int
+    cards: List[LandingCardResponse]

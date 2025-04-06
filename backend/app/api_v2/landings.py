@@ -10,7 +10,7 @@ from ..schemas_v2 import landing
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
-    LandingCardResponse, LandingSearchResponse
+    LandingCardResponse, LandingSearchResponse, LandingCardsResponse
 
 router = APIRouter()
 
@@ -160,7 +160,7 @@ def delete_landing_route(landing_id: int, db: Session = Depends(get_db),current_
     delete_landing(db, landing_id)
     return {"detail": "Landing deleted successfully"}
 
-@router.get("/cards", response_model=List[LandingCardResponse])
+@router.get("/cards", response_model=LandingCardsResponse)
 def get_cards(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, gt=0),
@@ -171,16 +171,10 @@ def get_cards(
 ):
     """
     Получение карточек лендингов с пагинацией, фильтрацией по тегам и сортировкой.
-    В карточке возвращаются:
-      - Первый тег
-      - Название лендинга
-      - Все авторы (имена и фотографии)
-      - Slug (page_name)
-      - Основное изображение
-      - Старая цена и новая цена
+    В ответе возвращаются общее количество лендингов по фильтрам и список карточек.
     """
-    cards = get_landing_cards(db, skip, limit, tags, sort, language)
-    return cards
+    result = get_landing_cards(db, skip, limit, tags, sort, language)
+    return result
 
 @router.get("/search", response_model=List[LandingSearchResponse])
 def search_landings(
