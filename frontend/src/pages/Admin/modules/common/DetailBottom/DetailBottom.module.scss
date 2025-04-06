@@ -2,4 +2,9 @@
   min-height: 52px;
   display: flex;
   justify-content: space-between;
+
+  @media (max-width: $mobile-breakpoint) {
+    flex-direction: column-reverse;
+    gap: 15px;
+  }
 }

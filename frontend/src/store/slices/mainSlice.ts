@@ -33,8 +33,7 @@ const mainSlice = createSlice({
       )
       .addCase(getTags.rejected, (state, action) => {
         state.loading = false;
-        console.log(action.payload);
-        // state.error = action.payload;
+        if (action.payload) state.error = action.payload;
       });
   },
 });

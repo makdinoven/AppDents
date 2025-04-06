@@ -3,149 +3,84 @@
   flex-direction: column;
   gap: 60px;
   margin-bottom: 130px;
-
-  @media (max-width: $mobile-breakpoint) {
-    gap: 44px;
-    margin-bottom: 100px;
-  }
-}
-
-.highlight {
-  color: $primary;
-}
-
-.hero_top {
-  display: flex;
-  justify-content: space-between;
-  gap: 37px;
-}
-
-.filter_btn {
-  @include flex-center;
-  height: 100%;
-
-  svg {
-    stroke-width: 2;
-    stroke: $primary;
-    width: clamp(28px, 5vw, 44px);
-    height: clamp(25px, 5vw, 39px);
-    fill: transparent;
-    @include transition();
-
-    @media (hover: hover) {
-      &:hover {
-        fill: $primary;
-      }
-    }
-
-    @media (hover: none) {
-      &:active {
-        fill: $primary;
-      }
-    }
-
-    @media (max-width: $mobile-breakpoint) {
-      stroke-width: 1;
-    }
-  }
-}
-
-.filter_btn_active {
-  svg {
-    fill: $primary;
-  }
 }
 
 .hero_content {
   position: relative;
 
-  .img_wrapper {
-    position: relative;
-
-    .glass_block {
-      cursor: pointer;
-      @include accent-glass;
-      position: absolute;
-      border-radius: 20px;
-      left: 29px;
-      top: clamp(30px, 12vw, 150px);
-      height: clamp(107px, 26vw, 236px);
-      width: clamp(137px, 30vw, 329px);
-      padding: 26px 42px 36px 33px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: start;
-
-      p {
-        @include clamped-p2;
-        color: $text-color;
-      }
-
-      @media (hover: hover) {
-        &:hover {
-          svg {
-            transform: translateX(10px);
-          }
-        }
-      }
-
-      svg {
-        @include transition(transform);
-        aspect-ratio: 1/1;
-        width: clamp(27px, 9vw, 92px);
-        stroke-width: 2;
-      }
-
-      @media (max-width: 920px) {
-        padding: 20px;
-      }
-
-      @media (max-width: $mobile-breakpoint) {
-        left: 13px;
-        top: clamp(30px, 24vw, 150px);
-        padding: 15px 12px;
-
-        svg {
-          stroke-width: 1;
-        }
-      }
-    }
+  h1 {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 10px;
   }
+}
 
+.img_wrapper {
+  position: relative;
   img {
     object-fit: cover;
-    height: 100%;
     width: 100%;
-    margin-top: clamp(45px, 13%, 135px);
-    z-index: 1;
-    user-select: none;
+    height: 100%;
+  }
+}
+
+.glass_block {
+  @include accent-glass;
+  @include transition($property: backdrop-filter);
+  position: absolute;
+  cursor: pointer;
+  border-radius: 20px;
+  left: clamp(13px, 3vw, 27px);
+  top: clamp(93px, 10vw, 160px);
+  width: clamp(165px, 31vw, 329px);
+  //max-height: clamp(107px, 20vw, 236px);
+  padding: clamp(13px, 3vw, 30px);
+
+  p {
+    @include clamped-p2;
+    color: $text-color;
+    padding-top: clamp(7px, 1vw, 14px);
   }
 
-  h1 {
-    width: 100%;
-    z-index: 2;
-    top: 0;
-    position: absolute;
+  svg {
+    @include transition(transform);
+    width: clamp(27px, 6vw, 92px);
+    height: clamp(27px, 6vw, 92px);
+    stroke-width: 2;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      backdrop-filter: blur(8px);
+
+      svg {
+        transform: translateX(10px);
+      }
+    }
   }
 }
 
 .hero_bottom {
-  p {
-    @include clamped-p2;
-  }
+  @include clamped-p2;
+}
 
-  .bottom_desc {
-    margin-bottom: clamp(20px, 3vw, 30px);
-    max-width: 40%;
+.bottom_desc {
+  margin-bottom: clamp(20px, 3vw, 30px);
+  max-width: 50%;
+}
+
+.bottom_secondary_desc {
+  text-align: right;
+  margin-top: 20px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .hero {
+    gap: 44px;
+    margin-bottom: 100px;
   }
 
   .bottom_secondary_desc {
-    text-align: right;
-    margin-top: 20px;
-
-    @media (max-width: $mobile-breakpoint) {
-      margin-top: unset;
-    }
+    margin-top: unset;
   }
 }

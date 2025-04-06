@@ -12,7 +12,6 @@ import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import UserIcon from "../../common/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
-import { t } from "i18next";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
@@ -81,12 +80,12 @@ const Header = () => {
   const modalContent = modalType
     ? {
         login: {
-          title: t("login"),
+          title: "login",
           component: <LoginModal onClose={handleCloseModal} />,
         },
-        "sign-up": { title: t("signup"), component: <SignUpModal /> },
+        "sign-up": { title: "signup", component: <SignUpModal /> },
         "password-reset": {
-          title: t("passwordReset"),
+          title: "passwordReset",
           component: <ResetPasswordModal />,
         },
       }[modalType]

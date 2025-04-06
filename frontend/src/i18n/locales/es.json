@@ -2,7 +2,7 @@
   "pay": "Pagar",
   "buy": "Comprar",
   "buyFor": "Comprar por",
-  "etAl": "y otros",
+  "etAl": "y otros",
   "nothingFound": "No se encontró nada",
   "searchCourses": "Buscar cursos...",
   "back": "Atrás",
@@ -17,6 +17,11 @@
   "reset": "restablecer",
   "update": "actualizar",
   "email": "Correo electrónico...",
+  "yourName": "Su nombre...",
+  "yourOrder": "Su pedido",
+  "seeMore": "Ver más",
+  "endOfList": "Estos son todos los cursos por ahora. ¡Pronto habrá más!",
+  "endOfListFilter": "Cursos filtrados por «{{filter}}». Eso es todo por ahora. ¡Pronto habrá más!",
   "password": "Contraseña...",
   "open": "abrir",
   "viewCourse": "Ver curso",
@@ -29,23 +34,25 @@
   "successPayment": "Tu compra ha sido exitosa. Serás redirigido a tu perfil en breve, donde podrás acceder al curso y comenzar a aprender.",
   "videoFailedToLoad": "No se pudo cargar el video. Intenta verlo directamente",
   "watchHere": "aquí.",
+  "total": "Total:",
+  "emailGrant": "Este correo electrónico se utilizará para otorgarle acceso a su curso comprado inmediatamente después del pago.",
+  "paymentWarn": "Una vez confirmado su pago, sus datos de acceso se enviarán automáticamente a su correo electrónico. Si no recibe el mensaje en su bandeja de entrada, revise su carpeta de correo no deseado.",
+
 
   "main": {
-    "title" : "Escuela <1>dental</1> en línea",
+    "title" : "Escuela <1>dental</1> en línea",
     "hero.widestRange": "La <1>más amplia</1> gama de productos",
     "hero.bestPrices": "Mejores <1>precios</1>",
-    "hero.description": "Cursos en línea para dentistas",
+    "hero.description": "Cursos en línea para dentistas",
     "hero.chooseCourse": "Elige tu curso",
     "ourCurses": "Nuestros cursos",
     "viewCourse": "Ver curso",
-    "noCourses": "No se encontraron cursos"
+    "noCourses": "No se encontraron cursos",
+    "noCoursesFilter": "No se encontraron cursos para el filtro «{{filter}}»."
   },
 
   "footer": {
     "contacts.title": "Contactos",
-    "contacts.address": "X44G+755 - Mina Jebel Ali - Jabal Ali Industrial Second - Dubái - EAU",
-    "contacts.phoneNumber": "+971 55 633 5434",
-    "contacts.email": "inform@di-s.org",
     "polities": "Políticas",
     "product": "Producto",
     "terms": "Términos de uso",

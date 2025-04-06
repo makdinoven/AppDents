@@ -12,6 +12,7 @@ $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
 $background-color: #edf8ff;
+$background-color-05: rgba(237, 248, 255, 0.5);
 $primary: #7fdfd5;
 $primary-glass: rgba(127, 223, 213, 0.8);
 $accent: #01433d;
@@ -24,8 +25,8 @@ $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #ff5c20;
 
-$font-sz-h1-desk: 120px;
-$font-sz-h1-mob: 40px;
+$font-sz-h1-desk: 95px;
+$font-sz-h1-mob: 31px;
 $font-sz-h2-desk: 40px;
 $font-sz-h2-mob: 26px;
 $font-sz-h3-desk: 30px;
@@ -38,11 +39,13 @@ $font-sz-p2-desk: 26px;
 $font-sz-p2-mob: 16px;
 $font-sz-p3-desk: 20px;
 $font-sz-p3-mob: 14px;
+$font-sz-p4-desk: 18px;
+$font-sz-p4-mob: 12px;
 $font-sz-err-desk: 20px;
 $font-sz-err-mob: 14px;
 
 @mixin clamped-h1 {
-  font-size: clamp($font-sz-h1-mob, 10vw, $font-sz-h1-desk);
+  font-size: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
 }
 
 @mixin clamped-h2 {
@@ -67,6 +70,10 @@ $font-sz-err-mob: 14px;
 
 @mixin clamped-p3 {
   font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+}
+
+@mixin clamped-p4 {
+  font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
 }
 
 @mixin clamped-err {

@@ -15,7 +15,6 @@ import {
   denormalizeLessons,
   normalizeLessons,
 } from "../../../common/helpers/helpers.ts";
-import { languages } from "../../../common/helpers/commonConstants.ts";
 
 const LandingDetail = () => {
   const { landingId } = useParams();
@@ -129,7 +128,6 @@ const LandingDetail = () => {
             tags={tags}
             authors={authors}
             courses={courses}
-            languages={languages}
             landing={landing}
             setLanding={setLanding}
           />

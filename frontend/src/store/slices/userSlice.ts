@@ -2,6 +2,9 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { getCourses, getMe, login } from "../actions/userActions.ts";
 import i18n from "i18next";
 
+const savedLanguage =
+  localStorage.getItem("DENTS_LANGUAGE")?.toLowerCase() || "EN";
+
 interface UserState {
   email: string | null;
   role: string | null;
@@ -26,7 +29,7 @@ const initialState: UserState = {
   loading: false,
   error: null,
   isLogged: false,
-  language: "EN",
+  language: savedLanguage,
   courses: [],
 };
 

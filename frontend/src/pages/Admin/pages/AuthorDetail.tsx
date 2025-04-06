@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { t } from "i18next";
-import { languages } from "../../../common/helpers/commonConstants.ts";
+import { LANGUAGES } from "../../../common/helpers/commonConstants.ts";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import PhotoUploader from "../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
 import { AuthorType } from "../types.ts";
@@ -95,7 +95,7 @@ const AuthorDetail = () => {
             <MultiSelect
               isSearchable={false}
               id={"language"}
-              options={languages}
+              options={LANGUAGES}
               placeholder={"Choose a language"}
               label={t("admin.landings.language")}
               selectedValue={author?.language ? author?.language : "EN"}
