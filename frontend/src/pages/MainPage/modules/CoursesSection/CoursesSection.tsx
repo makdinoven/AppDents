@@ -36,10 +36,6 @@ const CoursesSection = () => {
   }, []);
 
   useEffect(() => {
-    setSkip(0);
-  }, [language]);
-
-  useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
       fetchCourseCards();
     }
@@ -86,7 +82,9 @@ const CoursesSection = () => {
 
   const handleSetActiveFilter = (filter: string) => {
     setActiveFilter(filter);
-    setSkip(0);
+    if (skip !== 0) {
+      setSkip(0);
+    }
     const newParams = new URLSearchParams(searchParams);
     newParams.set("filters", filter);
     setSearchParams(newParams);
@@ -94,7 +92,9 @@ const CoursesSection = () => {
 
   const handleSetActiveSort = (sort: string) => {
     setActiveSort(sort);
-    setSkip(0);
+    if (skip !== 0) {
+      setSkip(0);
+    }
     const newParams = new URLSearchParams(searchParams);
     newParams.set("sort", sort);
     setSearchParams(newParams);

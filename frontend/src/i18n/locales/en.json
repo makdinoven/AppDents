@@ -44,7 +44,7 @@
     "hero.widestRange": "The <1>widest</1> range of products ",
     "hero.chooseCourse": "Choose your course",
     "hero.bestPrices": "Best <1>prices</1>",
-    "ourCurses": "Our curses",
+    "ourCurses": "Our courses",
     "viewCourse" : "View course",
     "noCourses" : "No courses found",
     "noCoursesFilter": "No courses found for the filter «{{filter}}»."
