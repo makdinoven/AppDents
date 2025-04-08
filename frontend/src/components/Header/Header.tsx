@@ -1,6 +1,6 @@
 import s from "./Header.module.scss";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import LogoIcon from "../../common/Icons/LogoIcon.tsx";
+import LogoIcon from "../../assets/Icons/LogoIcon.tsx";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
 import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
@@ -10,7 +10,7 @@ import SignUpModal from "../Modals/SignUpModal.tsx";
 import ResetPasswordModal from "../Modals/ResetPasswordModal.tsx";
 import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
-import UserIcon from "../../common/Icons/UserIcon.tsx";
+import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 

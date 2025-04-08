@@ -1,7 +1,7 @@
 import React from "react";
 import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
-import ErrorIcon from "../../../../common/Icons/ErrorIcon.tsx";
+import ErrorIcon from "../../../../assets/Icons/ErrorIcon.tsx";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error: string | undefined;

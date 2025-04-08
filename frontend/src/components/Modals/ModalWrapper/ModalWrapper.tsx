@@ -1,6 +1,6 @@
 import React, { ReactNode, useEffect, useState, useRef } from "react";
 import s from "./ModalWrapper.module.scss";
-import ModalClose from "../../../common/Icons/ModalClose.tsx";
+import ModalClose from "../../../assets/Icons/ModalClose.tsx";
 import { Trans } from "react-i18next";
 
 interface ModalWrapperProps {

@@ -1,8 +1,8 @@
 import s from "./CourseCard.module.scss";
-import { useScreenWidth } from "../../../../../common/hooks/useScreenWidth.ts";
-import ViewLink from "../../../../../components/ui/ViewLink/ViewLink.tsx";
+import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
-import { Path } from "../../../../../routes/routes.ts";
+import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 
 interface CourseCardProps {
