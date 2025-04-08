@@ -1,17 +1,17 @@
 import s from "./CoursesSection.module.scss";
 import { useEffect, useState } from "react";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import SectionHeader from "../../../components/ui/SectionHeader/SectionHeader.tsx";
+import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../store/store.ts";
-import { transformTags } from "../../../../common/helpers/helpers.ts";
-import SelectableList from "../../../../components/CommonComponents/SelectableList/SelectableList.tsx";
+import { AppRootStateType } from "../../../store/store.ts";
+import { transformTags } from "../../../common/helpers/helpers.ts";
+import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import { useSearchParams } from "react-router-dom";
 import CardsList from "./CardsList/CardsList.tsx";
 import {
   SORT_FILTERS,
   LANGUAGES,
-} from "../../../../common/helpers/commonConstants.ts";
+} from "../../../common/helpers/commonConstants.ts";
 const PAGE_SIZE = 10;
 
 const CoursesSection = () => {
@@ -36,6 +36,11 @@ const CoursesSection = () => {
   }, []);
 
   useEffect(() => {
+    setSkip(0);
+    setCards([]);
+  }, [language]);
+
+  useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
       fetchCourseCards();
     }
@@ -48,15 +53,9 @@ const CoursesSection = () => {
         language: language,
         sort: activeSort,
         limit: PAGE_SIZE,
+        ...(skip !== 0 && { skip }),
+        ...(activeFilter !== "all" && { tags: activeFilter }),
       };
-
-      if (skip !== 0) {
-        params.skip = skip;
-      }
-
-      if (activeFilter !== "all") {
-        params.tags = activeFilter;
-      }
 
       const res = await mainApi.getCourseCards(params);
       if (skip === 0) {

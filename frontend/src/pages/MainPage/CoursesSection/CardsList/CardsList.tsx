@@ -1,9 +1,9 @@
 import s from "./CardsList.module.scss";
-import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import CourseCard from "../CourseCard/CourseCard.tsx";
-import { formatAuthorsDesc } from "../../../../../common/helpers/helpers.ts";
+import { formatAuthorsDesc } from "../../../../common/helpers/helpers.ts";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 
 type Course = {
