@@ -101,6 +101,7 @@
     "courseProgram": "Course program",
     "fullCourseProgram": "The full course program",
     "buyFor": "Buy for <1>{{old_price}}</1> <2>{{new_price}}</2>",
+    "buyForFull": "Buy full course for <1>{{old_price}}</1> <2>{{new_price}}</2>",
     "youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>{{new_price}}</2>, instead of the old one - {{old_price}}",
     "fiveMinuteFragment": "Here you can watch a <1>five-minute fragment</1>",
     "durationOfLesson": "Duration:",

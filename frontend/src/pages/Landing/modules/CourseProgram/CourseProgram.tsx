@@ -53,6 +53,20 @@ const CourseProgram = ({
 
   return (
     <div className={s.course_program}>
+      <div className={s.buy_course}>
+        <p className={s.program_p}>
+          <Trans
+            i18nKey="landing.youCanBuyEntireCourse"
+            values={{ new_price: new_price, old_price: old_price }}
+            components={{
+              1: <span className="highlight" />,
+              2: <span className="highlight" />,
+            }}
+          />
+        </p>
+        {renderBuyButton}
+      </div>
+
       <SectionHeader name={"landing.courseProgram"} />
 
       <div className={s.card}>

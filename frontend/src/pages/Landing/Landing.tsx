@@ -97,10 +97,12 @@ const Landing = () => {
     }
   };
 
-  const renderBuyButton = () => (
+  const renderBuyButton = (variant: "full" | "default") => (
     <ArrowButton onClick={handleOpenModal}>
       <Trans
-        i18nKey="landing.buyFor"
+        i18nKey={
+          variant === "default" ? "landing.buyFor" : "landing.buyForFull"
+        }
         values={{
           ...getPricesData(landing),
         }}
@@ -116,7 +118,7 @@ const Landing = () => {
     landing_name: landing?.landing_name,
     authors: formattedAuthorsDesc,
     photo: landing?.preview_photo || null,
-    renderBuyButton: renderBuyButton(),
+    renderBuyButton: renderBuyButton("default"),
   };
 
   const aboutData = {
@@ -139,19 +141,19 @@ const Landing = () => {
       : `0 ${t("landing.onlineLessons")}`,
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
-    renderBuyButton: renderBuyButton(),
+    renderBuyButton: renderBuyButton("default"),
     ...getPricesData(landing),
   };
 
   const lessonsProgramData = {
     lessons: landing?.lessons_info,
-    renderBuyButton: renderBuyButton(),
+    renderBuyButton: renderBuyButton("full"),
   };
 
   const offerData = {
     landing_name: landing?.landing_name,
     authors: formattedAuthorsDesc,
-    renderBuyButton: renderBuyButton(),
+    renderBuyButton: renderBuyButton("default"),
   };
 
   const paymentData = {

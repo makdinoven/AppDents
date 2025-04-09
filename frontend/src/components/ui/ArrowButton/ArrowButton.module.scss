@@ -2,9 +2,10 @@
   @include clamped-p2;
   background-color: $accent;
   color: $text-color;
-  padding: clamp(9.5px, 2vw,12.5px)  clamp(10px, 2vw,20px);
+  gap: 10px;
+  padding: clamp(9.5px, 2vw, 12.5px) clamp(10px, 2vw, 20px);
   border-radius: 40px;
-  min-width: clamp(200px,35vw,400px);
+  min-width: clamp(200px, 35vw, 400px);
   width: fit-content;
   text-align: left;
   @include transition();
@@ -78,7 +79,4 @@
       fill: $background-color;
     }
   }
-
-
-
 }
