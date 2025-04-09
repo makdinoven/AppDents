@@ -85,6 +85,10 @@
   }
 
   @media (max-width: $mobile-breakpoint) {
+    .lesson_content {
+      gap: 20px;
+    }
+
     & {
       gap: 20px;
     }

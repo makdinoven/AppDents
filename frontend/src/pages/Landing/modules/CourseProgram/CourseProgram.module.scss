@@ -8,6 +8,13 @@ $card-padding-left: 35px;
   @include flex-column;
   gap: 40px;
 
+  .buy_course {
+    text-align: right;
+    @include flex-column;
+    gap: 20px;
+    align-items: end;
+  }
+
   .card_header {
     display: flex;
     gap: 33px;
