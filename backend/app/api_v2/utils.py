@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from starlette.responses import StreamingResponse
 
-from AppDents.backend.app.services import dump_cleaner
+from ..services import dump_cleaner
 
 router=APIRouter()
 
