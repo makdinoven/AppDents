@@ -17,3 +17,20 @@ export const getTags = createAppAsyncThunk(
     }
   },
 );
+
+export const getCourses = createAppAsyncThunk(
+  "main/getCourses",
+  async (params: any, { rejectWithValue }) => {
+    try {
+      const res = await mainApi.getCourseCards(params);
+
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data || "Unknown error");
+    }
+  },
+);
