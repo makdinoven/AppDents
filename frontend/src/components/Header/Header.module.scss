@@ -41,7 +41,7 @@
 
 @media (max-width: $mobile-breakpoint) {
   .header {
-    margin-bottom: 47px;
+    margin-bottom: 20px;
   }
 
   .login_btn {
@@ -53,10 +53,6 @@
 
   .header_buttons {
     gap: 20px;
-  }
-
-  .content {
-    padding-top: 60px;
   }
 
   .logo {
