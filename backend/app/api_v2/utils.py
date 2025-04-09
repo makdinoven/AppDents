@@ -24,8 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Маппинг полей: в дампе поле 'course_name' будет отображаться в модели как 'landing_name',
-# а поле 'linked_courses' мы исключаем, так как связь курсов хранится в ассоциативной таблице.
+# Маппинг полей: в дампе 'course_name' переименовывается в 'landing_name'
+# Поле 'linked_courses' исключается, так как связь курсов хранится в ассоциативной таблице
 FIELD_MAPPING = {
     'page_name': 'page_name',
     'course_name': 'landing_name',
@@ -34,7 +34,6 @@ FIELD_MAPPING = {
     'course_program': 'course_program',
     'lessons_info': 'lessons_info',
     'lecturers_info': 'lecturers_info',
-    # 'linked_courses': 'linked_courses',  # Исключаем данное поле
     'preview_photo': 'preview_photo'
 }
 
@@ -67,15 +66,12 @@ def clean_json_data(data: Union[Dict[str, Any], list, str]) -> Union[Dict[str, A
 def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
     """
     Принимает полный INSERT оператор из дампа.
-    Извлекает список полей и значения, используя регулярное выражение с флагом DOTALL
+    Извлекает список полей и значений, используя регулярное выражение (с флагом DOTALL)
     и модуль csv для корректного парсинга значений.
 
     Возвращает словарь с данными, где имена полей приведены согласно FIELD_MAPPING.
     """
     try:
-        # Пример оператора:
-        # INSERT INTO `landings` (`id`, `page_name`, `course_name`, ... )
-        # VALUES (442, 'ninja-sinus-lift', 'Ninja Sinus Lift', ... );
         pattern = re.compile(r"INSERT INTO `landings`\s*\((.*?)\)\s*VALUES\s*\((.*?)\);", re.DOTALL)
         match = pattern.search(statement)
         if not match:
@@ -84,15 +80,12 @@ def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
         fields_part = match.group(1)
         values_part = match.group(2)
 
-        # Разбиваем список полей по запятой
         fields = [f.strip().strip('`') for f in fields_part.split(',')]
-
-        # Используем csv для разбиения values, чтобы корректно обработать запятые в значениях
+        # Используем csv для корректного разбора строки значений
         csv_reader = csv.reader(StringIO(values_part), delimiter=',', quotechar="'", escapechar='\\')
         row = next(csv_reader)
         values = [val.strip() for val in row]
 
-        # Если поле id присутствует, удаляем его
         if 'id' in fields:
             idx = fields.index('id')
             del fields[idx]
@@ -104,7 +97,7 @@ def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
                 continue
             mapped_field = FIELD_MAPPING[field]
             value = values[i]
-            # Если значение выглядит как JSON
+            # Если значение выглядит как JSON, пытаемся декодировать
             if value.startswith('{') or value.startswith('['):
                 try:
                     json_value = json.loads(value)
@@ -123,8 +116,8 @@ def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
 
 async def get_or_create_author(db: AsyncSession, name: str, description: str) -> Tuple[Author, bool]:
     """
-    Пытается найти автора по имени, если не найден – создаёт нового.
-    Возвращает кортеж (author, created), где created True, если автор создан.
+    Пытается найти автора по имени, если не найден — создаёт нового.
+    Возвращает кортеж (author, created), где created True, если автор был создан.
     """
     try:
         result = await db.execute(select(Author).where(Author.name == name))
@@ -148,18 +141,18 @@ async def get_or_create_author(db: AsyncSession, name: str, description: str) ->
 
 @router.post("/import-dump")
 async def import_dump(
-        file: UploadFile = File(..., description="SQL dump file"),
-        db: AsyncSession = Depends(get_async_db)
+    file: UploadFile = File(..., description="SQL dump file"),
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Импортирует SQL дамп в базу проекта.
 
     Для каждого оператора INSERT:
-      • Парсится оператор (с учётом многострочности)
+      • Парсится оператор (учитывая многострочность)
       • Удаляются HTML-теги и inline стили из текстовых полей (а также рекурсивно внутри JSON)
       • Поля приводятся к нужному соответствию (например, course_name → landing_name)
-      • Создаётся объект Landing, вычисляется количество уроков (на основе lessons_info)
-      • Из lecturers_info извлекаются данные для авторов, которые создаются (или берутся из базы) и связываются
+      • Создаётся объект Landing, вычисляется количество уроков на основе lessons_info
+      • Из lecturers_info извлекаются данные для авторов, которые создаются (или берутся из БД) и связываются
       • Выполняется вставка в БД
 
     В ответе возвращается сводная статистика:
@@ -182,7 +175,7 @@ async def import_dump(
         contents = await file.read()
         content_str = contents.decode('utf-8')
 
-        # Находим все операторы INSERT (с учетом многострочности)
+        # Находим все операторы INSERT (учитывая многострочные конструкции)
         pattern = re.compile(r"(INSERT INTO `landings`\s*\(.*?\)\s*VALUES\s*\(.*?\);)", re.DOTALL)
         statements = pattern.findall(content_str)
         logger.info(f"Найдено операторов INSERT: {len(statements)}")
@@ -197,8 +190,7 @@ async def import_dump(
 
             logger.info("🔍 Обработка оператора INSERT")
 
-            # Формирование данных для лендинга: исключаем lecturers_info (для авторов)
-            # и поле linked_courses (оно не используется)
+            # Формируем данные для лендинга, исключая lecturers_info (и тем самым linked_courses)
             landing_data = {k: v for k, v in parsed_data.items() if k not in ['lecturers_info']}
             lessons_info = parsed_data.get('lessons_info')
             if isinstance(lessons_info, (dict, list)):
@@ -213,9 +205,16 @@ async def import_dump(
 
             # Обработка авторов из lecturers_info
             lecturers = parsed_data.get('lecturers_info', {})
+            if isinstance(lecturers, str):
+                try:
+                    lecturers = json.loads(lecturers)
+                except Exception as e:
+                    logger.error(f"Ошибка декодирования lecturers_info: {str(e)}")
+                    lecturers = {}
+
             for lecturer_key in ['lecturer1', 'lecturer2', 'lecturer3']:
-                lecturer_data = lecturers.get(lecturer_key)
-                if lecturer_data and lecturer_data.get('name'):
+                lecturer_data = lecturers.get(lecturer_key) if isinstance(lecturers, dict) else None
+                if lecturer_data and isinstance(lecturer_data, dict) and lecturer_data.get('name'):
                     author, created = await get_or_create_author(
                         db,
                         lecturer_data.get('name'),
