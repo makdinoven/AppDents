@@ -6,7 +6,7 @@ import {
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../routes/routes.ts";
-import { initialCourse } from "../../../common/helpers/commonConstants.ts";
+import { INITIAL_COURSE } from "../../../common/helpers/commonConstants.ts";
 
 const Courses = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -22,7 +22,7 @@ const Courses = () => {
         itemLink={(course) => `${Path.courseDetail}/${course.id}`}
         loading={loading}
         onFetch={() => dispatch(getCourses())}
-        onCreate={() => dispatch(createCourse(initialCourse))}
+        onCreate={() => dispatch(createCourse(INITIAL_COURSE))}
         searchPlaceholder="admin.courses.search"
         createButtonText="admin.courses.create"
         notFoundText="admin.courses.notFound"

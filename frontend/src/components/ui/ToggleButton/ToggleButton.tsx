@@ -1,4 +1,4 @@
-import s from "./FilterButton.module.scss";
+import s from "./ToggleButton.module.scss";
 import { Trans } from "react-i18next";
 
 interface TabButtonProps {
@@ -7,7 +7,7 @@ interface TabButtonProps {
   onClick?: () => void;
 }
 
-const FilterButton = ({ onClick, text, isActive }: TabButtonProps) => {
+const ToggleButton = ({ onClick, text, isActive }: TabButtonProps) => {
   return (
     <button
       onClick={onClick}
@@ -17,4 +17,4 @@ const FilterButton = ({ onClick, text, isActive }: TabButtonProps) => {
     </button>
   );
 };
-export default FilterButton;
+export default ToggleButton;

@@ -4,8 +4,8 @@
   position: relative;
   gap: 5px;
   min-height: 95px;
-}
 
-.custom_select {
-
+  @media (max-width: $mobile-breakpoint) {
+    min-height: unset;
+  }
 }

@@ -1,7 +1,7 @@
 import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
-import CircleArrow from "../../../../common/Icons/CircleArrow.tsx";
+import CircleArrow from "../../../../assets/Icons/CircleArrow.tsx";
 import initialPhoto from "../../../../assets/no-pictures.png";
 
 const LandingHero = ({

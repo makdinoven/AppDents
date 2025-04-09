@@ -1,10 +1,13 @@
 import s from "./LessonPage.module.scss";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../api/adminApi/adminApi.ts";
-import { isValidUrl, normalizeCourse } from "../../common/helpers/helpers.ts";
+import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import {
+  isValidUrl,
+  normalizeCourse,
+} from "../../../../common/helpers/helpers.ts";
 import { useParams } from "react-router-dom";
-import Loader from "../../components/ui/Loader/Loader.tsx";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 

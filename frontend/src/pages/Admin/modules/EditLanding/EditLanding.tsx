@@ -4,17 +4,16 @@ import { LandingType } from "../../types.ts";
 import { t } from "i18next";
 import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
+import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
 
 const EditLanding = ({
   landing,
   setLanding,
   authors,
-  languages,
   tags,
   courses,
 }: {
   authors: any[];
-  languages: any[];
   tags: any[];
   courses: any[];
   landing: LandingType;
@@ -115,7 +114,7 @@ const EditLanding = ({
         <MultiSelect
           isSearchable={false}
           id={"language"}
-          options={languages}
+          options={LANGUAGES}
           placeholder={"Choose a language"}
           label={t("admin.landings.language")}
           selectedValue={landing.language}

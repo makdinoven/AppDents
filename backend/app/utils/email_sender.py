@@ -661,13 +661,13 @@ def send_already_owned_course_email(
         </html>
         """
     else:
-        subject = "You Already Own These Courses"
+        subject = "You Already Own These CoursesSection"
         body_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
-          <title>Already Owned Courses</title>
+          <title>Already Owned CoursesSection</title>
           <style>
             body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
             .container {{
@@ -680,7 +680,7 @@ def send_already_owned_course_email(
         </head>
         <body>
           <div class="container">
-            <h2>You Already Own These Courses</h2>
+            <h2>You Already Own These CoursesSection</h2>
             <p>You have paid for the following course(s), which you already own: <strong>{courses_str}</strong>.</p>
             <p>If you would like to exchange them for another course of the same price, please contact us at <strong>{contact_email}</strong>.</p>
             <p>Thank you!</p>

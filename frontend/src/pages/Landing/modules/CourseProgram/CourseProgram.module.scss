@@ -198,6 +198,12 @@ $card-padding-left: 35px;
       }
     }
 
+    .card_body {
+      .arrows_list {
+        gap: 10px;
+      }
+    }
+
     .lessons_list {
       grid-template-columns: 1fr;
     }

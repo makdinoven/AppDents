@@ -1,9 +1,10 @@
-import Hero from "./modules/Hero/Hero.tsx";
-import Courses from "./modules/Courses/Courses.tsx";
+import Hero from "./Hero/Hero.tsx";
+import CoursesSection from "./CoursesSection/CoursesSection.tsx";
 import { useEffect } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
+// import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const MainPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -15,7 +16,8 @@ const MainPage = () => {
   return (
     <>
       <Hero />
-      <Courses />
+      <CoursesSection />
+      {/*<Feedback />*/}
     </>
   );
 };

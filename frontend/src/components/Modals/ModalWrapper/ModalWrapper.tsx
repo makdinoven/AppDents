@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect, useState, useRef } from "react";
 import s from "./ModalWrapper.module.scss";
-import ModalClose from "../../../common/Icons/ModalClose.tsx";
+import ModalClose from "../../../assets/Icons/ModalClose.tsx";
+import { Trans } from "react-i18next";
 
 interface ModalWrapperProps {
   title?: string;
@@ -14,6 +15,7 @@ interface ModalWrapperProps {
   hasTitle?: boolean;
   hasCloseButton?: boolean;
   isLang?: boolean;
+  variant?: "dark" | "default";
 }
 
 const ModalWrapper: React.FC<ModalWrapperProps> = ({
@@ -28,6 +30,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   cutoutPosition,
   cutoutOffsetY = 20,
   cutoutOffsetX = 30,
+  variant = "default",
 }) => {
   const [isClosing, setIsClosing] = useState(false);
   const [triggerTop, setTriggerTop] = useState<number | null>(null);
@@ -129,6 +132,9 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       ? {
           top: "50%",
           transform: "translateY(-50%)",
+          marginRight: "auto",
+          maxWidth: "700px",
+          padding: "0 20px",
         }
       : {
           top: triggerTop ? `${triggerTop}px` : "50%",
@@ -142,13 +148,18 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     none: modalContentStyles.none,
   }[cutoutPosition];
 
-  const modalBodyAdditionalStyle = isLang
-    ? { minHeight: "auto", padding: "clamp(14px, 3vw, 20px)" }
-    : { minHeight: "495px" };
+  const modalBodyStyle = {
+    ...(isLang
+      ? { minHeight: "auto", padding: "clamp(14px, 3vw, 20px)" }
+      : { minHeight: "495px" }),
+    ...(variant === "dark"
+      ? { background: "#01433dcc", backdropFilter: "blur(10px)" }
+      : {}),
+  };
 
   const finalModalBodyStyle = {
     ...selectedModalBodyStyle,
-    ...modalBodyAdditionalStyle,
+    ...modalBodyStyle,
   };
 
   const cutoutStyles = {
@@ -189,7 +200,11 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
               <ModalClose />
             </button>
           )}
-          {hasTitle && <h3>{title}</h3>}
+          {hasTitle && (
+            <h3>
+              <Trans i18nKey={title} />
+            </h3>
+          )}
           {children}
         </div>
 

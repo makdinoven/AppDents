@@ -10,9 +10,9 @@ import CourseDetail from "../pages/Admin/pages/CourseDetail.tsx";
 import AdminPage from "../pages/Admin/AdminPage.tsx";
 import LandingDetail from "../pages/Admin/pages/LandingDetail.tsx";
 import AuthorDetail from "../pages/Admin/pages/AuthorDetail.tsx";
-import CoursePage from "../pages/CoursePage/CoursePage.tsx";
+import CoursePage from "../pages/ProfilePage/pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
-import LessonPage from "../pages/LessonPage/LessonPage.tsx";
+import LessonPage from "../pages/ProfilePage/pages/LessonPage/LessonPage.tsx";
 import UserDetail from "../pages/Admin/pages/UserDetail.tsx";
 
 export const AppRoutes: FC = () => {

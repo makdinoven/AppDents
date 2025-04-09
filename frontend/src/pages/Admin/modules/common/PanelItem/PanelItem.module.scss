@@ -34,8 +34,17 @@
   }
 
   @media (max-width: $mobile-breakpoint) {
+    padding: 10px;
+    gap: 15px;
+
+    div {
+      flex-direction: column;
+      text-align: center;
+    }
+
     .buttons {
       width: 100%;
+      gap: 10px;
       flex-direction: column;
 
       button {

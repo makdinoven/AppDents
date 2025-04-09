@@ -1,16 +1,16 @@
 import s from "./CoursePage.module.scss";
 import { Outlet, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../api/adminApi/adminApi.ts";
-import { normalizeCourse } from "../../common/helpers/helpers.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
-import { getMe } from "../../store/actions/userActions.ts";
+import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
+import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import { getMe } from "../../../../store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
-import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
-import CourseCard from "../ProfilePage/modules/CourseCard/CourseCard.tsx";
-import { Path } from "../../routes/routes.ts";
+import { AppDispatchType } from "../../../../store/store.ts";
+import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import CourseCard from "../../modules/CourseCard/CourseCard.tsx";
+import { Path } from "../../../../routes/routes.ts";
 
 const CoursePage = () => {
   const dispatch = useDispatch<AppDispatchType>();

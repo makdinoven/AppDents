@@ -1,7 +1,7 @@
 .program_content {
   position: relative;
   @include flex-column;
-  gap: 30px;
+  gap: 20px;
 
   .list_item {
     @include clamped-p3;
@@ -35,10 +35,6 @@
   }
 
   @media (max-width: $tablet-breakpoint) {
-    .program_content {
-      gap: 20px;
-    }
-
     .list_item {
       gap: 10px;
       svg {
@@ -49,6 +45,8 @@
   }
 
   @media (max-width: $mobile-breakpoint) {
+    gap: 15px;
+
     .list_item {
       @include clamped-p2;
 
