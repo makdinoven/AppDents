@@ -1,9 +1,10 @@
 import re
+import csv
 import json
 import logging
 from datetime import datetime
 from io import StringIO
-from typing import Dict, Any, Union, Tuple
+from typing import Dict, Any, Union, Tuple, Optional
 
 from bs4 import BeautifulSoup
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
@@ -23,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Соответствие полей: ключ = поле в дампе, значение = поле в модели проекта
+# Соответствие полей: ключ – имя в дампе, значение – имя в модели
 FIELD_MAPPING = {
     'page_name': 'page_name',
     'course_name': 'landing_name',
@@ -39,7 +40,7 @@ FIELD_MAPPING = {
 
 def remove_html_tags(text: str) -> str:
     """
-    Удаляет HTML теги и inline стили из строки с помощью BeautifulSoup.
+    Удаляет HTML-теги и inline стили из строки.
     """
     if not text:
         return text
@@ -49,8 +50,7 @@ def remove_html_tags(text: str) -> str:
 
 def clean_json_data(data: Union[Dict[str, Any], list, str]) -> Union[Dict[str, Any], list, str]:
     """
-    Рекурсивно проходит по JSON-структуре и удаляет HTML из всех строковых значений,
-    не нарушая структуру.
+    Рекурсивно проходит по JSON-структуре и очищает все строковые значения от HTML-тегов.
     """
     if isinstance(data, dict):
         return {k: clean_json_data(v) for k, v in data.items()}
@@ -62,25 +62,35 @@ def clean_json_data(data: Union[Dict[str, Any], list, str]) -> Union[Dict[str, A
         return data
 
 
-def parse_insert_line(line: str) -> Union[Dict[str, Any], None]:
+def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
     """
-    Парсит строку INSERT запроса и возвращает словарь с полями,
-    преобразованными согласно FIELD_MAPPING. Для JSON-значений выполняется очистка.
+    Принимает полный INSERT оператор из дампа.
+    Извлекает список полей и значения, используя регулярное выражение с флагом DOTALL
+    и модуль csv для корректного парсинга значений.
+
+    Возвращает словарь с данными, где имена полей приведены согласно FIELD_MAPPING.
     """
     try:
-        pattern = r"INSERT INTO `landings` \(([^)]+)\) VALUES \((.+)\);"
-        match = re.search(pattern, line)
+        # Пример оператора:
+        # INSERT INTO `landings` (`id`, `page_name`, `course_name`, ... )
+        # VALUES (442, 'ninja-sinus-lift', 'Ninja Sinus Lift', ... );
+        pattern = re.compile(r"INSERT INTO `landings`\s*\((.*?)\)\s*VALUES\s*\((.*?)\);", re.DOTALL)
+        match = pattern.search(statement)
         if not match:
             return None
 
-        fields_str = match.group(1)
-        values_str = match.group(2)
+        fields_part = match.group(1)
+        values_part = match.group(2)
 
-        # Разбиваем строки с полями и значениями
-        fields = [field.strip().strip('`') for field in fields_str.split(',')]
-        values = values_str.split(',', len(fields) - 1)  # учитываем, что значение может содержать запятые
+        # Разбиваем список полей по запятой
+        fields = [f.strip().strip('`') for f in fields_part.split(',')]
 
-        # Удаляем поле "id"
+        # Используем csv для разбиения values, чтобы корректно обработать запятые в значениях
+        csv_reader = csv.reader(StringIO(values_part), delimiter=',', quotechar="'", escapechar='\\')
+        row = next(csv_reader)
+        values = [val.strip() for val in row]
+
+        # Если поле id присутствует, то оно исключается
         if 'id' in fields:
             idx = fields.index('id')
             del fields[idx]
@@ -91,11 +101,11 @@ def parse_insert_line(line: str) -> Union[Dict[str, Any], None]:
             if field not in FIELD_MAPPING:
                 continue
             mapped_field = FIELD_MAPPING[field]
-            # Убираем внешние одинарные кавычки
-            value = values[i].strip().strip("'")
+            value = values[i]
+            # Если значение начинается с { или [, предполагаем JSON и пытаемся его загрузить
             if value.startswith('{') or value.startswith('['):
                 try:
-                    json_value = json.loads(value.replace("\\", ""))
+                    json_value = json.loads(value)
                     cleaned_json = clean_json_data(json_value)
                     parsed[mapped_field] = cleaned_json
                 except json.JSONDecodeError:
@@ -105,14 +115,14 @@ def parse_insert_line(line: str) -> Union[Dict[str, Any], None]:
         return parsed
 
     except Exception as e:
-        logger.error(f"Ошибка при парсинге строки: {line}\nОшибка: {str(e)}")
+        logger.error(f"Ошибка при парсинге оператора:\n{statement}\nОшибка: {str(e)}")
         return None
 
 
 async def get_or_create_author(db: AsyncSession, name: str, description: str) -> Tuple[Author, bool]:
     """
-    Получает автора по имени или создаёт нового, если его нет.
-    Возвращает кортеж (author, created) где created=True, если автор создан.
+    Пытается найти автора по имени, если не найден – создаёт нового.
+    Возвращает кортеж (author, created), где created True, если автор создан.
     """
     try:
         result = await db.execute(select(Author).where(Author.name == name))
@@ -130,7 +140,7 @@ async def get_or_create_author(db: AsyncSession, name: str, description: str) ->
             return (author, True)
         return (author, False)
     except Exception as e:
-        logger.error(f"Ошибка при получении/создании автора {name}: {str(e)}")
+        logger.error(f"Ошибка при получении/создании автора '{name}': {str(e)}")
         raise
 
 
@@ -140,24 +150,25 @@ async def import_dump(
         db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Импортирует дамп SQL в базу данных проекта.
-    Для каждой строки дампа:
-      – Выполняется парсинг и очистка HTML тегов из текстовых полей (включая JSON-структуру),
-      – Приводятся поля согласно требуемой модели (например, course_name → landing_name),
-      – Создаётся объект Landing, вычисляется количество уроков по lessons_info,
-      – Из lecturers_info извлекаются данные для авторов, которые создаются/связываются,
-      – Выполняется вставка в базу.
+    Импортирует SQL дамп в базу проекта.
 
-    В ответ возвращается сводная статистика:
-      • Общее количество обработанных строк,
-      • Количество успешно вставленных лендингов,
-      • Количество строк, не распознанных для импорта,
-      • Количество ошибок при коммитах,
-      • Количество созданных новых авторов.
+    Для каждого оператора INSERT:
+      • Парсится оператор (с учётом многострочности)
+      • Удаляются HTML-теги и inline стили из текстовых полей (а также рекурсивно внутри JSON)
+      • Поля приводятся к нужному соответствию (например, course_name → landing_name)
+      • Создаётся объект Landing, вычисляется количество уроков (на основе lessons_info)
+      • Из lecturers_info извлекаются данные для авторов, которые создаются (или берутся из базы) и связываются
+      • Выполняется вставка в БД
 
-    Логируются все этапы и выбрасываются исключения при критичных ошибках.
+    В ответе возвращается сводная статистика:
+      – Общее количество найденных операторов INSERT
+      – Количество успешно вставленных лендингов
+      – Количество операторов, которые не удалось распарсить
+      – Количество ошибок коммита
+      – Количество созданных новых авторов
+      – Общее время импорта
     """
-    total_lines = 0
+    total_statements = 0
     landings_inserted = 0
     failed_parse = 0
     commit_errors = 0
@@ -167,25 +178,26 @@ async def import_dump(
         start_time = datetime.now()
         logger.info(f"🚀 Запуск импорта дампа из файла: {file.filename}")
         contents = await file.read()
-        file_stream = StringIO(contents.decode('utf-8'))
+        content_str = contents.decode('utf-8')
 
-        for line in file_stream:
-            total_lines += 1
-            line = line.strip()
-            if not line.startswith("INSERT INTO"):
-                logger.debug(f"Пропуск строки {total_lines}: не является INSERT запросом")
-                continue
+        # Используем finditer для нахождения всех INSERT операторов в файле (многострочные)
+        pattern = re.compile(r"(INSERT INTO `landings`\s*\(.*?\)\s*VALUES\s*\(.*?\);)", re.DOTALL)
+        statements = pattern.findall(content_str)
+        logger.info(f"Найдено операторов INSERT: {len(statements)}")
+        total_statements = len(statements)
 
-            parsed_data = parse_insert_line(line)
+        for stmt in statements:
+            parsed_data = parse_insert_line(stmt)
             if not parsed_data:
                 failed_parse += 1
-                logger.warning(f"⚠️ Не удалось распарсить строку {total_lines}")
+                logger.warning(f"⚠️ Не удалось распарсить оператор:\n{stmt[:200]}...")
                 continue
 
-            logger.info(f"🔍 Обработка строки {total_lines}")
+            logger.info("🔍 Обработка оператора INSERT")
 
-            # Формируем данные для лендинга (без lecturers_info)
+            # Формирование данных для лендинга (без lecturers_info)
             landing_data = {k: v for k, v in parsed_data.items() if k != 'lecturers_info'}
+
             lessons_info = parsed_data.get('lessons_info')
             if isinstance(lessons_info, (dict, list)):
                 landing_data['lessons_count'] = str(len(lessons_info))
@@ -221,7 +233,7 @@ async def import_dump(
             except Exception as commit_error:
                 commit_errors += 1
                 await db.rollback()
-                logger.error(f"❌ Ошибка коммита на строке {total_lines}: {str(commit_error)}")
+                logger.error(f"❌ Ошибка коммита для оператора:\n{stmt[:200]}...\nОшибка: {str(commit_error)}")
                 continue
 
         elapsed = datetime.now() - start_time
@@ -230,15 +242,15 @@ async def import_dump(
             "status": "success",
             "message": "Дамп успешно импортирован",
             "time_elapsed": str(elapsed),
-            "lines_processed": total_lines,
+            "statements_found": total_statements,
             "landings_inserted": landings_inserted,
-            "lines_failed_parse": failed_parse,
+            "statements_failed_parse": failed_parse,
             "commit_errors": commit_errors,
             "new_authors_created": new_authors_created
         }
 
     except Exception as e:
-        logger.critical(f"💥 Критическая ошибка: {str(e)}", exc_info=True)
+        logger.critical(f"💥 Критическая ошибка импорта: {str(e)}", exc_info=True)
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
     finally:
