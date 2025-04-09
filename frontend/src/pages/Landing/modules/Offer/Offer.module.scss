@@ -122,6 +122,11 @@
   }
 
   @media (max-width: $mobile-breakpoint) {
+    .card_body {
+      gap: 20px;
+      padding: 40px 20px;
+    }
+
     .line_arrow {
       max-width: 100%;
       svg {

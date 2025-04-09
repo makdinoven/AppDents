@@ -13,12 +13,12 @@ const About = ({
   data: any;
 }) => {
   const aboutItems = [
-    { Icon: Book, text: lessonsCount },
-    { Icon: Percent, text: discount },
-    { Icon: Calendar, text: access },
     { Icon: Glasses, text: professorsCount },
-    { Icon: Dollar, text: savings },
+    { Icon: Book, text: lessonsCount },
     { Icon: Clock, text: duration },
+    { Icon: Calendar, text: access },
+    { Icon: Percent, text: discount },
+    { Icon: Dollar, text: savings },
   ];
 
   return (

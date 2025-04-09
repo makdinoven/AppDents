@@ -22,6 +22,7 @@ $arrow-w: 66px;
     gap: 30px;
 
     h1 {
+      color: $primary;
       text-align: right;
       display: block;
       max-width: 918px;
@@ -131,7 +132,7 @@ $arrow-w: 66px;
     h2 {
       @include clamped-h2;
       text-transform: uppercase;
-      color: $primary;
+      color: $accent;
       margin-bottom: var(--offset);
     }
 
@@ -195,6 +196,7 @@ $arrow-w: 66px;
     .hero_content {
       .arrow {
         width: 229px;
+        height: 40px;
         svg {
           width: 40px;
           height: 40px;
