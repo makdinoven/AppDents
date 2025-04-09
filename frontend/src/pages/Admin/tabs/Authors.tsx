@@ -6,7 +6,7 @@ import {
   createAuthor,
   getAuthors,
 } from "../../../store/actions/adminActions.ts";
-import { initialAuthor } from "../../../common/helpers/commonConstants.ts";
+import { INITIAL_AUTHOR } from "../../../common/helpers/commonConstants.ts";
 
 const Authors = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -22,7 +22,7 @@ const Authors = () => {
         itemLink={(author) => `${Path.authorDetail}/${author.id}`}
         loading={loading}
         onFetch={() => dispatch(getAuthors())}
-        onCreate={() => dispatch(createAuthor(initialAuthor))}
+        onCreate={() => dispatch(createAuthor(INITIAL_AUTHOR))}
         searchPlaceholder="admin.authors.search"
         createButtonText="admin.authors.create"
         notFoundText="admin.authors.notFound"

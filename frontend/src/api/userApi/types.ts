@@ -13,3 +13,8 @@ export interface LoginType {
 export interface ChangePasswordType {
   email: string;
 }
+
+export interface PaymentType {
+  email: string;
+  name: string;
+}

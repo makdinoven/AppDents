@@ -20,13 +20,13 @@ import Professors from "./modules/Professors/Professors.tsx";
 import Offer from "./modules/Offer/Offer.tsx";
 import { Trans } from "react-i18next";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PaymentModal from "../../components/Modals/PaymentModal.tsx";
+import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
-import { baseUrl } from "../../common/helpers/commonConstants.ts";
+import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 
 const Landing = () => {
@@ -158,7 +158,7 @@ const Landing = () => {
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     region: landing?.language,
-    success_url: `${baseUrl}${Path.successPayment}`,
+    success_url: `${BASE_URL}${Path.successPayment}`,
     cancel_url: currentUrl,
   };
 
@@ -180,12 +180,18 @@ const Landing = () => {
 
       {isModalOpen && (
         <ModalWrapper
-          title={`${t("buy")}: ${landing?.landing_name}`}
+          variant="dark"
+          title={"yourOrder"}
           cutoutPosition="none"
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         >
-          <PaymentModal isLogged={isLogged} handlePayment={handlePayment} />
+          <PaymentModal
+            price={`$${landing?.new_price}`}
+            courseName={landing?.landing_name}
+            isLogged={isLogged}
+            handlePayment={handlePayment}
+          />
         </ModalWrapper>
       )}
     </>

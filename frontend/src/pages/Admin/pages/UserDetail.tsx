@@ -9,7 +9,7 @@ import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import { t } from "i18next";
 import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { roles } from "../../../common/helpers/commonConstants.ts";
+import { ROLES } from "../../../common/helpers/commonConstants.ts";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -97,7 +97,7 @@ const UserDetail = () => {
             <MultiSelect
               isSearchable={false}
               id={"role"}
-              options={roles}
+              options={ROLES}
               placeholder={"Choose a language"}
               label={t("admin.landings.role")}
               selectedValue={user?.role ? user?.role : "user"}

@@ -22,4 +22,8 @@ export const mainApi = {
   getTokenAfterPurchase(data: any) {
     return instance.post(`stripe/complete-purchase`, data);
   },
+
+  getCourseCards(params: any) {
+    return instance.get(`landings/cards`, { params: params });
+  },
 };

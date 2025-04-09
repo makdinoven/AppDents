@@ -23,3 +23,13 @@
   border-color: $primary;
   padding: 3px 60px;
 }
+
+@media (max-width: $mobile-breakpoint) {
+  .btn {
+    padding: 3px 20px;
+  }
+
+  .active {
+    padding: 3px 40px;
+  }
+}

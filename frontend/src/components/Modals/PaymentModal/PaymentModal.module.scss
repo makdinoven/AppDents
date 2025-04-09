@@ -1,0 +1,64 @@
+.modal {
+  @include flex-column;
+  align-items: center;
+
+  .modal_text {
+    @include clamped-p4;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .course_name_wrapper {
+    @include clamped-p2;
+    padding: 15px 0;
+    border-top: 2px solid $text-color;
+    border-bottom: 2px solid $text-color;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 20px;
+  }
+
+  .total_text {
+    @include clamped-h2;
+    @include flex-center;
+    margin-bottom: 20px;
+  }
+
+  .logos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    column-gap: 10px;
+    margin-top: 10px;
+    li {
+      height: 50px;
+      width: 50px;
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    .logos {
+      column-gap: 5px;
+
+      li {
+        width: 35px;
+        height: 35px;
+      }
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    form {
+      gap: 15px;
+    }
+
+    .course_name_wrapper {
+      gap: 20px;
+      border-top: 1px solid $text-color;
+      border-bottom: 1px solid $text-color;
+    }
+  }
+}

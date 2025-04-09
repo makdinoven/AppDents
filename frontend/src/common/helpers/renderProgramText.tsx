@@ -1,4 +1,4 @@
-import CircleArrow from "../Icons/CircleArrow.tsx";
+import CircleArrow from "../../assets/Icons/CircleArrow.tsx";
 
 const processProgramText = (text: string) => {
   const lines = text.split("\n").map((line) => line.trim());

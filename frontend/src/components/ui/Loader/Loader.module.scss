@@ -37,7 +37,7 @@
   animation: animloader 1s infinite ease-in-out;
 }
 .loader_twoDots::before {
-  background-color: $accent;
+  background-color: $error-color;
   transform: scale(0.5) translate(-48px, -48px);
 }
 

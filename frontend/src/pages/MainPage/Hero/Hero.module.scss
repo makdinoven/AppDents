@@ -1,0 +1,86 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  margin-bottom: 130px;
+}
+
+.hero_content {
+  position: relative;
+
+  h1 {
+    text-align: center;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+}
+
+.img_wrapper {
+  position: relative;
+  img {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.glass_block {
+  @include accent-glass;
+  @include transition($property: backdrop-filter);
+  position: absolute;
+  cursor: pointer;
+  border-radius: 20px;
+  left: clamp(13px, 3vw, 27px);
+  top: clamp(93px, 10vw, 160px);
+  width: clamp(165px, 31vw, 329px);
+  //max-height: clamp(107px, 20vw, 236px);
+  padding: clamp(13px, 3vw, 30px);
+
+  p {
+    @include clamped-p2;
+    color: $text-color;
+    padding-top: clamp(7px, 1vw, 14px);
+  }
+
+  svg {
+    @include transition(transform);
+    width: clamp(27px, 6vw, 92px);
+    height: clamp(27px, 6vw, 92px);
+    stroke-width: 2;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      backdrop-filter: blur(8px);
+
+      svg {
+        transform: translateX(10px);
+      }
+    }
+  }
+}
+
+.hero_bottom {
+  @include clamped-p2;
+}
+
+.bottom_desc {
+  margin-bottom: clamp(20px, 3vw, 30px);
+  max-width: 50%;
+}
+
+.bottom_secondary_desc {
+  text-align: right;
+  margin-top: 20px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .hero {
+    gap: 44px;
+    margin-bottom: 100px;
+  }
+
+  .bottom_secondary_desc {
+    margin-top: unset;
+  }
+}

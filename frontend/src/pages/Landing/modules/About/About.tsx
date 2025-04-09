@@ -1,11 +1,11 @@
 import s from "./About.module.scss";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import Book from "../../../../common/Icons/Book.tsx";
-import Glasses from "../../../../common/Icons/Glasses.tsx";
-import Percent from "../../../../common/Icons/Percent.tsx";
-import Dollar from "../../../../common/Icons/Dollar.tsx";
-import Clock from "../../../../common/Icons/Clock.tsx";
-import Calendar from "../../../../common/Icons/Calendar.tsx";
+import Book from "../../../../assets/Icons/Book.tsx";
+import Glasses from "../../../../assets/Icons/Glasses.tsx";
+import Percent from "../../../../assets/Icons/Percent.tsx";
+import Dollar from "../../../../assets/Icons/Dollar.tsx";
+import Clock from "../../../../assets/Icons/Clock.tsx";
+import Calendar from "../../../../assets/Icons/Calendar.tsx";
 
 const About = ({
   data: { lessonsCount, discount, access, professorsCount, savings, duration },

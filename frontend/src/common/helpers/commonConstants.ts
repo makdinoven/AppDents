@@ -1,10 +1,10 @@
-export const languages = [
+export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },
   { label: "Español", value: "ES" },
 ];
 
-export const roles = [
+export const ROLES = [
   {
     label: "Admin",
     value: "admin",
@@ -15,25 +15,31 @@ export const roles = [
   },
 ];
 
-export const initialAuthor = {
+export const INITIAL_AUTHOR = {
   name: "New author",
   description: "",
   photo: "",
 };
 
-export const initialCourse = {
+export const INITIAL_COURSE = {
   name: "New course",
   description: "",
 };
 
-export const initialLanding = {
+export const INITIAL_LANDING = {
   landing_name: "New landing",
 };
 
-export const initialUser = {
+export const INITIAL_USER = {
   email: "newuser@dents.com",
   password: "Newuserpassword123!",
   role: "user",
 };
 
-export const baseUrl = "https://dent-s.com";
+export const BASE_URL = "https://dent-s.com";
+
+export const SORT_FILTERS = [
+  { name: "tag.common.popular", value: "popular" },
+  { name: "tag.common.bestPrices", value: "discount" },
+  { name: "tag.common.new", value: "new" },
+];

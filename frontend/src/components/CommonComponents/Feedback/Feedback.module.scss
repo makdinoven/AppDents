@@ -1,0 +1,37 @@
+.tooltip_wrapper {
+  position: fixed;
+  bottom: 20px;
+  right: 10vw;
+  z-index: 50;
+
+  &:hover .feedback_tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
+}
+
+.feedback_icon {
+  @include flex-center;
+  border-radius: 50%;
+  background-color: $accent;
+  width: 100px;
+  height: 100px;
+  cursor: pointer;
+}
+
+.feedback_tooltip {
+  @include transition();
+  visibility: hidden;
+  opacity: 0;
+  @include clamped-p2;
+  color: $text-color;
+  padding: 15px 55px;
+  border-radius: 40px;
+  position: absolute;
+  top: -105%;
+  left: -405%;
+  min-width: 320px;
+  width: fit-content;
+  background-color: $accent-glass;
+  backdrop-filter: blur(5px);
+}

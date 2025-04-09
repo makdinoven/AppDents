@@ -1,10 +1,12 @@
 import s from "./Footer.module.scss";
 import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
+import { t } from "i18next";
 
 type FooterItem = {
   type: string;
   link?: string;
+  isExternal?: boolean;
   name: React.ReactNode;
 };
 
@@ -19,12 +21,22 @@ const Footer = () => {
       name: "contacts",
       list: [
         { type: "title", name: <Trans i18nKey={"footer.contacts.title"} /> },
-        { type: "item", name: <Trans i18nKey={"footer.contacts.address"} /> },
+        {
+          type: "item",
+          name: <Trans i18nKey={"footer.contacts.address"} />,
+          link: `https://www.google.com/maps?q=${t("footer.contacts.address")}`,
+          isExternal: true,
+        },
         {
           type: "item",
           name: <Trans i18nKey={"footer.contacts.phoneNumber"} />,
+          link: `tel:${t("footer.contacts.phoneNumber")}`,
         },
-        { type: "item", name: <Trans i18nKey={"footer.contacts.email"} /> },
+        {
+          type: "item",
+          name: <Trans i18nKey={"footer.contacts.email"} />,
+          link: `mailto:${t("footer.contacts.email")}`,
+        },
       ],
     },
     {
@@ -77,7 +89,17 @@ const Footer = () => {
             </li>
           ) : (
             <li key={index} className={s.list_item}>
-              {item?.link ? <Link to={item.link}>{item.name}</Link> : item.name}
+              {item?.link ? (
+                item?.isExternal ? (
+                  <a href={item.link} target="_blank" rel="noopener noreferrer">
+                    {item.name}
+                  </a>
+                ) : (
+                  <Link to={item.link}>{item.name}</Link>
+                )
+              ) : (
+                item.name
+              )}
             </li>
           ),
         )}

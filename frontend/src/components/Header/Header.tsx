@@ -1,6 +1,6 @@
 import s from "./Header.module.scss";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import LogoIcon from "../../common/Icons/LogoIcon.tsx";
+import LogoIcon from "../../assets/Icons/LogoIcon.tsx";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
 import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
@@ -10,9 +10,8 @@ import SignUpModal from "../Modals/SignUpModal.tsx";
 import ResetPasswordModal from "../Modals/ResetPasswordModal.tsx";
 import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
-import UserIcon from "../../common/Icons/UserIcon.tsx";
+import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
-import { t } from "i18next";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
@@ -81,12 +80,12 @@ const Header = () => {
   const modalContent = modalType
     ? {
         login: {
-          title: t("login"),
+          title: "login",
           component: <LoginModal onClose={handleCloseModal} />,
         },
-        "sign-up": { title: t("signup"), component: <SignUpModal /> },
+        "sign-up": { title: "signup", component: <SignUpModal /> },
         "password-reset": {
-          title: t("passwordReset"),
+          title: "passwordReset",
           component: <ResetPasswordModal />,
         },
       }[modalType]

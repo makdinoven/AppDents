@@ -6,7 +6,7 @@ import {
   createLanding,
   getLandings,
 } from "../../../store/actions/adminActions.ts";
-import { initialLanding } from "../../../common/helpers/commonConstants.ts";
+import { INITIAL_LANDING } from "../../../common/helpers/commonConstants.ts";
 
 const Landings = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -24,7 +24,7 @@ const Landings = () => {
         itemLink={(landing) => `${Path.landingDetail}/${landing.id}`}
         loading={loading}
         onFetch={() => dispatch(getLandings())}
-        onCreate={() => dispatch(createLanding(initialLanding))}
+        onCreate={() => dispatch(createLanding(INITIAL_LANDING))}
         searchPlaceholder="admin.landings.search"
         createButtonText="admin.landings.create"
         notFoundText="admin.landings.notFound"

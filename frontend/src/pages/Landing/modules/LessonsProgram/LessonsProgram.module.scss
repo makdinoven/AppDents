@@ -12,4 +12,10 @@
       gap: 110px;
     }
   }
+
+  @media (max-width: $mobile-breakpoint) {
+    .lessons {
+      gap: 70px;
+    }
+  }
 }

@@ -21,7 +21,7 @@
 }
 
 .section_closed {
-  @include horizontal-line($bottom: 0, $left: 0, $z:0);
+  @include horizontal-line($bottom: 0, $left: 0, $z: 0);
   position: relative;
   display: flex;
   justify-content: space-between;
@@ -34,3 +34,22 @@
   }
 }
 
+@media (max-width: $mobile-breakpoint) {
+  .section_closed {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .section_header {
+    gap: 15px;
+    flex-direction: column-reverse;
+  }
+
+  .section {
+    gap: 15px;
+    flex-direction: column-reverse;
+  }
+}

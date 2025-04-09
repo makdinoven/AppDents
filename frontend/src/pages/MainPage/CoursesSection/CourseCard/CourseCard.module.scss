@@ -30,16 +30,57 @@ $card-body-padding-bottom: calc(
     $padding-bottom + $tooth-top
 );
 
+.prices {
+  @include clamped-h2;
+  .new_price {
+    color: $text-color;
+  }
+}
+
+.authors_photos_list {
+  display: flex;
+  gap: 5px;
+}
+
+.author_photo {
+  border: 2px solid $primary;
+  background-color: $accent;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  margin-left: -10px;
+  z-index: 1;
+}
+
+.author_photo:first-child {
+  margin-left: 0;
+}
+
+.course_authors {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .card {
+  @include transition($property: transform);
   @include flex-column;
   @include clamped-p3;
   border-radius: 30px;
   color: $accent;
+  height: 100%;
   min-height: $card-height;
 
   h4 {
     @include clamped-p1;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+  }
+
+  &:hover {
+    transform: translateY(-10px);
   }
 }
 
@@ -78,12 +119,14 @@ $card-body-padding-bottom: calc(
 .card_body {
   flex: 1;
   position: relative;
-  padding: 11px $padding-right $card-body-padding-bottom $padding-left;
+  padding: 11px $padding-left $card-body-padding-bottom $padding-left;
   border-bottom-left-radius: $border-radius-small;
   border-top-right-radius: $border-radius-small;
   min-height: $card-body-height;
 
-  a {
+  .link_wrapper {
+    @include flex-column;
+    gap: 5px;
     position: absolute;
     left: $padding-left;
     bottom: $card-body-padding-bottom-initial;
@@ -157,6 +200,10 @@ $card-body-padding-bottom: calc(
     color: $secondary;
   }
 
+  .author_photo {
+    border: 2px solid $secondary-lighter;
+  }
+
   .card_header,
   .card_body,
   .card_bottom {
@@ -193,7 +240,7 @@ $card-body-padding-bottom: calc(
   }
 
   .card_body {
-    padding: 5px 45px 228px 11px;
+    padding: 5px 11px 228px 11px;
 
     .photo {
       width: calc(100% - 22px);
@@ -216,5 +263,12 @@ $card-body-padding-bottom: calc(
       height: 46px;
       bottom: -46px;
     }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .author_photo {
+    width: 40px;
+    height: 40px;
   }
 }
