@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI
-from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe
+from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, utils
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
 
@@ -34,6 +34,9 @@ def create_app() -> FastAPI:
     app.include_router(authors.router, prefix="/api/authors", tags=["authors"])
     app.include_router(photo.router, prefix="/api/photo", tags=["photo"])
     app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
+    app.include_router(utils.router, prefix="/api/utils", tags=["utils"])
+
+
 
     @app.on_event("startup")
     async def startup_event():
