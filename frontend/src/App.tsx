@@ -1,5 +1,4 @@
 import { AppRoutes } from "./routes/AppRoutes.tsx";
-import ScrollToTop from "./common/helpers/ScrollToTop.tsx";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import {
@@ -9,6 +8,7 @@ import {
 import { AppDispatchType } from "./store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { setLanguage } from "./store/slices/userSlice.ts";
+import ScrollToTop from "./common/helpers/ScrollToTop.tsx";
 
 function App() {
   const location = useLocation();

@@ -4,6 +4,10 @@
     gap: 30px;
   }
 
+  .text {
+    @include clamped-p2;
+  }
+
   h5 {
     @include clamped-h2;
     color: $primary;
