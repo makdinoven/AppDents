@@ -227,7 +227,9 @@ def send_successful_purchase_email(
                 <p><strong>Пароль:</strong> <span class="password">{password}</span></p>
                 <p>Пожалуйста, перейдите по кнопке ниже, чтобы войти:</p>
                 <a href="{login_url}" class="btn">Войти</a>
+<a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">Больше курсов здесь</a>
                 <p>Спасибо за покупку!</p>
+                
                 <p>Если у вас возникнут вопросы, напишите на <strong>{contact_email}</strong>.</p>
               </div>
             </body>
@@ -261,6 +263,7 @@ def send_successful_purchase_email(
                 <p>Они добавлены в ваш аккаунт.</p>
                 <p>Пожалуйста, перейдите по кнопке ниже, чтобы войти:</p>
                 <a href="{login_url}" class="btn">Войти</a>
+                <a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">Больше курсов здесь</a>
                 <p>Спасибо за покупку!</p>
                 <p>Если у вас возникнут вопросы, напишите на <strong>{contact_email}</strong>.</p>
               </div>
@@ -301,6 +304,7 @@ def send_successful_purchase_email(
                 <p><strong>Contraseña temporal:</strong> <span class="password">{password}</span></p>
                 <p>Use el botón a continuación para iniciar sesión:</p>
                 <a href="{login_url}" class="btn">Iniciar sesión</a>
+                <a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">Más cursos aquí</a>
                 <p>¡Gracias por su compra!</p>
                 <p>Si tiene alguna pregunta, escriba a <strong>{contact_email}</strong>.</p>
               </div>
@@ -335,6 +339,7 @@ def send_successful_purchase_email(
                 <p>Se han agregado a su cuenta.</p>
                 <p>Use el botón a continuación para iniciar sesión:</p>
                 <a href="{login_url}" class="btn">Iniciar sesión</a>
+                <a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">Más cursos aquí</a>
                 <p>¡Gracias por su compra!</p>
                 <p>Si tiene alguna pregunta, escriba a <strong>{contact_email}</strong>.</p>
               </div>
@@ -376,6 +381,7 @@ def send_successful_purchase_email(
                 <p><strong>Temporary Password:</strong> <span class="password">{password}</span></p>
                 <p>Please use the button below to log in:</p>
                 <a href="{login_url}" class="btn">Log In</a>
+                <a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">More courses here</a>
                 <p>Thank you for your purchase!</p>
                 <p>If you have any questions, contact us at <strong>{contact_email}</strong>.</p>
               </div>
@@ -410,6 +416,7 @@ def send_successful_purchase_email(
                 <p>They have been added to your account.</p>
                 <p>Please use the button below to log in:</p>
                 <a href="{login_url}" class="btn">Log In</a>
+                <a href="https://dent-s.com/" class="btn" style="background-color: #007bff; margin-left: 10px;">More courses here</a>
                 <p>Thank you for your purchase!</p>
                 <p>If you have any questions, contact us at <strong>{contact_email}</strong>.</p>
               </div>
