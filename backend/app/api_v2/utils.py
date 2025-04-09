@@ -24,7 +24,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Соответствие полей: ключ – имя в дампе, значение – имя в модели
+# Маппинг полей: в дампе поле 'course_name' будет отображаться в модели как 'landing_name',
+# а поле 'linked_courses' мы исключаем, так как связь курсов хранится в ассоциативной таблице.
 FIELD_MAPPING = {
     'page_name': 'page_name',
     'course_name': 'landing_name',
@@ -33,7 +34,7 @@ FIELD_MAPPING = {
     'course_program': 'course_program',
     'lessons_info': 'lessons_info',
     'lecturers_info': 'lecturers_info',
-    'linked_courses': 'linked_courses',
+    # 'linked_courses': 'linked_courses',  # Исключаем данное поле
     'preview_photo': 'preview_photo'
 }
 
@@ -50,7 +51,8 @@ def remove_html_tags(text: str) -> str:
 
 def clean_json_data(data: Union[Dict[str, Any], list, str]) -> Union[Dict[str, Any], list, str]:
     """
-    Рекурсивно проходит по JSON-структуре и очищает все строковые значения от HTML-тегов.
+    Рекурсивно проходит по JSON-структуре и очищает все строковые значения от HTML-тегов,
+    не нарушая саму структуру.
     """
     if isinstance(data, dict):
         return {k: clean_json_data(v) for k, v in data.items()}
@@ -90,7 +92,7 @@ def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
         row = next(csv_reader)
         values = [val.strip() for val in row]
 
-        # Если поле id присутствует, то оно исключается
+        # Если поле id присутствует, удаляем его
         if 'id' in fields:
             idx = fields.index('id')
             del fields[idx]
@@ -102,7 +104,7 @@ def parse_insert_line(statement: str) -> Optional[Dict[str, Any]]:
                 continue
             mapped_field = FIELD_MAPPING[field]
             value = values[i]
-            # Если значение начинается с { или [, предполагаем JSON и пытаемся его загрузить
+            # Если значение выглядит как JSON
             if value.startswith('{') or value.startswith('['):
                 try:
                     json_value = json.loads(value)
@@ -180,7 +182,7 @@ async def import_dump(
         contents = await file.read()
         content_str = contents.decode('utf-8')
 
-        # Используем finditer для нахождения всех INSERT операторов в файле (многострочные)
+        # Находим все операторы INSERT (с учетом многострочности)
         pattern = re.compile(r"(INSERT INTO `landings`\s*\(.*?\)\s*VALUES\s*\(.*?\);)", re.DOTALL)
         statements = pattern.findall(content_str)
         logger.info(f"Найдено операторов INSERT: {len(statements)}")
@@ -195,9 +197,9 @@ async def import_dump(
 
             logger.info("🔍 Обработка оператора INSERT")
 
-            # Формирование данных для лендинга (без lecturers_info)
-            landing_data = {k: v for k, v in parsed_data.items() if k != 'lecturers_info'}
-
+            # Формирование данных для лендинга: исключаем lecturers_info (для авторов)
+            # и поле linked_courses (оно не используется)
+            landing_data = {k: v for k, v in parsed_data.items() if k not in ['lecturers_info']}
             lessons_info = parsed_data.get('lessons_info')
             if isinstance(lessons_info, (dict, list)):
                 landing_data['lessons_count'] = str(len(lessons_info))
