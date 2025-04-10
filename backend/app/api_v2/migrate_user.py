@@ -103,7 +103,7 @@ def normalize_course_name(name: str) -> str:
     return normalized
 
 
-@app.post("/import-users-courses-2")
+@router.post("/import-users-courses-2")
 async def import_users_courses_2(file: UploadFile = File(...)):
     """
     Импортирует пользователей из CSV‑файла, где данные представлены в виде:
