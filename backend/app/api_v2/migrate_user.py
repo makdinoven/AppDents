@@ -1,11 +1,9 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 import csv
 import io
 
 from ..db.database import SessionLocal
-# Импорт моделей; предполагается, что они объявлены в файле models.py
 from ..models.models_v2 import User, Course
 
 
