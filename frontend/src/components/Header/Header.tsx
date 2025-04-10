@@ -1,6 +1,5 @@
 import s from "./Header.module.scss";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import LogoIcon from "../../assets/Icons/LogoIcon.tsx";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
 import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
@@ -13,6 +12,7 @@ import { useSelector } from "react-redux";
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
+import { DentsLogo } from "../../assets/logos/index";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
@@ -96,9 +96,16 @@ const Header = () => {
       <header className={s.header}>
         <div className={s.content}>
           <Link className={s.logo} to={Path.main}>
-            <LogoIcon />
+            <DentsLogo />
           </Link>
           <div className={s.header_buttons}>
+            {location.pathname !== Path.main && (
+              <UnstyledButton className={s.login_btn}>
+                <Link to={Path.main}>
+                  <Trans i18nKey={"home"} />
+                </Link>
+              </UnstyledButton>
+            )}
             <LanguageChanger />
             {renderButton()}
           </div>
