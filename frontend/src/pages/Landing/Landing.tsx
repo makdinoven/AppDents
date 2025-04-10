@@ -30,6 +30,7 @@ import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 
 const Landing = () => {
+  const [showBackButton, setShowBackButton] = useState(false);
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
@@ -44,6 +45,10 @@ const Landing = () => {
 
   useEffect(() => {
     dispatch(getMe());
+    const referrer = document.referrer;
+    const isFromMySite = referrer.includes("https://dent-s.com/");
+
+    setShowBackButton(isFromMySite);
   }, [dispatch]);
 
   useEffect(() => {
@@ -166,7 +171,7 @@ const Landing = () => {
 
   return (
     <>
-      <BackButton />
+      {showBackButton && <BackButton />}
       {loading ? (
         <Loader />
       ) : (

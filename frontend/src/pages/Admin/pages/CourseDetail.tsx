@@ -15,11 +15,19 @@ import {
   denormalizeCourse,
   normalizeCourse,
 } from "../../../common/helpers/helpers.ts";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../store/store.ts";
+import { getMe } from "../../../store/actions/userActions.ts";
 
 const CourseDetail = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatchType>();
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
 
   useEffect(() => {
     if (courseId) {
