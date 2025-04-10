@@ -123,7 +123,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 
   const modalContainerStyles = isLang
     ? {
-        maxWidth: "280px",
+        maxWidth: "300px",
         width: "fit-content",
         top: triggerTop ? `${triggerTop}px` : "50%",
         right: `calc(100vw - ${triggerDimensions.x + triggerDimensions.width}px)`,
