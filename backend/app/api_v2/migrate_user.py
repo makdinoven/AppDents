@@ -4,14 +4,10 @@ from sqlalchemy import create_engine
 import csv
 import io
 
+from ..db.database import SessionLocal
 # Импорт моделей; предполагается, что они объявлены в файле models.py
 from ..models.models_v2 import User, Course
 
-# Укажите корректную строку подключения к БД
-DATABASE_URL = "postgresql://user:password@localhost:5432/your_db"
-
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI()
 
