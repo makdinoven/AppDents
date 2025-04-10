@@ -1,6 +1,9 @@
 import en from "./locales/en.json";
 import ru from "./locales/ru.json";
 import es from "./locales/es.json";
+import it from "./locales/it.json";
+import pt from "./locales/pt.json";
+import ar from "./locales/ar.json";
 
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
@@ -20,6 +23,9 @@ i18n
       EN: { translation: en },
       RU: { translation: ru },
       ES: { translation: es },
+      IT: { translation: it },
+      PT: { translation: pt },
+      AR: { translation: ar },
     },
   });
 

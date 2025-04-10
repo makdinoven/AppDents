@@ -2,6 +2,9 @@ export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },
   { label: "Español", value: "ES" },
+  { label: "العربية", value: "AR" },
+  { label: "Português", value: "PT" },
+  { label: "Italiano", value: "IT" },
 ];
 
 export const ROLES = [
