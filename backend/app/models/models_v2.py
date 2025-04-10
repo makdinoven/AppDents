@@ -46,7 +46,7 @@ class Course(Base):
 class Landing(Base):
     __tablename__ = 'landings'
     id = Column(Integer, primary_key=True)
-    language = Column(Enum('EN', 'RU', 'ES', name='landing_language'), nullable=False, server_default='EN')
+    language = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT', name='landing_language'), nullable=False, server_default='EN')
     page_name = Column(String(255))
     landing_name = Column(Text)
     old_price = Column(String(255))
