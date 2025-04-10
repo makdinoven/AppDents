@@ -1,15 +1,15 @@
 import logging
 import re
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter
+from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter, Depends
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 import csv
 import io
 
 
-from ..db.database import SessionLocal
-from ..models.models_v2 import User, Course
-
+from ..db.database import SessionLocal, get_db
+from ..models.models_v2 import User, Course, Landing, users_courses
 
 app = FastAPI()
 
@@ -230,3 +230,36 @@ async def import_users_courses_2(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail="Ошибка при импорте: " + str(e))
     finally:
         session.close()
+
+
+@router.put("/update_all_sales_counts")
+def update_all_sales_counts(db: Session = Depends(get_db)):
+    # Получаем все лендинги
+    landings = db.query(Landing).all()
+    updated_landings = []
+
+    for landing in landings:
+        # Извлекаем список id курсов, связанных с лендингом
+        course_ids = [course.id for course in landing.courses]
+
+        # Подсчитываем количество покупок для курсов, привязанных к лендингу
+        if course_ids:
+            sales_count = db.query(func.count()).select_from(users_courses) \
+                .filter(users_courses.c.course_id.in_(course_ids)).scalar()
+        else:
+            sales_count = 0
+
+        # Обновляем значение sales_count
+        landing.sales_count = sales_count
+        updated_landings.append({
+            "landing_id": landing.id,
+            "sales_count": sales_count
+        })
+
+    # Фиксируем все изменения в БД одним коммитом
+    db.commit()
+
+    return {
+        "message": "Поле sales_count обновлено для всех лендингов",
+        "updated": updated_landings
+    }
