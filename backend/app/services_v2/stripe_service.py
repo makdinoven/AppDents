@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
 
 from ..core.config import settings
-from ..models.models_v2 import Course
+from ..models.models_v2 import Course, Landing
 from ..services_v2.user_service import (
     get_user_by_email,
     create_user,
@@ -240,6 +240,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 logging.info("Найден существующий пользователь: %s", user.id)
 
             # 3. Разделяем курсы на уже имеющиеся и новые
+            # 3. Разделяем курсы на уже имеющиеся и новые
             already_owned = []
             new_courses = []
             for course_obj in courses_db:
@@ -249,7 +250,16 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 else:
                     add_course_to_user(db, user.id, course_obj.id)
                     new_courses.append(course_obj)
-                    logging.info("Добавлен новый курс %s (ID=%s) пользователю %s", course_obj.name, course_obj.id, user.id)
+                    logging.info("Добавлен новый курс %s (ID=%s) пользователю %s", course_obj.name, course_obj.id,
+                                 user.id)
+
+                    # Увеличиваем sales_count у лендингов, связанных с курсом
+                    landings = db.query(Landing).join(Landing.courses).filter(Course.id == course_obj.id).all()
+                    for landing in landings:
+                        landing.sales_count += 1
+                        logging.info("Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s", landing.id,
+                                     landing.sales_count)
+            db.commit()
 
             # 4. Если оплачены курсы, которые уже есть – отправляем специальное письмо
             if already_owned:
