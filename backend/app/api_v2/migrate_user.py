@@ -13,11 +13,15 @@ router = APIRouter()
 @router.post("/import-users")
 async def import_users(file: UploadFile = File(...)):
     """
-    Роут принимает CSV-файл с данными пользователей. Для каждой записи он:
-    - Проверяет наличие пользователя с таким email (уникальность email);
-    - Создаёт нового пользователя (без использования id из дампа);
-    - Читает из поля 'course' идентификаторы курсов (один или несколько, разделённых запятыми);
-    - Для каждого найденного ID пытается найти соответствующий курс в БД и присоединяет его к пользователю.
+    Роут принимает CSV‑файл с данными пользователей.
+
+    Для каждой записи выполняется:
+      - Извлечение email из столбца "email". Если email отсутствует, запись пропускается.
+      - Проверка наличия пользователя с таким email. Если найден – запись пропускается.
+      - Создание нового пользователя без указания id (позволяя СУБД назначить новое значение).
+      - Чтение пароля из поля "pass" и установка роли в "user".
+      - Обработка поля "course": ожидается строковое представление списка ID курсов (например, "[212, 246, 66]").
+        Для каждого ID, если курс найден в БД, выполняется привязка к пользователю через отношение many-to-many.
     """
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="Допустимы только CSV файлы.")
@@ -33,30 +37,35 @@ async def import_users(file: UploadFile = File(...)):
         for row in csv_reader:
             email = row.get("email")
             if not email:
-                continue  # Если email отсутствует, пропускаем запись
+                continue  # Пропускаем строки без email
 
-            # Проверяем, есть ли уже пользователь с таким email
+            # Если пользователь с таким email уже существует, пропускаем запись
             existing_user = session.query(User).filter(User.email == email).first()
             if existing_user:
-                continue  # Пропускаем запись, если пользователь уже существует
+                continue
 
-            # Создаём нового пользователя.
-            # Обратите внимание: не задаём значение id – оно будет автоинкрементным.
+            # Создаём нового пользователя:
+            # - Используем email из CSV,
+            # - Берём пароль из поля "pass",
+            # - Устанавливаем role в "user" независимо от данных CSV.
             new_user = User(
                 email=email,
-                password=row.get("password"),
-                role=row.get("role")
+                password=row.get("pass"),  # значение из CSV (столбец "pass")
+                role="user"
             )
 
-            # Обработка поля "course" – ожидаем, что там может быть список ID курсов, разделённых запятыми.
+            # Обработка поля "course":
             course_field = row.get("course")
             if course_field:
+                # Удаляем пробелы и квадратные скобки, если они есть
+                course_field = course_field.strip()
+                if course_field.startswith("[") and course_field.endswith("]"):
+                    course_field = course_field[1:-1]
                 # Разбиваем строку по запятым и оставляем только числовые значения
                 course_ids = [token.strip() for token in course_field.split(",") if token.strip().isdigit()]
                 for cid in course_ids:
                     course = session.query(Course).filter(Course.id == int(cid)).first()
                     if course:
-                        # Связываем пользователя с курсом через отношение many-to-many
                         new_user.courses.append(course)
 
             session.add(new_user)
