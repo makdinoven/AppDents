@@ -10,6 +10,9 @@ import { t } from "i18next";
 import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../store/store.ts";
+import { getMe } from "../../../store/actions/userActions.ts";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -17,6 +20,11 @@ const UserDetail = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<any>(null);
   const { userId } = useParams();
+  const dispatch = useDispatch<AppDispatchType>();
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
 
   useEffect(() => {
     if (userId) {

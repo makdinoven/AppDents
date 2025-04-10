@@ -112,6 +112,9 @@ const Footer = () => {
       <div className={s.content}>
         {footerSections.map((section) => renderFooterSection(section))}
       </div>
+      {/*<div className={s.logo}>*/}
+      {/*  <DentsLogo />*/}
+      {/*</div>*/}
     </footer>
   );
 };

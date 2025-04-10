@@ -11,12 +11,20 @@ import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import PhotoUploader from "../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
 import { AuthorType } from "../types.ts";
 import Loader from "../../../components/ui/Loader/Loader.tsx";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../store/store.ts";
+import { getMe } from "../../../store/actions/userActions.ts";
 
 const AuthorDetail = () => {
   const [loading, setLoading] = useState(true);
   const [author, setAuthor] = useState<AuthorType | null>(null);
   const navigate = useNavigate();
   const { authorId } = useParams();
+  const dispatch = useDispatch<AppDispatchType>();
+
+  useEffect(() => {
+    dispatch(getMe());
+  }, [dispatch]);
 
   useEffect(() => {
     if (authorId) {
