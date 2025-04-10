@@ -1,58 +1,60 @@
-$row-gap: clamp(20px, 5vw,43px);
+$row-gap: clamp(20px, 5vw, 43px);
 
 .footer {
+  overflow: hidden;
+  position: relative;
   background-color: $accent;
   color: $text-color;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
+}
 
-  background-image: url("/src/assets/footer_logo.svg");
-  background-repeat: no-repeat;
-  background-size: clamp(320px, 50vw, 520px);
-  background-position: bottom right;
+.logo {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  right: -20px;
+  bottom: -72px;
 }
 
 .content {
   @include container;
-  padding-top: 25px;
-  padding-bottom: 65px;
+  padding: 25px 20px;
   display: flex;
   row-gap: $row-gap;
-  column-gap: clamp(40px, 5vw,60px);
+  column-gap: clamp(40px, 5vw, 60px);
   flex-wrap: wrap;
 
-  @media (max-width: 490px) {
-    padding-bottom: 150px;
-  }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 
+    &:first-child {
+      width: 100%;
+      position: relative;
+      @include horizontal-line(
+        $color: $background-color,
+        $bottom: calc(#{$row-gap} / 2 - #{$row-gap})
+      );
 
-  .list{
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+      &::after {
+        max-width: clamp(40%, 50vw, 55%);
+      }
 
-  &:first-child {
-    width: 100%;
-    position: relative;
-    @include horizontal-line($color: $background-color, $bottom: calc(#{$row-gap} / 2 - #{$row-gap}));
-
-    &::after {
-      max-width: clamp(40%,50vw,55%);
+      li {
+        max-width: 40%;
+      }
     }
 
     li {
-      max-width: 40%;
-    }
-  }
-
-  li {
-    a {
-      @include transition(color);
-      &:hover {
-        color: $primary;
+      a {
+        @include transition(color);
+        &:hover {
+          color: $primary;
+        }
       }
     }
-  }
 
     .list_title {
       @include clamped-h4;
@@ -61,5 +63,22 @@ $row-gap: clamp(20px, 5vw,43px);
     .list_item {
       @include clamped-p3;
     }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .logo {
+    top: 0;
+    width: 220px;
+    height: 220px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .logo {
+    width: 180px;
+    height: 180px;
+    right: -50px;
+    bottom: -42px;
   }
 }
