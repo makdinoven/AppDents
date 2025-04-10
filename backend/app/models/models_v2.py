@@ -77,7 +77,7 @@ class Author(Base):
     name = Column(String(255), unique=True, nullable=False)
     description = Column(Text)
     photo = Column(String(255))
-    language = Column(Enum('EN', 'RU', 'ES', name='author_language'), nullable=False, server_default='EN')
+    language = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT', name='author_language'), nullable=False, server_default='EN')
 
     # Лендинги, к которым привязан автор
     landings = relationship("Landing", secondary=landing_authors, back_populates="authors")
