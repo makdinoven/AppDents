@@ -128,7 +128,6 @@ async def import_users_courses(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Допустимы только CSV файлы.")
 
     session: Session = SessionLocal()
-
     # Статистика импорта
     imported_users = 0
     total_csv_courses = 0
