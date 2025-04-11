@@ -16,6 +16,10 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .courses_header {
+    gap: 20px;
+  }
+
   .courses {
     gap: 40px;
   }

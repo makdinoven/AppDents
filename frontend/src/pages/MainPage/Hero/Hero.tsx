@@ -7,21 +7,11 @@ import ArrowButton from "../../../components/ui/ArrowButton/ArrowButton.tsx";
 import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";
 import LineWrapper from "../../../components/ui/LineWrapper/LineWrapper.tsx";
-import Search from "../../../components/ui/Search/Search.tsx";
 
 const Hero = () => {
-  const handleSearch = () => {};
-
   return (
     <>
       <section className={s.hero}>
-        <div className={s.hero_top}>
-          <Search
-            value={""}
-            placeholder={t("searchCourses")}
-            onChange={handleSearch}
-          />
-        </div>
         <div className={s.hero_content}>
           <Title>
             <Trans

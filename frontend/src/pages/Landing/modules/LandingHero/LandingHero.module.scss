@@ -34,6 +34,7 @@ $arrow-w: 66px;
       background-color: $primary;
       flex: 1;
       //min-width: 150px;
+      max-width: 510px;
       height: clamp(70px, 15vw, $card-header-height);
       border-top-left-radius: var(--border-radius);
       border-top-right-radius: var(--border-radius);
