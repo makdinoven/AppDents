@@ -1,16 +1,17 @@
 from http.client import HTTPException
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing
-from ..schemas_v2 import landing
+from ..models.models_v2 import User, Tag, Landing, Author
+
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
-    LandingCardResponse, LandingSearchResponse, LandingCardsResponse
+ LandingSearchResponse, LandingCardsResponse
 
 router = APIRouter()
 
@@ -178,14 +179,34 @@ def get_cards(
 
 @router.get("/search", response_model=List[LandingSearchResponse])
 def search_landings(
-    q: str = Query(..., min_length=1, description="Поисковый запрос по названию лендинга"),
+    q: str = Query(..., min_length=1, description="Поисковый запрос по названию лендинга или имени лектора"),
     db: Session = Depends(get_db)
 ):
     """
-    Поиск лендингов по названию.
-    В ответе возвращаются только id и название лендинга.
+    Поиск лендингов по названию или имени лектора.
+    Возвращает id, landing_name и page_name для лендингов, соответствующих запросу.
     """
-    landings = db.query(Landing).filter(Landing.landing_name.ilike(f"%{q}%")).all()
+    landings = (
+        db.query(Landing)
+        .outerjoin(Landing.authors)
+        .filter(
+            or_(
+                Landing.landing_name.ilike(f"%{q}%"),
+                Author.name.ilike(f"%{q}%")
+            )
+        )
+        .distinct()
+        .all()
+    )
     if not landings:
-        raise HTTPException(status_code=404, detail="Нет лендингов, соответствующих запросу")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "COURSES_NOT_FOUND",
+                    "message": "Courses not found",
+                    "translation_key": "error.courses_not_found",
+                }
+            }
+        )
     return landings
