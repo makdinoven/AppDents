@@ -5,7 +5,7 @@
   "buyFor": "Buy for",
   "etAl": "et al.",
   "nothingFound" : "Nothing found",
-  "searchCourses": "Search courses...",
+  "searchCourses": "Search courses by title or author...",
   "back": "Back",
   "backToLogin": "Back to Log In",
   "login" : "Log in",
@@ -37,6 +37,7 @@
   "videoFailedToLoad": "Video failed to load? Try watching it directly",
   "watchHere": "here.",
   "total": "Total:",
+  "similarCourses": "Similar courses",
   "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
   "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
 

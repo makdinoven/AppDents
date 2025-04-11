@@ -46,7 +46,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     <div className={s.list}>
       <div className={s.list_header}>
         <Search
-          placeholder={t(searchPlaceholder)}
+          placeholder={searchPlaceholder}
           value={searchQuery}
           onChange={(e: any) => setSearchQuery(e.target.value)}
         />
