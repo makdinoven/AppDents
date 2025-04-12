@@ -99,10 +99,12 @@ const Header = () => {
             <DentsLogo />
           </Link>
           <div className={s.header_buttons}>
-            {location.pathname !== Path.main && (
+            {![Path.main, Path.login, Path.passwordReset, Path.signUp].includes(
+              location.pathname,
+            ) && (
               <UnstyledButton className={s.login_btn}>
                 <Link to={Path.main}>
-                  <Trans i18nKey={"home"} />
+                  <Trans i18nKey="home" />
                 </Link>
               </UnstyledButton>
             )}

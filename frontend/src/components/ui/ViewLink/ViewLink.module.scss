@@ -4,6 +4,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 10px;
+  height: fit-content;
   max-width: clamp(128px, 18vw, 194px);
   @include clamped-p2;
   @include horizontal-line(

@@ -20,14 +20,14 @@ interface CardsListProps {
   loading: boolean;
   handleSeeMore: () => void;
   showSeeMore: boolean;
-  filter: string;
+  filter?: string;
   cards: Course[] | null;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
   loading,
   cards,
-  filter,
+  filter = "all",
   showSeeMore,
   handleSeeMore,
 }) => {
