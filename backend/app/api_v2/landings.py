@@ -8,7 +8,7 @@ from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
-    delete_landing, get_landing_cards
+    delete_landing, get_landing_cards, get_purchases_last_24h_by_language, get_top_landings_by_sales
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse
 
@@ -261,3 +261,35 @@ def set_landing_is_hidden(
     db.commit()
     db.refresh(landing)
     return landing
+
+@router.get("/analytics/language-stats")
+def language_stats(db: Session = Depends(get_db)):
+    """
+    Возвращает статистику покупок за последние 24 часа по каждому языку лендинга.
+    """
+    data = get_purchases_last_24h_by_language(db)
+    return {"data": data}
+
+@router.get("/most-popular")
+def most_popular_landings(
+    language: str = None,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """
+    Возвращает самые популярные лендинги (по sales_count),
+    опционально отфильтрованные по языку,
+    ограничение кол-ва через limit.
+    """
+    landings = get_top_landings_by_sales(db, language, limit)
+    # Тут можно возвращать в формате вашей схемы, например, LandingListResponse или самодельную
+    return [
+        {
+            "id": l.id,
+            "landing_name": l.landing_name,
+            "sales_count": l.sales_count,
+            "language": l.language,
+            "in_advertising": l.in_advertising
+        }
+        for l in landings
+    ]

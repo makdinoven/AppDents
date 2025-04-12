@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, datetime, timedelta
 
 from sqlalchemy import func
 from sqlalchemy.types import Float
@@ -6,7 +6,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from typing import List, cast, Optional
-from ..models.models_v2 import Landing, Author, Course, Tag
+from ..models.models_v2 import Landing, Author, Course, Tag, Purchase
 from ..schemas_v2.landing import LandingCreate, LandingUpdate
 
 def list_landings(db: Session, skip: int = 0, limit: int = 10) -> List[Landing]:
@@ -185,3 +185,56 @@ def get_landing_cards(
         cards.append(card)
 
     return {"total": total, "cards": cards}
+
+def get_purchases_last_24h_by_language(db: Session):
+    """
+    Возвращает список словарей вида:
+      [
+        {"language": "EN", "count": 10},
+        {"language": "RU", "count": 5},
+        ...
+      ]
+    """
+    day_ago = datetime.utcnow() - timedelta(hours=24)
+    query = (
+        db.query(
+            Landing.language.label("language"),
+            func.count(Purchase.id).label("purchase_count")
+        )
+        .join(Purchase, Purchase.landing_id == Landing.id)
+        .filter(Purchase.created_at >= day_ago)
+        .group_by(Landing.language)
+    )
+    results = query.all()
+    # Превращаем в список словарей
+    return [
+        {"language": row.language, "count": row.purchase_count}
+        for row in results
+    ]
+def check_and_reset_ad_flag(landing: Landing, db: Session):
+    """
+    Если у лендинга in_advertising=True, но ad_flag_expires_at < now,
+    сбрасываем in_advertising в False.
+    """
+    if landing.in_advertising and landing.ad_flag_expires_at:
+        now = datetime.utcnow()
+        if landing.ad_flag_expires_at < now:
+            landing.in_advertising = False
+            landing.ad_flag_expires_at = None
+
+def get_top_landings_by_sales(db: Session, language: str = None, limit: int = 10):
+    query = db.query(Landing).order_by(Landing.sales_count.desc())
+    # Если вы хотите показывать только is_hidden=False:
+    query = query.filter(Landing.is_hidden == False)
+    if language:
+        query = query.filter(Landing.language == language)
+    landings = query.limit(limit).all()
+
+    # Ленивая проверка in_advertising
+    for landing in landings:
+        check_and_reset_ad_flag(landing, db)
+    # Возможно, не хотите коммитить на каждый проход,
+    # тогда можете делать один общий commit после цикла
+    db.commit()
+
+    return landings
