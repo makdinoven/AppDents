@@ -1,14 +1,16 @@
 import s from "./ProfilePage.module.scss";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useEffect } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import CoursesSection from "../MainPage/CoursesSection/CoursesSection.tsx";
-const PAGE_SIZE = 4;
-
+import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
+import { Path } from "../../routes/routes.ts";
 const ProfilePage = () => {
   const dispatch = useDispatch<AppDispatchType>();
+  const { role } = useSelector((state: AppRootStateType) => state.user);
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(getMe());
@@ -16,10 +18,23 @@ const ProfilePage = () => {
 
   return (
     <>
+      <div className={s.admin_wrapper}>
+        {role === "admin" && (
+          <PrettyButton
+            variant="primary"
+            text={"Admin panel"}
+            onClick={() => navigate(Path.admin)}
+          />
+        )}
+      </div>
       <div className={s.profilePage}>
         <Outlet />
       </div>
-      <CoursesSection sectionTitle={"similarCourses"} pageSize={PAGE_SIZE} />
+      <CoursesSection
+        showSort={true}
+        sectionTitle={"similarCourses"}
+        pageSize={4}
+      />
     </>
   );
 };

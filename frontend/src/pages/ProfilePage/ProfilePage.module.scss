@@ -1,11 +1,14 @@
+.admin_wrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .profilePage {
-  min-height: 100vh;
   margin-bottom: 140px;
 }
 
 @media (max-width: 768px) {
   .profilePage {
-    min-height: 100vh;
     margin-bottom: 80px;
   }
 }

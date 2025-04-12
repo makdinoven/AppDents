@@ -26,11 +26,11 @@ type props = {
 const CoursesSection = ({
   sectionTitle,
   pageSize,
-  activeFilter = "all",
-  activeSort = "popular",
+  tags,
   showFilters = false,
   showSort = false,
-  tags,
+  activeFilter: externalFilter,
+  activeSort: externalSort,
   handleSetActiveFilter,
   handleSetActiveSort,
 }: props) => {
@@ -41,6 +41,11 @@ const CoursesSection = ({
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
+  const [internalFilter, setInternalFilter] = useState("all");
+  const [internalSort, setInternalSort] = useState("popular");
+
+  const activeFilter = externalFilter ?? internalFilter;
+  const activeSort = externalSort ?? internalSort;
 
   useEffect(() => {
     setSkip(0);
@@ -48,7 +53,7 @@ const CoursesSection = ({
   }, [language]);
 
   const handleSeeMore = () => {
-    setSkip((prevSkip: number) => prevSkip + pageSize);
+    setSkip((prev) => prev + pageSize);
   };
 
   useEffect(() => {
@@ -61,23 +66,43 @@ const CoursesSection = ({
     setLoading(true);
     try {
       const params: any = {
-        language: language,
+        language,
         limit: pageSize,
-        sort: activeSort,
         ...(skip !== 0 && { skip }),
-        ...(activeFilter !== "all" && { tags: activeFilter }),
+        ...(activeSort !== "" && { sort: activeSort }),
+        ...(activeFilter !== "all" &&
+          activeFilter !== "" && { filters: activeFilter }),
       };
 
       const res = await mainApi.getCourseCards(params);
       if (skip === 0) {
         setCards(res.data.cards);
       } else {
-        setCards((prevCards: any) => [...prevCards, ...res.data.cards]);
+        setCards((prev: any) => [...prev, ...res.data.cards]);
       }
       setTotal(res.data.total);
-      setLoading(false);
     } catch (error) {
       console.error("Error fetching courses", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onFilterChange = (val: string) => {
+    if (handleSetActiveFilter) {
+      handleSetActiveFilter(val);
+    } else {
+      setInternalFilter(val);
+      setSkip(0);
+    }
+  };
+
+  const onSortChange = (val: string) => {
+    if (handleSetActiveSort) {
+      handleSetActiveSort(val);
+    } else {
+      setInternalSort(val);
+      setSkip(0);
     }
   };
 
@@ -90,7 +115,7 @@ const CoursesSection = ({
             <SelectableList
               items={tags}
               activeValue={activeFilter}
-              onSelect={handleSetActiveFilter}
+              onSelect={onFilterChange}
             />
             <span className={s.line}></span>
           </>
@@ -99,7 +124,7 @@ const CoursesSection = ({
           <SelectableList
             items={SORT_FILTERS}
             activeValue={activeSort}
-            onSelect={handleSetActiveSort}
+            onSelect={onSortChange}
           />
         )}
       </div>

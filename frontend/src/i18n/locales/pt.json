@@ -39,6 +39,20 @@
   "total": "Total:",
   "emailGrant": "Este e-mail será usado para conceder acesso ao seu curso comprado imediatamente após o pagamento.",
   "paymentWarn": "Uma vez confirmado o pagamento, seus dados de acesso serão enviados automaticamente para seu e-mail. Se não receber a mensagem na sua caixa de entrada, verifique sua pasta de spam.",
+  "resetPassword": "Alterar a senha",
+  "newPassword": "Digite uma nova senha...",
+  "change": "Alterar",
+  "passwordChanged": "A senha foi alterada com sucesso",
+
+  "search": {
+    "searchCourses": "Buscar cursos",
+    "searchPlaceholder": "Digite o nome do curso ou nome do autor...",
+    "result": "encontrados {{count}} cursos",
+    "result_one": "{{count}} curso encontrado",
+    "result_few": "{{count}} cursos encontrados",
+    "result_many": "encontrados {{count}} cursos",
+    "result_zero": "Nenhum curso encontrado"
+  },
 
   "main": {
     "title": "Escola <1>dentária</1> online",
@@ -122,6 +136,7 @@
     "password.minLength": "A senha deve ter pelo menos 6 caracteres",
     "password.digitUppercaseLetter": "A senha deve conter pelo menos um dígito e uma letra maiúscula",
     "password.required": "A senha é obrigatória",
-    "error.invalid_credentials": "E-mail ou senha incorretos"
+    "error.invalid_credentials": "E-mail ou senha incorretos",
+    "errorChangingPassword": "Erro. A senha não foi alterada."
   }
 }
