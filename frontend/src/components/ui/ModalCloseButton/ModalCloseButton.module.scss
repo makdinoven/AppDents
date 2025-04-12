@@ -1,0 +1,43 @@
+.close_button {
+  width: clamp(45px, 4vw, 56px);
+  height: clamp(45px, 4vw, 56px);
+  position: absolute;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 1;
+
+  svg {
+    width: 100%;
+    height: 100%;
+
+    circle {
+      stroke: $text-color;
+    }
+    path {
+      fill: $text-color;
+    }
+
+    circle,
+    path {
+      @include transition();
+    }
+
+    &:hover {
+      circle {
+        stroke: $accent;
+      }
+      path {
+        fill: $accent;
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .close_button {
+    width: 45px;
+    height: 45px;
+  }
+}

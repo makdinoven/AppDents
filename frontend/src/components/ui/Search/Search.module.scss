@@ -6,6 +6,7 @@ $input-wrapper-pb: clamp(4px, 1vw, 10px);
   @include clamped-h4;
   padding-bottom: $input-wrapper-pb;
   width: 100%;
+  padding-right: clamp(24px, 4vw, 39px);
 
   &::before {
     content: "";

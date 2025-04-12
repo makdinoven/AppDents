@@ -1,7 +1,7 @@
 import React, { ReactNode, useEffect, useState, useRef } from "react";
 import s from "./ModalWrapper.module.scss";
-import ModalClose from "../../../assets/Icons/ModalClose.tsx";
 import { Trans } from "react-i18next";
+import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
 
 interface ModalWrapperProps {
   title?: string;
@@ -182,9 +182,10 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
             style={cutoutStyles}
           >
             {hasCloseButton && (
-              <button className={s.close_button} onClick={handleClose}>
-                <ModalClose />
-              </button>
+              <ModalCloseButton
+                className={s.close_button}
+                onClick={handleClose}
+              />
             )}
           </div>
         )}
@@ -196,9 +197,10 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
           style={finalModalBodyStyle}
         >
           {!isTopRight && hasCloseButton && (
-            <button className={s.close_button} onClick={handleClose}>
-              <ModalClose />
-            </button>
+            <ModalCloseButton
+              className={s.close_button}
+              onClick={handleClose}
+            />
           )}
           {hasTitle && (
             <h3>

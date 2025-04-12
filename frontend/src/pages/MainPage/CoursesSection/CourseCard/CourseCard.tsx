@@ -71,17 +71,15 @@ const CourseCard = ({
           </div>
           {screenWidth > 1024 ? (
             <div className={s.card_bottom}>
-              <div
-                style={{ backgroundImage: `url(${photo})` }}
-                className={s.photo}
-              ></div>
+              <div className={s.photo}>
+                <img src={photo} alt="" />
+              </div>
             </div>
           ) : (
             <>
-              <div
-                style={{ backgroundImage: `url(${photo})` }}
-                className={s.photo}
-              ></div>
+              <div className={s.photo}>
+                <img src={photo} alt="" />
+              </div>
               <div className={s.card_bottom}></div>
             </>
           )}

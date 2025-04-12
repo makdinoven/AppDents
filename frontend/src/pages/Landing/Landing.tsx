@@ -28,6 +28,7 @@ import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
+import CoursesSection from "../MainPage/CoursesSection/CoursesSection.tsx";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
@@ -88,8 +89,13 @@ const Landing = () => {
   };
 
   const handlePayment = async (form: any) => {
+    const referrer = document.referrer;
+    const isFromMySite = referrer.includes("dent-s.com");
+    document.cookie = `isFromMySite=${isFromMySite}; path=/;`;
+
     const dataToSend = {
       ...paymentData,
+      ad: isFromMySite,
       user_email: isLogged ? email : form.email,
     };
     try {
@@ -192,6 +198,11 @@ const Landing = () => {
           <LessonsProgram data={lessonsProgramData} />
           <Professors data={landing?.authors} />
           <Offer data={offerData} />
+          <CoursesSection
+            showSort={true}
+            sectionTitle={"similarCourses"}
+            pageSize={4}
+          />
         </div>
       )}
 
