@@ -7,6 +7,7 @@ import {
   getLandings,
 } from "../../../store/actions/adminActions.ts";
 import { INITIAL_LANDING } from "../../../common/helpers/commonConstants.ts";
+import { adminApi } from "../../../api/adminApi/adminApi.ts";
 
 const Landings = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -14,6 +15,14 @@ const Landings = () => {
     (state: AppRootStateType) => state.admin.landings,
   );
   const dispatch = useDispatch<AppDispatchType>();
+
+  const handleToggleLandingVisibility = (id: number, isHidden: boolean) => {
+    try {
+      adminApi.toggleLandingVisibility(id, isHidden);
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <>
@@ -28,6 +37,10 @@ const Landings = () => {
         searchPlaceholder="admin.landings.search"
         createButtonText="admin.landings.create"
         notFoundText="admin.landings.notFound"
+        showToggle={true}
+        handleToggle={(id: number, isHidden: boolean) =>
+          handleToggleLandingVisibility(id, isHidden)
+        }
       />
     </>
   );

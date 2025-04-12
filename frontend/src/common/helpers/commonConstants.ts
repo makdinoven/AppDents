@@ -31,6 +31,7 @@ export const INITIAL_COURSE = {
 
 export const INITIAL_LANDING = {
   landing_name: "New landing",
+  is_hidden: true,
 };
 
 export const INITIAL_USER = {
