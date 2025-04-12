@@ -1,42 +1,11 @@
-.profile_page {
-  @include flex-column;
-  gap: 140px;
-  justify-content: space-between;
+.profilePage {
+  min-height: 100vh;
+  margin-bottom: 140px;
 }
 
-.page_header {
-  @include flex-column;
-  gap: 40px;
-}
-
-.user_info {
-  @include clamped-p3;
-  display: flex;
-  gap: 40px;
-  align-items: center;
-
-  span {
-    @include clamped-h3;
-    text-transform: uppercase;
-  }
-}
-
-.buttons {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-
-@media (max-width: $tablet-breakpoint) {
-  .profile_page {
-    gap: 80px;
-  }
-
-  .user_info {
-    gap: 20px;
-    svg {
-      width: 60px;
-      height: 60px;
-    }
+@media (max-width: 768px) {
+  .profilePage {
+    min-height: 100vh;
+    margin-bottom: 80px;
   }
 }

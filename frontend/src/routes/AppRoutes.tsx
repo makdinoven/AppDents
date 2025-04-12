@@ -1,7 +1,7 @@
 import MainPage from "../pages/MainPage/MainPage.tsx";
 import Layout from "../components/Layout/Layout.tsx";
 import Landing from "../pages/Landing/Landing.tsx";
-import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
+import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/ProfileMain.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
@@ -14,6 +14,7 @@ import CoursePage from "../pages/ProfilePage/pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
 import LessonPage from "../pages/ProfilePage/pages/LessonPage/LessonPage.tsx";
 import UserDetail from "../pages/Admin/pages/UserDetail.tsx";
+import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -24,14 +25,17 @@ export const AppRoutes: FC = () => {
           path={`${Path.landing}/:landingPath?/:modalType?`}
           element={<Landing />}
         />
-        <Route path={Path.profile} element={<ProfilePage />} />
-        <Route path={`${Path.myCourse}/:courseId?`} element={<CoursePage />}>
-          <Route
-            path={`${Path.lesson}/:sectionId/:lessonId`}
-            element={<LessonPage />}
-          />
-        </Route>
         <Route path={Path.successPayment} element={<SuccessPayment />} />
+
+        <Route path={Path.profile} element={<ProfilePage />}>
+          <Route index element={<ProfileMain />} />
+          <Route path={`${Path.myCourse}/:courseId?`} element={<CoursePage />}>
+            <Route
+              path={`${Path.lesson}/:sectionId/:lessonId`}
+              element={<LessonPage />}
+            />
+          </Route>
+        </Route>
 
         <Route path={Path.admin} element={<AdminPage />}>
           <Route index element={<AdminPanel />} />
