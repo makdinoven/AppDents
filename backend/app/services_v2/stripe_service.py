@@ -284,26 +284,3 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 )
         else:
             logging.warning("Неверные данные для session.completed: email=%s, course_ids=%s", email, course_ids)
-
-    elif event["type"] in ("checkout.session.async_payment_failed", "checkout.session.expired"):
-        session_obj = event["data"]["object"]
-        email = session_obj.get("customer_email")
-        metadata = session_obj.get("metadata", {})
-        course_ids_str = metadata.get("course_ids", "")
-        if isinstance(course_ids_str, str):
-            course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
-        else:
-            course_ids = []
-
-        courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
-        course_names = [c.name for c in courses_db]
-
-        if email:
-            logging.info("Отправка письма о неуспешной оплате: email=%s, курсы=%s", email, course_names)
-            send_failed_purchase_email(
-                recipient_email=email,
-                course_names=course_names,
-                region=region
-            )
-        else:
-            logging.warning("Нет email при неуспешной/просроченной сессии: %s", course_ids)
