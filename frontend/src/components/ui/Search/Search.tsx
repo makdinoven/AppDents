@@ -10,7 +10,7 @@ const Search = ({
   id = "search",
   inputRef,
 }: {
-  id: string;
+  id?: string;
   placeholder: string;
   value: string;
   onFocus?: () => void;
