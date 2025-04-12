@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -57,6 +57,7 @@ class Landing(Base):
     sales_count = Column(Integer, default=0)
     duration = Column(String(50), default='')
     lessons_count = Column(String(50), default='')
+    is_hidden = Column(Boolean, nullable=False, server_default='0')
 
 
     # Связь с лекторами через ассоциативную таблицу

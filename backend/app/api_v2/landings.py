@@ -114,7 +114,8 @@ def create_new_landing(
         "id": new_landing.id,
         "landing_name": new_landing.landing_name,
         "page_name": new_landing.page_name,
-        "language": new_landing.language
+        "language": new_landing.language,
+        "is_hidden": new_landing.is_hidden,
     }
 
 @router.put("/{landing_id}", response_model=LandingDetailResponse)
@@ -148,6 +149,7 @@ def update_landing_full(
         "tag_ids": [tag.id for tag in updated_landing.tags] if updated_landing.tags else [],
         "duration": updated_landing.duration,
         "lessons_count": updated_landing.lessons_count,
+        "is_hidden": updated_landing.is_hidden,
     }
 
 @router.get("/tags", response_model=List[TagResponse])
@@ -198,6 +200,7 @@ def search_landings(
     query = (
         db.query(Landing)
         .outerjoin(Landing.authors)
+        .filter(Landing.is_hidden == False)
         .filter(
             or_(
                 Landing.landing_name.ilike(f"%{q}%"),
@@ -211,16 +214,7 @@ def search_landings(
 
     landings = query.distinct().all()
     if not landings:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "code": "COURSES_NOT_FOUND",
-                    "message": "Courses not found",
-                    "translation_key": "error.courses_not_found",
-                }
-            }
-        )
+        landings = []
 
     # Формируем список объектов под нужную схему
     items_response = []
@@ -250,3 +244,20 @@ def search_landings(
         total=len(items_response),
         items=items_response
     )
+
+@router.patch("/set-hidden/{landing_id}", response_model=LandingDetailResponse)
+def set_landing_is_hidden(
+    landing_id: int,
+    is_hidden: bool = Query(..., description="True, чтобы скрыть лендинг, False, чтобы показать"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """Обновляет флаг is_hidden для лендинга по его ID."""
+    landing = db.query(Landing).filter(Landing.id == landing_id).first()
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    landing.is_hidden = is_hidden
+    db.commit()
+    db.refresh(landing)
+    return landing

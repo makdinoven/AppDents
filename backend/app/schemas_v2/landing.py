@@ -21,6 +21,7 @@ class LandingListResponse(BaseModel):
     id: int
     landing_name: str
     page_name: str
+    is_hidden: bool = False
 
     class Config:
         orm_mode = True
@@ -44,9 +45,11 @@ class LandingDetailResponse(BaseModel):
     tags: Optional[List[TagResponse]] = []
     duration: Optional[str] = ""
     lessons_count: Optional[str] = ""
+    is_hidden: bool = False
 
     class Config:
         orm_mode = True
+
 
 class LandingCreate(BaseModel):
     page_name: Optional[str] = ""
@@ -55,7 +58,6 @@ class LandingCreate(BaseModel):
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
-    # Входной формат для lessons_info – список объектов
     lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
     sales_count: Optional[int] = 0
@@ -64,6 +66,7 @@ class LandingCreate(BaseModel):
     tag_ids: Optional[List[int]] = []
     duration: Optional[str] = ""
     lessons_count: Optional[str] = ""
+    is_hidden: Optional[bool] = False
 
     class Config:
         orm_mode = True
@@ -83,6 +86,7 @@ class LandingUpdate(BaseModel):
     tag_ids: Optional[List[int]] = None
     duration: Optional[str] = ""
     lessons_count: Optional[str] = ""
+    is_hidden: Optional[bool] = False
 
     class Config:
         orm_mode = True
