@@ -181,7 +181,7 @@ def get_cards(
 
 @router.get("/search", response_model=LandingSearchResponse)
 def search_landings(
-        q: str = Query(..., min_length=1, description="Поиск по названию лендинга или имени лектора"),
+        q: str = Query(..., min_length=0, description="Поиск по названию лендинга или имени лектора"),
         language: Optional[str] = Query(None, description="Язык лендинга (EN, RU, ES, PT, AR, IT)"),
         db: Session = Depends(get_db)
 ):
