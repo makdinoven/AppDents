@@ -1,17 +1,16 @@
-from http.client import HTTPException
-
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
+from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
- LandingSearchResponse, LandingCardsResponse
+    LandingSearchResponse, LandingCardsResponse, LandingItemResponse
 
 router = APIRouter()
 
@@ -177,16 +176,26 @@ def get_cards(
     result = get_landing_cards(db, skip, limit, tags, sort, language)
     return result
 
-@router.get("/search", response_model=List[LandingSearchResponse])
+
+@router.get("/search", response_model=LandingSearchResponse)
 def search_landings(
-    q: str = Query(..., min_length=1, description="Поисковый запрос по названию лендинга или имени лектора"),
-    db: Session = Depends(get_db)
+        q: str = Query(..., min_length=1, description="Поиск по названию лендинга или имени лектора"),
+        language: Optional[str] = Query(None, description="Язык лендинга (EN, RU, ES, PT, AR, IT)"),
+        db: Session = Depends(get_db)
 ):
     """
-    Поиск лендингов по названию или имени лектора.
-    Возвращает id, landing_name и page_name для лендингов, соответствующих запросу.
+    Поиск лендингов:
+      - по названию (landing_name) или
+      - по имени лектора (author.name).
+    Дополнительно можно передать language, чтобы отфильтровать результаты по языку.
+    В ответе:
+      - общее число результатов (total),
+      - список лендингов (items),
+      - у каждого лендинга: id, landing_name, page_name, old_price, new_price,
+        preview_photo, список авторов (id, name, photo).
     """
-    landings = (
+
+    query = (
         db.query(Landing)
         .outerjoin(Landing.authors)
         .filter(
@@ -195,9 +204,12 @@ def search_landings(
                 Author.name.ilike(f"%{q}%")
             )
         )
-        .distinct()
-        .all()
     )
+
+    if language:
+        query = query.filter(Landing.language == language)
+
+    landings = query.distinct().all()
     if not landings:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -209,4 +221,32 @@ def search_landings(
                 }
             }
         )
-    return landings
+
+    # Формируем список объектов под нужную схему
+    items_response = []
+    for landing in landings:
+        authors_list = [
+            AuthorResponse(
+                id=author.id,
+                name=author.name,
+                photo=author.photo
+            )
+            for author in landing.authors
+        ]
+
+        items_response.append(
+            LandingItemResponse(
+                id=landing.id,
+                landing_name=landing.landing_name,
+                page_name=landing.page_name,
+                old_price=landing.old_price,
+                new_price=landing.new_price,
+                preview_photo=landing.preview_photo,
+                authors=authors_list
+            )
+        )
+
+    return LandingSearchResponse(
+        total=len(items_response),
+        items=items_response
+    )

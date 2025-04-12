@@ -107,14 +107,20 @@ class LandingCardResponse(BaseModel):
     class Config:
         orm_mode = True
 
-class LandingSearchResponse(BaseModel):
-    id: int
-    landing_name: str
-    page_name: str
-
-    class Config:
-        orm_mode = True
-
 class LandingCardsResponse(BaseModel):
     total: int
     cards: List[LandingCardResponse]
+
+
+class LandingItemResponse(BaseModel):
+    id: int
+    landing_name: str
+    page_name: str
+    old_price: str
+    new_price: str
+    preview_photo: Optional[str] = None  # Если это preview_photo из Landing или main_image из Course
+    authors: List[AuthorResponse] = []
+
+class LandingSearchResponse(BaseModel):
+    total: int
+    items: List[LandingItemResponse]
