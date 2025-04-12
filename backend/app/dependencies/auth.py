@@ -11,7 +11,7 @@ from ..core.config import settings
 from ..models.models_v2 import User
 
 # Добавляем схему для OAuth2
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login",auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login",auto_error=False)
 
 
 from fastapi import Depends, HTTPException
