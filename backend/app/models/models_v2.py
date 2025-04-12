@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -58,6 +58,8 @@ class Landing(Base):
     duration = Column(String(50), default='')
     lessons_count = Column(String(50), default='')
     is_hidden = Column(Boolean, nullable=False, server_default='0')
+    in_advertising = Column(Boolean, default=False)
+    ad_flag_expires_at = Column(DateTime, nullable=True)
 
 
     # Связь с лекторами через ассоциативную таблицу
@@ -92,3 +94,19 @@ class User(Base):
 
     # Курсы, купленные пользователем, теперь через отдельное отношение
     courses = relationship("Course", secondary=users_courses, back_populates="users")
+
+
+class Purchase(Base):
+    __tablename__ = 'purchases'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    landing_id = Column(Integer, ForeignKey('landings.id'), nullable=True)
+    course_id = Column(Integer, ForeignKey('courses.id'), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    # Если хотите хранить "покупка была из рекламы или нет"
+    from_ad = Column(Boolean, default=False)
+
+    user = relationship("User", backref="purchases")
+    landing = relationship("Landing", backref="purchases")
+    course = relationship("Course", backref="purchases")
