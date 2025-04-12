@@ -93,8 +93,21 @@ def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depe
     user = update_user_role(db, user_id, role_data.role)
     return user
 
+
 @router.put("/{user_id}/password", response_model=UserRead, summary="Изменить пароль пользователя")
-def change_user_password(user_id: int, password_data: UserUpdatePassword, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
+def change_user_password(
+        user_id: int,
+        password_data: UserUpdatePassword,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user)  # Зависимость для получения текущего пользователя
+):
+    # Проверяем: если пользователь не админ, то он может менять только свой пароль.
+    if current_user.role != "admin" and current_user.id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="У вас нет прав для изменения пароля другого пользователя"
+        )
+
     user = update_user_password(db, user_id, password_data.password)
     return user
 
