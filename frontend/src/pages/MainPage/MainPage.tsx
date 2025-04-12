@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
 import { getTags } from "../../store/actions/mainActions.ts";
-// import SearchDropdown from "../../components/CommonComponents/SearchDropdown/SearchDropdown.tsx";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const PAGE_SIZE = 10;
@@ -15,7 +14,7 @@ const MainPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const tags = useSelector((state: any) => state.main.tags);
   const [searchParams, setSearchParams] = useSearchParams();
-  const filterFromUrl = searchParams.get("filters") || "all";
+  const filterFromUrl = searchParams.get("filter") || "all";
   const sortFromUrl = searchParams.get("sort") || "popular";
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [activeSort, setActiveSort] = useState<string>("");
@@ -23,15 +22,15 @@ const MainPage = () => {
 
   useEffect(() => {
     dispatch(getMe());
-    handleSetActiveParam("filters", filterFromUrl);
+    handleSetActiveParam("filter", filterFromUrl);
     handleSetActiveParam("sort", sortFromUrl);
     if (tags.length < 1) {
       dispatch(getTags());
     }
   }, []);
 
-  const handleSetActiveParam = (param: "filters" | "sort", value: string) => {
-    const setter = param === "filters" ? setActiveFilter : setActiveSort;
+  const handleSetActiveParam = (param: "filter" | "sort", value: string) => {
+    const setter = param === "filter" ? setActiveFilter : setActiveSort;
     setter(value);
 
     if (skip !== 0) {
@@ -39,13 +38,21 @@ const MainPage = () => {
     }
 
     const newParams = new URLSearchParams(searchParams);
-    newParams.set(param, value);
+
+    if (
+      (param === "filter" && value === "all") ||
+      (param === "sort" && value === "popular")
+    ) {
+      newParams.delete(param);
+    } else {
+      newParams.set(param, value);
+    }
+
     setSearchParams(newParams);
   };
 
   return (
     <>
-      {/*<SearchDropdown />*/}
       <Hero />
       <CoursesSection
         sectionTitle={"main.ourCurses"}
@@ -56,7 +63,7 @@ const MainPage = () => {
         showFilters={true}
         showSort={true}
         handleSetActiveFilter={(filter: string) =>
-          handleSetActiveParam("filters", filter)
+          handleSetActiveParam("filter", filter)
         }
         handleSetActiveSort={(sort: string) =>
           handleSetActiveParam("sort", sort)

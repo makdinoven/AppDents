@@ -6,18 +6,20 @@ import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useEffect, useRef, useState } from "react";
 import LoginModal from "../Modals/LoginModal.tsx";
 import SignUpModal from "../Modals/SignUpModal.tsx";
-import ResetPasswordModal from "../Modals/ResetPasswordModal.tsx";
+import ForgotPasswordModal from "../Modals/ForgotPasswordModal.tsx";
 import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
-import { DentsLogo } from "../../assets/logos/index";
+import { DentsLogo, SearchIcon } from "../../assets/logos/index";
+import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,7 +88,7 @@ const Header = () => {
         "sign-up": { title: "signup", component: <SignUpModal /> },
         "password-reset": {
           title: "passwordReset",
-          component: <ResetPasswordModal />,
+          component: <ForgotPasswordModal />,
         },
       }[modalType]
     : undefined;
@@ -98,7 +100,13 @@ const Header = () => {
           <Link className={s.logo} to={Path.main}>
             <DentsLogo />
           </Link>
-          <div className={s.header_buttons}>
+          <nav className={s.nav}>
+            <UnstyledButton
+              className={s.search_button}
+              onClick={() => setShowSearch(true)}
+            >
+              <SearchIcon />
+            </UnstyledButton>
             {![Path.main, Path.login, Path.passwordReset, Path.signUp].includes(
               location.pathname,
             ) && (
@@ -110,9 +118,16 @@ const Header = () => {
             )}
             <LanguageChanger />
             {renderButton()}
-          </div>
+          </nav>
         </div>
       </header>
+
+      {showSearch && (
+        <SearchDropdown
+          showDropdown={showSearch}
+          setShowDropdown={setShowSearch}
+        />
+      )}
 
       {triggerRef.current && isModalOpen && modalContent && (
         <ModalWrapper

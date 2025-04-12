@@ -39,6 +39,20 @@
   "total": "Totale:",
   "emailGrant": "Questa email verrà utilizzata per fornirti l'accesso al corso acquistato immediatamente dopo il pagamento.",
   "paymentWarn": "Una volta confermato il pagamento, i tuoi dati di accesso verranno inviati automaticamente alla tua email. Se non trovi il messaggio nella posta in arrivo, controlla la cartella dello spam.",
+  "resetPassword": "Cambia la password",
+  "newPassword": "Inserisci una nuova password...",
+  "change": "Cambia",
+  "passwordChanged": "La password è stata cambiata con successo",
+
+  "search": {
+    "searchCourses": "Cerca corsi",
+    "searchPlaceholder": "Inserisci il nome del corso o il nome dell'autore...",
+    "result": "trovati {{count}} corsi",
+    "result_one": "{{count}} corso trovato",
+    "result_few": "{{count}} corsi trovati",
+    "result_many": "trovati {{count}} corsi",
+    "result_zero": "Nessun corso trovato"
+  },
 
   "main": {
     "title" : "Scuola <1>dentale</1> online",
@@ -122,6 +136,7 @@
     "password.minLength": "La password deve contenere almeno 6 caratteri",
     "password.digitUppercaseLetter": "La password deve contenere almeno una cifra e una lettera maiuscola",
     "password.required": "La password è obbligatoria",
-    "error.invalid_credentials" : "Email o password errati"
+    "error.invalid_credentials" : "Email o password errati",
+    "errorChangingPassword": "Errore. La password non è stata cambiata."
   }
 }

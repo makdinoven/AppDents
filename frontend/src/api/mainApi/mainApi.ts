@@ -26,4 +26,13 @@ export const mainApi = {
   getCourseCards(params: any) {
     return instance.get(`landings/cards`, { params: params });
   },
+
+  searchCourses(query: string, language: string) {
+    return instance.get(`landings/search`, {
+      params: {
+        language: language,
+        q: query,
+      },
+    });
+  },
 };

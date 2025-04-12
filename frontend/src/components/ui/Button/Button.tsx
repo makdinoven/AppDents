@@ -1,5 +1,6 @@
 import s from "./Button.module.scss";
 import { Link } from "react-router-dom";
+import { Trans } from "react-i18next";
 
 interface ButtonProps {
   // loading?: boolean;
@@ -19,11 +20,11 @@ const Button = ({
   return link ? (
     <Link className={s.btn} to={link}>
       {/*{loading ? <Loader variant={"twoDots"} /> : text}*/}
-      {text}
+      <Trans i18nKey={text} />
     </Link>
   ) : (
     <button onClick={onClick} className={s.btn} type={type}>
-      {text}
+      <Trans i18nKey={text} />
       {/*{loading ? <Loader variant={"twoDots"} /> : text}*/}
     </button>
   );
