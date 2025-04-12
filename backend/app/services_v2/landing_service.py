@@ -31,6 +31,7 @@ def create_landing(db: Session, landing_data: LandingCreate) -> Landing:
         sales_count = landing_data.sales_count,
         duration = landing_data.duration,
         lessons_count = landing_data.lessons_count,
+        is_hidden=landing_data.is_hidden or False,
     )
     db.add(new_landing)
     db.commit()
@@ -99,6 +100,8 @@ def update_landing(db: Session, landing_id: int, update_data: LandingUpdate) -> 
                 landing.duration = update_data.duration
             if update_data.lessons_count is not None:
                 landing.lessons_count = update_data.lessons_count
+            if update_data.is_hidden is not None:
+                landing.is_hidden = update_data.is_hidden
             db.commit()
             db.refresh(landing)
             return landing
@@ -132,7 +135,7 @@ def get_landing_cards(
         sort: Optional[str] = None,  # Возможные значения: "popular", "discount", "new"
         language: Optional[str] = None
 ) -> dict:
-    query = db.query(Landing)
+    query = db.query(Landing).filter(Landing.is_hidden == False)
 
     if language:
         language = language.upper().strip()
