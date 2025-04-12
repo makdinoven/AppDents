@@ -6,6 +6,7 @@ const savedLanguage = localStorage.getItem("DENTS_LANGUAGE") || "EN";
 
 interface UserState {
   email: string | null;
+  id: number | null;
   role: string | null;
   loading: boolean;
   error: ErrorResponse | null;
@@ -23,6 +24,7 @@ interface ErrorResponse {
 }
 
 const initialState: UserState = {
+  id: null,
   email: null,
   role: null,
   loading: false,
@@ -90,6 +92,7 @@ const userSlice = createSlice({
           state.isLogged = true;
           state.email = action.payload.res.data.email;
           state.role = action.payload.res.data.role;
+          state.id = action.payload.res.data.id;
         },
       )
       .addCase(getMe.rejected, (state, action) => {

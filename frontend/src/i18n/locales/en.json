@@ -40,6 +40,20 @@
   "similarCourses": "Similar courses",
   "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
   "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
+  "resetPassword": "Reset password",
+  "newPassword": "Enter new password...",
+  "change": "Change",
+  "passwordChanged": "Password has been successfully changed",
+
+  "search": {
+    "searchCourses": "Search courses",
+    "searchPlaceholder": "Enter course name or author name...",
+    "result": "{{count}} courses found",
+    "result_one": "{{count}} course found",
+    "result_few": "{{count}} courses found",
+    "result_many": "{{count}} courses found",
+    "result_zero": "No courses found"
+  },
 
   "main" : {
     "title" : "Online <1>dental</1> school",
@@ -128,7 +142,8 @@
     "password.required": "Password is required",
     "invalid_credentials" : "Incorrect Email or password",
     "user_not_found" : "User with this email is not found",
-    "email_exist" : "User with this email exist"
+    "email_exist" : "User with this email exist",
+    "errorChangingPassword": "Error. Password was not changed."
   },
 
   "admin": {

@@ -52,11 +52,11 @@ const CoursePage = () => {
   }
 
   return (
-    <>
+    <div className={s.course_page}>
       {loading ? (
         <Loader />
       ) : (
-        <div className={s.course_page}>
+        <>
           <DetailHeader title={course?.name} />
           <Outlet />
           <ul className={s.modules_list}>
@@ -80,9 +80,9 @@ const CoursePage = () => {
               </li>
             ))}
           </ul>
-        </div>
+        </>
       )}
-    </>
+    </div>
   );
 };
 

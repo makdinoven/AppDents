@@ -24,6 +24,7 @@ $quaternary: #5b6968;
 $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #fe0502;
+$hover-color: rgba(100, 116, 139, 0.1);
 
 $font-sz-h1-desk: 95px;
 $font-sz-h1-mob: 31px;
@@ -156,6 +157,30 @@ $font-sz-err-mob: 14px;
       height: 1px;
     }
   }
+}
+
+@mixin custom-scrollbar {
+  overflow-y: auto;
+
+  // Скроллбар трек
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  // Полоса (ползунок)
+  &::-webkit-scrollbar-thumb {
+    background-color: $primary;
+    border-radius: 4px;
+  }
+
+  // Трек (фон под полосой)
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  // Для Firefox
+  scrollbar-width: thin; // толщина: auto | thin | none
+  scrollbar-color: $primary transparent; // thumb track
 }
 
 @mixin circle-angle(

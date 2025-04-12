@@ -2,59 +2,182 @@ import s from "./SearchDropdown.module.scss";
 import Search from "../../ui/Search/Search.tsx";
 import { useEffect, useRef, useState } from "react";
 import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
+import { Link } from "react-router-dom";
+import { Path } from "../../../routes/routes.ts";
+import Loader from "../../ui/Loader/Loader.tsx";
+import { Trans } from "react-i18next";
+import { SearchIcon } from "../../../assets/logos/index";
+import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
+import { mainApi } from "../../../api/mainApi/mainApi.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
+import useDebounce from "../../../common/hooks/useDebounce.ts";
+// import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 
-const mockData = [
-  "apple",
-  "banana",
-  "orange",
-  "grape",
-  "pineapple",
-  "mango",
-  "watermelon",
-];
-
-const SearchDropdown = () => {
+const SearchDropdown = ({
+  showDropdown,
+  setShowDropdown,
+}: {
+  showDropdown: boolean;
+  setShowDropdown: (value: boolean) => void;
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [filteredResults, setFilteredResults] = useState<string[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [totalResults, setTotalResults] = useState<number>(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
   useOutsideClick(wrapperRef, () => {
-    setShowDropdown(false);
+    handleClose();
   });
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (searchValue.trim()) {
-      const filtered = mockData.filter((item) =>
-        item.toLowerCase().includes(searchValue.toLowerCase()),
-      );
-      setFilteredResults(filtered);
-      setShowDropdown(true);
+    if (showDropdown) {
+      document.body.style.overflow = "hidden";
+      inputRef.current?.focus();
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          handleClose();
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+
+      return () => {
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", handleKeyDown);
+      };
     } else {
-      setFilteredResults([]);
-      setShowDropdown(false);
+      document.body.style.overflow = "";
     }
-  }, [searchValue]);
+  }, [showDropdown]);
+
+  const debouncedSearchValue = useDebounce(searchValue, 200);
+
+  useEffect(() => {
+    setLoading(true);
+    handleSearch(debouncedSearchValue);
+  }, [debouncedSearchValue]);
+
+  const handleInputChange = (value: string) => {
+    setSearchValue(value);
+  };
+
+  const handleInputFocus = () => {
+    if (searchValue.trim()) {
+      handleOpen();
+    }
+  };
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      console.log(isClosing);
+      setIsClosing(false);
+      setShowDropdown(false);
+    }, 150);
+  };
+
+  const handleOpen = () => {
+    setShowDropdown(true);
+  };
+
+  const handleSearch = async (query: string) => {
+    if (query.trim() === "") {
+      setSearchResults([]);
+      setTotalResults(0);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await mainApi.searchCourses(query, language);
+      setSearchResults(res.data.items);
+      setTotalResults(res.data.total);
+      return res;
+    } catch (error) {
+      setSearchResults([]);
+      console.error("Ошибка при поиске", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div ref={wrapperRef} className={s.dropdown_wrapper}>
-      <Search
-        onFocus={() => {
-          if (filteredResults.length) setShowDropdown(true);
-        }}
-        value={searchValue}
-        placeholder={"searchCourses"}
-        onChange={(e) => setSearchValue(e.target.value)}
-      />
-      {showDropdown && filteredResults.length > 0 && (
-        <ul className={s.dropdown}>
-          {filteredResults.map((item, index) => (
-            <li key={index} className={s.dropdown_item}>
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div
+      className={`${s.dropdown_wrapper} ${isClosing ? s.fadeOut : s.fadeIn}`}
+    >
+      <div className={s.dropdown_container}>
+        <div ref={wrapperRef} className={s.dropdown_content}>
+          <ModalCloseButton className={s.close_button} onClick={handleClose} />
+
+          {totalResults === 0 && searchValue.length === 0 ? (
+            <h3 className={s.dropdown_title}>
+              <Trans i18nKey={"search.searchCourses"} />
+            </h3>
+          ) : (
+            <h3
+              style={{
+                opacity: `${totalResults > 0 ? "1" : "0.5"}`,
+              }}
+              className={s.dropdown_title}
+            >
+              <Trans i18nKey={"search.result"} count={totalResults} />
+            </h3>
+          )}
+
+          <div className={s.search_wrapper}>
+            <Search
+              inputRef={inputRef}
+              id="searchCourses"
+              value={searchValue}
+              placeholder={"search.searchPlaceholder"}
+              onFocus={handleInputFocus}
+              onChange={(e) => handleInputChange(e.target.value)}
+            />
+          </div>
+          {searchResults.length > 0 && (
+            <ul className={s.dropdown_list}>
+              {loading && (
+                <div className={s.loader_overlay}>
+                  <Loader />
+                </div>
+              )}
+              {searchResults?.map((item: any, index: number) => (
+                <li key={index} onClick={handleClose}>
+                  <Link
+                    className={s.dropdown_item}
+                    to={`${Path.landing}/${item.page_name}`}
+                  >
+                    <div className={s.icon}>
+                      <SearchIcon />
+                    </div>
+                    <div className={s.dropdown_item_inner}>
+                      <div className={s.prices}>
+                        <span className="highlight">${item?.new_price}</span>{" "}
+                        <span className="crossed">${item?.old_price}</span>
+                      </div>
+                      <h4>{item.landing_name}</h4>
+                      <p>{formatAuthorsDesc(item?.authors)}</p>
+                    </div>
+                    {item?.preview_photo && (
+                      <div className={s.img_wrapper}>
+                        <img src={item?.preview_photo} alt="" />
+                      </div>
+                    )}
+                    {/*<ViewLink text={"view"} />*/}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
