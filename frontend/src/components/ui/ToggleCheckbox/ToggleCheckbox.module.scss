@@ -1,0 +1,35 @@
+.toggleWrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toggle {
+  width: 55px;
+  height: 30px;
+  background-color: $error-color;
+  border-radius: 25px;
+  position: relative;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.toggle.checked {
+  background-color: $primary;
+}
+
+.toggle::before {
+  content: "";
+  width: 25px;
+  height: 25px;
+  background-color: $background-color;
+  border-radius: 50%;
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  @include transition();
+}
+
+.toggle.checked::before {
+  transform: translateX(25px);
+}

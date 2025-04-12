@@ -101,12 +101,6 @@ const Header = () => {
             <DentsLogo />
           </Link>
           <nav className={s.nav}>
-            <UnstyledButton
-              className={s.search_button}
-              onClick={() => setShowSearch(true)}
-            >
-              <SearchIcon />
-            </UnstyledButton>
             {![Path.main, Path.login, Path.passwordReset, Path.signUp].includes(
               location.pathname,
             ) && (
@@ -116,6 +110,12 @@ const Header = () => {
                 </Link>
               </UnstyledButton>
             )}
+            <UnstyledButton
+              className={s.search_button}
+              onClick={() => setShowSearch(true)}
+            >
+              <SearchIcon />
+            </UnstyledButton>
             <LanguageChanger />
             {renderButton()}
           </nav>

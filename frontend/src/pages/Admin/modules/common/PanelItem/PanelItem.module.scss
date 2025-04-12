@@ -18,6 +18,9 @@
     display: flex;
     gap: 15px;
     span {
+      @include flex-column;
+      gap: 10px;
+      justify-content: space-between;
       color: $primary;
     }
   }

@@ -53,6 +53,15 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  toggleLandingVisibility(id: number, is_hidden: boolean) {
+    return instance.patch(
+      `landings/set-hidden/${id}?is_hidden=${is_hidden}`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
 
   getAuthorsList() {
     return instance.get("authors/?skip=0&limit=10000");
