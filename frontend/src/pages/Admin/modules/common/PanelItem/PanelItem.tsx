@@ -2,15 +2,27 @@ import s from "./PanelItem.module.scss";
 import { Link } from "react-router-dom";
 import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
+import ToggleCheckbox from "../../../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
 
 interface PanelItemType {
   name: string;
   link: string;
+  handleToggle?: (value: number) => void;
+  showToggle?: boolean;
+  isHidden?: boolean;
   landingPath?: string;
   id?: number;
 }
 
-const PanelItem = ({ link, name, id, landingPath }: PanelItemType) => {
+const PanelItem = ({
+  link,
+  name,
+  id,
+  landingPath,
+  handleToggle,
+  isHidden,
+  showToggle = false,
+}: PanelItemType) => {
   const renderButtons = () => {
     return landingPath ? (
       <div className={s.buttons}>
@@ -31,7 +43,18 @@ const PanelItem = ({ link, name, id, landingPath }: PanelItemType) => {
   return (
     <div className={s.item}>
       <div>
-        {id && <span>{id}</span>} {name}
+        {id && (
+          <span>
+            {showToggle && (
+              <ToggleCheckbox
+                isChecked={!isHidden}
+                onChange={() => handleToggle && handleToggle(id)}
+              />
+            )}
+            {id}
+          </span>
+        )}{" "}
+        {name}
       </div>
       {renderButtons()}
     </div>

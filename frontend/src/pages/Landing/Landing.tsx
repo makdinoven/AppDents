@@ -89,13 +89,14 @@ const Landing = () => {
   };
 
   const handlePayment = async (form: any) => {
-    const referrer = document.referrer;
-    const isFromMySite = referrer.includes("dent-s.com");
-    document.cookie = `isFromMySite=${isFromMySite}; path=/;`;
+    const isFromFacebookAds = () => {
+      const cookies = document.cookie;
+      return cookies.includes("_fbc=") || cookies.includes("_fbp=");
+    };
 
     const dataToSend = {
       ...paymentData,
-      ad: isFromMySite,
+      ad: isFromFacebookAds(),
       user_email: isLogged ? email : form.email,
     };
     try {
