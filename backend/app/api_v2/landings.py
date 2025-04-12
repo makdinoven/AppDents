@@ -1,17 +1,16 @@
-from http.client import HTTPException
-
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
+from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
-    delete_landing, get_landing_cards
+    delete_landing, get_landing_cards, get_purchases_last_24h_by_language, get_top_landings_by_sales
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
- LandingSearchResponse, LandingCardsResponse
+    LandingSearchResponse, LandingCardsResponse, LandingItemResponse
 
 router = APIRouter()
 
@@ -115,7 +114,8 @@ def create_new_landing(
         "id": new_landing.id,
         "landing_name": new_landing.landing_name,
         "page_name": new_landing.page_name,
-        "language": new_landing.language
+        "language": new_landing.language,
+        "is_hidden": new_landing.is_hidden,
     }
 
 @router.put("/{landing_id}", response_model=LandingDetailResponse)
@@ -149,6 +149,7 @@ def update_landing_full(
         "tag_ids": [tag.id for tag in updated_landing.tags] if updated_landing.tags else [],
         "duration": updated_landing.duration,
         "lessons_count": updated_landing.lessons_count,
+        "is_hidden": updated_landing.is_hidden,
     }
 
 @router.get("/tags", response_model=List[TagResponse])
@@ -177,36 +178,118 @@ def get_cards(
     result = get_landing_cards(db, skip, limit, tags, sort, language)
     return result
 
-@router.get("/search", response_model=List[LandingSearchResponse])
+
+@router.get("/search", response_model=LandingSearchResponse)
 def search_landings(
-    q: str = Query(..., min_length=1, description="Поисковый запрос по названию лендинга или имени лектора"),
-    db: Session = Depends(get_db)
+        q: str = Query(..., min_length=0, description="Поиск по названию лендинга или имени лектора"),
+        language: Optional[str] = Query(None, description="Язык лендинга (EN, RU, ES, PT, AR, IT)"),
+        db: Session = Depends(get_db)
 ):
     """
-    Поиск лендингов по названию или имени лектора.
-    Возвращает id, landing_name и page_name для лендингов, соответствующих запросу.
+    Поиск лендингов:
+      - по названию (landing_name) или
+      - по имени лектора (author.name).
+    Дополнительно можно передать language, чтобы отфильтровать результаты по языку.
+    В ответе:
+      - общее число результатов (total),
+      - список лендингов (items),
+      - у каждого лендинга: id, landing_name, page_name, old_price, new_price,
+        preview_photo, список авторов (id, name, photo).
     """
-    landings = (
+
+    query = (
         db.query(Landing)
         .outerjoin(Landing.authors)
+        .filter(Landing.is_hidden == False)
         .filter(
             or_(
                 Landing.landing_name.ilike(f"%{q}%"),
                 Author.name.ilike(f"%{q}%")
             )
         )
-        .distinct()
-        .all()
     )
+
+    if language:
+        query = query.filter(Landing.language == language)
+
+    landings = query.distinct().all()
     if not landings:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": {
-                    "code": "COURSES_NOT_FOUND",
-                    "message": "Courses not found",
-                    "translation_key": "error.courses_not_found",
-                }
-            }
+        landings = []
+
+    # Формируем список объектов под нужную схему
+    items_response = []
+    for landing in landings:
+        authors_list = [
+            AuthorResponse(
+                id=author.id,
+                name=author.name,
+                photo=author.photo
+            )
+            for author in landing.authors
+        ]
+
+        items_response.append(
+            LandingItemResponse(
+                id=landing.id,
+                landing_name=landing.landing_name,
+                page_name=landing.page_name,
+                old_price=landing.old_price,
+                new_price=landing.new_price,
+                preview_photo=landing.preview_photo,
+                authors=authors_list
+            )
         )
-    return landings
+
+    return LandingSearchResponse(
+        total=len(items_response),
+        items=items_response
+    )
+
+@router.patch("/set-hidden/{landing_id}", response_model=LandingDetailResponse)
+def set_landing_is_hidden(
+    landing_id: int,
+    is_hidden: bool = Query(..., description="True, чтобы скрыть лендинг, False, чтобы показать"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    """Обновляет флаг is_hidden для лендинга по его ID."""
+    landing = db.query(Landing).filter(Landing.id == landing_id).first()
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    landing.is_hidden = is_hidden
+    db.commit()
+    db.refresh(landing)
+    return landing
+
+@router.get("/analytics/language-stats")
+def language_stats(db: Session = Depends(get_db)):
+    """
+    Возвращает статистику покупок за последние 24 часа по каждому языку лендинга.
+    """
+    data = get_purchases_last_24h_by_language(db)
+    return {"data": data}
+
+@router.get("/most-popular")
+def most_popular_landings(
+    language: str = None,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    """
+    Возвращает самые популярные лендинги (по sales_count),
+    опционально отфильтрованные по языку,
+    ограничение кол-ва через limit.
+    """
+    landings = get_top_landings_by_sales(db, language, limit)
+    # Тут можно возвращать в формате вашей схемы, например, LandingListResponse или самодельную
+    return [
+        {
+            "id": l.id,
+            "landing_name": l.landing_name,
+            "sales_count": l.sales_count,
+            "language": l.language,
+            "in_advertising": l.in_advertising
+        }
+        for l in landings
+    ]

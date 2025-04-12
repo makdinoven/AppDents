@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 import requests
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
 
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing
+from ..models.models_v2 import Course, Landing, Purchase
 from ..services_v2.user_service import (
     get_user_by_email,
     create_user,
@@ -119,7 +119,8 @@ def create_checkout_session(
     cancel_url: str,
     request: Request,
     fbp: str | None = None,
-    fbc: str | None = None
+    fbc: str | None = None,
+    ad: bool = False
 ) -> str:
     stripe_keys = get_stripe_keys_by_region(region)
     stripe.api_key = stripe_keys["secret_key"]
@@ -135,7 +136,8 @@ def create_checkout_session(
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
         "user_agent": user_agent,
-        "referer": referer or ""
+        "referer": referer or "",
+        "ad": "true" if ad else "false"
     }
     if fbp:
         metadata["fbp"] = fbp
@@ -189,6 +191,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
         metadata = session_obj.get("metadata", {})
         logging.info("Получены метаданные: %s", metadata)
+        from_ad = (metadata.get("ad") == "true")
 
         course_ids_str = metadata.get("course_ids", "")
         if isinstance(course_ids_str, str):
@@ -257,8 +260,23 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                     landings = db.query(Landing).join(Landing.courses).filter(Course.id == course_obj.id).all()
                     for landing in landings:
                         landing.sales_count += 1
+                        if from_ad:
+                            landing.in_advertising = True
+                            expiry_time = datetime.utcnow() + timedelta(hours=6)
+                            # Если уже был выставлен срок, продлеваем только если он меньше новой даты
+                            if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < expiry_time:
+                                landing.ad_flag_expires_at = expiry_time
                         logging.info("Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s", landing.id,
                                      landing.sales_count)
+                    purchase = Purchase(
+                        user_id=user.id,
+                        course_id=course_obj.id,
+                        # если у вас 1:1 "курс <-> лендинг" — можно взять landings[0].id
+                        # но если много лендингов, придётся решить, какой именно ID хранить.
+                        landing_id=landings[0].id if landings else None,
+                        from_ad=from_ad
+                    )
+                    db.add(purchase)
             db.commit()
 
             # 4. Если оплачены курсы, которые уже есть – отправляем специальное письмо
@@ -284,26 +302,3 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 )
         else:
             logging.warning("Неверные данные для session.completed: email=%s, course_ids=%s", email, course_ids)
-
-    elif event["type"] in ("checkout.session.async_payment_failed", "checkout.session.expired"):
-        session_obj = event["data"]["object"]
-        email = session_obj.get("customer_email")
-        metadata = session_obj.get("metadata", {})
-        course_ids_str = metadata.get("course_ids", "")
-        if isinstance(course_ids_str, str):
-            course_ids = [int(cid) for cid in course_ids_str.split(",") if cid.strip()]
-        else:
-            course_ids = []
-
-        courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
-        course_names = [c.name for c in courses_db]
-
-        if email:
-            logging.info("Отправка письма о неуспешной оплате: email=%s, курсы=%s", email, course_names)
-            send_failed_purchase_email(
-                recipient_email=email,
-                course_names=course_names,
-                region=region
-            )
-        else:
-            logging.warning("Нет email при неуспешной/просроченной сессии: %s", course_ids)
