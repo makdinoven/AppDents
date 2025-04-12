@@ -2,13 +2,14 @@ import logging
 import re
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 import csv
 import io
 
 
-from ..db.database import SessionLocal, get_db
+from ..db.database import SessionLocal, get_db, get_async_db
 from ..models.models_v2 import User, Course, Landing, users_courses
 from ..services_v2.user_service import pwd_context
 
@@ -274,34 +275,33 @@ def is_hashed(password: str) -> bool:
 
 
 @router.post("/migrate-passwords", summary="Миграция незахешированных паролей")
-def migrate_passwords(db: Session = Depends(get_db)):
+async def migrate_passwords(db: AsyncSession = Depends(get_async_db)):
     """
-    Роут для миграции паролей.
-    Проходит по всем записям пользователей и, если пароль не захеширован,
-    обновляет запись новым захешированным значением.
+    Асинхронный роут, который проходит по всем записям пользователей и для
+    каждого незахешированного пароля генерирует новый хэш и сохраняет изменения.
     """
-    users = db.query(User).all()
-    updated_count = 0
-
     try:
+        result = await db.execute(select(User))
+        users = result.scalars().all()
+        updated_count = 0
+
         for user in users:
-            # Если пароль не начинается с '$', считаем, что он не захеширован
             if not is_hashed(user.password):
-                # Для отладки можно выводить первоначальный и новый пароль,
-                # но в production подобное логирование следует исключить.
                 original_password = user.password
                 user.password = pwd_context.hash(user.password)
                 updated_count += 1
+                # Для отладки можно выводить информацию о замене,
+                # но в production рекомендуется избегать логирования открытых паролей.
                 print(f"Обновлён пользователь {user.email}: '{original_password}' -> '{user.password}'")
-        db.commit()
+        await db.commit()
         return {
             "status": "success",
             "updated_users_count": updated_count,
             "message": "Миграция паролей выполнена успешно."
         }
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
-            status_code= 500,
+            status_code=500,
             detail=f"Ошибка миграции: {str(e)}"
         )
