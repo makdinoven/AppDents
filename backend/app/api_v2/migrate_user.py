@@ -10,6 +10,7 @@ import io
 
 from ..db.database import SessionLocal, get_db
 from ..models.models_v2 import User, Course, Landing, users_courses
+from ..services_v2.user_service import pwd_context
 
 app = FastAPI()
 
@@ -263,3 +264,44 @@ def update_all_sales_counts(db: Session = Depends(get_db)):
         "message": "Поле sales_count обновлено для всех лендингов",
         "updated": updated_landings
     }
+
+def is_hashed(password: str) -> bool:
+    """
+    Простейшая проверка, захеширован ли пароль.
+    Если строка начинается с '$', предполагаем, что пароль захеширован.
+    """
+    return password.startswith("$")
+
+
+@router.post("/migrate-passwords", summary="Миграция незахешированных паролей")
+def migrate_passwords(db: Session = Depends(get_db)):
+    """
+    Роут для миграции паролей.
+    Проходит по всем записям пользователей и, если пароль не захеширован,
+    обновляет запись новым захешированным значением.
+    """
+    users = db.query(User).all()
+    updated_count = 0
+
+    try:
+        for user in users:
+            # Если пароль не начинается с '$', считаем, что он не захеширован
+            if not is_hashed(user.password):
+                # Для отладки можно выводить первоначальный и новый пароль,
+                # но в production подобное логирование следует исключить.
+                original_password = user.password
+                user.password = pwd_context.hash(user.password)
+                updated_count += 1
+                print(f"Обновлён пользователь {user.email}: '{original_password}' -> '{user.password}'")
+        db.commit()
+        return {
+            "status": "success",
+            "updated_users_count": updated_count,
+            "message": "Миграция паролей выполнена успешно."
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code= 500,
+            detail=f"Ошибка миграции: {str(e)}"
+        )
