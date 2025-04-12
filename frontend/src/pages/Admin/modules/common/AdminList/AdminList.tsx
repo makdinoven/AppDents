@@ -20,6 +20,8 @@ interface AdminListProps<T> {
   createButtonText: string;
   notFoundText: string;
   loading: boolean;
+  handleToggle?: (value: number, isHidden: boolean) => void;
+  showToggle?: boolean;
 }
 
 const AdminList = <T extends { id: number; [key: string]: any }>({
@@ -33,6 +35,8 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   createButtonText,
   notFoundText,
   loading,
+  handleToggle,
+  showToggle = false,
 }: AdminListProps<T>) => {
   const { searchQuery, setSearchQuery, filteredItems } = useSearch(items, [
     searchField as string,
@@ -67,6 +71,11 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
               item.page_name ? `${Path.landing}/${item.page_name}` : undefined
             }
             key={item.id}
+            handleToggle={(value: number) =>
+              handleToggle && handleToggle(value, !item.is_hidden)
+            }
+            isHidden={item.is_hidden}
+            showToggle={showToggle}
             link={itemLink(item)}
           />
         ))
