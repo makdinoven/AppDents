@@ -3,3 +3,9 @@
   flex-direction: column;
   gap: 60px;
 }
+
+@media (max-width: $mobile-breakpoint) {
+  .admin {
+    gap: 30px;
+  }
+}
