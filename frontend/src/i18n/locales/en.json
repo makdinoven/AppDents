@@ -252,6 +252,10 @@
       "edit": "Edit author",
       "create": "Create author",
       "notFound": "No authors found"
+    },
+    "analytics": {
+      "analytics": "Analytics",
+      "size": "Size"
     }
   }
 }

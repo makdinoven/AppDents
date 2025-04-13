@@ -1,0 +1,33 @@
+.analytics_page {
+  @include flex-column;
+  gap: 20px;
+}
+
+.top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.analytics_options {
+  height: fit-content;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.languages_table {
+  flex: 1;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .analytics_options {
+    @include flex-column;
+    gap: 10px;
+  }
+
+  .languages_table {
+    width: 100%;
+  }
+}

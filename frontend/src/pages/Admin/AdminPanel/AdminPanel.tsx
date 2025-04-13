@@ -6,6 +6,7 @@ import Landings from "../tabs/Landings.tsx";
 import Authors from "../tabs/Authors.tsx";
 import Users from "../tabs/Users.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
+import Analytics from "../tabs/Analytics/Analytics.tsx";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -27,6 +28,11 @@ const AdminPanel = () => {
     },
     { name: "admin.authors.authors", value: "authors", component: <Authors /> },
     { name: "admin.users.users", value: "users", component: <Users /> },
+    {
+      name: "admin.analytics.analytics",
+      value: "analytics",
+      component: <Analytics />,
+    },
   ];
 
   useEffect(() => {
@@ -40,6 +46,7 @@ const AdminPanel = () => {
         activeValue={activeTab}
         onSelect={setActiveTab}
       />
+
       <div className={s.content}>
         {tabs.find((tab) => tab.value === activeTab)?.component}
       </div>
