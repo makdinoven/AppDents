@@ -15,7 +15,9 @@ export const userApi = {
   },
 
   resetPassword(newPassword: any, id: number) {
-    return instance.put(`users/${id}/password`, newPassword);
+    return instance.put(`users/${id}/password`, newPassword, {
+      headers: getAuthHeaders(),
+    });
   },
 
   signUp(data: SignUpType) {
