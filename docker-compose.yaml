@@ -80,6 +80,18 @@ services:
       - prod
     volumes:
       - ./assets:/assets
+      - certs_data:/etc/letsencrypt
+      - ./webroot:/var/www/certbot
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot_prod
+    volumes:
+      - certs_data:/etc/letsencrypt  # общий volume, где certbot хранит сертификаты
+      - ./webroot:/var/www/certbot   # локальная папка, которую отдаст Nginx
+    networks:
+      - prod
+    entrypoint: /bin/bash
 
 networks:
   prod:
@@ -87,3 +99,4 @@ networks:
 
 volumes:
   mysql_data_prod:
+   certs_data:
