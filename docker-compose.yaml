@@ -91,7 +91,6 @@ services:
       - ./webroot:/var/www/certbot   # локальная папка, которую отдаст Nginx
     networks:
       - prod
-    entrypoint: /bin/bash
 
 networks:
   prod:
