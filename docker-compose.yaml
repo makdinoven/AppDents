@@ -99,4 +99,4 @@ networks:
 
 volumes:
   mysql_data_prod:
-   certs_data:
+  certs_data:
