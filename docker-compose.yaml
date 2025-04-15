@@ -80,7 +80,7 @@ services:
       - prod
     volumes:
       - ./assets:/assets
-      - ./dummy_certs/dent-s.com:/etc/letsencrypt/live/dent-s.com:ro
+      - certs_data:/etc/letsencrypt
       - ./webroot:/var/www/certbot
 
   certbot:
