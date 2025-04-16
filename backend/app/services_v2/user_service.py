@@ -10,6 +10,7 @@ from fastapi import HTTPException, status
 from ..core.config import settings
 from ..models.models_v2 import User, Course
 from ..schemas_v2.user import TokenData, UserUpdateFull
+from ..utils.email_sender import send_recovery_email
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -107,6 +108,7 @@ def update_user_password(db: Session, user_id: int, new_password: str) -> User:
     user.password = hash_password(new_password)
     db.commit()
     db.refresh(user)
+    send_recovery_email(user.email, user.password)
     return user
 
 def add_course_to_user(db: Session, user_id: int, course_id: int) -> None:
@@ -202,6 +204,7 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
     # Обновляем пароль, если значение передано, не пустое и отличается от текущего
     # Для проверки пароля нужно сравнить, например, через функцию verify_password
     if data.password is not None and data.password.strip():
+        send_recovery_email(data.email, data.password)
         # Если новый пароль не совпадает с текущим (в терминах верификации)
         if not verify_password(data.password, user.password):
             user.password = hash_password(data.password)

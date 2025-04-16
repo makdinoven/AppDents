@@ -195,18 +195,24 @@ def get_purchases_last_24h_by_language(db: Session):
         ...
       ]
     """
-    day_ago = datetime.utcnow() - timedelta(hours=24)
+    now = datetime.utcnow()
+    # Определяем начало дня (00:00 текущей даты UTC)
+    start_of_day = datetime(now.year, now.month, now.day)
+    # Конец дня (начало следующего дня)
+    end_of_day = start_of_day + timedelta(days=1)
+
     query = (
         db.query(
             Landing.language.label("language"),
             func.count(Purchase.id).label("purchase_count")
         )
         .join(Purchase, Purchase.landing_id == Landing.id)
-        .filter(Purchase.created_at >= day_ago)
+        .filter(Purchase.created_at >= start_of_day, Purchase.created_at < end_of_day)
         .group_by(Landing.language)
     )
     results = query.all()
-    # Превращаем в список словарей
+
+    # Преобразуем результат в нужный список словарей
     return [
         {"language": row.language, "count": row.purchase_count}
         for row in results
