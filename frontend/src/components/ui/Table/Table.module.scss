@@ -1,0 +1,32 @@
+.table_wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid $hover-color;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  @include clamped-p3;
+
+  th,
+  td {
+    padding: 8px;
+    text-align: left;
+  }
+
+  th {
+    font-weight: 600;
+    background-color: $hover-color;
+  }
+
+  tr:nth-child(even) {
+    background-color: $hover-color;
+  }
+}
+
+.empty {
+  padding: 16px;
+  text-align: center;
+  color: #999;
+}

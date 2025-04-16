@@ -22,6 +22,10 @@
   color: $primary;
 }
 
+.error {
+  color: $error-color;
+}
+
 .crossed {
   text-decoration: line-through;
 }

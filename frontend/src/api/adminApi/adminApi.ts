@@ -108,4 +108,11 @@ export const adminApi = {
   uploadPhoto(file: any) {
     return instance.post("photo/photo", file);
   },
+
+  getMostPopularLandings(params: any) {
+    return instance.get("landings/most-popular", { params: params });
+  },
+  getLanguageStats() {
+    return instance.get("landings/analytics/language-stats");
+  },
 };
