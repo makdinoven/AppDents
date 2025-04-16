@@ -7,11 +7,8 @@ export const userApi = {
     return instance.get("users/me", { headers: getAuthHeaders() });
   },
 
-  changePassword(data: ChangePasswordType) {
-    return instance.post(`users/forgot-password`, {
-      data: data,
-      headers: getAuthHeaders(),
-    });
+  forgotPassword(data: ChangePasswordType) {
+    return instance.post(`users/forgot-password`, data);
   },
 
   resetPassword(newPassword: any, id: number) {
