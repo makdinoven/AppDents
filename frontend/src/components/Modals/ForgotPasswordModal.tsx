@@ -22,10 +22,10 @@ const ForgotPasswordModal = () => {
 
   const handleResetPassword = async (email: any) => {
     try {
-      await userApi.changePassword(email);
+      await userApi.forgotPassword(email);
       navigate("/login");
-    } catch (error) {
-      setError(error);
+    } catch (error: any) {
+      setError(error.response.data.detail.error.translation_key);
     }
   };
 
@@ -45,9 +45,9 @@ const ForgotPasswordModal = () => {
         </>
       </Form>
       <div className={s.modal_bottom}>
-        {error?.response?.data?.detail?.error?.translation_key && (
+        {error && (
           <p className={s.error_message}>
-            <Trans i18nKey={error.response.data.detail.error.translation_key} />
+            <Trans i18nKey={error} />
           </p>
         )}
         <span>

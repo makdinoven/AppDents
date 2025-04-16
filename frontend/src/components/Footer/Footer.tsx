@@ -46,17 +46,17 @@ const Footer = () => {
         {
           type: "item",
           name: <Trans i18nKey={"footer.terms"} />,
-          link: "/terms",
+          link: "/",
         },
         {
           type: "item",
           name: <Trans i18nKey={"footer.cookie"} />,
-          link: "/cookie",
+          link: "/",
         },
         {
           type: "item",
           name: <Trans i18nKey={"footer.privacy"} />,
-          link: "/privacy",
+          link: "/",
         },
       ],
     },
@@ -68,12 +68,12 @@ const Footer = () => {
         {
           type: "item",
           name: <Trans i18nKey={"footer.tour"} />,
-          link: "/tour",
+          link: "/",
         },
         {
           type: "item",
           name: <Trans i18nKey={"footer.templates"} />,
-          link: "/templates",
+          link: "/",
         },
       ],
     },
