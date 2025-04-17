@@ -65,29 +65,33 @@ const CardsList: React.FC<CardsListProps> = ({
               onClick={handleSeeMore}
             />
           ) : (
-            <p className={s.no_courses}>
-              {filter && filter !== "all" ? (
-                <Trans
-                  i18nKey={t("endOfListFilter")}
-                  values={{ filter: filterName }}
-                />
-              ) : (
-                <Trans i18nKey={t("endOfList")} />
-              )}
-            </p>
+            !loading && (
+              <p className={s.no_courses}>
+                {filter && filter !== "all" ? (
+                  <Trans
+                    i18nKey={t("endOfListFilter")}
+                    values={{ filter: filterName }}
+                  />
+                ) : (
+                  <Trans i18nKey={t("endOfList")} />
+                )}
+              </p>
+            )
           )}
         </>
       ) : (
-        <div className={s.no_courses}>
-          {filter && filter !== "all" ? (
-            <Trans
-              i18nKey={t("main.noCoursesFilter")}
-              values={{ filter: filterName }}
-            />
-          ) : (
-            <Trans i18nKey={"main.noCourses"} />
-          )}
-        </div>
+        !loading && (
+          <div className={s.no_courses}>
+            {filter && filter !== "all" ? (
+              <Trans
+                i18nKey={t("main.noCoursesFilter")}
+                values={{ filter: filterName }}
+              />
+            ) : (
+              <Trans i18nKey={"main.noCourses"} />
+            )}
+          </div>
+        )
       )}
     </div>
   );
