@@ -10,3 +10,5 @@ export { default as VisaLogo } from "../visa-logo.svg?react";
 export { default as FeedbackLogo } from "../../Icons/feedback-icon.svg?react";
 export { default as DentsLogo } from "../../logo.svg?react";
 export { default as SearchIcon } from "../../search-icon.svg?react";
+export { default as EyeOpened } from "../../Icons/eye-opened.svg?react";
+export { default as EyeClosed } from "../../Icons/eye-closed.svg?react";
