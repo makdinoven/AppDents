@@ -8,7 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { getTags } from "../../store/actions/mainActions.ts";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 14;
 
 const MainPage = () => {
   const dispatch = useDispatch<AppDispatchType>();

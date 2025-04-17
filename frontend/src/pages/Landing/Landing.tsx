@@ -42,22 +42,6 @@ const Landing = () => {
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
-  const isFromMySite = () => {
-    const referrer = document.referrer;
-    if (!referrer) return false;
-
-    try {
-      const referrerUrl = new URL(referrer);
-      const mySiteHost = "dent-s.com";
-
-      return (
-        referrerUrl.hostname.endsWith(mySiteHost) ||
-        referrerUrl.hostname === mySiteHost
-      );
-    } catch (e) {
-      return false;
-    }
-  };
   useEffect(() => {
     dispatch(getMe());
   }, [dispatch]);
@@ -188,7 +172,7 @@ const Landing = () => {
 
   return (
     <>
-      {isFromMySite() && <BackButton />}
+      {<BackButton />}
       {loading ? (
         <Loader />
       ) : (
