@@ -1,7 +1,6 @@
 import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
 import Form from "./modules/Form/Form.tsx";
-import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import { useForm } from "../../common/hooks/useForm.ts";
@@ -10,6 +9,7 @@ import { userApi } from "../../api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { resetPasswordSchema } from "../../common/schemas/resetPasswordSchema.ts";
+import Input from "./modules/Input/Input.tsx";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);
@@ -37,6 +37,7 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
       <Form handleSubmit={handleSubmit}>
         <>
           <Input
+            type="password"
             name="password"
             id="password"
             placeholder={t("newPassword")}
