@@ -56,7 +56,7 @@ const SearchDropdown = ({
     }
   }, [showDropdown]);
 
-  const debouncedSearchValue = useDebounce(searchValue, 200);
+  const debouncedSearchValue = useDebounce(searchValue, 500);
 
   useEffect(() => {
     setLoading(true);

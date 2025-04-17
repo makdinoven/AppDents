@@ -30,7 +30,7 @@
   gap: 30px;
   align-items: center;
   color: $accent;
-  padding: 25px;
+  padding: 25px 25px 50px;
   height: fit-content;
   max-height: 100%;
   background: $background-color;
@@ -208,7 +208,7 @@
   }
 
   .dropdown_content {
-    padding: 20px;
+    padding: 20px 20px 30px;
   }
 
   .search_wrapper {
@@ -235,7 +235,7 @@
     position: relative;
     margin-right: 0;
     gap: 10px;
-    padding: 80px 0 0;
+    padding: 80px 5px 5px;
     align-items: start;
 
     .icon {
