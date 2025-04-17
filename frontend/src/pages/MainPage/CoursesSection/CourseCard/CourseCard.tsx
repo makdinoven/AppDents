@@ -4,6 +4,7 @@ import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
+import initialPhoto from "../../../../assets/no-pictures.png";
 
 interface CourseCardProps {
   name: string;
@@ -40,6 +41,21 @@ const CourseCard = ({
     }
   };
 
+  const renderPhoto = () => {
+    return photo ? (
+      <div className={s.photo}>
+        <img src={photo} alt="Course image" />
+      </div>
+    ) : (
+      <div className={s.photo}>
+        <div
+          style={{ backgroundImage: `url(${initialPhoto})` }}
+          className={s.no_photo}
+        ></div>
+      </div>
+    );
+  };
+
   return (
     <li>
       <Link className={`${s.card} ${setCardColor()}`} to={LANDING_LINK}>
@@ -70,16 +86,10 @@ const CourseCard = ({
             <ViewLink text={"viewCourse"} />
           </div>
           {screenWidth > 1024 ? (
-            <div className={s.card_bottom}>
-              <div className={s.photo}>
-                <img src={photo} alt="" />
-              </div>
-            </div>
+            <div className={s.card_bottom}>{renderPhoto()}</div>
           ) : (
             <>
-              <div className={s.photo}>
-                <img src={photo} alt="" />
-              </div>
+              {renderPhoto()}
               <div className={s.card_bottom}></div>
             </>
           )}
