@@ -1,12 +1,13 @@
-import s from "./PaymentModal.module.scss";
+import { useForm } from "react-hook-form";
+import { joiResolver } from "@hookform/resolvers/joi";
 import { t } from "i18next";
-import { useForm } from "../../../common/hooks/useForm.ts";
-import Form from "../modules/Form/Form.tsx";
-import Input from "../modules/Input/Input.tsx";
-import Button from "../../ui/Button/Button.tsx";
-import { PaymentType } from "../../../api/userApi/types.ts";
-import { paymentSchema } from "../../../common/schemas/paymentSchema.ts";
 import { Trans } from "react-i18next";
+import s from "./PaymentModal.module.scss";
+import Form from "../modules/Form/Form";
+import Input from "../modules/Input/Input";
+import Button from "../../ui/Button/Button";
+import { PaymentType } from "../../../api/userApi/types";
+import { paymentSchema } from "../../../common/schemas/paymentSchema";
 import {
   AmexLogo,
   ApplePayLogo,
@@ -27,12 +28,16 @@ const PaymentModal = ({
 }: {
   price: string;
   courseName: string;
-  handlePayment: any;
+  handlePayment: (data: PaymentType) => void;
   isLogged: boolean;
 }) => {
-  const { values, errors, handleChange, handleSubmit } = useForm<PaymentType>({
-    validationSchema: isLogged ? undefined : paymentSchema,
-    onSubmit: (email) => handlePayment(email),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PaymentType>({
+    resolver: isLogged ? undefined : joiResolver(paymentSchema),
+    mode: "onTouched",
   });
 
   const logos = [
@@ -50,34 +55,31 @@ const PaymentModal = ({
   return (
     <div className={s.modal}>
       <div className={s.course_name_wrapper}>
-        <p> {courseName}</p>
+        <p>{courseName}</p>
         <span>{price}</span>
       </div>
       <p className={s.total_text}>
-        <Trans i18nKey={"total"} /> {price}
+        <Trans i18nKey="total" /> {price}
       </p>
-      <Form handleSubmit={handleSubmit}>
+
+      <Form handleSubmit={handleSubmit(handlePayment)}>
         {!isLogged && (
           <>
             <Input
               id="name"
-              name="name"
-              value={values.name || ""}
               placeholder={t("yourName")}
-              onChange={handleChange}
-              error={errors?.name}
+              error={errors.name?.message}
+              {...register("name")}
             />
             <div>
               <Input
                 id="email"
-                name="email"
-                value={values.email || ""}
                 placeholder={t("email")}
-                onChange={handleChange}
-                error={errors?.email}
+                error={errors.email?.message}
+                {...register("email")}
               />
               <p className={s.modal_text}>
-                <Trans i18nKey={"emailGrant"} />
+                <Trans i18nKey="emailGrant" />
               </p>
             </div>
           </>
@@ -85,7 +87,7 @@ const PaymentModal = ({
         <Button text={t("pay")} type="submit" />
       </Form>
       <p className={s.modal_text}>
-        <Trans i18nKey={"paymentWarn"} />
+        <Trans i18nKey="paymentWarn" />
       </p>
 
       <ul className={s.logos}>

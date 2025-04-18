@@ -15,11 +15,15 @@ const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
   const inputType = isPassword ? (visible ? "text" : "password") : type;
 
   return (
-    <div className={`${s.input_wrapper} ${error ? s.error : ""}`}>
+    <div
+      style={{ paddingRight: `${isPassword && error ? "65px" : ""}` }}
+      className={`${s.input_wrapper} ${error ? s.error : ""}`}
+    >
       <input {...props} type={inputType} />
 
       {isPassword && (
         <button
+          style={{ right: `${error ? "35px" : "0"}` }}
           type="button"
           className={s.eye}
           onClick={() => setVisible((prev) => !prev)}
@@ -30,10 +34,7 @@ const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
       )}
 
       {error && (
-        <div
-          style={{ right: `${isPassword ? "-35px" : "0"}` }}
-          className={s.error_icon_wrapper}
-        >
+        <div className={s.error_icon_wrapper}>
           <ErrorIcon />
           <div className={s.tooltip}>
             <Trans i18nKey={error} />

@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState, useRef } from "react";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import s from "./ModalWrapper.module.scss";
 import { Trans } from "react-i18next";
 import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
@@ -171,6 +171,9 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 
   return (
     <div
+      style={{
+        backgroundColor: `${cutoutPosition === "none" ? "rgba(0, 0, 0, 0.06)" : ""}`,
+      }}
       className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn}`}
       onClick={handleClose}
     >

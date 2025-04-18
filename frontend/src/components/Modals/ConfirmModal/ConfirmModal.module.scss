@@ -1,0 +1,25 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  @include flex-center;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.modal {
+  background-color: $background-color;
+  display: flex;
+  width: 100px;
+  height: 100px;
+}
+
+.layout.fadeIn {
+  @include fadeIn();
+}
+
+.layout.fadeOut {
+  @include fadeOut();
+}

@@ -3,21 +3,27 @@ import { Trans } from "react-i18next";
 import Form from "./modules/Form/Form.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
-import { useForm } from "../../common/hooks/useForm.ts";
 import { useState } from "react";
 import { userApi } from "../../api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { resetPasswordSchema } from "../../common/schemas/resetPasswordSchema.ts";
 import Input from "./modules/Input/Input.tsx";
+import { ResetPasswordType } from "../../api/userApi/types.ts";
+import { joiResolver } from "@hookform/resolvers/joi";
+import { useForm } from "react-hook-form";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);
-  const { values, errors, handleChange, handleSubmit } = useForm({
-    validationSchema: resetPasswordSchema,
-    onSubmit: (data) => handleResetPassword(data),
-  });
   const id = useSelector((state: AppRootStateType) => state.user.id);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ResetPasswordType>({
+    resolver: joiResolver(resetPasswordSchema),
+    mode: "onTouched",
+  });
 
   const handleResetPassword = async (newPassword: any) => {
     if (id) {
@@ -34,16 +40,14 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
 
   return (
     <div className={s.modal}>
-      <Form handleSubmit={handleSubmit}>
+      <Form handleSubmit={handleSubmit(handleResetPassword)}>
         <>
           <Input
             type="password"
-            name="password"
             id="password"
             placeholder={t("newPassword")}
-            value={values.password || ""}
-            onChange={handleChange}
-            error={errors?.password}
+            {...register("password")}
+            error={errors.password?.message}
           />
           <Button text={"change"} type="submit" />
         </>

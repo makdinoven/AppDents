@@ -5,19 +5,25 @@ import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import Form from "./modules/Form/Form.tsx";
-import { useForm } from "../../common/hooks/useForm.ts";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
 import { Path } from "../../routes/routes.ts";
 import { userApi } from "../../api/userApi/userApi.ts";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChangePasswordType } from "../../api/userApi/types.ts";
+import { joiResolver } from "@hookform/resolvers/joi";
+import { useForm } from "react-hook-form";
 
 const SignUpModal = () => {
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
-  const { values, errors, handleChange, handleSubmit } = useForm({
-    validationSchema: emailSchema,
-    onSubmit: (email) => handleSignUp(email),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ChangePasswordType>({
+    resolver: joiResolver(emailSchema),
+    mode: "onTouched",
   });
 
   const handleSignUp = async (email: any) => {
@@ -31,15 +37,13 @@ const SignUpModal = () => {
 
   return (
     <div className={s.modal}>
-      <Form handleSubmit={handleSubmit}>
+      <Form handleSubmit={handleSubmit(handleSignUp)}>
         <>
           <Input
             id="emailSignUp"
-            name="email"
-            value={values.email || ""}
             placeholder={t("email")}
-            onChange={handleChange}
-            error={errors?.email}
+            {...register("email")}
+            error={errors.email?.message}
           />
           <Button text={t("signup")} type="submit" />
         </>

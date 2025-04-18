@@ -3,7 +3,7 @@
   position: relative;
   border-bottom: 2px solid $text-color;
   padding-bottom: 5px;
-  padding-right: 30px;
+  padding-right: 35px;
 
   input {
     border-radius: 5px;
@@ -93,5 +93,26 @@
         fill: $accent;
       }
     }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .input_wrapper {
+    svg {
+      width: 25px;
+      height: 25px;
+    }
+
+    &.error {
+      .error_icon_wrapper {
+        width: 25px;
+        height: 25px;
+      }
+    }
+  }
+
+  .eye {
+    width: 25px;
+    height: 25px;
   }
 }

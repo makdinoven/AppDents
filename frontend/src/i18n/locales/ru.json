@@ -129,10 +129,10 @@
   },
 
   "error": {
-    "email.empty": "Email не должен быть пустым",
-    "email.valid": "Пожалуйста, введите корректный Email",
+    "email.empty": "Введите Email",
+    "email.valid": "Email некорректный",
     "email.required": "Email обязателен",
-    "password.empty": "Пароль не должен быть пустым",
+    "password.empty": "Введите пароль",
     "password.minLength": "Пароль должен содержать не менее 6 символов",
     "password.required": "Пароль обязателен",
     "error.invalid_credentials" : "Неправильный Email или пароль",
