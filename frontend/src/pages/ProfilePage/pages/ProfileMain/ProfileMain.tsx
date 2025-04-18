@@ -6,9 +6,8 @@ import s from "./ProfileMain.module.scss";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { useEffect, useState } from "react";
 import { getCourses, getMe } from "../../../../store/actions/userActions.ts";
-import { AppDispatchType } from "../../../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
-import { AppRootStateType } from "../../../../store/store.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
 import User from "../../../../assets/Icons/User.tsx";
@@ -17,12 +16,14 @@ import MyCourses from "../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import ResetPasswordModal from "../../../../components/Modals/ResetPasswordModal.tsx";
+// import ConfirmModal from "../../../../components/Modals/ConfirmModal/ConfirmModal.tsx";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  // const [showConfirmModal, setShowConfirmModal] = useState(false);
   const { loading, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
@@ -91,6 +92,8 @@ const ProfileMain = () => {
           <ResetPasswordModal handleClose={handleModalClose} />
         </ModalWrapper>
       )}
+
+      {/*{showConfirmModal && <ConfirmModal />}*/}
     </>
   );
 };

@@ -5,19 +5,25 @@ import Form from "./modules/Form/Form.tsx";
 import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
-import { useForm } from "../../common/hooks/useForm.ts";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
 import { Path } from "../../routes/routes.ts";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { userApi } from "../../api/userApi/userApi.ts";
+import { ChangePasswordType } from "../../api/userApi/types.ts";
+import { joiResolver } from "@hookform/resolvers/joi";
+import { useForm } from "react-hook-form";
 
 const ForgotPasswordModal = () => {
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
-  const { values, errors, handleChange, handleSubmit } = useForm({
-    validationSchema: emailSchema,
-    onSubmit: (data) => handleResetPassword(data),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ChangePasswordType>({
+    resolver: joiResolver(emailSchema),
+    mode: "onTouched",
   });
 
   const handleResetPassword = async (email: any) => {
@@ -31,15 +37,13 @@ const ForgotPasswordModal = () => {
 
   return (
     <div className={s.modal}>
-      <Form handleSubmit={handleSubmit}>
+      <Form handleSubmit={handleSubmit(handleResetPassword)}>
         <>
           <Input
-            name="email"
-            id="emailResetPassword"
+            id="email"
             placeholder={t("email")}
-            value={values.email || ""}
-            onChange={handleChange}
-            error={errors?.email}
+            error={errors.email?.message}
+            {...register("email")}
           />
           <Button text={t("reset")} type="submit" />
         </>

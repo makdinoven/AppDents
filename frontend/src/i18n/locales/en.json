@@ -133,10 +133,10 @@
   },
 
   "error": {
-    "email.empty": "Email must not be empty",
-    "email.valid": "Email is not valid",
+    "email.empty": "Enter Email",
+    "email.valid": "Enter valid email",
     "email.required": "Email is required",
-    "password.empty": "Password must not be empty",
+    "password.empty": "Enter password",
     "password.minLength": "Password must be at least 6 characters long",
     "password.digitUppercaseLetter": "Password must contain at least one digit and one uppercase letter",
     "password.required": "Password is required",

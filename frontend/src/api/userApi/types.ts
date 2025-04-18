@@ -14,6 +14,10 @@ export interface ChangePasswordType {
   email: string;
 }
 
+export interface ResetPasswordType {
+  password: string;
+}
+
 export interface PaymentType {
   email: string;
   name: string;

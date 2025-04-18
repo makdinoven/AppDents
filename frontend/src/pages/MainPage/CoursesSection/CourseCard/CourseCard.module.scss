@@ -1,3 +1,4 @@
+@use "sass:color";
 //common
 $initial-card-height: 430px;
 
@@ -194,7 +195,10 @@ $card-body-padding-bottom: calc(
     width: 100%;
     height: 100%;
     border-radius: $border-radius-small;
-    background-color: saturate(lighten($primary, 15%), 70%);
+    background-color: color.adjust(
+      color.adjust($primary, $lightness: 15%),
+      $saturation: 70%
+    );
     opacity: 0.3;
   }
 
@@ -239,7 +243,10 @@ $card-body-padding-bottom: calc(
 
   .photo {
     &::after {
-      background-color: saturate(lighten($secondary-lighter, 10%), 35%);
+      background-color: color.adjust(
+        color.adjust($secondary-lighter, $lightness: 15%),
+        $saturation: 70%
+      );
     }
 
     &::before {
