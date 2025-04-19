@@ -9,14 +9,14 @@ from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Author
-from ..schemas_v2.author import AuthorSimpleResponse, AuthorResponse, AuthorCreate, AuthorUpdate
+from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorFullDetailResponse
 from ..services_v2.author_service import list_authors_simple, get_author_detail, create_author, update_author, \
-    delete_author
+    delete_author, get_author_full_detail
 
 router = APIRouter()
 
-@router.get("/", response_model=List[AuthorSimpleResponse])
-def get_authors(language: Optional[str] = Query(None, description="Filter by language (EN, RU, ES)"),
+@router.get("/", response_model=List[AuthorResponsePage])
+def get_authors(language: Optional[str] = Query(None, description="Filter by language (EN, RU, ES, PT, IT, AR)"),
                 db: Session = Depends(get_db)):
     return list_authors_simple(db, language)
 
@@ -185,3 +185,18 @@ def remove_dr_and_prof_and_merge(db: Session = Depends(get_db)):
         )
 
     return {"detail": "Очистка и слияние авторов завершены."}
+
+@router.get("/full_detail/{author_id}", response_model=AuthorFullDetailResponse)
+def full_detail(author_id: int, db: Session = Depends(get_db)):
+    """
+    Возвращает полную информацию по автору:
+      - базовые поля (id, name, description, photo, language)
+      - список его лендингов (old/new price, 1‑й тег, имя, slug, картинка, course_ids)
+      - все course_ids по всем лендингам
+      - суммарную new_price по всем лендингам
+      - количество лендингов
+    """
+    detail = get_author_full_detail(db, author_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Author not found")
+    return detail

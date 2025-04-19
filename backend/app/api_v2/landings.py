@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, time, date
+
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -8,7 +10,8 @@ from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
-    delete_landing, get_landing_cards, get_purchases_last_24h_by_language, get_top_landings_by_sales
+    delete_landing, get_landing_cards, get_top_landings_by_sales, \
+    get_purchases_by_language
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse
 
@@ -262,12 +265,53 @@ def set_landing_is_hidden(
     db.refresh(landing)
     return landing
 
+
 @router.get("/analytics/language-stats")
-def language_stats(db: Session = Depends(get_db)):
+def language_stats(
+        start_date: Optional[date] = Query(
+            None,
+            description="Дата начала (YYYY-MM-DD)."
+        ),
+        end_date: Optional[date] = Query(
+            None,
+            description="Дата конца (YYYY-MM-DD, включительно)."
+        ),
+        db: Session = Depends(get_db),
+):
     """
-    Возвращает статистику покупок за последние 24 часа по каждому языку лендинга.
+    Возвращает статистику покупок по языкам за указанный период.
+
+    Логика выбора периода:
+    - Нет ни start_date, ни end_date → за сегодняшний UTC‑день [00:00 – теперь).
+    - Есть только start_date от начала start_date до текущего времени.
+    - Есть и start_date, и end_date → от начала start_date до конца end_date (00:00 следующего дня).
+    - Есть только end_date ошибка.
     """
-    data = get_purchases_last_24h_by_language(db)
+    now = datetime.utcnow()
+
+    if start_date is None and end_date is None:
+        # за сегодняшний день
+        start_dt = datetime(now.year, now.month, now.day)
+        end_dt = now
+
+    elif start_date is not None and end_date is None:
+        # от начала указанных суток до текущего момента
+        start_dt = datetime.combine(start_date, time.min)
+        end_dt = now
+
+    elif start_date is not None and end_date is not None:
+        # от начала start_date до начала дня после end_date
+        start_dt = datetime.combine(start_date, time.min)
+        end_dt = datetime.combine(end_date + timedelta(days=1), time.min)
+
+    else:
+        # end_date без start_date — некорректно
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    data = get_purchases_by_language(db, start_dt, end_dt)
     return {"data": data}
 
 @router.get("/most-popular")

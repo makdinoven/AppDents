@@ -11,7 +11,7 @@ def list_authors_simple(db: Session, language: Optional[str] = None) -> List[dic
         query = query.filter(Author.language == language)
     authors = query.all()
     # Преобразуем результат в список словарей
-    return [{"id": a.id, "name": a.name, "language": a.language} for a in authors]
+    return [{"id": a.id, "name": a.name, "language": a.language, "photo": a.photo} for a in authors]
 
 def get_author_detail(db: Session, author_id: int) -> Author:
     author = db.query(Author).filter(Author.id == author_id).first()
@@ -55,3 +55,53 @@ def delete_author(db: Session, author_id: int) -> None:
     author.landings = []
     db.delete(author)
     db.commit()
+
+def get_author_full_detail(db: Session, author_id: int) -> dict:
+    # Достаём автора вместе с лендингами, тегами и курсами
+    author = (
+        db.query(Author)
+          .filter(Author.id == author_id)
+          .first()
+    )
+    if not author:
+        return None
+
+    # Подготовим данные по каждому лендингу
+    landings_data = []
+    all_course_ids = set()
+    total_new_price = 0.0
+
+    for l in author.landings:
+        # Приводим новую цену к float
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = 0.0
+        total_new_price += price
+
+        # Список курсов в этом лендинге
+        course_ids = [c.id for c in l.courses]
+        all_course_ids.update(course_ids)
+
+        landings_data.append({
+            "id": l.id,
+            "landing_name": l.landing_name,
+            "page_name": l.page_name,
+            "old_price": l.old_price,
+            "new_price": l.new_price,
+            "main_image": l.preview_photo,
+            "first_tag": l.tags[0].name if l.tags else None,
+            "course_ids": course_ids,
+        })
+
+    return {
+        "id": author.id,
+        "name": author.name,
+        "description": author.description,
+        "photo": author.photo,
+        "language": author.language,
+        "landings": landings_data,
+        "course_ids": list(all_course_ids),
+        "total_new_price": total_new_price,
+        "landing_count": len(landings_data),
+    }

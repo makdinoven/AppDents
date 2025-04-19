@@ -186,33 +186,30 @@ def get_landing_cards(
 
     return {"total": total, "cards": cards}
 
-def get_purchases_last_24h_by_language(db: Session):
+def get_purchases_by_language(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+):
     """
-    Возвращает список словарей вида:
-      [
-        {"language": "EN", "count": 10},
-        {"language": "RU", "count": 5},
-        ...
-      ]
+    Возвращает список словарей:
+      [ {"language": "EN", "count": 10}, ... ]
+    за период [start_dt, end_dt).
     """
-    now = datetime.utcnow()
-    # Определяем начало дня (00:00 текущей даты UTC)
-    start_of_day = datetime(now.year, now.month, now.day)
-    # Конец дня (начало следующего дня)
-    end_of_day = start_of_day + timedelta(days=1)
-
     query = (
         db.query(
             Landing.language.label("language"),
-            func.count(Purchase.id).label("purchase_count")
+            func.count(Purchase.id).label("purchase_count"),
         )
         .join(Purchase, Purchase.landing_id == Landing.id)
-        .filter(Purchase.created_at >= start_of_day, Purchase.created_at < end_of_day)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at < end_dt,
+        )
         .group_by(Landing.language)
     )
     results = query.all()
 
-    # Преобразуем результат в нужный список словарей
     return [
         {"language": row.language, "count": row.purchase_count}
         for row in results
