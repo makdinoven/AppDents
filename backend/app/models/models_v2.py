@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -106,6 +106,7 @@ class Purchase(Base):
 
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
+    amount = Column(Float, nullable=False, default=0.0)
 
     user = relationship("User", backref="purchases")
     landing = relationship("Landing", backref="purchases")
