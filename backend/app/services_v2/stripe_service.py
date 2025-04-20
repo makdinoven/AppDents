@@ -274,7 +274,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                         # если у вас 1:1 "курс <-> лендинг" — можно взять landings[0].id
                         # но если много лендингов, придётся решить, какой именно ID хранить.
                         landing_id=landings[0].id if landings else None,
-                        from_ad=from_ad
+                        from_ad=from_ad,
+                        amount = session_obj["amount_total"] / 100
                     )
                     db.add(purchase)
             db.commit()

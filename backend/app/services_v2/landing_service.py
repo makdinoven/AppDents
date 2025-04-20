@@ -193,13 +193,14 @@ def get_purchases_by_language(
 ):
     """
     Возвращает список словарей:
-      [ {"language": "EN", "count": 10}, ... ]
+      [ {"language": "EN", "count": 10}, "total_amount": 1234.56 ]
     за период [start_dt, end_dt).
     """
     query = (
         db.query(
             Landing.language.label("language"),
             func.count(Purchase.id).label("purchase_count"),
+            func.coalesce(func.sum(Purchase.amount), 0).label("total_amount"),
         )
         .join(Purchase, Purchase.landing_id == Landing.id)
         .filter(
@@ -211,7 +212,7 @@ def get_purchases_by_language(
     results = query.all()
 
     return [
-        {"language": row.language, "count": row.purchase_count}
+        {"language": row.language, "count": row.purchase_count, "total_amount": row.total_amount}
         for row in results
     ]
 def check_and_reset_ad_flag(landing: Landing, db: Session):
