@@ -27,6 +27,15 @@ class AuthorResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class AuthorResponseForFullDetails(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = ""
+    photo: Optional[str] = ""
+
+    class Config:
+        orm_mode = True
+
 class AuthorResponsePage(BaseModel):
     id: int
     name: str
@@ -60,7 +69,7 @@ class LandingForAuthor(BaseModel):
     authors: List[AuthorSimpleResponseWithPhoto]
 
 # Новая схема полного ответа
-class AuthorFullDetailResponse(AuthorResponse):
+class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landings: List[LandingForAuthor]
     course_ids: List[int]
     total_new_price: float
