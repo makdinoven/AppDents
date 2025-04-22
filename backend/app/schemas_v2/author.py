@@ -65,4 +65,5 @@ class AuthorFullDetailResponse(AuthorResponse):
     landings: List[LandingForAuthor]
     course_ids: List[int]
     total_new_price: float
+    total_old_price: float
     landing_count: int
