@@ -13,7 +13,6 @@ class AuthorSimpleResponse(BaseModel):
 class AuthorSimpleResponseWithPhoto(BaseModel):
     id: int
     name: str
-    language: str
 
     class Config:
         orm_mode = True
