@@ -52,7 +52,7 @@ class AuthorUpdate(BaseModel):
 class LandingForAuthor(BaseModel):
     id: int
     landing_name: str
-    page_name: str
+    slug: str
     old_price: str
     new_price: str
     main_image: Optional[str]
