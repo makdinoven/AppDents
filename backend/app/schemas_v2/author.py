@@ -10,6 +10,14 @@ class AuthorSimpleResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class AuthorSimpleResponseWithPhoto(BaseModel):
+    id: int
+    name: str
+    language: str
+
+    class Config:
+        orm_mode = True
+
 class AuthorResponse(BaseModel):
     id: int
     name: str
@@ -50,6 +58,7 @@ class LandingForAuthor(BaseModel):
     main_image: Optional[str]
     first_tag: Optional[str]
     course_ids: List[int]
+    authors: List[AuthorSimpleResponseWithPhoto]
 
 # Новая схема полного ответа
 class AuthorFullDetailResponse(AuthorResponse):

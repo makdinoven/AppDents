@@ -83,15 +83,26 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
 
+        # Список авторов этого лендинга
+        authors_info = [
+            {
+                "id": a.id,
+                "name": a.name,
+                "photo": a.photo
+            }
+            for a in l.authors
+        ]
+
         landings_data.append({
             "id": l.id,
             "landing_name": l.landing_name,
-            "page_name": l.page_name,
+            "slug": l.page_name,
             "old_price": l.old_price,
             "new_price": l.new_price,
             "main_image": l.preview_photo,
             "first_tag": l.tags[0].name if l.tags else None,
             "course_ids": course_ids,
+            "authors": authors_info,
         })
 
     return {
