@@ -18,7 +18,6 @@ from ..services_v2.user_service import (
 )
 from ..utils.email_sender import (
     send_successful_purchase_email,
-    send_failed_purchase_email,
     send_already_owned_course_email
 )
 
