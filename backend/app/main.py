@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI
-from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, utils, migrate_user
+from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, utils, migrate_user, tilda_migrate
 from fastapi.middleware.cors import CORSMiddleware
 from .db.database import init_db
 
@@ -36,6 +36,8 @@ def create_app() -> FastAPI:
     app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
     app.include_router(utils.router, prefix="/api/utils", tags=["utils"])
     app.include_router(migrate_user.router, prefix="/api/migrate", tags=["migrate"])
+
+    app.include_router(tilda_migrate.router, prefix="/api/tilda", tags=["tilda"])
 
 
 
