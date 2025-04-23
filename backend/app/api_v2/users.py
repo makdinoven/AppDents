@@ -33,6 +33,7 @@ def generate_random_password(length=12) -> str:
 def register(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
+    region: str = "EN",
     db: Session = Depends(get_db)
 ):
     """
@@ -56,7 +57,7 @@ def register(
 
     random_pass = generate_random_password()
     user = create_user(db, email=user_data.email, password=random_pass)
-    background_tasks.add_task(send_password_to_user, user.email, random_pass)
+    background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
     user_read = UserRead.from_orm(user)
     return {**user_read.dict(), "password": random_pass}
 
@@ -99,6 +100,7 @@ def change_user_password(
         user_id: int,
         password_data: UserUpdatePassword,
         db: Session = Depends(get_db),
+        region: str = 'EN',
         current_user: User = Depends(get_current_user)  # Зависимость для получения текущего пользователя
 ):
     # Проверяем: если пользователь не админ, то он может менять только свой пароль.
@@ -108,7 +110,7 @@ def change_user_password(
             detail="У вас нет прав для изменения пароля другого пользователя"
         )
 
-    user = update_user_password(db, user_id, password_data.password)
+    user = update_user_password(db, user_id, password_data.password, region)
     return user
 
 @router.post("/admin/{user_id}/courses", summary="Добавить курс пользователю")
@@ -130,6 +132,7 @@ def get_purchased_courses(current_user: User = Depends(get_current_user)):
 def forgot_password(
         forgot_data: ForgotPasswordRequest,
         background_tasks: BackgroundTasks,
+        region: str = "EN",
         db: Session = Depends(get_db)
 ):
     user = get_user_by_email(db, forgot_data.email)
@@ -147,7 +150,6 @@ def forgot_password(
         )
     new_password = generate_random_password()
     update_user_password(db, user.id, new_password)
-    background_tasks.add_task(send_recovery_email, user.email, new_password)
     return {"message": "New password send successfully", "new_password": new_password}
 
 @router.post("/admin/users", response_model=UserRead, summary="Создать нового пользователя (Админ)")

@@ -93,7 +93,7 @@ def update_user_role(db: Session, user_id: int, new_role: str) -> User:
     db.refresh(user)
     return user
 
-def update_user_password(db: Session, user_id: int, new_password: str) -> User:
+def update_user_password(db: Session, user_id: int, new_password: str, region: str = "EN") -> User:
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
@@ -108,7 +108,7 @@ def update_user_password(db: Session, user_id: int, new_password: str) -> User:
     user.password = hash_password(new_password)
     db.commit()
     db.refresh(user)
-    send_recovery_email(user.email, user.password)
+    send_recovery_email(user.email, user.password, region)
     return user
 
 def add_course_to_user(db: Session, user_id: int, course_id: int) -> None:
@@ -181,7 +181,7 @@ def delete_user(db: Session, user_id: int) -> None:
     db.commit()
 
 
-def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
+def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: str = "EN") -> User:
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
@@ -204,7 +204,7 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull) -> User:
     # Обновляем пароль, если значение передано, не пустое и отличается от текущего
     # Для проверки пароля нужно сравнить, например, через функцию verify_password
     if data.password is not None and data.password.strip():
-        send_recovery_email(data.email, data.password)
+        send_recovery_email(data.email, data.password, region)
         # Если новый пароль не совпадает с текущим (в терминах верификации)
         if not verify_password(data.password, user.password):
             user.password = hash_password(data.password)

@@ -10,12 +10,28 @@ class AuthorSimpleResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class AuthorSimpleResponseWithPhoto(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 class AuthorResponse(BaseModel):
     id: int
     name: str
     description: Optional[str] = ""
     photo: Optional[str] = ""
     language: Optional[str] = ""
+
+    class Config:
+        orm_mode = True
+
+class AuthorResponseForFullDetails(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = ""
+    photo: Optional[str] = ""
 
     class Config:
         orm_mode = True
@@ -44,16 +60,18 @@ class AuthorUpdate(BaseModel):
 class LandingForAuthor(BaseModel):
     id: int
     landing_name: str
-    page_name: str
+    slug: str
     old_price: str
     new_price: str
     main_image: Optional[str]
     first_tag: Optional[str]
     course_ids: List[int]
+    authors: List[AuthorSimpleResponseWithPhoto]
 
 # Новая схема полного ответа
-class AuthorFullDetailResponse(AuthorResponse):
+class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landings: List[LandingForAuthor]
     course_ids: List[int]
     total_new_price: float
+    total_old_price: float
     landing_count: int

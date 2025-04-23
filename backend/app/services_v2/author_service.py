@@ -70,28 +70,43 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
     landings_data = []
     all_course_ids = set()
     total_new_price = 0.0
+    total_old_price = 0.0
 
     for l in author.landings:
         # Приводим новую цену к float
         try:
             price = float(l.new_price)
+            old_price = float(l.old_price)
         except Exception:
             price = 0.0
+            old_price = 0.0
         total_new_price += price
+        total_old_price += old_price
 
         # Список курсов в этом лендинге
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
 
+        # Список авторов этого лендинга
+        authors_info = [
+            {
+                "id": a.id,
+                "name": a.name,
+                "photo": a.photo
+            }
+            for a in l.authors
+        ]
+
         landings_data.append({
             "id": l.id,
             "landing_name": l.landing_name,
-            "page_name": l.page_name,
+            "slug": l.page_name,
             "old_price": l.old_price,
             "new_price": l.new_price,
             "main_image": l.preview_photo,
             "first_tag": l.tags[0].name if l.tags else None,
             "course_ids": course_ids,
+            "authors": authors_info,
         })
 
     return {
@@ -103,5 +118,6 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "landings": landings_data,
         "course_ids": list(all_course_ids),
         "total_new_price": total_new_price,
+        "total_old_price": total_old_price,
         "landing_count": len(landings_data),
     }
