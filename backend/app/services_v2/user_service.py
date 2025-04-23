@@ -177,6 +177,7 @@ def delete_user(db: Session, user_id: int) -> None:
                 "params": {"user_id": user_id}
             }}
         )
+    user.courses.clear()
     db.delete(user)
     db.commit()
 
