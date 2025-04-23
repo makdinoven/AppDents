@@ -18,7 +18,6 @@ from ..services_v2.user_service import (
 )
 from ..utils.email_sender import (
     send_successful_purchase_email,
-    send_failed_purchase_email,
     send_already_owned_course_email
 )
 
@@ -106,7 +105,11 @@ def get_stripe_keys_by_region(region: str) -> dict:
             "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_ES
         }
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid region '{region}'")
+        return {
+            "secret_key": settings.STRIPE_SECRET_KEY_EN,
+            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_EN,
+            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_EN
+        }
 
 def create_checkout_session(
     db: Session,
