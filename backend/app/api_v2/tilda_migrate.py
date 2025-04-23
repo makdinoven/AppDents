@@ -16,12 +16,11 @@ router = APIRouter()
 
 # ---------- РУЧНЫЕ СООТВЕТСТВИЯ ---------- #
 MANUAL_OVERRIDES = {
-    # "нормализованное название из CSV": ID курса в БД
-    "3step": 245,
-    "JEFFREY P. OKESON. OCCLUSION": 133,
-    "ZBLC Immediate MasterClass": 234,
-    "BOPT": 41,
-
+    # нормализованное название → ID курса
+    "3step":                           245,
+    "jeffreypokesonocclusion":        133,   # от "JEFFREY P. OKESON. OCCLUSION"
+    "zblcimmediatemasterclass":       234,   # от "ZBLC Immediate MasterClass"
+    "bopt":                            41,   # от "BOPT"
 }
 # ----------------------------------------- #
 
