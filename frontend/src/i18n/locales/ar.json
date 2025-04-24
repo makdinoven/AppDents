@@ -131,7 +131,7 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "احصل على جميع دورات هذا المؤلف الآن مقابل <1>${{new_price}}</1> فقط — بدلاً من <2>${{old_price}}</2>!",
+    "youCanBuyAllCourses": "احصل على جميع دورات هذا المدرّس الآن مقابل <1>${{new_price}}</1> فقط — بدلاً من <2>${{old_price}}</2>!",
     "getAllCourses": "جميع الدورات بـ <1>${{new_price}}</1>",
     "accessToAllCourses": "وصول غير محدود للدورات مدى الحياة!",
     "professorsCourses": "دورات هذا المحاضر"

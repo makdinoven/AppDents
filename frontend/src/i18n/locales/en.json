@@ -134,7 +134,7 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "Get all the courses from this author now for just <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!",
+    "youCanBuyAllCourses": "Get all the courses from this professor now for just <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!",
     "getAllCourses": "Get All Courses for <1>${{new_price}}</1>",
     "accessToAllCourses": "Access to the courses is not limited in time!",
     "professorsCourses": "This professor's courses"
