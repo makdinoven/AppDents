@@ -130,7 +130,7 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "Получите все курсы этого автора всего за <1>${{new_price}}</1> — вместо <2>${{old_price}}</2>!",
+    "youCanBuyAllCourses": "Получите все курсы этого преподавателя всего за <1>${{new_price}}</1> — вместо <2>${{old_price}}</2>!",
     "getAllCourses": "Все курсы всего за <1>${{new_price}}</1>",
     "accessToAllCourses": "Доступ к курсам без ограничения по времени!",
     "professorsCourses": "Курсы этого преподавателя"
