@@ -4,12 +4,12 @@
 
   .lessons {
     @include flex-column;
-    gap: 200px;
+    gap: 80px;
   }
 
   @media (max-width: $tablet-breakpoint) {
     .lessons {
-      gap: 110px;
+      gap: 60px;
     }
   }
 

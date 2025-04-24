@@ -83,7 +83,11 @@ const Analytics = () => {
           <div className={s.languages_table}>
             <Table
               data={languageStats}
-              columnLabels={{ language: "Lang", count: "Sales" }}
+              columnLabels={{
+                language: "Lang",
+                count: "Sales",
+                total_amount: "Total",
+              }}
             />
           </div>
         )}

@@ -15,6 +15,7 @@ import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
 import LessonPage from "../pages/ProfilePage/pages/LessonPage/LessonPage.tsx";
 import UserDetail from "../pages/Admin/pages/UserDetail.tsx";
 import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
+import ProfessorPage from "../pages/ProfessorPage/ProfessorPage.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -26,7 +27,10 @@ export const AppRoutes: FC = () => {
           element={<Landing />}
         />
         <Route path={Path.successPayment} element={<SuccessPayment />} />
-
+        <Route
+          path={`${Path.professor}/:professorId/:modalType?`}
+          element={<ProfessorPage />}
+        />
         <Route path={Path.profile} element={<ProfilePage />}>
           <Route index element={<ProfileMain />} />
           <Route path={`${Path.myCourse}/:courseId?`} element={<CoursePage />}>

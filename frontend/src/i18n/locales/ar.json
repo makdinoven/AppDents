@@ -43,14 +43,15 @@
   "newPassword": "أدخل كلمة مرور جديدة...",
   "change": "تغيير",
   "passwordChanged": "تم تغيير كلمة المرور بنجاح",
+  "about_professor": "عن الأستاذ",
 
   "search": {
     "searchCourses": "بحث عن الدورات",
     "searchPlaceholder": "أدخل اسم الدورة أو اسم المؤلف...",
-    "result": "تم العثور على {{count}} دورات",
-    "result_one": "تم العثور على دورة واحدة {{count}}",
-    "result_few": "تم العثور على {{count}} دورات",
-    "result_many": "تم العثور على {{count}} دورات",
+    "result": "تم العثور على {{count,localizedNumber}} دورات",
+    "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
+    "result_few": "تم العثور على {{ localizedNumber,count}} دورات",
+    "result_many": "تم العثور على {{count,localizedNumber}} دورات",
     "result_zero": "لم يتم العثور على دورات"
   },
 
@@ -109,13 +110,13 @@
     "professors_other": "أساتذة",
     "onlineLessons": "دروس عبر الإنترنت",
     "online": "عبر الإنترنت",
-    "discount": "خصم {{count}}%",
+    "discount": "خصم {{count, localizedNumber}}%",
     "savings": "توفير",
     "courseProgram": "برنامج الدورة",
     "fullCourseProgram": "البرنامج الكامل للدورة",
-    "buyFor": "شراء مقابل <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "buyForFull": "شراء الدورة مقابل <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "youCanBuyEntireCourse": "يمكنك شراء <1>الدورة الكاملة</1> الآن بالسعر الجديد <2>{{new_price}}</2> بدلًا من السعر القديم - {{old_price}}",
+    "buyFor": "شراء مقابل <1>{{old_price,localizedNumber}}</1> <2>{{new_price, localizedNumber}}</2>",
+    "buyForFull": "شراء الدورة مقابل <1>{{old_price,localizedNumber}}</1> <2>{{new_price, localizedNumber}}</2>",
+    "youCanBuyEntireCourse": "يمكنك شراء <1>الدورة الكاملة</1> الآن بالسعر الجديد <2>{{new_price, localizedNumber}}</2> بدلًا من السعر القديم - {{old_price, localizedNumber}}",
     "fiveMinuteFragment": "يمكنك مشاهدة <1>مقطع مدته خمس دقائق</1> هنا",
     "durationOfLesson": "مدة الدرس:",
     "noVideoLink": "لا يوجد رابط فيديو أو الرابط غير صالح",
@@ -128,6 +129,17 @@
     "yourCourses": "دوراتك",
     "noCourses": "لا توجد دورات"
   },
+
+  "professor": {
+    "youCanBuyAllCourses": "احصل على جميع دورات هذا المؤلف الآن مقابل <1>${{new_price}}</1> فقط — بدلاً من <2>${{old_price}}</2>!",
+    "getAllCourses": "جميع الدورات بـ <1>${{new_price}}</1>",
+    "accessToAllCourses": "وصول غير محدود للدورات مدى الحياة!",
+    "professorsCourses": "دورات هذا المحاضر"
+  },
+  "other": {
+    "otherCourses": "دورات أخرى"
+  },
+
 
   "error": {
     "email.empty": "لا يجب أن يكون البريد الإلكتروني فارغًا",

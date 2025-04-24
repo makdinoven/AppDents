@@ -34,9 +34,6 @@ const CoursesSection = ({
   handleSetActiveFilter,
   handleSetActiveSort,
 }: props) => {
-  // const [cards, setCards] = useState<any>([]);
-  // const [total, setTotal] = useState(0);
-  // const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const cards = useSelector((state: AppRootStateType) => state.main.courses);
   const total = useSelector(
@@ -59,53 +56,22 @@ const CoursesSection = ({
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
-      dispatch(
-        getCourses({
-          language,
-          limit: pageSize,
-          skip,
-          sort: activeSort,
-          filters: activeFilter,
-        }),
-      );
+      const params = {
+        language,
+        limit: pageSize,
+        skip,
+        ...(activeFilter !== "all" &&
+          activeFilter !== "" && { tags: activeFilter }),
+        ...(activeSort !== "" && { sort: activeSort }),
+      };
+
+      dispatch(getCourses(params));
     }
   }, [language, skip, activeFilter, activeSort]);
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
   };
-
-  // useEffect(() => {
-  //   if (LANGUAGES.some((lang) => lang.value === language)) {
-  //     fetchCourseCards();
-  //   }
-  // }, [language, skip, activeFilter, activeSort]);
-
-  // const fetchCourseCards = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const params: any = {
-  //       language,
-  //       limit: pageSize,
-  //       ...(skip !== 0 && { skip }),
-  //       ...(activeSort !== "" && { sort: activeSort }),
-  //       ...(activeFilter !== "all" &&
-  //         activeFilter !== "" && { filters: activeFilter }),
-  //     };
-  //
-  //     const res = await mainApi.getCourseCards(params);
-  //     if (skip === 0) {
-  //       setCards(res.data.cards);
-  //     } else {
-  //       setCards((prev: any) => [...prev, ...res.data.cards]);
-  //     }
-  //     setTotal(res.data.total);
-  //   } catch (error) {
-  //     console.error("Error fetching courses", error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const onFilterChange = (val: string) => {
     if (handleSetActiveFilter) {

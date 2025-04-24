@@ -146,17 +146,19 @@ const EditLanding = ({
         valueKey="id"
         labelKey="name"
       />
-      <MultiSelect
-        id={"author_ids"}
-        options={authors}
-        placeholder={"Choose an author"}
-        label={t("admin.landings.authors")}
-        selectedValue={landing.author_ids}
-        isMultiple={true}
-        onChange={handleChange}
-        valueKey="id"
-        labelKey="name"
-      />
+      {authors && (
+        <MultiSelect
+          id={"author_ids"}
+          options={authors}
+          placeholder={"Choose an author"}
+          label={t("admin.landings.authors")}
+          selectedValue={landing.author_ids}
+          isMultiple={true}
+          onChange={handleChange}
+          valueKey="id"
+          labelKey="name"
+        />
+      )}
     </div>
   );
 };

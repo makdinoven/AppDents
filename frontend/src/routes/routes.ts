@@ -8,6 +8,7 @@ export const Path = {
   myCourse: "course",
   lesson: "lesson",
   admin: "/admin",
+  professor: "/professor",
   courseDetail: "/admin/course",
   landingDetail: "/admin/landing",
   userDetail: "/admin/user",

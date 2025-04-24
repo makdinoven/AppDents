@@ -1,0 +1,218 @@
+$card-width: 340px;
+$card-height: 550px;
+$card-header-height: 55px;
+
+$card-bottom-height: $card-header-height;
+$card-bottom-width: $card-width - 190px;
+
+.professor_page {
+  @include flex-column;
+  gap: 100px;
+}
+
+.professor_hero {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  gap: 40px;
+}
+
+.professor_cards {
+  @include flex-column;
+  gap: 40px;
+}
+
+.professor_name {
+  position: relative;
+  padding-bottom: 10px;
+  @include clamped-h1;
+  color: $primary;
+  @include horizontal-line($left: 0, $width: 70%, $bottom: 0);
+}
+
+.professor_info {
+  @include flex-column;
+  gap: 30px;
+
+  p {
+    position: relative;
+    padding-bottom: 30px;
+    @include clamped-p2;
+    @include horizontal-line($right: 0, $width: 70%, $bottom: 0);
+  }
+}
+
+.buy_section {
+  @include flex-column;
+  gap: 30px;
+  align-items: center;
+  border-radius: 30px;
+  padding: 30px;
+  border: 1px solid $secondary-lighter;
+  p {
+    @include clamped-p1;
+  }
+}
+
+.buy_section_desc {
+  width: 100%;
+  text-align: center;
+  @include clamped-p1;
+}
+
+.professor_access {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  svg {
+    min-width: 60px;
+  }
+
+  p {
+    vertical-align: center;
+    text-align: center;
+    color: $secondary;
+    text-transform: uppercase;
+    @include clamped-h2;
+  }
+}
+
+.card_wrapper {
+}
+
+.card {
+  @include flex-column;
+  height: $card-height;
+  width: $card-width;
+  flex: 1;
+
+  .card_header {
+    position: relative;
+    background-color: $secondary-lighter;
+    width: 69%;
+    min-height: 55px;
+    border-top-left-radius: var(--border-radius-smaller);
+    border-top-right-radius: var(--border-radius-smaller);
+
+    @include circle-angle(
+      $bottom: 0,
+      $right: -40px,
+      $size: 40px,
+      $offset-x: -15px,
+      $offset-y: 15px,
+      $shadow-color: $secondary-lighter,
+      $border-bottom-left-radius: var(--border-radius-smaller)
+    );
+  }
+
+  .card_body {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    width: 100%;
+    background-color: $secondary-lighter;
+    border-bottom-left-radius: var(--border-radius-smaller);
+    border-top-right-radius: var(--border-radius-smaller);
+  }
+
+  .photo {
+    z-index: 2;
+    margin: 0 15px;
+    position: absolute;
+    overflow: hidden;
+    border-radius: var(--border-radius-smaller);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 15px;
+    left: 0;
+    right: 0;
+    bottom: 15px;
+    background-color: $accent-glass;
+    backdrop-filter: blur(5px);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    div {
+      width: 100%;
+      height: 100%;
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: contain;
+    }
+  }
+
+  .card_bottom {
+    margin-left: auto;
+    position: relative;
+    background-color: $secondary-lighter;
+    min-height: $card-bottom-height;
+    width: 69%;
+    border-bottom-left-radius: var(--border-radius-smaller);
+    border-bottom-right-radius: var(--border-radius-smaller);
+
+    @include circle-angle(
+      $top: 0,
+      $left: -40px,
+      $size: 40px,
+      $offset-x: 15px,
+      $offset-y: -15px,
+      $shadow-color: $secondary-lighter,
+      $border-top-right-radius: var(--border-radius-smaller)
+    );
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .professor_page {
+    gap: 60px;
+  }
+
+  .card {
+    width: 240px;
+    height: 400px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .professor_name {
+    order: 1;
+  }
+
+  .professor_hero {
+    flex-direction: column;
+    gap: 20px;
+
+    .professor_info {
+      order: 3;
+    }
+  }
+
+  .card {
+    width: 100%;
+
+    .photo {
+      top: 10px;
+      bottom: 10px;
+    }
+  }
+
+  .card_wrapper {
+    order: 2;
+  }
+
+  .professor_access {
+    flex-direction: column;
+
+    svg {
+      min-width: 40px;
+      width: 40px;
+      height: 40px;
+    }
+  }
+}

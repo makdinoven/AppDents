@@ -44,6 +44,7 @@
   "newPassword": "Enter new password...",
   "change": "Change",
   "passwordChanged": "Password has been successfully changed",
+  "about_professor": "About professor",
 
   "search": {
     "searchCourses": "Search courses",
@@ -130,6 +131,17 @@
   "profile": {
     "yourCourses": "Your courses",
     "noCourses": "No Courses Yet"
+  },
+
+  "professor": {
+    "youCanBuyAllCourses": "Get all the courses from this author now for just <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!",
+    "getAllCourses": "Get All Courses for <1>${{new_price}}</1>",
+    "accessToAllCourses": "Access to the courses is not limited in time!",
+    "professorsCourses": "This professor's courses"
+  },
+
+  "other": {
+    "otherCourses": "Other courses"
   },
 
   "error": {

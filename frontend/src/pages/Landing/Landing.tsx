@@ -22,8 +22,8 @@ import { Trans } from "react-i18next";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
@@ -36,9 +36,6 @@ const Landing = () => {
   const { landingPath } = useParams();
   const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user,
-  );
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
@@ -69,37 +66,6 @@ const Landing = () => {
       setLoading(false);
     } catch (error) {
       console.error(error);
-    }
-  };
-
-  const handlePayment = async (form: any) => {
-    const isFromFacebookAds = () => {
-      const cookies = document.cookie;
-      return cookies.includes("_fbc=") || cookies.includes("_fbp=");
-    };
-
-    const dataToSend = {
-      ...paymentData,
-      ad: isFromFacebookAds(),
-      user_email: isLogged ? email : form.email,
-    };
-    try {
-      const res = await mainApi.buyCourse(dataToSend);
-      const checkoutUrl = res.data.checkout_url;
-
-      if (checkoutUrl) {
-        const newTab = window.open(checkoutUrl, "_blank");
-
-        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
-          window.location.href = checkoutUrl;
-        } else {
-          handleCloseModal();
-        }
-      } else {
-        console.error("Checkout URL is missing");
-      }
-    } catch (error) {
-      console.log(error);
     }
   };
 
@@ -165,14 +131,23 @@ const Landing = () => {
   const paymentData = {
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
+    total_new_price: landing?.new_price,
+    total_old_price: landing?.old_price,
     region: landing?.language,
     success_url: `${BASE_URL}${Path.successPayment}`,
     cancel_url: currentUrl,
+    courses: [
+      {
+        name: landing?.landing_name,
+        new_price: landing?.new_price,
+        old_price: landing?.old_price,
+      },
+    ],
   };
 
   return (
     <>
-      {<BackButton />}
+      <BackButton />
       {loading ? (
         <Loader />
       ) : (
@@ -200,10 +175,8 @@ const Landing = () => {
           onClose={handleCloseModal}
         >
           <PaymentModal
-            price={`$${landing?.new_price}`}
-            courseName={landing?.landing_name}
-            isLogged={isLogged}
-            handlePayment={handlePayment}
+            paymentData={paymentData}
+            handleCloseModal={handleCloseModal}
           />
         </ModalWrapper>
       )}
