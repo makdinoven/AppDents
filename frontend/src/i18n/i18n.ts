@@ -18,6 +18,19 @@ i18n
     lng: "EN",
     interpolation: {
       escapeValue: false,
+      format: (value, format, lng) => {
+        if (format === "localizedNumber" && typeof value === "number") {
+          const locale = lng?.toLowerCase?.() || "en";
+          if (locale === "ar") {
+            return new Intl.NumberFormat("ar", {
+              numberingSystem: "arab",
+            }).format(value);
+          }
+
+          return new Intl.NumberFormat(locale).format(value);
+        }
+        return value;
+      },
     },
     resources: {
       EN: { translation: en },
