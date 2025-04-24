@@ -108,7 +108,7 @@ def update_user_password(db: Session, user_id: int, new_password: str, region: s
     user.password = hash_password(new_password)
     db.commit()
     db.refresh(user)
-    send_recovery_email(user.email, user.password, region)
+    send_recovery_email(user.email, new_password, region)
     return user
 
 def add_course_to_user(db: Session, user_id: int, course_id: int) -> None:
