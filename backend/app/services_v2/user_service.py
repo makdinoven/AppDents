@@ -4,11 +4,12 @@ from typing import Optional
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
+from sqlalchemy import delete
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course
+from ..models.models_v2 import User, Course, Purchase, users_courses
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -166,6 +167,7 @@ def remove_course_from_user(db: Session, user_id: int, course_id: int) -> None:
         db.commit()
 
 def delete_user(db: Session, user_id: int) -> None:
+    # 1) получаем пользователя
     user = get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(
@@ -177,9 +179,24 @@ def delete_user(db: Session, user_id: int) -> None:
                 "params": {"user_id": user_id}
             }}
         )
-    db.delete(user)
-    db.commit()
 
+    # 2) удаляем все покупки этого пользователя
+    db.execute(
+        delete(Purchase).
+        where(Purchase.user_id == user_id)
+    )
+
+    # 3) удаляем все записи в users_courses для этого пользователя
+    db.execute(
+        delete(users_courses).
+        where(users_courses.c.user_id == user_id)
+    )
+
+    # 4) удаляем самого пользователя
+    db.delete(user)
+
+    # 5) коммитим изменения разом
+    db.commit()
 
 def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: str = "EN") -> User:
     user = get_user_by_id(db, user_id)
