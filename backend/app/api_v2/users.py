@@ -149,7 +149,7 @@ def forgot_password(
             }
         )
     new_password = generate_random_password()
-    update_user_password(db, user.id, new_password)
+    update_user_password(db, user.id, new_password, region)
     return {"message": "New password send successfully", "new_password": new_password}
 
 @router.post("/admin/users", response_model=UserRead, summary="Создать нового пользователя (Админ)")
