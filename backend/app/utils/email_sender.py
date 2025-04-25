@@ -317,6 +317,7 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
     except Exception as e:
         print("Error sending recovery email:", e)
 
+
 def send_successful_purchase_email(
     recipient_email: str,
     course_names: list[str],

@@ -92,7 +92,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             {
                 "id": a.id,
                 "name": a.name,
-                "photo": a.photo
+                "photo": a.photo or ""
             }
             for a in l.authors
         ]
@@ -117,7 +117,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": total_new_price,
+        "total_new_price": int(total_new_price*0.8),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
     }
