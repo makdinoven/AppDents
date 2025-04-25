@@ -92,7 +92,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             {
                 "id": a.id,
                 "name": a.name,
-                "photo": a.photo
+                "photo": a.photo or ""
             }
             for a in l.authors
         ]
