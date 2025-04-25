@@ -29,8 +29,8 @@ const LanguageChanger = () => {
         ref={triggerRef}
         className={s.language_changer}
       >
-        <span className={s.language_preview}>{language.toUpperCase()}</span>
         <LanguageIcon />
+        <span className={s.language_preview}>{language.toUpperCase()}</span>
       </button>
       <ModalWrapper
         isLang={true}

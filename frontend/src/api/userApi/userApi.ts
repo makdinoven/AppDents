@@ -7,8 +7,12 @@ export const userApi = {
     return instance.get("users/me", { headers: getAuthHeaders() });
   },
 
-  forgotPassword(data: ChangePasswordType) {
-    return instance.post(`users/forgot-password`, data);
+  forgotPassword(data: ChangePasswordType, language: string) {
+    return instance.post(`users/forgot-password`, data, {
+      params: {
+        region: language,
+      },
+    });
   },
 
   resetPassword(newPassword: any, id: number) {
@@ -17,8 +21,12 @@ export const userApi = {
     });
   },
 
-  signUp(data: SignUpType) {
-    return instance.post(`users/register`, data);
+  signUp(data: SignUpType, language: string) {
+    return instance.post(`users/register`, data, {
+      params: {
+        region: language,
+      },
+    });
   },
 
   login(data: LoginType) {

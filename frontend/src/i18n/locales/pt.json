@@ -43,7 +43,11 @@
   "newPassword": "Digite uma nova senha...",
   "change": "Alterar",
   "passwordChanged": "A senha foi alterada com sucesso",
+  "forgotPasswordSuccess": "Sua nova senha foi enviada para seu e-mail. Agora você pode fazer login com a nova senha. Se não encontrar o e-mail, verifique a pasta de spam.",
+  "registrationSuccess": "Cadastro realizado com sucesso! Sua senha foi enviada para seu e-mail. Agora você pode fazer login. Se não encontrar o e-mail, verifique a pasta de spam.",
   "about_professor": "Sobre o professor",
+  "showLess": "Mostrar menos",
+  "readMore": "Leia mais",
 
   "search": {
     "searchCourses": "Buscar cursos",
@@ -130,7 +134,7 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "Adquira todos os cursos deste professor por apenas <1>${{new_price}}</1> — antes <2>${{old_price}}</2>!",
+    "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
     "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",
     "accessToAllCourses": "Acesso vitalício aos cursos!",
     "professorsCourses": "Cursos deste professor"

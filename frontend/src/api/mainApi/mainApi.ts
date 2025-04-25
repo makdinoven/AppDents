@@ -27,12 +27,13 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  searchCourses(query: string, language: string) {
+  searchCourses(query: string, language: string, signal?: any) {
     return instance.get(`landings/search`, {
       params: {
         language: language,
         q: query,
       },
+      signal,
     });
   },
 

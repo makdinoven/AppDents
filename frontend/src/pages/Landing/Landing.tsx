@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
-  formatAuthorsDesc,
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
@@ -29,12 +28,15 @@ import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import CoursesSection from "../MainPage/CoursesSection/CoursesSection.tsx";
+import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
-  const formattedAuthorsDesc = formatAuthorsDesc(landing?.authors);
+  const formattedAuthorsDesc = (
+    <FormattedAuthorsDesc authors={landing?.authors} />
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
