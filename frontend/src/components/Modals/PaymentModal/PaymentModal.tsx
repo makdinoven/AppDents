@@ -19,18 +19,43 @@ import {
   UnionPayLogo,
   VisaLogo,
 } from "../../../assets/logos/index";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import { mainApi } from "../../../api/mainApi/mainApi.ts";
+
+const logos = [
+  AmexLogo,
+  ApplePayLogo,
+  DinnerClubLogo,
+  DiscoverLogo,
+  GooglePayLogo,
+  JcbLogo,
+  MastercardLogo,
+  UnionPayLogo,
+  VisaLogo,
+];
+
+type PaymentDataType = {
+  course_ids: number[];
+  price_cents: number;
+  total_new_price: number;
+  total_old_price: number;
+  region: string;
+  success_url: string;
+  cancel_url: string;
+  courses: { name: string; new_price: number; old_price: number }[];
+};
 
 const PaymentModal = ({
-  courseName,
-  price,
-  handlePayment,
-  isLogged,
+  paymentData,
+  handleCloseModal,
 }: {
-  price: string;
-  courseName: string;
-  handlePayment: (data: PaymentType) => void;
-  isLogged: boolean;
+  paymentData: PaymentDataType;
+  handleCloseModal: () => void;
 }) => {
+  const { isLogged, email } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
   const {
     register,
     handleSubmit,
@@ -40,27 +65,57 @@ const PaymentModal = ({
     mode: "onTouched",
   });
 
-  const logos = [
-    AmexLogo,
-    ApplePayLogo,
-    DinnerClubLogo,
-    DiscoverLogo,
-    GooglePayLogo,
-    JcbLogo,
-    MastercardLogo,
-    UnionPayLogo,
-    VisaLogo,
-  ];
+  const handlePayment = async (form: any) => {
+    const isFromFacebookAds = () => {
+      const cookies = document.cookie;
+      return cookies.includes("_fbc=") || cookies.includes("_fbp=");
+    };
+
+    const dataToSend = {
+      ...paymentData,
+      ad: isFromFacebookAds(),
+      user_email: isLogged ? email : form.email,
+    };
+    try {
+      const res = await mainApi.buyCourse(dataToSend);
+      const checkoutUrl = res.data.checkout_url;
+
+      if (checkoutUrl) {
+        const newTab = window.open(checkoutUrl, "_blank");
+
+        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+          window.location.href = checkoutUrl;
+        } else {
+          handleCloseModal();
+        }
+      } else {
+        console.error("Checkout URL is missing");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div className={s.modal}>
-      <div className={s.course_name_wrapper}>
-        <p>{courseName}</p>
-        <span>{price}</span>
+      <div className={s.courses}>
+        {paymentData.courses.map((course, index: number) => (
+          <div key={index} className={s.course}>
+            <p>{course.name}</p>
+            <div className={s.course_prices}>
+              <span className={"highlight"}>${course.new_price}</span>
+              <span className={"crossed"}>${course.old_price}</span>
+            </div>
+          </div>
+        ))}
       </div>
-      <p className={s.total_text}>
-        <Trans i18nKey="total" /> {price}
-      </p>
+      <div className={s.total_text}>
+        <Trans i18nKey="total" />
+        <div>
+          <span className={"highlight"}>${paymentData.total_new_price}</span>
+          <span className={"crossed"}>${paymentData.total_old_price}</span>
+        </div>
+      </div>
 
       <Form handleSubmit={handleSubmit(handlePayment)}>
         {!isLogged && (

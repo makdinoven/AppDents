@@ -2,28 +2,79 @@
   @include flex-column;
   align-items: center;
 
+  form {
+    @include flex-column;
+    gap: 30px;
+    width: 90%;
+  }
+
   .modal_text {
     @include clamped-p4;
     margin-top: 10px;
     text-align: center;
   }
 
-  .course_name_wrapper {
-    @include clamped-p2;
-    padding: 15px 0;
+  .courses {
+    overflow-y: auto;
+    max-height: 180px;
     border-top: 2px solid $text-color;
     border-bottom: 2px solid $text-color;
+    margin-bottom: 20px;
+    @include custom-scrollbar;
+    padding: 0 20px;
+  }
+
+  .course {
+    @include clamped-p3;
+    position: relative;
+    width: 100%;
+    padding: 20px 0;
     display: flex;
     justify-content: space-between;
+    gap: 25px;
+    &:not(:last-child) {
+      @include horizontal-line(
+        $height: 1px,
+        $color: $text-color,
+        $bottom: 0,
+        $width: 70%,
+        $right: 0
+      );
+    }
+  }
+
+  .course_prices {
+    @include flex-column;
+    gap: 5px;
     align-items: center;
-    gap: 40px;
-    margin-bottom: 20px;
+
+    span {
+      &:last-child {
+        opacity: 0.75;
+        @include clamped-p4;
+      }
+    }
   }
 
   .total_text {
     @include clamped-h2;
-    @include flex-center;
+    width: 100%;
+    display: flex;
+    justify-content: center;
     margin-bottom: 20px;
+    gap: 10px;
+
+    div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      span {
+        &:last-child {
+          opacity: 0.75;
+          @include clamped-p2;
+        }
+      }
+    }
   }
 
   .logos {
@@ -51,14 +102,21 @@
   }
 
   @media (max-width: $mobile-breakpoint) {
+    .courses {
+      max-height: 140px;
+    }
+
     form {
       gap: 15px;
     }
 
-    .course_name_wrapper {
-      gap: 20px;
-      border-top: 1px solid $text-color;
-      border-bottom: 1px solid $text-color;
+    .course {
+      gap: 15px;
+      padding: 10px 0;
+    }
+
+    .courses {
+      padding: 0 10px;
     }
   }
 }

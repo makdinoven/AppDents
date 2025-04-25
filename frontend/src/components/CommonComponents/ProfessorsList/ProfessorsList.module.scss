@@ -1,0 +1,17 @@
+.list {
+  column-gap: 20px;
+  row-gap: 30px;
+}
+
+@media (max-width: $sm-breakpoint) {
+  .list {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .list {
+    display: flex !important;
+    flex-direction: column;
+  }
+}
