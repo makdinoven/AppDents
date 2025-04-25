@@ -13,7 +13,7 @@ class AuthorSimpleResponse(BaseModel):
 class AuthorSimpleResponseWithPhoto(BaseModel):
     id: int
     name: str
-    photo: str
+    photo: str = ""
 
     class Config:
         orm_mode = True
