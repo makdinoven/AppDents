@@ -18,10 +18,11 @@ type Course = {
 
 interface CardsListProps {
   loading: boolean;
-  handleSeeMore: () => void;
+  handleSeeMore?: () => void;
   showSeeMore: boolean;
   filter?: string;
   cards: Course[] | null;
+  showEndOfList?: boolean;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
@@ -30,6 +31,7 @@ const CardsList: React.FC<CardsListProps> = ({
   filter = "all",
   showSeeMore,
   handleSeeMore,
+  showEndOfList = true,
 }) => {
   const filterName = t(filter);
 
@@ -65,18 +67,21 @@ const CardsList: React.FC<CardsListProps> = ({
               onClick={handleSeeMore}
             />
           ) : (
-            !loading && (
+            !loading &&
+            (filter && filter !== "all" ? (
               <p className={s.no_courses}>
-                {filter && filter !== "all" ? (
-                  <Trans
-                    i18nKey={t("endOfListFilter")}
-                    values={{ filter: filterName }}
-                  />
-                ) : (
-                  <Trans i18nKey={t("endOfList")} />
-                )}
+                <Trans
+                  i18nKey={t("endOfListFilter")}
+                  values={{ filter: filterName }}
+                />
               </p>
-            )
+            ) : (
+              showEndOfList && (
+                <p className={s.no_courses}>
+                  <Trans i18nKey={t("endOfList")} />{" "}
+                </p>
+              )
+            ))
           )}
         </>
       ) : (

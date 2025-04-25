@@ -28,8 +28,6 @@ const SuccessPayment = () => {
 
   const getAndSetToken = async () => {
     try {
-      console.log(sessionId);
-      console.log(region);
       const res = await mainApi.getTokenAfterPurchase({
         session_id: sessionId,
         region: region,

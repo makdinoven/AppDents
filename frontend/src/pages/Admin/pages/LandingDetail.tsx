@@ -150,7 +150,7 @@ const LandingDetail = () => {
                 onClick={handleAddLesson}
               />
             </div>
-            {landing.lessons_info.length > 0 ? (
+            {landing?.lessons_info.length > 0 ? (
               landing.lessons_info.map((lesson: any, index: number) => (
                 <EditLesson
                   type={"landing"}

@@ -35,4 +35,8 @@ export const mainApi = {
       },
     });
   },
+
+  getProfessorDetail(id: number) {
+    return instance.get(`/authors/full_detail/${id}`);
+  },
 };

@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);
-  const id = useSelector((state: AppRootStateType) => state.user.id);
+  const { id } = useSelector((state: AppRootStateType) => state.user);
   const {
     register,
     handleSubmit,
@@ -52,13 +52,13 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
           <Button text={"change"} type="submit" />
         </>
       </Form>
-      <div className={s.modal_bottom}>
-        {error && (
+      {error && (
+        <div className={s.modal_bottom}>
           <p className={s.error_message}>
             <Trans i18nKey={"error.errorChangingPassword"} />
           </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

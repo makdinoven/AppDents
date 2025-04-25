@@ -31,7 +31,7 @@ const CourseCard = ({
 }: CourseCardProps) => {
   const screenWidth = useScreenWidth();
   const LANDING_LINK = `${Path.landing}/${link}`;
-  const visibleAuthors = authors.slice(0, 3).filter((author) => author.photo);
+  const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -69,9 +69,9 @@ const CourseCard = ({
           </div>
           <h4>{name}</h4>
           <div className={s.course_authors}>
-            {visibleAuthors.length > 0 && (
+            {visibleAuthors?.length > 0 && (
               <ul className={s.authors_photos_list}>
-                {visibleAuthors.map((author) => (
+                {visibleAuthors?.map((author) => (
                   <li
                     key={author.id}
                     style={{ backgroundImage: `url("${author.photo}")` }}

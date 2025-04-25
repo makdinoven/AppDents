@@ -43,13 +43,13 @@
     .tooltip {
       @include transition($property: opacity);
       position: absolute;
-      bottom: 110%;
+      bottom: 115%;
       left: 50%;
       transform: translateX(-50%);
       background-color: $error-color;
       color: $text-color;
-      padding: 6px 8px;
-      border-radius: 4px;
+      padding: 5px 10px;
+      border-radius: 5px;
       white-space: nowrap;
       font-size: 12px;
       opacity: 0;
@@ -107,6 +107,13 @@
       .error_icon_wrapper {
         width: 25px;
         height: 25px;
+      }
+
+      .tooltip {
+        padding: 4px 8px;
+        right: -100%;
+        transform: unset;
+        left: unset;
       }
     }
   }
