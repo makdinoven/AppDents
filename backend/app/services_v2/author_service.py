@@ -117,7 +117,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": total_new_price,
+        "total_new_price": total_new_price-((total_old_price/100)*20),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
     }
