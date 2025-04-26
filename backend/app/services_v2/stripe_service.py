@@ -39,7 +39,6 @@ def _send_facebook_purchase(
     user_agent: str,
     fbp: str | None = None,
     fbc: str | None = None,
-    phone: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
 ):
@@ -72,11 +71,6 @@ def _send_facebook_purchase(
             user_data["fbp"] = fbp
         if fbc:
             user_data["fbc"] = fbc
-        if phone:
-            # Оставляем только цифры и хешируем
-            digits = re.sub(r"\D", "", phone)
-            hashed_phone = hashlib.sha256(digits.encode("utf-8")).hexdigest()
-            user_data["ph"] = [hashed_phone]
         if first_name:
             fn_norm = first_name.strip().lower()
             user_data["fn"] = [hashlib.sha256(fn_norm.encode("utf-8")).hexdigest()]
@@ -180,7 +174,6 @@ def create_checkout_session(
         cancel_url=cancel_url,
         customer_email=email,
         metadata=metadata,
-        phone_number_collection={"enabled": True}
     )
     logging.info("Stripe session created: id=%s", session["id"])
     return session.url
@@ -212,7 +205,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         metadata = session_obj.get("metadata", {})
         logging.info("Получены метаданные: %s", metadata)
         from_ad = (metadata.get("ad") == "true")
-        phone = session_obj.get("customer_details", {}).get("phone")
         full_name = session_obj.get("customer_details", {}).get("name", "") or ""
         parts = full_name.strip().split()
         first_name = parts[0] if parts else None
@@ -249,7 +241,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 user_agent=user_agent,
                 fbp=fbp_value,
                 fbc=fbc_value,
-                phone=phone,
                 first_name=first_name,
                 last_name=last_name
             )
