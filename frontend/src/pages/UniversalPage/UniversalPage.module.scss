@@ -1,0 +1,14 @@
+.page_container {
+  @include flex-column;
+  gap: 60px;
+
+  p {
+    @include clamped-p3;
+    text-align: justify;
+  }
+
+  .page_content {
+    @include flex-column;
+    gap: 15px;
+  }
+}
