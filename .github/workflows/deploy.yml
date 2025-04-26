@@ -82,6 +82,7 @@ jobs:
 
             # Запускаем/перезапускаем весь стек
             docker compose up -d
+            docker compose up -d nginx
 
             # Очищаем неиспользуемые сборочные кэши
             docker builder prune -f
