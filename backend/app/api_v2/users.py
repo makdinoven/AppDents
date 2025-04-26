@@ -84,7 +84,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.get("/search", response_model=List[UserRead], summary="Поиск пользователей по email(yjdsq cthdth)")
+@router.get("/search", response_model=List[UserRead], summary="Поиск пользователей по email(еуыеыеые")
 def search_users(email: str = Query(..., description="Часть email для поиска"), db: Session = Depends(get_db)):
     users = search_users_by_email(db, email)
     return users
