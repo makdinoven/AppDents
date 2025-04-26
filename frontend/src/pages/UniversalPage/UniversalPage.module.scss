@@ -11,4 +11,16 @@
     @include flex-column;
     gap: 15px;
   }
+
+  @media (max-width: $mobile-breakpoint) {
+    gap: 20px;
+
+    p {
+      @include clamped-p4;
+    }
+
+    .page_content {
+      gap: 10px;
+    }
+  }
 }
