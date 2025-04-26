@@ -47,11 +47,8 @@ export const transformTags = (
   return [{ id: 0, name: "tag.allCourses", value: "all" }, ...transformed];
 };
 
-export const scrollToElementAndClick = (triggerRef: any) => {
-  triggerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  setTimeout(() => {
-    triggerRef.current?.click();
-  }, 1000);
+export const scrollToElement = (triggerRef: any) => {
+  triggerRef.current?.scrollIntoView({ behavior: "smooth" });
 };
 
 export const keepFirstTwoWithInsert = (initialStr: string) => {

@@ -1,11 +1,12 @@
 import Hero from "./Hero/Hero.tsx";
 import CoursesSection from "./CoursesSection/CoursesSection.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
 import { getTags } from "../../store/actions/mainActions.ts";
+import { scrollToElement } from "../../common/helpers/helpers.ts";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const PAGE_SIZE = 14;
@@ -19,6 +20,7 @@ const MainPage = () => {
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [activeSort, setActiveSort] = useState<string>("");
   const [skip, setSkip] = useState(0);
+  const coursesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     dispatch(getMe());
@@ -53,22 +55,25 @@ const MainPage = () => {
 
   return (
     <>
-      <Hero />
-      <CoursesSection
-        sectionTitle={"main.ourCurses"}
-        pageSize={PAGE_SIZE}
-        activeFilter={activeFilter}
-        activeSort={activeSort}
-        tags={tags}
-        showFilters={true}
-        showSort={true}
-        handleSetActiveFilter={(filter: string) =>
-          handleSetActiveParam("filter", filter)
-        }
-        handleSetActiveSort={(sort: string) =>
-          handleSetActiveParam("sort", sort)
-        }
-      />
+      <Hero onClickScroll={() => scrollToElement(coursesRef)} />
+      <div ref={coursesRef}>
+        <CoursesSection
+          sectionTitle={"main.ourCurses"}
+          pageSize={PAGE_SIZE}
+          activeFilter={activeFilter}
+          activeSort={activeSort}
+          tags={tags}
+          showFilters={true}
+          showSort={true}
+          handleSetActiveFilter={(filter: string) =>
+            handleSetActiveParam("filter", filter)
+          }
+          handleSetActiveSort={(sort: string) =>
+            handleSetActiveParam("sort", sort)
+          }
+        />
+      </div>
+
       {/*<Feedback />*/}
     </>
   );

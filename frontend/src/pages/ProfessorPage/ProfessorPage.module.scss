@@ -34,8 +34,8 @@ $card-bottom-width: $card-width - 190px;
   @include flex-column;
   gap: 30px;
   position: relative;
-  @include horizontal-line($right: 0, $width: 70%, $bottom: 0);
   padding-bottom: 30px;
+  @include horizontal-line($right: 0, $width: 70%, $bottom: 0);
 
   button {
     align-self: center;

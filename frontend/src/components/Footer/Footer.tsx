@@ -46,34 +46,20 @@ const Footer = () => {
         {
           type: "item",
           name: <Trans i18nKey={"footer.terms"} />,
-          link: "/",
-        },
-        {
-          type: "item",
-          name: <Trans i18nKey={"footer.cookie"} />,
-          link: "/",
+          link: "http://project11845297.tilda.ws/page60744947.html",
+          isExternal: true,
         },
         {
           type: "item",
           name: <Trans i18nKey={"footer.privacy"} />,
-          link: "/",
-        },
-      ],
-    },
-    {
-      name: "product",
-      list: [
-        { type: "title", name: <Trans i18nKey={"footer.product"} /> },
-        { type: "item", name: <Trans i18nKey={"footer.home"} />, link: "/" },
-        {
-          type: "item",
-          name: <Trans i18nKey={"footer.tour"} />,
-          link: "/",
+          link: "https://project11845297.tilda.ws/page60745015.html",
+          isExternal: true,
         },
         {
           type: "item",
-          name: <Trans i18nKey={"footer.templates"} />,
-          link: "/",
+          name: <Trans i18nKey={"footer.cookie"} />,
+          link: "http://project11845297.tilda.ws/page60744983.html",
+          isExternal: true,
         },
       ],
     },
