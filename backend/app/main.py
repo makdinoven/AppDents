@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(utils.router, prefix="/api/utils", tags=["utils"])
     app.include_router(migrate_user.router, prefix="/api/migrate", tags=["migrate"])
 
-    app.include_router(tilda_migrate.router, prefix="/api/tilda", tags=["new_ser_tilda"])
+    app.include_router(tilda_migrate.router, prefix="/api/tilda", tags=["new_server_tilda"])
 
 
 
