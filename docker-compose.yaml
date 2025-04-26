@@ -98,6 +98,5 @@ networks:
 
 volumes:
   mysql_data_prod:
-    name: mysql_data_prod
-    driver: local
+    external: true
   certs_data:
