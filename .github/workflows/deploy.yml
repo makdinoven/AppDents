@@ -66,6 +66,7 @@ jobs:
           skip_host_key_check: true
           script: |
             cd /var/www/AppDents
+            export COMPOSE_PROJECT_NAME=appdents
 
             # Обновляем код
             git pull --no-rebase -s recursive -X theirs origin main
