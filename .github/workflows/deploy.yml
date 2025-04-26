@@ -80,9 +80,7 @@ jobs:
               echo "Нет изменений в сервисах — пропускаем сборку."
             fi
 
-            # Запускаем/перезапускаем весь стек
-            docker compose up -d
-            docker compose up -d nginx
-
-            # Очищаем неиспользуемые сборочные кэши
+            docker compose build $CHANGED_SERVICES nginx      # nginx всегда пересобираем
+            docker compose up -d                              # поднимаем всё
+            docker compose exec nginx nginx -s reload         # гарантированный reload
             docker builder prune -f
