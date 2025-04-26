@@ -60,12 +60,13 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          host: ${{ secrets.TW_SERVER_HOST }}
+          username: ${{ secrets.TW_SERVER_USER }}
+          key: ${{ secrets.TW_SERVER_SSH_KEY }}
           skip_host_key_check: true
           script: |
             cd /var/www/AppDents
+            export COMPOSE_PROJECT_NAME=appdents
 
             # Обновляем код
             git pull --no-rebase -s recursive -X theirs origin main
