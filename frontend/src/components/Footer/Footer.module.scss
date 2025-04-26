@@ -21,30 +21,21 @@ $row-gap: clamp(20px, 5vw, 43px);
   @include container;
   padding: 25px 20px;
   display: flex;
-  row-gap: $row-gap;
-  column-gap: clamp(40px, 5vw, 60px);
-  flex-wrap: wrap;
+  gap: 80px;
 
   .list {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    //width: 100%;
+    //max-width: 50%;
 
     &:first-child {
-      width: 100%;
-      position: relative;
-      @include horizontal-line(
-        $color: $background-color,
-        $bottom: calc(#{$row-gap} / 2 - #{$row-gap})
-      );
+      flex: 1;
+    }
 
-      &::after {
-        max-width: clamp(40%, 50vw, 55%);
-      }
-
-      li {
-        max-width: 40%;
-      }
+    &:last-child {
+      text-align: right;
     }
 
     li {
@@ -58,6 +49,14 @@ $row-gap: clamp(20px, 5vw, 43px);
 
     .list_title {
       @include clamped-h4;
+      position: relative;
+      padding-bottom: 10px;
+      @include horizontal-line(
+        $width: 100%,
+        $left: 0,
+        $bottom: 0,
+        $color: $background-color
+      );
     }
 
     .list_item {
@@ -66,19 +65,23 @@ $row-gap: clamp(20px, 5vw, 43px);
   }
 }
 
-@media (max-width: $tablet-breakpoint) {
-  .logo {
-    top: 0;
-    width: 220px;
-    height: 220px;
-  }
-}
-
 @media (max-width: $mobile-breakpoint) {
-  .logo {
-    width: 180px;
-    height: 180px;
-    right: -50px;
-    bottom: -42px;
+  .content {
+    flex-direction: column;
+    gap: 20px;
+
+    .list {
+      text-align: left;
+
+      &:last-child {
+        text-align: left;
+      }
+
+      .list_title {
+        &:after {
+          width: 70%;
+        }
+      }
+    }
   }
 }
