@@ -411,6 +411,7 @@ def most_popular_landings(
         {
             "id": l.id,
             "landing_name": l.landing_name,
+            "slug" : l.page_name,
             "sales_count": l.sales_count,
             "language": l.language,
             "in_advertising": l.in_advertising
