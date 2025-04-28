@@ -7,12 +7,12 @@ import { Path } from "../../../routes/routes.ts";
 import Loader from "../../ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
 import { SearchIcon } from "../../../assets/logos/index";
-import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
+import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 // import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 
 const SearchDropdown = ({
@@ -35,6 +35,7 @@ const SearchDropdown = ({
     handleClose();
   });
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (showDropdown) {
@@ -56,7 +57,7 @@ const SearchDropdown = ({
     }
   }, [showDropdown]);
 
-  const debouncedSearchValue = useDebounce(searchValue, 500);
+  const debouncedSearchValue = useDebounce(searchValue, 200);
 
   useEffect(() => {
     setLoading(true);
@@ -87,19 +88,21 @@ const SearchDropdown = ({
   };
 
   const handleSearch = async (query: string) => {
-    if (query.trim() === "") {
-      setSearchResults([]);
-      setTotalResults(0);
-      setLoading(false);
-      return;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setLoading(true);
 
     try {
-      setLoading(true);
-      const res = await mainApi.searchCourses(query, language);
+      const res = await mainApi.searchCourses(
+        query,
+        language,
+        controller.signal,
+      );
       setSearchResults(res.data.items);
       setTotalResults(res.data.total);
-      return res;
     } catch (error) {
       setSearchResults([]);
       console.error("Ошибка при поиске", error);
@@ -107,7 +110,6 @@ const SearchDropdown = ({
       setLoading(false);
     }
   };
-
   return (
     <div
       className={`${s.dropdown_wrapper} ${isClosing ? s.fadeOut : s.fadeIn}`}

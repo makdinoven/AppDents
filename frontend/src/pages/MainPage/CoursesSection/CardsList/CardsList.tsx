@@ -1,7 +1,6 @@
 import s from "./CardsList.module.scss";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import CourseCard from "../CourseCard/CourseCard.tsx";
-import { formatAuthorsDesc } from "../../../../common/helpers/helpers.ts";
 import { Trans } from "react-i18next";
 import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
@@ -53,7 +52,6 @@ const CardsList: React.FC<CardsListProps> = ({
                 old_price={course.old_price}
                 new_price={course.new_price}
                 name={course.landing_name}
-                description={formatAuthorsDesc(course?.authors)}
                 tag={course.first_tag}
                 link={course.slug}
                 photo={course.main_image}

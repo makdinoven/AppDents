@@ -1,7 +1,6 @@
 import s from "./ProfessorCard.module.scss";
 import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Link } from "react-router-dom";
-// import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 
 const ProfessorCard = ({
   name,

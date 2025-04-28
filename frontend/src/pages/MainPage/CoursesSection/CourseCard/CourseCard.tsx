@@ -5,10 +5,10 @@ import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
+import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
 
 interface CourseCardProps {
   name: string;
-  description: string | null;
   tag: string;
   link: string;
   photo: string;
@@ -20,7 +20,6 @@ interface CourseCardProps {
 
 const CourseCard = ({
   name,
-  description,
   tag,
   link,
   photo,
@@ -80,7 +79,9 @@ const CourseCard = ({
                 ))}
               </ul>
             )}
-            <p> {description}</p>
+            <p>
+              <FormattedAuthorsDesc authors={authors} />
+            </p>
           </div>
           <div className={s.link_wrapper}>
             <ViewLink text={"viewCourse"} />
