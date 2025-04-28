@@ -5,23 +5,50 @@ from ..db.database import get_db
 from ..dependencies.access_course import get_course_detail_with_access
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Course, User
-from ..services_v2.course_service import create_course, delete_course
-from ..services_v2.course_service import list_courses, get_course_detail, update_course
-from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate
+from ..services_v2.course_service import create_course, delete_course, search_courses_paginated, list_courses_paginated
+from ..services_v2.course_service import get_course_detail, update_course
+from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
+    CourseListPageResponse
 
 router = APIRouter()
 
-@router.get("/list", response_model=List[CourseListResponse])
+@router.get(
+    "/list",
+    response_model=CourseListPageResponse,
+    summary="Список курсов (пагинация по страницам)"
+)
 def get_course_listing(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, gt=0),
-    db: Session = Depends(get_db)
-):
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
+    db: Session = Depends(get_db),
+) -> dict:
     """
-    Возвращает листинг курсов: id и name.
+    Возвращает страницу курсов:
+    {
+      total: <общее количество курсов>,
+      total_pages: <число страниц>,
+      page: <текущая страница>,
+      size: <размер страницы>,
+      items: [ …CourseListResponse… ]
+    }
     """
-    courses = list_courses(db, skip=skip, limit=limit)
-    return courses
+    return list_courses_paginated(db, page=page, size=size)
+
+@router.get(
+    "/list/search",
+    response_model=CourseListPageResponse,
+    summary="Поиск курсов с пагинацией"
+)
+def search_course_listing(
+    q: str = Query(..., min_length=1, description="Строка для поиска в имени курса"),
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    То же, что /list, но фильтрует по подстроке в имени курса.
+    """
+    return search_courses_paginated(db, q=q, page=page, size=size)
 
 @router.get("/detail/{course_id}", response_model=CourseDetailResponse)
 def get_course_by_id(course_id: int, db: Session = Depends(get_db), course : Course = Depends(get_course_detail_with_access)):

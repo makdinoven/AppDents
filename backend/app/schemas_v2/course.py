@@ -53,3 +53,10 @@ class CourseCreate(BaseModel):
 
     class Config:
         orm_mode = True
+
+class CourseListPageResponse(BaseModel):
+    total: int                      # общее число курсов
+    total_pages: int                # общее число страниц
+    page: int                       # текущая страница
+    size: int                       # размер страницы
+    items: List[CourseListResponse]  # сами курсы на этой странице
