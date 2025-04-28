@@ -85,6 +85,13 @@ class UserShortResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class UserListPageResponse(BaseModel):
+    total: int
+    total_pages: int
+    page: int
+    size: int
+    items: List[UserShortResponse]
+
 class UserDetailResponse(BaseModel):
     """
     Схема для возврата полной информации о пользователе:
