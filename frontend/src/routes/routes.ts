@@ -13,6 +13,7 @@ export const Path = {
   cookiePolicy: "/info/cookie-policy",
   termsOfUse: "/info/terms-of-use",
   professor: "/professor",
+  professors: "/professors",
   courseDetail: "/admin/course",
   landingDetail: "/admin/landing",
   userDetail: "/admin/user",

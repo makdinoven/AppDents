@@ -64,7 +64,7 @@ export const adminApi = {
   },
 
   getAuthorsList() {
-    return instance.get("authors/?skip=0&limit=10000");
+    return instance.get("authors/?size=1000");
   },
   getAuthor(id: any) {
     return instance.get(`authors/detail/${id}`);

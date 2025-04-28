@@ -37,6 +37,11 @@ export const mainApi = {
     });
   },
 
+  getProfessors(params: { language: string; skip: number; limit: number }) {
+    return instance.get("authors/", {
+      params: params,
+    });
+  },
   getProfessorDetail(id: number) {
     return instance.get(`/authors/full_detail/${id}`);
   },

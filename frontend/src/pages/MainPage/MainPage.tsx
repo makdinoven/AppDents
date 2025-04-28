@@ -1,5 +1,5 @@
 import Hero from "./Hero/Hero.tsx";
-import CoursesSection from "./CoursesSection/CoursesSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { useEffect, useRef, useState } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch, useSelector } from "react-redux";
