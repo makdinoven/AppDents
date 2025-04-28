@@ -1,10 +1,11 @@
 import secrets
 from datetime import datetime, timedelta
+from math import ceil
 from typing import Optional
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from sqlalchemy import delete
+from sqlalchemy import delete, func
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
@@ -238,3 +239,52 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: st
     db.commit()
     db.refresh(user)
     return user
+
+def list_users_paginated(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 10
+) -> dict:
+    # 1) Общее число пользователей
+    total = db.query(func.count(User.id)).scalar()
+    # 2) Смещение
+    offset = (page - 1) * size
+    # 3) Выборка
+    users = db.query(User).offset(offset).limit(size).all()
+    # 4) Подсчёт страниц
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": users,
+    }
+
+
+def search_users_paginated(
+    db: Session,
+    *,
+    q: str,
+    page: int = 1,
+    size: int = 10
+) -> dict:
+    # 1) Базовый фильтр по подстроке в email
+    base_q = db.query(User).filter(User.email.ilike(f"%{q}%"))
+    # 2) Общее число
+    total = base_q.count()
+    # 3) Смещение и лимит
+    offset = (page - 1) * size
+    users = base_q.offset(offset).limit(size).all()
+    # 4) Подсчёт страниц
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": users,
+    }
