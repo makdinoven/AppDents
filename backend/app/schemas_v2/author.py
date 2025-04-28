@@ -41,6 +41,7 @@ class AuthorResponsePage(BaseModel):
     id: int
     name: str
     photo: Optional[str] = ""
+    description: Optional[str] = ""
     language: Optional[str] = ""
 
     class Config:

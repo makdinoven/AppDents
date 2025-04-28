@@ -11,7 +11,7 @@ def list_authors_simple(db: Session, language: Optional[str] = None) -> List[dic
         query = query.filter(Author.language == language)
     authors = query.all()
     # Преобразуем результат в список словарей
-    return [{"id": a.id, "name": a.name, "language": a.language, "photo": a.photo} for a in authors]
+    return [{"id": a.id, "name": a.name, "language": a.language, "description": a.description, "photo": a.photo} for a in authors]
 
 def get_author_detail(db: Session, author_id: int) -> Author:
     author = db.query(Author).filter(Author.id == author_id).first()
