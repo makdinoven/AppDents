@@ -178,6 +178,7 @@ def get_landing_cards(
             "landing_name": landing.landing_name,
             "authors": authors,
             "slug": landing.page_name,
+            "lessons_count": landing.lessons_count,
             "main_image": landing.preview_photo,
             "old_price": landing.old_price,
             "new_price": landing.new_price,
