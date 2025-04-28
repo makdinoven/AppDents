@@ -118,14 +118,15 @@ class PurchaseResponse(BaseModel):
 
     @root_validator(pre=True)
     def extract_landing_fields(cls, values):
-        landing = values.get("landing")
+        data = dict(values)
+        landing = data.get("landing")
         if landing:
-            values["landing_slug"] = landing.page_name
-            values["landing_name"] = landing.landing_name
+            data["landing_slug"] = landing.page_name
+            data["landing_name"] = landing.landing_name
         else:
-            values["landing_slug"] = None
-            values["landing_name"] = None
-        return values
+            data["landing_slug"] = None
+            data["landing_name"] = None
+        return data
 
 class UserDetailedResponse(BaseModel):
     id: int
