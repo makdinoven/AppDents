@@ -1,6 +1,7 @@
 from datetime import time, datetime, timedelta
+from math import ceil
 
-from sqlalchemy import func
+from sqlalchemy import func, _or
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -9,8 +10,67 @@ from typing import List, cast, Optional
 from ..models.models_v2 import Landing, Author, Course, Tag, Purchase
 from ..schemas_v2.landing import LandingCreate, LandingUpdate
 
-def list_landings(db: Session, skip: int = 0, limit: int = 10) -> List[Landing]:
-    return db.query(Landing).offset(skip).limit(limit).all()
+def list_landings_paginated(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    # 1. общее число
+    total = db.query(func.count(Landing.id)).scalar()
+    # 2. смещение
+    offset = (page - 1) * size
+    # 3. сами записи
+    landings = (
+        db.query(Landing)
+          .offset(offset)
+          .limit(size)
+          .all()
+    )
+    # 4. считаем страницы
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": landings,   # ORM-объекты, pydantic orm_mode сделает остальное
+    }
+
+def search_landings_paginated(
+    db: Session,
+    *,
+    q: str,
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    # 1. базовый фильтр по подстроке в landing_name или page_name
+    base_q = (
+        db.query(Landing)
+          .filter(
+             or_(
+               Landing.landing_name.ilike(f"%{q}%"),
+               Landing.page_name.ilike(f"%{q}%")
+             )
+          )
+    )
+    # 2. общее число по фильтру
+    total = base_q.count()
+    # 3. смещение и лимит
+    offset = (page - 1) * size
+    landings = base_q.offset(offset).limit(size).all()
+    # 4. страницы
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": landings,
+    }
+
 
 def get_landing_detail(db: Session, landing_id: int) -> Landing:
     landing = db.query(Landing).filter(Landing.id == landing_id).first()
@@ -186,6 +246,68 @@ def get_landing_cards(
         cards.append(card)
 
     return {"total": total, "cards": cards}
+
+def get_landing_cards_pagination(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 20,
+    tags: Optional[List[str]] = None,
+    sort: Optional[str] = None,  # "popular", "discount", "new"
+    language: Optional[str] = None,
+) -> dict:
+    # 1) Базовый запрос и фильтры
+    query = db.query(Landing).filter(Landing.is_hidden == False)
+    if language:
+        query = query.filter(Landing.language == language.upper().strip())
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+    # 2) Считаем общее число (без пагинации)
+    total = query.distinct(Landing.id).count()
+    # 3) Сортировка
+    if sort == "popular":
+        query = query.order_by(Landing.sales_count.desc())
+    elif sort == "discount":
+        old_p = func.cast(Landing.__table__.c.old_price, Float())
+        new_p = func.cast(Landing.__table__.c.new_price, Float())
+        discount = ((old_p - new_p) / old_p) * 100
+        query = query.order_by(discount.desc())
+    elif sort == "new":
+        query = query.order_by(Landing.id.desc())
+    else:
+        query = query.order_by(Landing.id)
+    # 4) Пагинация по страницам
+    offset = (page - 1) * size
+    items = query.offset(offset).limit(size).all()
+    # 5) Формируем карточки
+    cards = []
+    for landing in items:
+        first_tag = landing.tags[0].name if landing.tags else None
+        authors = [
+            {"id": a.id, "name": a.name, "photo": a.photo}
+            for a in landing.authors
+        ]
+        cards.append({
+            "first_tag": first_tag,
+            "landing_name": landing.landing_name,
+            "authors": authors,
+            "slug": landing.page_name,
+            "lessons_count": landing.lessons_count,
+            "main_image": landing.preview_photo,
+            "old_price": landing.old_price,
+            "new_price": landing.new_price,
+        })
+    # 6) Подсчёт общего числа страниц
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "cards": cards,
+    }
+
 
 def get_purchases_by_language(
     db: Session,

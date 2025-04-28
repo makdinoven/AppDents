@@ -113,6 +113,14 @@ class LandingCardResponse(BaseModel):
 
 class LandingCardsResponse(BaseModel):
     total: int
+    cards : List[LandingCardResponse]
+
+
+class LandingCardsResponsePaginations(BaseModel):
+    total: int            # общее число записей
+    total_pages: int      # общее число страниц
+    page: int             # текущая страница
+    size: int             # размер страницы
     cards: List[LandingCardResponse]
 
 
@@ -128,3 +136,10 @@ class LandingItemResponse(BaseModel):
 class LandingSearchResponse(BaseModel):
     total: int
     items: List[LandingItemResponse]
+
+class LandingListPageResponse(BaseModel):
+    total: int            # общее число записей
+    total_pages: int      # общее число страниц
+    page: int             # текущая страница
+    size: int             # размер страницы
+    items: List[LandingListResponse]

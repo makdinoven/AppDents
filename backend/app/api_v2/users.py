@@ -12,13 +12,13 @@ from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
-    UserUpdateFull, UserDetailResponse
+    UserUpdateFull, UserDetailResponse, UserListPageResponse
 from ..schemas_v2.user import UserCreate, UserRead, Token, UserUpdateRole, UserUpdatePassword, UserAddCourse, \
     UserRegistrationResponse
 from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
-    remove_course_from_user, delete_user, update_user_full, get_user_by_id
+    remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated, search_users_paginated
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -177,21 +177,54 @@ def create_user_admin(
     user = create_user(db, email=user_data.email, password=user_data.password, role=user_data.role)
     return UserRead.from_orm(user)
 
-@router.get("/admin/users",
-            response_model=List[UserShortResponse],
-            summary="Список всех пользователей (Админ)")
+@router.get(
+    "/admin/users",
+    response_model=UserListPageResponse,
+    summary="Список всех пользователей (Админ)"
+)
 def get_all_users(
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
-):
+) -> dict:
     """
-    Возвращает список всех пользователей: только id и email.
-    Поиск/фильтрация по email может осуществляться фронтендом.
+    Возвращает пагинированный список всех пользователей:
+    {
+      total: <общее число>,
+      total_pages: <число страниц>,
+      page: <текущая страница>,
+      size: <размер страницы>,
+      items: […UserShortResponse…]
+    }
     """
-    # Получаем всех пользователей
-    users = db.query(User).all()
-    # Возвращаем, а Pydantic сам смапит к UserShortResponse
-    return users
+    return list_users_paginated(db, page=page, size=size)
+
+
+@router.get(
+    "/admin/users/search",
+    response_model=UserListPageResponse,
+    summary="Поиск пользователей по email (Админ)"
+)
+def search_users(
+    q: str = Query(..., min_length=1, description="Подстрока для поиска в email"),
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+) -> dict:
+    """
+    То же, что /admin/users, но с фильтром по email:
+    {
+      total: <число совпадений>,
+      total_pages: <число страниц>,
+      page: <текущая страница>,
+      size: <размер страницы>,
+      items: […UserShortResponse…]
+    }
+    """
+    return search_users_paginated(db, q=q, page=page, size=size)
+
 
 @router.delete("/admin/{user_id}", summary="Удалить пользователя (Админ)")
 def delete_user_route(

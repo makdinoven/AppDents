@@ -1,11 +1,64 @@
+from math import ceil
+
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi import HTTPException
 from ..models.models_v2 import Course
 from ..schemas_v2.course import CourseUpdate, CourseCreate
-from typing import List
 
-def list_courses(db: Session, skip: int = 0, limit: int = 10) -> List[Course]:
-    return db.query(Course).offset(skip).limit(limit).all()
+
+def list_courses_paginated(
+    db: Session,
+    *,
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    # 1) считаем общее число курсов
+    total = db.query(func.count(Course.id)).scalar()
+    # 2) вычисляем смещение
+    offset = (page - 1) * size
+    # 3) достаём нужную «страницу»
+    courses = (
+        db.query(Course)
+          .offset(offset)
+          .limit(size)
+          .all()
+    )
+    # 4) считаем число страниц
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": courses,
+    }
+
+def search_courses_paginated(
+    db: Session,
+    *,
+    q: str,
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    # 1) базовый запрос с поиском по name (case-insensitive)
+    base = db.query(Course).filter(Course.name.ilike(f"%{q}%"))
+    # 2) общее число по этому фильтру
+    total = base.count()
+    # 3) пагинация
+    offset = (page - 1) * size
+    courses = base.offset(offset).limit(size).all()
+    # 4) общее число страниц
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": courses,
+    }
 
 def get_course_detail(db: Session, course_id: int) -> Course:
     course = db.query(Course).filter(Course.id == course_id).first()
