@@ -1,6 +1,6 @@
 import s from "./CoursesSection.module.scss";
-import SectionHeader from "../../../components/ui/SectionHeader/SectionHeader.tsx";
-import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
+import SectionHeader from "../../ui/SectionHeader/SectionHeader.tsx";
+import SelectableList from "../SelectableList/SelectableList.tsx";
 import CardsList from "./CardsList/CardsList.tsx";
 import {
   LANGUAGES,

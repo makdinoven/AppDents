@@ -4,9 +4,10 @@ import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useEffect } from "react";
 import { getMe } from "../../store/actions/userActions.ts";
 import { Outlet, useNavigate } from "react-router-dom";
-import CoursesSection from "../MainPage/CoursesSection/CoursesSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
+
 const ProfilePage = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
