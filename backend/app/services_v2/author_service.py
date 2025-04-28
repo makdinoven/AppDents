@@ -1,17 +1,49 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from sqlalchemy import func
 from ..models.models_v2 import Author
-from ..schemas_v2.author import AuthorCreate, AuthorUpdate
+from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage
 
 
-def list_authors_simple(db: Session, language: Optional[str] = None) -> List[dict]:
-    query = db.query(Author.id, Author.name, Author.description, Author.language, Author.photo)
+def list_authors_paginated(
+    db: Session,
+    *,
+    skip: int = 0,
+    limit: int = 10,
+    language: Optional[str] = None
+) -> dict:
+    # Базовый запрос с возможным фильтром по языку
+    base_query = db.query(Author)
     if language:
-        query = query.filter(Author.language == language)
-    authors = query.all()
-    # Преобразуем результат в список словарей
-    return [{"id": a.id, "name": a.name, "language": a.language, "description": a.description, "photo": a.photo} for a in authors]
+        base_query = base_query.filter(Author.language == language)
+
+    # Считаем общее кол-во
+    total = db.query(func.count(Author.id)).filter(
+        Author.language == language
+    ).scalar() if language else db.query(func.count(Author.id)).scalar()
+
+    # Получаем нужную «страницу»
+    authors = (
+        base_query
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+    # Формируем ответ
+    items = [
+        AuthorResponsePage(
+            id=a.id,
+            name=a.name,
+            description=a.description,
+            language=a.language,
+            photo=a.photo,
+        )
+        for a in authors
+    ]
+
+    return {"total": total, "items": items}
 
 def get_author_detail(db: Session, author_id: int) -> Author:
     author = db.query(Author).filter(Author.id == author_id).first()
