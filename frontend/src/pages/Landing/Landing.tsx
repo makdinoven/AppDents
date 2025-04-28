@@ -1,5 +1,5 @@
 import s from "./Landing.module.scss";
-import { useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
@@ -21,14 +21,15 @@ import { Trans } from "react-i18next";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
+import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
@@ -37,10 +38,12 @@ const Landing = () => {
   const formattedAuthorsDesc = (
     <FormattedAuthorsDesc authors={landing?.authors} />
   );
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
+  const { role } = useSelector((state: AppRootStateType) => state.user);
   useEffect(() => {
     dispatch(getMe());
   }, [dispatch]);
@@ -149,7 +152,16 @@ const Landing = () => {
 
   return (
     <>
-      <BackButton />
+      <div className={s.landing_top}>
+        <BackButton />
+        {role === "admin" && (
+          <PrettyButton
+            variant="primary"
+            text={"admin.landings.edit"}
+            onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
+          />
+        )}
+      </div>
       {loading ? (
         <Loader />
       ) : (

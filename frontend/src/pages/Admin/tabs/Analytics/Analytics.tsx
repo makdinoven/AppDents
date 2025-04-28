@@ -20,21 +20,34 @@ const Analytics = () => {
   const [limit, setLimit] = useState<string>("10");
   const [landings, setLandings] = useState<[] | null>(null);
   const [languageStats, setLanguageStats] = useState<[] | null>(null);
+  const getFormattedDate = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+  const [startDate, setStartDate] = useState<string>(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return getFormattedDate(yesterday);
+  });
+  const [endDate, setEndDate] = useState<string>(() =>
+    getFormattedDate(new Date()),
+  );
 
   useEffect(() => {
     fetchLandingsStats();
-  }, []);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchMostPopularLandings();
   }, [language, limit]);
 
   const fetchMostPopularLandings = async () => {
+    const params = {
+      language: language,
+      limit: limit,
+    };
+
     try {
-      const res = await adminApi.getMostPopularLandings({
-        language: language,
-        limit: limit,
-      });
+      const res = await adminApi.getMostPopularLandings(params);
       setLandings(res.data);
     } catch (err) {
       console.error(err);
@@ -42,18 +55,47 @@ const Analytics = () => {
   };
 
   const fetchLandingsStats = async () => {
+    const params = {
+      start_date: startDate,
+      end_date: endDate,
+    };
+
     try {
-      const res = await adminApi.getLanguageStats();
+      const res = await adminApi.getLanguageStats(params);
       setLanguageStats(res.data.data);
     } catch (err) {
       console.error(err);
     }
   };
 
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartDate(e.target.value);
+  };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
+  };
+
   return (
     <div className={s.analytics_page}>
       <div className={s.top}>
         <div className={s.analytics_options}>
+          <label htmlFor="start_date">Start date</label>
+          <input
+            id="start_date"
+            value={startDate}
+            className={s.date_input}
+            onChange={handleStartDateChange}
+            type="date"
+          />
+          <label htmlFor="end_date">End date</label>
+          <input
+            id="end_date"
+            value={endDate}
+            className={s.date_input}
+            onChange={handleEndDateChange}
+            type="date"
+          />
           <MultiSelect
             isSearchable={false}
             id={"language"}
@@ -79,6 +121,7 @@ const Analytics = () => {
             labelKey="name"
           />
         </div>
+
         {languageStats && (
           <div className={s.languages_table}>
             <Table

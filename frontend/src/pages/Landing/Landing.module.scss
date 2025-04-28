@@ -1,3 +1,12 @@
+.landing_top {
+  display: flex;
+  justify-content: space-between;
+
+  button {
+    height: fit-content;
+  }
+}
+
 .landing {
   @include flex-column;
   gap: 140px;

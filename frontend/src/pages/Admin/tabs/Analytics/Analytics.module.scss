@@ -10,6 +10,12 @@
   gap: 20px;
 }
 
+.date_input {
+  border: 1px solid $accent;
+  padding: 5px 10px;
+  border-radius: 10px;
+}
+
 .analytics_options {
   height: fit-content;
   display: grid;
@@ -18,6 +24,7 @@
 }
 
 .languages_table {
+  height: 100%;
   flex: 1;
 }
 

@@ -4,7 +4,7 @@ import { Trans } from "react-i18next";
 
 interface FieldProps {
   id: string;
-  type: "textarea" | "input";
+  type: "textarea" | "input" | "date";
   value?: string | number;
   onChange: (value: string) => void;
   onBlur?: any;

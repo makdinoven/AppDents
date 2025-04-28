@@ -13,6 +13,15 @@
   td {
     padding: 8px;
     text-align: left;
+
+    a {
+      text-decoration: underline;
+      @include transition;
+
+      &:hover {
+        color: $primary;
+      }
+    }
   }
 
   th {
@@ -26,6 +35,7 @@
 }
 
 .empty {
+  height: 100%;
   padding: 16px;
   text-align: center;
   color: #999;
