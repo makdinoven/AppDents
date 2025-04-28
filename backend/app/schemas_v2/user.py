@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, root_validator
 from typing import Optional, List, Any
 
 from ..schemas_v2.course import CourseListResponseShort
@@ -123,7 +123,7 @@ class PurchaseResponse(BaseModel):
     class Config:
         orm_mode = True
 
-    @validator(pre=True)
+    @root_validator(pre=True)
     def extract_landing_fields(cls, values):
         landing = values.get("landing")
         if landing:
