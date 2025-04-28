@@ -58,8 +58,8 @@ const LandingDetail = () => {
         lessons_info: normalizeLessons(landingRes.data.lessons_info),
       });
       setTags(tagsRes.data);
-      setCourses(coursesRes.data);
-      setAuthors(authorsRes.data);
+      setCourses(coursesRes.data.items);
+      setAuthors(authorsRes.data.items);
     } catch (error) {
       console.error("Error fetching data", error);
     } finally {

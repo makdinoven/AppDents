@@ -40,7 +40,7 @@ const UserDetail = () => {
         adminApi.getCoursesList(),
       ]);
       setUser(userRes.data);
-      setCourses(coursesRes.data);
+      setCourses(coursesRes.data.items);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching data", error);

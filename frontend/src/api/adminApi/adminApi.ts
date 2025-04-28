@@ -114,7 +114,9 @@ export const adminApi = {
   getMostPopularLandings(params: any) {
     return instance.get("landings/most-popular", { params: params });
   },
-  getLanguageStats() {
-    return instance.get("landings/analytics/language-stats");
+  getLanguageStats(params: any) {
+    return instance.get("landings/analytics/language-stats", {
+      params: params,
+    });
   },
 };

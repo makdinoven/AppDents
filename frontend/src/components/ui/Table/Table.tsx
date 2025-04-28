@@ -1,4 +1,5 @@
 import s from "./Table.module.scss";
+import { Path } from "../../../routes/routes.ts";
 
 interface TableProps<T extends Record<string, any>> {
   data: T[];
@@ -11,7 +12,7 @@ const Table = <T extends Record<string, any>>({
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
-  const headers = Object.keys(data[0]);
+  const headers = Object.keys(data[0]).filter((key) => key !== "slug");
 
   return (
     <div className={s.table_wrapper}>
@@ -30,7 +31,15 @@ const Table = <T extends Record<string, any>>({
               <td>{rowIdx + 1}</td>
               {headers.map((key) => (
                 <td key={key}>
-                  {typeof row[key] === "boolean" ? (
+                  {key === "landing_name" ? (
+                    <a
+                      href={`${Path.landing}/${row.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {row[key]}
+                    </a>
+                  ) : typeof row[key] === "boolean" ? (
                     row[key] ? (
                       <span className="highlight">Yes</span>
                     ) : (
