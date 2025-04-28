@@ -17,6 +17,7 @@ import UserDetail from "../pages/Admin/pages/UserDetail.tsx";
 import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
 import ProfessorPage from "../pages/ProfessorPage/ProfessorPage.tsx";
 import UniversalPage from "../pages/UniversalPage/UniversalPage.tsx";
+import Professors from "../pages/Professors/Professors.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -32,6 +33,7 @@ export const AppRoutes: FC = () => {
           path={`${Path.professor}/:professorId/:modalType?`}
           element={<ProfessorPage />}
         />
+        <Route path={Path.professors} element={<Professors />} />
         <Route
           path={`${Path.info}/:pageType/:modalType?`}
           element={<UniversalPage />}

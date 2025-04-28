@@ -27,7 +27,7 @@ import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
-import CoursesSection from "../MainPage/CoursesSection/CoursesSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 
 const Landing = () => {

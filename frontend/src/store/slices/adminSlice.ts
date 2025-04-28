@@ -117,7 +117,7 @@ const adminSlice = createSlice({
         getAuthors.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.authors = action.payload.res.data.sort(
+          state.authors = action.payload.res.data.items.sort(
             (a: { id: number }, b: { id: number }) => b.id - a.id,
           );
         },
