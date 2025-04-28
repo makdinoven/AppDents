@@ -13,10 +13,15 @@ import { userApi } from "../../api/userApi/userApi.ts";
 import { ChangePasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../store/store.ts";
 
 const ForgotPasswordModal = () => {
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
   const {
     register,
     handleSubmit,
@@ -28,7 +33,8 @@ const ForgotPasswordModal = () => {
 
   const handleResetPassword = async (email: any) => {
     try {
-      await userApi.forgotPassword(email);
+      await userApi.forgotPassword(email, language);
+      alert(t("forgotPasswordSuccess"));
       navigate("/login");
     } catch (error: any) {
       setError(error.response.data.detail.error.translation_key);

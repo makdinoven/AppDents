@@ -13,10 +13,15 @@ import { useNavigate } from "react-router-dom";
 import { ChangePasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../store/store.ts";
 
 const SignUpModal = () => {
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
   const {
     register,
     handleSubmit,
@@ -28,7 +33,8 @@ const SignUpModal = () => {
 
   const handleSignUp = async (email: any) => {
     try {
-      await userApi.signUp(email);
+      await userApi.signUp(email, language);
+      alert(t("registrationSuccess"));
       navigate("/login");
     } catch (error) {
       setError(error);

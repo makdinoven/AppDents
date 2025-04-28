@@ -95,7 +95,7 @@ const CoursesSection = ({
     <section className={s.courses}>
       <div className={s.courses_header}>
         <SectionHeader name={sectionTitle} />
-        {showFilters && tags && (
+        {showFilters && tags && tags.length > 0 && (
           <>
             <SelectableList
               items={tags}
@@ -105,7 +105,7 @@ const CoursesSection = ({
             <span className={s.line}></span>
           </>
         )}
-        {showSort && (
+        {showSort && cards.length > 0 && (
           <SelectableList
             items={SORT_FILTERS}
             activeValue={activeSort}

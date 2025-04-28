@@ -194,7 +194,7 @@ def full_detail(author_id: int, db: Session = Depends(get_db)):
       - список его лендингов (old/new price, 1‑й тег, имя, slug, картинка, course_ids)
       - все course_ids по всем лендингам
       - суммарную new_price по всем лендингам
-      - количество лендингов
+      - количество  лендингов
     """
     detail = get_author_full_detail(db, author_id)
     if detail is None:

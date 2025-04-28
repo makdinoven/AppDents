@@ -2,6 +2,7 @@ import s from "./Footer.module.scss";
 import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
 import { t } from "i18next";
+import { Path } from "../../routes/routes";
 
 type FooterItem = {
   type: string;
@@ -46,34 +47,17 @@ const Footer = () => {
         {
           type: "item",
           name: <Trans i18nKey={"footer.terms"} />,
-          link: "/",
-        },
-        {
-          type: "item",
-          name: <Trans i18nKey={"footer.cookie"} />,
-          link: "/",
+          link: `${Path.termsOfUse}`,
         },
         {
           type: "item",
           name: <Trans i18nKey={"footer.privacy"} />,
-          link: "/",
-        },
-      ],
-    },
-    {
-      name: "product",
-      list: [
-        { type: "title", name: <Trans i18nKey={"footer.product"} /> },
-        { type: "item", name: <Trans i18nKey={"footer.home"} />, link: "/" },
-        {
-          type: "item",
-          name: <Trans i18nKey={"footer.tour"} />,
-          link: "/",
+          link: `${Path.privacyPolicy}`,
         },
         {
           type: "item",
-          name: <Trans i18nKey={"footer.templates"} />,
-          link: "/",
+          name: <Trans i18nKey={"footer.cookie"} />,
+          link: `${Path.cookiePolicy}`,
         },
       ],
     },

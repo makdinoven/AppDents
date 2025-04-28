@@ -8,7 +8,7 @@ import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";
 import LineWrapper from "../../../components/ui/LineWrapper/LineWrapper.tsx";
 
-const Hero = () => {
+const Hero = ({ onClickScroll }: { onClickScroll: () => void }) => {
   return (
     <>
       <section className={s.hero}>
@@ -29,7 +29,7 @@ const Hero = () => {
               />
               <img src={HeroBackground} alt="" />
             </picture>
-            <div className={s.glass_block}>
+            <div onClick={onClickScroll} className={s.glass_block}>
               <CircleArrow />
               <p>
                 <Trans i18nKey="main.hero.description" />
@@ -47,7 +47,10 @@ const Hero = () => {
             />
           </p>
           <LineWrapper>
-            <ArrowButton text={t("main.hero.chooseCourse")} />
+            <ArrowButton
+              onClick={onClickScroll}
+              text={t("main.hero.chooseCourse")}
+            />
           </LineWrapper>
           <p className={s.bottom_secondary_desc}>
             <Trans
