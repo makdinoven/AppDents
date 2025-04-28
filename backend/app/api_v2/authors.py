@@ -31,6 +31,11 @@ def get_authors(
         ge=1,
         description="Номер страницы (начиная с 1)"
     ),
+    size: int = Query(
+        12,
+        ge=1,
+        description="Количество возвращаемых записей"
+    ),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -43,7 +48,7 @@ def get_authors(
         "items": [ ...список авторов... ]
     }
     """
-    return list_authors_by_page(db, page=page, size=12, language=language)
+    return list_authors_by_page(db, page=page, size=size, language=language)
 
 @router.get("/detail/{author_id}", response_model=AuthorResponse)
 def get_author(author_id: int, db: Session = Depends(get_db)):
