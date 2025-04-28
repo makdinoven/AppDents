@@ -6,7 +6,7 @@ from ..schemas_v2.author import AuthorCreate, AuthorUpdate
 
 
 def list_authors_simple(db: Session, language: Optional[str] = None) -> List[dict]:
-    query = db.query(Author.id, Author.name, Author.language, Author.photo)
+    query = db.query(Author.id, Author.name, Author.description, Author.language, Author.photo)
     if language:
         query = query.filter(Author.language == language)
     authors = query.all()
