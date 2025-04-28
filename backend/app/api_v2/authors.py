@@ -242,6 +242,11 @@ def search_authors(
         ge=1,
         description="Номер страницы (начиная с 1)"
     ),
+    size: int = Query(
+        12,
+        ge=1,
+        description="Количество возвращаемых записей"
+    ),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -259,6 +264,6 @@ def search_authors(
         db,
         search=q,
         page=page,
-        size=12,
+        size=size,
         language=language
     )
