@@ -37,7 +37,7 @@ export const mainApi = {
     });
   },
 
-  getProfessors(params: { language: string; skip: number; limit: number }) {
+  getProfessors(params: { language: string; size: number; page: number }) {
     return instance.get("authors/", {
       params: params,
     });

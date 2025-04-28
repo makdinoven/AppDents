@@ -3,7 +3,7 @@ import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 
 export const adminApi = {
   getCoursesList() {
-    return instance.get("courses/list?skip=0&limit=10000", {
+    return instance.get("courses/list?size=1000", {
       headers: getAuthHeaders(),
     });
   },
@@ -29,7 +29,7 @@ export const adminApi = {
   },
 
   getLandingsList() {
-    return instance.get("landings/list?skip=0&limit=10000", {
+    return instance.get("landings/list?size=1000", {
       headers: getAuthHeaders(),
     });
   },
@@ -86,7 +86,9 @@ export const adminApi = {
   },
 
   getUsersList() {
-    return instance.get("users/admin/users", { headers: getAuthHeaders() });
+    return instance.get("users/admin/users?size=100000", {
+      headers: getAuthHeaders(),
+    });
   },
   getUser(id: any) {
     return instance.get(`users/admin/${id}/detail`, {

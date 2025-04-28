@@ -43,7 +43,7 @@ const adminSlice = createSlice({
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.courses = action.payload.res.data.sort(
+          state.courses = action.payload.res.data.items.sort(
             (a: { id: number }, b: { id: number }) => b.id - a.id,
           );
         },
@@ -80,7 +80,7 @@ const adminSlice = createSlice({
         getLandings.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.landings = action.payload.res.data.sort(
+          state.landings = action.payload.res.data.items.sort(
             (a: { id: number }, b: { id: number }) => b.id - a.id,
           );
         },
@@ -155,7 +155,7 @@ const adminSlice = createSlice({
         getUsers.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.users = action.payload.res.data.sort(
+          state.users = action.payload.res.data.items.sort(
             (a: { id: number }, b: { id: number }) => b.id - a.id,
           );
         },
