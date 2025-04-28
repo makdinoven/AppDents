@@ -335,7 +335,7 @@ def get_purchases_by_language(
     results = query.all()
 
     return [
-        {"language": row.language, "count": row.purchase_count, "total_amount": row.total_amount}
+        {"language": row.language, "count": row.purchase_count, "total_amount": f"{row.total_amount} $"}
         for row in results
     ]
 def check_and_reset_ad_flag(landing: Landing, db: Session):
