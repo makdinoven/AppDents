@@ -9,7 +9,7 @@ from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
 
-from ..services_v2.landing_service import list_landings, get_landing_detail, create_landing, update_landing, \
+from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
