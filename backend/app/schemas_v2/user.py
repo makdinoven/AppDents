@@ -1,3 +1,4 @@
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List, Any
@@ -55,15 +56,6 @@ class UserCreateAdmin(BaseModel):
     password: str
     role: str
 
-class UserDetailedResponse(BaseModel):
-    id: int
-    email: EmailStr
-    role: str
-    courses: List[int]  # "Forward reference" при необходимости
-
-    class Config:
-        orm_mode = True
-
     @validator("courses", pre=True)
     def convert_courses_to_ids(cls, value):
         if value is None:
@@ -120,3 +112,36 @@ class UserUpdateFull(BaseModel):
     password: Optional[str] = None
     # Чтобы полностью переопределять купленные курсы:
     courses: Optional[List[int]] = None
+
+class PurchaseResponse(BaseModel):
+    id: int
+    course_id: Optional[int]               # если покупка была курса
+    landing_slug: Optional[str]            # вместо landing_id
+    landing_name: Optional[str]            # название лендинга
+    created_at: datetime
+    from_ad: bool
+    amount: float
+
+    class Config:
+        orm_mode = True
+
+    @validator(pre=True)
+    def extract_landing_fields(cls, values):
+        landing = values.get("landing")
+        if landing:
+            values["landing_slug"] = landing.page_name
+            values["landing_name"] = landing.landing_name
+        else:
+            values["landing_slug"] = None
+            values["landing_name"] = None
+        return values
+
+class UserDetailedResponse(BaseModel):
+    id: int
+    email: EmailStr
+    role: str
+    courses: List[int]
+    purchases: List[PurchaseResponse]
+
+    class Config:
+        orm_mode = True

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User
+from ..models.models_v2 import User, Purchase
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -251,20 +251,26 @@ def remove_user_course(
     remove_course_from_user(db, user_id, course_id)
     return {"message": "Курс успешно удален у пользователя"}
 
-@router.get("/admin/{user_id}/detail",
-            response_model=UserDetailedResponse,
-            summary="Детальная информация о пользователе (Админ)")
+@router.get(
+    "/admin/{user_id}/detail",
+    response_model=UserDetailedResponse,
+    summary="Детальная информация о пользователе (Админ)"
+)
 def get_user_details(
     user_id: int,
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
     """
-    Возвращает полную информацию о пользователе, включая роль и купленные курсы.
+    Возвращает полную информацию о пользователе, включая роль,
+    купленные курсы и все покупки с полями landing_slug и landing_name.
     """
     user = (
         db.query(User)
-        .options(joinedload(User.courses))  # Жадно загружаем связанные курсы
+        .options(
+            joinedload(User.courses),
+            joinedload(User.purchases).joinedload(Purchase.landing)
+        )
         .filter(User.id == user_id)
         .first()
     )

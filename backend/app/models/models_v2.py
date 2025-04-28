@@ -102,7 +102,7 @@ class Purchase(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     landing_id = Column(Integer, ForeignKey('landings.id'), nullable=True)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=True)
-    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
 
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
