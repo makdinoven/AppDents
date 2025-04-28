@@ -1,7 +1,7 @@
 from datetime import time, datetime, timedelta
 from math import ceil
 
-from sqlalchemy import func, _or
+from sqlalchemy import func, or_
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
