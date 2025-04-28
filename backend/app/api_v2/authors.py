@@ -9,16 +9,44 @@ from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Author
-from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorFullDetailResponse
-from ..services_v2.author_service import list_authors_simple, get_author_detail, create_author, update_author, \
-    delete_author, get_author_full_detail
+from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, \
+    AuthorFullDetailResponse, AuthorsPage
+from ..services_v2.author_service import get_author_detail, create_author, update_author, \
+    delete_author, get_author_full_detail, list_authors_paginated
 
 router = APIRouter()
 
-@router.get("/", response_model=List[AuthorResponsePage])
-def get_authors(language: Optional[str] = Query(None, description="Filter by language (EN, RU, ES, PT, IT, AR)"),
-                db: Session = Depends(get_db)):
-    return list_authors_simple(db, language)
+@router.get(
+    "/",
+    response_model=AuthorsPage,
+    summary="Список авторов с пагинацией"
+)
+def get_authors(
+    language: Optional[str] = Query(
+        None,
+        description="Фильтр по языку (EN, RU, ES, PT, IT, AR)"
+    ),
+    skip: int = Query(
+        0,
+        ge=0,
+        description="Сколько записей пропустить (offset)"
+    ),
+    limit: int = Query(
+        10,
+        ge=1,
+        le=100,
+        description="Сколько записей вернуть (max 100)"
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Возвращает словарь вида:
+    {
+      "total": <общее количество авторов (после фильтра)>,
+      "items": [ ...список авторов... ]
+    }
+    """
+    return list_authors_paginated(db, skip=skip, limit=limit, language=language)
 
 @router.get("/detail/{author_id}", response_model=AuthorResponse)
 def get_author(author_id: int, db: Session = Depends(get_db)):

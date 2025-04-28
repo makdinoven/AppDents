@@ -77,3 +77,7 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     total_new_price: float
     total_old_price: float
     landing_count: int
+
+class AuthorsPage(BaseModel):
+    total: int
+    items: List[AuthorResponsePage]
