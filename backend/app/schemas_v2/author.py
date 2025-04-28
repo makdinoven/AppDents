@@ -79,5 +79,8 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landing_count: int
 
 class AuthorsPage(BaseModel):
-    total: int
-    items: List[AuthorResponsePage]
+    total: int           # общее число записей
+    total_pages: int     # общее число страниц
+    page: int            # текущая страница
+    size: int            # размер страницы (число элементов на странице)
+    items: List[AuthorResponse]

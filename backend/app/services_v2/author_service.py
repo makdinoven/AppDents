@@ -1,39 +1,47 @@
+from math import ceil
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from sqlalchemy import func
 from ..models.models_v2 import Author
-from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage
+from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
 
-def list_authors_paginated(
+def list_authors_by_page(
     db: Session,
     *,
-    skip: int = 0,
-    limit: int = 10,
+    page: int = 1,
+    size: int = 12,
     language: Optional[str] = None
 ) -> dict:
-    # Базовый запрос с возможным фильтром по языку
+    # 1) Базовый запрос для фильтрации
     base_query = db.query(Author)
     if language:
         base_query = base_query.filter(Author.language == language)
 
-    # Считаем общее кол-во
-    total = db.query(func.count(Author.id)).filter(
+    # 2) Считаем общее число записей под фильтром
+    total = db.query(func.count(Author.id)).select_from(Author).filter(
         Author.language == language
-    ).scalar() if language else db.query(func.count(Author.id)).scalar()
+    ).scalar() if language else db.query(func.count(Author.id)).select_from(Author).scalar()
 
-    # Получаем нужную «страницу»
+    # 3) Вычисляем смещение
+    offset = (page - 1) * size
+
+    # 4) Получаем нужный «кусок» данных
     authors = (
         base_query
-        .offset(skip)
-        .limit(limit)
+        .offset(offset)
+        .limit(size)
         .all()
     )
 
-    # Формируем ответ
+    # 5) Подсчитываем общее число страниц
+    total_pages = ceil(total / size) if total else 0
+
+    # 6) Формируем список Pydantic-моделей
     items = [
-        AuthorResponsePage(
+        AuthorResponse(
             id=a.id,
             name=a.name,
             description=a.description,
@@ -43,7 +51,13 @@ def list_authors_paginated(
         for a in authors
     ]
 
-    return {"total": total, "items": items}
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": items,
+    }
 
 def get_author_detail(db: Session, author_id: int) -> Author:
     author = db.query(Author).filter(Author.id == author_id).first()

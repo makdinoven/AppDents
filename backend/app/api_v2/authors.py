@@ -12,41 +12,38 @@ from ..models.models_v2 import User, Author
 from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, \
     AuthorFullDetailResponse, AuthorsPage
 from ..services_v2.author_service import get_author_detail, create_author, update_author, \
-    delete_author, get_author_full_detail, list_authors_paginated
+    delete_author, get_author_full_detail, list_authors_by_page
 
 router = APIRouter()
 
 @router.get(
     "/",
     response_model=AuthorsPage,
-    summary="Список авторов с пагинацией"
+    summary="Список авторов с пагинацией по страницам"
 )
 def get_authors(
     language: Optional[str] = Query(
         None,
         description="Фильтр по языку (EN, RU, ES, PT, IT, AR)"
     ),
-    skip: int = Query(
-        0,
-        ge=0,
-        description="Сколько записей пропустить (offset)"
-    ),
-    limit: int = Query(
-        10,
+    page: int = Query(
+        1,
         ge=1,
-        le=100,
-        description="Сколько записей вернуть (max 100)"
+        description="Номер страницы (начиная с 1)"
     ),
     db: Session = Depends(get_db),
 ) -> dict:
     """
-    Возвращает словарь вида:
+    Возвращает:
     {
-      "total": <общее количество авторов (после фильтра)>,
-      "items": [ ...список авторов... ]
+        "total": <общее число авторов после фильтра>,
+        "total_pages": <общее число страниц>,
+        "page": <текущая страница>,
+        "size": 12,  # фиксированный размер страницы
+        "items": [ ...список авторов... ]
     }
     """
-    return list_authors_paginated(db, skip=skip, limit=limit, language=language)
+    return list_authors_by_page(db, page=page, size=12, language=language)
 
 @router.get("/detail/{author_id}", response_model=AuthorResponse)
 def get_author(author_id: int, db: Session = Depends(get_db)):
