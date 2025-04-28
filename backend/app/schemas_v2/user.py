@@ -56,12 +56,12 @@ class UserCreateAdmin(BaseModel):
     password: str
     role: str
 
-    @validator("courses", pre=True)
-    def convert_courses_to_ids(cls, value):
-        if value is None:
-            return []
-        # Если это список ORM объектов, извлекаем их ID
-        return [course.id for course in value]
+    # @validator("courses", pre=True)
+    # def convert_courses_to_ids(cls, value):
+    #     if value is None:
+    #         return []
+    #     # Если это список ORM объектов, извлекаем их ID
+    #     return [course.id for course in value]
 
 class UserShortResponse(BaseModel):
     id: int
