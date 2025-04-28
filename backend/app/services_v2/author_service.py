@@ -167,3 +167,67 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
     }
+
+def _search_authors_query(
+    db: Session,
+    *,
+    search: str,
+    language: Optional[str]
+):
+    """
+    Возвращает базовый query с фильтрами по строке поиска и языку.
+    """
+    q = db.query(Author)
+    # Поиск в поле name (case-insensitive)
+    q = q.filter(Author.name.ilike(f"%{search}%"))
+    if language:
+        q = q.filter(Author.language == language)
+    return q
+
+def list_authors_search_paginated(
+    db: Session,
+    *,
+    search: str,
+    page: int = 1,
+    size: int = 12,
+    language: Optional[str] = None
+) -> dict:
+    # 1) Готовим базовый запрос
+    base_query = _search_authors_query(db, search=search, language=language)
+
+    # 2) Считаем общее число под этот запрос
+    total = db.query(func.count(Author.id))\
+              .select_from(Author)\
+              .filter(Author.name.ilike(f"%{search}%"))\
+              .filter(Author.language == language) if language else \
+            db.query(func.count(Author.id))\
+              .select_from(Author)\
+              .filter(Author.name.ilike(f"%{search}%"))
+    total = total.scalar()
+
+    # 3) Пагинация
+    offset = (page - 1) * size
+    authors = base_query.offset(offset).limit(size).all()
+
+    # 4) Подсчёт страниц
+    total_pages = ceil(total / size) if total else 0
+
+    # 5) Формируем список Pydantic-моделей
+    items = [
+        AuthorResponse(
+            id=a.id,
+            name=a.name,
+            description=a.description,
+            language=a.language,
+            photo=a.photo,
+        )
+        for a in authors
+    ]
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": items,
+    }

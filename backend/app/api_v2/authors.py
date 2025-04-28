@@ -12,7 +12,7 @@ from ..models.models_v2 import User, Author
 from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, \
     AuthorFullDetailResponse, AuthorsPage
 from ..services_v2.author_service import get_author_detail, create_author, update_author, \
-    delete_author, get_author_full_detail, list_authors_by_page
+    delete_author, get_author_full_detail, list_authors_by_page, list_authors_search_paginated
 
 router = APIRouter()
 
@@ -225,3 +225,40 @@ def full_detail(author_id: int, db: Session = Depends(get_db)):
     if detail is None:
         raise HTTPException(status_code=404, detail="Author not found")
     return detail
+
+@router.get(
+    "/search",
+    response_model=AuthorsPage,
+    summary="Поиск авторов с пагинацией"
+)
+def search_authors(
+    q: str = Query(..., min_length=1, description="Строка поиска по имени автора"),
+    language: Optional[str] = Query(
+        None,
+        description="Фильтр по языку (EN, RU, ES, PT, IT, AR)"
+    ),
+    page: int = Query(
+        1,
+        ge=1,
+        description="Номер страницы (начиная с 1)"
+    ),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    Поиск авторов по подстроке в имени (case-insensitive).
+    Возвращает тот же формат, что и обычный список:
+    {
+      total: <общее число совпадений>,
+      total_pages: <число страниц при размере size=12>,
+      page: <текущая страница>,
+      size: 12,
+      items: [ …авторы… ]
+    }
+    """
+    return list_authors_search_paginated(
+        db,
+        search=q,
+        page=page,
+        size=12,
+        language=language
+    )
