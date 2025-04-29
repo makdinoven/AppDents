@@ -111,7 +111,7 @@ class PurchaseResponse(BaseModel):
     landing_name: Optional[str]            # название лендинга
     created_at: datetime
     from_ad: bool
-    amount: float
+    amount: Optional[float] = 0.0
 
     class Config:
         orm_mode = True
@@ -127,6 +127,11 @@ class PurchaseResponse(BaseModel):
             data["landing_slug"] = None
             data["landing_name"] = None
         return data
+
+    @validator("amount", pre=True, always=True)
+    def set_default_amount(cls, v):
+        # если из БД пришло None — возвращаем 0.0
+        return 0.0 if v is None else v
 
 class UserDetailedResponse(BaseModel):
     id: int
