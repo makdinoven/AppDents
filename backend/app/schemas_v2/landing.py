@@ -104,6 +104,7 @@ class LandingCardResponse(BaseModel):
     landing_name: str
     authors: List[AuthorCardResponse]
     slug: str
+    lessons_count: Optional[str] = ""
     main_image: Optional[str] = None
     old_price: Optional[str] = None    # старая цена
     new_price: Optional[str] = None    # новая цена
