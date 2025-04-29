@@ -17,6 +17,12 @@
   gap: 40px;
 }
 
+.nav_buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .content {
   @include container;
   @include flex-center;
@@ -46,6 +52,29 @@
 
 .login_btn_active {
   color: $primary;
+}
+
+.home_button {
+  @include flex-center;
+
+  &:hover {
+    svg {
+      path {
+        stroke: $primary;
+      }
+    }
+  }
+
+  a {
+    @include flex-center;
+    height: fit-content;
+  }
+
+  svg {
+    path {
+      @include transition();
+    }
+  }
 }
 
 .search_button {
@@ -87,7 +116,7 @@
     margin-bottom: 20px;
   }
 
-  .login_btn {
+  .search_button {
     svg {
       width: 35px;
       height: 35px;
