@@ -1,0 +1,15 @@
+.pagination button {
+  cursor: pointer;
+  padding: 0 5px;
+  //border-radius: 5px;
+}
+
+.pagination button:hover {
+  color: $primary;
+  //background-color: $hover-color;
+}
+
+.activePage {
+  color: $primary;
+  //background-color: $hover-color;
+}
