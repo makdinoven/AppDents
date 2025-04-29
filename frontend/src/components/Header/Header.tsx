@@ -14,7 +14,6 @@ import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 import { DentsLogo, HomeIcon, SearchIcon } from "../../assets/logos/index";
 import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.tsx";
-import WorkingWarn from "../ui/WorkingWarn/WorkingWarn.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
@@ -96,7 +95,6 @@ const Header = () => {
 
   return (
     <>
-      <WorkingWarn />
       <header className={s.header}>
         <div className={s.content}>
           <Link className={s.logo} to={Path.main}>
