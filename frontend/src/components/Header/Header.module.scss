@@ -37,9 +37,24 @@
   @include transition();
   @include flex-center;
 
+  svg {
+    width: 50px;
+    height: 50px;
+    circle {
+      @include transition();
+    }
+  }
+
   @media (hover: hover) {
     &:hover {
       color: $primary;
+
+      svg {
+        circle {
+          fill: $primary;
+          stroke: $primary;
+        }
+      }
     }
   }
 
@@ -115,6 +130,13 @@
 @media (max-width: $mobile-breakpoint) {
   .header {
     margin-bottom: 20px;
+  }
+
+  .login_btn {
+    svg {
+      width: 30px;
+      height: 30px;
+    }
   }
 
   .search_button {
