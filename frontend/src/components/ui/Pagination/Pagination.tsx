@@ -37,15 +37,12 @@ const Pagination = ({ page, setPage, totalPages }: PaginationProps) => {
             <Arrow />
           </button>
         )}
-
         <PaginationButton
           onClick={() => changePage(1)}
           pageNumber={1}
           activePage={page}
         />
-
         {page > 3 && createEllipsis("start-ellipsis")}
-
         {Array.from({ length: endPage - startPage + 1 }, (_, idx) => (
           <PaginationButton
             key={startPage + idx}
@@ -54,9 +51,7 @@ const Pagination = ({ page, setPage, totalPages }: PaginationProps) => {
             activePage={page}
           />
         ))}
-
         {page < totalPages - 2 && createEllipsis("end-ellipsis")}
-
         {totalPages > 1 && (
           <PaginationButton
             onClick={() => changePage(totalPages)}
@@ -64,7 +59,6 @@ const Pagination = ({ page, setPage, totalPages }: PaginationProps) => {
             activePage={page}
           />
         )}
-
         {page < totalPages && (
           <button
             onClick={() => changePage(page + 1)}
