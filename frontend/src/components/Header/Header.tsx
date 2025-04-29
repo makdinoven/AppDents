@@ -95,6 +95,24 @@ const Header = () => {
 
   return (
     <>
+      <div className={s.working_warn}>
+        <h2>We'll Be Back Soon</h2>
+        <p>
+          We're currently performing some updates to improve your learning
+          experience.
+        </p>
+        <p>
+          Our course platform is temporarily unavailable due to scheduled
+          maintenance.
+        </p>
+        <p>
+          Please check back shortly — new and improved features are on the way!
+        </p>
+        <p>
+          Thank you for your patience and continued interest in our courses.
+        </p>
+        <p>— The Dent-S Team</p>
+      </div>
       <header className={s.header}>
         <div className={s.content}>
           <Link className={s.logo} to={Path.main}>
