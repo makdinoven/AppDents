@@ -12,3 +12,4 @@ export { default as DentsLogo } from "../../logo.svg?react";
 export { default as SearchIcon } from "../../search-icon.svg?react";
 export { default as EyeOpened } from "../../Icons/eye-opened.svg?react";
 export { default as EyeClosed } from "../../Icons/eye-closed.svg?react";
+export { default as HomeIcon } from "../../Icons/home.svg?react";
