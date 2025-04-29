@@ -1,6 +1,6 @@
 import s from "./Professors.module.scss";
 import Search from "../../components/ui/Search/Search.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
@@ -18,13 +18,16 @@ const Professors = () => {
     (state: AppRootStateType) => state.user.language,
   );
   const [searchParams, setSearchParams] = useSearchParams();
-  console.log(searchParams.get("page"));
   const pageFromUrl = parseInt(searchParams.get("page") || "1");
   const [page, setPage] = useState(pageFromUrl);
+  const prevLanguageRef = useRef(language);
 
-  // useEffect(() => {
-  //   setPage(1);
-  // }, [language]);
+  useEffect(() => {
+    if (prevLanguageRef.current !== language) {
+      setPage(1);
+      prevLanguageRef.current = language;
+    }
+  }, [language]);
 
   useEffect(() => {
     fetchProfessors();
@@ -65,9 +68,8 @@ const Professors = () => {
       </div>
 
       <ProfessorsList professors={professors} />
-      <div className={s.pagination}>
-        <Pagination setPage={setPage} page={page} totalPages={totalPages} />
-      </div>
+
+      <Pagination setPage={setPage} page={page} totalPages={totalPages} />
     </div>
   );
 };
