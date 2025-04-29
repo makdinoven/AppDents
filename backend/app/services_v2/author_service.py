@@ -151,6 +151,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "new_price": l.new_price,
             "main_image": l.preview_photo,
             "first_tag": l.tags[0].name if l.tags else None,
+            "lessons_count": l.lessons_count,
             "course_ids": course_ids,
             "authors": authors_info,
         })

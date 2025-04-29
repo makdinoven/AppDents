@@ -65,6 +65,7 @@ class LandingForAuthor(BaseModel):
     slug: str
     old_price: str
     new_price: str
+    lessons_count: Optional[str]
     main_image: Optional[str]
     first_tag: Optional[str]
     course_ids: List[int]
@@ -77,6 +78,7 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     total_new_price: float
     total_old_price: float
     landing_count: int
+    lessons_count : Optional[str] = ""
 
 class AuthorsPage(BaseModel):
     total: int           # общее число записей
