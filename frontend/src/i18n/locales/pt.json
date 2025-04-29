@@ -154,5 +154,15 @@
     "password.required": "A senha é obrigatória",
     "error.invalid_credentials": "E-mail ou senha incorretos",
     "errorChangingPassword": "Erro. A senha não foi alterada."
+  },
+
+  "workingWarn": {
+    "title": "Voltamos em breve",
+    "first": "Estamos a fazer melhorias para optimizar a sua experiência de aprendizagem.",
+    "second": "A nossa plataforma de cursos está temporariamente indisponível devido a manutenção programada.",
+    "third": "Por favor, volte em breve — novas funcionalidades e melhorias estão a caminho!",
+    "fourth": "Agradecemos a sua paciência e o interesse contínuo nos nossos cursos.",
+    "last": "— A equipa Dent-S"
   }
+
 }

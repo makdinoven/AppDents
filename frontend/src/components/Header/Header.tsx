@@ -95,26 +95,6 @@ const Header = () => {
 
   return (
     <>
-      {/*<div className={s.working_warn}>*/}
-      {/*  <h2>*/}
-      {/*    <Trans i18nKey={"workingWarn.title"} />*/}
-      {/*  </h2>*/}
-      {/*  <p>*/}
-      {/*    <Trans i18nKey={"workingWarn.first"} />*/}
-      {/*  </p>*/}
-      {/*  <p>*/}
-      {/*    <Trans i18nKey={"workingWarn.second"} />*/}
-      {/*  </p>*/}
-      {/*  <p>*/}
-      {/*    <Trans i18nKey={"workingWarn.third"} />*/}
-      {/*  </p>*/}
-      {/*  <p>*/}
-      {/*    <Trans i18nKey={"workingWarn.fourth"} />*/}
-      {/*  </p>*/}
-      {/*  <p>*/}
-      {/*    <Trans i18nKey={"workingWarn.last"} />*/}
-      {/*  </p>*/}
-      {/*</div>*/}
       <header className={s.header}>
         <div className={s.content}>
           <Link className={s.logo} to={Path.main}>
