@@ -3,13 +3,6 @@
   gap: 20px;
 }
 
-.top {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  align-items: flex-end;
-  gap: 20px;
-}
-
 .date_input {
   border: 1px solid $accent;
   padding: 5px 10px;
@@ -28,13 +21,24 @@
   flex: 1;
 }
 
-@media (max-width: $mobile-breakpoint) {
-  .analytics_options {
-    @include flex-column;
-    gap: 10px;
-  }
+.input_wrapper {
+  @include clamped-p2;
+  @include flex-column;
+  position: relative;
+  gap: 5px;
 
-  .languages_table {
+  input {
     width: 100%;
   }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  //.analytics_options {
+  //  @include flex-column;
+  //  gap: 10px;
+  //}
+
+  //.languages_table {
+  //  width: 100%;
+  //}
 }

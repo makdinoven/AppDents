@@ -165,6 +165,15 @@
     "errorChangingPassword": "Error. Password was not changed."
   },
 
+  "workingWarn": {
+    "title": "We'll Be Back Soon",
+    "first": "We're currently performing some updates to improve your learning experience.",
+    "second": "Our course platform is temporarily unavailable due to scheduled maintenance.",
+    "third": "Please check back shortly — new and improved features are on the way!",
+    "fourth": "Thank you for your patience and continued interest in our courses.",
+    "last": "— The Dent-S Team"
+  },
+
   "admin": {
     "save": "Save changes",
     "update": "update",

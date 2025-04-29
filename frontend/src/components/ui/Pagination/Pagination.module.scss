@@ -1,18 +1,48 @@
-.pagination {
-  margin-top: 20px;
+.pagination_container {
+  width: 100%;
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.pagination {
+  position: relative;
+  display: flex;
+  width: fit-content;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 60px;
+  border: 1px solid $primary;
+  border-radius: var(--border-radius);
 }
 
 .pagination button {
-  padding: 6px 12px;
   cursor: pointer;
+  padding: 0 5px;
+  //border-radius: 5px;
 }
 
 .pagination button:hover {
   color: $primary;
+  //background-color: $hover-color;
 }
 
 .activePage {
   color: $primary;
+  //background-color: $hover-color;
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.prevNavButton {
+  transform: rotate(180deg) translateY(50%);
+  left: 10px;
+}
+
+.nextNavButton {
+  right: 10px;
 }
