@@ -1,25 +1,3 @@
-.working_warn {
-  position: sticky;
-  background-color: $background-color;
-  z-index: 10000000;
-  top: 20px;
-  width: 100%;
-  text-align: center;
-  padding: 10px;
-  border: 2px solid $error-color;
-  border-radius: var(--border-radius);
-  @include clamped-p4;
-  margin: 20px auto;
-  color: $error-color;
-  max-width: 1280px;
-
-  h2 {
-    text-transform: uppercase;
-    @include clamped-p1;
-    //color: $error-color;
-  }
-}
-
 .header {
   margin-bottom: 40px;
 }
