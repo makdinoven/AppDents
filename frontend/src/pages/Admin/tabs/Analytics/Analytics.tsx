@@ -78,8 +78,8 @@ const Analytics = () => {
 
   return (
     <div className={s.analytics_page}>
-      <div className={s.top}>
-        <div className={s.analytics_options}>
+      <div className={s.analytics_options}>
+        <div className={s.input_wrapper}>
           <label htmlFor="start_date">Start date</label>
           <input
             id="start_date"
@@ -88,6 +88,8 @@ const Analytics = () => {
             onChange={handleStartDateChange}
             type="date"
           />
+        </div>
+        <div className={s.input_wrapper}>
           <label htmlFor="end_date">End date</label>
           <input
             id="end_date"
@@ -96,46 +98,47 @@ const Analytics = () => {
             onChange={handleEndDateChange}
             type="date"
           />
-          <MultiSelect
-            isSearchable={false}
-            id={"language"}
-            options={LANGUAGES}
-            placeholder={"Choose a language"}
-            label={t("admin.landings.language")}
-            selectedValue={language}
-            isMultiple={false}
-            onChange={(e) => setLanguage(e.value as string)}
-            valueKey="value"
-            labelKey="label"
-          />
-          <MultiSelect
-            isSearchable={false}
-            id={"limits"}
-            options={LIMITS}
-            placeholder={""}
-            label={t("admin.analytics.size")}
-            selectedValue={limit}
-            isMultiple={false}
-            onChange={(e) => setLimit(e.value as string)}
-            valueKey="value"
-            labelKey="name"
+        </div>
+      </div>
+      {languageStats && (
+        <div className={s.languages_table}>
+          <Table
+            data={languageStats}
+            columnLabels={{
+              language: "Lang",
+              count: "Sales",
+              total_amount: "Total",
+            }}
           />
         </div>
+      )}
 
-        {languageStats && (
-          <div className={s.languages_table}>
-            <Table
-              data={languageStats}
-              columnLabels={{
-                language: "Lang",
-                count: "Sales",
-                total_amount: "Total",
-              }}
-            />
-          </div>
-        )}
+      <div className={s.analytics_options}>
+        <MultiSelect
+          isSearchable={false}
+          id={"language"}
+          options={LANGUAGES}
+          placeholder={"Choose a language"}
+          label={t("admin.landings.language")}
+          selectedValue={language}
+          isMultiple={false}
+          onChange={(e) => setLanguage(e.value as string)}
+          valueKey="value"
+          labelKey="label"
+        />
+        <MultiSelect
+          isSearchable={false}
+          id={"limits"}
+          options={LIMITS}
+          placeholder={""}
+          label={t("admin.analytics.size")}
+          selectedValue={limit}
+          isMultiple={false}
+          onChange={(e) => setLimit(e.value as string)}
+          valueKey="value"
+          labelKey="name"
+        />
       </div>
-
       {landings && (
         <Table
           data={landings}
