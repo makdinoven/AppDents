@@ -33,7 +33,10 @@ export const AppRoutes: FC = () => {
           path={`${Path.professor}/:professorId/:modalType?`}
           element={<ProfessorPage />}
         />
-        <Route path={Path.professors} element={<Professors />} />
+        <Route
+          path={`${Path.professors}/:modalType?`}
+          element={<Professors />}
+        />
         <Route
           path={`${Path.info}/:pageType/:modalType?`}
           element={<UniversalPage />}

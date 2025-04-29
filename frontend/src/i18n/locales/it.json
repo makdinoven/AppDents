@@ -154,5 +154,15 @@
     "password.required": "La password è obbligatoria",
     "error.invalid_credentials" : "Email o password errati",
     "errorChangingPassword": "Errore. La password non è stata cambiata."
+  },
+
+  "workingWarn": {
+    "title": "Torniamo presto",
+    "first": "Stiamo effettuando aggiornamenti per migliorare la tua esperienza formativa.",
+    "second": "La nostra piattaforma di corsi è temporaneamente non disponibile per manutenzione programmata.",
+    "third": "Torna a trovarci a breve — stiamo lavorando a nuove funzioni e miglioramenti!",
+    "fourth": "Grazie per la tua pazienza e per l'interesse nei nostri corsi.",
+    "last": "— Il team di Dent-S"
   }
+
 }

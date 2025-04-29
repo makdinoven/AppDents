@@ -17,6 +17,12 @@
   gap: 40px;
 }
 
+.nav_buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .content {
   @include container;
   @include flex-center;
@@ -46,6 +52,30 @@
 
 .login_btn_active {
   color: $primary;
+}
+
+.home_button {
+  @include flex-center;
+  &:hover {
+    svg {
+      path {
+        stroke: $primary;
+      }
+    }
+  }
+
+  a {
+    @include flex-center;
+    height: fit-content;
+  }
+
+  svg {
+    height: 37px;
+    width: 37px;
+    path {
+      @include transition();
+    }
+  }
 }
 
 .search_button {
@@ -87,20 +117,26 @@
     margin-bottom: 20px;
   }
 
-  .login_btn {
+  .search_button {
     svg {
-      width: 35px;
-      height: 35px;
+      width: 23px;
+      height: 23px;
     }
   }
 
-  .search_button {
-    width: 25px;
-    height: 25px;
+  .home_button {
+    svg {
+      height: 25px;
+      width: 25px;
+    }
   }
 
   .nav {
     gap: 15px;
+  }
+
+  .nav_buttons {
+    gap: 10px;
   }
 
   .logo {

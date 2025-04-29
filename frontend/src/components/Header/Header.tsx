@@ -12,7 +12,7 @@ import { useSelector } from "react-redux";
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
-import { DentsLogo, SearchIcon } from "../../assets/logos/index";
+import { DentsLogo, HomeIcon, SearchIcon } from "../../assets/logos/index";
 import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
@@ -101,22 +101,28 @@ const Header = () => {
             <DentsLogo />
           </Link>
           <nav className={s.nav}>
-            {![Path.main, Path.login, Path.passwordReset, Path.signUp].includes(
-              location.pathname,
-            ) && (
-              <UnstyledButton className={s.login_btn}>
-                <Link to={Path.main}>
-                  <Trans i18nKey="home" />
-                </Link>
+            <div className={s.nav_buttons}>
+              {![
+                Path.main,
+                Path.login,
+                Path.passwordReset,
+                Path.signUp,
+              ].includes(location.pathname) && (
+                <UnstyledButton className={s.home_button}>
+                  <Link to={Path.main}>
+                    <HomeIcon />
+                  </Link>
+                </UnstyledButton>
+              )}
+              <UnstyledButton
+                className={s.search_button}
+                onClick={() => setShowSearch(true)}
+              >
+                <SearchIcon />
               </UnstyledButton>
-            )}
-            <UnstyledButton
-              className={s.search_button}
-              onClick={() => setShowSearch(true)}
-            >
-              <SearchIcon />
-            </UnstyledButton>
-            <LanguageChanger />
+              <LanguageChanger />
+            </div>
+
             {renderButton()}
           </nav>
         </div>
