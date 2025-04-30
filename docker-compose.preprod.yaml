@@ -1,5 +1,5 @@
 services:
-  mysql:
+  mysql_preprod:
     image: mysql:8.0
     container_name: mysql_preprod
     restart: always
