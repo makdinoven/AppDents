@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
-import Loader from "../../ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
 import { SearchIcon } from "../../../assets/logos/index";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
@@ -13,7 +12,7 @@ import { AppRootStateType } from "../../../store/store.ts";
 import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
-// import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
+import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const SearchDropdown = ({
   showDropdown,
@@ -61,7 +60,12 @@ const SearchDropdown = ({
 
   useEffect(() => {
     setLoading(true);
-    handleSearch(debouncedSearchValue);
+    if (debouncedSearchValue !== "") {
+      handleSearch(debouncedSearchValue);
+    } else {
+      setSearchResults([]);
+      setTotalResults(0);
+    }
   }, [debouncedSearchValue]);
 
   const handleInputChange = (value: string) => {
@@ -77,7 +81,6 @@ const SearchDropdown = ({
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => {
-      console.log(isClosing);
       setIsClosing(false);
       setShowDropdown(false);
     }, 150);
@@ -145,11 +148,7 @@ const SearchDropdown = ({
           </div>
           {searchResults.length > 0 && (
             <ul className={s.dropdown_list}>
-              {loading && (
-                <div className={s.loader_overlay}>
-                  <Loader />
-                </div>
-              )}
+              {loading && <LoaderOverlay />}
               {searchResults?.map((item: any, index: number) => (
                 <li key={index} onClick={handleClose}>
                   <Link
@@ -172,7 +171,6 @@ const SearchDropdown = ({
                         <img src={item?.preview_photo} alt="" />
                       </div>
                     )}
-                    {/*<ViewLink text={"view"} />*/}
                   </Link>
                 </li>
               ))}

@@ -1,15 +1,69 @@
-.pagination button {
+.navButton {
   cursor: pointer;
-  padding: 0 5px;
-  //border-radius: 5px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid $background-color;
+  @include clamped-p2;
+  @include transition;
+  svg {
+    path {
+      @include transition($property: fill);
+    }
+  }
 }
 
-.pagination button:hover {
+.navButton:not(.activePage):hover {
   color: $primary;
-  //background-color: $hover-color;
+  svg {
+    path {
+      fill: $primary;
+    }
+  }
+}
+
+.navButton:not(.activePage):not(.navButtonArrow):hover {
+  border-color: $primary;
+}
+
+.navButton:not(.activePage):active {
+  color: $text-color;
+  background-color: $primary;
+  svg {
+    path {
+      fill: $text-color;
+    }
+  }
 }
 
 .activePage {
-  color: $primary;
-  //background-color: $hover-color;
+  color: $text-color;
+  background-color: $primary;
+}
+
+.navButtonArrow {
+  @include flex-center;
+  padding: 0;
+  svg {
+    width: 20px;
+    height: 20px;
+
+    @media (max-width: 720px) {
+      width: 13px;
+      height: 13px;
+    }
+  }
+}
+
+.prevNavButton {
+  transform: rotate(180deg);
+}
+
+.nextNavButton {
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .navButton {
+    padding: 0 5px;
+    border-radius: 5px;
+  }
 }

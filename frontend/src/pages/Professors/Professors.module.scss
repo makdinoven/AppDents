@@ -11,4 +11,18 @@
 .professors {
   @include flex-column;
   gap: 60px;
+
+  h1 {
+    text-transform: uppercase;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .professors {
+    gap: 25px;
+  }
+
+  .search_container {
+    gap: 5px;
+  }
 }

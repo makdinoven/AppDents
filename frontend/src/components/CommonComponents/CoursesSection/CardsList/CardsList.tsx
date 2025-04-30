@@ -1,9 +1,9 @@
 import s from "./CardsList.module.scss";
-import Loader from "../../../ui/Loader/Loader.tsx";
 import CourseCard from "../CourseCard/CourseCard.tsx";
 import { Trans } from "react-i18next";
 import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
+import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
 type Course = {
   landing_name: string;
@@ -13,6 +13,7 @@ type Course = {
   main_image: string;
   old_price: string;
   new_price: string;
+  lessons_count: string;
 };
 
 interface CardsListProps {
@@ -36,11 +37,7 @@ const CardsList: React.FC<CardsListProps> = ({
 
   return (
     <div className={s.list_wrapper}>
-      {loading && (
-        <div className={s.loader_overlay}>
-          <Loader />
-        </div>
-      )}
+      {loading && <LoaderOverlay />}
       {cards && cards.length > 0 ? (
         <>
           <ul className={s.list}>
@@ -55,6 +52,7 @@ const CardsList: React.FC<CardsListProps> = ({
                 tag={course.first_tag}
                 link={course.slug}
                 photo={course.main_image}
+                lessons_count={course.lessons_count}
               />
             ))}
           </ul>

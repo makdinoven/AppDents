@@ -52,7 +52,7 @@ const CoursesSection = ({
 
   useEffect(() => {
     setSkip(0);
-  }, [language]);
+  }, [language, activeFilter, activeSort]);
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {

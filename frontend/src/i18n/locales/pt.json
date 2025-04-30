@@ -137,7 +137,11 @@
     "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
     "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",
     "accessToAllCourses": "Acesso vitalício aos cursos!",
-    "professorsCourses": "Cursos deste professor"
+    "professorsCourses": "Cursos deste professor",
+    "professors.title": "Nossos professores",
+    "search": "Procurar professores...",
+    "professorsFound": "Professores encontrados: {{count}}",
+    "noProfessors": "Nenhum professor encontrado"
   },
   "other": {
     "otherCourses": "Outros cursos"

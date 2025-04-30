@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
 
+// import Book from "../../../../assets/Icons/Book.tsx";
+
 interface CourseCardProps {
   name: string;
   tag: string;
@@ -16,6 +18,7 @@ interface CourseCardProps {
   old_price: string;
   new_price: string;
   authors: any[];
+  lessons_count: string;
 }
 
 const CourseCard = ({
@@ -27,6 +30,7 @@ const CourseCard = ({
   new_price,
   index,
   authors,
+  // lessons_count,
 }: CourseCardProps) => {
   const screenWidth = useScreenWidth();
   const LANDING_LINK = `${Path.landing}/${link}`;
@@ -62,10 +66,17 @@ const CourseCard = ({
           <Trans i18nKey={tag} />
         </div>
         <div className={s.card_body}>
-          <div className={s.prices}>
-            <span className={s.new_price}>${new_price}</span>{" "}
-            <span className="crossed">${old_price}</span>
+          <div className={s.card_content_header}>
+            <div className={s.prices}>
+              <span className={s.new_price}>${new_price}</span>{" "}
+              <span className="crossed">${old_price}</span>
+            </div>
+            {/*<p className={s.lessons_count}>*/}
+            {/*  <Book />*/}
+            {/*  {lessons_count}*/}
+            {/*</p>*/}
           </div>
+
           <h4>{name}</h4>
           <div className={s.course_authors}>
             {visibleAuthors?.length > 0 && (

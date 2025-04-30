@@ -67,6 +67,7 @@ $card-body-padding-bottom: calc(
 }
 
 .card {
+  @include fadeInMove;
   @include transition($property: transform);
   @include flex-column;
   @include clamped-p3;
@@ -251,6 +252,28 @@ $card-body-padding-bottom: calc(
 
     &::before {
       background-image: url("/src/assets/tooth-blue.svg");
+    }
+  }
+}
+
+.card_content_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.lessons_count {
+  @include flex-center;
+  @include clamped-p2;
+  gap: 5px;
+
+  svg {
+    width: 35px;
+    height: 35px;
+
+    path {
+      fill: $accent;
     }
   }
 }
