@@ -76,23 +76,11 @@ services:
       - adminer
     ports:
       - "80:80"
-      - "443:443"
     networks:
       - pub
       - priv
     volumes:
       - ./assets:/assets
-      - ./webroot:/var/www/certbot
-      - certs_data_preprod:/etc/letsencrypt
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: certbot_preprod
-    volumes:
-      - certs_data_preprod:/etc/letsencrypt
-      - ./webroot:/var/www/certbot
-    networks:
-      - pub
 
 networks:
   pub:
@@ -103,5 +91,4 @@ networks:
 
 volumes:
   mysql_data_preprod:
-  certs_data_preprod:
 

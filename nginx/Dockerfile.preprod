@@ -6,10 +6,6 @@ RUN rm /etc/nginx/conf.d/default.conf
 # Копируем ваш preprod-конфиг
 COPY ./preprod.conf /etc/nginx/conf.d/default.conf
 
-# Папка для ACME-челленджей (certbot будет класть туда .well-known)
-RUN mkdir -p /var/www/certbot
-
 EXPOSE 80
-EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]
