@@ -93,6 +93,36 @@
   }
 }
 
+.professors_button {
+  @include flex-center;
+  svg {
+    path {
+      fill: $accent;
+    }
+  }
+
+  &:hover {
+    svg {
+      path {
+        fill: $primary;
+      }
+    }
+  }
+
+  a {
+    @include flex-center;
+    height: fit-content;
+  }
+
+  svg {
+    height: 37px;
+    width: 37px;
+    path {
+      @include transition();
+    }
+  }
+}
+
 .search_button {
   @include flex-center;
   width: 30px;
@@ -147,6 +177,13 @@
   }
 
   .home_button {
+    svg {
+      height: 25px;
+      width: 25px;
+    }
+  }
+
+  .professors_button {
     svg {
       height: 25px;
       width: 25px;

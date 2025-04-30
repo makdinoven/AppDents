@@ -9,40 +9,28 @@
   position: relative;
   display: flex;
   width: fit-content;
-  align-items: flex-end;
-  gap: 2px;
-  padding: 0 60px;
-  border: 1px solid $primary;
+  gap: 10px;
   border-radius: var(--border-radius);
 }
 
-.pagination button {
-  cursor: pointer;
-  padding: 0 5px;
-  //border-radius: 5px;
+.ellipsis {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  @include clamped-p2;
 }
 
-.pagination button:hover {
-  color: $primary;
-  //background-color: $hover-color;
+.pagination_buttons {
+  display: flex;
+  gap: 5px;
 }
 
-.activePage {
-  color: $primary;
-  //background-color: $hover-color;
-}
+@media (max-width: $mobile-breakpoint) {
+  .pagination_buttons {
+    gap: 2px;
+  }
 
-.navButton {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.prevNavButton {
-  transform: rotate(180deg) translateY(50%);
-  left: 10px;
-}
-
-.nextNavButton {
-  right: 10px;
+  .pagination {
+    gap: 5px;
+  }
 }
