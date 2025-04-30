@@ -40,11 +40,4 @@ def create_app() -> FastAPI:
     # app.include_router(tilda_migrate.router, prefix="/api/tilda", tags=["new_server_tilda"])
 
 
-
-    @app.on_event("startup")
-    async def startup_event():
-        init_db()
-
-    return app
-
 app = create_app()
