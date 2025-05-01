@@ -80,10 +80,6 @@ $card-body-padding-bottom: calc(
     @include clamped-p1;
     margin-bottom: 10px;
   }
-
-  &:hover {
-    transform: translateY(-10px);
-  }
 }
 
 .card_header,

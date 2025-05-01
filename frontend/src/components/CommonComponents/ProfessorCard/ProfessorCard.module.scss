@@ -69,8 +69,10 @@
     color: $secondary;
   }
 
-  &:hover {
-    transform: translateY(-10px);
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-10px);
+    }
   }
 }
 

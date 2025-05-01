@@ -131,7 +131,9 @@
 
   "profile": {
     "yourCourses": "دوراتك",
-    "noCourses": "لا توجد دورات"
+    "noCourses": "لا توجد دورات",
+    "nextLesson": "الدرس التالي",
+    "prevLesson": "الدرس السابق"
   },
 
   "professor": {
