@@ -137,7 +137,9 @@
 
   "profile": {
     "yourCourses": "Your courses",
-    "noCourses": "No Courses Yet"
+    "noCourses": "No Courses Yet",
+    "nextLesson": "Next lesson",
+    "prevLesson": "Prev lesson"
   },
 
   "professor": {

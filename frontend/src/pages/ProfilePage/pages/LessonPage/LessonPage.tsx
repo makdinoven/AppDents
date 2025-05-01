@@ -1,54 +1,75 @@
 import s from "./LessonPage.module.scss";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import {
-  isValidUrl,
-  normalizeCourse,
-} from "../../../../common/helpers/helpers.ts";
-import { useParams } from "react-router-dom";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import { isValidUrl } from "../../../../common/helpers/helpers.ts";
+import { Link, useOutletContext, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
+import { Path } from "../../../../routes/routes.ts";
+import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
+import Arrow from "../../../../assets/Icons/Arrow.tsx";
+
+type OutletContextType = {
+  course: any;
+};
 
 const LessonPage = () => {
-  const { courseId, sectionId, lessonId } = useParams();
+  const { course } = useOutletContext<OutletContextType>();
+  const { sectionId, lessonId } = useParams();
   const [lesson, setLesson] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [prevLesson, setPrevLesson] = useState<any | null>(null);
+  const [nextLesson, setNextLesson] = useState<any | null>(null);
 
   useEffect(() => {
-    if (courseId && lessonId) {
-      fetchCourseData();
+    if (course && sectionId && lessonId) {
+      prepareLesson();
     }
-  }, [courseId, lessonId]);
+  }, [course, sectionId, lessonId]);
 
-  const fetchCourseData = async () => {
-    try {
-      const res = await adminApi.getCourse(courseId);
-      const courseData = normalizeCourse(res.data);
-      const section = courseData.sections.find(
-        (section: any) => section.id === Number(sectionId),
-      );
-      const lesson = section?.lessons.find(
-        (lesson: any) => lesson.id === Number(lessonId),
-      );
+  const prepareLesson = () => {
+    const sectionIndex = course.sections.findIndex(
+      (section: any) => section.id === Number(sectionId),
+    );
 
-      // console.log(lesson);
+    if (sectionIndex === -1) return;
 
-      setLesson(lesson);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-    }
+    const section = course.sections[sectionIndex];
+    const lessons = section.lessons;
+    const lessonIndex = lessons.findIndex(
+      (lesson: any) => lesson.id === Number(lessonId),
+    );
+
+    if (lessonIndex === -1) return;
+
+    const currentLesson = lessons[lessonIndex];
+    const prev =
+      lessonIndex > 0
+        ? { lesson: lessons[lessonIndex - 1], sectionId: section.id }
+        : sectionIndex > 0
+          ? {
+              lesson: course.sections[sectionIndex - 1].lessons.slice(-1)[0],
+              sectionId: course.sections[sectionIndex - 1].id,
+            }
+          : null;
+    const next =
+      lessonIndex < lessons.length - 1
+        ? { lesson: lessons[lessonIndex + 1], sectionId: section.id }
+        : sectionIndex < course.sections.length - 1
+          ? {
+              lesson: course.sections[sectionIndex + 1].lessons[0],
+              sectionId: course.sections[sectionIndex + 1].id,
+            }
+          : null;
+
+    setLesson(currentLesson);
+    setPrevLesson(prev);
+    setNextLesson(next);
   };
-
-  return (
-    <div className={s.lesson_container}>
-      <DetailHeader title={lesson?.lesson_name} />
-      {loading ? (
-        <Loader />
-      ) : (
+  if (lesson)
+    return (
+      <>
+        <BackButton link={`${Path.profile}/${Path.myCourse}/${course.id}`} />
         <div className={s.lesson_page}>
+          <h3>{lesson.lesson_name}</h3>
           <div className={s.video_container}>
             {isValidUrl(lesson.video_link) && lesson.video_link.length > 0 ? (
               <iframe
@@ -65,8 +86,28 @@ const LessonPage = () => {
               </p>
             )}
           </div>
+          <div className={s.navigation_links}>
+            {prevLesson && (
+              <Link
+                to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${prevLesson.sectionId}/${prevLesson.lesson.id}`}
+                className={s.prev_link}
+              >
+                <Arrow />
+                <Trans i18nKey={"profile.prevLesson"} />
+              </Link>
+            )}
+            {nextLesson && (
+              <Link
+                to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
+                className={s.next_link}
+              >
+                <Trans i18nKey={"profile.nextLesson"} />
+                <Arrow />
+              </Link>
+            )}
+          </div>
 
-          <p>
+          <p className={s.failed_to_load}>
             {t("videoFailedToLoad")}{" "}
             <a
               href={lesson.video_link}
@@ -78,8 +119,7 @@ const LessonPage = () => {
             </a>
           </p>
         </div>
-      )}
-    </div>
-  );
+      </>
+    );
 };
 export default LessonPage;

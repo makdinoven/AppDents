@@ -46,7 +46,7 @@ const CoursePage = () => {
   if (lessonId) {
     return (
       <>
-        <Outlet />
+        <Outlet context={{ course }} />
       </>
     );
   }
@@ -57,7 +57,7 @@ const CoursePage = () => {
         <Loader />
       ) : (
         <>
-          <DetailHeader title={course?.name} />
+          <DetailHeader link={Path.profile} title={course?.name} />
           <Outlet />
           <ul className={s.modules_list}>
             {course.sections.map((section: any) => (

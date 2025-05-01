@@ -130,7 +130,9 @@
 
   "profile": {
     "yourCourses": "I tuoi corsi",
-    "noCourses": "Nessun corso"
+    "noCourses": "Nessun corso",
+    "nextLesson": "Lezione successiva",
+    "prevLesson": "Lezione precedente"
   },
 
   "professor": {
