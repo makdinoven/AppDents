@@ -59,6 +59,13 @@ jobs:
         with:
             fetch-depth: 0   # чтобы был полный history для git pull
 
+      - name: Dump first lines of SSH key
+        run: |
+          echo "-----BEGIN:"  
+          echo "${{ secrets.PREPROD_SERVER_SSH_KEY }}" | head -n1  
+          echo "-----END:"  
+
+
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.2
         with:
