@@ -28,7 +28,7 @@ def create_app() -> FastAPI:
     # app.include_router(transfer.router, prefix="/transfer", tags=["Transfer"])
 
     # app.include_router(cleaner.router, prefix="/api/cleaner", tags=["cleaner"])
-    app.include_router(users.router, prefix="/api/users", tags=["users "])
+    app.include_router(users.router, prefix="/api/users", tags=["users"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(landings.router, prefix="/api/landings", tags=["landings"])
     app.include_router(authors.router, prefix="/api/authors", tags=["authors"])
