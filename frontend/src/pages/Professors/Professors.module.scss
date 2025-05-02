@@ -10,7 +10,7 @@
 
 .professors {
   @include flex-column;
-  gap: 60px;
+  gap: 40px;
 
   h1 {
     text-transform: uppercase;

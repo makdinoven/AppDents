@@ -77,6 +77,7 @@ const Professors = () => {
       <DetailHeader title={"professor.professors.title"} />
       <div className={s.search_container}>
         <Search
+          id={`client_professors_search`}
           placeholder={"professor.search"}
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}

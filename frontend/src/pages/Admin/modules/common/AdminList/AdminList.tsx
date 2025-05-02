@@ -87,6 +87,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       <div className={s.list_header}>
         <div className={s.list_header_inner}>
           <Search
+            id={`admin_${tab}_search`}
             placeholder={`admin.${tab}.search`}
             value={searchValue}
             onChange={(e: any) => setSearchValue(e.target.value)}
