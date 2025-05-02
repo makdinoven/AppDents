@@ -62,7 +62,7 @@ jobs:
       - name: Dump first lines of SSH key
         run: |
           echo "-----BEGIN:"  
-          echo "${{ secrets.PREPROD_SERVER_SSH_KEY }}" | head -n1  
+          echo "${{ secrets.PREPROD_SSH_KEY }}" | head -n1  
           echo "-----END:"  
 
 
