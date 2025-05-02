@@ -1,0 +1,26 @@
+.page_container {
+  @include flex-column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+
+  div {
+    @include flex-column;
+    align-items: center;
+  }
+
+  span {
+    font-size: clamp(80px, 20vw, 200px);
+    color: $primary;
+  }
+
+  .page_not_found {
+    font-size: clamp(35px, 10vw, 80px);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  p {
+    @include clamped-p1;
+  }
+}
