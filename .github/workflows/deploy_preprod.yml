@@ -75,7 +75,7 @@ jobs:
           port: 22
           skip_host_key_check: true
           script: |
-            cd /var/www/AppDents
+            cd var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
 
             # Обновляем код
