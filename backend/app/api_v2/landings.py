@@ -14,7 +14,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
-    LandingListPageResponse
+    LandingListPageResponse, LangEnum
 
 router = APIRouter()
 
@@ -24,21 +24,15 @@ router = APIRouter()
     summary="Список лендингов (пагинация по страницам)"
 )
 def get_landing_listing(
-    page: int = Query(1, ge=1, description="Номер страницы, от 1"),
+    page: int = Query(1, ge=1, description="Номер страницы (≥1)"),
     size: int = Query(10, gt=0, description="Размер страницы"),
+    language: Optional[LangEnum] = Query(           # 👈 новый параметр
+        None,
+        description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
+    ),
     db: Session = Depends(get_db),
-) -> dict:
-    """
-    Возвращает страницу списка лендингов:
-    {
-      total: <общее число>,
-      total_pages: <число страниц>,
-      page: <текущая страница>,
-      size: <размер страницы>,
-      items: […LandingListResponse…]
-    }
-    """
-    return list_landings_paginated(db, page=page, size=size)
+):
+    return list_landings_paginated(db, language=language, page=page, size=size)
 
 
 @router.get(
@@ -47,22 +41,16 @@ def get_landing_listing(
     summary="Поиск лендингов по имени или slug с пагинацией"
 )
 def search_landing_listing(
-    q: str = Query(..., min_length=1, description="Подстрока для поиска в landing_name или page_name"),
-    page: int = Query(1, ge=1, description="Номер страницы, от 1"),
-    size: int = Query(10, gt=0, description="Размер страницы"),
+    q: str = Query(..., min_length=1, description="Подстрока для поиска"),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, gt=0),
+    language: Optional[LangEnum] = Query(
+        None,
+        description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
+    ),
     db: Session = Depends(get_db),
-) -> dict:
-    """
-    То же, что и /list, но с фильтром по q:
-    {
-      total: <число совпадений>,
-      total_pages: <число страниц>,
-      page: <текущая>,
-      size: <размер>,
-      items: […LandingListResponse…]
-    }
-    """
-    return search_landings_paginated(db, q=q, page=page, size=size)
+):
+    return search_landings_paginated(db, q=q, language=language, page=page, size=size)
 
 @router.get("/detail/{landing_id}", response_model=LandingDetailResponse)
 def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
