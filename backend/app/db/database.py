@@ -8,9 +8,10 @@ from ..models.models_v2 import Base
 DATABASE_URL = (
     f"mysql+pymysql://{settings.DB_USER}:{settings.DB_PASSWORD}"
     f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+    f"?charset=utf8"
 )
 
-engine = create_engine(DATABASE_URL, echo=False)
+engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True,)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
