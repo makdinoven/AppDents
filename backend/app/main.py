@@ -41,5 +41,8 @@ def create_app() -> FastAPI:
 
     return app
 
+    @app.on_event("startup")
+    def on_startup():
+        init_db()
 
 app = create_app()
