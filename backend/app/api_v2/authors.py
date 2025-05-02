@@ -237,7 +237,7 @@ def full_detail(author_id: int, db: Session = Depends(get_db)):
     summary="Поиск авторов с пагинацией"
 )
 def search_authors(
-    q: str = Query(..., min_length=0, description="Строка поиска по имени автора"),
+    q: str = Query(..., min_length=1, description="Строка поиска по имени автора"),
     language: Optional[str] = Query(
         None,
         description="Фильтр по языку (EN, RU, ES, PT, IT, AR)"
