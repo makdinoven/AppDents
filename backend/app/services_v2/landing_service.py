@@ -1,75 +1,50 @@
 from datetime import time, datetime, timedelta
 from math import ceil
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, desc
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 from typing import List, cast, Optional
 from ..models.models_v2 import Landing, Author, Course, Tag, Purchase
-from ..schemas_v2.landing import LandingCreate, LandingUpdate
+from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
+
+
+def _paginate(query: Query, *, page: int, size: int) -> dict:
+    total = query.count()
+    items = (query
+             .offset((page - 1) * size)
+             .limit(size)
+             .all())
+    return {
+        "total": total,
+        "total_pages": ceil(total / size) if total else 0,
+        "page": page,
+        "size": size,
+        "items": items,
+    }
 
 def list_landings_paginated(
-    db: Session,
-    *,
-    page: int = 1,
-    size: int = 10,
+    db: Session, *, language: Optional[LangEnum], page: int = 1, size: int = 10
 ) -> dict:
-    # 1. общее число
-    total = db.query(func.count(Landing.id)).scalar()
-    # 2. смещение
-    offset = (page - 1) * size
-    # 3. сами записи
-    landings = (
-        db.query(Landing)
-          .offset(offset)
-          .limit(size)
-          .all()
-    )
-    # 4. считаем страницы
-    total_pages = ceil(total / size) if total else 0
-
-    return {
-        "total": total,
-        "total_pages": total_pages,
-        "page": page,
-        "size": size,
-        "items": landings,   # ORM-объекты, pydantic orm_mode сделает остальное
-    }
+    q = db.query(Landing).order_by(desc(Landing.id))        # новые сверху
+    if language:                                                # фильтр, если задан
+        q = q.filter(Landing.language == language.value)
+    return _paginate(q, page=page, size=size)
 
 def search_landings_paginated(
-    db: Session,
-    *,
-    q: str,
-    page: int = 1,
-    size: int = 10,
+    db: Session, *, q: str, language: Optional[LangEnum], page: int = 1, size: int = 10
 ) -> dict:
-    # 1. базовый фильтр по подстроке в landing_name или page_name
-    base_q = (
-        db.query(Landing)
-          .filter(
-             or_(
-               Landing.landing_name.ilike(f"%{q}%"),
-               Landing.page_name.ilike(f"%{q}%")
-             )
-          )
-    )
-    # 2. общее число по фильтру
-    total = base_q.count()
-    # 3. смещение и лимит
-    offset = (page - 1) * size
-    landings = base_q.offset(offset).limit(size).all()
-    # 4. страницы
-    total_pages = ceil(total / size) if total else 0
-
-    return {
-        "total": total,
-        "total_pages": total_pages,
-        "page": page,
-        "size": size,
-        "items": landings,
-    }
+    q_base = (db.query(Landing)
+                .filter(or_(
+                    Landing.landing_name.ilike(f"%{q}%"),
+                    Landing.page_name.ilike(f"%{q}%")
+                ))
+                .order_by(desc(Landing.id)))
+    if language:
+        q_base = q_base.filter(Landing.language == language.value)
+    return _paginate(q_base, page=page, size=size)
 
 
 def get_landing_detail(db: Session, landing_id: int) -> Landing:

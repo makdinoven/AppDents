@@ -20,6 +20,7 @@ def list_courses_paginated(
     # 3) достаём нужную «страницу»
     courses = (
         db.query(Course)
+          .order_by(Course.id.desc())
           .offset(offset)
           .limit(size)
           .all()
