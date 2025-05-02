@@ -2,6 +2,8 @@
 from fastapi import FastAPI
 from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, utils, migrate_user, tilda_migrate
 from fastapi.middleware.cors import CORSMiddleware
+
+from .core.config import settings
 from .db.database import init_db
 
 
@@ -41,6 +43,10 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def on_startup():
+        print(f">>> settings.DB_HOST={settings.DB_HOST}  DB_PORT={settings.DB_PORT}  DB_NAME={settings.DB_NAME}")
+        print(
+            f">>> full URL   = mysql+pymysql://{settings.DB_USER}:***@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}")
+        print(">>> on_startup: init_db()")
         init_db()
 
     return app
