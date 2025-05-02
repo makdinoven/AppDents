@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get(
     "/list",
     response_model=CourseListPageResponse,
-    summary="Список курсов (пагинация по страницам)"
+    summary="Список курсов (пагинация по стра ницам)"
 )
 def get_course_listing(
     page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
