@@ -1,11 +1,11 @@
 .admin {
   display: flex;
   flex-direction: column;
-  gap: 60px;
+  gap: 35px;
 }
 
 @media (max-width: $mobile-breakpoint) {
   .admin {
-    gap: 30px;
+    gap: 25px;
   }
 }

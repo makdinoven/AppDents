@@ -139,7 +139,7 @@ const SearchDropdown = ({
           <div className={s.search_wrapper}>
             <Search
               inputRef={inputRef}
-              id="searchCourses"
+              id="client_search_courses"
               value={searchValue}
               placeholder={"search.searchPlaceholder"}
               onFocus={handleInputFocus}

@@ -246,6 +246,10 @@ $font-sz-err-mob: 14px;
   animation: fadeInMove $duration $timing forwards;
 }
 
+@mixin shake($duration: 0.5s, $timing: ease) {
+  animation: shake $duration $timing;
+}
+
 @keyframes fadeInMove {
   0% {
     opacity: 0;
@@ -272,5 +276,23 @@ $font-sz-err-mob: 14px;
   }
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: translateY(-50%) translateX(0);
+  }
+  25% {
+    transform: translateY(-50%) translateX(4px);
+  }
+  50% {
+    transform: translateY(-50%) translateX(-4px);
+  }
+  75% {
+    transform: translateY(-50%) translateX(4px);
+  }
+  100% {
+    transform: translateY(-50%) translateX(0);
   }
 }
