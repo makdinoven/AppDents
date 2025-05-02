@@ -103,18 +103,11 @@ const Header = () => {
           </Link>
           <nav className={s.nav}>
             <div className={s.nav_buttons}>
-              {![
-                Path.main,
-                Path.login,
-                Path.passwordReset,
-                Path.signUp,
-              ].includes(location.pathname) && (
-                <UnstyledButton className={s.home_button}>
-                  <Link to={Path.main}>
-                    <HomeIcon />
-                  </Link>
-                </UnstyledButton>
-              )}
+              <UnstyledButton className={s.home_button}>
+                <Link to={Path.main}>
+                  <HomeIcon />
+                </Link>
+              </UnstyledButton>
               <UnstyledButton className={s.professors_button}>
                 <Link to={Path.professors}>
                   <Glasses />

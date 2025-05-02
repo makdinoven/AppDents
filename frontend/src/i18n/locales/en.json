@@ -180,6 +180,13 @@
     "last": "— The Dent-S Team"
   },
 
+  "pageNotFound": {
+    "num": "404",
+    "title": "Page not found",
+    "sorry": "Sorry, the page you are looking for does not exist",
+    "goBack": "Go back"
+  },
+
   "admin": {
     "save": "Save changes",
     "update": "update",

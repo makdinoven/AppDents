@@ -169,5 +169,13 @@
     "third": "Vuelve a visitarnos pronto: ¡se avecinan nuevas funciones y mejoras!",
     "fourth": "Gracias por tu paciencia y por seguir confiando en nuestros cursos.",
     "last": "— El equipo de Dent-S"
+  },
+
+  "pageNotFound": {
+    "num": "404",
+    "title": "Página no encontrada",
+    "sorry": "Lo sentimos, la página que buscas no existe",
+    "goBack": "Volver atrás"
   }
+
 }
