@@ -59,16 +59,12 @@ jobs:
         with:
             fetch-depth: 0   # чтобы был полный history для git pull
 
-      - name: Start SSH agent and load key
-        uses: webfactory/ssh-agent@v0.9.1
-        with:
-            ssh-private-key: ${{ secrets.PREPROD_SSH_KEY }}
-
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.PREPROD_SERVER_HOST }}
           username: ${{ secrets.PREPROD_SERVER_USER }}
+          key: ${{ secrets.PREPROD_SSH_KEY }}
           port: 22
           script: |
             cd /var/www/AppDents
