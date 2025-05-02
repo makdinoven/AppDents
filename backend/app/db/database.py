@@ -38,11 +38,14 @@ def init_db():
     # Создаём базу данных, если её не существует
     last_exc = None
     for attempt in range(10):
+        print(f">>> attempt {attempt}")
         try:
             with tmp_engine.connect() as conn:
+                print("Succes connection")
                 conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {settings.DB_NAME}"))
             break
         except OperationalError as e:
+            print(f">>> Failed connections {attempt}. Error: {e}")
             last_exc = e
             time.sleep(2)
     else:
