@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, utils, migrate_user, tilda_migrate
 from fastapi.middleware.cors import CORSMiddleware
+
 from .db.database import init_db
 
 
@@ -39,12 +40,12 @@ def create_app() -> FastAPI:
     #
     # app.include_router(tilda_migrate.router, prefix="/api/tilda", tags=["new_server_tilda"])
 
-
-
     @app.on_event("startup")
-    async def startup_event():
+    def on_startup():
         init_db()
 
     return app
+
+
 
 app = create_app()

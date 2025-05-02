@@ -1,7 +1,17 @@
+from enum import Enum
+
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
+
+class LangEnum(str, Enum):
+    EN = "EN"
+    RU = "RU"
+    ES = "ES"
+    IT = "IT"
+    AR = "AR"
+    PT = "PT"
 
 class TagResponse(BaseModel):
     id: int

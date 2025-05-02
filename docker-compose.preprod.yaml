@@ -1,7 +1,7 @@
 services:
-  mysql:
+  mysql_preprod:
     image: mysql:8.0
-    container_name: mysql_prod
+    container_name: mysql_preprod
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -9,9 +9,9 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
     volumes:
-      - mysql_data_prod:/var/lib/mysql
+      - mysql_data_preprod:/var/lib/mysql
     expose:
-      - "3306"
+      - "3307"
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -24,15 +24,15 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    container_name: backend_prod
+      dockerfile: Dockerfile.preprod
+    container_name: backend_preprod
     restart: always
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
-      mysql:
+      mysql_preprod:
         condition: service_healthy
     networks:
       - priv
@@ -44,21 +44,21 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: frontend_prod
+    container_name: frontend_preprod
     restart: always
     ports:
-      - "3002:80"
+      - "3003:80"
     networks:
       - pub
 
   adminer:
     image: adminer
-    container_name: adminer_prod
+    container_name: adminer_preprod
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8080"
     depends_on:
-      mysql:
+      mysql_preprod:
         condition: service_healthy
     networks:
       - pub
@@ -67,8 +67,8 @@ services:
   nginx:
     build:
       context: ./nginx
-      dockerfile: Dockerfile.prod
-    container_name: nginx_prod
+      dockerfile: Dockerfile.preprod
+    container_name: nginx_preprod
     restart: always
     depends_on:
       - backend
@@ -76,23 +76,11 @@ services:
       - adminer
     ports:
       - "80:80"
-      - "443:443"
     networks:
       - pub
       - priv
     volumes:
       - ./assets:/assets
-      - certs_data:/etc/letsencrypt
-      - ./webroot:/var/www/certbot
-
-  certbot:
-    image: certbot/certbot:latest
-    container_name: certbot_prod
-    volumes:
-      - certs_data:/etc/letsencrypt  # общий volume, где certbot хранит сертификаты
-      - ./webroot:/var/www/certbot   # локальная папка, которую отдаст Nginx
-    networks:
-      - pub
 
 networks:
   pub:
@@ -102,6 +90,5 @@ networks:
     internal: true
 
 volumes:
-  mysql_data_prod:
-    external: true
-  certs_data:
+  mysql_data_preprod:
+
