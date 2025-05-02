@@ -1,21 +1,37 @@
 .list_header {
+  @include flex-column;
+  gap: 10px;
+}
+
+.total_count {
+  @include clamped-p2;
+  text-align: right;
+}
+
+.list_header_inner {
+  width: 100%;
   display: flex;
   gap: 40px;
-  margin-bottom: 40px;
 
   div {
     flex: 1;
   }
 }
 
+.list_container {
+  @include flex-column;
+  gap: 20px;
+}
+
 .list {
-  display: flex;
-  flex-direction: column;
+  @include flex-column;
+  position: relative;
   gap: 20px;
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .list_header {
-    flex-direction: column;
+  .list_header_inner {
+    flex-direction: column-reverse;
+    gap: 20px;
   }
 }

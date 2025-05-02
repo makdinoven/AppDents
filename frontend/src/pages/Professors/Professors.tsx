@@ -22,21 +22,26 @@ const Professors = () => {
   const [loading, setLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const pageFromUrl = parseInt(searchParams.get("page") || "1");
-  const [page, setPage] = useState(pageFromUrl);
   const prevLanguageRef = useRef(language);
   const [searchValue, setSearchValue] = useState("");
   const debouncedSearchValue = useDebounce(searchValue, 300);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
     if (prevLanguageRef.current !== language) {
-      setPage(1);
+      setSearchParams({ page: "1" });
       prevLanguageRef.current = language;
     }
   }, [language]);
 
   useEffect(() => {
-    if (page !== 1) {
-      setPage(1);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    if (pageFromUrl !== 1) {
+      setSearchParams({ page: "1" });
     } else {
       loadProfessors(debouncedSearchValue);
     }
@@ -44,21 +49,17 @@ const Professors = () => {
 
   useEffect(() => {
     loadProfessors(debouncedSearchValue);
-  }, [language, page]);
-
-  useEffect(() => {
-    setSearchParams({ page: page.toString() });
-  }, [page]);
+  }, [language, pageFromUrl]);
 
   const loadProfessors = async (search?: string) => {
     setLoading(true);
     try {
       let res;
       if (search) {
-        const params = { language, page, size: 10, q: search };
+        const params = { language, page: pageFromUrl, size: 10, q: search };
         res = await mainApi.searchProfessors(params);
       } else {
-        const params = { language, page, size: 10 };
+        const params = { language, page: pageFromUrl, size: 10 };
         res = await mainApi.getProfessors(params);
       }
       setProfessors(res.data.items);
@@ -90,7 +91,7 @@ const Professors = () => {
         )}
       </div>
       <ProfessorsList professors={professors} loading={loading} />
-      <Pagination setPage={setPage} page={page} totalPages={totalPages} />
+      <Pagination totalPages={totalPages} />
       <CoursesSection
         showSort={true}
         sectionTitle={"other.otherCourses"}

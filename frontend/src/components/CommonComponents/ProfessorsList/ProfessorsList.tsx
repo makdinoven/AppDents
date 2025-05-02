@@ -39,9 +39,11 @@ const ProfessorsList = ({ professors, loading }: props) => {
           ))}
         </ul>
       ) : (
-        <p className={s.no_professors}>
-          <Trans i18nKey={"professor.noProfessors"} />
-        </p>
+        !loading && (
+          <p className={s.no_professors}>
+            <Trans i18nKey={"professor.noProfessors"} />
+          </p>
+        )
       )}
     </div>
   );

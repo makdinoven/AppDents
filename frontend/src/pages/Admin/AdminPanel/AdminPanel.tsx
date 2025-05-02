@@ -1,6 +1,6 @@
 import s from "./AdminPanel.module.scss";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 import Courses from "../tabs/Courses.tsx";
 import Landings from "../tabs/Landings.tsx";
 import Authors from "../tabs/Authors.tsx";
@@ -9,11 +9,15 @@ import SelectableList from "../../../components/CommonComponents/SelectableList/
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get("tab") || "landings";
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "landings";
+
+  const handleSelectTab = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", value);
+    newParams.set("page", "1");
+    setSearchParams(newParams);
+  };
 
   const tabs = [
     {
@@ -36,15 +40,17 @@ const AdminPanel = () => {
   ];
 
   useEffect(() => {
-    navigate(`?tab=${activeTab}`, { replace: true });
-  }, [activeTab, navigate]);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", activeTab);
+    setSearchParams(newParams);
+  }, [activeTab, searchParams, setSearchParams]);
 
   return (
     <div className={s.admin}>
       <SelectableList
         items={tabs}
         activeValue={activeTab}
-        onSelect={setActiveTab}
+        onSelect={handleSelectTab}
       />
 
       <div className={s.content}>

@@ -12,17 +12,19 @@
   }
 }
 
-.navButton:not(.activePage):hover {
-  color: $primary;
-  svg {
-    path {
-      fill: $primary;
+@media (hover: hover) {
+  .navButton:not(.activePage):hover {
+    color: $primary;
+    svg {
+      path {
+        fill: $primary;
+      }
     }
   }
-}
 
-.navButton:not(.activePage):not(.navButtonArrow):hover {
-  border-color: $primary;
+  .navButton:not(.activePage):not(.navButtonArrow):hover {
+    border-color: $primary;
+  }
 }
 
 .navButton:not(.activePage):active {
@@ -46,11 +48,6 @@
   svg {
     width: 20px;
     height: 20px;
-
-    @media (max-width: 720px) {
-      width: 13px;
-      height: 13px;
-    }
   }
 }
 
@@ -65,5 +62,20 @@
   .navButton {
     padding: 0 5px;
     border-radius: 5px;
+  }
+
+  .navButtonArrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .prevNavButton {
+    left: 0;
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .nextNavButton {
+    right: 0;
   }
 }

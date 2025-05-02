@@ -49,8 +49,8 @@ const LandingDetail = () => {
       const [landingRes, tagsRes, coursesRes, authorsRes] = await Promise.all([
         adminApi.getLanding(landingId),
         mainApi.getTags(),
-        adminApi.getCoursesList(),
-        adminApi.getAuthorsList(),
+        adminApi.getCoursesList({ size: 100000 }),
+        adminApi.getAuthorsList({ size: 100000 }),
       ]);
 
       setLanding({

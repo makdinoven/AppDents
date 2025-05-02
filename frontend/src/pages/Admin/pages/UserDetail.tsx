@@ -37,7 +37,7 @@ const UserDetail = () => {
     try {
       const [userRes, coursesRes] = await Promise.all([
         adminApi.getUser(userId),
-        adminApi.getCoursesList(),
+        adminApi.getCoursesList({ size: 100000 }),
       ]);
       setUser(userRes.data);
       setCourses(coursesRes.data.items);
