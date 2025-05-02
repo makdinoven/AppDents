@@ -1,7 +1,9 @@
+import time
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import OperationalError
 from ..core.config import settings
 from ..models.models_v2 import Base
 
@@ -34,10 +36,18 @@ def init_db():
     tmp_engine = create_engine(base_url, echo=False)
 
     # Создаём базу данных, если её не существует
-    with tmp_engine.connect() as connection:
-        connection.execute(
-            text(f"CREATE DATABASE IF NOT EXISTS {settings.DB_NAME}")
-        )
+    last_exc = None
+    for attempt in range(10):
+        try:
+            with tmp_engine.connect() as conn:
+                conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {settings.DB_NAME}"))
+            break
+        except OperationalError as e:
+            last_exc = e
+            time.sleep(2)
+    else:
+        # не получилось ни разу — перекатим исключение дальше
+        raise last_exc
 
     # Создаём все таблицы, определённые в Base
     Base.metadata.create_all(bind=engine)
