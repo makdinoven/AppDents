@@ -1,24 +1,27 @@
-name: 🚀 Deploy to Preprod
+name: Deploy to Preprod
 
-# триггер при пуше в ветку preprod
 on:
   push:
     branches: [ "preprod" ]
 
 jobs:
-  # 1) Определяем, какие сервисы изменились
+  # 1) Определяем, какие сервисы затронуты изменениями
   check-changes:
     runs-on: ubuntu-latest
+
+    # Список изменённых сервисов передадим как output этого job
     outputs:
       changed_services: ${{ steps.prepare.outputs.changed_services }}
+
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v3
 
       - name: Detect changed folders
         id: changes
         uses: dorny/paths-filter@v2
         with:
+          # Настраиваем фильтры, указывая пути для каждого сервиса
           filters: |
             backend:
               - 'backend/**'
@@ -40,58 +43,44 @@ jobs:
           if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then
             SERVICES="$SERVICES nginx"
           fi
+          # Записываем результат в GITHUB_OUTPUT,
+          # чтобы передать в другой job.
           echo "changed_services=$SERVICES" >> $GITHUB_OUTPUT
 
-  # 2) Деплой на препрод-сервер
+
+  # 2) Деплой на сервер с выборочной сборкой
   deploy:
-    name: SSH Deploy to Preprod
     runs-on: ubuntu-latest
-    needs: check-changes
+    needs: [check-changes]
+
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Load SSH key
-        uses: webfactory/ssh-agent@v0.8.1
-        with:
-          ssh-private-key: ${{ secrets.PREPROD_SERVER_SSH_KEY }}
-
-      - name: Deploy via SSH
+      - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.PREPROD_SERVER_HOST }}
           username: ${{ secrets.PREPROD_SERVER_USER }}
+          key: ${{ secrets.PREPROD_SERVER_SSH_KEY }}
           skip_host_key_check: true
           script: |
-            # Переходим в директорию препрода
-            cd /var/www/AppDents-preprod
+            cd /var/www/AppDents
+            export COMPOSE_PROJECT_NAME=appdents
 
-            # переключаемся на ветку и тянем обновления
-            git fetch origin
-            git checkout preprod
+            # Обновляем код
             git pull --no-rebase -s recursive -X theirs origin preprod
 
-            # задаём проект и файлы compose
-            export COMPOSE_PROJECT_NAME=appdents_preprod
-            COMPOSE_FILES="-f docker-compose.yml -f docker-compose.preprod.yaml"
-
-            # собираем изменённые сервисы (если были)
-            CHANGED="${{ needs.check-changes.outputs.changed_services }}"
-            if [ -n "$CHANGED" ]; then
-              echo "Changed services: $CHANGED"
-              docker compose $COMPOSE_FILES build $CHANGED
+            # Считываем список изменённых сервисов
+            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
+            if [ -n "$CHANGED_SERVICES" ]; then
+              echo "Есть изменения в: $CHANGED_SERVICES"
+              docker compose build $CHANGED_SERVICES
             else
-              echo "No service changes — skipping selective build"
+              echo "Нет изменений в сервисах — пропускаем сборку."
             fi
 
-            # nginx всегда пересобираем
-            docker compose $COMPOSE_FILES build nginx
-
-            # выкатываем
-            docker compose $COMPOSE_FILES up -d
-
-            # гарантированно перезагружаем nginx
-            docker compose $COMPOSE_FILES exec nginx nginx -s reload
-
-            # чистим билд-кеш
+            docker compose -f docker-compose.preprod.yaml build $CHANGED_SERVICES nginx      # nginx всегда пересобираем
+            docker compose -f docker-compose.preprod.yaml up -d                              # поднимаем всё
+            docker compose -f docker-compose.preprod.yaml exec nginx nginx -s reload         # гарантированный reload
             docker builder prune -f
