@@ -31,6 +31,7 @@ def list_authors_by_page(
     # 4) Получаем нужный «кусок» данных
     authors = (
         base_query
+        .order_by(Author.id.desc())
         .offset(offset)
         .limit(size)
         .all()

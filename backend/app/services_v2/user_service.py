@@ -251,7 +251,7 @@ def list_users_paginated(
     # 2) Смещение
     offset = (page - 1) * size
     # 3) Выборка
-    users = db.query(User).offset(offset).limit(size).all()
+    users = db.query(User).order_by(User.id.desc()).offset(offset).limit(size).all()
     # 4) Подсчёт страниц
     total_pages = ceil(total / size) if total else 0
 
