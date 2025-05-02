@@ -42,6 +42,16 @@ export const mainApi = {
       params: params,
     });
   },
+  searchProfessors(params: {
+    language: string;
+    size: number;
+    page: number;
+    q: string;
+  }) {
+    return instance.get("authors/search", {
+      params: params,
+    });
+  },
   getProfessorDetail(id: number) {
     return instance.get(`/authors/full_detail/${id}`);
   },
