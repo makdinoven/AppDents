@@ -60,7 +60,7 @@ jobs:
       - name: Start SSH agent and load key
         uses: webfactory/ssh-agent@v0.9.1
         with:
-          ssh-private-key: ${{ secrets.PREPROD_SERVER_SSH_KEY }}
+          ssh-private-key: ${{ secrets.PREPROD_SSH_KEY }}
 
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
