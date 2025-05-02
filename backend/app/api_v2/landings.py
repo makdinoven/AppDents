@@ -388,7 +388,7 @@ def language_stats(
         # end_date без start_date — некорректно
         raise HTTPException(
             status_code=400,
-            detail="Если указываете end_date, нужно обязательно передать start_date."
+            detail="Если указываете end_date,  нужно обязательно передать start_date."
         )
 
     data = get_purchases_by_language(db, start_dt, end_dt)
