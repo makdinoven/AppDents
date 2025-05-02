@@ -66,6 +66,7 @@ jobs:
           username: ${{ secrets.PREPROD_SERVER_USER }}
           key: ${{ secrets.PREPROD_SSH_KEY }}
           port: 22
+          skip_host_key_check: true
           script: |
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
