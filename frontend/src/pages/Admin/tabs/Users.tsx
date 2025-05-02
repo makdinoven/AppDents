@@ -3,7 +3,12 @@ import { Path } from "../../../routes/routes.ts";
 import { INITIAL_USER } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { createUser, getUsers } from "../../../store/actions/adminActions.ts";
+import {
+  createUser,
+  getUsers,
+  searchUsers,
+} from "../../../store/actions/adminActions.ts";
+import { ParamsType } from "../../../api/adminApi/types.ts";
 
 const Users = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -13,16 +18,13 @@ const Users = () => {
   return (
     <>
       <AdminList<any>
-        items={users}
-        searchField="email"
-        itemName="email"
+        data={users}
+        itemName={"email"}
         itemLink={(user) => `${Path.userDetail}/${user.id}`}
         loading={loading}
-        onFetch={() => dispatch(getUsers())}
+        onFetch={(params: ParamsType) => dispatch(getUsers(params))}
+        onSearch={(params: ParamsType) => dispatch(searchUsers(params))}
         onCreate={() => dispatch(createUser(INITIAL_USER))}
-        searchPlaceholder="admin.users.search"
-        createButtonText="admin.users.create"
-        notFoundText="admin.users.notFound"
       />
     </>
   );

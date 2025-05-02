@@ -203,7 +203,8 @@
       "description.placeholder": "Enter course description...",
       "notFound": "No courses found",
       "delete": "Delete course",
-      "noSections": "No sections in this course."
+      "noSections": "No sections in this course.",
+      "found": "Courses found:"
     },
     "sections": {
       "sections": "Sections",
@@ -265,7 +266,8 @@
       "language": "Language",
       "authors": "Authors",
       "notFound": "No landings found",
-      "role" : "Role"
+      "role" : "Role",
+      "found": "Landings found:"
     },
     "users": {
       "users": "users",
@@ -278,7 +280,8 @@
       "email.placeholder": "Enter user email...",
       "password": "Password",
       "password.placeholder": "Enter new password...",
-      "courses": "User courses"
+      "courses": "User courses",
+      "found": "Users found:"
     },
     "authors": {
       "authors": "authors",
@@ -292,7 +295,8 @@
       "delete": "Delete author",
       "edit": "Edit author",
       "create": "Create author",
-      "notFound": "No authors found"
+      "notFound": "No authors found",
+      "found": "Authors found:"
     },
     "analytics": {
       "analytics": "Analytics",

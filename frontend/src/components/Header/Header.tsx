@@ -30,14 +30,6 @@ const Header = () => {
   useEffect(() => {
     if (modalType && allowedModals.includes(modalType)) {
       setIsModalOpen(true);
-    } else {
-      const pathWithoutModal = location.pathname
-        .split("/")
-        .filter((segment) => !allowedModals.includes(segment))
-        .join("/");
-
-      navigate(pathWithoutModal || "/", { replace: true });
-      setIsModalOpen(false);
     }
   }, [modalType, navigate]);
 

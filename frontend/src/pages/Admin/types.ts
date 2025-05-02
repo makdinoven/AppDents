@@ -52,8 +52,3 @@ export interface UserType {
   password: string;
   courses: any[];
 }
-
-export interface LandingFromListType {
-  id: number;
-  landing_name: string;
-}

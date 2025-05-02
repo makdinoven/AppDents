@@ -1,30 +1,41 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
-  createAuthor,
-  createCourse,
-  createLanding,
-  createUser,
   getAuthors,
   getCourses,
   getLandings,
   getUsers,
+  searchAuthors,
+  searchCourses,
+  searchLandings,
+  searchUsers,
 } from "../actions/adminActions.ts";
-import { CourseType } from "../../pages/Admin/types.ts";
+
+interface PaginationListType {
+  list: any[];
+  total: number | null;
+  total_pages: number | null;
+}
 
 interface AdminState {
-  courses: CourseType[];
-  landings: any;
-  users: any;
-  authors: any;
+  courses: PaginationListType;
+  landings: PaginationListType;
+  users: PaginationListType;
+  authors: PaginationListType;
   loading: boolean;
   error: null;
 }
 
+const initialPaginationListState: PaginationListType = {
+  list: [],
+  total: null,
+  total_pages: null,
+};
+
 const initialState: AdminState = {
-  courses: [],
-  landings: [],
-  users: [],
-  authors: [],
+  courses: initialPaginationListState,
+  landings: initialPaginationListState,
+  users: initialPaginationListState,
+  authors: initialPaginationListState,
   loading: false,
   error: null,
 };
@@ -43,34 +54,34 @@ const adminSlice = createSlice({
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.courses = action.payload.res.data.items.sort(
-            (a: { id: number }, b: { id: number }) => b.id - a.id,
-          );
+          state.courses.list = action.payload.res.data.items;
+          state.courses.total_pages = action.payload.res.data.total_pages;
+          state.courses.total = action.payload.res.data.total;
         },
       )
       .addCase(getCourses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
-
     builder
-      .addCase(createCourse.pending, (state) => {
+      .addCase(searchCourses.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        createCourse.fulfilled,
+        searchCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          if (action.payload) {
-            state.courses = [action.payload.res.data, ...state.courses];
-          }
+          state.courses.list = action.payload.res.data.items;
+          state.courses.total_pages = action.payload.res.data.total_pages;
+          state.courses.total = action.payload.res.data.total;
         },
       )
-      .addCase(createCourse.rejected, (state, action) => {
+      .addCase(searchCourses.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
+
     builder
       .addCase(getLandings.pending, (state) => {
         state.loading = true;
@@ -80,9 +91,27 @@ const adminSlice = createSlice({
         getLandings.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.landings = action.payload.res.data.items.sort(
-            (a: { id: number }, b: { id: number }) => b.id - a.id,
-          );
+          state.landings.list = action.payload.res.data.items;
+          state.landings.total_pages = action.payload.res.data.total_pages;
+          state.landings.total = action.payload.res.data.total;
+        },
+      )
+      .addCase(searchLandings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+    builder
+      .addCase(searchLandings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        searchLandings.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          state.landings.list = action.payload.res.data.items;
+          state.landings.total_pages = action.payload.res.data.total_pages;
+          state.landings.total = action.payload.res.data.total;
         },
       )
       .addCase(getLandings.rejected, (state, action) => {
@@ -90,24 +119,6 @@ const adminSlice = createSlice({
         state.error = action.payload as any;
       });
 
-    builder
-      .addCase(createLanding.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        createLanding.fulfilled,
-        (state, action: PayloadAction<{ res: any }>) => {
-          state.loading = false;
-          if (action.payload) {
-            state.landings = [action.payload.res.data, ...state.landings];
-          }
-        },
-      )
-      .addCase(createLanding.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as any;
-      });
     builder
       .addCase(getAuthors.pending, (state) => {
         state.loading = true;
@@ -117,31 +128,31 @@ const adminSlice = createSlice({
         getAuthors.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.authors = action.payload.res.data.items.sort(
-            (a: { id: number }, b: { id: number }) => b.id - a.id,
-          );
+          state.authors.list = action.payload.res.data.items;
+          state.authors.total_pages = action.payload.res.data.total_pages;
+          state.authors.total = action.payload.res.data.total;
         },
       )
-      .addCase(getAuthors.rejected, (state, action) => {
+      .addCase(searchAuthors.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
 
     builder
-      .addCase(createAuthor.pending, (state) => {
+      .addCase(searchAuthors.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        createAuthor.fulfilled,
+        searchAuthors.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          if (action.payload) {
-            state.authors = [action.payload.res.data, ...state.authors];
-          }
+          state.authors.list = action.payload.res.data.items;
+          state.authors.total_pages = action.payload.res.data.total_pages;
+          state.authors.total = action.payload.res.data.total;
         },
       )
-      .addCase(createAuthor.rejected, (state, action) => {
+      .addCase(getAuthors.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
@@ -155,9 +166,9 @@ const adminSlice = createSlice({
         getUsers.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.users = action.payload.res.data.items.sort(
-            (a: { id: number }, b: { id: number }) => b.id - a.id,
-          );
+          state.users.list = action.payload.res.data.items;
+          state.users.total_pages = action.payload.res.data.total_pages;
+          state.users.total = action.payload.res.data.total;
         },
       )
       .addCase(getUsers.rejected, (state, action) => {
@@ -166,20 +177,20 @@ const adminSlice = createSlice({
       });
 
     builder
-      .addCase(createUser.pending, (state) => {
+      .addCase(searchUsers.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        createUser.fulfilled,
+        searchUsers.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          if (action.payload) {
-            state.users = [action.payload.res.data, ...state.users];
-          }
+          state.users.list = action.payload.res.data.items;
+          state.users.total_pages = action.payload.res.data.total_pages;
+          state.users.total = action.payload.res.data.total;
         },
       )
-      .addCase(createUser.rejected, (state, action) => {
+      .addCase(searchUsers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
