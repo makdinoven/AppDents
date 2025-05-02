@@ -14,6 +14,7 @@ import { Path } from "../../routes/routes.ts";
 import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 import { DentsLogo, HomeIcon, SearchIcon } from "../../assets/logos/index";
 import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.tsx";
+import Glasses from "../../assets/Icons/Glasses.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
 
@@ -114,6 +115,11 @@ const Header = () => {
                   </Link>
                 </UnstyledButton>
               )}
+              <UnstyledButton className={s.professors_button}>
+                <Link to={Path.professors}>
+                  <Glasses />
+                </Link>
+              </UnstyledButton>
               <UnstyledButton
                 className={s.search_button}
                 onClick={() => setShowSearch(true)}

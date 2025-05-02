@@ -9,6 +9,8 @@ import { Trans } from "react-i18next";
 import Pagination from "../../components/ui/Pagination/Pagination.tsx";
 import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import { useSearchParams } from "react-router-dom";
+import useDebounce from "../../common/hooks/useDebounce.ts";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 
 const Professors = () => {
   const [professors, setProfessors] = useState([]);
@@ -17,10 +19,13 @@ const Professors = () => {
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
+  const [loading, setLoading] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const pageFromUrl = parseInt(searchParams.get("page") || "1");
   const [page, setPage] = useState(pageFromUrl);
   const prevLanguageRef = useRef(language);
+  const [searchValue, setSearchValue] = useState("");
+  const debouncedSearchValue = useDebounce(searchValue, 300);
 
   useEffect(() => {
     if (prevLanguageRef.current !== language) {
@@ -30,26 +35,39 @@ const Professors = () => {
   }, [language]);
 
   useEffect(() => {
-    fetchProfessors();
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      loadProfessors(debouncedSearchValue);
+    }
+  }, [debouncedSearchValue]);
+
+  useEffect(() => {
+    loadProfessors(debouncedSearchValue);
   }, [language, page]);
 
   useEffect(() => {
     setSearchParams({ page: page.toString() });
   }, [page]);
 
-  const fetchProfessors = async () => {
-    const params = {
-      language: language,
-      page: page,
-      size: 12,
-    };
+  const loadProfessors = async (search?: string) => {
+    setLoading(true);
     try {
-      const res = await mainApi.getProfessors(params);
+      let res;
+      if (search) {
+        const params = { language, page, size: 10, q: search };
+        res = await mainApi.searchProfessors(params);
+      } else {
+        const params = { language, page, size: 10 };
+        res = await mainApi.getProfessors(params);
+      }
       setProfessors(res.data.items);
       setTotal(res.data.total);
       setTotalPages(res.data.total_pages);
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,17 +77,25 @@ const Professors = () => {
       <div className={s.search_container}>
         <Search
           placeholder={"professor.search"}
-          value={""}
-          onChange={() => console.log("search")}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
         />
-        <p>
-          <Trans i18nKey={"professor.professorsFound"} /> : {total}
-        </p>
+        {!!total && (
+          <p>
+            <Trans
+              i18nKey={"professor.professorsFound"}
+              values={{ count: total }}
+            />
+          </p>
+        )}
       </div>
-
-      <ProfessorsList professors={professors} />
-
+      <ProfessorsList professors={professors} loading={loading} />
       <Pagination setPage={setPage} page={page} totalPages={totalPages} />
+      <CoursesSection
+        showSort={true}
+        sectionTitle={"other.otherCourses"}
+        pageSize={4}
+      />
     </div>
   );
 };

@@ -131,14 +131,20 @@
 
   "profile": {
     "yourCourses": "دوراتك",
-    "noCourses": "لا توجد دورات"
+    "noCourses": "لا توجد دورات",
+    "nextLesson": "الدرس التالي",
+    "prevLesson": "الدرس السابق"
   },
 
   "professor": {
     "youCanBuyAllCourses": "احصل على جميع الدورات من هذا المدرس بخصم <1>٢٠٪</1> مقابل <1>${{new_price}}</1> بدلاً من <2>${{old_price}}</2>!",
     "getAllCourses": "جميع الدورات بـ <1>${{new_price}}</1>",
     "accessToAllCourses": "وصول غير محدود للدورات مدى الحياة!",
-    "professorsCourses": "دورات هذا المحاضر"
+    "professorsCourses": "دورات هذا المحاضر",
+    "professors.title": "أساتذتنا",
+    "search": "ابحث عن الأساتذة...",
+    "professorsFound": "تم العثور على أساتذة: {{count}}",
+    "noProfessors": "لم يتم العثور على أساتذة"
   },
   "other": {
     "otherCourses": "دورات أخرى"

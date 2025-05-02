@@ -1,0 +1,23 @@
+.loader_overlay {
+  position: absolute;
+  inset: -1px;
+  z-index: 200;
+  overflow: hidden;
+  background: linear-gradient(
+    100deg,
+    $background-color-05 35%,
+    $background-color-08 50%,
+    $background-color-05 65%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 0.7s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}

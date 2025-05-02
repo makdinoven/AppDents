@@ -1,6 +1,6 @@
 import s from "./CourseCard.module.scss";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const CourseCard = ({
   name,
@@ -13,21 +13,11 @@ const CourseCard = ({
   link: string;
   isEven: boolean;
 }) => {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (link.startsWith("http://") || link.startsWith("https://")) {
-      window.open(link, "_blank");
-    } else {
-      navigate(link);
-    }
-  };
-
   return (
-    <li onClick={handleClick} className={`${s.card} ${isEven ? "" : s.blue}`}>
+    <Link to={link} className={`${s.card} ${isEven ? "" : s.blue}`}>
       <h3>{name}</h3>
       <ViewLink text={viewText} />
-    </li>
+    </Link>
   );
 };
 
