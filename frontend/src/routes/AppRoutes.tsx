@@ -4,7 +4,7 @@ import Landing from "../pages/Landing/Landing.tsx";
 import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/ProfileMain.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import AdminPanel from "../pages/Admin/AdminPanel/AdminPanel.tsx";
 import CourseDetail from "../pages/Admin/pages/CourseDetail.tsx";
 import AdminPage from "../pages/Admin/AdminPage.tsx";
@@ -18,6 +18,7 @@ import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
 import ProfessorPage from "../pages/ProfessorPage/ProfessorPage.tsx";
 import UniversalPage from "../pages/UniversalPage/UniversalPage.tsx";
 import Professors from "../pages/Professors/Professors.tsx";
+import NotFoundPage from "../pages/NotFoundPage/NotFoundPage.tsx";
 
 export const AppRoutes: FC = () => {
   return (
@@ -49,6 +50,7 @@ export const AppRoutes: FC = () => {
               element={<LessonPage />}
             />
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         <Route path={Path.admin} element={<AdminPage />}>
@@ -69,10 +71,10 @@ export const AppRoutes: FC = () => {
             path={`${Path.userDetail}/:userId?`}
             element={<UserDetail />}
           />
-          {/*<Route path="*" element={<Navigate to={Path.admin} replace />} />*/}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
-        <Route path="*" element={<Navigate to={Path.main} replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   );
