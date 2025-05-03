@@ -149,7 +149,7 @@
     "professorsCourses": "This professor's courses",
     "professors.title": "Our professors",
     "search": "Search professors...",
-    "professorsFound": "Professors found: {{count}}",
+    "found": "Professors found: {{count}}",
     "noProfessors": "No professors found"
   },
 
@@ -204,7 +204,7 @@
       "notFound": "No courses found",
       "delete": "Delete course",
       "noSections": "No sections in this course.",
-      "found": "Courses found:"
+      "found": "Courses found: {{count}}"
     },
     "sections": {
       "sections": "Sections",
@@ -267,7 +267,7 @@
       "authors": "Authors",
       "notFound": "No landings found",
       "role" : "Role",
-      "found": "Landings found:"
+      "found": "Landings found: {{count}}"
     },
     "users": {
       "users": "users",
@@ -281,7 +281,7 @@
       "password": "Password",
       "password.placeholder": "Enter new password...",
       "courses": "User courses",
-      "found": "Users found:"
+      "found": "Users found: {{count}}"
     },
     "authors": {
       "authors": "authors",
@@ -296,7 +296,7 @@
       "edit": "Edit author",
       "create": "Create author",
       "notFound": "No authors found",
-      "found": "Authors found:"
+      "found": "Authors found: {{count}}"
     },
     "analytics": {
       "analytics": "Analytics",

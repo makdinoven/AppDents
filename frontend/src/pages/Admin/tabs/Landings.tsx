@@ -26,6 +26,14 @@ const Landings = () => {
     }
   };
 
+  const loadData = (params: ParamsType) => {
+    if (params.q) {
+      dispatch(searchLandings(params));
+    } else {
+      dispatch(getLandings(params));
+    }
+  };
+
   return (
     <>
       <AdminList<any>
@@ -33,10 +41,10 @@ const Landings = () => {
         itemName={"landing_name"}
         itemLink={(landing) => `${Path.landingDetail}/${landing.id}`}
         loading={loading}
-        onFetch={(params: ParamsType) => dispatch(getLandings(params))}
-        onSearch={(params: ParamsType) => dispatch(searchLandings(params))}
+        onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createLanding(INITIAL_LANDING))}
         showToggle={true}
+        showLanguageFilter={true}
         handleToggle={(id: number, isHidden: boolean) =>
           handleToggleLandingVisibility(id, isHidden)
         }

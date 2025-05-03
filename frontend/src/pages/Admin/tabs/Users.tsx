@@ -15,6 +15,14 @@ const Users = () => {
   const users = useSelector((state: AppRootStateType) => state.admin.users);
   const dispatch = useDispatch<AppDispatchType>();
 
+  const loadData = (params: ParamsType) => {
+    if (params.q) {
+      dispatch(searchUsers(params));
+    } else {
+      dispatch(getUsers(params));
+    }
+  };
+
   return (
     <>
       <AdminList<any>
@@ -22,8 +30,7 @@ const Users = () => {
         itemName={"email"}
         itemLink={(user) => `${Path.userDetail}/${user.id}`}
         loading={loading}
-        onFetch={(params: ParamsType) => dispatch(getUsers(params))}
-        onSearch={(params: ParamsType) => dispatch(searchUsers(params))}
+        onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createUser(INITIAL_USER))}
       />
     </>

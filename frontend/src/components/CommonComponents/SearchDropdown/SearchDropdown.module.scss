@@ -48,7 +48,14 @@
 }
 
 .search_wrapper {
+  @include flex-column;
+  gap: 10px;
   width: 80%;
+}
+
+.search_results {
+  @include clamped-p3;
+  text-align: right;
 }
 
 .close_button {
@@ -202,6 +209,10 @@
 
   .search_wrapper {
     width: 100%;
+  }
+
+  .search_results {
+    text-align: center;
   }
 
   .close_button {

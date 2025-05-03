@@ -143,7 +143,7 @@
     "professorsCourses": "دورات هذا المحاضر",
     "professors.title": "أساتذتنا",
     "search": "ابحث عن الأساتذة...",
-    "professorsFound": "تم العثور على أساتذة: {{count}}",
+    "found": "تم العثور على أساتذة: {{count}}",
     "noProfessors": "لم يتم العثور على أساتذة"
   },
   "other": {
