@@ -12,7 +12,9 @@ const Table = <T extends Record<string, any>>({
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
-  const headers = Object.keys(data[0]).filter((key) => key !== "slug");
+  const headers = Object.keys(data[0]).filter(
+    (key) => key !== "slug" && key !== "landing_slug",
+  );
 
   return (
     <div className={s.table_wrapper}>
@@ -33,7 +35,7 @@ const Table = <T extends Record<string, any>>({
                 <td key={key}>
                   {key === "landing_name" ? (
                     <a
-                      href={`${Path.landing}/${row.slug}`}
+                      href={`${Path.landing}/${row.slug ? row.slug : row.landing_slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

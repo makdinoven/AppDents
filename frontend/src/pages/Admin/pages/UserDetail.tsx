@@ -13,6 +13,7 @@ import { ROLES } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../store/store.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
+import Table from "../../../components/ui/Table/Table.tsx";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -67,7 +68,6 @@ const UserDetail = () => {
 
   const handleSave = async () => {
     try {
-      console.log(user);
       await adminApi.updateUser(userId, user);
       navigate(-1);
     } catch (error) {
@@ -83,6 +83,20 @@ const UserDetail = () => {
       ) : (
         <>
           <div className={s.list}>
+            {!!user?.purchases.length && (
+              <Table
+                data={user.purchases}
+                columnLabels={{
+                  id: "ID",
+                  course_id: "Course ID",
+                  landing_name: "Landing",
+                  created_at: "Date",
+                  from_ad: "Ad",
+                  amount: "Amount",
+                }}
+              />
+            )}
+
             <div className={s.two_items}>
               <AdminField
                 type="input"

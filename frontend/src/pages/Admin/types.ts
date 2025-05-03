@@ -50,5 +50,6 @@ export interface UserType {
   role: string;
   email: string;
   password: string;
+  purchases: any[];
   courses: any[];
 }
