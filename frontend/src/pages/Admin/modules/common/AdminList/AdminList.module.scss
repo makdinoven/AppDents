@@ -5,6 +5,10 @@
   gap: 10px;
 }
 
+.multi_select_wrapper {
+  min-width: 150px;
+}
+
 .total_count {
   @include clamped-p2;
   text-align: right;
@@ -19,10 +23,21 @@
   gap: 20px;
 }
 
+.not_found {
+  @include clamped-p2;
+  text-align: center;
+  opacity: 0.7;
+}
+
 @media (max-width: $tablet-breakpoint) {
-  .list_header_inner {
-    flex-direction: column-reverse;
-    align-items: center;
-    gap: 20px;
+  .list_header {
+    justify-content: space-between;
+    gap: 10px;
+
+    button {
+      min-width: unset;
+      width: fit-content;
+      padding: 5px 10px;
+    }
   }
 }
