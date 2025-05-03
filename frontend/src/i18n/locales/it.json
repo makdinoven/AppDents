@@ -142,7 +142,7 @@
     "professorsCourses": "I corsi di questo professore",
     "professors.title": "I nostri professori",
     "search": "Cerca professori...",
-    "professorsFound": "Professori trovati: {{count}}",
+    "found": "Professori trovati: {{count}}",
     "noProfessors": "Nessun professore trovato"
 },
   "other": {

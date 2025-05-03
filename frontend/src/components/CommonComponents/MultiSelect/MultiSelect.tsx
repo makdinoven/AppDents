@@ -6,7 +6,7 @@ interface MultiSelectProps<T> {
   id: string;
   options: T[];
   placeholder: string;
-  label: string;
+  label?: string;
   isMultiple: boolean;
   selectedValue: string | number | string[];
   onChange: (e: { name: string; value: string | string[] }) => void;
@@ -63,6 +63,7 @@ const customStyles = {
     border: "1px solid rgba(1,67,61,0.4)",
     padding: "0px 5px",
     borderRadius: "10px",
+    zIndex: 9999,
   }),
   option: (provided: any, state: any) => ({
     ...provided,

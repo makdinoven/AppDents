@@ -1,5 +1,11 @@
 import s from "./Header.module.scss";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
 import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
@@ -17,10 +23,11 @@ import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.ts
 import Glasses from "../../assets/Icons/Glasses.tsx";
 
 const allowedModals = ["login", "sign-up", "password-reset"];
+const OPEN_SEARCH_KEY = "GS";
 
 const Header = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,6 +93,12 @@ const Header = () => {
       }[modalType]
     : undefined;
 
+  const openSearch = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(OPEN_SEARCH_KEY, "");
+    setSearchParams(newParams, { replace: true });
+  };
+
   return (
     <>
       <header className={s.header}>
@@ -105,10 +118,7 @@ const Header = () => {
                   <Glasses />
                 </Link>
               </UnstyledButton>
-              <UnstyledButton
-                className={s.search_button}
-                onClick={() => setShowSearch(true)}
-              >
+              <UnstyledButton className={s.search_button} onClick={openSearch}>
                 <SearchIcon />
               </UnstyledButton>
               <LanguageChanger />
@@ -119,12 +129,7 @@ const Header = () => {
         </div>
       </header>
 
-      {showSearch && (
-        <SearchDropdown
-          showDropdown={showSearch}
-          setShowDropdown={setShowSearch}
-        />
-      )}
+      <SearchDropdown openKey={OPEN_SEARCH_KEY} />
 
       {triggerRef.current && isModalOpen && modalContent && (
         <ModalWrapper

@@ -1,6 +1,5 @@
 import s from "./AdminPanel.module.scss";
 import { useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
 import Courses from "../tabs/Courses.tsx";
 import Landings from "../tabs/Landings.tsx";
 import Authors from "../tabs/Authors.tsx";
@@ -15,7 +14,12 @@ const AdminPanel = () => {
   const handleSelectTab = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", value);
-    newParams.set("page", "1");
+    newParams.delete("language");
+    if (value === "analytics") {
+      newParams.delete("page");
+    } else {
+      newParams.set("page", "1");
+    }
     setSearchParams(newParams);
   };
 
@@ -38,12 +42,6 @@ const AdminPanel = () => {
       component: <Analytics />,
     },
   ];
-
-  useEffect(() => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("tab", activeTab);
-    setSearchParams(newParams);
-  }, [activeTab, searchParams, setSearchParams]);
 
   return (
     <div className={s.admin}>

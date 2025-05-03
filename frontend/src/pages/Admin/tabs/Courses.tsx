@@ -15,6 +15,14 @@ const Courses = () => {
   const courses = useSelector((state: AppRootStateType) => state.admin.courses);
   const dispatch = useDispatch<AppDispatchType>();
 
+  const loadData = (params: ParamsType) => {
+    if (params.q) {
+      dispatch(searchCourses(params));
+    } else {
+      dispatch(getCourses(params));
+    }
+  };
+
   return (
     <>
       <AdminList<any>
@@ -22,8 +30,7 @@ const Courses = () => {
         itemName={"name"}
         itemLink={(course) => `${Path.courseDetail}/${course.id}`}
         loading={loading}
-        onFetch={(params: ParamsType) => dispatch(getCourses(params))}
-        onSearch={(params: ParamsType) => dispatch(searchCourses(params))}
+        onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createCourse(INITIAL_COURSE))}
       />
     </>

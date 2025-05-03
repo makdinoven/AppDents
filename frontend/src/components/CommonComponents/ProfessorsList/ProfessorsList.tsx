@@ -20,13 +20,7 @@ const ProfessorsList = ({ professors, loading }: props) => {
     <div className={s.list_wrapper}>
       {loading && <LoaderOverlay />}
       {professors.length > 0 ? (
-        <ul
-          className={s.list}
-          style={{
-            display: `${professors.length <= 1 ? "flex" : "grid"}`,
-            gridTemplateColumns: "repeat(2, 1fr)",
-          }}
-        >
+        <ul className={s.list}>
           {professors.map((professor: any) => (
             <li key={professor.id}>
               <ProfessorCard

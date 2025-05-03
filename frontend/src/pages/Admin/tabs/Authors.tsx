@@ -15,6 +15,14 @@ const Authors = () => {
   const authors = useSelector((state: AppRootStateType) => state.admin.authors);
   const dispatch = useDispatch<AppDispatchType>();
 
+  const loadData = (params: ParamsType) => {
+    if (params.q) {
+      dispatch(searchAuthors(params));
+    } else {
+      dispatch(getAuthors(params));
+    }
+  };
+
   return (
     <>
       <AdminList<any>
@@ -22,9 +30,9 @@ const Authors = () => {
         itemName={"name"}
         itemLink={(author) => `${Path.authorDetail}/${author.id}`}
         loading={loading}
-        onFetch={(params: ParamsType) => dispatch(getAuthors(params))}
-        onSearch={(params: ParamsType) => dispatch(searchAuthors(params))}
+        onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createAuthor(INITIAL_AUTHOR))}
+        showLanguageFilter={true}
       />
     </>
   );

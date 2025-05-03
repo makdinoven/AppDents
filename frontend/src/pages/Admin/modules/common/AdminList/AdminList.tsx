@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState } from "react";
 import s from "./AdminList.module.scss";
-import Search from "../../../../../components/ui/Search/Search.tsx";
 import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
 import PanelItem from "../PanelItem/PanelItem.tsx";
 import { Path } from "../../../../../routes/routes.ts";
 import { useSearchParams } from "react-router-dom";
 import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import Pagination from "../../../../../components/ui/Pagination/Pagination.tsx";
 import { ParamsType } from "../../../../../api/adminApi/types.ts";
-import useDebounce from "../../../../../common/hooks/useDebounce.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import ListController from "../../../../../components/ui/ListController/ListController.tsx";
+import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
+import { useState } from "react";
 
 interface AdminListProps<T> {
   data: any;
@@ -18,11 +18,13 @@ interface AdminListProps<T> {
   itemLink: (item: T) => string;
   onFetch: (params: ParamsType) => void;
   onCreate: () => void;
-  onSearch: (params: ParamsType) => void;
   loading: boolean;
+  showLanguageFilter?: boolean;
   handleToggle?: (value: number, isHidden: boolean) => void;
   showToggle?: boolean;
 }
+
+const SIZE = 10;
 
 const AdminList = <T extends { id: number; [key: string]: any }>({
   data,
@@ -30,87 +32,64 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   itemLink,
   onFetch,
   onCreate,
-  onSearch,
   loading,
   handleToggle,
+  showLanguageFilter = false,
   showToggle = false,
 }: AdminListProps<T>) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab");
-  const pageFromUrl = parseInt(searchParams.get("page") || "1", 10);
-  const [searchValue, setSearchValue] = useState("");
-  const debouncedSearchValue = useDebounce(searchValue, 300);
+  const SEARCH_KEY = `admin.${tab}`;
   const itemsList = data.list as T[];
-  const getParams = () => ({
-    page: pageFromUrl,
-    size: 10,
-  });
-  const isFirstRender = useRef(true);
-
-  const setFirstPageSearchParams = () => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", "1");
-    setSearchParams(newParams);
-  };
-
-  useEffect(() => {
-    if (!debouncedSearchValue) {
-      onFetch(getParams());
-    }
-  }, [pageFromUrl, tab]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-
-    if (debouncedSearchValue) {
-      setFirstPageSearchParams();
-      onSearch({
-        page: 1,
-        size: 10,
-        q: debouncedSearchValue,
-      });
-    } else {
-      onFetch(getParams());
-    }
-  }, [debouncedSearchValue]);
+  const [language, setLanguage] = useState<any>("EN");
 
   const handleCreateItem = async () => {
     await onCreate();
-    setFirstPageSearchParams();
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("page", "1");
+    setSearchParams(newParams, { replace: true });
+    onFetch({ page: 1, size: SIZE, language });
   };
 
   return (
     <div className={s.list_container}>
       <div className={s.list_header}>
-        <div className={s.list_header_inner}>
-          <Search
-            id={`admin_${tab}_search`}
-            placeholder={`admin.${tab}.search`}
-            value={searchValue}
-            onChange={(e: any) => setSearchValue(e.target.value)}
+        {showLanguageFilter && (
+          <MultiSelect
+            isSearchable={false}
+            id={"language"}
+            options={LANGUAGES}
+            placeholder={"Choose a language"}
+            selectedValue={language}
+            isMultiple={false}
+            onChange={({ value }) => setLanguage(value)}
+            valueKey="value"
+            labelKey="label"
           />
-          <PrettyButton
-            variant={"primary"}
-            text={`admin.${tab}.create`}
-            onClick={handleCreateItem}
-          />
-        </div>
-      </div>
-      <div className={s.list}>
-        {loading && (
-          <>
-            <LoaderOverlay />
-          </>
         )}
-        {itemsList.length > 0 ? (
-          <>
-            <span className={s.total_count}>
-              <Trans i18nKey={`admin.${tab}.found`} /> {data.total}
-            </span>
-            {itemsList.map((item) => (
+
+        <PrettyButton
+          variant={"primary"}
+          text={`admin.${tab}.create`}
+          onClick={handleCreateItem}
+        />
+      </div>
+      <ListController
+        type={SEARCH_KEY}
+        language={language}
+        loadData={(params) => onFetch(params)}
+        total={data.total}
+        totalPages={data.total_pages}
+        size={SIZE}
+      >
+        <div className={s.list}>
+          {loading && (
+            <>
+              <LoaderOverlay />
+            </>
+          )}
+          {itemsList.length > 0 ? (
+            itemsList.map((item) => (
               <PanelItem
                 id={item.id}
                 name={item[itemName]}
@@ -127,15 +106,14 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                 showToggle={showToggle}
                 link={itemLink(item)}
               />
-            ))}
-            <Pagination totalPages={data.total_pages} />
-          </>
-        ) : !loading ? (
-          <Trans i18nKey={`admin.${tab}.notFound`} />
-        ) : (
-          <Loader />
-        )}
-      </div>
+            ))
+          ) : !loading ? (
+            <Trans i18nKey={`admin.${tab}.notFound`} />
+          ) : (
+            <Loader />
+          )}
+        </div>
+      </ListController>
     </div>
   );
 };

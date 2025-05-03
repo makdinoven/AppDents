@@ -1,13 +1,3 @@
-.search_container {
-  @include flex-column;
-  gap: 10px;
-  p {
-    @include clamped-p2;
-    text-align: right;
-    opacity: 0.8;
-  }
-}
-
 .professors {
   @include flex-column;
   gap: 40px;

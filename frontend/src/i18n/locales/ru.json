@@ -142,7 +142,7 @@
     "professorsCourses": "Курсы этого преподавателя",
     "professors.title": "Наши преподаватели",
     "search": "Поиск преподавателей...",
-    "professorsFound": "Преподавателей найдено: {{count}}",
+    "found": "Преподавателей найдено: {{count}}",
     "noProfessors": "Преподаватели не найдены"
   },
   "other": {
