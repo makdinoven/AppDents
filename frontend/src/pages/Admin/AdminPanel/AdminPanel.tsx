@@ -6,10 +6,20 @@ import Authors from "../tabs/Authors.tsx";
 import Users from "../tabs/Users.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
+import { useEffect } from "react";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "landings";
+  const tabFromParams = searchParams.get("tab");
+  useEffect(() => {
+    if (!tabFromParams) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("tab", "landings");
+      setSearchParams(newParams);
+    }
+  }, [tabFromParams, searchParams, setSearchParams]);
+
+  const activeTab = tabFromParams || "landings";
 
   const handleSelectTab = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
