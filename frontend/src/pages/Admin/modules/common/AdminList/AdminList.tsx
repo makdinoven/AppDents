@@ -41,7 +41,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const tab = searchParams.get("tab");
   const SEARCH_KEY = `admin.${tab}`;
   const itemsList = data.list as T[];
-  const [language, setLanguage] = useState<any>("EN");
+  const [language, setLanguage] = useState<any>("all");
 
   const handleCreateItem = async () => {
     await onCreate();
@@ -51,21 +51,25 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     onFetch({ page: 1, size: SIZE, language });
   };
 
+  const languagesOptions = [{ label: "All", value: "all" }, ...LANGUAGES];
+
   return (
     <div className={s.list_container}>
       <div className={s.list_header}>
         {showLanguageFilter && (
-          <MultiSelect
-            isSearchable={false}
-            id={"language"}
-            options={LANGUAGES}
-            placeholder={"Choose a language"}
-            selectedValue={language}
-            isMultiple={false}
-            onChange={({ value }) => setLanguage(value)}
-            valueKey="value"
-            labelKey="label"
-          />
+          <div className={s.multi_select_wrapper}>
+            <MultiSelect
+              isSearchable={false}
+              id={"language"}
+              options={languagesOptions}
+              placeholder={"Choose a language"}
+              selectedValue={language}
+              isMultiple={false}
+              onChange={({ value }) => setLanguage(value)}
+              valueKey="value"
+              labelKey="label"
+            />
+          </div>
         )}
 
         <PrettyButton
@@ -76,7 +80,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       </div>
       <ListController
         type={SEARCH_KEY}
-        language={language}
+        language={language !== "all" ? language : undefined}
         loadData={(params) => onFetch(params)}
         total={data.total}
         totalPages={data.total_pages}
@@ -108,7 +112,9 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
               />
             ))
           ) : !loading ? (
-            <Trans i18nKey={`admin.${tab}.notFound`} />
+            <p className={s.not_found}>
+              <Trans i18nKey={`admin.${tab}.notFound`} />
+            </p>
           ) : (
             <Loader />
           )}
