@@ -1,6 +1,5 @@
 import s from "./LessonPage.module.scss";
 import { useEffect, useState } from "react";
-import { isValidUrl } from "../../../../common/helpers/helpers.ts";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
@@ -71,7 +70,7 @@ const LessonPage = () => {
         <div className={s.lesson_page}>
           <h3>{lesson.lesson_name}</h3>
           <div className={s.video_container}>
-            {isValidUrl(lesson.video_link) && lesson.video_link.length > 0 ? (
+            {lesson.video_link?.length > 0 ? (
               <iframe
                 src={lesson.video_link}
                 width="100%"
