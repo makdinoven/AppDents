@@ -1,3 +1,5 @@
+import { Path } from "../../routes/routes.ts";
+
 export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },
@@ -6,6 +8,8 @@ export const LANGUAGES = [
   { label: "Português", value: "PT" },
   { label: "Italiano", value: "IT" },
 ];
+
+export const AUTH_MODAL_ROUTES = [Path.login, Path.signUp, Path.passwordReset];
 
 export const ROLES = [
   {
