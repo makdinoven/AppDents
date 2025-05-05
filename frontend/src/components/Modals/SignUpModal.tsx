@@ -35,7 +35,7 @@ const SignUpModal = () => {
     try {
       await userApi.signUp(email, language);
       alert(t("registrationSuccess"));
-      navigate("/login");
+      navigate(Path.login);
     } catch (error) {
       setError(error);
     }

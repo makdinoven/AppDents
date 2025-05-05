@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Trans } from "react-i18next";
 import s from "./ModalLink.module.scss";
 
@@ -11,20 +11,26 @@ const ModalLink = ({
   text: string;
   variant?: "uppercase";
 }) => {
+  const navigate = useNavigate();
   const location = useLocation();
 
-  const pathParts = location.pathname.split("/").filter(Boolean);
-  pathParts.pop();
-
-  const basePath = pathParts.join("/");
-
   return (
-    <Link
+    <span
       className={`${s.link} ${variant === "uppercase" ? s.uppercase : ""}`}
-      to={`${basePath}${link}`}
+      onClick={() =>
+        navigate(link, {
+          state: {
+            backgroundLocation: location.state?.backgroundLocation || {
+              pathname: location.pathname,
+              search: location.search,
+            },
+          },
+          replace: true,
+        })
+      }
     >
       <Trans i18nKey={text} />
-    </Link>
+    </span>
   );
 };
 

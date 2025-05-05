@@ -10,9 +10,9 @@ const Layout = () => {
   return (
     <div className={s.main_wrapper}>
       <Header />
-      <div className={s.content}>
+      <main className={s.content}>
         <Outlet />
-      </div>
+      </main>
       {!isAdminRoute && <Footer />}
     </div>
   );
