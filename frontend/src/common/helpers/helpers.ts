@@ -59,12 +59,6 @@ export const keepFirstTwoWithInsert = (initialStr: string) => {
   return `${parts[0]} ${t("landing.online")} ${secondWord}`;
 };
 
-export const isValidUrl = (url: string) => {
-  const regex =
-    /^(https?:\/\/)?([a-zA-Z0-9]+[.-])*[a-zA-Z0-9]+(\.[a-zA-Z]{2,})?(:\d+)?(\/[^\s]*)?$/;
-  return regex.test(url);
-};
-
 export const getPricesData = (landing: any) => ({
   old_price: landing?.old_price ? `$${landing?.old_price}` : "",
   new_price: landing?.new_price ? `$${landing?.new_price}` : "",
