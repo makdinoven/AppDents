@@ -11,7 +11,7 @@ import { INITIAL_LANDING } from "../../../common/helpers/commonConstants.ts";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { ParamsType } from "../../../api/adminApi/types.ts";
 
-const Landings = () => {
+const AdminLandingsTab = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const landings = useSelector(
     (state: AppRootStateType) => state.admin.landings,
@@ -53,4 +53,4 @@ const Landings = () => {
   );
 };
 
-export default Landings;
+export default AdminLandingsTab;

@@ -13,8 +13,10 @@ import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { LoginType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
-const LoginModal = ({ onClose }: { onClose: () => void }) => {
+const LoginModal = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatchType>();
   const { error } = useSelector((state: AppRootStateType) => state.user);
   const {
@@ -31,7 +33,7 @@ const LoginModal = ({ onClose }: { onClose: () => void }) => {
 
     if (loginResponse.meta.requestStatus === "fulfilled") {
       await dispatch(getMe());
-      onClose();
+      navigate(Path.profile, { replace: true });
     } else {
       console.log(loginResponse.payload);
     }

@@ -26,7 +26,9 @@ const Header = () => {
   const { setTriggerRef } = useTriggerRef();
   const localTriggerRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
-  const userEmail = useSelector((state: AppRootStateType) => state.user.email);
+  const isLogged = useSelector(
+    (state: AppRootStateType) => state.user.isLogged,
+  );
 
   useEffect(() => {
     if (localTriggerRef.current) {
@@ -35,7 +37,7 @@ const Header = () => {
   }, [localTriggerRef, setTriggerRef]);
 
   const renderButton = () => {
-    if (!userEmail) {
+    if (!isLogged) {
       return (
         <UnstyledButton
           ref={localTriggerRef}

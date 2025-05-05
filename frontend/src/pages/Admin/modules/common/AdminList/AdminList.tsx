@@ -43,12 +43,26 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const itemsList = data.list as T[];
   const [language, setLanguage] = useState<any>("all");
 
+  const getLanguageParam = () => {
+    return language !== "all" ? language : undefined;
+  };
+
   const handleCreateItem = async () => {
-    await onCreate();
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set("page", "1");
-    setSearchParams(newParams, { replace: true });
-    onFetch({ page: 1, size: SIZE, language });
+    try {
+      await onCreate();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("page", "1");
+      setSearchParams(newParams, { replace: true });
+      onFetch({
+        page: 1,
+        size: SIZE,
+        language: getLanguageParam(),
+      });
+    } catch (err: any) {
+      alert(
+        `Error creating ${tab?.slice(0, -1)}, error message: ${err.message}`,
+      );
+    }
   };
 
   const languagesOptions = [{ label: "All", value: "all" }, ...LANGUAGES];
@@ -80,7 +94,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       </div>
       <ListController
         type={SEARCH_KEY}
-        language={language !== "all" ? language : undefined}
+        language={getLanguageParam()}
         loadData={(params) => onFetch(params)}
         total={data.total}
         totalPages={data.total_pages}

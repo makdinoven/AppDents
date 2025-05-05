@@ -1,41 +1,40 @@
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../routes/routes.ts";
+import { INITIAL_USER } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import {
-  createAuthor,
-  getAuthors,
-  searchAuthors,
+  createUser,
+  getUsers,
+  searchUsers,
 } from "../../../store/actions/adminActions.ts";
-import { INITIAL_AUTHOR } from "../../../common/helpers/commonConstants.ts";
 import { ParamsType } from "../../../api/adminApi/types.ts";
 
-const Authors = () => {
+const AdminUsersTab = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
-  const authors = useSelector((state: AppRootStateType) => state.admin.authors);
+  const users = useSelector((state: AppRootStateType) => state.admin.users);
   const dispatch = useDispatch<AppDispatchType>();
 
   const loadData = (params: ParamsType) => {
     if (params.q) {
-      dispatch(searchAuthors(params));
+      dispatch(searchUsers(params));
     } else {
-      dispatch(getAuthors(params));
+      dispatch(getUsers(params));
     }
   };
 
   return (
     <>
       <AdminList<any>
-        data={authors}
-        itemName={"name"}
-        itemLink={(author) => `${Path.authorDetail}/${author.id}`}
+        data={users}
+        itemName={"email"}
+        itemLink={(user) => `${Path.userDetail}/${user.id}`}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
-        onCreate={() => dispatch(createAuthor(INITIAL_AUTHOR))}
-        showLanguageFilter={true}
+        onCreate={() => dispatch(createUser(INITIAL_USER))}
       />
     </>
   );
 };
 
-export default Authors;
+export default AdminUsersTab;
