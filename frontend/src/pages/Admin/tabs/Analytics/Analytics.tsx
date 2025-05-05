@@ -23,11 +23,9 @@ const Analytics = () => {
   const getFormattedDate = (date: Date) => {
     return date.toISOString().split("T")[0];
   };
-  const [startDate, setStartDate] = useState<string>(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return getFormattedDate(yesterday);
-  });
+  const [startDate, setStartDate] = useState<string>(() =>
+    getFormattedDate(new Date()),
+  );
   const [endDate, setEndDate] = useState<string>(() =>
     getFormattedDate(new Date()),
   );

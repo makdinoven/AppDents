@@ -23,7 +23,6 @@ import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx"
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
-import { getMe } from "../../store/actions/userActions.ts";
 import { Path } from "../../routes/routes.ts";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
@@ -44,9 +43,6 @@ const Landing = () => {
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
 
   useEffect(() => {
     fetchLandingData();

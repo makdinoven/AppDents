@@ -21,6 +21,8 @@ import Professors from "../pages/Professors/Professors.tsx";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage.tsx";
 import AuthModalManager from "../components/AuthModalManager/AuthModalManager.tsx";
 import { AUTH_MODAL_ROUTES } from "../common/helpers/commonConstants.ts";
+import ProtectedRoute from "./protected/ProtectedRoute.tsx";
+import AdminRoute from "./protected/AdminRoute.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -44,7 +46,14 @@ export const AppRoutes: FC = () => {
           <Route path={`${Path.professors}`} element={<Professors />} />
           <Route path={`${Path.info}/:pageType`} element={<UniversalPage />} />
 
-          <Route path={Path.profile} element={<ProfilePage />}>
+          <Route
+            path={Path.profile}
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<ProfileMain />} />
             <Route
               path={`${Path.myCourse}/:courseId?`}
@@ -57,7 +66,14 @@ export const AppRoutes: FC = () => {
             </Route>
           </Route>
 
-          <Route path={Path.admin} element={<AdminPage />}>
+          <Route
+            path={Path.admin}
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          >
             <Route index element={<AdminPanel />} />
             <Route
               path={`${Path.courseDetail}/:courseId?`}

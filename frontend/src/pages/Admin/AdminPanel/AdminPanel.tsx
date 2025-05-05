@@ -1,9 +1,9 @@
 import s from "./AdminPanel.module.scss";
 import { useSearchParams } from "react-router-dom";
-import Courses from "../tabs/Courses.tsx";
-import Landings from "../tabs/Landings.tsx";
-import Authors from "../tabs/Authors.tsx";
-import Users from "../tabs/Users.tsx";
+import AdminCoursesTab from "../tabs/AdminCoursesTab.tsx";
+import AdminLandingsTab from "../tabs/AdminLandingsTab.tsx";
+import AdminAuthorsTab from "../tabs/AdminAuthorsTab.tsx";
+import AdminUsersTab from "../tabs/AdminUsersTab.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
@@ -37,15 +37,19 @@ const AdminPanel = () => {
     {
       name: "admin.landings.landings",
       value: "landings",
-      component: <Landings />,
+      component: <AdminLandingsTab />,
     },
     {
       name: "admin.courses.courses",
       value: "courses",
-      component: <Courses />,
+      component: <AdminCoursesTab />,
     },
-    { name: "admin.authors.authors", value: "authors", component: <Authors /> },
-    { name: "admin.users.users", value: "users", component: <Users /> },
+    {
+      name: "admin.authors.authors",
+      value: "authors",
+      component: <AdminAuthorsTab />,
+    },
+    { name: "admin.users.users", value: "users", component: <AdminUsersTab /> },
     {
       name: "admin.analytics.analytics",
       value: "analytics",

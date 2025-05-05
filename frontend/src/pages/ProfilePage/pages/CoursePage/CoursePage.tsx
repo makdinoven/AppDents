@@ -5,33 +5,20 @@ import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
-import { getMe } from "../../../../store/actions/userActions.ts";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../../store/store.ts";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import CourseCard from "../../modules/CourseCard/CourseCard.tsx";
 import { Path } from "../../../../routes/routes.ts";
 
 const CoursePage = () => {
-  const dispatch = useDispatch<AppDispatchType>();
   const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (courseId) {
-      fetchData();
+      fetchCourseData();
     }
-  }, [dispatch, courseId]);
-
-  const fetchData = async () => {
-    try {
-      await dispatch(getMe());
-      await fetchCourseData();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  }, [courseId]);
 
   const fetchCourseData = async () => {
     try {

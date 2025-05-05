@@ -10,7 +10,7 @@ import { Path } from "../../../routes/routes.ts";
 import { INITIAL_COURSE } from "../../../common/helpers/commonConstants.ts";
 import { ParamsType } from "../../../api/adminApi/types.ts";
 
-const Courses = () => {
+const AdminCoursesTab = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const courses = useSelector((state: AppRootStateType) => state.admin.courses);
   const dispatch = useDispatch<AppDispatchType>();
@@ -37,4 +37,4 @@ const Courses = () => {
   );
 };
 
-export default Courses;
+export default AdminCoursesTab;

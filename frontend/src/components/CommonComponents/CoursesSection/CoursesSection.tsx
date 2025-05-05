@@ -46,6 +46,15 @@ const CoursesSection = ({
   );
   const [internalFilter, setInternalFilter] = useState("all");
   const [internalSort, setInternalSort] = useState("popular");
+  const [isReady, setIsReady] = useState(false);
+  const filter = externalFilter ?? internalFilter;
+  const sort = externalSort ?? internalSort;
+
+  useEffect(() => {
+    if (LANGUAGES.some((lang) => lang.value === language)) {
+      setIsReady(true);
+    }
+  }, [language, filter, sort]);
 
   const activeFilter = externalFilter ?? internalFilter;
   const activeSort = externalSort ?? internalSort;
@@ -55,19 +64,17 @@ const CoursesSection = ({
   }, [language, activeFilter, activeSort]);
 
   useEffect(() => {
-    if (LANGUAGES.some((lang) => lang.value === language)) {
+    if (isReady) {
       const params = {
         language,
         limit: pageSize,
         skip,
-        ...(activeFilter !== "all" &&
-          activeFilter !== "" && { tags: activeFilter }),
-        ...(activeSort !== "" && { sort: activeSort }),
+        ...(filter !== "all" && filter !== "" && { tags: filter }),
+        ...(sort !== "" && { sort }),
       };
-
       dispatch(getCourses(params));
     }
-  }, [language, skip, activeFilter, activeSort]);
+  }, [isReady, language, skip, filter, sort]);
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
