@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, time, date
 
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -11,7 +11,8 @@ from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
-    get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated
+    get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
+    track_ad_visit
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum
@@ -26,7 +27,7 @@ router = APIRouter()
 def get_landing_listing(
     page: int = Query(1, ge=1, description="Номер страницы (≥1)"),
     size: int = Query(10, gt=0, description="Размер страницы"),
-    language: Optional[LangEnum] = Query(           # 👈 новый параметр
+    language: Optional[LangEnum] = Query(
         None,
         description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
     ),
@@ -406,3 +407,19 @@ def most_popular_landings(
         }
         for l in landings
     ]
+
+@router.post("/track-ad/{slug}")
+def track_ad(slug: str,
+             request: Request,
+             db: Session = Depends(get_db)):
+    landing = db.query(Landing).filter(Landing.page_name == slug).first()
+    if not landing:
+        raise HTTPException(404)
+    track_ad_visit(
+        db=db,
+        landing_id=landing.id,
+        fbp=request.cookies.get("_fbp"),
+        fbc=request.cookies.get("_fbc"),
+        ip=request.client.host
+    )
+    return {"ok": True}
