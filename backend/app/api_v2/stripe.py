@@ -24,7 +24,6 @@ class CheckoutRequest(BaseModel):
     cancel_url: str = "https://example.com/payment-cancel"
     fbp: str | None = None  # Из cookie _fbp
     fbc: str | None = None  # Из cookie _fbc
-    ad: bool = False
 
 @router.post("/checkout")
 def stripe_checkout(
