@@ -111,3 +111,15 @@ class Purchase(Base):
     user = relationship("User", backref="purchases")
     landing = relationship("Landing", backref="purchases")
     course = relationship("Course", backref="purchases")
+
+# models_v2.py
+class AdVisit(Base):
+    __tablename__ = "ad_visits"
+    id          = Column(Integer, primary_key=True)
+    landing_id  = Column(Integer, ForeignKey("landings.id"), nullable=False)
+    visited_at  = Column(DateTime, server_default=func.utc(), nullable=False)
+    fbp         = Column(String(255))
+    fbc         = Column(String(255))
+    ip_address  = Column(String(45))
+
+    landing = relationship("Landing", backref="ad_visits")

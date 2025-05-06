@@ -7,7 +7,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 from typing import List, cast, Optional
-from ..models.models_v2 import Landing, Author, Course, Tag, Purchase
+from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
 
 
@@ -324,7 +324,27 @@ def check_and_reset_ad_flag(landing: Landing, db: Session):
             landing.in_advertising = False
             landing.ad_flag_expires_at = None
 
+def reset_expired_ad_flags(db: Session):
+    """
+    Сбрасывает in_advertising у лендингов,
+    у которых истёк ad_flag_expires_at.
+    """
+    updated = db.query(Landing).filter(
+        Landing.in_advertising.is_(True),
+        Landing.ad_flag_expires_at < func.utc_timestamp()
+    ).update(
+        {
+            Landing.in_advertising: False,
+            Landing.ad_flag_expires_at: None
+        },
+        synchronize_session=False      # быстрее, чем проход по каждому объекту
+    )
+    if updated:
+        db.commit()
+
+
 def get_top_landings_by_sales(db: Session, language: str = None, limit: int = 10):
+    reset_expired_ad_flags(db)
     query = db.query(Landing).order_by(Landing.sales_count.desc())
     # Если вы хотите показывать только is_hidden=False:
     query = query.filter(Landing.is_hidden == False)
@@ -332,11 +352,27 @@ def get_top_landings_by_sales(db: Session, language: str = None, limit: int = 10
         query = query.filter(Landing.language == language)
     landings = query.limit(limit).all()
 
-    # Ленивая проверка in_advertising
-    for landing in landings:
-        check_and_reset_ad_flag(landing, db)
     # Возможно, не хотите коммитить на каждый проход,
     # тогда можете делать один общий commit после цикла
     db.commit()
 
     return landings
+
+
+# services_v2/landing_service.py
+AD_TTL = timedelta(hours=3)
+
+def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    visit = AdVisit(
+        landing_id=landing_id,
+        fbp=fbp,
+        fbc=fbc,
+        ip_address=ip,
+    )
+    db.add(visit)
+
+    landing = db.query(Landing).filter(Landing.id == landing_id).first()
+    if landing:
+        landing.in_advertising = True
+        landing.ad_flag_expires_at = datetime.utcnow() + AD_TTL
+    db.commit()
