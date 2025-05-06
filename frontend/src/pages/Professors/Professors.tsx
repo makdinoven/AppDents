@@ -54,11 +54,13 @@ const Professors = () => {
       >
         <ProfessorsList professors={professors} loading={loading} />
       </ListController>
-      <CoursesSection
-        showSort={true}
-        sectionTitle={"other.otherCourses"}
-        pageSize={4}
-      />
+      {!loading && (
+        <CoursesSection
+          showSort={true}
+          sectionTitle={"other.otherCourses"}
+          pageSize={4}
+        />
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ $svg-height: 35px;
   @include clamped-p1;
   @include transition($property: color);
   position: relative;
-  width: 100%;
+  width: fit-content;
   display: flex;
   align-items: center;
   padding-left: $svg-width + 20px;
