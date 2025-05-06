@@ -7,7 +7,7 @@
   @include flex-column;
   gap: 10px;
   p {
-    @include clamped-p2;
+    @include clamped-p3;
     text-align: right;
     opacity: 0.8;
   }

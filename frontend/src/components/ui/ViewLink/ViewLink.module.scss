@@ -6,6 +6,7 @@
   gap: 10px;
   height: fit-content;
   max-width: clamp(128px, 18vw, 196px);
+  padding-bottom: 1px;
   @include clamped-p2;
   @include horizontal-line(
     $bottom: -2px,

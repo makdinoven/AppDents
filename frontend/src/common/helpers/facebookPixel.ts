@@ -5,8 +5,17 @@ const options = {
   debug: false,
 };
 
+const pixelIds = ["355039504358349", "1105921817166633"];
+
+let initialized = false;
+
 export const initFacebookPixel = () => {
-  ReactPixel.init("355039504358349", undefined, options);
+  if (!initialized) {
+    pixelIds.forEach((id) => {
+      ReactPixel.init(id, undefined, options);
+    });
+    initialized = true;
+  }
 };
 
 export const trackPageView = () => {

@@ -9,7 +9,7 @@ import { ParamsType } from "../../api/adminApi/types.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 
-const SIZE = 10;
+const SIZE = 12;
 
 const Professors = () => {
   const language = useSelector(
@@ -42,7 +42,7 @@ const Professors = () => {
   };
 
   return (
-    <div className={s.professors}>
+    <div lang={language.toLowerCase()} className={s.professors}>
       <DetailHeader title={"professor.professors.title"} />
       <ListController
         language={language}
