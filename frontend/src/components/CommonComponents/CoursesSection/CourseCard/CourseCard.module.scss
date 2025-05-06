@@ -79,6 +79,9 @@ $card-body-padding-bottom: calc(
   h4 {
     @include clamped-p1;
     margin-bottom: 10px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 }
 

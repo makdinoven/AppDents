@@ -1,73 +1,10 @@
-.photo_wrapper {
-  text-align: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  background-color: $quaternary;
-  width: 110px;
-  height: 110px;
-  border-radius: 100%;
-  color: $text-color;
-  border: 5px solid $secondary;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-}
-
 .card_wrapper {
   @include fadeIn;
   @include transition($property: transform);
   @include flex-column;
   height: 100%;
+  width: 100%;
   cursor: pointer;
-
-  .card_header {
-    position: relative;
-    outline: 1px solid $secondary-lighter;
-    border-bottom: unset;
-    padding: 15px 20px 5px;
-    width: fit-content;
-    max-width: 80%;
-    border-top-right-radius: 20px;
-    border-top-left-radius: 20px;
-    &::after {
-      content: "";
-      display: block;
-      position: absolute;
-      height: 8px;
-      bottom: -3px;
-      left: 0;
-      right: 5px;
-      width: 103%;
-      background-color: $background-color;
-    }
-    @include circle-angle(
-      $bottom: 0,
-      $right: -20px,
-      $size: 20px,
-      $offset-x: -20px,
-      $offset-y: 20px,
-      $shadow-color: $background-color,
-      $border-bottom-left-radius: 20px
-    );
-
-    &::before {
-      border: 1px solid $secondary-lighter;
-      border-top: 0;
-      border-right: 0;
-      z-index: 2;
-      box-shadow: -2px 2px 0 2px $background-color;
-    }
-  }
-
-  h6 {
-    @include clamped-h4;
-    width: fit-content;
-    text-transform: uppercase;
-    color: $secondary;
-  }
 
   @media (hover: hover) {
     &:hover {
@@ -76,52 +13,152 @@
   }
 }
 
+.card_header {
+  flex: 1;
+  @include flex-center;
+  position: relative;
+  outline: 1px solid $secondary-lighter;
+  border-bottom: unset;
+  padding: 15px 20px 5px;
+  width: 80%;
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+  &::after {
+    content: "";
+    display: block;
+    position: absolute;
+    height: 8px;
+    bottom: -3px;
+    left: 0;
+    right: 5px;
+    width: 103%;
+    background-color: $background-color;
+  }
+  @include circle-angle(
+    $bottom: 0,
+    $right: -20px,
+    $size: 20px,
+    $offset-x: -20px,
+    $offset-y: 20px,
+    $shadow-color: $background-color,
+    $border-bottom-left-radius: 20px
+  );
+
+  &::before {
+    border: 1px solid $secondary-lighter;
+    border-top: 0;
+    border-right: 0;
+    z-index: 2;
+    box-shadow: -2px 2px 0 2px $background-color;
+  }
+
+  h6 {
+    @include clamped-p2;
+    width: fit-content;
+    text-transform: uppercase;
+    color: $secondary;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
+
 .professor_card {
   @include flex-column;
-  align-items: end;
-  height: 100%;
   gap: 15px;
   outline: 1px solid $secondary-lighter;
-  border-radius: var(--border-radius);
+  border-radius: 20px;
+  align-items: center;
   border-top-left-radius: unset;
-  border-top-right-radius: 30px;
+  border-top-right-radius: 20px;
   padding: 10px 20px 20px;
-  @include clamped-p3;
+  @include clamped-p4;
 
   span {
-    @include clamped-p3;
-    margin-right: 20px;
+    @include clamped-p4;
     max-width: unset;
   }
 
   .description {
     height: 100%;
+    width: 100%;
     overflow: hidden;
     position: relative;
     display: -webkit-box;
-    -webkit-line-clamp: 6;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
 }
 
 .card_content {
   display: flex;
+  align-items: center;
   flex: 1;
   gap: 20px;
   width: 100%;
 }
 
+.photo_wrapper {
+  text-align: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: 100%;
+  max-width: 188px;
+  height: 180px;
+  border-radius: 30px;
+  color: $text-color;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
 @media (max-width: $middle-breakpoint) {
   .photo_wrapper {
-    width: 80px;
-    height: 80px;
+    width: 120px;
+    height: 120px;
+  }
+
+  .professor_card {
+    padding: 10px 15px 20px;
+  }
+
+  .card_header {
+    padding: 15px 15px 5px;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .photo_wrapper {
-    width: 63px;
-    height: 63px;
+    width: 80px;
+    height: 80px;
+    border-radius: 15px;
+  }
+
+  .card_header {
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 10px 10px 5px;
+
+    &::before {
+      width: 15px;
+      height: 15px;
+      right: -15px;
+      border-bottom-left-radius: 15px;
+    }
+  }
+
+  .professor_card {
+    padding: 10px 10px 15px;
+    gap: 10px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    border-top-right-radius: 15px;
   }
 
   .card_content {

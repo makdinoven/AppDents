@@ -5,6 +5,7 @@ import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Trans } from "react-i18next";
 
 type Professor = {
+  id: number;
   name: string;
   photo: string;
   description: string;
@@ -16,14 +17,27 @@ type props = {
 };
 
 const ProfessorsList = ({ professors, loading }: props) => {
+  const getGridTemplateColumns = (count: number) => {
+    if (count === 3) return "repeat(3, 1fr)";
+    if (count === 2) return "repeat(2, 1fr)";
+    if (count === 1) return "repeat(1, 1fr)";
+    return "repeat(4, 1fr)";
+  };
+
   return (
     <div className={s.list_wrapper}>
       {loading && <LoaderOverlay />}
       {professors.length > 0 ? (
-        <ul className={s.list}>
-          {professors.map((professor: any) => (
+        <ul
+          style={{
+            gridTemplateColumns: `${getGridTemplateColumns(professors.length)}`,
+          }}
+          className={s.list}
+        >
+          {professors.map((professor) => (
             <li key={professor.id}>
               <ProfessorCard
+                variant={professors.length <= 2 ? "horizontal" : "vertical"}
                 name={professor.name}
                 photo={professor.photo}
                 description={professor.description}
