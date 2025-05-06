@@ -77,7 +77,6 @@ def stripe_checkout(
         request=request,
         fbp=data.fbp,
         fbc=data.fbc,
-        ad=data.ad
     )
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
