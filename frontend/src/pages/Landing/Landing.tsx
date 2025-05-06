@@ -43,8 +43,15 @@ const Landing = () => {
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
+  const isFromFacebookAds = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.has("fbclid");
+  };
 
   useEffect(() => {
+    if (isFromFacebookAds()) {
+      trackFacebookAd();
+    }
     fetchLandingData();
   }, [landingPath]);
 
@@ -68,6 +75,10 @@ const Landing = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const trackFacebookAd = () => {
+    mainApi.trackFacebookAd(landingPath!);
   };
 
   const renderBuyButton = (variant: "full" | "default") => (
