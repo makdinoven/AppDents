@@ -30,6 +30,53 @@ def _hash_email(email: str) -> str:
     normalized = email.strip().lower()
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
+def _build_fb_event(email: str,
+                    amount: float,
+                    currency: str,
+                    course_ids: list[int],
+                    client_ip: str,
+                    user_agent: str,
+                    fbp: str | None,
+                    fbc: str | None,
+                    first_name: str | None,
+                    last_name: str | None) -> dict:
+    """
+    Формирует payload **один раз** – его можно многократно посылать
+    в разные пиксели.
+    """
+    if not email:
+        raise ValueError("Empty email for Facebook Purchase event")
+
+    hashed_email = _hash_email(email)
+    event = {
+        "data": [{
+            "event_name": "Purchase",
+            "event_time": int(datetime.now().timestamp()),
+            "user_data": {
+                "em": [hashed_email],
+                "client_ip_address": client_ip if client_ip != "0.0.0.0" else None,
+                "client_user_agent": user_agent or None,
+            },
+            "custom_data": {
+                "currency": currency,
+                "value": amount,
+                "content_ids": [str(cid) for cid in course_ids],
+                "content_type": "course",
+            },
+        }]
+    }
+
+    u = event["data"][0]["user_data"]
+    if fbp: u["fbp"] = fbp
+    if fbc: u["fbc"] = fbc
+    if first_name:
+        u["fn"] = [_hash_email(first_name)]
+    if last_name and last_name != first_name:
+        u["ln"] = [_hash_email(last_name)]
+
+    return event
+
+
 def _send_facebook_purchase(
     email: str,
     amount: float,
@@ -42,57 +89,42 @@ def _send_facebook_purchase(
     first_name: str | None = None,
     last_name: str | None = None,
 ):
+    """
+    Отправляет событие **во все пиксели из settings**.
+    Любые ошибки логируем, но не прерываем цикл,
+    чтобы попытаться отправить в остальные.
+    """
     try:
-        if not email:
-            logging.warning("Empty email for Facebook Purchase event")
-            return
-
-        hashed_email = _hash_email(email)
-        event_data = {
-            "data": [{
-                "event_name": "Purchase",
-                "event_time": int(datetime.now().timestamp()),
-                "user_data": {
-                    "em": [hashed_email],
-                    "client_ip_address": client_ip if client_ip != "0.0.0.0" else None,
-                    "client_user_agent": user_agent or None,
-                },
-                "custom_data": {
-                    "currency": currency,
-                    "value": amount,
-                    "content_ids": [str(cid) for cid in course_ids],
-                    "content_type": "course",
-                },
-            }]
-        }
-
-        user_data = event_data["data"][0]["user_data"]
-        if fbp:
-            user_data["fbp"] = fbp
-        if fbc:
-            user_data["fbc"] = fbc
-        if first_name:
-            fn_norm = first_name.strip().lower()
-            user_data["fn"] = [hashlib.sha256(fn_norm.encode("utf-8")).hexdigest()]
-
-        if last_name:
-            ln_norm = last_name.strip().lower()
-            user_data["ln"] = [hashlib.sha256(ln_norm.encode("utf-8")).hexdigest()]
-
-        response = requests.post(
-            f"https://graph.facebook.com/v18.0/{settings.FACEBOOK_PIXEL_ID}/events",
-            params={"access_token": settings.FACEBOOK_ACCESS_TOKEN},
-            json=event_data,
-            timeout=3
+        event_data = _build_fb_event(
+            email, amount, currency, course_ids,
+            client_ip, user_agent, fbp, fbc, first_name, last_name
         )
+        pixels = [
+            {"id": settings.FACEBOOK_PIXEL_ID,   "token": settings.FACEBOOK_ACCESS_TOKEN},
+            {"id": settings.FACEBOOK_PIXEL_ID_2, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+        ]
 
-        if response.status_code != 200:
-            logging.error(f"Facebook Pixel error: {response.status_code} - {response.text}")
-        else:
-            logging.info("Facebook event sent successfully for email: %s", email)
+        for p in pixels:
+            try:
+                resp = requests.post(
+                    f"https://graph.facebook.com/v18.0/{p['id']}/events",
+                    params={"access_token": p["token"]},
+                    json=event_data,
+                    timeout=3
+                )
+                if resp.status_code == 200:
+                    logging.info("FB Pixel %s: ok for %s", p["id"], email)
+                else:
+                    logging.error(
+                        "FB Pixel %s error %s – %s",
+                        p["id"], resp.status_code, resp.text
+                    )
+            except Exception as e:
+                logging.error("FB Pixel %s failed: %s", p["id"], e, exc_info=True)
 
     except Exception as e:
-        logging.error(f"Failed to send Facebook event: {str(e)}", exc_info=True)
+        logging.error("Failed to build/send FB events: %s", e, exc_info=True)
+
 
 def get_stripe_keys_by_region(region: str) -> dict:
     region = region.upper()
