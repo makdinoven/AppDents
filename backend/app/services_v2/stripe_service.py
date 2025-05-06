@@ -102,7 +102,7 @@ def _send_facebook_purchase(
         # Список пикселей (можно собрать динамически, см. пункт 1)
         pixels = [
             {"id": settings.FACEBOOK_PIXEL_ID,   "token": settings.FACEBOOK_ACCESS_TOKEN},
-            {"id": settings.FACEBOOK_PIXEL_ID_2, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+            {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
         ]
 
         for p in pixels:
