@@ -3,6 +3,7 @@ import UnstyledInput from "../../CommonComponents/UnstyledInput.tsx";
 import { t } from "i18next";
 import { SearchIcon } from "../../../assets/logos/index";
 import { useSearchParams } from "react-router-dom";
+import ArrowX from "../../../assets/Icons/ArrowX.tsx";
 
 const Search = ({
   placeholder,
@@ -29,6 +30,12 @@ const Search = ({
     setSearchParams(newParams, { replace: true });
   };
 
+  const handleClear = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete(id);
+    setSearchParams(newParams, { replace: true });
+  };
+
   return (
     <div className={`${s.input_wrapper} ${value ? s.filled : ""}`}>
       <UnstyledInput
@@ -40,9 +47,17 @@ const Search = ({
         onFocus={onFocus}
         ref={inputRef}
       />
-      <span className={s.search_icon}>
-        <SearchIcon />
-      </span>
+      <div className={s.icons}>
+        {value && (
+          <span className={s.clear_icon} onClick={handleClear}>
+            <ArrowX />
+          </span>
+        )}
+        <span className={s.search_icon}>
+          <SearchIcon />
+        </span>
+      </div>
+
       <label htmlFor={id} className={s.placeholder_label}>
         {t(placeholder)}
       </label>
