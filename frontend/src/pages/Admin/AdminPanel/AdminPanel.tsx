@@ -65,9 +65,7 @@ const AdminPanel = () => {
         onSelect={handleSelectTab}
       />
 
-      <div className={s.content}>
-        {tabs.find((tab) => tab.value === activeTab)?.component}
-      </div>
+      {tabs.find((tab) => tab.value === activeTab)?.component}
     </div>
   );
 };
