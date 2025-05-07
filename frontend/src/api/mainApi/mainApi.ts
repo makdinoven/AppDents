@@ -47,4 +47,8 @@ export const mainApi = {
   getProfessorDetail(id: number) {
     return instance.get(`/authors/full_detail/${id}`);
   },
+
+  trackFacebookAd(slug: string) {
+    return instance.post(`/landings/track-ad/${slug}`);
+  },
 };

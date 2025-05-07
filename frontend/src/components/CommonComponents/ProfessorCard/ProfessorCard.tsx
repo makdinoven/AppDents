@@ -31,10 +31,23 @@ const ProfessorCard = ({
           <div className={s.photo_wrapper}>
             <img src={photo ? photo : INITIAL_PHOTO} alt="professor photo" />
           </div>
-          <p className={s.description}>{description}</p>
+          <div className={s.description_wrapper}>
+            {/*<span>*/}
+            {/*  <span className={"highlight"}>*/}
+            {/*    <Trans i18nKey={"professor.specialization"} />*/}
+            {/*  </span>{" "}*/}
+            {/*  orthodontics*/}
+            {/*</span>*/}
+            {/*<span>*/}
+            {/*  <span className={"highlight"}>*/}
+            {/*    <Trans i18nKey={"professor.coursesCount"} />*/}
+            {/*  </span>{" "}*/}
+            {/*  13 courses*/}
+            {/*</span>*/}
+            <p className={s.description}>{description}</p>
+            <ViewLink className={s.professor_link} text={"professor.about"} />
+          </div>
         </div>
-
-        <ViewLink text={"professor.about"} />
       </div>
     </Link>
   );
