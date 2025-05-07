@@ -386,7 +386,7 @@ def language_stats(
 @router.get("/most-popular")
 def most_popular_landings(
     language: Optional[str] = Query(None),
-    limit: int = Query(10, gt=0, le=100),
+    limit: int = Query(10, gt=0, le=500),
     start_date: Optional[date] = Query(
         None, description="Начало периода (YYYY-MM-DD)"
     ),
