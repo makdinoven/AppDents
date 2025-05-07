@@ -387,10 +387,10 @@ def language_stats(
 def most_popular_landings(
     language: str | None = Query(None),
     limit:     int       = Query(10, gt=0, le=100),
-    start_date: datetime | None = Query(
+    start_date: date | None = Query(
         None, description="Начало периода (ISO 8601)"
     ),
-    end_date:   datetime | None = Query(
+    end_date:   date | None = Query(
         None, description="Конец периода (ISO 8601)"
     ),
     db: Session = Depends(get_db),
