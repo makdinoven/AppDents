@@ -385,27 +385,52 @@ def language_stats(
 
 @router.get("/most-popular")
 def most_popular_landings(
-    language: str = None,
-    limit: int = 10,
-    db: Session = Depends(get_db)
+    language: Optional[str] = Query(None),
+    limit: int = Query(10, gt=0, le=500),
+    start_date: Optional[date] = Query(
+        None, description="Начало периода (YYYY-MM-DD)"
+    ),
+    end_date: Optional[date] = Query(
+        None, description="Конец периода (YYYY-MM-DD, включительно)"
+    ),
+    db: Session = Depends(get_db),
 ):
     """
-    Возвращает самые популярные лендинги (по sales_count),
-    опционально отфильтрованные по языку,
-    ограничение кол-ва через limit.
+    • Если нет дат — используется агрегированное поле sales_count.
+    • Если есть только start_date — все продажи от start_date до сегодня.
+    • Если есть обе даты — все продажи за каждый день от start_date до end_date включительно.
+    • end_date без start_date — ошибка.
     """
-    landings = get_top_landings_by_sales(db, language, limit)
-    # Тут можно возвращать в формате вашей схемы, например, LandingListResponse или самодельную
+    if not start_date and not end_date:
+        sd, ed = None, None
+    elif start_date and not end_date:
+        sd, ed = start_date, None
+    elif start_date and end_date:
+        sd, ed = start_date, end_date
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    rows = get_top_landings_by_sales(
+        db=db,
+        language=language,
+        limit=limit,
+        start_date=sd,
+        end_date=ed,
+    )
+
     return [
         {
             "id": l.id,
             "landing_name": l.landing_name,
-            "slug" : l.page_name,
-            "sales_count": l.sales_count,
+            "slug": l.page_name,
+            "sales_count": sales,
             "language": l.language,
-            "in_advertising": l.in_advertising
+            "in_advertising": l.in_advertising,
         }
-        for l in landings
+        for l, sales in rows
     ]
 
 @router.post("/track-ad/{slug}")

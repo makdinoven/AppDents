@@ -1,12 +1,12 @@
-from datetime import time, datetime, timedelta
+from datetime import time, datetime, timedelta, date
 from math import ceil
 
-from sqlalchemy import func, or_, desc
+from sqlalchemy import func, or_, desc, Date, cast
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
-from typing import List, cast, Optional
+from typing import List, Optional
 from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
 
@@ -343,20 +343,60 @@ def reset_expired_ad_flags(db: Session):
         db.commit()
 
 
-def get_top_landings_by_sales(db: Session, language: str = None, limit: int = 10):
+def get_top_landings_by_sales(
+    db: Session,
+    language: Optional[str] = None,
+    limit: int = 10,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+):
     reset_expired_ad_flags(db)
-    query = db.query(Landing).order_by(Landing.sales_count.desc())
-    # Если вы хотите показывать только is_hidden=False:
-    query = query.filter(Landing.is_hidden == False)
-    if language:
-        query = query.filter(Landing.language == language)
-    landings = query.limit(limit).all()
 
-    # Возможно, не хотите коммитить на каждый проход,
-    # тогда можете делать один общий commit после цикла
+    # если есть хотя бы одна дата — считаем реальный sales
+    if start_date or end_date:
+        subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("sales"),
+            )
+            .filter(Purchase.landing_id.isnot(None))
+        )
+
+        # приводим created_at → date и фильтруем
+        if start_date:
+            subq = subq.filter(
+                cast(Purchase.created_at, Date) >= start_date
+            )
+        if end_date:
+            subq = subq.filter(
+                cast(Purchase.created_at, Date) <= end_date
+            )
+
+        subq = subq.group_by(Purchase.landing_id).subquery()
+
+        q = (
+            db.query(Landing, subq.c.sales)
+            .join(subq, subq.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
+        )
+        if language:
+            q = q.filter(Landing.language == language)
+
+        result = q.order_by(subq.c.sales.desc()).limit(limit).all()
+
+    else:
+        # старое поведение: агрегированное поле
+        q = (
+            db.query(Landing, Landing.sales_count.label("sales"))
+            .filter(Landing.is_hidden.is_(False))
+        )
+        if language:
+            q = q.filter(Landing.language == language)
+
+        result = q.order_by(Landing.sales_count.desc()).limit(limit).all()
+
     db.commit()
-
-    return landings
+    return result
 
 
 # services_v2/landing_service.py
