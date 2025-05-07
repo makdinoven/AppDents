@@ -1,4 +1,4 @@
-from datetime import time, datetime, timedelta
+from datetime import time, datetime, timedelta, date
 from math import ceil
 
 from sqlalchemy import func, or_, desc
@@ -345,59 +345,55 @@ def reset_expired_ad_flags(db: Session):
 
 def get_top_landings_by_sales(
     db: Session,
-    language: str | None = None,
+    language: Optional[str] = None,
     limit: int = 10,
-    start_date: datetime | None = None,
-    end_date:   datetime | None = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
 ):
-    """
-    Возвращает [(Landing, sales_count), …] отсортированные по sales_count ↓
-    """
-    reset_expired_ad_flags(db)       # ваша логика
+    reset_expired_ad_flags(db)
 
-    # ---------- 1. Если указан диапазон дат -----------------
+    # если есть хотя бы одна дата — считаем реальный sales
     if start_date or end_date:
-        # подзапрос «продажи за период»
-        sales_subq = (
+        subq = (
             db.query(
                 Purchase.landing_id.label("landing_id"),
                 func.count(Purchase.id).label("sales"),
             )
             .filter(Purchase.landing_id.isnot(None))
         )
+
+        # приводим created_at → date и фильтруем
         if start_date:
-            sales_subq = sales_subq.filter(Purchase.created_at >= start_date)
+            subq = subq.filter(
+                cast(Purchase.created_at, Date) >= start_date
+            )
         if end_date:
-            sales_subq = sales_subq.filter(Purchase.created_at <= end_date)
+            subq = subq.filter(
+                cast(Purchase.created_at, Date) <= end_date
+            )
 
-        sales_subq = sales_subq.group_by(Purchase.landing_id).subquery()
+        subq = subq.group_by(Purchase.landing_id).subquery()
 
-        # соединяем с Landing
-        query = (
-            db.query(Landing, sales_subq.c.sales)
-            .join(sales_subq, sales_subq.c.landing_id == Landing.id)
+        q = (
+            db.query(Landing, subq.c.sales)
+            .join(subq, subq.c.landing_id == Landing.id)
             .filter(Landing.is_hidden.is_(False))
         )
         if language:
-            query = query.filter(Landing.language == language)
+            q = q.filter(Landing.language == language)
 
-        result = (
-            query.order_by(sales_subq.c.sales.desc())
-            .limit(limit)
-            .all()                       # -> [(Landing, sales), …]
-        )
+        result = q.order_by(subq.c.sales.desc()).limit(limit).all()
 
-    # ---------- 2. Нет интервала – берём агрегированное поле ----------
     else:
-        query = (
+        # старое поведение: агрегированное поле
+        q = (
             db.query(Landing, Landing.sales_count.label("sales"))
             .filter(Landing.is_hidden.is_(False))
-            .order_by(Landing.sales_count.desc())
         )
         if language:
-            query = query.filter(Landing.language == language)
+            q = q.filter(Landing.language == language)
 
-        result = query.limit(limit).all()   # -> [(Landing, sales), …]
+        result = q.order_by(Landing.sales_count.desc()).limit(limit).all()
 
     db.commit()
     return result
