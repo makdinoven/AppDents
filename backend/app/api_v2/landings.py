@@ -385,27 +385,44 @@ def language_stats(
 
 @router.get("/most-popular")
 def most_popular_landings(
-    language: str = None,
-    limit: int = 10,
-    db: Session = Depends(get_db)
+    language: str | None = Query(None),
+    limit:     int       = Query(10, gt=0, le=100),
+    start_date: datetime | None = Query(
+        None, description="Начало периода (ISO 8601)"
+    ),
+    end_date:   datetime | None = Query(
+        None, description="Конец периода (ISO 8601)"
+    ),
+    db: Session = Depends(get_db),
 ):
     """
-    Возвращает самые популярные лендинги (по sales_count),
-    опционально отфильтрованные по языку,
-    ограничение кол-ва через limit.
+    Самые популярные лендинги (по количеству продаж).
+
+    • Если `start_date`/`end_date` **не заданы** – берётся
+      агрегированное поле `Landing.sales_count` (всё время).
+
+    • Если указаны – считаются продажи в указанном интервале
+      по таблице `purchases.created_at`.
     """
-    landings = get_top_landings_by_sales(db, language, limit)
-    # Тут можно возвращать в формате вашей схемы, например, LandingListResponse или самодельную
+    landings = get_top_landings_by_sales(
+        db=db,
+        language=language,
+        limit=limit,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # Приводим к нужной схеме
     return [
         {
             "id": l.id,
             "landing_name": l.landing_name,
-            "slug" : l.page_name,
-            "sales_count": l.sales_count,
+            "slug": l.page_name,
+            "sales_count": sales,          # либо aggregated, либо period_sales
             "language": l.language,
-            "in_advertising": l.in_advertising
+            "in_advertising": l.in_advertising,
         }
-        for l in landings
+        for l, sales in landings
     ]
 
 @router.post("/track-ad/{slug}")
