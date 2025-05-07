@@ -343,21 +343,64 @@ def reset_expired_ad_flags(db: Session):
         db.commit()
 
 
-def get_top_landings_by_sales(db: Session, language: str = None, limit: int = 10):
-    reset_expired_ad_flags(db)
-    query = db.query(Landing).order_by(Landing.sales_count.desc())
-    # Если вы хотите показывать только is_hidden=False:
-    query = query.filter(Landing.is_hidden == False)
-    if language:
-        query = query.filter(Landing.language == language)
-    landings = query.limit(limit).all()
+def get_top_landings_by_sales(
+    db: Session,
+    language: str | None = None,
+    limit: int = 10,
+    start_date: datetime | None = None,
+    end_date:   datetime | None = None,
+):
+    """
+    Возвращает [(Landing, sales_count), …] отсортированные по sales_count ↓
+    """
+    reset_expired_ad_flags(db)       # ваша логика
 
-    # Возможно, не хотите коммитить на каждый проход,
-    # тогда можете делать один общий commit после цикла
+    # ---------- 1. Если указан диапазон дат -----------------
+    if start_date or end_date:
+        # подзапрос «продажи за период»
+        sales_subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("sales"),
+            )
+            .filter(Purchase.landing_id.isnot(None))
+        )
+        if start_date:
+            sales_subq = sales_subq.filter(Purchase.created_at >= start_date)
+        if end_date:
+            sales_subq = sales_subq.filter(Purchase.created_at <= end_date)
+
+        sales_subq = sales_subq.group_by(Purchase.landing_id).subquery()
+
+        # соединяем с Landing
+        query = (
+            db.query(Landing, sales_subq.c.sales)
+            .join(sales_subq, sales_subq.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
+        )
+        if language:
+            query = query.filter(Landing.language == language)
+
+        result = (
+            query.order_by(sales_subq.c.sales.desc())
+            .limit(limit)
+            .all()                       # -> [(Landing, sales), …]
+        )
+
+    # ---------- 2. Нет интервала – берём агрегированное поле ----------
+    else:
+        query = (
+            db.query(Landing, Landing.sales_count.label("sales"))
+            .filter(Landing.is_hidden.is_(False))
+            .order_by(Landing.sales_count.desc())
+        )
+        if language:
+            query = query.filter(Landing.language == language)
+
+        result = query.limit(limit).all()   # -> [(Landing, sales), …]
+
     db.commit()
-
-    return landings
-
+    return result
 
 # services_v2/landing_service.py
 AD_TTL = timedelta(hours=3)
