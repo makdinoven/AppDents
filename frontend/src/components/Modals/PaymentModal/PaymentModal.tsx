@@ -66,14 +66,8 @@ const PaymentModal = ({
   });
 
   const handlePayment = async (form: any) => {
-    const isFromFacebookAds = () => {
-      const cookies = document.cookie;
-      return cookies.includes("_fbc=") || cookies.includes("_fbp=");
-    };
-
     const dataToSend = {
       ...paymentData,
-      ad: isFromFacebookAds(),
       user_email: isLogged ? email : form.email,
     };
     try {
