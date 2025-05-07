@@ -1,12 +1,12 @@
 from datetime import time, datetime, timedelta, date
 from math import ceil
 
-from sqlalchemy import func, or_, desc, Date
+from sqlalchemy import func, or_, desc, Date, cast
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
-from typing import List, cast, Optional
+from typing import List, Optional
 from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
 
