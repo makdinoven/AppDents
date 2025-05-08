@@ -1,10 +1,10 @@
 from math import ceil
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
-from sqlalchemy import func
-from ..models.models_v2 import Author
+from sqlalchemy import func, literal_column
+from ..models.models_v2 import Author, Landing
 from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
 
@@ -15,42 +15,91 @@ def list_authors_by_page(
     size: int = 12,
     language: Optional[str] = None
 ) -> dict:
+    popularity_sub = (
+        db.query(
+            Author.id.label("author_id"),
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0)
+            .label("popularity")
+        )
+        .outerjoin(Author.landings)  # LEFT JOIN landing_authors + landings
+        .group_by(Author.id)
+    ).subquery()
+
     # 1) Базовый запрос для фильтрации
-    base_query = db.query(Author)
+    base_query = (
+        db.query(Author)
+        .join(popularity_sub, popularity_sub.c.author_id == Author.id)
+        .options(  # нужны курсы для courses_count
+            selectinload(Author.landings)
+            .selectinload(Landing.courses),
+            selectinload(Author.landings)
+            .selectinload(Landing.tags),
+        )
+        .order_by(
+            popularity_sub.c.popularity.desc(),  # ← сортировка
+            Author.id.desc()
+        )
+    )
     if language:
         base_query = base_query.filter(Author.language == language)
 
     # 2) Считаем общее число записей под фильтром
-    total = db.query(func.count(Author.id)).select_from(Author).filter(
-        Author.language == language
-    ).scalar() if language else db.query(func.count(Author.id)).select_from(Author).scalar()
-
+    total = base_query.with_entities(func.count(literal_column("1"))).scalar()
     # 3) Вычисляем смещение
     offset = (page - 1) * size
 
     # 4) Получаем нужный «кусок» данных
-    authors = (
-        base_query
-        .order_by(Author.id.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
+    authors = base_query.offset(offset).limit(size).all()
 
     # 5) Подсчитываем общее число страниц
     total_pages = ceil(total / size) if total else 0
 
-    # 6) Формируем список Pydantic-моделей
-    items = [
-        AuthorResponse(
-            id=a.id,
-            name=a.name,
-            description=a.description,
-            language=a.language,
-            photo=a.photo,
+    def safe_price(value) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return float("inf")  # некорректная цена → бесконечность
+
+
+    items : List[AuthorResponse] = []
+    for a in authors:
+        # ---- 1. минимальная цена по каждому course_id ----
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = safe_price(l.new_price)
+            for c in l.courses:
+                cid = c.id
+                if price < min_price_by_course.get(cid, float("inf")):
+                    min_price_by_course[cid] = price
+
+        # ---- 2. оставляем только «дешёвые» лендинги ----
+        kept_landings: List[Landing] = []
+        for l in a.landings:
+            price = safe_price(l.new_price)
+            has_cheaper_alt = any(
+                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                for c in l.courses
+            )
+            if not has_cheaper_alt:
+                kept_landings.append(l)
+
+        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+        unique_tags: Set[str] = {
+            t.name for l in kept_landings for t in l.tags
+        }
+
+        items.append(
+            AuthorResponse(
+                id=a.id,
+                name=a.name,
+                description=a.description,
+                language=a.language,
+                photo=a.photo,
+                courses_count=len(unique_course_ids),
+                tags=sorted(unique_tags)
+            )
         )
-        for a in authors
-    ]
 
     return {
         "total": total,
@@ -103,44 +152,77 @@ def delete_author(db: Session, author_id: int) -> None:
     db.delete(author)
     db.commit()
 
+from sqlalchemy.orm import Session, selectinload
+from typing import Dict, Tuple, Set, List
+
 def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # Достаём автора вместе с лендингами, тегами и курсами
+    # 1. Автор и все связи одним запросом
     author = (
         db.query(Author)
+          .options(
+              selectinload(Author.landings)
+                .selectinload(Landing.courses),
+              selectinload(Author.landings)
+                .selectinload(Landing.tags),
+              selectinload(Author.landings)
+                .selectinload(Landing.authors),
+          )
           .filter(Author.id == author_id)
           .first()
     )
     if not author:
         return None
 
-    # Подготовим данные по каждому лендингу
-    landings_data = []
-    all_course_ids = set()
+    # 2. Минимальная цена по каждому курсу среди всех лендингов автора
+    min_price_by_course: Dict[int, float] = {}
+    for l in author.landings:
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = float("inf")
+        for c in l.courses:
+            cid = c.id
+            cur = min_price_by_course.get(cid, float("inf"))
+            if price < cur:
+                min_price_by_course[cid] = price
+
+    # 3. Фильтруем лендинги:
+    #    исключаем, если нашлась хотя бы одна позиция дешевле
+    kept_landings = []
+    for l in author.landings:
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = float("inf")
+        # есть ли курс, у которого эта цена НЕ минимальна?
+        has_cheaper_alt = any(
+            price > min_price_by_course.get(c.id, price)  # строго > !!!
+            for c in l.courses
+        )
+        if not has_cheaper_alt:
+            kept_landings.append(l)
+
+    # 4. Формируем агрегаты по отфильтрованному набору
+    landings_data: List[dict] = []
+    all_course_ids: Set[int] = set()
     total_new_price = 0.0
     total_old_price = 0.0
 
-    for l in author.landings:
-        # Приводим новую цену к float
+    for l in kept_landings:
         try:
-            price = float(l.new_price)
-            old_price = float(l.old_price)
+            p_new = float(l.new_price)
+            p_old = float(l.old_price)
         except Exception:
-            price = 0.0
-            old_price = 0.0
-        total_new_price += price
-        total_old_price += old_price
+            p_new = p_old = 0.0
 
-        # Список курсов в этом лендинге
+        total_new_price += p_new
+        total_old_price += p_old
+
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
 
-        # Список авторов этого лендинга
         authors_info = [
-            {
-                "id": a.id,
-                "name": a.name,
-                "photo": a.photo or ""
-            }
+            {"id": a.id, "name": a.name, "photo": a.photo or ""}
             for a in l.authors
         ]
 
@@ -157,6 +239,9 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "authors": authors_info,
         })
 
+    # упорядочим по id для стабильности
+    landings_data.sort(key=lambda x: x["id"])
+
     return {
         "id": author.id,
         "name": author.name,
@@ -165,26 +250,17 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": int(total_new_price*0.8),
+        "total_new_price": int(total_new_price * 0.8),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
+        "tags": sorted({t.name for l in kept_landings for t in l.tags}),
     }
+def safe_price(v) -> float:
+        try:
+            return float(v)
+        except Exception:
+            return float("inf")
 
-def _search_authors_query(
-    db: Session,
-    *,
-    search: str,
-    language: Optional[str]
-):
-    """
-    Возвращает базовый query с фильтрами по строке поиска и языку.
-    """
-    q = db.query(Author)
-    # Поиск в поле name (case-insensitive)
-    q = q.filter(Author.name.ilike(f"%{search}%"))
-    if language:
-        q = q.filter(Author.language == language)
-    return q
 
 def list_authors_search_paginated(
     db: Session,
@@ -194,38 +270,85 @@ def list_authors_search_paginated(
     size: int = 12,
     language: Optional[str] = None
 ) -> dict:
-    # 1) Готовим базовый запрос
-    base_query = _search_authors_query(db, search=search, language=language)
+    # ---------- 1. подзапрос популярности ----------------------------------
+    popularity_sub = (
+        db.query(
+            Author.id.label("author_id"),
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0)
+                .label("popularity")
+        )
+        .outerjoin(Author.landings)
+        .group_by(Author.id)
+    ).subquery()
 
-    # 2) Считаем общее число под этот запрос
-    total = db.query(func.count(Author.id))\
-              .select_from(Author)\
-              .filter(Author.name.ilike(f"%{search}%"))\
-              .filter(Author.language == language) if language else \
-            db.query(func.count(Author.id))\
-              .select_from(Author)\
-              .filter(Author.name.ilike(f"%{search}%"))
-    total = total.scalar()
+    # ---------- 2. базовый запрос c поиском + языком ------------------------
+    base_query = (
+        db.query(Author)
+          .join(popularity_sub, popularity_sub.c.author_id == Author.id)
+          .options(
+              selectinload(Author.landings)
+                .selectinload(Landing.courses),
+              selectinload(Author.landings)
+                .selectinload(Landing.tags),
+          )
+          .filter(Author.name.ilike(f"%{search}%"))
+          .order_by(
+              popularity_sub.c.popularity.desc(),
+              Author.id.desc()
+          )
+    )
+    if language:
+        base_query = base_query.filter(Author.language == language)
 
-    # 3) Пагинация
+    # ---------- 3. всего записей -------------------------------------------
+    total = base_query.with_entities(func.count(literal_column("1"))).scalar()
+
+    # ---------- 4. пагинация в БД ------------------------------------------
     offset = (page - 1) * size
     authors = base_query.offset(offset).limit(size).all()
 
-    # 4) Подсчёт страниц
-    total_pages = ceil(total / size) if total else 0
+    # ---------- 5. вычисляем courses_count ---------------------------------
+    items: List[AuthorResponse] = []
+    for a in authors:
+        # a) минимальная цена по каждому курсу
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = safe_price(l.new_price)
+            for c in l.courses:
+                if price < min_price_by_course.get(c.id, float("inf")):
+                    min_price_by_course[c.id] = price
 
-    # 5) Формируем список Pydantic-моделей
-    items = [
-        AuthorResponse(
-            id=a.id,
-            name=a.name,
-            description=a.description,
-            language=a.language,
-            photo=a.photo,
+        # b) «дорогие» дубликаты отбрасываем
+        kept_landings = [
+            l for l in a.landings
+            if not any(
+                safe_price(l.new_price) > min_price_by_course.get(c.id, safe_price(l.new_price))
+                for c in l.courses
+            )
+        ]
+
+        # c) уникальные курсы
+        unique_course_ids: Set[int] = {
+            c.id for l in kept_landings for c in l.courses
+        }
+        unique_tags: Set[str] = {
+            t.name for l in kept_landings for t in l.tags
+        }
+
+        items.append(
+            AuthorResponse(
+                id=a.id,
+                name=a.name,
+                description=a.description,
+                language=a.language,
+                photo=a.photo,
+                courses_count=len(unique_course_ids),
+                tags = sorted(unique_tags)
         )
-        for a in authors
-    ]
+        )
 
+    # ---------- 6. финальный ответ -----------------------------------------
+    total_pages = ceil(total / size) if total else 0
     return {
         "total": total,
         "total_pages": total_pages,
