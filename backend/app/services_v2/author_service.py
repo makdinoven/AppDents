@@ -123,13 +123,16 @@ from sqlalchemy.orm import Session, selectinload
 from typing import Dict, Tuple, Set, List
 
 def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # 1. Забираем автора с нужными связями «одним» запросом
+    # --- 1. Автор + связи ----------------------------------------------------
     author = (
         db.query(Author)
           .options(
-              selectinload(Author.landings).selectinload(Landing.courses),
-              selectinload(Author.landings).selectinload(Landing.tags),
-              selectinload(Author.landings).selectinload(Landing.authors),
+              selectinload(Author.landings)
+                .selectinload(Landing.courses),
+              selectinload(Author.landings)
+                .selectinload(Landing.tags),
+              selectinload(Author.landings)
+                .selectinload(Landing.authors),
           )
           .filter(Author.id == author_id)
           .first()
@@ -137,30 +140,31 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
     if not author:
         return None
 
-    # 2. Определяем самый дешёвый лендинг для КАЖДОГО курса
-    #    (цена new_price приводится к float; некорректная — «бесконечность»)
+    # --- 2. Самый дешёвый лендинг для каждого курса -------------------------
     cheapest_by_course: Dict[int, Tuple[float, Landing]] = {}
     for l in author.landings:
         try:
             price = float(l.new_price)
         except Exception:
+            # некорректная цена => считаем «бесконечность»
             price = float("inf")
+
         for c in l.courses:
             cid = c.id
             prev = cheapest_by_course.get(cid)
             if prev is None or price < prev[0]:
                 cheapest_by_course[cid] = (price, l)
 
-    # 3. Убираем дубли лендингов (один лендинг мог победить по нескольким курсам)
+    # --- 3. Итоговый набор лендингов -----------------------------------------
     unique_landings = {tpl[1] for tpl in cheapest_by_course.values()}
 
-    # 4. Формируем ответные агрегаты уже по этому набору
     landings_data: List[dict] = []
     all_course_ids: Set[int] = set()
     total_new_price = 0.0
     total_old_price = 0.0
 
     for l in unique_landings:
+        # аккуратно приводим цены к float
         try:
             price = float(l.new_price)
             old_price = float(l.old_price)
@@ -192,10 +196,10 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "authors": authors_info,
         })
 
-    # (необязательно) фиксируем порядок, например по id
+    # фиксируем читаемый порядок (по id лендинга)
     landings_data.sort(key=lambda x: x["id"])
 
-    # 5. Финальный словарь ровно с теми же полями, что был раньше
+    # --- 4. Финальный ответ (прежний контракт) -------------------------------
     return {
         "id": author.id,
         "name": author.name,
