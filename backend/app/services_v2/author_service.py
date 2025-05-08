@@ -249,23 +249,6 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "landing_count": len(landings_data),
     }
 
-
-def _search_authors_query(
-    db: Session,
-    *,
-    search: str,
-    language: Optional[str]
-):
-    """
-    Возвращает базовый query с фильтрами по строке поиска и языку.
-    """
-    q = db.query(Author)
-    # Поиск в поле name (case-insensitive)
-    q = q.filter(Author.name.ilike(f"%{search}%"))
-    if language:
-        q = q.filter(Author.language == language)
-    return q
-
 def list_authors_search_paginated(
     db: Session,
     *,
@@ -274,69 +257,71 @@ def list_authors_search_paginated(
     size: int = 12,
     language: Optional[str] = None
 ) -> dict:
-    # 1) Готовим базовый запрос
-    base_query = _search_authors_query(db, search=search, language=language)
+    # ---------- 1. подзапрос популярности ----------------------------------
+    popularity_sub = (
+        db.query(
+            Author.id.label("author_id"),
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0)
+                .label("popularity")
+        )
+        .outerjoin(Author.landings)
+        .group_by(Author.id)
+    ).subquery()
 
-    # 2) Считаем общее число под этот запрос
-    total = db.query(func.count(Author.id))\
-              .select_from(Author)\
-              .filter(Author.name.ilike(f"%{search}%"))\
-              .filter(Author.language == language) if language else \
-            db.query(func.count(Author.id))\
-              .select_from(Author)\
-              .filter(Author.name.ilike(f"%{search}%"))
-    total = total.scalar()
+    # ---------- 2. базовый запрос c поиском + языком ------------------------
+    base_query = (
+        db.query(Author)
+          .join(popularity_sub, popularity_sub.c.author_id == Author.id)
+          .options(
+              selectinload(Author.landings)
+                .selectinload(Landing.courses)
+          )
+          .filter(Author.name.ilike(f"%{search}%"))
+          .order_by(
+              popularity_sub.c.popularity.desc(),
+              Author.id.desc()
+          )
+    )
+    if language:
+        base_query = base_query.filter(Author.language == language)
 
-    # 3) Пагинация
+    # ---------- 3. всего записей -------------------------------------------
+    total = base_query.with_entities(func.count(literal_column("1"))).scalar()
+
+    # ---------- 4. пагинация в БД ------------------------------------------
     offset = (page - 1) * size
     authors = base_query.offset(offset).limit(size).all()
 
-    # 4) Подсчёт страниц
-    total_pages = ceil(total / size) if total else 0
-
-    # 5) Формируем список Pydantic-моделей
-    authors = (
-        base_query
-        .options(
-            selectinload(Author.landings)
-            .selectinload(Landing.courses)
-        )
-        .order_by(Author.id.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
-
-    def _safe_price(value) -> float:
+    # ---------- 5. вычисляем courses_count ---------------------------------
+    def _safe_price(v) -> float:
         try:
-            return float(value)
+            return float(v)
         except Exception:
-            return float("inf")  # некорректная цена → бесконечность
+            return float("inf")
 
-    items = []
+    items: List[AuthorResponse] = []
     for a in authors:
-        # ---- 1. минимальная цена по каждому course_id ----
+        # a) минимальная цена по каждому курсу
         min_price_by_course: Dict[int, float] = {}
         for l in a.landings:
             price = _safe_price(l.new_price)
             for c in l.courses:
-                cid = c.id
-                if price < min_price_by_course.get(cid, float("inf")):
-                    min_price_by_course[cid] = price
+                if price < min_price_by_course.get(c.id, float("inf")):
+                    min_price_by_course[c.id] = price
 
-        # ---- 2. оставляем только «дешёвые» лендинги ----
-        kept_landings: List[Landing] = []
-        for l in a.landings:
-            price = _safe_price(l.new_price)
-            has_cheaper_alt = any(
-                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+        # b) «дорогие» дубликаты отбрасываем
+        kept_landings = [
+            l for l in a.landings
+            if not any(
+                _safe_price(l.new_price) > min_price_by_course.get(c.id, _safe_price(l.new_price))
                 for c in l.courses
             )
-            if not has_cheaper_alt:
-                kept_landings.append(l)
+        ]
 
-        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
-        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+        # c) уникальные курсы
+        unique_course_ids: Set[int] = {
+            c.id for l in kept_landings for c in l.courses
+        }
 
         items.append(
             AuthorResponse(
@@ -345,10 +330,12 @@ def list_authors_search_paginated(
                 description=a.description,
                 language=a.language,
                 photo=a.photo,
-                courses_count=len(unique_course_ids)  # ← корректное число
+                courses_count=len(unique_course_ids)
             )
         )
 
+    # ---------- 6. финальный ответ -----------------------------------------
+    total_pages = ceil(total / size) if total else 0
     return {
         "total": total,
         "total_pages": total_pages,
