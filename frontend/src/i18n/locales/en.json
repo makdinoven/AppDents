@@ -150,9 +150,10 @@
     "search": "Search professors...",
     "found": "Professors found: {{count}}",
     "noProfessors": "No professors found",
-    "about": "About professor",
+    "about": "About",
     "specialization": "Specialization:",
-    "coursesCount": "Courses:"
+    "coursesCount_one": "{{count}} course",
+    "coursesCount_other": "{{count}} courses"
   },
 
   "other": {
