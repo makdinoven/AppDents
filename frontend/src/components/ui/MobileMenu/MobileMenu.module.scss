@@ -13,6 +13,7 @@
 
   .btn_wrapper {
     width: 100%;
+    @include flex-center;
   }
 }
 
