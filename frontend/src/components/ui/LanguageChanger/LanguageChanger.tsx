@@ -32,29 +32,31 @@ const LanguageChanger = () => {
         <LanguageIcon />
         <span className={s.language_preview}>{language.toUpperCase()}</span>
       </button>
-      <ModalWrapper
-        isDropdown={true}
-        hasTitle={false}
-        hasCloseButton={false}
-        cutoutPosition="top-right"
-        cutoutOffsetY={10}
-        cutoutOffsetX={15}
-        triggerElement={triggerRef.current}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      >
-        <ul className={s.language_changer_modal}>
-          {LANGUAGES.map((button) => (
-            <li
-              key={button.value}
-              onClick={() => handleLanguageChange(button.value)}
-            >
-              ({button.value}) {button.label}
-              {button.value === language.toUpperCase() && <CheckMark />}
-            </li>
-          ))}
-        </ul>
-      </ModalWrapper>
+      {isModalOpen && (
+        <ModalWrapper
+          isDropdown={true}
+          hasTitle={false}
+          hasCloseButton={false}
+          cutoutPosition="top-right"
+          cutoutOffsetY={10}
+          cutoutOffsetX={15}
+          triggerElement={triggerRef.current}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        >
+          <ul className={s.language_changer_modal}>
+            {LANGUAGES.map((button) => (
+              <li
+                key={button.value}
+                onClick={() => handleLanguageChange(button.value)}
+              >
+                ({button.value}) {button.label}
+                {button.value === language.toUpperCase() && <CheckMark />}
+              </li>
+            ))}
+          </ul>
+        </ModalWrapper>
+      )}
     </>
   );
 };

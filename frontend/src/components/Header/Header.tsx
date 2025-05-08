@@ -21,6 +21,7 @@ import {
 } from "../../common/helpers/commonConstants.ts";
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import SearchModal from "../ui/SearchModal/SearchModal.tsx";
+import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 
 const OPEN_SEARCH_KEY = "GS";
 
@@ -34,6 +35,7 @@ const Header = () => {
     (state: AppRootStateType) => state.user.isLogged,
   );
   const [isScrolled, setIsScrolled] = useState(false);
+  const screenWidth = useScreenWidth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,31 +55,33 @@ const Header = () => {
   }, [localTriggerRef, setTriggerRef]);
 
   const renderLoginButton = () => {
-    if (!isLogged) {
+    if (screenWidth > 767) {
+      if (!isLogged) {
+        return (
+          <UnstyledButton
+            ref={localTriggerRef}
+            onClick={() =>
+              navigate(Path.login, {
+                state: {
+                  backgroundLocation: location,
+                },
+              })
+            }
+            className={`${s.login_btn} ${AUTH_MODAL_ROUTES.includes(location.pathname) ? s.active : ""}`}
+          >
+            <Trans i18nKey="login" />
+          </UnstyledButton>
+        );
+      }
       return (
         <UnstyledButton
-          ref={localTriggerRef}
-          onClick={() =>
-            navigate(Path.login, {
-              state: {
-                backgroundLocation: location,
-              },
-            })
-          }
-          className={`${s.login_btn} ${AUTH_MODAL_ROUTES.includes(location.pathname) && s.active}`}
+          onClick={() => navigate(Path.profile)}
+          className={`${s.login_btn} ${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
         >
-          <Trans i18nKey="login" />
+          <UserIcon />
         </UnstyledButton>
       );
     }
-    return (
-      <UnstyledButton
-        onClick={() => navigate(Path.profile)}
-        className={`${s.login_btn} ${s.profile_button} ${location.pathname === Path.profile && s.active}`}
-      >
-        <UserIcon />
-      </UnstyledButton>
-    );
   };
 
   const openSearch = () => {
