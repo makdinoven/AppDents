@@ -3,7 +3,7 @@ from math import ceil
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
-from sqlalchemy import func
+from sqlalchemy import func, literal_column
 from ..models.models_v2 import Author, Landing
 from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
@@ -15,43 +15,42 @@ def list_authors_by_page(
     size: int = 12,
     language: Optional[str] = None
 ) -> dict:
+    popularity_sub = (
+        db.query(
+            Author.id.label("author_id"),
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0)
+            .label("popularity")
+        )
+        .outerjoin(Author.landings)  # LEFT JOIN landing_authors + landings
+        .group_by(Author.id)
+    ).subquery()
+
     # 1) Базовый запрос для фильтрации
-    base_query = db.query(Author)
+    base_query = (
+        db.query(Author)
+        .join(popularity_sub, popularity_sub.c.author_id == Author.id)
+        .options(  # нужны курсы для courses_count
+            selectinload(Author.landings)
+            .selectinload(Landing.courses)
+        )
+        .order_by(
+            popularity_sub.c.popularity.desc(),  # ← сортировка
+            Author.id.desc()
+        )
+    )
     if language:
         base_query = base_query.filter(Author.language == language)
 
     # 2) Считаем общее число записей под фильтром
-    total = db.query(func.count(Author.id)).select_from(Author).filter(
-        Author.language == language
-    ).scalar() if language else db.query(func.count(Author.id)).select_from(Author).scalar()
-
+    total = base_query.with_entities(func.count(literal_column("1"))).scalar()
     # 3) Вычисляем смещение
     offset = (page - 1) * size
 
     # 4) Получаем нужный «кусок» данных
-    authors = (
-        base_query
-        .order_by(Author.id.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
+    authors = base_query.offset(offset).limit(size).all()
 
     # 5) Подсчитываем общее число страниц
     total_pages = ceil(total / size) if total else 0
-
-    # 6) Формируем список Pydantic-моделей
-    authors = (
-        base_query
-        .options(
-            selectinload(Author.landings)
-            .selectinload(Landing.courses)
-        )
-        .order_by(Author.id.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
 
     def _safe_price(value) -> float:
         try:
@@ -59,7 +58,8 @@ def list_authors_by_page(
         except Exception:
             return float("inf")  # некорректная цена → бесконечность
 
-    items = []
+
+    items : List[AuthorResponse] = []
     for a in authors:
         # ---- 1. минимальная цена по каждому course_id ----
         min_price_by_course: Dict[int, float] = {}
