@@ -42,7 +42,7 @@
 
 .language_changer_modal {
   @include flex-column;
-  font-size: 20px;
+  font-size: 24px;
   gap: 14px;
   align-items: flex-start;
   justify-content: space-between;
@@ -90,6 +90,7 @@
     }
   }
   .language_changer_modal {
+    font-size: 16px;
     li {
       gap: 20px;
       svg {

@@ -1,12 +1,14 @@
 import s from "./PaginationButton.module.scss";
-import Arrow from "../../../../assets/Icons/Arrow.tsx";
+import BackArrow from "../../../../assets/Icons/BackArrow.tsx";
 
 const PaginationButton = ({
+  disabled,
   onClick,
   pageNumber,
   activePage,
   variant = "default",
 }: {
+  disabled?: boolean;
   onClick: () => void;
   pageNumber: number;
   activePage: number;
@@ -17,18 +19,18 @@ const PaginationButton = ({
       return (
         <button
           onClick={onClick}
-          className={`${s.navButton} ${s.navButtonArrow} ${s.nextNavButton}`}
+          className={`${s.navButton} ${s.navButtonArrow} ${s.nextNavButton} ${disabled ? s.disabled : ""}`}
         >
-          <Arrow />
+          <BackArrow />
         </button>
       );
     case "prev":
       return (
         <button
           onClick={onClick}
-          className={`${s.navButton} ${s.navButtonArrow} ${s.prevNavButton}`}
+          className={`${s.navButton} ${s.navButtonArrow} ${s.prevNavButton} ${disabled ? s.disabled : ""}`}
         >
-          <Arrow />
+          <BackArrow />
         </button>
       );
     case "default":

@@ -17,7 +17,7 @@ const Pagination = ({ totalPages }: PaginationProps) => {
       const newParams = new URLSearchParams(searchParams);
       newParams.set("page", newPage.toString());
       setSearchParams(newParams);
-      window.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -33,14 +33,13 @@ const Pagination = ({ totalPages }: PaginationProps) => {
   return (
     <div className={s.pagination_container}>
       <div className={s.pagination}>
-        {page > 1 && (
-          <PaginationButton
-            onClick={() => changePage(page - 1)}
-            pageNumber={totalPages}
-            activePage={page}
-            variant={"prev"}
-          />
-        )}
+        <PaginationButton
+          disabled={page === 1}
+          onClick={() => changePage(page - 1)}
+          pageNumber={totalPages}
+          activePage={page}
+          variant={"prev"}
+        />
         <div className={s.pagination_buttons}>
           <PaginationButton
             onClick={() => changePage(1)}
@@ -65,14 +64,13 @@ const Pagination = ({ totalPages }: PaginationProps) => {
             />
           )}
         </div>
-        {page < totalPages && (
-          <PaginationButton
-            onClick={() => changePage(page + 1)}
-            pageNumber={totalPages}
-            activePage={page}
-            variant={"next"}
-          />
-        )}
+        <PaginationButton
+          disabled={page === totalPages}
+          onClick={() => changePage(page + 1)}
+          pageNumber={totalPages}
+          activePage={page}
+          variant={"next"}
+        />
       </div>
     </div>
   );
