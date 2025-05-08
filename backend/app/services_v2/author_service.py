@@ -1,10 +1,10 @@
 from math import ceil
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from sqlalchemy import func
-from ..models.models_v2 import Author
+from ..models.models_v2 import Author, Landing
 from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
 
@@ -41,16 +41,59 @@ def list_authors_by_page(
     total_pages = ceil(total / size) if total else 0
 
     # 6) Формируем список Pydantic-моделей
-    items = [
-        AuthorResponse(
-            id=a.id,
-            name=a.name,
-            description=a.description,
-            language=a.language,
-            photo=a.photo,
+    authors = (
+        base_query
+        .options(
+            selectinload(Author.landings)
+            .selectinload(Landing.courses)
         )
-        for a in authors
-    ]
+        .order_by(Author.id.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+    def _safe_price(value) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return float("inf")  # некорректная цена → бесконечность
+
+    items = []
+    for a in authors:
+        # ---- 1. минимальная цена по каждому course_id ----
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            for c in l.courses:
+                cid = c.id
+                if price < min_price_by_course.get(cid, float("inf")):
+                    min_price_by_course[cid] = price
+
+        # ---- 2. оставляем только «дешёвые» лендинги ----
+        kept_landings: List[Landing] = []
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            has_cheaper_alt = any(
+                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                for c in l.courses
+            )
+            if not has_cheaper_alt:
+                kept_landings.append(l)
+
+        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+
+        items.append(
+            AuthorResponse(
+                id=a.id,
+                name=a.name,
+                description=a.description,
+                language=a.language,
+                photo=a.photo,
+                courses_count=len(unique_course_ids)  # ← корректное число
+            )
+        )
 
     return {
         "total": total,
@@ -103,44 +146,77 @@ def delete_author(db: Session, author_id: int) -> None:
     db.delete(author)
     db.commit()
 
+from sqlalchemy.orm import Session, selectinload
+from typing import Dict, Tuple, Set, List
+
 def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # Достаём автора вместе с лендингами, тегами и курсами
+    # 1. Автор и все связи одним запросом
     author = (
         db.query(Author)
+          .options(
+              selectinload(Author.landings)
+                .selectinload(Landing.courses),
+              selectinload(Author.landings)
+                .selectinload(Landing.tags),
+              selectinload(Author.landings)
+                .selectinload(Landing.authors),
+          )
           .filter(Author.id == author_id)
           .first()
     )
     if not author:
         return None
 
-    # Подготовим данные по каждому лендингу
-    landings_data = []
-    all_course_ids = set()
+    # 2. Минимальная цена по каждому курсу среди всех лендингов автора
+    min_price_by_course: Dict[int, float] = {}
+    for l in author.landings:
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = float("inf")
+        for c in l.courses:
+            cid = c.id
+            cur = min_price_by_course.get(cid, float("inf"))
+            if price < cur:
+                min_price_by_course[cid] = price
+
+    # 3. Фильтруем лендинги:
+    #    исключаем, если нашлась хотя бы одна позиция дешевле
+    kept_landings = []
+    for l in author.landings:
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = float("inf")
+        # есть ли курс, у которого эта цена НЕ минимальна?
+        has_cheaper_alt = any(
+            price > min_price_by_course.get(c.id, price)  # строго > !!!
+            for c in l.courses
+        )
+        if not has_cheaper_alt:
+            kept_landings.append(l)
+
+    # 4. Формируем агрегаты по отфильтрованному набору
+    landings_data: List[dict] = []
+    all_course_ids: Set[int] = set()
     total_new_price = 0.0
     total_old_price = 0.0
 
-    for l in author.landings:
-        # Приводим новую цену к float
+    for l in kept_landings:
         try:
-            price = float(l.new_price)
-            old_price = float(l.old_price)
+            p_new = float(l.new_price)
+            p_old = float(l.old_price)
         except Exception:
-            price = 0.0
-            old_price = 0.0
-        total_new_price += price
-        total_old_price += old_price
+            p_new = p_old = 0.0
 
-        # Список курсов в этом лендинге
+        total_new_price += p_new
+        total_old_price += p_old
+
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
 
-        # Список авторов этого лендинга
         authors_info = [
-            {
-                "id": a.id,
-                "name": a.name,
-                "photo": a.photo or ""
-            }
+            {"id": a.id, "name": a.name, "photo": a.photo or ""}
             for a in l.authors
         ]
 
@@ -157,6 +233,9 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "authors": authors_info,
         })
 
+    # упорядочим по id для стабильности
+    landings_data.sort(key=lambda x: x["id"])
+
     return {
         "id": author.id,
         "name": author.name,
@@ -165,10 +244,11 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": int(total_new_price*0.8),
+        "total_new_price": int(total_new_price * 0.8),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
     }
+
 
 def _search_authors_query(
     db: Session,
@@ -215,16 +295,59 @@ def list_authors_search_paginated(
     total_pages = ceil(total / size) if total else 0
 
     # 5) Формируем список Pydantic-моделей
-    items = [
-        AuthorResponse(
-            id=a.id,
-            name=a.name,
-            description=a.description,
-            language=a.language,
-            photo=a.photo,
+    authors = (
+        base_query
+        .options(
+            selectinload(Author.landings)
+            .selectinload(Landing.courses)
         )
-        for a in authors
-    ]
+        .order_by(Author.id.desc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
+
+    def _safe_price(value) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return float("inf")  # некорректная цена → бесконечность
+
+    items = []
+    for a in authors:
+        # ---- 1. минимальная цена по каждому course_id ----
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            for c in l.courses:
+                cid = c.id
+                if price < min_price_by_course.get(cid, float("inf")):
+                    min_price_by_course[cid] = price
+
+        # ---- 2. оставляем только «дешёвые» лендинги ----
+        kept_landings: List[Landing] = []
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            has_cheaper_alt = any(
+                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                for c in l.courses
+            )
+            if not has_cheaper_alt:
+                kept_landings.append(l)
+
+        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+
+        items.append(
+            AuthorResponse(
+                id=a.id,
+                name=a.name,
+                description=a.description,
+                language=a.language,
+                photo=a.photo,
+                courses_count=len(unique_course_ids)  # ← корректное число
+            )
+        )
 
     return {
         "total": total,
