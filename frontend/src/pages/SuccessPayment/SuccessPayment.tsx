@@ -23,6 +23,8 @@ const SuccessPayment = () => {
     }
     if (sessionId) {
       getAndSetToken();
+    } else {
+      navigate(Path.main);
     }
   }, [sessionId, region]);
 

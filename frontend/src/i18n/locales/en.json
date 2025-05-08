@@ -49,6 +49,16 @@
   "showLess": "Show Less",
   "readMore": "Read more",
 
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "books": "Books",
+    "professors": "Professors",
+    "cart": "Cart",
+    "search": "Search",
+    "profile": "Profile"
+  },
+
   "search": {
     "searchCourses": "Search courses",
     "searchPlaceholder": "Enter course name or author name...",

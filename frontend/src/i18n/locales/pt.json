@@ -48,6 +48,17 @@
   "showLess": "Mostrar menos",
   "readMore": "Leia mais",
 
+  "nav": {
+    "home": "Início",
+    "courses": "Cursos",
+    "books": "Livros",
+    "professors": "Professores",
+    "cart": "Carrinho",
+    "search": "Buscar",
+    "profile": "Perfil"
+  },
+
+
   "search": {
     "searchCourses": "Buscar cursos",
     "searchPlaceholder": "Digite o nome do curso ou nome do autor...",

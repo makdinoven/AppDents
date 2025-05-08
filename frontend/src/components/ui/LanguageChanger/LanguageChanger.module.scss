@@ -6,15 +6,16 @@
   @include transition();
 
   svg {
+    width: 27px;
+    height: 27px;
     path {
       @include transition();
       fill: $accent;
     }
   }
 
-  &:hover {
+  &.active {
     color: $primary;
-
     svg {
       path {
         fill: $primary;
@@ -22,14 +23,26 @@
     }
   }
 
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+
+      svg {
+        path {
+          fill: $primary;
+        }
+      }
+    }
+  }
+
   .language_preview {
-    @include clamped-h3;
+    font-size: 20px;
   }
 }
 
 .language_changer_modal {
   @include flex-column;
-  @include clamped-p1;
+  font-size: 20px;
   gap: 14px;
   align-items: flex-start;
   justify-content: space-between;
@@ -65,10 +78,15 @@
 @media (max-width: $mobile-breakpoint) {
   .language_changer {
     gap: 5px;
+    font-size: 16px;
 
     svg {
       width: 20px;
       height: 20px;
+    }
+
+    .language_preview {
+      font-size: 16px;
     }
   }
   .language_changer_modal {

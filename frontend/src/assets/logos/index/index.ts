@@ -13,3 +13,8 @@ export { default as SearchIcon } from "../../search-icon.svg?react";
 export { default as EyeOpened } from "../../Icons/eye-opened.svg?react";
 export { default as EyeClosed } from "../../Icons/eye-closed.svg?react";
 export { default as HomeIcon } from "../../Icons/home.svg?react";
+export { default as ProfessorsIcon } from "../../Icons/professors.svg?react";
+export { default as BooksIcon } from "../../Icons/book.svg?react";
+export { default as CoursesIcon } from "../../Icons/coursesIcon.svg?react";
+export { default as CartIcon } from "../../Icons/cart.svg?react";
+export { default as ProfileIcon } from "../../Icons/profile.svg?react";

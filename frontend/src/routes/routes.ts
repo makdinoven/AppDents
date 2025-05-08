@@ -2,6 +2,8 @@ export const Path = {
   main: "/",
   login: "/login",
   passwordReset: "/password-reset",
+  search: "/search",
+  cart: "/cart",
   signUp: "/sign-up",
   landing: "/course",
   profile: "/profile",

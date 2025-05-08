@@ -27,13 +27,13 @@ const LanguageChanger = () => {
       <button
         onClick={handleOpenModal}
         ref={triggerRef}
-        className={s.language_changer}
+        className={`${s.language_changer} ${isModalOpen ? s.active : ""}`}
       >
         <LanguageIcon />
         <span className={s.language_preview}>{language.toUpperCase()}</span>
       </button>
       <ModalWrapper
-        isLang={true}
+        isDropdown={true}
         hasTitle={false}
         hasCloseButton={false}
         cutoutPosition="top-right"

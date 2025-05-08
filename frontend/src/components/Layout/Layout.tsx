@@ -2,6 +2,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "../Header/Header.tsx";
 import Footer from "../Footer/Footer.tsx";
 import s from "./Layout.module.scss";
+import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
 
 const Layout = () => {
   const location = useLocation();
@@ -14,6 +15,7 @@ const Layout = () => {
         <Outlet />
       </main>
       {!isAdminRoute && <Footer />}
+      <MobileMenu />
     </div>
   );
 };

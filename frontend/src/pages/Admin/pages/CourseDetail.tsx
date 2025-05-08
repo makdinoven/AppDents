@@ -124,10 +124,6 @@ const CourseDetail = () => {
     }
   };
 
-  // useEffect(() => {
-  //   console.log(course);
-  // }, [course]);
-
   const handleSave = async () => {
     try {
       await adminApi.updateCourse(courseId, denormalizeCourse(course));
