@@ -34,17 +34,17 @@ const AuthModalManager = () => {
     switch (location.pathname) {
       case Path.login:
         return {
-          title: "Login",
+          title: "login",
           component: <LoginModal />,
         };
       case Path.signUp:
         return {
-          title: "Sign Up",
+          title: "signup",
           component: <SignUpModal />,
         };
       case Path.passwordReset:
         return {
-          title: "Reset Password",
+          title: "passwordReset",
           component: <ForgotPasswordModal />,
         };
       default:
@@ -58,14 +58,14 @@ const AuthModalManager = () => {
     }
   }, [isLogged, isModalOpen, navigate]);
 
-  if (!isModalOpen || !modalContent || !triggerRef?.current) return null;
+  if (!isModalOpen || !modalContent) return null;
 
   return (
     <ModalWrapper
       title={modalContent.title}
-      cutoutPosition="top-right"
+      cutoutPosition={`${triggerRef ? "top-right" : "none"}`}
       cutoutOffsetY={15}
-      triggerElement={triggerRef.current}
+      triggerElement={triggerRef?.current}
       isOpen={isModalOpen}
       onClose={handleClose}
     >

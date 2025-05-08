@@ -1,5 +1,5 @@
 import s from "./PaginationButton.module.scss";
-import Arrow from "../../../../assets/Icons/Arrow.tsx";
+import BackArrow from "../../../../assets/Icons/BackArrow.tsx";
 
 const PaginationButton = ({
   onClick,
@@ -19,7 +19,7 @@ const PaginationButton = ({
           onClick={onClick}
           className={`${s.navButton} ${s.navButtonArrow} ${s.nextNavButton}`}
         >
-          <Arrow />
+          <BackArrow />
         </button>
       );
     case "prev":
@@ -28,7 +28,7 @@ const PaginationButton = ({
           onClick={onClick}
           className={`${s.navButton} ${s.navButtonArrow} ${s.prevNavButton}`}
         >
-          <Arrow />
+          <BackArrow />
         </button>
       );
     case "default":

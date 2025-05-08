@@ -157,7 +157,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       },
       none: {
         borderRadius: DEFAULT_BORDER_RADIUS,
-        minHeight: "unset",
+        minHeight: "60vh",
       },
     }[cutoutPosition];
 

@@ -44,6 +44,8 @@ $font-sz-p3-desk: 20px;
 $font-sz-p3-mob: 14px;
 $font-sz-p4-desk: 18px;
 $font-sz-p4-mob: 12px;
+$font-sz-p5-desk: 16px;
+$font-sz-p5-mob: 12px;
 $font-sz-err-desk: 20px;
 $font-sz-err-mob: 14px;
 
@@ -77,6 +79,10 @@ $font-sz-err-mob: 14px;
 
 @mixin clamped-p4 {
   font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
+}
+
+@mixin clamped-p5 {
+  font-size: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
 }
 
 @mixin clamped-err {
