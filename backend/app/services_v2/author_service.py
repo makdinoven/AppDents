@@ -43,7 +43,7 @@ def list_authors_by_page(
     # 6) Формируем список Pydantic-моделей
     authors = (
         base_query
-        .options(  # жадно подгружаем лендинги‑курсы
+        .options(
             selectinload(Author.landings)
             .selectinload(Landing.courses)
         )
@@ -53,10 +53,37 @@ def list_authors_by_page(
         .all()
     )
 
-    # 6) Формируем список Pydantic‑моделей
+    def _safe_price(value) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return float("inf")  # некорректная цена → бесконечность
+
     items = []
     for a in authors:
-        course_ids = {c.id for l in a.landings for c in l.courses}
+        # ---- 1. минимальная цена по каждому course_id ----
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            for c in l.courses:
+                cid = c.id
+                if price < min_price_by_course.get(cid, float("inf")):
+                    min_price_by_course[cid] = price
+
+        # ---- 2. оставляем только «дешёвые» лендинги ----
+        kept_landings: List[Landing] = []
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            has_cheaper_alt = any(
+                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                for c in l.courses
+            )
+            if not has_cheaper_alt:
+                kept_landings.append(l)
+
+        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -64,7 +91,7 @@ def list_authors_by_page(
                 description=a.description,
                 language=a.language,
                 photo=a.photo,
-                courses_count=len(course_ids)  # ← заполняем
+                courses_count=len(unique_course_ids)  # ← корректное число
             )
         )
 
@@ -270,7 +297,7 @@ def list_authors_search_paginated(
     # 5) Формируем список Pydantic-моделей
     authors = (
         base_query
-        .options(  # жадно подгружаем лендинги‑курсы
+        .options(
             selectinload(Author.landings)
             .selectinload(Landing.courses)
         )
@@ -280,10 +307,37 @@ def list_authors_search_paginated(
         .all()
     )
 
-    # 6) Формируем список Pydantic‑моделей
+    def _safe_price(value) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return float("inf")  # некорректная цена → бесконечность
+
     items = []
     for a in authors:
-        course_ids = {c.id for l in a.landings for c in l.courses}
+        # ---- 1. минимальная цена по каждому course_id ----
+        min_price_by_course: Dict[int, float] = {}
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            for c in l.courses:
+                cid = c.id
+                if price < min_price_by_course.get(cid, float("inf")):
+                    min_price_by_course[cid] = price
+
+        # ---- 2. оставляем только «дешёвые» лендинги ----
+        kept_landings: List[Landing] = []
+        for l in a.landings:
+            price = _safe_price(l.new_price)
+            has_cheaper_alt = any(
+                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                for c in l.courses
+            )
+            if not has_cheaper_alt:
+                kept_landings.append(l)
+
+        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -291,7 +345,7 @@ def list_authors_search_paginated(
                 description=a.description,
                 language=a.language,
                 photo=a.photo,
-                courses_count=len(course_ids)  # ← заполняем
+                courses_count=len(unique_course_ids)  # ← корректное число
             )
         )
 
