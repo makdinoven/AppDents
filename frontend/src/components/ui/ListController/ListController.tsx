@@ -31,7 +31,7 @@ const ListController = ({
   const pageFromUrl = parseInt(searchParams.get("page") || "1");
   const searchValue = searchParams.get(SEARCH_KEY);
   const debouncedSearchValue = useDebounce(searchValue, 300);
-  const prevLanguage = useRef(language);
+  const prevLanguage = useRef<string | undefined>("");
   const prevSearch = useRef(debouncedSearchValue);
 
   useEffect(() => {
