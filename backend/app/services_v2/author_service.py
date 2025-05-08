@@ -31,7 +31,9 @@ def list_authors_by_page(
         .join(popularity_sub, popularity_sub.c.author_id == Author.id)
         .options(  # нужны курсы для courses_count
             selectinload(Author.landings)
-            .selectinload(Landing.courses)
+            .selectinload(Landing.courses),
+            selectinload(Author.landings)
+            .selectinload(Landing.tags),
         )
         .order_by(
             popularity_sub.c.popularity.desc(),  # ← сортировка
@@ -83,6 +85,9 @@ def list_authors_by_page(
 
         # ---- 3. уникальные курсы по отфильтрованным лендингам ----
         unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
+        unique_tags: Set[str] = {
+            t.name for l in kept_landings for t in l.tags
+        }
 
         items.append(
             AuthorResponse(
@@ -91,7 +96,8 @@ def list_authors_by_page(
                 description=a.description,
                 language=a.language,
                 photo=a.photo,
-                courses_count=len(unique_course_ids)  # ← корректное число
+                courses_count=len(unique_course_ids),
+                tags=sorted(unique_tags)
             )
         )
 
@@ -247,6 +253,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "total_new_price": int(total_new_price * 0.8),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
+        "tags": sorted({t.name for l in kept_landings for t in l.tags}),
     }
 
 def list_authors_search_paginated(
@@ -274,7 +281,9 @@ def list_authors_search_paginated(
           .join(popularity_sub, popularity_sub.c.author_id == Author.id)
           .options(
               selectinload(Author.landings)
-                .selectinload(Landing.courses)
+                .selectinload(Landing.courses),
+              selectinload(Author.landings)
+                .selectinload(Landing.tags),
           )
           .filter(Author.name.ilike(f"%{search}%"))
           .order_by(
@@ -322,6 +331,9 @@ def list_authors_search_paginated(
         unique_course_ids: Set[int] = {
             c.id for l in kept_landings for c in l.courses
         }
+        unique_tags: Set[str] = {
+            t.name for l in kept_landings for t in l.tags
+        }
 
         items.append(
             AuthorResponse(
@@ -330,8 +342,9 @@ def list_authors_search_paginated(
                 description=a.description,
                 language=a.language,
                 photo=a.photo,
-                courses_count=len(unique_course_ids)
-            )
+                courses_count=len(unique_course_ids),
+                tags = sorted(unique_tags)
+        )
         )
 
     # ---------- 6. финальный ответ -----------------------------------------
