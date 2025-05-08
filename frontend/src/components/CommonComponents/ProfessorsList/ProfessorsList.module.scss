@@ -25,7 +25,8 @@
 
 @media (max-width: $mobile-breakpoint) {
   .list {
-    grid-template-columns: repeat(2, minmax(152.5px, 1fr)) !important;
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
 }

@@ -154,7 +154,13 @@
     "search": "Поиск преподавателей...",
     "found": "Преподавателей найдено: {{count}}",
     "noProfessors": "Преподаватели не найдены",
-    "about": "Подробнее"
+    "about": "Подробнее",
+    "specialization": "Специализация:",
+    "coursesCount_one": "{{count}} курс",
+    "coursesCount_few": "{{count}} курса",
+    "coursesCount_many": "{{count}} курсов",
+    "coursesCount_other": "{{count}} курса"
+
   },
   "other": {
     "otherCourses": "Другие курсы"
