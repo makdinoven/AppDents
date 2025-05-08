@@ -25,6 +25,7 @@ class AuthorResponse(BaseModel):
     photo: Optional[str] = ""
     language: Optional[str] = ""
     courses_count: int = 0
+    tags: List[str] = []
 
     class Config:
         orm_mode = True
@@ -80,6 +81,10 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     total_old_price: float
     landing_count: int
     lessons_count : Optional[str] = ""
+    tags: List[str]
+
+    class Config:
+        orm_mode = True
 
 class AuthorsPage(BaseModel):
     total: int           # общее число записей
