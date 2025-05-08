@@ -24,6 +24,7 @@ class AuthorResponse(BaseModel):
     description: Optional[str] = ""
     photo: Optional[str] = ""
     language: Optional[str] = ""
+    courses_count: int = 0
 
     class Config:
         orm_mode = True
