@@ -13,7 +13,7 @@
 }
 
 @media (hover: hover) {
-  .navButton:not(.activePage):hover {
+  .navButton:not(.activePage):not(.disabled):hover {
     color: $primary;
     svg {
       path {
@@ -27,7 +27,7 @@
   }
 }
 
-.navButton:not(.activePage):active {
+.navButton:not(.activePage):not(.disabled):active {
   color: $text-color;
   background-color: $primary;
   svg {
@@ -45,6 +45,13 @@
 .navButtonArrow {
   @include flex-center;
   padding: 0 5px;
+
+  &.disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+
   svg {
     width: 25px;
     height: 25px;
