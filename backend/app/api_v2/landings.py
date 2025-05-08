@@ -433,7 +433,6 @@ def most_popular_landings(
         for l, sales in rows
     ]
 
-
 @router.post("/track-ad/{slug}")
 def track_ad(slug: str,
              request: Request,

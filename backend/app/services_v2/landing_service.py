@@ -398,6 +398,7 @@ def get_top_landings_by_sales(
     db.commit()
     return result
 
+
 # services_v2/landing_service.py
 AD_TTL = timedelta(hours=3)
 
