@@ -65,7 +65,7 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     else:
         lessons_list = []
     authors_list = [
-        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo}
+        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo, "courses_count": author.courses_count, "tags": author.tags}
         for author in landing.authors
     ] if landing.authors else []
     tags_list = [
