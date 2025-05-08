@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base, relationship, backref
 
 Base = declarative_base()
 
@@ -92,8 +92,16 @@ class User(Base):
     password = Column(String(255), nullable=False)
     role = Column(String(255))
 
-    # Курсы, купленные пользователем, теперь через отдельное отношение
+    balance = Column(Float, default=0.0, nullable=False)
+    referral_code = Column(String(20), unique=True, index=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id"))
+
     courses = relationship("Course", secondary=users_courses, back_populates="users")
+    invited_users = relationship(
+        "User",
+        backref=backref("inviter", remote_side=[id]),
+        foreign_keys="[User.invited_by_id]",
+    )
 
 
 class Purchase(Base):
@@ -112,7 +120,6 @@ class Purchase(Base):
     landing = relationship("Landing", backref="purchases")
     course = relationship("Course", backref="purchases")
 
-# models_v2.py
 class AdVisit(Base):
     __tablename__ = "ad_visits"
     id          = Column(Integer, primary_key=True)
