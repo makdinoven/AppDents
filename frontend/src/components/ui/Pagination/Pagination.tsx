@@ -17,7 +17,7 @@ const Pagination = ({ totalPages }: PaginationProps) => {
       const newParams = new URLSearchParams(searchParams);
       newParams.set("page", newPage.toString());
       setSearchParams(newParams);
-      window.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
