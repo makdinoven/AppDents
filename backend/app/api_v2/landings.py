@@ -157,8 +157,12 @@ def get_landing_by_page(
 
         authors_list.append({
             "id": a.id,
+            "name": a.name,
+            "description": a.description or "",
+            "photo": a.photo or "",
+            "language": a.language,
             "courses_count": len(unique_courses),
-            "tags": unique_tags,
+            "tags": sorted(unique_tags),
         })
 
     # 5) детали самого лендинга
