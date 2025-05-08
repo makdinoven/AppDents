@@ -144,7 +144,15 @@
     "search": "ابحث عن الأساتذة...",
     "found": "تم العثور على أساتذة: {{count}}",
     "noProfessors": "لم يتم العثور على أساتذة",
-    "about": "عن الأستاذ"
+    "about": "عن الأستاذ",
+    "specialization": "التخصص:",
+    "coursesCount_zero": "لا توجد دورات",
+    "coursesCount_one": "دورة واحدة",
+    "coursesCount_two": "دورتان",
+    "coursesCount_few": "{{count}} دورات",
+    "coursesCount_many": "{{count}} دورة",
+    "coursesCount_other": "{{count}} دورة"
+
   },
   "other": {
     "otherCourses": "دورات أخرى"
