@@ -9,7 +9,7 @@
   }
 
   .modal_text {
-    @include clamped-p4;
+    @include clamped-p5;
     margin-top: 10px;
     text-align: center;
   }
@@ -17,8 +17,9 @@
   .courses {
     overflow-y: auto;
     max-height: 180px;
-    border-top: 2px solid $text-color;
-    border-bottom: 2px solid $text-color;
+    width: 100%;
+    border-top: 1.5px solid $text-color;
+    border-bottom: 1.5px solid $text-color;
     margin-bottom: 20px;
     @include custom-scrollbar;
     padding: 0 20px;
@@ -28,10 +29,10 @@
     @include clamped-p3;
     position: relative;
     width: 100%;
-    padding: 20px 0;
+    padding: 15px 0;
     display: flex;
     justify-content: space-between;
-    gap: 25px;
+    gap: 20px;
     &:not(:last-child) {
       @include horizontal-line(
         $height: 1px,
@@ -44,7 +45,7 @@
   }
 
   .course_prices {
-    @include flex-column;
+    display: flex;
     gap: 5px;
     align-items: center;
 
@@ -57,7 +58,7 @@
   }
 
   .total_text {
-    @include clamped-h2;
+    @include clamped-h3;
     width: 100%;
     display: flex;
     justify-content: center;
