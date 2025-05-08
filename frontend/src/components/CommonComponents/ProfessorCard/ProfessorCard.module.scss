@@ -14,7 +14,6 @@
 }
 
 .card_header {
-  flex: 1;
   @include flex-center;
   position: relative;
   outline: 1px solid $secondary-lighter;
@@ -66,6 +65,7 @@
 
 .professor_card {
   @include flex-column;
+  flex: 1;
   gap: 15px;
   outline: 1px solid $secondary-lighter;
   border-radius: 20px;
@@ -78,6 +78,7 @@
 
 .description_wrapper {
   width: 100%;
+  height: 100%;
   position: relative;
   @include flex-column;
   gap: 5px;
@@ -86,22 +87,33 @@
 .professor_link {
   @include clamped-p4;
   align-self: flex-end;
+  margin-right: 10px;
 }
 
-.description {
-  height: 100%;
-  width: 100%;
+.description,
+.tags {
   overflow: hidden;
-  position: relative;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
 }
 
+.courses_count {
+  width: fit-content;
+  background-color: $secondary-lighter;
+  color: $text-color;
+  padding: 1px 10px;
+  border-radius: 20px;
+  @include clamped-p3;
+  align-self: center;
+  flex-shrink: 0;
+}
+
 .card_content {
+  position: relative;
   display: flex;
   align-items: center;
   flex: 1;
@@ -154,11 +166,37 @@
     border-radius: 15px;
   }
 
+  .description_wrapper {
+    justify-content: flex-end;
+    gap: 3px;
+    padding-bottom: 20px;
+  }
+
+  .description {
+    order: 3;
+  }
+
+  .professor_link {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin-right: 0;
+  }
+
+  .courses_count {
+    order: 1;
+    padding: 0 5px;
+    border-radius: 5px;
+    align-self: flex-start !important;
+  }
+
+  .tags {
+    order: 2;
+  }
+
   .card_header {
     outline: none;
     width: 100%;
-    //border-top-left-radius: 15px;
-    //border-top-right-radius: 15px;
     padding: 0;
     justify-content: flex-start;
 
@@ -185,15 +223,7 @@
     gap: 5px;
     outline: unset;
     border-radius: unset;
-    //border-bottom-left-radius: 15px;
-    //border-bottom-right-radius: 15px;
-    //border-top-right-radius: 15px;
     align-items: end;
-  }
-
-  .description {
-    //display: none;
-    //-webkit-line-clamp: 2;
   }
 
   .card_content {

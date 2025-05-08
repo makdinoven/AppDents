@@ -143,7 +143,10 @@
     "search": "Cerca professori...",
     "found": "Professori trovati: {{count}}",
     "noProfessors": "Nessun professore trovato",
-    "about": "Sul docente"
+    "about": "Dettagliato",
+    "specialization": "Specializzazione:",
+    "coursesCount_one": "{{count}} corso",
+    "coursesCount_other": "{{count}} corsi"
   },
   "other": {
     "otherCourses": "Altri corsi"
