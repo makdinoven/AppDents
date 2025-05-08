@@ -3,6 +3,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from typing import List
+from urllib.parse import urlparse
 
 import requests
 import stripe
@@ -293,7 +294,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     logging.info("Обработка успешной оплаты: email=%s, course_ids=%s", email, course_ids)
 
-    # 1. Facebook Pixel
+    # 1. Facebook Pixel
     _send_facebook_purchase(
         email=email,
         amount=session_obj["amount_total"] / 100,
@@ -326,52 +327,87 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     for course_obj in courses_db:
         if course_obj in user.courses:
             already_owned.append(course_obj)
-            logging.info("Пользователь %s уже имеет курс %s (ID=%s)",
-                         user.id, course_obj.name, course_obj.id)
-            continue
-
-        add_course_to_user(db, user.id, course_obj.id)
-        new_courses.append(course_obj)
-        logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
-                     course_obj.name, course_obj.id, user.id)
-
-        # лендинги конкретно под этот курс
-        course_landings: List[Landing] = (
-            db.query(Landing)
-              .join(Landing.courses)
-              .filter(Course.id == course_obj.id)
-              .all()
-        )
-
-        for landing in course_landings:
-            landing.sales_count += 1
-            logging.info("Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s",
-                         landing.id, landing.sales_count)
-
-            # ─────── Флаг «в рекламе» — только для тех, где был визит ─────
-            if landing.id in landings_recent_ad:
-                landing.in_advertising = True
-                expiry_time = datetime.utcnow() + timedelta(hours=AD_INACTIVITY_HOURS)
-                if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < expiry_time:
-                    landing.ad_flag_expires_at = expiry_time
-            # ───────────────────────────────────────────────────────────────
-
-        db.add(
-            Purchase(
-                user_id=user.id,
-                course_id=course_obj.id,
-                landing_id=course_landings[0].id if course_landings else None,
-                from_ad=from_ad,
-                amount=session_obj["amount_total"] / 100,
+            logging.info(
+                "Пользователь %s уже имеет курс %s (ID=%s)",
+                user.id, course_obj.name, course_obj.id
             )
-        )
+        else:
+            add_course_to_user(db, user.id, course_obj.id)
+            new_courses.append(course_obj)
+            logging.info(
+                "Добавлен новый курс %s (ID=%s) пользователю %s",
+                course_obj.name, course_obj.id, user.id
+            )
 
+    # Сохраняем связь пользователь–курсы
     db.commit()
+
+    # Создаём одну запись о покупке «сборника»
+    if new_courses:
+        referer = metadata.get("referer", "")
+        landing_for_purchase = None
+
+        if referer:
+            try:
+                slug = urlparse(referer).path.strip("/").split("/")[-1]
+                landing_for_purchase = (
+                    db.query(Landing)
+                    .filter(Landing.page_name == slug)
+                    .first()
+                )
+                logging.info("Лендинг определён по referer: %s -> ID %s",
+                             referer,
+                             landing_for_purchase.id if landing_for_purchase else None)
+            except Exception as e:
+                logging.warning(
+                    "Не удалось определить лендинг по referer %s: %s",
+                    referer, e
+                )
+
+        # Если не удалось по referer, берём первый лендинг первого курса
+        if not landing_for_purchase:
+            first_course = new_courses[0]
+            landing_for_purchase = (
+                db.query(Landing)
+                .join(Landing.courses)
+                .filter(Course.id == first_course.id)
+                .first()
+            )
+            logging.info(
+                "Лендинг по умолчанию для курса %s: ID %s",
+                first_course.id,
+                landing_for_purchase.id if landing_for_purchase else None
+            )
+
+        if landing_for_purchase:
+            # Увеличиваем счётчик продаж
+            landing_for_purchase.sales_count += 1
+            logging.info(
+                "Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s",
+                landing_for_purchase.id,
+                landing_for_purchase.sales_count
+            )
+            # Счетчик
+            if landing_for_purchase.id in landings_recent_ad:
+                landing_for_purchase.in_advertising = True
+                expiry_time = datetime.utcnow() + timedelta(hours=AD_INACTIVITY_HOURS)
+                if (not landing_for_purchase.ad_flag_expires_at
+                        or landing_for_purchase.ad_flag_expires_at < expiry_time):
+                    landing_for_purchase.ad_flag_expires_at = expiry_time
+
+        # Создаём одну запись Purchase с общей суммой
+        purchase = Purchase(
+            user_id=user.id,
+            course_id=None,
+            landing_id=landing_for_purchase.id if landing_for_purchase else None,
+            from_ad=from_ad,
+            amount=session_obj["amount_total"] / 100,
+        )
+        db.add(purchase)
+        db.commit()
 
     # 4. Письма
     if already_owned:
-        owned_names = [c.name for c in already_owned]
-        logging.info("Пользователь оплатил курсы, которые уже имеет: %s", owned_names)
         send_already_owned_course_email(
             recipient_email=email,
             course_names=[c.name for c in already_owned],
@@ -379,8 +415,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         )
 
     if new_courses:
-        new_names = [c.name for c in new_courses]
-        logging.info("Новые курсы, добавленные пользователю: %s", new_names)
         send_successful_purchase_email(
             recipient_email=email,
             course_names=[c.name for c in new_courses],
