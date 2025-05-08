@@ -1,5 +1,5 @@
-import s from "./SearchDropdown.module.scss";
-import Search from "../../ui/Search/Search.tsx";
+import s from "./SearchModal.module.scss";
+import Search from "../Search/Search.tsx";
 import { useEffect, useRef, useState } from "react";
 import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
 import { Link, useSearchParams } from "react-router-dom";
@@ -9,12 +9,12 @@ import { SearchIcon } from "../../../assets/logos/index";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
-import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
+import ModalCloseButton from "../ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
-import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
+import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
-const SearchDropdown = ({ openKey }: { openKey: string }) => {
+const SearchModal = ({ openKey }: { openKey: string }) => {
   const SEARCH_KEY = "global_courses_search";
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -175,4 +175,4 @@ const SearchDropdown = ({ openKey }: { openKey: string }) => {
   );
 };
 
-export default SearchDropdown;
+export default SearchModal;

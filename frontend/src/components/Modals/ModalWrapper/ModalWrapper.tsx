@@ -10,7 +10,7 @@ import { Trans } from "react-i18next";
 import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
 import s from "./ModalWrapper.module.scss";
 
-type CutoutPosition = "top-right" | "bottom-right" | "none";
+type CutoutPosition = "top-right" | "top-left" | "bottom-right" | "none";
 type ModalVariant = "dark" | "default";
 
 interface ModalWrapperProps {
@@ -24,7 +24,7 @@ interface ModalWrapperProps {
   cutoutOffsetX?: number;
   hasTitle?: boolean;
   hasCloseButton?: boolean;
-  isLang?: boolean;
+  isDropdown?: boolean;
   variant?: ModalVariant;
 }
 
@@ -44,7 +44,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   children,
   isOpen,
   onClose,
-  isLang = false,
+  isDropdown = false,
   hasTitle = true,
   hasCloseButton = true,
   triggerElement,
@@ -65,7 +65,8 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   );
 
   const modalContentRef = useRef<HTMLDivElement | null>(null);
-  const showTopCutout = cutoutPosition === "top-right";
+  const showTopCutout =
+    cutoutPosition === "top-right" || cutoutPosition === "top-left";
   const showBottomCutout = cutoutPosition === "bottom-right";
 
   const handleClose = useCallback(() => {
@@ -95,35 +96,60 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   );
 
   const modalContainerStyles = useMemo((): React.CSSProperties => {
-    if (isLang) {
-      return {
-        maxWidth: "300px",
-        width: "fit-content",
-        top: `${triggerDimensions.top}px`,
-        right: `calc(100vw - ${triggerDimensions.x + triggerDimensions.width}px)`,
-      };
+    if (triggerElement) {
+      if (isDropdown) {
+        if (cutoutPosition === "top-right") {
+          return {
+            maxWidth: "300px",
+            width: "fit-content",
+            top: `${triggerDimensions.top}px`,
+            right: `calc(100vw - ${triggerDimensions.x + triggerDimensions.width}px)`,
+          };
+        } else if (cutoutPosition === "top-left") {
+          return {
+            maxWidth: "205px",
+            width: "fit-content",
+            top: `${triggerDimensions.top}px`,
+            left: `calc(${triggerDimensions.x}px)`,
+            marginLeft: "unset",
+            marginRight: "auto",
+          };
+        }
+      }
+
+      return cutoutPosition === "none"
+        ? {
+            top: "50%",
+            transform: "translateY(-50%)",
+            marginRight: "auto",
+            maxWidth: "800px",
+            padding: "0 10px",
+          }
+        : {
+            top: `${triggerDimensions.top}px`,
+            padding: "0 20px",
+            marginRight: "auto",
+          };
     }
 
-    return cutoutPosition === "none"
-      ? {
-          top: "50%",
-          transform: "translateY(-50%)",
-          marginRight: "auto",
-          maxWidth: "800px",
-          padding: "0 10px",
-        }
-      : {
-          top: `${triggerDimensions.top}px`,
-          padding: "0 20px",
-          marginRight: "auto",
-        };
-  }, [isLang, cutoutPosition, triggerDimensions]);
+    return {
+      top: "50%",
+      transform: "translateY(-50%)",
+      marginRight: "auto",
+      maxWidth: "800px",
+      padding: "0 10px",
+    };
+  }, [isDropdown, cutoutPosition, triggerDimensions, triggerElement]);
 
   const modalContentStyles = useMemo((): React.CSSProperties => {
     const baseStyles = {
       "top-right": {
         borderTopRightRadius: "20px",
         borderTopLeftRadius: "0",
+      },
+      "top-left": {
+        borderTopLeftRadius: "20px",
+        borderTopRightRadius: "0",
       },
       "bottom-right": {
         borderBottomRightRadius: "20px",
@@ -135,7 +161,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       },
     }[cutoutPosition];
 
-    const sizeStyles = isLang
+    const sizeStyles = isDropdown
       ? {
           minHeight: "auto",
           padding: "clamp(14px, 3vw, 20px)",
@@ -143,7 +169,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
       : {};
 
     return { ...baseStyles, ...sizeStyles, ...variantStyles };
-  }, [cutoutPosition, isLang, variantStyles]);
+  }, [cutoutPosition, isDropdown, variantStyles]);
 
   useEffect(() => {
     if (!triggerElement || !isOpen) return;
@@ -189,14 +215,14 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     <div
       className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn}`}
       style={{
-        backgroundColor: cutoutPosition === "none" ? "rgba(0, 0, 0, 0.06)" : "",
+        backgroundColor: isDropdown ? "" : "rgba(0, 0, 0, 0.06)",
       }}
       onClick={handleClose}
     >
       <div className={s.modal_container} style={modalContainerStyles}>
         {showTopCutout && (
           <div
-            className={`${s.modal_header} ${s.topRight}`}
+            className={`${s.modal_header} ${cutoutPosition === "top-right" ? s.topRight : s.topLeft}`}
             style={cutoutStyles}
             onClick={(e) => e.stopPropagation()}
           >

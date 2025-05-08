@@ -48,6 +48,17 @@
   "showLess": "Скрыть",
   "readMore": "Читать далее",
 
+  "nav": {
+    "home": "Главная",
+    "courses": "Курсы",
+    "books": "Книги",
+    "professors": "Преподаватели",
+    "cart": "Корзина",
+    "search": "Поиск",
+    "profile": "Профиль"
+  },
+
+
   "search": {
     "searchCourses": "Поиск курсов",
     "searchPlaceholder": "Введите название курса или имя автора...",

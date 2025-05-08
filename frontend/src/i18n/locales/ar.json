@@ -48,6 +48,17 @@
   "showLess": "عرض أقل",
   "readMore": "اقرأ المزيد",
 
+  "nav": {
+    "home": "الرئيسية",
+    "courses": "الدورات",
+    "books": "الكتب",
+    "professors": "الأساتذة",
+    "cart": "عربة التسوق",
+    "search": "بحث",
+    "profile": "الملف الشخصي"
+  },
+
+
   "search": {
     "searchCourses": "بحث عن الدورات",
     "searchPlaceholder": "أدخل اسم الدورة أو اسم المؤلف...",
