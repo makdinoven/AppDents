@@ -123,7 +123,7 @@ from sqlalchemy.orm import Session, selectinload
 from typing import Dict, Tuple, Set, List
 
 def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # --- 1. Автор + связи ----------------------------------------------------
+    # 1. Автор и все связи одним запросом
     author = (
         db.query(Author)
           .options(
@@ -140,40 +140,50 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
     if not author:
         return None
 
-    # --- 2. Самый дешёвый лендинг для каждого курса -------------------------
-    cheapest_by_course: Dict[int, Tuple[float, Landing]] = {}
+    # 2. Минимальная цена по каждому курсу среди всех лендингов автора
+    min_price_by_course: Dict[int, float] = {}
     for l in author.landings:
         try:
             price = float(l.new_price)
         except Exception:
-            # некорректная цена => считаем «бесконечность»
             price = float("inf")
-
         for c in l.courses:
             cid = c.id
-            prev = cheapest_by_course.get(cid)
-            if prev is None or price < prev[0]:
-                cheapest_by_course[cid] = (price, l)
+            cur = min_price_by_course.get(cid, float("inf"))
+            if price < cur:
+                min_price_by_course[cid] = price
 
-    # --- 3. Итоговый набор лендингов -----------------------------------------
-    unique_landings = {tpl[1] for tpl in cheapest_by_course.values()}
+    # 3. Фильтруем лендинги:
+    #    исключаем, если нашлась хотя бы одна позиция дешевле
+    kept_landings = []
+    for l in author.landings:
+        try:
+            price = float(l.new_price)
+        except Exception:
+            price = float("inf")
+        # есть ли курс, у которого эта цена НЕ минимальна?
+        has_cheaper_alt = any(
+            price > min_price_by_course.get(c.id, price)  # строго > !!!
+            for c in l.courses
+        )
+        if not has_cheaper_alt:
+            kept_landings.append(l)
 
+    # 4. Формируем агрегаты по отфильтрованному набору
     landings_data: List[dict] = []
     all_course_ids: Set[int] = set()
     total_new_price = 0.0
     total_old_price = 0.0
 
-    for l in unique_landings:
-        # аккуратно приводим цены к float
+    for l in kept_landings:
         try:
-            price = float(l.new_price)
-            old_price = float(l.old_price)
+            p_new = float(l.new_price)
+            p_old = float(l.old_price)
         except Exception:
-            price = 0.0
-            old_price = 0.0
+            p_new = p_old = 0.0
 
-        total_new_price += price
-        total_old_price += old_price
+        total_new_price += p_new
+        total_old_price += p_old
 
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
@@ -196,10 +206,9 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "authors": authors_info,
         })
 
-    # фиксируем читаемый порядок (по id лендинга)
+    # упорядочим по id для стабильности
     landings_data.sort(key=lambda x: x["id"])
 
-    # --- 4. Финальный ответ (прежний контракт) -------------------------------
     return {
         "id": author.id,
         "name": author.name,
