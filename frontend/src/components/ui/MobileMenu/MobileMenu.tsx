@@ -5,13 +5,21 @@ import { ProfileIcon } from "../../../assets/logos/index";
 import { Path } from "../../../routes/routes.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const MobileMenu = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
 
-  const buttons = [...NAV_BUTTONS];
+  const buttons: {
+    icon: any;
+    text: string;
+    link?: any;
+    onClick?: () => void;
+  }[] = [...NAV_BUTTONS];
 
   if (isLogged) {
     buttons.push({
@@ -23,7 +31,12 @@ const MobileMenu = () => {
     buttons.push({
       icon: ProfileIcon,
       text: "login",
-      link: Path.login,
+      onClick: () =>
+        navigate(Path.login, {
+          state: {
+            backgroundLocation: location,
+          },
+        }),
     });
   }
 
@@ -36,6 +49,7 @@ const MobileMenu = () => {
             text={btn.text}
             link={btn.link}
             direction={"vertical"}
+            onClick={btn.onClick}
             isActive={
               btn.link === Path.main
                 ? location.pathname === Path.main
