@@ -121,7 +121,7 @@ def _send_facebook_purchase(
         )
         pixels = [
             {"id": settings.FACEBOOK_PIXEL_ID,   "token": settings.FACEBOOK_ACCESS_TOKEN},
-            {"id": settings.FACEBOOK_PIXEL_ID_2, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+            {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
         ]
 
         for p in pixels:
@@ -315,18 +315,25 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         try:
             user = create_user(db, email, random_pass)
             new_user_created = True
+            logging.info("Создан новый пользователь с email: %s", email)
         except ValueError:
             user = get_user_by_email(db, email)
+    else:
+        logging.info("Найден существующий пользователь: %s", user.id)
 
     # 3. Курсы
     already_owned, new_courses = [], []
     for course_obj in courses_db:
         if course_obj in user.courses:
             already_owned.append(course_obj)
+            logging.info("Пользователь %s уже имеет курс %s (ID=%s)",
+                         user.id, course_obj.name, course_obj.id)
             continue
 
         add_course_to_user(db, user.id, course_obj.id)
         new_courses.append(course_obj)
+        logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
+                     course_obj.name, course_obj.id, user.id)
 
         # лендинги конкретно под этот курс
         course_landings: List[Landing] = (
@@ -338,6 +345,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
         for landing in course_landings:
             landing.sales_count += 1
+            logging.info("Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s",
+                         landing.id, landing.sales_count)
 
             # ─────── Флаг «в рекламе» — только для тех, где был визит ─────
             if landing.id in landings_recent_ad:
@@ -361,6 +370,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # 4. Письма
     if already_owned:
+        owned_names = [c.name for c in already_owned]
+        logging.info("Пользователь оплатил курсы, которые уже имеет: %s", owned_names)
         send_already_owned_course_email(
             recipient_email=email,
             course_names=[c.name for c in already_owned],
@@ -368,6 +379,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         )
 
     if new_courses:
+        new_names = [c.name for c in new_courses]
+        logging.info("Новые курсы, добавленные пользователю: %s", new_names)
         send_successful_purchase_email(
             recipient_email=email,
             course_names=[c.name for c in new_courses],

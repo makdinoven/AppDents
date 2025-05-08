@@ -24,7 +24,6 @@ class CheckoutRequest(BaseModel):
     cancel_url: str = "https://example.com/payment-cancel"
     fbp: str | None = None  # Из cookie _fbp
     fbc: str | None = None  # Из cookie _fbc
-    ad: bool = False
 
 @router.post("/checkout")
 def stripe_checkout(
@@ -78,7 +77,6 @@ def stripe_checkout(
         request=request,
         fbp=data.fbp,
         fbc=data.fbc,
-        ad=data.ad
     )
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
