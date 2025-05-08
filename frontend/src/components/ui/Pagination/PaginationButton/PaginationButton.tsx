@@ -2,11 +2,13 @@ import s from "./PaginationButton.module.scss";
 import BackArrow from "../../../../assets/Icons/BackArrow.tsx";
 
 const PaginationButton = ({
+  disabled,
   onClick,
   pageNumber,
   activePage,
   variant = "default",
 }: {
+  disabled?: boolean;
   onClick: () => void;
   pageNumber: number;
   activePage: number;
@@ -17,7 +19,7 @@ const PaginationButton = ({
       return (
         <button
           onClick={onClick}
-          className={`${s.navButton} ${s.navButtonArrow} ${s.nextNavButton}`}
+          className={`${s.navButton} ${s.navButtonArrow} ${s.nextNavButton} ${disabled ? s.disabled : ""}`}
         >
           <BackArrow />
         </button>
@@ -26,7 +28,7 @@ const PaginationButton = ({
       return (
         <button
           onClick={onClick}
-          className={`${s.navButton} ${s.navButtonArrow} ${s.prevNavButton}`}
+          className={`${s.navButton} ${s.navButtonArrow} ${s.prevNavButton} ${disabled ? s.disabled : ""}`}
         >
           <BackArrow />
         </button>
