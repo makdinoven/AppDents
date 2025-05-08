@@ -94,24 +94,28 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
-def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
+def get_landing_by_page(
+    page_name: str,
+    db: Session = Depends(get_db)
+):
+    # 1) забираем лендинг по page_name + нужные связи
     landing = (
         db.query(Landing)
-        .options(
-            selectinload(Landing.authors)
-            .selectinload(Author.landings)
-            .selectinload(Landing.courses),
-            selectinload(Landing.authors)
-            .selectinload(Author.landings)
-            .selectinload(Landing.tags),
-        )
-        .filter(Landing.page_name == page_name)
-        .first()
+          .options(
+              selectinload(Landing.authors)
+                .selectinload(Author.landings)
+                  .selectinload(Landing.courses),
+              selectinload(Landing.authors)
+                .selectinload(Author.landings)
+                  .selectinload(Landing.tags),
+          )
+          .filter(Landing.page_name == page_name)    # <-- фильтр по page_name
+          .first()
     )
     if not landing:
-        raise HTTPException(404, "Landing not found")
+        raise HTTPException(status_code=404, detail="Landing not found")
 
-    # 2) Преобразуем lessons_info (как раньше)
+    # 2) приводим lessons_info к списку
     lessons = landing.lessons_info
     if isinstance(lessons, dict):
         lessons_list = [{k: v} for k, v in lessons.items()]
@@ -120,17 +124,17 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
     else:
         lessons_list = []
 
-    # 3) Вспомогательная функция
+    # 3) вспомогательный safe_price
     def _safe_price(v) -> float:
         try:
             return float(v)
         except:
             return float("inf")
 
-    # 4) Собираем упрощённый authors_list
+    # 4) строим authors_list с нужными полями
     authors_list = []
     for a in landing.authors:
-        # 4.1) Найти минимальную цену по каждому курсу
+        # 4.1) минимальная цена по каждому курсу
         min_price: Dict[int, float] = {}
         for l in a.landings:
             p = _safe_price(l.new_price)
@@ -138,7 +142,7 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
                 if p < min_price.get(c.id, float("inf")):
                     min_price[c.id] = p
 
-        # 4.2) Отфильтровать «дешёвые» лендинги
+        # 4.2) оставляем только «дешёвые» лендинги
         kept = [
             l for l in a.landings
             if not any(
@@ -147,18 +151,21 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
             )
         ]
 
-        # 4.3) Уникальные курсы и теги
+        # 4.3) собираем уникальные курсы и теги
         unique_courses = {c.id for l in kept for c in l.courses}
-        unique_tags = {t.name for l in kept for t in l.tags}
+        unique_tags    = sorted({t.name for l in kept for t in l.tags})
 
         authors_list.append({
             "id": a.id,
             "courses_count": len(unique_courses),
-            "tags": sorted(unique_tags),
+            "tags": unique_tags,
         })
 
-    # 5) Собираем остальной ответ (без изменений)
-    tags_list = [{"id": t.id, "name": t.name} for t in landing.tags]
+    # 5) детали самого лендинга
+    tags_list   = [{"id": t.id, "name": t.name} for t in landing.tags]
+    course_ids  = [c.id for c in landing.courses]
+    author_ids  = [a.id for a in landing.authors]
+    tag_ids     = [t.id for t in landing.tags]
 
     return {
         "id": landing.id,
@@ -171,10 +178,10 @@ def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
         "lessons_info": lessons_list,
         "preview_photo": landing.preview_photo,
         "sales_count": landing.sales_count,
-        "author_ids": [a.id for a in landing.authors],
-        "course_ids": [c.id for c in landing.courses],
-        "tag_ids": [t.id for t in landing.tags],
-        "authors": authors_list,  # <-- теперь только id, courses_count и tags
+        "author_ids": author_ids,
+        "course_ids": course_ids,
+        "tag_ids": tag_ids,
+        "authors": authors_list,   # <-- только id, courses_count и tags
         "tags": tags_list,
         "duration": landing.duration,
         "lessons_count": landing.lessons_count,
