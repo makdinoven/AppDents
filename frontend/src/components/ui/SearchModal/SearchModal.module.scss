@@ -67,7 +67,7 @@
       stroke: $accent;
     }
     path {
-      fill: $accent;
+      stroke: $accent;
     }
 
     &:hover {
@@ -75,7 +75,7 @@
         stroke: $primary;
       }
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }
@@ -110,12 +110,30 @@
     svg {
       path {
         @include transition;
-        fill: $accent;
+        stroke: $accent;
       }
     }
   }
 
-  &:hover {
+  @media (hover: hover) {
+    &:hover {
+      background-color: $hover-color;
+      .dropdown_item_inner {
+        &::after {
+          width: 100%;
+          background-color: $primary;
+        }
+      }
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
+
+  &:active {
     background-color: $hover-color;
     .dropdown_item_inner {
       &::after {
@@ -126,7 +144,7 @@
 
     svg {
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }
@@ -143,7 +161,7 @@
 
     svg {
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }
