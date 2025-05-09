@@ -16,6 +16,7 @@
 
     a {
       text-decoration: underline;
+      text-decoration-thickness: 2px;
       @include transition;
 
       &:hover {

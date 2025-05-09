@@ -44,6 +44,7 @@ $card-padding-left: 35px;
   }
 
   .card_header_background {
+    box-shadow: 0 4px 0 $secondary-lighter;
     position: relative;
     max-width: 910px;
     border-radius: var(--border-radius) var(--border-radius) 0 0;

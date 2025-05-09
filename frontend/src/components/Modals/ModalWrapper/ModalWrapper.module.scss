@@ -30,6 +30,7 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 .modal_header {
   position: relative;
   background: $primary;
+  box-shadow: 0 4px 0 $primary;
 }
 
 .topRight {

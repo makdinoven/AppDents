@@ -30,7 +30,7 @@ const CourseCard = ({
   new_price,
   index,
   authors,
-  // lessons_count,
+  lessons_count,
 }: CourseCardProps) => {
   const screenWidth = useScreenWidth();
   const LANDING_LINK = `${Path.landing}/${link}`;
@@ -71,13 +71,9 @@ const CourseCard = ({
               <span className={s.new_price}>${new_price}</span>{" "}
               <span className="crossed">${old_price}</span>
             </div>
-            {/*<p className={s.lessons_count}>*/}
-            {/*  <Book />*/}
-            {/*  {lessons_count}*/}
-            {/*</p>*/}
           </div>
-
           <h4>{name}</h4>
+          <p className={s.lessons_count}>{lessons_count}</p>
           <div className={s.course_authors}>
             {visibleAuthors?.length > 0 && (
               <ul className={s.authors_photos_list}>

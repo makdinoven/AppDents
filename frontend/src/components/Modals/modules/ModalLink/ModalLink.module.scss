@@ -2,6 +2,7 @@
   cursor: pointer;
   @include clamped-p3;
   text-decoration: underline;
+  text-decoration-thickness: 2px;
   @include transition(color);
 
   &:hover {
