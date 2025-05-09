@@ -84,6 +84,10 @@ $hoverColor: $primary;
     gap: 5px;
     font-size: 16px;
 
+    &.vertical {
+      gap: 3px;
+    }
+
     .icon {
       width: 20px;
       height: 20px;
