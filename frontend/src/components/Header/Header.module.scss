@@ -50,24 +50,19 @@
   justify-content: space-between;
 }
 
-.login_btn {
-  color: $text-color-accent;
-  font-size: 20px;
-  text-transform: uppercase;
-  @include transition();
+.profile_button {
   @include flex-center;
+  border-radius: 100%;
 
   svg {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     circle {
       @include transition();
     }
   }
 
   &.active {
-    color: $primary;
-
     svg {
       circle {
         fill: $primary;
@@ -76,23 +71,41 @@
     }
   }
 
-  @media (hover: hover) {
-    &:hover {
-      color: $primary;
-
-      svg {
-        circle {
-          fill: $primary;
-          stroke: $primary;
-        }
+  &:hover {
+    svg {
+      circle {
+        fill: $primary;
+        stroke: $primary;
       }
     }
   }
+}
 
-  @media (hover: none) {
-    &:active {
-      color: $primary;
+.login_btn {
+  color: $text-color;
+  border-radius: 20px;
+  font-size: 20px;
+  padding: 5px 30px;
+  background-color: $accent;
+  @include transition();
+  @include flex-center;
+
+  &.active {
+    color: $text-color;
+    background-color: $primary;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: $text-color;
+      background-color: $primary;
     }
+  }
+
+  &:active {
+    color: $primary;
+    background-color: $background-color;
+    outline: 1px solid $primary;
   }
 }
 

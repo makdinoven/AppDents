@@ -56,27 +56,27 @@ $hoverColor: $primary;
     }
   }
 
-  @media (hover: hover) {
-    &:hover {
-      color: $hoverColor;
+  //@media (hover: hover) {
+  &:hover {
+    color: $hoverColor;
 
-      .icon {
-        path {
-          stroke: $hoverColor;
-        }
-      }
-    }
-
-    &.light:hover {
-      color: $accent;
-
-      .icon {
-        path {
-          stroke: $accent;
-        }
+    .icon {
+      path {
+        stroke: $hoverColor;
       }
     }
   }
+
+  &.light:hover {
+    color: $accent;
+
+    .icon {
+      path {
+        stroke: $accent;
+      }
+    }
+  }
+  //}
 }
 
 @media (max-width: $mobile-breakpoint) {
