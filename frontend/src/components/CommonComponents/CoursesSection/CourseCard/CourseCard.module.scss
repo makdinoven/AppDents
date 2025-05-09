@@ -34,6 +34,7 @@ $card-body-padding-bottom: calc(
 .prices {
   @include clamped-h2;
   .new_price {
+    font-weight: 700;
     color: $text-color;
   }
 }
@@ -78,7 +79,6 @@ $card-body-padding-bottom: calc(
 
   h4 {
     @include clamped-p1;
-    margin-bottom: 10px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
@@ -96,6 +96,7 @@ $card-body-padding-bottom: calc(
   align-items: end;
   position: relative;
   text-transform: uppercase;
+  box-shadow: 0 4px 0 $primary;
   width: $card_header-width;
   height: $card_header-height;
   padding-top: 31px;
@@ -118,9 +119,11 @@ $card-body-padding-bottom: calc(
 }
 
 .card_body {
+  @include flex-column;
+  gap: 5px;
   flex: 1;
   position: relative;
-  padding: 11px $padding-left $card-body-padding-bottom $padding-left;
+  padding: 5px $padding-left $card-body-padding-bottom $padding-left;
   border-bottom-left-radius: $border-radius-small;
   border-top-right-radius: $border-radius-small;
   min-height: $card-body-height;
@@ -136,6 +139,7 @@ $card-body-padding-bottom: calc(
 
 .card_bottom {
   position: absolute;
+  box-shadow: 0 -4px 0 $primary;
   bottom: -$card_bottom-height;
   right: 0;
   height: $card_bottom-height;
@@ -230,12 +234,14 @@ $card-body-padding-bottom: calc(
   }
 
   .card_header {
+    box-shadow: 0 4px 0 $secondary-lighter;
     &::before {
       box-shadow: -15px 15px 0 2px $secondary-lighter;
     }
   }
 
   .card_bottom {
+    box-shadow: 0 -4px 0 $secondary-lighter;
     &::before {
       box-shadow: 15px -15px 0 2px $secondary-lighter;
     }
@@ -263,18 +269,7 @@ $card-body-padding-bottom: calc(
 }
 
 .lessons_count {
-  @include flex-center;
-  @include clamped-p2;
-  gap: 5px;
-
-  svg {
-    width: 35px;
-    height: 35px;
-
-    path {
-      fill: $accent;
-    }
-  }
+  @include clamped-p4;
 }
 
 @media (max-width: $middle-breakpoint) {
@@ -311,8 +306,22 @@ $card-body-padding-bottom: calc(
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .course_authors {
+    gap: 5px;
+    p {
+      font-size: 12px;
+    }
+  }
+
+  .card_body {
+    .link_wrapper {
+      left: 12px;
+      bottom: 14px;
+    }
+  }
+
   .author_photo {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
   }
 }

@@ -12,7 +12,10 @@ const FormattedAuthorsDesc = ({ authors }: any) => {
     .map((author: any, index: number) => (
       <span onClick={(e) => e.preventDefault()} key={author.id}>
         <span
-          style={{ textDecoration: "underline", cursor: "pointer" }}
+          style={{
+            textDecoration: "underline 1.5px",
+            cursor: "pointer",
+          }}
           onClick={() => navigate(`${Path.professor}/${author.id}`)}
         >
           {capitalizeText(author.name)}

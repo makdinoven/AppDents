@@ -91,7 +91,7 @@ const Landing = () => {
           ...getPricesData(landing),
         }}
         components={{
-          1: <span className="crossed" />,
+          1: <span className="crossed-15" />,
           2: <span className="highlight" />,
         }}
       />
