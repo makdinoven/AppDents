@@ -36,6 +36,7 @@
   }
 
   .language_preview {
+    text-transform: capitalize;
     font-size: 20px;
   }
 }
@@ -48,27 +49,34 @@
   justify-content: space-between;
 
   li {
+    text-transform: capitalize;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 30px;
+    gap: 20px;
     cursor: pointer;
     @include transition(color);
 
     svg {
+      width: 22px;
+      height: 22px;
+
       path {
-        @include transition(stroke);
         stroke: $text-color;
       }
     }
 
     &:hover {
-      color: $accent;
+      color: $accent-glass;
+    }
+
+    &.checked {
+      color: $accent-glass;
 
       svg {
         path {
-          stroke: $accent;
+          stroke: $accent-glass;
         }
       }
     }
@@ -92,10 +100,12 @@
   .language_changer_modal {
     font-size: 16px;
     li {
-      gap: 20px;
+      gap: 5px;
       svg {
+        width: 18px;
+        height: 18px;
         path {
-          stroke-width: 1px;
+          stroke-width: 1.5px;
         }
       }
     }

@@ -3,6 +3,7 @@ import Header from "../Header/Header.tsx";
 import Footer from "../Footer/Footer.tsx";
 import s from "./Layout.module.scss";
 import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
+import ScrollToTopButton from "../ui/ScrollToTopButton/ScrollToTopButton.tsx";
 
 const Layout = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const Layout = () => {
       </main>
       {!isAdminRoute && <Footer />}
       <MobileMenu />
+      <ScrollToTopButton />
     </div>
   );
 };

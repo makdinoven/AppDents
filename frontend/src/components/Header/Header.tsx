@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import { Path } from "../../routes/routes.ts";
@@ -22,6 +22,7 @@ import {
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import SearchModal from "../ui/SearchModal/SearchModal.tsx";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
+import { useScroll } from "../../common/hooks/useScroll.ts";
 
 const OPEN_SEARCH_KEY = "GS";
 
@@ -34,19 +35,8 @@ const Header = () => {
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
-  const [isScrolled, setIsScrolled] = useState(false);
   const screenWidth = useScreenWidth();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
+  const isScrolled = useScroll();
 
   useEffect(() => {
     if (localTriggerRef.current) {
@@ -76,7 +66,7 @@ const Header = () => {
       return (
         <UnstyledButton
           onClick={() => navigate(Path.profile)}
-          className={`${s.login_btn} ${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
+          className={`${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
         >
           <UserIcon />
         </UnstyledButton>
@@ -116,7 +106,7 @@ const Header = () => {
               <NavButton
                 onClick={openSearch}
                 icon={SearchIcon}
-                text={"nav.search"}
+                // text={"nav.search"}
                 isActive={location.pathname === Path.search}
               />
               <LanguageChanger />

@@ -30,7 +30,7 @@ const LanguageChanger = () => {
         className={`${s.language_changer} ${isModalOpen ? s.active : ""}`}
       >
         <LanguageIcon />
-        <span className={s.language_preview}>{language.toUpperCase()}</span>
+        <span className={s.language_preview}>{language.toLowerCase()}</span>
       </button>
       {isModalOpen && (
         <ModalWrapper
@@ -48,9 +48,10 @@ const LanguageChanger = () => {
             {LANGUAGES.map((button) => (
               <li
                 key={button.value}
+                className={`${button.value === language.toUpperCase() ? s.checked : ""}`}
                 onClick={() => handleLanguageChange(button.value)}
               >
-                ({button.value}) {button.label}
+                ({button.value.toLowerCase()}) {button.label}
                 {button.value === language.toUpperCase() && <CheckMark />}
               </li>
             ))}

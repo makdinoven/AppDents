@@ -21,9 +21,11 @@ type props = {
   showSort?: boolean;
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
+  ref?: React.RefObject<any>;
 };
 
 const CoursesSection = ({
+  ref,
   sectionTitle,
   pageSize,
   tags,
@@ -99,7 +101,7 @@ const CoursesSection = ({
   };
 
   return (
-    <section className={s.courses}>
+    <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         <SectionHeader name={sectionTitle} />
         {showFilters && tags && tags.length > 0 && (

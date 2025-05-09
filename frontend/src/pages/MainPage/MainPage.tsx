@@ -54,23 +54,22 @@ const MainPage = () => {
   return (
     <>
       <Hero onClickScroll={() => scrollToElement(coursesRef)} />
-      <div ref={coursesRef}>
-        <CoursesSection
-          sectionTitle={"main.ourCurses"}
-          pageSize={PAGE_SIZE}
-          activeFilter={activeFilter}
-          activeSort={activeSort}
-          tags={tags}
-          showFilters={true}
-          showSort={true}
-          handleSetActiveFilter={(filter: string) =>
-            handleSetActiveParam("filter", filter)
-          }
-          handleSetActiveSort={(sort: string) =>
-            handleSetActiveParam("sort", sort)
-          }
-        />
-      </div>
+      <CoursesSection
+        ref={coursesRef}
+        sectionTitle={"main.ourCurses"}
+        pageSize={PAGE_SIZE}
+        activeFilter={activeFilter}
+        activeSort={activeSort}
+        tags={tags}
+        showFilters={true}
+        showSort={true}
+        handleSetActiveFilter={(filter: string) =>
+          handleSetActiveParam("filter", filter)
+        }
+        handleSetActiveSort={(sort: string) =>
+          handleSetActiveParam("sort", sort)
+        }
+      />
 
       {/*<Feedback />*/}
     </>
