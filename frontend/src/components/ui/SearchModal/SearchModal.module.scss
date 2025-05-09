@@ -67,7 +67,7 @@
       stroke: $accent;
     }
     path {
-      stroke: $accent;
+      fill: $accent;
     }
 
     &:hover {
@@ -75,7 +75,7 @@
         stroke: $primary;
       }
       path {
-        stroke: $primary;
+        fill: $primary;
       }
     }
   }
