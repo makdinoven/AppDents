@@ -34,7 +34,7 @@ $card-body-padding-bottom: calc(
 .prices {
   @include clamped-h2;
   .new_price {
-    font-weight: 700;
+    font-weight: 500;
     color: $text-color;
   }
 }
