@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..dependencies.auth import get_current_user
 from ..db.database import get_db
 from ..models import models_v2 as m
+from ..models.models_v2 import User
 from ..schemas_v2.wallet import (
     ReferralLinkResponse,
     WalletResponse,
@@ -26,21 +27,17 @@ def my_referral_link(
     return ReferralLinkResponse(referral_link=link)
 
 
-@router.get("/referrals", response_model=List[ReferralReportItem])
+@router.get(
+    "/referrals",
+    response_model=List[ReferralReportItem],
+    summary="Список приглашённых и сколько кэшбэка они принесли"
+)
 def my_referrals(
-    db: Session = Depends(get_db),
-    current_user: m.User = Depends(get_current_user),
+    db = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    data = ws.get_referral_report(db, current_user.id)
-    return [
-        ReferralReportItem(
-            user_id=u.id,
-            email=u.email,
-            total_paid=paid,
-            total_cashback=cash,
-        )
-        for u, paid, cash in data
-    ]
+    # service уже возвращает List[ReferralReportItem]
+    return ws.get_referral_report(db, current_user.id)
 
 
 @router.get("/wallet", response_model=WalletResponse)
