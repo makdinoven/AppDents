@@ -59,7 +59,6 @@ def get_referral_report(db: Session, inviter_id: int):
             .scalar()
             or 0.0
         )
-
         report.append((u, total_paid, total_cashback))
 
     return report
