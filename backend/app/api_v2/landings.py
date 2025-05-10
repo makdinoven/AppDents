@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, time, date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
-from sqlalchemy.orm import Session, selectinload
-from typing import List, Optional, Dict
+from sqlalchemy.orm import Session
+from typing import List, Optional
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
@@ -65,7 +65,7 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     else:
         lessons_list = []
     authors_list = [
-        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo, "courses_count": author.courses_count, "tags": author.tags}
+        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo}
         for author in landing.authors
     ] if landing.authors else []
     tags_list = [
@@ -94,28 +94,10 @@ def get_landing_by_id(landing_id: int, db: Session = Depends(get_db)):
     }
 
 @router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
-def get_landing_by_page(
-    page_name: str,
-    db: Session = Depends(get_db)
-):
-    # 1) забираем лендинг по page_name + нужные связи
-    landing = (
-        db.query(Landing)
-          .options(
-              selectinload(Landing.authors)
-                .selectinload(Author.landings)
-                  .selectinload(Landing.courses),
-              selectinload(Landing.authors)
-                .selectinload(Author.landings)
-                  .selectinload(Landing.tags),
-          )
-          .filter(Landing.page_name == page_name)    # <-- фильтр по page_name
-          .first()
-    )
+def get_landing_by_page(page_name: str, db: Session = Depends(get_db)):
+    landing = db.query(Landing).filter(Landing.page_name == page_name).first()
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
-
-    # 2) приводим lessons_info к списку
     lessons = landing.lessons_info
     if isinstance(lessons, dict):
         lessons_list = [{k: v} for k, v in lessons.items()]
@@ -123,54 +105,14 @@ def get_landing_by_page(
         lessons_list = lessons
     else:
         lessons_list = []
-
-    # 3) вспомогательный safe_price
-    def _safe_price(v) -> float:
-        try:
-            return float(v)
-        except:
-            return float("inf")
-
-    # 4) строим authors_list с нужными полями
-    authors_list = []
-    for a in landing.authors:
-        # 4.1) минимальная цена по каждому курсу
-        min_price: Dict[int, float] = {}
-        for l in a.landings:
-            p = _safe_price(l.new_price)
-            for c in l.courses:
-                if p < min_price.get(c.id, float("inf")):
-                    min_price[c.id] = p
-
-        # 4.2) оставляем только «дешёвые» лендинги
-        kept = [
-            l for l in a.landings
-            if not any(
-                _safe_price(l.new_price) > min_price.get(c.id, _safe_price(l.new_price))
-                for c in l.courses
-            )
-        ]
-
-        # 4.3) собираем уникальные курсы и теги
-        unique_courses = {c.id for l in kept for c in l.courses}
-        unique_tags    = sorted({t.name for l in kept for t in l.tags})
-
-        authors_list.append({
-            "id": a.id,
-            "name": a.name,
-            "description": a.description or "",
-            "photo": a.photo or "",
-            "language": a.language,
-            "courses_count": len(unique_courses),
-            "tags": sorted(unique_tags),
-        })
-
-    # 5) детали самого лендинга
-    tags_list   = [{"id": t.id, "name": t.name} for t in landing.tags]
-    course_ids  = [c.id for c in landing.courses]
-    author_ids  = [a.id for a in landing.authors]
-    tag_ids     = [t.id for t in landing.tags]
-
+    authors_list = [
+        {"id": author.id, "name": author.name, "description": author.description, "photo": author.photo}
+        for author in landing.authors
+    ] if landing.authors else []
+    tags_list = [
+        {"id": tag.id, "name": tag.name}
+        for tag in landing.tags
+    ] if landing.tags else []
     return {
         "id": landing.id,
         "page_name": landing.page_name,
@@ -182,14 +124,13 @@ def get_landing_by_page(
         "lessons_info": lessons_list,
         "preview_photo": landing.preview_photo,
         "sales_count": landing.sales_count,
-        "author_ids": author_ids,
-        "course_ids": course_ids,
-        "tag_ids": tag_ids,
-        "authors": authors_list,   # <-- только id, courses_count и tags
+        "author_ids": [author.id for author in landing.authors] if landing.authors else [],
+        "course_ids": [course.id for course in landing.courses] if landing.courses else [],
+        "tag_ids": [tag.id for tag in landing.tags] if landing.tags else [],
+        "authors": authors_list,
         "tags": tags_list,
         "duration": landing.duration,
         "lessons_count": landing.lessons_count,
-        "is_hidden": landing.is_hidden,
     }
 
 @router.post("/", response_model=LandingListResponse)

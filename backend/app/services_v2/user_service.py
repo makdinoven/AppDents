@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course, Purchase, users_courses
+from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -26,12 +26,41 @@ def generate_random_password() -> str:
     """Генерирует короткий случайный пароль."""
     return secrets.token_urlsafe(8)
 
-def create_user(db: Session, email: str, password: str, role: str = "user") -> User:
+def generate_unique_referral_code(db: Session) -> str:
+    """Базовое URL-safe кодирование — 8 символов хватит."""
+    while True:
+        code = secrets.token_urlsafe(6)[:8]
+        if not db.query(User).filter(User.referral_code == code).first():
+            return code
+
+def credit_balance(
+    db: Session, user_id: int,
+    amount: float,
+    tx_type: WalletTxTypes,
+    meta: dict | None = None
+) -> None:
+    user = db.query(User).get(user_id)
+    if not user:
+        raise ValueError(f"User {user_id} not found for wallet credit")
+    user.balance += amount
+    db.add(
+        WalletTransaction(
+            user_id=user_id,
+            amount=amount,
+            type=tx_type,
+            meta=meta or {}
+        )
+    )
+    db.commit()
+
+def create_user(db: Session, email: str, password: str, role: str = "user", invited_by: Optional[User] = None) -> User:
     user = User(
         email=email,
         password=hash_password(password),
-        role=role
+        role=role,
+        invited_by_id=invited_by.id if invited_by else None,
     )
+    user.referral_code = generate_unique_referral_code(db)
     db.add(user)
     db.commit()
     db.refresh(user)

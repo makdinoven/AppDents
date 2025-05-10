@@ -21,6 +21,7 @@ class UserRead(BaseModel):
     id: int
     email: EmailStr
     role: str
+    balance: float
 
     class Config:
         orm_mode = True
