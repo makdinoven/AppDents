@@ -6,16 +6,17 @@ from typing import List
 
 import requests
 import stripe
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status, Request
 
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, AdVisit
+from ..models.models_v2 import Course, Landing, Purchase, AdVisit, WalletTxTypes, ReferralRule
 from ..services_v2.user_service import (
     get_user_by_email,
     create_user,
     add_course_to_user,
-    generate_random_password
+    generate_random_password, credit_balance
 )
 from ..utils.email_sender import (
     send_successful_purchase_email,
@@ -41,6 +42,29 @@ def _landing_has_recent_ad_visits(db: Session, landing_id: int) -> bool:
               .exists()
     ).scalar()
 
+def _get_cashback_percent(db: Session, invitee_id: int) -> float:
+    """
+    Считает порядковый номер текущей покупки invitee_id (1-я, 2-я, ...),
+    ищет в referral_rules правило, попадающее в этот диапазон,
+    и возвращает percent. Если не нашлось — 0.
+    """
+    # сколько покупок уже было у приглашённого (включая эту текущую)
+    purchase_count = db.query(func.count(Purchase.id))\
+        .filter(Purchase.user_id == invitee_id)\
+        .scalar() or 0
+
+    rule = db.query(ReferralRule)\
+        .filter(
+            ReferralRule.min_purchase_no <= purchase_count,
+            or_(
+                ReferralRule.max_purchase_no == None,
+                ReferralRule.max_purchase_no >= purchase_count
+            )
+        )\
+        .order_by(ReferralRule.min_purchase_no.desc())\
+        .first()
+
+    return rule.percent if rule else 0.0
 
 def _hash_email(email: str) -> str:
     """
@@ -367,6 +391,30 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         )
 
     db.commit()
+
+    if user.invited_by_id and new_purchases:
+        for purchase in new_purchases:
+            percent = _get_cashback_percent(db, user.id)
+            if percent <= 0:
+                continue  # для безопасности не начисляем, если правило не задано
+
+            reward_usd = purchase.amount * (percent / 100)
+            credit_balance(
+                db,
+                user_id=user.invited_by_id,
+                amount=reward_usd,
+                tx_type=WalletTxTypes.REFERRAL_CASHBACK,
+                meta={
+                    "from_user": user.id,
+                    "purchase_id": purchase.id,
+                    "percent": percent,
+                }
+            )
+            logging.info(
+                "Начислен кэшбэк %.2f USD (%s%%) "
+                "пригласителю %s за purchase_id=%s",
+                reward_usd, percent, user.invited_by_id, purchase.id
+            )
 
     # 4. Письма
     if already_owned:
