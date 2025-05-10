@@ -3,6 +3,8 @@ import os
 from pydantic import BaseSettings
 
 class Settings(BaseSettings):
+    APP_URL: str
+
     DB_USER: str
     DB_PASSWORD: str
     DB_HOST: str

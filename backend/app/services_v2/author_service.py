@@ -54,7 +54,7 @@ def list_authors_by_page(
     # 5) Подсчитываем общее число страниц
     total_pages = ceil(total / size) if total else 0
 
-    def safe_price(value) -> float:
+    def _safe_price(value) -> float:
         try:
             return float(value)
         except Exception:
@@ -66,7 +66,7 @@ def list_authors_by_page(
         # ---- 1. минимальная цена по каждому course_id ----
         min_price_by_course: Dict[int, float] = {}
         for l in a.landings:
-            price = safe_price(l.new_price)
+            price = _safe_price(l.new_price)
             for c in l.courses:
                 cid = c.id
                 if price < min_price_by_course.get(cid, float("inf")):
@@ -75,7 +75,7 @@ def list_authors_by_page(
         # ---- 2. оставляем только «дешёвые» лендинги ----
         kept_landings: List[Landing] = []
         for l in a.landings:
-            price = safe_price(l.new_price)
+            price = _safe_price(l.new_price)
             has_cheaper_alt = any(
                 price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
                 for c in l.courses
@@ -255,12 +255,6 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "landing_count": len(landings_data),
         "tags": sorted({t.name for l in kept_landings for t in l.tags}),
     }
-def safe_price(v) -> float:
-        try:
-            return float(v)
-        except Exception:
-            return float("inf")
-
 
 def list_authors_search_paginated(
     db: Session,
@@ -308,12 +302,18 @@ def list_authors_search_paginated(
     authors = base_query.offset(offset).limit(size).all()
 
     # ---------- 5. вычисляем courses_count ---------------------------------
+    def _safe_price(v) -> float:
+        try:
+            return float(v)
+        except Exception:
+            return float("inf")
+
     items: List[AuthorResponse] = []
     for a in authors:
         # a) минимальная цена по каждому курсу
         min_price_by_course: Dict[int, float] = {}
         for l in a.landings:
-            price = safe_price(l.new_price)
+            price = _safe_price(l.new_price)
             for c in l.courses:
                 if price < min_price_by_course.get(c.id, float("inf")):
                     min_price_by_course[c.id] = price
@@ -322,7 +322,7 @@ def list_authors_search_paginated(
         kept_landings = [
             l for l in a.landings
             if not any(
-                safe_price(l.new_price) > min_price_by_course.get(c.id, safe_price(l.new_price))
+                _safe_price(l.new_price) > min_price_by_course.get(c.id, _safe_price(l.new_price))
                 for c in l.courses
             )
         ]
