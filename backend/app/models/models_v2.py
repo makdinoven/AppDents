@@ -111,6 +111,7 @@ class Purchase(Base):
     landing_id = Column(Integer, ForeignKey('landings.id'), nullable=True)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=True)
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+    stripe_event_id = Column(String(255), unique=True, nullable=True)
 
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
