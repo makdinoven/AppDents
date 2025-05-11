@@ -49,6 +49,10 @@ const MobileMenu = () => {
     return null;
   }
 
+  if (location.pathname.includes(Path.landing)) {
+    return null;
+  }
+
   return (
     <nav className={s.menu}>
       {buttons.map((btn) => (

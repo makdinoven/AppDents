@@ -8,7 +8,6 @@ import {
   keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
-import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import Loader from "../../components/ui/Loader/Loader.tsx";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";
@@ -165,7 +164,7 @@ const Landing = () => {
   return (
     <>
       <div className={s.landing_top}>
-        {!isFromFacebook && <BackButton />}
+        {/*{!isFromFacebook && <BackButton />}*/}
         {role === "admin" && (
           <PrettyButton
             variant="primary"
