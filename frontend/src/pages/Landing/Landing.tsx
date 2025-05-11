@@ -1,6 +1,6 @@
 import s from "./Landing.module.scss";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
@@ -43,13 +43,18 @@ const Landing = () => {
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
-  const isFromFacebookAds = () => {
+  // const isFromFacebookAds = () => {
+  //   const searchParams = new URLSearchParams(location.search);
+  //   return searchParams.has("fbclid");
+  // };
+
+  const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.has("fbclid");
-  };
+  }, [location.search]);
 
   useEffect(() => {
-    if (isFromFacebookAds()) {
+    if (isFromFacebook) {
       trackFacebookAd();
     }
     fetchLandingData();
@@ -160,7 +165,7 @@ const Landing = () => {
   return (
     <>
       <div className={s.landing_top}>
-        <BackButton />
+        {!isFromFacebook && <BackButton />}
         {role === "admin" && (
           <PrettyButton
             variant="primary"
