@@ -13,7 +13,7 @@ const NavButton = ({
 }: {
   direction?: "horizontal" | "vertical";
   isActive?: boolean;
-  appearance?: "light";
+  appearance?: "light" | "footer";
   icon?: React.ElementType;
   text?: string;
   link?: string;
@@ -23,7 +23,11 @@ const NavButton = ({
     return (
       <Link
         onClick={onClick}
-        className={`${s.navButton} ${appearance ? s.light : ""} ${isActive ? s.active : ""} ${direction === "vertical" ? s.vertical : ""}`}
+        className={`${s.navButton}
+         ${appearance === "light" ? s.light : ""}
+          ${appearance === "footer" ? s.footer : ""}
+           ${isActive ? s.active : ""}
+            ${direction === "vertical" ? s.vertical : ""}`}
         to={link}
       >
         {Icon && <Icon className={s.icon} />}
@@ -34,7 +38,11 @@ const NavButton = ({
     return (
       <button
         onClick={onClick}
-        className={`${s.navButton} ${appearance ? s.light : ""} ${isActive ? s.active : ""} ${direction === "vertical" ? s.vertical : ""}`}
+        className={`${s.navButton}
+         ${appearance === "light" ? s.light : ""}
+          ${appearance === "footer" ? s.footer : ""}
+           ${isActive ? s.active : ""}
+            ${direction === "vertical" ? s.vertical : ""}`}
       >
         {Icon && <Icon className={s.icon} />}
         {text && <Trans i18nKey={text} />}
