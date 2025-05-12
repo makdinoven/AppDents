@@ -2,7 +2,6 @@ import s from "./CourseCard.module.scss";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
-import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
@@ -33,7 +32,6 @@ const CourseCard = ({
   lessons_count,
 }: CourseCardProps) => {
   const screenWidth = useScreenWidth();
-  const LANDING_LINK = `${Path.landing}/${link}`;
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
 
   const setCardColor = () => {
@@ -61,7 +59,7 @@ const CourseCard = ({
 
   return (
     <li>
-      <Link className={`${s.card} ${setCardColor()}`} to={LANDING_LINK}>
+      <Link className={`${s.card} ${setCardColor()}`} to={link}>
         <div className={s.card_header}>
           <Trans i18nKey={tag} />
         </div>

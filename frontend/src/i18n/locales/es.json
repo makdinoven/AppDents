@@ -55,7 +55,11 @@
     "professors": "Profesores",
     "cart": "Carrito",
     "search": "Buscar",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "promote": {
+      "professors": "Profesores del curso",
+      "program": "Programa del curso"
+    }
   },
 
 
@@ -127,15 +131,36 @@
     "savings": "ahorros",
     "courseProgram": "Programa del curso",
     "fullCourseProgram": "El programa completo del curso",
-    "buyFor": "Comprar por <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "buyForFull": "Comprar curso para <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "youCanBuyEntireCourse": "Puedes comprar el <1>curso completo</1> ahora al nuevo precio <2>{{new_price}}</2>, en lugar del antiguo - {{old_price}}",
+    "buyFor": "Comprar por <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyForFull": "Comprar curso para <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "Puedes comprar el <1>curso completo</1> ahora al nuevo precio <2>${{new_price}}</2>, en lugar del antiguo - ${{old_price}}",
     "fiveMinuteFragment": "Aquí puedes ver un <1>fragmento de cinco minutos</1>",
     "durationOfLesson": "Duración:",
     "noVideoLink": "No hay enlace de video o el enlace no es válido",
     "videoIsNotSupported": "Tu navegador no admite video",
     "specialOffer": "Oferta especial",
-    "accessFull": "¡El acceso al curso es ilimitado en el tiempo!"
+    "accessFull": "¡El acceso al curso es ilimitado en el tiempo!",
+    "faq": {
+      "faq": "Preguntas Frecuentes",
+      "1_question": "¿Cómo accedo a mi curso después de la compra?",
+      "1_answer": "Una vez que se complete tu pago, recibirás acceso inmediato a tu curso. Tras el pago, serás dirigido automáticamente a tu cuenta, donde verás el curso adquirido (te recomendamos cambiar tu contraseña de inmediato para no olvidarla). También recibirás un recibo y una confirmación de inscripción por correo electrónico. Si no ves el correo, revisa tu carpeta de spam (y otras carpetas; el remitente es 'no-reply'). Los materiales del curso estarán disponibles al instante, permitiéndote aprender a tu ritmo desde cualquier dispositivo.",
+      "2_question": "¿Hay un límite de tiempo para completar los cursos?",
+      "2_answer": "No, todos nuestros cursos son de ritmo propio, lo que te da flexibilidad para comenzar, pausar y reanudar cuando quieras. Tendrás acceso de por vida a los materiales del curso.",
+      "3_question": "¿Qué métodos de pago aceptan?",
+      "3_answer": "Aceptamos todas las principales tarjetas de crédito, incluyendo Visa, MasterCard y American Express, además de casi todos los sistemas de pago globales (ApplePay, GooglePay, SamsungPay, etc.). Usamos Stripe para procesar pagos de forma segura.",
+      "4_question": "¿Por qué sus precios son más bajos?",
+      "4_answer": "En Dent-S creemos que la educación de calidad debe estar disponible para todos, sin importar el país, estatus social o experiencia profesional. Cuanto mejores sean los médicos, más sana y feliz será la humanidad. Por eso ofrecemos los precios más bajos posibles. Gracias a tu apoyo, podemos expandir y mejorar nuestro proyecto.",
+      "5_question": "¿Puedo acceder a mis cursos desde un móvil o tablet?",
+      "5_answer": "¡Sí! Nuestra plataforma está completamente optimizada para móviles y tabletas, permitiéndote aprender desde cualquier dispositivo en cualquier momento.",
+      "6_question": "¿Recibiré una factura de mi compra?",
+      "6_answer": "Si necesitas una factura, contacta a nuestro equipo de soporte (sus datos aparecen en tu recibo de pago) y te la proporcionaremos.",
+      "7_question": "¿Qué pasa si no estoy satisfecho con el curso?",
+      "7_answer": "Ofrecemos reemplazo del curso o reembolso completo si no estás satisfecho. Contacta a soporte dentro de los 15 días de la compra para asistencia.",
+      "8_question": "¿Cómo contacto con soporte?",
+      "8_answer": "Puedes contactar a soporte desde tu cuenta en <link1>dent-s.com</link1> o usando el correo de contacto en tu recibo de pago.",
+      "9_question": "¿Cómo restablezco mi contraseña?",
+      "9_answer": "Haz clic en <link1>¿Olvidaste tu contraseña?</link1> en la <link2>página de inicio de sesión</link2> y sigue las instrucciones para crear una nueva contraseña."
+    }
   },
 
   "profile": {

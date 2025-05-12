@@ -49,7 +49,10 @@ const MobileMenu = () => {
     return null;
   }
 
-  if (location.pathname.includes(Path.landing)) {
+  if (
+    location.pathname.includes(Path.landing) &&
+    !location.pathname.includes(Path.landingClient)
+  ) {
     return null;
   }
 

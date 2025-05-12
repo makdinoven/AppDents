@@ -53,6 +53,8 @@ export const INITIAL_USER = {
   role: "user",
 };
 
+export const OPEN_SEARCH_KEY = "GS";
+
 export const BASE_URL = "https://dent-s.com";
 
 export const SORT_FILTERS = [

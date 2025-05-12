@@ -28,8 +28,15 @@ import { setLanguage } from "../../store/slices/userSlice.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
+import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import Faq from "./modules/Faq/Faq.tsx";
+import {
+  closeModal,
+  openModal,
+  setPrices,
+} from "../../store/slices/landingSlice.ts";
 
-const Landing = () => {
+const Landing = ({ isClient }: { isClient: boolean }) => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
@@ -37,15 +44,13 @@ const Landing = () => {
     <FormattedAuthorsDesc authors={landing?.authors} />
   );
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
-  // const isFromFacebookAds = () => {
-  //   const searchParams = new URLSearchParams(location.search);
-  //   return searchParams.has("fbclid");
-  // };
+  const isModalOpen = useSelector(
+    (state: AppRootStateType) => state.landing.isModalOpen,
+  );
 
   const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -60,14 +65,15 @@ const Landing = () => {
   }, [landingPath]);
 
   const handleOpenModal = () => {
-    setIsModalOpen(true);
+    dispatch(openModal());
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    dispatch(closeModal());
   };
 
   const fetchLandingData = async () => {
+    setLoading(true);
     try {
       const res = await mainApi.getLanding(landingPath);
       setLanding({
@@ -75,9 +81,16 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
+      dispatch(
+        setPrices({
+          newPrice: res.data.new_price,
+          oldPrice: res.data.old_price,
+        }),
+      );
       setLoading(false);
     } catch (error) {
       console.error(error);
+      setLoading(false);
     }
   };
 
@@ -164,8 +177,8 @@ const Landing = () => {
   return (
     <>
       <div className={s.landing_top}>
-        {/*{!isFromFacebook && <BackButton />}*/}
-        {role === "admin" && (
+        {isClient && <BackButton />}
+        {role === "admin" && isClient && (
           <PrettyButton
             variant="primary"
             text={"admin.landings.edit"}
@@ -183,7 +196,9 @@ const Landing = () => {
           <LessonsProgram data={lessonsProgramData} />
           <Professors data={landing?.authors} />
           <Offer data={offerData} />
+          <Faq />
           <CoursesSection
+            isClient={isClient}
             showSort={true}
             sectionTitle={"similarCourses"}
             pageSize={4}
