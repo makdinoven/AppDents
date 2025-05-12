@@ -179,11 +179,21 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
       <div className={s.landing_top}>
         {isClient && <BackButton />}
         {role === "admin" && isClient && (
-          <PrettyButton
-            variant="primary"
-            text={"admin.landings.edit"}
-            onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
-          />
+          <div className={s.admin_btns}>
+            <a
+              href={`${BASE_URL}${Path.landing}/${landingPath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PrettyButton variant="default" text={"promo link"} />
+            </a>
+
+            <PrettyButton
+              variant="primary"
+              text={"admin.landings.edit"}
+              onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
+            />
+          </div>
         )}
       </div>
       {loading ? (
