@@ -79,6 +79,28 @@ $hoverColor: $primary;
     }
   }
   //}
+
+  &.footer {
+    color: $background-color;
+
+    .icon {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &.footer:hover {
+      color: $primary;
+
+      .icon {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
