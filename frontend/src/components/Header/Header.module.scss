@@ -27,6 +27,7 @@
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 30px;
 }
 
@@ -109,6 +110,47 @@
   }
 }
 
+.buy_btn {
+  color: $text-color;
+  border-radius: 20px;
+  font-size: 20px;
+  gap: 5px;
+  padding: 5px 30px;
+  background-color: $accent;
+  border: 1.5px solid $accent;
+  @include transition();
+  @include flex-center;
+
+  span {
+    @include transition();
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: $accent;
+      background-color: $background-color;
+      border-color: $primary;
+
+      span:first-child {
+        color: $accent;
+      }
+
+      //span:last-child {
+      //  color: $text-color;
+      //}
+    }
+  }
+
+  &:active {
+    color: $text-color;
+    background-color: $primary;
+    border-color: $primary;
+    span:last-child {
+      color: $text-color;
+    }
+  }
+}
+
 @media (max-width: $tablet-breakpoint) {
   .nav_center {
     display: none;
@@ -135,6 +177,18 @@
     height: 47px;
   }
 
+  .logoPromo {
+    transform: translateY(-50%);
+    left: unset;
+    right: 0;
+  }
+
+  .buy_btn {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
   .nav {
     position: relative;
     justify-content: space-between;
@@ -147,13 +201,10 @@
     margin-bottom: 20px;
   }
 
-  //.login_btn {
-  //  display: none;
-  //  font-size: 16px;
-  //
-  //  svg {
-  //    width: 30px;
-  //    height: 30px;
-  //  }
-  //}
+  .buy_btn {
+    min-width: 190px;
+    font-size: 16px;
+    gap: 3px;
+    padding: 4px 8px;
+  }
 }

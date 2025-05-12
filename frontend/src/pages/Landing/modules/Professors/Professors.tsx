@@ -4,7 +4,7 @@ import ProfessorsList from "../../../../components/CommonComponents/ProfessorsLi
 
 const Professors = ({ data }: { data: any }) => {
   return (
-    <div className={s.professors_container}>
+    <div id={"course-professors"} className={s.professors_container}>
       <SectionHeader name={"professors"} />
       <ProfessorsList professors={data} />
     </div>

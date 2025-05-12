@@ -18,3 +18,4 @@ export { default as BooksIcon } from "../../Icons/book.svg?react";
 export { default as CoursesIcon } from "../../Icons/coursesIcon.svg?react";
 export { default as CartIcon } from "../../Icons/cart.svg?react";
 export { default as ProfileIcon } from "../../Icons/profile.svg?react";
+export { default as QuestionMark } from "../../Icons/question-mark.svg?react";

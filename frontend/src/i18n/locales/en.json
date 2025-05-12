@@ -56,7 +56,12 @@
     "professors": "Professors",
     "cart": "Cart",
     "search": "Search",
-    "profile": "Profile"
+    "profile": "Profile",
+    "promote": {
+      "professors": "Course professors",
+      "program": "Course program",
+      "faq": "FAQ"
+    }
   },
 
   "search": {
@@ -133,15 +138,36 @@
     "savings": "savings",
     "courseProgram": "Course program",
     "fullCourseProgram": "The full course program",
-    "buyFor": "Buy for <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "buyForFull": "Buy full course for <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>{{new_price}}</2>, instead of the old one - {{old_price}}",
+    "buyFor": "Buy for <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyForFull": "Buy full course for <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>${{new_price}}</2>, instead of the old one - ${{old_price}}",
     "fiveMinuteFragment": "Here you can watch a <1>five-minute fragment</1>",
     "durationOfLesson": "Duration:",
     "noVideoLink": "No video link or link is not valid",
     "videoIsNotSupported": "Your browser is not supporting video",
     "specialOffer": "Special offer",
-    "accessFull": "Access to the course is unlimited in time!"
+    "accessFull": "Access to the course is unlimited in time!",
+    "faq": {
+      "faq": "Frequently Asked Questions",
+      "1_question": "How do I access my course after purchase?",
+      "1_answer": "As soon as your payment is completed, you'll receive immediate access to your course. After payment, you will automatically be taken to your account, where you will see the course you purchased (we recommend changing your password right away so you definitely don’t forget it). You’ll also receive a receipt and enrollment confirmation via email, ensuring you have everything you need to get started. If you don’t see the email in your inbox, please check your spam folder (and any other mail folders—the sender’s name is “no-reply”). Your course materials will be available instantly, allowing you to learn at your own pace from any device.",
+      "2_question": "Is there a time limit to complete the courses?",
+      "2_answer": "No, all of our courses are self-paced, giving you the flexibility to start, pause, and resume at any time. You will have lifetime access to the course materials, so there’s no pressure to complete them within a certain timeframe.",
+      "3_question": "What payment methods are accepted?",
+      "3_answer": "We accept all major credit cards, including Visa, MasterCard, and American Express and nearly all global payment systems (ApplePay, GooglePay, SamsungPay etc.). \nTo process payments, we use Stripe—the most popular and reliable payment service—which securely protects your card data.",
+      "4_question": "Why are your prices cheaper?",
+      "4_answer": "At Dent-S, we believe that quality education should be available to every person on the planet, regardless of their country of residence, social status, or professional experience. The better doctors perform worldwide, the healthier and happier humanity will be as a whole. That’s why we’ve set our prices as low as possible for all the courses we offer. And thanks to you and your support, we’ll be able to expand and refine the project to create the most comprehensive library of medical information in the world!",
+      "5_question": "Can I access my courses from a mobile or tablet?",
+      "5_answer": "Yes! Our platform is fully optimized for mobile and tablet use, allowing you to access your courses on-the-go. Whether you're using a smartphone, tablet, or desktop, you can seamlessly continue your learning from any device at any time.",
+      "6_question": "Am I going to receive an invoice for my purchase?",
+      "6_answer": "If you need an invoice, please contact our support team (their contact details will be listed on your payment receipt), and we will provide one for you.",
+      "7_question": "What if I'm not satisfied with the course?",
+      "7_answer": "If you’re not satisfied with your course, we offer a course replacement or a full refund. Simply contact our support team within 15 days of purchase, and they will assist you in finding a suitable alternative or processing your refund. Your satisfaction is our priority!",
+      "8_question": "How do I contact support?",
+      "8_answer": "You can reach our support team through your personal account on the <link1>dent-s.com</link1> website, as well as via the contact email listed on the payment receipt that was sent to you.",
+      "9_question": "How do I reset my password?",
+      "9_answer": "If you need to reset your password, simply click on the <link1>Forgot your Password?</link1> link on the <link2>login page</link2>. Follow the instructions to receive an email with a link to create a new password."
+    }
   },
 
   "profile": {

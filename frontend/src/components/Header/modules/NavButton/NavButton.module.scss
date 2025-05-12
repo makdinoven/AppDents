@@ -5,6 +5,8 @@ $hoverColor: $primary;
   font-size: 20px;
   @include transition();
   @include flex-center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 10px;
 
   &.vertical {
