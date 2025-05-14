@@ -18,7 +18,8 @@ from ..schemas_v2.user import UserCreate, UserRead, Token, UserUpdateRole, UserU
 from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
-    remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated, search_users_paginated
+    remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
+    search_users_paginated, verify_password
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -59,9 +60,11 @@ def register(
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
     return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
+
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
+    user = db.query(User).filter(User.username == form_data.username).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -75,6 +78,25 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             },
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # Проверяем роль пользователя
+    if user.role == 'admin':
+        # Для админов проверяем пароль
+        if not verify_password(form_data.password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": {
+                        "code": "INVALID_CREDENTIALS",
+                        "message": "Incorrect username or password",
+                        "translation_key": "error.invalid_credentials",
+                        "params": {}
+                    }
+                },
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    # Для остальных пользователей пароль игнорируется
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
 
