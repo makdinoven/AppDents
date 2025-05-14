@@ -16,9 +16,7 @@ AWS_SECRET = os.getenv("AWS_SECRET_ACCESS_KEY")
 S3_BUCKET  = os.getenv("S3_BUCKET")
 S3_PUBLIC_URL = os.getenv("S3_PUBLIC_URL")
 
-for var in ("AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "S3_BUCKET"):
-    if not globals()[var]:
-        raise RuntimeError(f"Не задано окружение {var}")
+
 
 # — Инициализируем S3-клиент —
 s3 = boto3.client(
