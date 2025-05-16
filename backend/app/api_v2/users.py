@@ -66,6 +66,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:
+        logger.warning(f"Failed login attempt: user not found (email={form_data.username})")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={
@@ -79,10 +80,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Проверяем роль пользователя
+    password_is_valid = verify_password(form_data.password, user.password)
+
     if user.role == 'admin':
-        # Для админов проверяем пароль
-        if not verify_password(form_data.password, user.password):
+        if not password_is_valid:
+            logger.warning(f"Failed admin login: incorrect password (email={form_data.username})")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={
@@ -95,8 +97,15 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
                 },
                 headers={"WWW-Authenticate": "Bearer"},
             )
+        else:
+            logger.info(f"Successful admin login (email={form_data.username})")
+    else:
+        # Для не админов логируем правильность пароля, но не отказываем во входе
+        if password_is_valid:
+            logger.info(f"Successful login with correct password (email={form_data.username}, role={user.role})")
+        else:
+            logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
 
-    # Для остальных пользователей пароль игнорируется
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
 
