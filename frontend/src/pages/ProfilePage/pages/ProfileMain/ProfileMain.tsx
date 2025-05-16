@@ -58,12 +58,19 @@ const ProfileMain = () => {
                 </span>
                 {email}
               </div>
-
               <PrettyButton
                 variant="danger"
                 onClick={() => setShowResetPasswordModal(true)}
                 text={"resetPassword"}
               />
+              <div>
+                <span>
+                  <Trans i18nKey="support" />:{" "}
+                </span>
+                <a className={s.mail_link} href="mailto:info.dis.org@gmail.com">
+                  info.dis.org@gmail.com
+                </a>
+              </div>
             </div>
           </div>
           <LineWrapper>
