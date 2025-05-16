@@ -60,7 +60,7 @@ def register(
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
     return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
-
+logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
