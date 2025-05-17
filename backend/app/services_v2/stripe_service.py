@@ -22,17 +22,18 @@ from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, AdVisit
+from ..models.models_v2 import Course, Landing, Purchase, AdVisit, WalletTxTypes
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
     generate_random_password,
-    get_user_by_email,
+    get_user_by_email, credit_balance,
 )
 from ..utils.email_sender import (
     send_already_owned_course_email,
     send_successful_purchase_email,
 )
+from ..services_v2.wallet_service import get_cashback_percent
 
 # ────────────────────────────────────────────────────────────────
 # Константы и базовая настройка логов
@@ -442,15 +443,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 if (not landing_for_purchase.ad_flag_expires_at or
                         landing_for_purchase.ad_flag_expires_at < expiry):
                     landing_for_purchase.ad_flag_expires_at = expiry
-
-        # 12.4 Записываем покупку
+    purchase: Purchase | None = None
+    if new_courses:
         purchase = Purchase(
             user_id=user.id,
             course_id=None,  # это «сборная» покупка сразу нескольких курсов
             landing_id=landing_for_purchase.id if landing_for_purchase else None,
             from_ad=from_ad,
             amount=session_obj["amount_total"] / 100,
-            stripe_event_id=event["id"],  # для идемпотентности (совет из первого ответа)
+
         )
         db.add(purchase)
     db.commit()
@@ -470,6 +471,28 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         last_name=last_name,
         event_time=event_time,
     )
+
+    if purchase and user.invited_by_id:
+        percent = get_cashback_percent(db, user.id)
+        if percent > 0:
+            reward = purchase.amount * (percent / 100)
+            credit_balance(
+                db,
+                user_id=user.invited_by_id,
+                amount=reward,
+                tx_type=WalletTxTypes.REFERRAL_CASHBACK,
+                meta={
+                    "from_user": user.id,
+                    "purchase_id": purchase.id,
+                    "percent": percent,
+                }
+            )
+            logging.info(
+                "Начислен кэшбэк %.2f USD (%s%%) пригласителю %s "
+                "за purchase_id=%s",
+                reward, percent, user.invited_by_id, purchase.id
+            )
+
     # 13. Письма
     if already_owned:
         send_already_owned_course_email(

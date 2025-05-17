@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
 from sqlalchemy.orm import declarative_base, relationship, backref
+from enum import Enum as PyEnum
 
 Base = declarative_base()
 
@@ -92,16 +93,16 @@ class User(Base):
     password = Column(String(255), nullable=False)
     role = Column(String(255))
 
-    # balance = Column(Float, default=0.0, nullable=False)
-    # referral_code = Column(String(20), unique=True, index=True)
-    # invited_by_id = Column(Integer, ForeignKey("users.id"))
+    balance = Column(Float, default=0.0, nullable=False)
+    referral_code = Column(String(20), unique=True, index=True)
+    invited_by_id = Column(Integer, ForeignKey("users.id"))
 
     courses = relationship("Course", secondary=users_courses, back_populates="users")
-    # invited_users = relationship(
-    #     "User",
-    #     backref=backref("inviter", remote_side=[id]),
-    #     foreign_keys="[User.invited_by_id]",
-    # )
+    invited_users = relationship(
+        "User",
+        backref=backref("inviter", remote_side=[id]),
+        foreign_keys="[User.invited_by_id]",
+    )
 
 
 class Purchase(Base):
@@ -111,7 +112,6 @@ class Purchase(Base):
     landing_id = Column(Integer, ForeignKey('landings.id'), nullable=True)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=True)
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
-    stripe_event_id = Column(String(255), unique=True, nullable=True)
 
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
@@ -120,6 +120,37 @@ class Purchase(Base):
     user = relationship("User", backref="purchases")
     landing = relationship("Landing", backref="purchases")
     course = relationship("Course", backref="purchases")
+
+class WalletTxTypes(str, PyEnum):
+    REFERRAL_CASHBACK = "REFERRAL_CASHBACK"
+    INTERNAL_PURCHASE = "INTERNAL_PURCHASE"
+    ADMIN_ADJUST      = "ADMIN_ADJUST"
+
+class WalletTransaction(Base):
+    __tablename__ = "wallet_transactions"
+    id         = Column(Integer, primary_key=True)
+    user_id    = Column(Integer, ForeignKey("users.id"), nullable=False)
+    amount     = Column(Float, nullable=False)           # +/-
+    type       = Column(
+        Enum(WalletTxTypes, name="wallet_tx_type"),
+        nullable=False
+    )
+    meta       = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+
+    user = relationship("User", backref="wallet_tx")
+
+class ReferralRule(Base):
+    """
+    min_purchase_no / max_purchase_no задают диапазон порядкового
+    номера покупки приглашённого (1-я, 2-я … ∞).
+    Сейчас будет одна строка 1-∞ с percent = 50.
+    """
+    __tablename__ = "referral_rules"
+    id              = Column(Integer, primary_key=True)
+    min_purchase_no = Column(Integer, nullable=False)
+    max_purchase_no = Column(Integer)           # NULL = ∞
+    percent         = Column(Float, nullable=False)
 
 class AdVisit(Base):
     __tablename__ = "ad_visits"
