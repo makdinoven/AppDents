@@ -311,11 +311,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.error("Invalid webhook signature")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
-    exists = db.query(Purchase.id).filter_by(stripe_event_id=event["id"]).first()
-    if exists:
-        logging.info("Stripe event %s уже обработан → %s", event["id"], exists[0])
-        return {"status": "duplicate"}
-
     # 2. Интересует только completed
     if event["type"] != "checkout.session.completed":
         return {"status": "ignored"}
