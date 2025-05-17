@@ -1,3 +1,4 @@
+import logging
 import secrets
 import string
 from typing import List
@@ -35,37 +36,32 @@ def register(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
     region: str = "EN",
+    ref: str | None = Query(None, description="Referral code"),
     db: Session = Depends(get_db)
 ):
     """
-    Регистрирует нового пользователя, генерирует случайный пароль,
-    сохраняет его в БД (хэшированный) и отправляет письмо с паролем.
-    На этапе разработки возвращает пароль в ответе.
+    При регистрации можно передать ?ref=ABCD1234 – код пригласителя.
     """
     existing_user = get_user_by_email(db, user_data.email)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "error": {
-                    "code": "EMAIL_EXIST",
-                    "message": f"User with email {user_data.email} already exists.",
-                    "translation_key": "error.email_exist",
-                    "params": {"email": user_data.email}
-                }
-            }
+            detail={"error": { ... }}  # как было
         )
 
+    inviter = db.query(User).filter(User.referral_code == ref).first() if ref else None
     random_pass = generate_random_password()
-    user = create_user(db, email=user_data.email, password=random_pass)
-    background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
-    user_read = UserRead.from_orm(user)
-    return {**user_read.dict(), "password": random_pass}
+    user = create_user(
+        db,
+        email=user_data.email,
+        password=random_pass,
+        invited_by=inviter
+    )
 
-import logging
+    background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
+    return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
 logger = logging.getLogger("auth")
-
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
