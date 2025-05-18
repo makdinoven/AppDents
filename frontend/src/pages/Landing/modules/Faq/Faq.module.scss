@@ -93,6 +93,10 @@
 
 .faq_answer_wrapper {
   position: relative;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.2s ease-in-out;
+  padding: 0 50px;
   @include horizontal-line(
     $left: 30px,
     $color: $primary,
@@ -100,10 +104,6 @@
     $top: 2px,
     $height: 1px
   );
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height 0.2s ease-in-out;
-  padding: 0 50px;
 }
 
 .faq_item.opened .faq_answer_wrapper {
