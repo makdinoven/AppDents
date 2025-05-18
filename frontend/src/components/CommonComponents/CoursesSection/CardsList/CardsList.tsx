@@ -11,8 +11,8 @@ type Course = {
   first_tag: string;
   slug: string;
   main_image: string;
-  old_price: string;
-  new_price: string;
+  old_price: number;
+  new_price: number;
   lessons_count: string;
 };
 
@@ -58,6 +58,7 @@ const CardsList: React.FC<CardsListProps> = ({
           </ul>
           {showSeeMore ? (
             <PrettyButton
+              className={s.seeMoreBtn}
               text={t("seeMore")}
               variant={"primary"}
               onClick={handleSeeMore}

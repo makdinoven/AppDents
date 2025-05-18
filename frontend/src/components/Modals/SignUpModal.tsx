@@ -17,6 +17,7 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 
 const SignUpModal = () => {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
@@ -32,12 +33,15 @@ const SignUpModal = () => {
   });
 
   const handleSignUp = async (email: any) => {
+    setLoading(true);
     try {
       await userApi.signUp(email, language);
       alert(t("registrationSuccess"));
       navigate(Path.login);
     } catch (error) {
       setError(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,7 +55,7 @@ const SignUpModal = () => {
             {...register("email")}
             error={errors.email?.message}
           />
-          <Button text={t("signup")} type="submit" />
+          <Button loading={loading} text={t("signup")} type="submit" />
         </>
       </Form>
       <div className={s.modal_bottom}>

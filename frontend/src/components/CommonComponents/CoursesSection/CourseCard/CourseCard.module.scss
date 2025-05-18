@@ -10,7 +10,7 @@ $border-radius-small: 20px;
 
 //card bottom
 $card_bottom-width: 53.5%;
-$card_bottom-height: 72px;
+$card_bottom-height: 60px;
 
 //photo
 $photo-height: 174px;
@@ -33,41 +33,15 @@ $card-body-padding-bottom: calc(
 
 .prices {
   @include clamped-h2;
+  flex-shrink: 0;
   .new_price {
-    font-weight: 700;
+    font-weight: 500;
     color: $text-color;
   }
 }
 
-.authors_photos_list {
-  display: flex;
-  gap: 5px;
-}
-
-.author_photo {
-  border: 2px solid $primary;
-  background-color: $accent;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-  margin-left: -10px;
-  z-index: 1;
-}
-
-.author_photo:first-child {
-  margin-left: 0;
-}
-
-.course_authors {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .card {
+  position: relative;
   @include fadeInMove;
   @include transition($property: transform);
   @include flex-column;
@@ -77,6 +51,14 @@ $card-body-padding-bottom: calc(
   height: 100%;
   min-height: $card-height;
 
+  &:not(:hover) {
+    z-index: 1;
+  }
+
+  &:hover {
+    z-index: 10;
+  }
+
   h4 {
     @include clamped-p1;
     word-wrap: break-word;
@@ -85,13 +67,13 @@ $card-body-padding-bottom: calc(
   }
 }
 
-.card_header,
+.card_header_background,
 .card_body,
 .card_bottom {
   background-color: $primary;
 }
 
-.card_header {
+.card_header_background {
   display: flex;
   align-items: end;
   position: relative;
@@ -120,24 +102,16 @@ $card-body-padding-bottom: calc(
 
 .card_body {
   @include flex-column;
-  gap: 5px;
   flex: 1;
   position: relative;
-  padding: 5px $padding-left $card-body-padding-bottom $padding-left;
+  padding: 0 20px 25px 20px;
   border-bottom-left-radius: $border-radius-small;
   border-top-right-radius: $border-radius-small;
   min-height: $card-body-height;
-
-  .link_wrapper {
-    @include flex-column;
-    gap: 5px;
-    position: absolute;
-    left: $padding-left;
-    bottom: $card-body-padding-bottom-initial;
-  }
 }
 
 .card_bottom {
+  @include flex-center;
   position: absolute;
   box-shadow: 0 -4px 0 $primary;
   bottom: -$card_bottom-height;
@@ -169,14 +143,15 @@ $card-body-padding-bottom: calc(
   background-position: center center;
   width: 100%;
   height: 100%;
+  background-color: rgba(1, 67, 61, 0.4);
+  border-radius: $border-radius-small;
 }
 
 .photo {
+  position: relative;
+  width: 100%;
+  max-width: 306px;
   border-radius: $border-radius-small;
-  position: absolute;
-  right: $padding-right;
-  bottom: $padding-bottom;
-  width: calc(100% - $padding-right - 7px);
   height: $photo-height;
   background-repeat: no-repeat;
   background-position: center center;
@@ -189,23 +164,6 @@ $card-body-padding-bottom: calc(
     height: 100%;
   }
 
-  &::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: $border-radius-small;
-    background-color: color.adjust(
-      color.adjust($primary, $lightness: 15%),
-      $saturation: 70%
-    );
-    opacity: 0.3;
-  }
-
   &::before {
     z-index: 3;
     content: "";
@@ -214,6 +172,9 @@ $card-body-padding-bottom: calc(
     right: 5px;
     width: 70px;
     height: 89px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
     background-image: url("/src/assets/tooth.svg");
   }
 }
@@ -227,13 +188,13 @@ $card-body-padding-bottom: calc(
     border: 2px solid $secondary-lighter;
   }
 
-  .card_header,
+  .card_header_background,
   .card_body,
   .card_bottom {
     background-color: $secondary-lighter;
   }
 
-  .card_header {
+  .card_header_background {
     box-shadow: 0 4px 0 $secondary-lighter;
     &::before {
       box-shadow: -15px 15px 0 2px $secondary-lighter;
@@ -268,33 +229,143 @@ $card-body-padding-bottom: calc(
   gap: 20px;
 }
 
+.card_content_body {
+  @include flex-column;
+  flex: 1;
+  gap: 5px;
+}
+
+.course_authors {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  p {
+    max-width: 375px;
+  }
+}
+.authors_photos_list {
+  display: flex;
+  gap: 5px;
+}
+
+.author_photo {
+  border: 2px solid $primary;
+  background-color: $accent;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  margin-left: -10px;
+  z-index: 1;
+}
+
+.author_photo:first-child {
+  margin-left: 0;
+}
+
 .lessons_count {
+  font-weight: 500;
+  width: fit-content;
+  border-radius: 10px;
+  text-align: center;
+  border: 1.5px solid $background-color;
+  color: $text-color;
+  padding: 2px 12px;
   @include clamped-p4;
 }
 
+.content_bottom {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.buy_btn {
+  overflow: hidden;
+  position: relative;
+  @include clamped-p2;
+  background-color: $accent;
+  padding: 7.5px 40px;
+  width: 100%;
+  color: $text-color;
+  border-radius: 20px;
+  border: 1.5px solid $accent;
+  @include transition;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      border-color: $background-color;
+      color: $accent;
+    }
+  }
+
+  &:active {
+    background-color: $background-color;
+    border-color: $background-color;
+    color: $accent;
+  }
+}
+
+.buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.32fr 1fr;
+  gap: 10px;
+  position: relative;
+}
+
+.link_btn {
+  max-width: unset !important;
+}
+
 @media (max-width: $middle-breakpoint) {
-  .card_header {
+  .card_header_background {
     padding-left: 11px;
     height: 45px;
   }
 
+  .content_bottom {
+    margin-bottom: 10px;
+  }
+
+  .buy_btn {
+    padding: 3.5px 15px;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    align-self: flex-end;
+    width: 100%;
+    max-width: $card_bottom-width - 2%;
+  }
+
   .card_body {
-    padding: 5px 11px 228px 11px;
+    padding: 5px 11px 11px 11px;
 
     .photo {
-      width: calc(100% - 22px);
-      height: 169px;
-      bottom: 45px;
-      right: 11px;
+      max-width: unset;
+      width: 100%;
 
       &::before {
-        top: unset;
-        bottom: -50px;
+        width: 50px;
+        height: 60px;
+        top: -15px;
+        right: -8px;
+        transform: rotate(-60deg);
       }
     }
 
-    a {
-      left: 11px;
+    .link_btn {
+      left: 14px;
+      position: absolute;
       bottom: 14px;
     }
 
@@ -310,13 +381,6 @@ $card-body-padding-bottom: calc(
     gap: 5px;
     p {
       font-size: 12px;
-    }
-  }
-
-  .card_body {
-    .link_wrapper {
-      left: 12px;
-      bottom: 14px;
     }
   }
 
