@@ -64,7 +64,7 @@ const CourseCard = ({
 
   const fetchLandingDataAndOpenModal = async () => {
     try {
-      const res = await mainApi.getLanding(link);
+      const res = await mainApi.getLanding(link.replace("/client/course", ""));
       setPaymentData({
         course_ids: res.data?.course_ids,
         price_cents: res.data?.new_price * 100,
@@ -82,9 +82,10 @@ const CourseCard = ({
         ],
       });
       setModalOpen(true);
-      setPaymentDataLoading(false);
     } catch (e) {
       console.error(e);
+    } finally {
+      setPaymentDataLoading(false);
     }
   };
 
