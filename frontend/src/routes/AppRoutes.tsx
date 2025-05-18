@@ -37,7 +37,14 @@ export const AppRoutes: FC = () => {
             <Route key={path} path={path} element={<MainPage />} />
           ))}
           <Route index element={<MainPage />} />
-          <Route path={`${Path.landing}/:landingPath?`} element={<Landing />} />
+          <Route
+            path={`${Path.landing}/:landingPath?`}
+            element={<Landing isClient={false} />}
+          />
+          <Route
+            path={`${Path.landingClient}/:landingPath?`}
+            element={<Landing isClient={true} />}
+          />
           <Route path={Path.successPayment} element={<SuccessPayment />} />
           <Route
             path={`${Path.professor}/:professorId`}

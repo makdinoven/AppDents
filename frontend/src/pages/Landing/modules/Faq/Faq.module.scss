@@ -1,0 +1,154 @@
+.faq_container {
+  @include flex-column;
+  gap: 40px;
+}
+
+.faq_list {
+  @include flex-column;
+  gap: 20px;
+}
+
+.faq_item {
+  @include transition();
+  border: 1.5px solid $primary;
+  height: fit-content;
+  width: 100%;
+  border-radius: 20px;
+
+  @media (hover: hover) {
+    &:hover:not(.opened) {
+      background-color: $primary;
+      color: $text-color;
+
+      .question_number {
+        color: $text-color;
+      }
+
+      svg {
+        stroke: $text-color;
+      }
+    }
+
+    &:active:not(.opened) {
+      color: $accent;
+      background-color: $hover-color;
+
+      .question_number {
+        color: $primary;
+      }
+      svg {
+        stroke: $primary;
+      }
+    }
+  }
+
+  &.opened {
+    svg {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.faq_link {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.faq_question_button {
+  padding: 15px 30px;
+  position: relative;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  @include clamped-h3;
+  width: 100%;
+  svg {
+    transition: transform 0.2s;
+    transform: rotate(-90deg);
+    stroke: $text-color-accent;
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.faq_question {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.question_number {
+  @include transition();
+  color: $primary;
+}
+
+.faq_answer {
+  padding-top: 10px;
+  margin-bottom: 20px;
+  @include clamped-p2;
+  width: 100%;
+}
+
+.faq_answer_wrapper {
+  position: relative;
+  @include horizontal-line(
+    $left: 30px,
+    $color: $primary,
+    $width: 60%,
+    $top: 2px,
+    $height: 1px
+  );
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.2s ease-in-out;
+  padding: 0 50px;
+}
+
+.faq_item.opened .faq_answer_wrapper {
+}
+
+@media (max-width: $middle-breakpoint) {
+  .faq_question_button {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .faq_container {
+    @include flex-column;
+    gap: 30px;
+  }
+
+  .faq_list {
+    gap: 10px;
+  }
+
+  .faq_item {
+    border-radius: 15px;
+    border: 1px solid $primary;
+  }
+
+  .faq_question_button {
+    padding: 10px 20px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .faq_link {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+  }
+
+  .faq_answer_wrapper {
+    padding: 0 30px;
+
+    &::after {
+      left: 20px;
+    }
+  }
+}

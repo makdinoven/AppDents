@@ -7,23 +7,39 @@
   }
 }
 
+.admin_btns {
+  display: flex;
+  gap: 10px;
+}
+
 .landing {
   @include flex-column;
   gap: 140px;
+}
 
-  @media (max-width: $middle-breakpoint) {
+@media (max-width: $middle-breakpoint) {
+  .landing {
     gap: 100px;
 
     button {
       width: fit-content;
     }
   }
+}
 
-  @media (max-width: $tablet-breakpoint) {
+@media (max-width: $tablet-breakpoint) {
+  .landing {
     gap: 80px;
   }
+}
 
-  @media (max-width: $mobile-breakpoint) {
+@media (max-width: $mobile-breakpoint) {
+  .landing {
     gap: 60px;
+  }
+
+  .admin_btns {
+    flex-direction: column;
+    margin-bottom: 10px;
   }
 }

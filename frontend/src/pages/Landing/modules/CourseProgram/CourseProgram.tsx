@@ -52,7 +52,7 @@ const CourseProgram = ({
   };
 
   return (
-    <div className={s.course_program}>
+    <div id={"course-program"} className={s.course_program}>
       <div className={s.buy_course}>
         <p className={s.program_p}>
           <Trans

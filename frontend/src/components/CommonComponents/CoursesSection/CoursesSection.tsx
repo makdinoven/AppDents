@@ -14,6 +14,7 @@ import { getCourses } from "../../../store/actions/mainActions.ts";
 type props = {
   sectionTitle: string;
   pageSize: number;
+  isClient?: boolean;
   tags?: any[];
   activeFilter?: string;
   activeSort?: string;
@@ -28,6 +29,7 @@ const CoursesSection = ({
   ref,
   sectionTitle,
   pageSize,
+  isClient = true,
   tags,
   showFilters = false,
   showSort = false,
@@ -123,6 +125,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isClient={isClient}
         filter={activeFilter}
         handleSeeMore={handleSeeMore}
         loading={loading}

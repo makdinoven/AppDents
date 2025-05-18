@@ -4,6 +4,7 @@ import { Trans } from "react-i18next";
 import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
+import { Path } from "../../../../routes/routes.ts";
 
 type Course = {
   landing_name: string;
@@ -17,6 +18,7 @@ type Course = {
 };
 
 interface CardsListProps {
+  isClient?: boolean;
   loading: boolean;
   handleSeeMore?: () => void;
   showSeeMore: boolean;
@@ -26,6 +28,7 @@ interface CardsListProps {
 }
 
 const CardsList: React.FC<CardsListProps> = ({
+  isClient = false,
   loading,
   cards,
   filter = "all",
@@ -50,7 +53,7 @@ const CardsList: React.FC<CardsListProps> = ({
                 new_price={course.new_price}
                 name={course.landing_name}
                 tag={course.first_tag}
-                link={course.slug}
+                link={`${isClient ? `/${Path.landingClient}` : Path.landing}/${course.slug}`}
                 photo={course.main_image}
                 lessons_count={course.lessons_count}
               />

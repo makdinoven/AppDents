@@ -146,7 +146,7 @@ const SearchModal = ({ openKey }: { openKey: string }) => {
                 <li key={index} onClick={() => setShowDropdown(false)}>
                   <Link
                     className={s.dropdown_item}
-                    to={`${Path.landing}/${item.page_name}`}
+                    to={`${Path.landingClient}/${item.page_name}`}
                   >
                     <div className={s.icon}>
                       <SearchIcon />

@@ -48,6 +48,7 @@
   "registrationSuccess": "Registrazione completata! La tua password è stata inviata alla tua email. Ora puoi accedere. Se non vedi il messaggio, controlla anche la cartella dello spam.",
   "showLess": "Mostra meno",
   "readMore": "Leggi di più",
+  "support": "Supporto",
 
   "nav": {
     "home": "Home",
@@ -56,7 +57,11 @@
     "professors": "Professori",
     "cart": "Carrello",
     "search": "Cerca",
-    "profile": "Profilo"
+    "profile": "Profilo",
+    "promote": {
+      "professors": "Docenti del corso",
+      "program": "Programma del corso"
+    }
   },
 
 
@@ -91,7 +96,8 @@
     "privacy": "Informativa sulla privacy",
     "home": "Pagina principale",
     "tour": "Tour",
-    "templates": "Template"
+    "templates": "Template",
+    "copyright": "© 2025 Dent-S. Tutti i diritti riservati."
   },
 
   "tag": {
@@ -128,15 +134,36 @@
     "savings": "risparmio",
     "courseProgram": "Programma del corso",
     "fullCourseProgram": "Il programma completo del corso",
-    "buyFor": "Acquista per <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "buyForFull": "Acquista il corso per <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "youCanBuyEntireCourse": "Puoi acquistare l'<1>intero corso</1> ora al nuovo prezzo <2>{{new_price}}</2>, invece del vecchio - {{old_price}}",
+    "buyFor": "Acquista per <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyForFull": "Acquista il corso per <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "Puoi acquistare l'<1>intero corso</1> ora al nuovo prezzo <2>${{new_price}}</2>, invece del vecchio - ${{old_price}}",
     "fiveMinuteFragment": "Qui puoi vedere un <1>frammento di cinque minuti</1>",
     "durationOfLesson": "Durata:",
     "noVideoLink": "Nessun link al video o link non valido",
     "videoIsNotSupported": "Il tuo browser non supporta il video",
     "specialOffer": "Offerta speciale",
-    "accessFull": "L'accesso al corso è illimitato nel tempo!"
+    "accessFull": "L'accesso al corso è illimitato nel tempo!",
+    "faq": {
+      "faq": "Domande Frequenti",
+      "1_question": "Come accedo al mio corso dopo l'acquisto?",
+      "1_answer": "Non appena il pagamento sarà completato, riceverai accesso immediato al tuo corso. Dopo il pagamento, verrai reindirizzato automaticamente al tuo account, dove troverai il corso acquistato (consigliamo di cambiare subito la password per non dimenticarla). Riceverai anche una ricevuta e la conferma di iscrizione via email. Se non trovi l'email, controlla la cartella spam (e altre cartelle; il mittente è 'no-reply'). I materiali del corso saranno disponibili immediatamente.",
+      "2_question": "C'è un limite di tempo per completare i corsi?",
+      "2_answer": "No, i nostri corsi sono a ritmo libero: puoi iniziare, sospendere e riprendere quando vuoi. L’accesso ai materiali è illimitato nel tempo.",
+      "3_question": "Quali metodi di pagamento accettate?",
+      "3_answer": "Accettiamo tutte le principali carte di credito (Visa, MasterCard, American Express) e sistemi di pagamento globali come ApplePay, GooglePay, SamsungPay, ecc. Utilizziamo Stripe per pagamenti sicuri.",
+      "4_question": "Perché i vostri prezzi sono più bassi?",
+      "4_answer": "Dent-S crede che un'istruzione di qualità debba essere accessibile a tutti. Più medici qualificati significano una società più sana. Per questo offriamo i nostri corsi al prezzo più basso possibile. Grazie al tuo supporto possiamo ampliare il progetto.",
+      "5_question": "Posso accedere ai corsi da cellulare o tablet?",
+      "5_answer": "Certo! La nostra piattaforma è ottimizzata per dispositivi mobili e tablet, così puoi studiare ovunque e in qualsiasi momento.",
+      "6_question": "Riceverò una fattura per il mio acquisto?",
+      "6_answer": "Se hai bisogno di una fattura, contatta il nostro supporto (i dettagli sono sulla ricevuta) e te la invieremo.",
+      "7_question": "E se non sono soddisfatto del corso?",
+      "7_answer": "Offriamo il cambio del corso o il rimborso totale entro 15 giorni dall'acquisto. Contatta il nostro supporto.",
+      "8_question": "Come contatto il supporto?",
+      "8_answer": "Puoi contattare il supporto tramite il tuo account su <link1>dent-s.com</link1> o usando l'email indicata sulla ricevuta.",
+      "9_question": "Come reimposto la password?",
+      "9_answer": "Clicca su <link1>Hai dimenticato la password?</link1> nella <link2>pagina di accesso</link2> e segui le istruzioni per crearne una nuova."
+    }
   },
 
   "profile": {

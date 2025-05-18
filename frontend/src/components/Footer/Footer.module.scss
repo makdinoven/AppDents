@@ -17,11 +17,17 @@ $row-gap: clamp(20px, 5vw, 43px);
   bottom: -72px;
 }
 
-.content {
+.footer_container {
+  @include flex-column;
+  gap: 50px;
   @include container;
   padding: 25px 20px;
+}
+
+.content {
   display: flex;
   gap: 80px;
+  justify-content: space-between;
 
   .list {
     display: flex;
@@ -29,14 +35,6 @@ $row-gap: clamp(20px, 5vw, 43px);
     gap: 10px;
     //width: 100%;
     //max-width: 50%;
-
-    &:first-child {
-      flex: 1;
-    }
-
-    &:last-child {
-      text-align: right;
-    }
 
     li {
       a {
@@ -50,13 +48,6 @@ $row-gap: clamp(20px, 5vw, 43px);
     .list_title {
       @include clamped-h4;
       position: relative;
-      padding-bottom: 10px;
-      @include horizontal-line(
-        $width: 100%,
-        $left: 0,
-        $bottom: 0,
-        $color: $background-color
-      );
     }
 
     .list_item {
@@ -65,23 +56,30 @@ $row-gap: clamp(20px, 5vw, 43px);
   }
 }
 
+.nav_buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 30px;
+  row-gap: 20px;
+  align-items: flex-start;
+  justify-items: center;
+}
+
+.copyright {
+  @include clamped-p4;
+}
+
 @media (max-width: $mobile-breakpoint) {
+  .copyright {
+    text-align: center;
+  }
+
   .content {
     flex-direction: column;
     gap: 20px;
 
     .list {
       text-align: left;
-
-      &:last-child {
-        text-align: left;
-      }
-
-      .list_title {
-        &:after {
-          width: 70%;
-        }
-      }
     }
   }
 }
