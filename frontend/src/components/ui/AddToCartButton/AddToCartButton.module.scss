@@ -1,0 +1,48 @@
+.btn {
+  @include transition();
+  @include flex-center;
+  border: 2px solid $accent;
+  border-radius: 20px;
+  padding: 8px 17px 8px 13px;
+  width: 100%;
+  flex-shrink: 0;
+
+  svg {
+    width: clamp(20px, 2.5vw, 32px);
+    height: clamp(19px, 2.5vw, 32px);
+    path {
+      @include transition();
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $text-color;
+      border-color: $text-color;
+    }
+  }
+
+  &.active {
+    background-color: $accent;
+    border-color: $accent;
+  }
+
+  &:active {
+    background-color: $accent;
+    border-color: $accent;
+    svg {
+      path {
+        stroke: $text-color;
+      }
+    }
+  }
+
+  @media (max-width: $middle-breakpoint) {
+    & {
+      z-index: 5;
+      padding: 3px 15px;
+      position: absolute;
+      bottom: -41px;
+    }
+  }
+}
