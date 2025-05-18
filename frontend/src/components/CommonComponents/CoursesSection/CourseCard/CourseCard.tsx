@@ -1,11 +1,11 @@
 import s from "./CourseCard.module.scss";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
-import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { useState } from "react";
 import ModalWrapper from "../../../Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal, {
@@ -45,7 +45,6 @@ const CourseCard = ({
   const currentUrl = window.location.origin + location.pathname;
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
-  const LANDING_LINK = `${Path.landing}/${link}`;
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
 
   const setCardColor = () => {
@@ -97,11 +96,11 @@ const CourseCard = ({
     <>
       <li className={`${s.card} ${setCardColor()}`}>
         <div className={s.card_header}>
-          <Link to={LANDING_LINK} className={s.card_header_background}>
+          <Link to={link} className={s.card_header_background}>
             <Trans i18nKey={tag} />
           </Link>
         </div>
-        <Link to={LANDING_LINK} className={s.card_body}>
+        <Link to={link} className={s.card_body}>
           <div className={s.card_content_header}>
             <div className={s.prices}>
               <span className={s.new_price}>${new_price}</span>{" "}
@@ -155,7 +154,7 @@ const CourseCard = ({
             </div>
           </div>
 
-          <Link to={LANDING_LINK} className={s.card_bottom}></Link>
+          <Link to={link} className={s.card_bottom}></Link>
         </Link>
       </li>
 

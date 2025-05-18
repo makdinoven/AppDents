@@ -41,7 +41,10 @@ const BurgerMenu = ({ buttons }: { buttons: any[] }) => {
                 icon={btn.icon}
                 text={btn.text}
                 link={btn.link}
-                onClick={handleCloseModal}
+                onClick={() => {
+                  btn.onClick();
+                  handleCloseModal();
+                }}
                 isActive={location.pathname === btn.link}
               />
             ))}

@@ -13,8 +13,8 @@ const NavButton = ({
 }: {
   direction?: "horizontal" | "vertical";
   isActive?: boolean;
-  appearance?: "light";
-  icon: React.ElementType;
+  appearance?: "light" | "footer";
+  icon?: React.ElementType;
   text?: string;
   link?: string;
   onClick?: () => void;
@@ -23,10 +23,14 @@ const NavButton = ({
     return (
       <Link
         onClick={onClick}
-        className={`${s.navButton} ${appearance ? s.light : ""} ${isActive ? s.active : ""} ${direction === "vertical" ? s.vertical : ""}`}
+        className={`${s.navButton}
+         ${appearance === "light" ? s.light : ""}
+          ${appearance === "footer" ? s.footer : ""}
+           ${isActive ? s.active : ""}
+            ${direction === "vertical" ? s.vertical : ""}`}
         to={link}
       >
-        <Icon className={s.icon} />
+        {Icon && <Icon className={s.icon} />}
         {text && <Trans i18nKey={text} />}
       </Link>
     );
@@ -34,9 +38,13 @@ const NavButton = ({
     return (
       <button
         onClick={onClick}
-        className={`${s.navButton} ${appearance ? s.light : ""} ${isActive ? s.active : ""} ${direction === "vertical" ? s.vertical : ""}`}
+        className={`${s.navButton}
+         ${appearance === "light" ? s.light : ""}
+          ${appearance === "footer" ? s.footer : ""}
+           ${isActive ? s.active : ""}
+            ${direction === "vertical" ? s.vertical : ""}`}
       >
-        <Icon className={s.icon} />
+        {Icon && <Icon className={s.icon} />}
         {text && <Trans i18nKey={text} />}
       </button>
     );

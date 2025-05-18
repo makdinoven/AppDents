@@ -6,6 +6,7 @@ export const Path = {
   cart: "/cart",
   signUp: "/sign-up",
   landing: "/course",
+  landingClient: "client/course",
   profile: "/profile",
   myCourse: "course",
   lesson: "lesson",

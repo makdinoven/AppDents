@@ -6,6 +6,7 @@ import { Path } from "../../../routes/routes.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 const MobileMenu = () => {
   const location = useLocation();
@@ -13,6 +14,10 @@ const MobileMenu = () => {
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
+  const isFromFacebook = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.has("fbclid");
+  }, [location.search]);
 
   const buttons: {
     icon: any;
@@ -38,6 +43,17 @@ const MobileMenu = () => {
           },
         }),
     });
+  }
+
+  if (isFromFacebook) {
+    return null;
+  }
+
+  if (
+    location.pathname.includes(Path.landing) &&
+    !location.pathname.includes(Path.landingClient)
+  ) {
+    return null;
   }
 
   return (

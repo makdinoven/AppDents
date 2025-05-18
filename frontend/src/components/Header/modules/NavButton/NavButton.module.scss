@@ -5,6 +5,8 @@ $hoverColor: $primary;
   font-size: 20px;
   @include transition();
   @include flex-center;
+  justify-content: flex-start;
+  text-align: left;
   gap: 10px;
 
   &.vertical {
@@ -77,6 +79,28 @@ $hoverColor: $primary;
     }
   }
   //}
+
+  &.footer {
+    color: $background-color;
+
+    .icon {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &.footer:hover {
+      color: $primary;
+
+      .icon {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
