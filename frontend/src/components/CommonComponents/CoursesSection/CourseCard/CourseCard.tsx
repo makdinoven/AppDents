@@ -63,8 +63,10 @@ const CourseCard = ({
   };
 
   const fetchLandingDataAndOpenModal = async () => {
+    const cleanLink = link.replace(/^\/(client\/)?course/, "");
+
     try {
-      const res = await mainApi.getLanding(link.replace("/client/course", ""));
+      const res = await mainApi.getLanding(cleanLink);
       setPaymentData({
         course_ids: res.data?.course_ids,
         price_cents: res.data?.new_price * 100,
