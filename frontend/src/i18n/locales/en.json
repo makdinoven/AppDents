@@ -177,7 +177,9 @@
     "yourCourses": "Your courses",
     "noCourses": "No Courses Yet",
     "nextLesson": "Next lesson",
-    "prevLesson": "Prev lesson"
+    "prevLesson": "Prev lesson",
+    "pdfText": "This lesson contains PDF materials instead of a video. Click the link below to open the file.",
+    "openPdf": "Open PDF materials"
   },
 
   "professor": {

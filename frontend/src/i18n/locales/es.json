@@ -170,7 +170,10 @@
     "yourCourses": "Tus cursos",
     "noCourses": "No hay cursos",
     "nextLesson": "Siguiente lección",
-    "prevLesson": "Lección anterior"
+    "prevLesson": "Lección anterior",
+    "pdfText": "Esta lección contiene materiales en PDF en lugar de un video. Haz clic en el enlace de abajo para abrir el archivo.",
+    "openPdf": "Abrir materiales en PDF"
+
   },
 
   "professor": {

@@ -47,7 +47,8 @@ const Header = () => {
   const isScrolled = useScroll();
   const isPromotionLanding =
     location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient);
+    !location.pathname.includes(Path.landingClient) &&
+    !location.pathname.includes(Path.profile);
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.landing.oldPrice,
   );
