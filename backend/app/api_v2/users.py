@@ -46,7 +46,14 @@ def register(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"error": { ... }}  # как было
+            detail={
+                "error": {
+                    "code": "INVALID_CREDENTIALS",
+                    "message": "Email already registered",
+                    "translation_key": "error.email_exist",
+                    "params": {}
+                }
+            }
         )
 
     inviter = db.query(User).filter(User.referral_code == ref).first() if ref else None
