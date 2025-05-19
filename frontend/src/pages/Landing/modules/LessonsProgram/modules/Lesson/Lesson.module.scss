@@ -87,6 +87,10 @@
   @media (max-width: $mobile-breakpoint) {
     .lesson_content {
       gap: 20px;
+
+      button {
+        align-self: center;
+      }
     }
 
     & {
