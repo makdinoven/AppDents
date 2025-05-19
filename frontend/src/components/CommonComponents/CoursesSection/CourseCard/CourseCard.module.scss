@@ -149,10 +149,11 @@ $card-body-padding-bottom: calc(
 
 .photo {
   position: relative;
+  aspect-ratio: 16/9;
   width: 100%;
   max-width: 306px;
   border-radius: $border-radius-small;
-  height: $photo-height;
+  //height: $photo-height;
   background-repeat: no-repeat;
   background-position: center center;
   background-size: cover;
@@ -269,7 +270,7 @@ $card-body-padding-bottom: calc(
 .lessons_count {
   font-weight: 500;
   width: fit-content;
-  border-radius: 10px;
+  border-radius: 15px;
   text-align: center;
   border: 1.5px solid $background-color;
   color: $text-color;
@@ -328,6 +329,7 @@ $card-body-padding-bottom: calc(
 @media (max-width: $middle-breakpoint) {
   .card_header_background {
     padding-left: 11px;
+    padding-right: 10px;
     height: 45px;
   }
 
@@ -366,7 +368,7 @@ $card-body-padding-bottom: calc(
     .link_btn {
       left: 14px;
       position: absolute;
-      bottom: 14px;
+      bottom: 16px;
     }
 
     .card_bottom {
