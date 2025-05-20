@@ -2,7 +2,7 @@ import s from "./SearchDropdown.module.scss";
 import Search from "../../ui/Search/Search.tsx";
 import { useEffect, useRef, useState } from "react";
 import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { Trans } from "react-i18next";
 import { SearchIcon } from "../../../assets/logos/index";
@@ -14,16 +14,12 @@ import useDebounce from "../../../common/hooks/useDebounce.ts";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
-const SearchDropdown = ({
-  showDropdown,
-  setShowDropdown,
-}: {
-  showDropdown: boolean;
-  setShowDropdown: (value: boolean) => void;
-}) => {
+const SearchDropdown = ({ openKey }: { openKey: string }) => {
+  const SEARCH_KEY = "global_courses_search";
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [totalResults, setTotalResults] = useState<number>(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -31,10 +27,11 @@ const SearchDropdown = ({
     (state: AppRootStateType) => state.user.language,
   );
   useOutsideClick(wrapperRef, () => {
-    handleClose();
+    handleDropdownClose();
   });
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const searchValue = searchParams.get(SEARCH_KEY);
+  const debouncedSearchValue = useDebounce(searchValue, 300);
 
   useEffect(() => {
     if (showDropdown) {
@@ -42,7 +39,7 @@ const SearchDropdown = ({
       inputRef.current?.focus();
       const handleKeyDown = (event: KeyboardEvent) => {
         if (event.key === "Escape") {
-          handleClose();
+          handleDropdownClose();
         }
       };
       document.addEventListener("keydown", handleKeyDown);
@@ -56,11 +53,8 @@ const SearchDropdown = ({
     }
   }, [showDropdown]);
 
-  const debouncedSearchValue = useDebounce(searchValue, 200);
-
   useEffect(() => {
-    setLoading(true);
-    if (debouncedSearchValue !== "") {
+    if (debouncedSearchValue) {
       handleSearch(debouncedSearchValue);
     } else {
       setSearchResults([]);
@@ -68,21 +62,21 @@ const SearchDropdown = ({
     }
   }, [debouncedSearchValue]);
 
-  const handleInputChange = (value: string) => {
-    setSearchValue(value);
-  };
-
   const handleInputFocus = () => {
-    if (searchValue.trim()) {
+    if (searchValue?.trim()) {
       handleOpen();
     }
   };
 
-  const handleClose = () => {
+  const handleDropdownClose = () => {
     setIsClosing(true);
     setTimeout(() => {
       setIsClosing(false);
       setShowDropdown(false);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete(openKey);
+      newParams.delete(SEARCH_KEY);
+      setSearchParams(newParams, { replace: true });
     }, 150);
   };
 
@@ -90,20 +84,13 @@ const SearchDropdown = ({
     setShowDropdown(true);
   };
 
-  const handleSearch = async (query: string) => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+  const handleSearch = async (q: string) => {
     setLoading(true);
-
     try {
-      const res = await mainApi.searchCourses(
-        query,
+      const res = await mainApi.searchCourses({
+        q: q.trim(),
         language,
-        controller.signal,
-      );
+      });
       setSearchResults(res.data.items);
       setTotalResults(res.data.total);
     } catch (error) {
@@ -113,44 +100,50 @@ const SearchDropdown = ({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (searchParams.has(openKey)) {
+      setShowDropdown(true);
+    }
+  }, [searchParams, openKey]);
+
+  if (!showDropdown) return null;
+
   return (
     <div
       className={`${s.dropdown_wrapper} ${isClosing ? s.fadeOut : s.fadeIn}`}
     >
       <div className={s.dropdown_container}>
         <div ref={wrapperRef} className={s.dropdown_content}>
-          <ModalCloseButton className={s.close_button} onClick={handleClose} />
+          <ModalCloseButton
+            className={s.close_button}
+            onClick={handleDropdownClose}
+          />
 
-          {totalResults === 0 && searchValue.length === 0 ? (
-            <h3 className={s.dropdown_title}>
-              <Trans i18nKey={"search.searchCourses"} />
-            </h3>
-          ) : (
-            <h3
-              style={{
-                opacity: `${totalResults > 0 ? "1" : "0.5"}`,
-              }}
-              className={s.dropdown_title}
-            >
-              <Trans i18nKey={"search.result"} count={totalResults} />
-            </h3>
-          )}
+          <h3 className={s.dropdown_title}>
+            <Trans i18nKey={"search.searchCourses"} />
+          </h3>
 
           <div className={s.search_wrapper}>
             <Search
               inputRef={inputRef}
-              id="searchCourses"
-              value={searchValue}
+              id={SEARCH_KEY}
               placeholder={"search.searchPlaceholder"}
               onFocus={handleInputFocus}
-              onChange={(e) => handleInputChange(e.target.value)}
             />
+
+            <p
+              style={{ opacity: `${totalResults > 0 ? 1 : 0.7}` }}
+              className={s.search_results}
+            >
+              <Trans i18nKey={"search.result"} count={totalResults} />
+            </p>
           </div>
           {searchResults.length > 0 && (
             <ul className={s.dropdown_list}>
               {loading && <LoaderOverlay />}
               {searchResults?.map((item: any, index: number) => (
-                <li key={index} onClick={handleClose}>
+                <li key={index} onClick={() => setShowDropdown(false)}>
                   <Link
                     className={s.dropdown_item}
                     to={`${Path.landing}/${item.page_name}`}

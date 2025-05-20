@@ -1,33 +1,55 @@
 import s from "./AdminPanel.module.scss";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import Courses from "../tabs/Courses.tsx";
-import Landings from "../tabs/Landings.tsx";
-import Authors from "../tabs/Authors.tsx";
-import Users from "../tabs/Users.tsx";
+import { useSearchParams } from "react-router-dom";
+import AdminCoursesTab from "../tabs/AdminCoursesTab.tsx";
+import AdminLandingsTab from "../tabs/AdminLandingsTab.tsx";
+import AdminAuthorsTab from "../tabs/AdminAuthorsTab.tsx";
+import AdminUsersTab from "../tabs/AdminUsersTab.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
+import { useEffect } from "react";
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get("tab") || "landings";
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromParams = searchParams.get("tab");
+  useEffect(() => {
+    if (!tabFromParams) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("tab", "landings");
+      setSearchParams(newParams);
+    }
+  }, [tabFromParams, searchParams, setSearchParams]);
+
+  const activeTab = tabFromParams || "landings";
+
+  const handleSelectTab = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("tab", value);
+    newParams.delete("language");
+    if (value === "analytics") {
+      newParams.delete("page");
+    } else {
+      newParams.set("page", "1");
+    }
+    setSearchParams(newParams);
+  };
 
   const tabs = [
     {
       name: "admin.landings.landings",
       value: "landings",
-      component: <Landings />,
+      component: <AdminLandingsTab />,
     },
     {
       name: "admin.courses.courses",
       value: "courses",
-      component: <Courses />,
+      component: <AdminCoursesTab />,
     },
-    { name: "admin.authors.authors", value: "authors", component: <Authors /> },
-    { name: "admin.users.users", value: "users", component: <Users /> },
+    {
+      name: "admin.authors.authors",
+      value: "authors",
+      component: <AdminAuthorsTab />,
+    },
+    { name: "admin.users.users", value: "users", component: <AdminUsersTab /> },
     {
       name: "admin.analytics.analytics",
       value: "analytics",
@@ -35,21 +57,15 @@ const AdminPanel = () => {
     },
   ];
 
-  useEffect(() => {
-    navigate(`?tab=${activeTab}`, { replace: true });
-  }, [activeTab, navigate]);
-
   return (
     <div className={s.admin}>
       <SelectableList
         items={tabs}
         activeValue={activeTab}
-        onSelect={setActiveTab}
+        onSelect={handleSelectTab}
       />
 
-      <div className={s.content}>
-        {tabs.find((tab) => tab.value === activeTab)?.component}
-      </div>
+      {tabs.find((tab) => tab.value === activeTab)?.component}
     </div>
   );
 };

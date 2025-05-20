@@ -45,7 +45,6 @@
   "passwordChanged": "A senha foi alterada com sucesso",
   "forgotPasswordSuccess": "Sua nova senha foi enviada para seu e-mail. Agora você pode fazer login com a nova senha. Se não encontrar o e-mail, verifique a pasta de spam.",
   "registrationSuccess": "Cadastro realizado com sucesso! Sua senha foi enviada para seu e-mail. Agora você pode fazer login. Se não encontrar o e-mail, verifique a pasta de spam.",
-  "about_professor": "Sobre o professor",
   "showLess": "Mostrar menos",
   "readMore": "Leia mais",
 
@@ -142,8 +141,9 @@
     "professorsCourses": "Cursos deste professor",
     "professors.title": "Nossos professores",
     "search": "Procurar professores...",
-    "professorsFound": "Professores encontrados: {{count}}",
-    "noProfessors": "Nenhum professor encontrado"
+    "found": "Professores encontrados: {{count}}",
+    "noProfessors": "Nenhum professor encontrado",
+    "about": "Sobre o professor"
   },
   "other": {
     "otherCourses": "Outros cursos"

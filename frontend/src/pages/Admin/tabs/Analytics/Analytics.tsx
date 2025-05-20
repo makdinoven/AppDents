@@ -23,14 +23,15 @@ const Analytics = () => {
   const getFormattedDate = (date: Date) => {
     return date.toISOString().split("T")[0];
   };
-  const [startDate, setStartDate] = useState<string>(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return getFormattedDate(yesterday);
-  });
+  const [startDate, setStartDate] = useState<string>(() =>
+    getFormattedDate(new Date()),
+  );
   const [endDate, setEndDate] = useState<string>(() =>
     getFormattedDate(new Date()),
   );
+
+  const [secondStartDate, setSecondStartDate] = useState<string>("");
+  const [secondEndDate, setSecondEndDate] = useState<string>("");
 
   useEffect(() => {
     fetchLandingsStats();
@@ -38,13 +39,25 @@ const Analytics = () => {
 
   useEffect(() => {
     fetchMostPopularLandings();
-  }, [language, limit]);
+  }, [language, limit, secondEndDate, secondStartDate]);
 
   const fetchMostPopularLandings = async () => {
-    const params = {
+    const params: {
+      language: string;
+      limit: string;
+      start_date?: string;
+      end_date?: string;
+    } = {
       language: language,
       limit: limit,
     };
+
+    if (secondStartDate) {
+      params.start_date = secondStartDate;
+    }
+    if (secondEndDate) {
+      params.end_date = secondEndDate;
+    }
 
     try {
       const res = await adminApi.getMostPopularLandings(params);
@@ -138,6 +151,28 @@ const Analytics = () => {
           valueKey="value"
           labelKey="name"
         />
+      </div>
+      <div className={s.analytics_options}>
+        <div className={s.input_wrapper}>
+          <label htmlFor="start_date">Start date</label>
+          <input
+            id="start_date"
+            value={secondStartDate}
+            className={s.date_input}
+            onChange={(e) => setSecondStartDate(e.target.value)}
+            type="date"
+          />
+        </div>
+        <div className={s.input_wrapper}>
+          <label htmlFor="end_date">End date</label>
+          <input
+            id="end_date"
+            value={secondEndDate}
+            className={s.date_input}
+            onChange={(e) => setSecondEndDate(e.target.value)}
+            type="date"
+          />
+        </div>
       </div>
       {landings && (
         <Table

@@ -15,9 +15,6 @@ import {
   denormalizeLessons,
   normalizeLessons,
 } from "../../../common/helpers/helpers.ts";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../store/store.ts";
-import { getMe } from "../../../store/actions/userActions.ts";
 
 const LandingDetail = () => {
   const { landingId } = useParams();
@@ -27,11 +24,6 @@ const LandingDetail = () => {
   const [tags, setTags] = useState<any | null>(null);
   const [courses, setCourses] = useState<any | null>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatchType>();
-
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
 
   useEffect(() => {
     if (landingId) {
@@ -39,18 +31,14 @@ const LandingDetail = () => {
     }
   }, [landingId]);
 
-  // useEffect(() => {
-  //   console.log(landing);
-  // }, [landing]);
-
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [landingRes, tagsRes, coursesRes, authorsRes] = await Promise.all([
         adminApi.getLanding(landingId),
         mainApi.getTags(),
-        adminApi.getCoursesList(),
-        adminApi.getAuthorsList(),
+        adminApi.getCoursesList({ size: 100000 }),
+        adminApi.getAuthorsList({ size: 100000 }),
       ]);
 
       setLanding({
@@ -60,8 +48,8 @@ const LandingDetail = () => {
       setTags(tagsRes.data);
       setCourses(coursesRes.data.items);
       setAuthors(authorsRes.data.items);
-    } catch (error) {
-      console.error("Error fetching data", error);
+    } catch (error: any) {
+      alert(`Error fetching landing data, error message: ${error.message}`);
     } finally {
       setLoading(false);
     }

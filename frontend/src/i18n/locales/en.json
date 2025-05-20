@@ -46,7 +46,6 @@
   "passwordChanged": "Password has been successfully changed",
   "forgotPasswordSuccess": "Your new password has been sent to your email. You can now log in using the new password. If you don't see the message, please check your spam folder.",
   "registrationSuccess": "Registration successful! Your password has been sent to your email. You can now log in. If you don't see the message, please check your spam folder.",
-  "about_professor": "About professor",
   "showLess": "Show Less",
   "readMore": "Read more",
 
@@ -101,7 +100,7 @@
     "prosthodontics": "Prosthodontics",
     "digital_dentistry": "Digital dentistry",
     "pediatric_dentistry": "Pediatric dentistry",
-    "orthopedics": "orthopedics",
+    "orthopedics": "Orthopedics",
     "management": "Management",
     "esthetic": "Esthetic",
     "common.popular": "Popular",
@@ -149,8 +148,11 @@
     "professorsCourses": "This professor's courses",
     "professors.title": "Our professors",
     "search": "Search professors...",
-    "professorsFound": "Professors found: {{count}}",
-    "noProfessors": "No professors found"
+    "found": "Professors found: {{count}}",
+    "noProfessors": "No professors found",
+    "about": "About professor",
+    "specialization": "Specialization:",
+    "coursesCount": "Courses:"
   },
 
   "other": {
@@ -203,7 +205,8 @@
       "description.placeholder": "Enter course description...",
       "notFound": "No courses found",
       "delete": "Delete course",
-      "noSections": "No sections in this course."
+      "noSections": "No sections in this course.",
+      "found": "Courses found: {{count}}"
     },
     "sections": {
       "sections": "Sections",
@@ -265,7 +268,8 @@
       "language": "Language",
       "authors": "Authors",
       "notFound": "No landings found",
-      "role" : "Role"
+      "role" : "Role",
+      "found": "Landings found: {{count}}"
     },
     "users": {
       "users": "users",
@@ -278,7 +282,8 @@
       "email.placeholder": "Enter user email...",
       "password": "Password",
       "password.placeholder": "Enter new password...",
-      "courses": "User courses"
+      "courses": "User courses",
+      "found": "Users found: {{count}}"
     },
     "authors": {
       "authors": "authors",
@@ -292,7 +297,8 @@
       "delete": "Delete author",
       "edit": "Edit author",
       "create": "Create author",
-      "notFound": "No authors found"
+      "notFound": "No authors found",
+      "found": "Authors found: {{count}}"
     },
     "analytics": {
       "analytics": "Analytics",

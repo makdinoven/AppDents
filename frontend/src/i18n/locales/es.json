@@ -45,7 +45,6 @@
   "passwordChanged": "La contraseña se ha cambiado correctamente",
   "forgotPasswordSuccess": "Tu nueva contraseña ha sido enviada a tu correo electrónico. Ahora puedes iniciar sesión con la nueva contraseña. Si no ves el mensaje, revisa la carpeta de spam.",
   "registrationSuccess": "¡Registro exitoso! Tu contraseña ha sido enviada a tu correo electrónico. Ahora puedes iniciar sesión. Si no ves el mensaje, revisa la carpeta de spam.",
-  "about_professor": "Sobre el profesor",
   "showLess": "Mostrar menos",
   "readMore": "Leer más",
 
@@ -142,8 +141,9 @@
     "professorsCourses": "Cursos de este profesor",
     "professors.title": "Nuestros profesores",
     "search": "Buscar profesores...",
-    "professorsFound": "Profesores encontrados: {{count}}",
-    "noProfessors": "No se encontraron profesores"
+    "found": "Profesores encontrados: {{count}}",
+    "noProfessors": "No se encontraron profesores",
+    "about": "Sobre el profesor"
   },
   "other": {
     "otherCourses": "Otros cursos"

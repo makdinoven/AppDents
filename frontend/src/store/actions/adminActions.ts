@@ -1,11 +1,28 @@
 import { createAppAsyncThunk } from "../createAppAsynkThunk.ts";
 import { adminApi } from "../../api/adminApi/adminApi.ts";
+import { ParamsType } from "../../api/adminApi/types.ts";
 
 export const getCourses = createAppAsyncThunk(
   "admin/getCourses",
-  async (_, { rejectWithValue }) => {
+  async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.getCoursesList();
+      const res = await adminApi.getCoursesList(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const searchCourses = createAppAsyncThunk(
+  "admin/searchCourses",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.searchCourses(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -35,9 +52,25 @@ export const createCourse = createAppAsyncThunk(
 
 export const getLandings = createAppAsyncThunk(
   "admin/getLandings",
-  async (_, { rejectWithValue }) => {
+  async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.getLandingsList();
+      const res = await adminApi.getLandingsList(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const searchLandings = createAppAsyncThunk(
+  "admin/searchLandings",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.searchLandings(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -67,9 +100,25 @@ export const createLanding = createAppAsyncThunk(
 
 export const getAuthors = createAppAsyncThunk(
   "admin/getAuthors",
-  async (_, { rejectWithValue }) => {
+  async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.getAuthorsList();
+      const res = await adminApi.getAuthorsList(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const searchAuthors = createAppAsyncThunk(
+  "admin/searchAuthors",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.searchAuthors(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -99,9 +148,25 @@ export const createAuthor = createAppAsyncThunk(
 
 export const getUsers = createAppAsyncThunk(
   "admin/getUsers",
-  async (_, { rejectWithValue }) => {
+  async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.getUsersList();
+      const res = await adminApi.getUsersList(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const searchUsers = createAppAsyncThunk(
+  "admin/searchUsers",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.searchUsers(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }

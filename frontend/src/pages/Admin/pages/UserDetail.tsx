@@ -10,9 +10,7 @@ import { t } from "i18next";
 import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../store/store.ts";
-import { getMe } from "../../../store/actions/userActions.ts";
+import Table from "../../../components/ui/Table/Table.tsx";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -20,11 +18,6 @@ const UserDetail = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<any>(null);
   const { userId } = useParams();
-  const dispatch = useDispatch<AppDispatchType>();
-
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
 
   useEffect(() => {
     if (userId) {
@@ -37,13 +30,13 @@ const UserDetail = () => {
     try {
       const [userRes, coursesRes] = await Promise.all([
         adminApi.getUser(userId),
-        adminApi.getCoursesList(),
+        adminApi.getCoursesList({ size: 100000 }),
       ]);
       setUser(userRes.data);
       setCourses(coursesRes.data.items);
       setLoading(false);
-    } catch (error) {
-      console.error("Error fetching data", error);
+    } catch (error: any) {
+      alert(`Error fetching user data, error message: ${error.message}`);
     }
   };
 
@@ -67,7 +60,6 @@ const UserDetail = () => {
 
   const handleSave = async () => {
     try {
-      console.log(user);
       await adminApi.updateUser(userId, user);
       navigate(-1);
     } catch (error) {
@@ -83,6 +75,20 @@ const UserDetail = () => {
       ) : (
         <>
           <div className={s.list}>
+            {!!user?.purchases.length && (
+              <Table
+                data={user.purchases}
+                columnLabels={{
+                  id: "ID",
+                  course_id: "Course ID",
+                  landing_name: "Landing",
+                  created_at: "Date",
+                  from_ad: "Ad",
+                  amount: "Amount",
+                }}
+              />
+            )}
+
             <div className={s.two_items}>
               <AdminField
                 type="input"

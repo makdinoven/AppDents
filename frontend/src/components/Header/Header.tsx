@@ -1,12 +1,13 @@
 import s from "./Header.module.scss";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
-import ModalWrapper from "../Modals/ModalWrapper/ModalWrapper.tsx";
-import { useEffect, useRef, useState } from "react";
-import LoginModal from "../Modals/LoginModal.tsx";
-import SignUpModal from "../Modals/SignUpModal.tsx";
-import ForgotPasswordModal from "../Modals/ForgotPasswordModal.tsx";
+import { useEffect, useRef } from "react";
 import { AppRootStateType } from "../../store/store.ts";
 import { useSelector } from "react-redux";
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
@@ -15,56 +16,39 @@ import LanguageChanger from "../ui/LanguageChanger/LanguageChanger.tsx";
 import { DentsLogo, HomeIcon, SearchIcon } from "../../assets/logos/index";
 import SearchDropdown from "../CommonComponents/SearchDropdown/SearchDropdown.tsx";
 import Glasses from "../../assets/Icons/Glasses.tsx";
+import { useTriggerRef } from "../../common/context/TriggerRefContext.tsx";
 
-const allowedModals = ["login", "sign-up", "password-reset"];
+const OPEN_SEARCH_KEY = "GS";
 
 const Header = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const navigate = useNavigate();
   const location = useLocation();
-  const { modalType } = useParams();
-  const userEmail = useSelector((state: AppRootStateType) => state.user.email);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { setTriggerRef } = useTriggerRef();
+  const localTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const navigate = useNavigate();
+  const isLogged = useSelector(
+    (state: AppRootStateType) => state.user.isLogged,
+  );
 
   useEffect(() => {
-    if (modalType && allowedModals.includes(modalType)) {
-      setIsModalOpen(true);
-    } else {
-      const pathWithoutModal = location.pathname
-        .split("/")
-        .filter((segment) => !allowedModals.includes(segment))
-        .join("/");
-
-      navigate(pathWithoutModal || "/", { replace: true });
-      setIsModalOpen(false);
+    if (localTriggerRef.current) {
+      setTriggerRef(localTriggerRef);
     }
-  }, [modalType, navigate]);
-
-  const handleOpenModal = (modal: string) => {
-    const newPath = location.pathname.endsWith("/")
-      ? `${location.pathname}${modal}`
-      : `${location.pathname}/${modal}`;
-
-    navigate(newPath, { replace: true });
-  };
-
-  const handleCloseModal = () => {
-    const pathWithoutModal = location.pathname
-      .split("/")
-      .filter((segment) => !allowedModals.includes(segment))
-      .join("/");
-
-    navigate(pathWithoutModal || "/", { replace: true });
-  };
+  }, [localTriggerRef, setTriggerRef]);
 
   const renderButton = () => {
-    if (!userEmail) {
+    if (!isLogged) {
       return (
         <UnstyledButton
-          ref={triggerRef}
-          onClick={() => handleOpenModal("login")}
-          className={`${s.login_btn} ${modalType ? s.login_btn_active : ""}`}
+          ref={localTriggerRef}
+          onClick={() =>
+            navigate(Path.login, {
+              state: {
+                backgroundLocation: location,
+              },
+            })
+          }
+          className={s.login_btn}
         >
           <Trans i18nKey="login" />
         </UnstyledButton>
@@ -80,19 +64,11 @@ const Header = () => {
     );
   };
 
-  const modalContent = modalType
-    ? {
-        login: {
-          title: "login",
-          component: <LoginModal onClose={handleCloseModal} />,
-        },
-        "sign-up": { title: "signup", component: <SignUpModal /> },
-        "password-reset": {
-          title: "passwordReset",
-          component: <ForgotPasswordModal />,
-        },
-      }[modalType]
-    : undefined;
+  const openSearch = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(OPEN_SEARCH_KEY, "");
+    setSearchParams(newParams, { replace: true });
+  };
 
   return (
     <>
@@ -113,10 +89,7 @@ const Header = () => {
                   <Glasses />
                 </Link>
               </UnstyledButton>
-              <UnstyledButton
-                className={s.search_button}
-                onClick={() => setShowSearch(true)}
-              >
+              <UnstyledButton className={s.search_button} onClick={openSearch}>
                 <SearchIcon />
               </UnstyledButton>
               <LanguageChanger />
@@ -127,25 +100,7 @@ const Header = () => {
         </div>
       </header>
 
-      {showSearch && (
-        <SearchDropdown
-          showDropdown={showSearch}
-          setShowDropdown={setShowSearch}
-        />
-      )}
-
-      {triggerRef.current && isModalOpen && modalContent && (
-        <ModalWrapper
-          title={modalContent.title}
-          cutoutPosition="top-right"
-          cutoutOffsetY={15}
-          triggerElement={triggerRef.current}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        >
-          {modalContent.component}
-        </ModalWrapper>
-      )}
+      <SearchDropdown openKey={OPEN_SEARCH_KEY} />
     </>
   );
 };
