@@ -1,24 +1,42 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List, Set
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
-from ..models.models_v2 import User, CartItemType
+from ..models.models_v2 import User, CartItemType, Cart, CartItem, Landing
 from ..services_v2 import cart_service as cs
 from ..services_v2.stripe_service import create_checkout_session    # ← уже есть:contentReference[oaicite:0]{index=0}:contentReference[oaicite:1]{index=1}
 from ..schemas_v2.cart import CartResponse
+from ..services_v2.cart_service import get_or_create_cart
 
 router = APIRouter(prefix="/api/cart", tags=["cart"])
 
 # ── CRUD ────────────────────────────────────────────────────────────────
 @router.get("", response_model=CartResponse)
 def my_cart(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: Session         = Depends(get_db),
+    current_user: User  = Depends(get_current_user),
 ):
-    return cs._get_or_create_cart(db, current_user)
+    # 1) убедимся, что корзина есть
+    cart = get_or_create_cart(db, current_user)
+
+    # 2) подгружаем все нужные связи
+    cart = (
+        db.query(Cart)
+          .options(
+             selectinload(Cart.items)
+               .selectinload(CartItem.landing)
+                 .selectinload(Landing.authors),
+             selectinload(Cart.items)
+               .selectinload(CartItem.landing)
+                 .selectinload(Landing.courses),
+          )
+          .filter(Cart.id == cart.id)
+          .first()
+    )
+    return cart
 
 @router.post("/landing/{landing_id}", response_model=CartResponse)
 def add_landing(

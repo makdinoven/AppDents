@@ -7,7 +7,7 @@ def _safe_price(v) -> float:
     except Exception:
         return 0.0
 
-def _get_or_create_cart(db: Session, user: User) -> Cart:
+def get_or_create_cart(db: Session, user: User) -> Cart:
     if user.cart:
         return user.cart
     cart = Cart(user_id=user.id)
@@ -23,7 +23,7 @@ def _recalc_total(cart: Cart) -> None:
 # Публичное API
 # ────────────────────────────────────────────────────────────────────────
 def add_landing(db: Session, user: User, landing_id: int) -> Cart:
-    cart   = _get_or_create_cart(db, user)
+    cart   = get_or_create_cart(db, user)
     landing = db.query(Landing).get(landing_id)
     if not landing:
         raise ValueError("Landing not found")
@@ -44,7 +44,7 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
     return cart
 
 def remove_item(db: Session, user: User, item_id: int) -> Cart:
-    cart = _get_or_create_cart(db, user)
+    cart = get_or_create_cart(db, user)
     item = next((i for i in cart.items if i.id == item_id), None)
     if item:
         db.delete(item)
@@ -54,7 +54,7 @@ def remove_item(db: Session, user: User, item_id: int) -> Cart:
     return cart
 
 def clear_cart(db: Session, user: User) -> Cart:
-    cart = _get_or_create_cart(db, user)
+    cart = get_or_create_cart(db, user)
     for i in list(cart.items):
         db.delete(i)
     cart.total_amount = 0
