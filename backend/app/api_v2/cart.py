@@ -11,7 +11,7 @@ from ..services_v2.stripe_service import create_checkout_session    # ← уже
 from ..schemas_v2.cart import CartResponse
 from ..services_v2.cart_service import get_or_create_cart
 
-router = APIRouter(prefix="/api/cart", tags=["cart"])
+router = APIRouter()
 
 # ── CRUD ────────────────────────────────────────────────────────────────
 @router.get("", response_model=CartResponse)
