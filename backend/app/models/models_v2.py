@@ -175,6 +175,12 @@ class Cart(Base):
                           onupdate=func.utc_timestamp(), nullable=False)
 
     user = relationship("User", back_populates="cart")
+    items = relationship(
+        "CartItem",
+        back_populates="cart",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
 
 class CartItemType(str, PyEnum):
     LANDING = "LANDING"
@@ -191,5 +197,5 @@ class CartItem(Base):
     price      = Column(Float, nullable=False)
     added_at   = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
 
-    cart    = relationship("Cart", backref="items")
+    cart = relationship("Cart", back_populates="items")
     landing = relationship("Landing")
