@@ -17,3 +17,6 @@ class CartResponse(BaseModel):
     total_amount : float
     updated_at   : datetime
     items        : List[CartItemOut]
+
+    class Config:
+        orm_mode = True
