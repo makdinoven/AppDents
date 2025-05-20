@@ -97,6 +97,8 @@ class User(Base):
     referral_code = Column(String(20), unique=True, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id"))
 
+    cart = relationship("Cart", uselist=False, back_populates="user")
+
     courses = relationship("Course", secondary=users_courses, back_populates="users")
     invited_users = relationship(
         "User",
@@ -162,3 +164,32 @@ class AdVisit(Base):
     ip_address  = Column(String(45))
 
     landing = relationship("Landing", backref="ad_visits")
+
+class Cart(Base):
+    __tablename__ = "carts"
+
+    id           = Column(Integer, primary_key=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    total_amount = Column(Float, default=0.0, nullable=False)
+    updated_at   = Column(DateTime, server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp(), nullable=False)
+
+    user = relationship("User", backref=backref("cart", uselist=False))
+
+class CartItemType(str, PyEnum):
+    LANDING = "LANDING"
+    BOOK    = "BOOK"            # резерв под будущее
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id         = Column(Integer, primary_key=True)
+    cart_id    = Column(Integer, ForeignKey("carts.id"), nullable=False)
+    item_type  = Column(Enum(CartItemType, name="cart_item_type"), nullable=False)
+    landing_id = Column(Integer, ForeignKey("landings.id"))
+    book_id    = Column(Integer)                      # для книг позже
+    price      = Column(Float, nullable=False)
+    added_at   = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    cart    = relationship("Cart", backref="items")
+    landing = relationship("Landing")
