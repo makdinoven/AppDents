@@ -174,7 +174,7 @@ class Cart(Base):
     updated_at   = Column(DateTime, server_default=func.utc_timestamp(),
                           onupdate=func.utc_timestamp(), nullable=False)
 
-    user = relationship("User", backref=backref("cart", uselist=False))
+    user = relationship("User", back_populates="cart")
 
 class CartItemType(str, PyEnum):
     LANDING = "LANDING"
