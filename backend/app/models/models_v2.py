@@ -69,6 +69,11 @@ class Landing(Base):
     courses = relationship("Course", secondary=landing_course)
     tags = relationship("Tag", secondary=landing_tags, back_populates="landings")
 
+    @hybrid_property
+    def course_ids(self) -> list[int]:
+        """Список ID курсов, связанных с этим лендингом."""
+        return [c.id for c in self.courses]
+
 class Tag(Base):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True)
