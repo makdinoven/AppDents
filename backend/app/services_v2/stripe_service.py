@@ -71,6 +71,7 @@ def _hash_plain(value: str) -> str:
 # ────────────────────────────────────────────────────────────────
 def _build_fb_event(
     *,
+    event_name: str = "Purchase",        # ➊ новое
     email: str,
     amount: float,
     currency: str,
@@ -84,35 +85,11 @@ def _build_fb_event(
     first_name: str | None = None,
     last_name: str | None = None,
 ) -> dict:
-    """Формирует один payload Purchase для Conversions API."""
-
-    if not email:
-        raise ValueError("Empty email for Facebook Purchase event")
-
-    user_data: dict = {
-        "em": [_hash_email(email)],
-        "client_ip_address": None if client_ip == "0.0.0.0" else client_ip,
-        "client_user_agent": user_agent or None,
-    }
-
-    # дополнительные идентификаторы
-    if external_id:
-        user_data["external_id"] = [external_id]  # UUID / user_id можно не хэшировать
-    if fbp:
-        user_data["fbp"] = fbp
-    if fbc:
-        user_data["fbc"] = fbc
-
-    # персональные поля
-    if first_name:
-        user_data["fn"] = [_hash_plain(first_name)]
-    if last_name and last_name != first_name:
-        user_data["ln"] = [_hash_plain(last_name)]
-
+    ...
     event = {
         "data": [
             {
-                "event_name": "Purchase",
+                "event_name": event_name,          # ➋ вместо хардкода
                 "event_time": event_time,
                 "user_data": user_data,
                 "custom_data": {
@@ -125,16 +102,16 @@ def _build_fb_event(
         ]
     }
     logging.info(
-        "FB event built → %s | amount=%s %s | courses=%s",
+        "FB event built → %s | %s | amount=%s %s | courses=%s",
         email,
+        event_name,
         amount,
         currency.upper(),
         course_ids,
     )
     return event
 
-
-def _send_facebook_purchase(
+def _send_facebook_events(
     *,
     email: str,
     amount: float,
@@ -149,9 +126,26 @@ def _send_facebook_purchase(
     first_name: str | None = None,
     last_name: str | None = None,
 ) -> None:
-    """Отправляет Purchase во все пиксели из settings, логируя каждый шаг."""
+    """Шлёт Purchase в два пикселя и Donate в третий."""
 
-    event_payload = _build_fb_event(
+    # ——— 1. Собираем payload-ы
+    purchase_payload = _build_fb_event(
+        event_name="Purchase",
+        email=email,
+        amount=amount,
+        currency=currency,
+        course_ids=course_ids,
+        client_ip=client_ip,
+        user_agent=user_agent,
+        event_time=event_time,
+        external_id=external_id,
+        fbp=fbp,
+        fbc=fbc,
+        first_name=first_name,
+        last_name=last_name,
+    )
+    donate_payload = _build_fb_event(            # отличается только именем
+        event_name="Donate",
         email=email,
         amount=amount,
         currency=currency,
@@ -166,28 +160,39 @@ def _send_facebook_purchase(
         last_name=last_name,
     )
 
-    pixels = [
+    # ——— 2. Список пикселей
+    pixels_purchase = [
         {"id": settings.FACEBOOK_PIXEL_ID, "token": settings.FACEBOOK_ACCESS_TOKEN},
         {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS,
          "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
     ]
+    pixel_donation = {
+        "id": settings.FACEBOOK_PIXEL_ID_DONATION,
+        "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
+    }
 
-    for p in pixels:
+    # ——— 3. Отправляем
+    def _post(pixel: dict, payload: dict, tag: str):
         try:
             resp = requests.post(
-                f"https://graph.facebook.com/v18.0/{p['id']}/events",
-                params={"access_token": p["token"]},
-                json=event_payload,
+                f"https://graph.facebook.com/v18.0/{pixel['id']}/events",
+                params={"access_token": pixel["token"]},
+                json=payload,
                 timeout=3,
             )
             if resp.status_code == 200:
-                logging.info("FB Pixel %s — OK (email=%s)", p["id"], email)
+                logging.info("FB %s Pixel %s — OK (email=%s)",
+                             tag, pixel['id'], email)
             else:
-                logging.error("FB Pixel %s — %s %s",
-                              p["id"], resp.status_code, resp.text)
+                logging.error("FB %s Pixel %s — %s %s",
+                              tag, pixel['id'], resp.status_code, resp.text)
         except Exception as e:
-            logging.error("FB Pixel %s failed: %s", p["id"], e, exc_info=True)
+            logging.error("FB %s Pixel %s failed: %s",
+                          tag, pixel['id'], e, exc_info=True)
 
+    for p in pixels_purchase:
+        _post(p, purchase_payload, "Purchase")
+    _post(pixel_donation, donate_payload, "Donate")
 
 # ────────────────────────────────────────────────────────────────
 # Stripe helpers
@@ -452,7 +457,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     db.commit()
 
     # 9. Отправляем событие Purchase в FB
-    _send_facebook_purchase(
+    _send_facebook_events(
         email=email,
         amount=session_obj["amount_total"] / 100,
         currency=session_obj["currency"],
