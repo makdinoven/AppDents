@@ -1,8 +1,11 @@
 .list_wrapper {
   position: relative;
+  @include flex-column;
+  gap: 30px;
 }
 
 .list {
+  display: grid;
   column-gap: 20px;
   row-gap: 30px;
 }
@@ -14,16 +17,16 @@
   justify-content: center;
 }
 
-@media (max-width: $sm-breakpoint) {
+@media (max-width: $middle-breakpoint) {
   .list {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .list {
-    display: flex !important;
+    display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
   }
 }

@@ -9,6 +9,7 @@ import { AppDispatchType } from "./store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { setLanguage } from "./store/slices/userSlice.ts";
 import ScrollToTop from "./common/helpers/ScrollToTop.tsx";
+import { getMe } from "./store/actions/userActions.ts";
 
 function App() {
   const location = useLocation();
@@ -24,9 +25,10 @@ function App() {
   }, [location.pathname]);
 
   useEffect(() => {
+    dispatch(getMe());
     const storedLanguage = localStorage.getItem("DENTS_LANGUAGE") || language;
     dispatch(setLanguage(storedLanguage));
-  }, [dispatch]);
+  }, []);
 
   return (
     <>

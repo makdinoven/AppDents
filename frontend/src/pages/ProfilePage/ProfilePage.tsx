@@ -1,21 +1,18 @@
 import s from "./ProfilePage.module.scss";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
-import { useEffect } from "react";
-import { getMe } from "../../store/actions/userActions.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../store/store.ts";
 import { Outlet, useNavigate } from "react-router-dom";
-import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
+import Loader from "../../components/ui/Loader/Loader.tsx";
 
 const ProfilePage = () => {
-  const dispatch = useDispatch<AppDispatchType>();
-  const { role } = useSelector((state: AppRootStateType) => state.user);
+  const role = useSelector((state: AppRootStateType) => state.user.role);
+  const loading = useSelector((state: AppRootStateType) => state.user.loading);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
+  if (loading) return <Loader />;
 
   return (
     <>

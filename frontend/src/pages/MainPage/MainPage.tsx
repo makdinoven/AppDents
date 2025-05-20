@@ -1,7 +1,6 @@
 import Hero from "./Hero/Hero.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { useEffect, useRef, useState } from "react";
-import { getMe } from "../../store/actions/userActions.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
@@ -23,7 +22,6 @@ const MainPage = () => {
   const coursesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    dispatch(getMe());
     handleSetActiveParam("filter", filterFromUrl);
     handleSetActiveParam("sort", sortFromUrl);
     if (tags.length < 1) {

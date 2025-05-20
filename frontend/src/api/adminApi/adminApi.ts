@@ -1,10 +1,18 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
+import { ParamsType } from "./types.ts";
 
 export const adminApi = {
-  getCoursesList() {
-    return instance.get("courses/list?size=1000", {
+  getCoursesList(params: ParamsType) {
+    return instance.get("courses/list", {
       headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  searchCourses(params: ParamsType) {
+    return instance.get("courses/list/search", {
+      headers: getAuthHeaders(),
+      params: params,
     });
   },
   getCourse(id: any) {
@@ -28,9 +36,16 @@ export const adminApi = {
     });
   },
 
-  getLandingsList() {
-    return instance.get("landings/list?size=1000", {
+  getLandingsList(params: ParamsType) {
+    return instance.get("landings/list", {
       headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  searchLandings(params: ParamsType) {
+    return instance.get("landings/list/search", {
+      headers: getAuthHeaders(),
+      params: params,
     });
   },
   getLanding(id: any) {
@@ -63,8 +78,11 @@ export const adminApi = {
     );
   },
 
-  getAuthorsList() {
-    return instance.get("authors/?size=1000");
+  getAuthorsList(params: ParamsType) {
+    return instance.get("authors/", { params: params });
+  },
+  searchAuthors(params: ParamsType) {
+    return instance.get("authors/search", { params: params });
   },
   getAuthor(id: any) {
     return instance.get(`authors/detail/${id}`);
@@ -85,9 +103,16 @@ export const adminApi = {
     });
   },
 
-  getUsersList() {
-    return instance.get("users/admin/users?size=100000", {
+  getUsersList(params: ParamsType) {
+    return instance.get("users/admin/users", {
       headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  searchUsers(params: ParamsType) {
+    return instance.get("users/admin/users/search", {
+      headers: getAuthHeaders(),
+      params: params,
     });
   },
   getUser(id: any) {

@@ -1,7 +1,6 @@
 import s from "./Lesson.module.scss";
 import { Trans } from "react-i18next";
 import ProgramContent from "../ProgramContent/ProgramContent.tsx";
-import { isValidUrl } from "../../../../../../common/helpers/helpers.ts";
 
 const Lesson = ({ lesson, renderBuyButton }: any) => {
   return (
@@ -17,7 +16,7 @@ const Lesson = ({ lesson, renderBuyButton }: any) => {
         <div className={s.lesson_content}>
           <div className={s.video_container}>
             <div className={s.video_wrapper}>
-              {isValidUrl(lesson.link) && lesson.link.length > 0 ? (
+              {lesson.link?.length > 0 ? (
                 // <iframe src={lesson.link} frameBorder="0" />
                 <video controls>
                   <source src={lesson.link} type="video/mp4" />

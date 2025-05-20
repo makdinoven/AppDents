@@ -1,10 +1,8 @@
 import s from "./ProfessorPage.module.scss";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import { useParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
+import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
-import { getMe } from "../../store/actions/userActions.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import Loader from "../../components/ui/Loader/Loader.tsx";
 import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
@@ -22,7 +20,6 @@ import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 
 const ProfessorPage = () => {
   const { professorId } = useParams();
-  const dispatch = useDispatch<AppDispatchType>();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const language = useSelector((state: any) => state.user.language);
@@ -30,10 +27,6 @@ const ProfessorPage = () => {
   const currentUrl = window.location.origin + location.pathname;
   const screenWidth = useScreenWidth();
   const [showFullDescription, setShowFullDescription] = useState(false);
-
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
 
   useEffect(() => {
     fetchProfessorData();

@@ -15,19 +15,11 @@ import {
   denormalizeCourse,
   normalizeCourse,
 } from "../../../common/helpers/helpers.ts";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../store/store.ts";
-import { getMe } from "../../../store/actions/userActions.ts";
 
 const CourseDetail = () => {
   const { courseId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatchType>();
-
-  useEffect(() => {
-    dispatch(getMe());
-  }, [dispatch]);
 
   useEffect(() => {
     if (courseId) {
@@ -39,8 +31,8 @@ const CourseDetail = () => {
     try {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      alert(`Error fetching course data, error message: ${error.message}`);
     }
   };
 

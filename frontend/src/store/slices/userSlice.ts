@@ -27,7 +27,7 @@ const initialState: UserState = {
   id: null,
   email: null,
   role: null,
-  loading: false,
+  loading: true,
   error: null,
   isLogged: false,
   language: savedLanguage,
@@ -39,15 +39,9 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
-      if (
-        window.location.pathname.startsWith("/admin") ||
-        window.location.pathname.startsWith("/profile")
-      ) {
-        window.location.href = "/";
-      }
       state.email = null;
       state.role = null;
-      state.loading = false;
+      state.loading = true;
       state.error = null;
       state.isLogged = false;
       localStorage.removeItem("access_token");
@@ -101,14 +95,12 @@ const userSlice = createSlice({
         userSlice.caseReducers.logout(state);
       })
       .addCase(getCourses.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.courses = action.payload.res.data;
-          state.loading = false;
         },
       );
   },

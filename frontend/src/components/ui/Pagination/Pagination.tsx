@@ -1,19 +1,23 @@
+import { useSearchParams } from "react-router-dom";
 import s from "./Pagination.module.scss";
 import PaginationButton from "./PaginationButton/PaginationButton.tsx";
 
 type PaginationProps = {
-  page: number;
-  setPage: (page: number) => void;
   totalPages: number;
 };
 
-const Pagination = ({ page, setPage, totalPages }: PaginationProps) => {
+const Pagination = ({ totalPages }: PaginationProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = parseInt(searchParams.get("page") || "1", 10);
+
   if (totalPages <= 1) return null;
 
   const changePage = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("page", newPage.toString());
+      setSearchParams(newParams);
       window.scrollTo({ top: 0 });
-      setPage(newPage);
     }
   };
 

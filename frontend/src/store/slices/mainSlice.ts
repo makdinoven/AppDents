@@ -27,7 +27,12 @@ const initialState: MainState = {
 const mainSlice = createSlice({
   name: "main",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCourses: (state) => {
+      state.courses = [];
+      state.totalCourses = 0;
+    },
+  },
 
   extraReducers: (builder) => {
     builder
@@ -69,4 +74,5 @@ const mainSlice = createSlice({
   },
 });
 
+export const { clearCourses } = mainSlice.actions;
 export const mainReducer = mainSlice.reducer;

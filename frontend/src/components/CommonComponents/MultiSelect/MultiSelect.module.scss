@@ -2,8 +2,8 @@
   @include clamped-p2;
   @include flex-column;
   position: relative;
-  gap: 5px;
-  min-height: 95px;
+  //gap: 5px;
+  //min-height: 95px;
 
   @media (max-width: $mobile-breakpoint) {
     min-height: unset;

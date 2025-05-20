@@ -1,11 +1,10 @@
 from typing import List
 
-from sqlalchemy import func, or_, Integer, cast
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models import models_v2 as m
-from ..schemas_v2.wallet import ReferralReportItem
 from ..services_v2.user_service import generate_unique_referral_code
 
 
@@ -35,48 +34,31 @@ def get_wallet_transactions(db: Session, user_id: int) -> List[m.WalletTransacti
     )
 
 
-def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
-    """
-    Возвращает список приглашённых + суммы.
-    Работает и в MySQL, и в PostgreSQL.
-    """
-    invited = db.query(m.User).filter(m.User.invited_by_id == inviter_id).all()
-    report = []
+def get_referral_report(db: Session, inviter_id: int):
+    """Возвращает список (User, total_paid, total_cashback)."""
 
-    for u in invited:
-        # 1) сколько потратил приглашённый
+    # Все приглашённые пользователи
+    invitees: List[m.User] = db.query(m.User).filter(m.User.invited_by_id == inviter_id).all()
+
+    report = []
+    for u in invitees:
         total_paid = (
             db.query(func.coalesce(func.sum(m.Purchase.amount), 0.0))
-              .filter(m.Purchase.user_id == u.id)
-              .scalar() or 0.0
+            .filter(m.Purchase.user_id == u.id)
+            .scalar()
+            or 0.0
         )
-
-        # 2) сколько кэшбэка получили с этого приглашённого
-        # --- MySQL-совместимый фильтр JSON ---
-        from_user_filter = cast(
-            func.JSON_UNQUOTE(
-                func.JSON_EXTRACT(m.WalletTransaction.meta, '$.from_user')
-            ),
-            Integer
-        ) == u.id
 
         total_cashback = (
             db.query(func.coalesce(func.sum(m.WalletTransaction.amount), 0.0))
-              .filter(
-                  m.WalletTransaction.user_id == inviter_id,
-                  m.WalletTransaction.type == m.WalletTxTypes.REFERRAL_CASHBACK,
-                  from_user_filter
-              )
-              .scalar() or 0.0
-        )
-
-        report.append(
-            ReferralReportItem(
-                user_id=u.id,
-                email=u.email,
-                total_paid=total_paid,
-                total_cashback=total_cashback
+            .filter(
+                m.WalletTransaction.user_id == inviter_id,
+                m.WalletTransaction.type == m.WalletTxTypes.REFERRAL_CASHBACK,
+                m.WalletTransaction.meta['from_user'].astext.cast("int") == u.id,
             )
+            .scalar()
+            or 0.0
         )
+        report.append((u, total_paid, total_cashback))
 
     return report

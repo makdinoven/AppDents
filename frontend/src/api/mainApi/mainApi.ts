@@ -1,5 +1,6 @@
 import { instance } from "../api-instance.ts";
 import { getFacebookData } from "../../common/helpers/helpers.ts";
+import { ParamsType } from "../adminApi/types.ts";
 
 export const mainApi = {
   getTags() {
@@ -27,32 +28,27 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  searchCourses(query: string, language: string, signal?: any) {
+  searchCourses(params: { q: string; language: string }) {
     return instance.get(`landings/search`, {
-      params: {
-        language: language,
-        q: query,
-      },
-      signal,
+      params,
     });
   },
 
-  getProfessors(params: { language: string; size: number; page: number }) {
+  getProfessors(params: ParamsType) {
     return instance.get("authors/", {
       params: params,
     });
   },
-  searchProfessors(params: {
-    language: string;
-    size: number;
-    page: number;
-    q: string;
-  }) {
+  searchProfessors(params: ParamsType) {
     return instance.get("authors/search", {
       params: params,
     });
   },
   getProfessorDetail(id: number) {
     return instance.get(`/authors/full_detail/${id}`);
+  },
+
+  trackFacebookAd(slug: string) {
+    return instance.post(`/landings/track-ad/${slug}`);
   },
 };

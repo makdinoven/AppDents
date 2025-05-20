@@ -28,7 +28,7 @@
 .dropdown_content {
   position: relative;
   @include flex-column;
-  gap: 30px;
+  gap: 10px;
   align-items: center;
   color: $accent;
   padding: 25px;
@@ -48,7 +48,14 @@
 }
 
 .search_wrapper {
+  @include flex-column;
+  gap: 10px;
   width: 80%;
+}
+
+.search_results {
+  @include clamped-p3;
+  text-align: right;
 }
 
 .close_button {
@@ -192,25 +199,29 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .dropdown_wrapper {
-    margin: 0 0 40px;
-  }
+  //.dropdown_wrapper {
+  //  margin: 0 0 40px;
+  //}
 
   .dropdown_content {
-    padding: 20px;
+    padding: 17px;
   }
 
   .search_wrapper {
     width: 100%;
   }
 
+  .search_results {
+    text-align: center;
+  }
+
   .close_button {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
   }
 
   .dropdown_container {
-    padding: 70px 15px 15px;
+    padding: 70px 15px;
     border-radius: 10px;
     gap: 10px;
   }

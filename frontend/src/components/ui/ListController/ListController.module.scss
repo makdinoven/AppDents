@@ -1,0 +1,20 @@
+.list_controller_container {
+  @include flex-column;
+  gap: 40px;
+}
+
+.search_container {
+  @include flex-column;
+  gap: 10px;
+  p {
+    @include clamped-p3;
+    text-align: right;
+    opacity: 0.8;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .list_controller_container {
+    gap: 25px;
+  }
+}
