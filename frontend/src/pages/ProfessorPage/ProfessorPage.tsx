@@ -151,6 +151,7 @@ const ProfessorPage = () => {
           <div className={s.professor_cards}>
             <SectionHeader name={"professor.professorsCourses"} />
             <CardsList
+              // isClient={true}
               filter={"all"}
               loading={false}
               cards={professor.landings}
