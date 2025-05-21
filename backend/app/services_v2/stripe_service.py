@@ -10,6 +10,7 @@
 """
 
 import hashlib
+import json
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -22,7 +23,7 @@ from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, AdVisit, WalletTxTypes
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -35,25 +36,11 @@ from ..utils.email_sender import (
 )
 from ..services_v2.wallet_service import get_cashback_percent
 
-# ────────────────────────────────────────────────────────────────
-# Константы и базовая настройка логов
-# ────────────────────────────────────────────────────────────────
-AD_INACTIVITY_HOURS = 1     # TTL флага in_advertising после продажи (часы)
-AD_VISIT_WINDOW_HOURS = 3   # окно, в котором считаем посещения рекламой (часы)
-
 logging.basicConfig(level=logging.INFO)
 
 # ────────────────────────────────────────────────────────────────
 # Вспомогательные функции
 # ────────────────────────────────────────────────────────────────
-def _landing_has_recent_ad_visits(db: Session, landing_id: int) -> bool:
-    """True, если у лендинга были визиты из рекламы за последние N часов."""
-    since = datetime.utcnow() - timedelta(hours=AD_VISIT_WINDOW_HOURS)
-    return db.query(
-        db.query(AdVisit)
-        .filter(AdVisit.landing_id == landing_id, AdVisit.visited_at >= since)
-        .exists()
-    ).scalar()
 
 
 def _hash_email(email: str) -> str:
@@ -260,7 +247,8 @@ def create_checkout_session(
     request: Request,
     fbp: str | None = None,
     fbc: str | None = None,
-    landing_id: int | None = None,
+    landing_ids: list[int] | None = None,
+    from_ad : bool | None = None,
 ) -> str:
     """Создаёт Stripe Checkout Session и возвращает URL оплаты."""
 
@@ -300,8 +288,13 @@ def create_checkout_session(
         metadata["fbp"] = fbp
     if fbc:
         metadata["fbc"] = fbc
-    if landing_id is not None:
-        metadata["landing_id"] = str(landing_id)
+    if landing_ids:
+        # сериализуем список в JSON-строку, чтобы в webhook легко распарсить
+        metadata["landing_ids"] = json.dumps(landing_ids)
+
+    if from_ad is not None:
+        # сохраняем точно то, что придёт с фронта: "true" или "false"
+        metadata["from_ad"] = str(from_ad).lower()
 
     logging.info("Metadata for Stripe session: %s", metadata)
 
@@ -358,8 +351,11 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                      session_id, session_obj.get("payment_status"))
         return {"status": "unpaid"}
 
+
     metadata = session_obj.get("metadata", {}) or {}
     logging.info("Получены метаданные: %s", metadata)
+
+
 
     # 4. Основные данные заказа
     email = session_obj.get("customer_email")
@@ -368,8 +364,42 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     ]
     logging.info("Преобразованные course_ids: %s", course_ids)
 
+    # разбираем landing_ids из metadata
+    # разбираем landing_ids из metadata
+    raw = metadata.get("landing_ids", "")
+    try:
+        landing_ids_list = json.loads(raw)
+    except ValueError:
+        landing_ids_list = [int(x) for x in raw.split(",") if x.strip()]
+
+    # fallback: если landing_ids не пришёл или пустой — определяем лендинг по referer или первому курсу
+    if not landing_ids_list:
+        referer = metadata.get("referer", "")
+        landing_for_purchase = None
+
+        # пробуем по slug из referer
+        if referer:
+            slug = urlparse(referer).path.strip("/").split("/")[-1]
+            landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
+
+        # если по referer не нашли — первый лендинг первого курса
+        if not landing_for_purchase and course_ids:
+            landing_for_purchase = (
+                db.query(Landing)
+                .join(Landing.courses)
+                .filter(Course.id == course_ids[0])
+                .first()
+            )
+
+        # сохраняем в список
+        if landing_for_purchase:
+            landing_ids_list = [landing_for_purchase.id]
     # 5. Точное время события
     event_time = session_obj.get("created", int(datetime.utcnow().timestamp()))
+
+    raw_from_ad = metadata.get("from_ad", "false").lower()
+    from_ad = (raw_from_ad == "true")
+    logging.info("from_ad (из metadata) = %s", from_ad)
 
     # 6. Персональные данные
     full_name = session_obj.get("customer_details", {}).get("name", "") or ""
@@ -383,34 +413,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     external_id = metadata.get("external_id")
     fbp_value = metadata.get("fbp")
     fbc_value = metadata.get("fbc")
-
-     # 8. Попытка взять лэндинг из metadata
-    landing_for_purchase = None
-    landing_id_meta = metadata.get("landing_id")
-
-    if landing_id_meta:
-        try:
-            landing_for_purchase = db.query(Landing).get(int(landing_id_meta))
-            logging.info("Лендинг определён по metadata landing_id: %s", landing_id_meta)
-        except Exception as e:
-               logging.warning(
-                      "Не удалось загрузить лендинг по metadata landing_id=%s: %s",
-                  landing_id_meta, e)
-
-    # 8. Лэндинги + рекламный трафик
-    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
-    all_landings: List[Landing] = (
-        db.query(Landing)
-        .join(Landing.courses)
-        .filter(Course.id.in_(course_ids))
-        .all()
-    )
-    landings_recent_ad = {
-        ln.id for ln in all_landings if _landing_has_recent_ad_visits(db, ln.id)
-    }
-    from_ad = bool(landings_recent_ad)
-    logging.info("from_ad (по визитам) = %s", from_ad)
-
 
     # 10. Пользователь
     user = get_user_by_email(db, email)
@@ -427,6 +429,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.info("Найден существующий пользователь: %s", user.id)
 
     # 11. Курсы → пользователю
+    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
     already_owned, new_courses = [], []
     for course_obj in courses_db:
         if course_obj in user.courses:
@@ -439,53 +442,22 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)
 
-    if not landing_for_purchase:
-        referer = metadata.get("referer", "")
-        if referer:
-            try:
-                slug = urlparse(referer).path.strip("/").split("/")[-1]
-                landing_for_purchase = (
-                    db.query(Landing)
-                    .filter(Landing.page_name == slug)
-                    .first()
-                )
-                logging.info(
-                    "Лендинг определён по referer: %s → ID %s",
-                    referer,
-                    landing_for_purchase.id if landing_for_purchase else None
-                )
-            except Exception as e:
-                logging.warning(
-                    "Не удалось определить лендинг по referer %s: %s",
-                    referer, e
-                )
-
-        # Фоллбэк: первый лендинг первого нового курса
-        if not landing_for_purchase and new_courses:
-            first_course = new_courses[0]
-            landing_for_purchase = (
-                db.query(Landing)
-                .join(Landing.courses)
-                .filter(Course.id == first_course.id)
-                .first()
-            )
-            logging.info(
-                "Лендинг по умолчанию для курса %s: ID %s",
-                first_course.id,
-                landing_for_purchase.id if landing_for_purchase else None
-            )
-
     # Запись Purchase с правильным landing_id
     purchase = None
     if new_courses:
-        purchase = Purchase(
-            user_id=user.id,
-            course_id=None,
-            landing_id=landing_for_purchase.id if landing_for_purchase else None,
-            from_ad=from_ad,
-            amount=session_obj["amount_total"] / 100,
-        )
-        db.add(purchase)
+        # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
+        amount_total = session_obj["amount_total"] / 100.0
+        for idx, lid in enumerate(landing_ids_list):
+            p = Purchase(
+                user_id=user.id,
+                course_id=None,
+                landing_id=lid,
+                from_ad=from_ad,
+                amount=amount_total if idx == 0 else 0.0,
+            )
+            db.add(p)
+            if idx == 0:
+                purchase = p
     db.commit()
 
     # 9. Отправляем событие Purchase в FB
