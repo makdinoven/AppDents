@@ -43,6 +43,9 @@ const ProfessorPage = () => {
   };
 
   const paymentData = {
+    landing_ids: professor?.landings.map(
+      (landing: { id: number }) => landing.id,
+    ),
     course_ids: professor?.course_ids,
     price_cents: professor?.total_new_price * 100,
     total_new_price: professor?.total_new_price,
@@ -148,6 +151,7 @@ const ProfessorPage = () => {
           <div className={s.professor_cards}>
             <SectionHeader name={"professor.professorsCourses"} />
             <CardsList
+              // isClient={true}
               filter={"all"}
               loading={false}
               cards={professor.landings}

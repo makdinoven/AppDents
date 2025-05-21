@@ -51,10 +51,13 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
   const isModalOpen = useSelector(
     (state: AppRootStateType) => state.landing.isModalOpen,
   );
+  const isPromotionLanding =
+    location.pathname.includes(Path.landing) &&
+    !location.pathname.includes(Path.landingClient);
 
   const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
-    return searchParams.has("fbclid");
+    return searchParams.has("fbclid") || isPromotionLanding;
   }, [location.search]);
 
   useEffect(() => {
@@ -158,6 +161,8 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
   };
 
   const paymentData = {
+    from_ad: isPromotionLanding,
+    landing_ids: [landing?.id],
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     total_new_price: landing?.new_price,
