@@ -148,6 +148,7 @@ $card-body-padding-bottom: calc(
 }
 
 .photo {
+  background-color: $accent;
   position: relative;
   aspect-ratio: 16/9;
   width: 100%;
