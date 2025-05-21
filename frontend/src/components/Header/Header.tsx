@@ -161,6 +161,15 @@ const Header = () => {
             ) : (
               <>
                 <div className={s.nav_center}>
+                  {/*<button*/}
+                  {/*  onClick={() =>*/}
+                  {/*    navigate(Path.cart, {*/}
+                  {/*      state: { backgroundLocation: location },*/}
+                  {/*    })*/}
+                  {/*  }*/}
+                  {/*>*/}
+                  {/*  Открыть корзину*/}
+                  {/*</button>*/}
                   {NAV_BUTTONS.map((btn) => (
                     <NavButton
                       key={btn.text}

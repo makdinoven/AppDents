@@ -68,6 +68,7 @@ const CourseCard = ({
     try {
       const res = await mainApi.getLanding(cleanLink);
       setPaymentData({
+        landing_ids: [res.data?.id],
         course_ids: res.data?.course_ids,
         price_cents: res.data?.new_price * 100,
         total_new_price: res.data?.new_price,
