@@ -394,6 +394,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         # сохраняем в список
         if landing_for_purchase:
             landing_ids_list = [landing_for_purchase.id]
+    logging.info("Landings: %s", landing_ids_list)
     # 5. Точное время события
     event_time = session_obj.get("created", int(datetime.utcnow().timestamp()))
 
@@ -443,6 +444,11 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                          course_obj.name, course_obj.id, user.id)
 
     # Запись Purchase с правильным landing_id
+    for lid in landing_ids_list:
+        ln = db.query(Landing).filter_by(id=lid).one_or_none()
+        if ln:
+            ln.sales_count = (ln.sales_count or 0) + 1
+            logging.info("sales_count++ для лендинга ID=%s → %s", ln.id, ln.sales_count)
     purchase = None
     if new_courses:
         # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
