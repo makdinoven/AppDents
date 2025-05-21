@@ -158,6 +158,7 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
   };
 
   const paymentData = {
+    landing_ids: [landing?.id],
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     total_new_price: landing?.new_price,
