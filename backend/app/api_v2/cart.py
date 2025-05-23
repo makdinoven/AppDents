@@ -5,8 +5,9 @@ from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User, Cart, CartItem, Landing, CartItemType
 from ..schemas_v2.cart import CartResponse
 from ..services_v2.cart_service import get_or_create_cart, _safe_price
+from ..services_v2 import cart_service as cs
 
-router = APIRouter(prefix="/cart", tags=["cart"])
+router = APIRouter()
 
 def _calc_discount(n: int) -> float:
     """
@@ -72,3 +73,19 @@ def my_cart(
         "updated_at": cart.updated_at,
         "items": cart.items,
     }
+
+@router.post("/landing/{landing_id}", response_model=CartResponse)
+def add_landing(
+    landing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return cs.add_landing(db, current_user, landing_id)
+
+@router.delete("/item/{item_id}", response_model=CartResponse)
+def delete_item(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return cs.remove_item(db, current_user, item_id)
