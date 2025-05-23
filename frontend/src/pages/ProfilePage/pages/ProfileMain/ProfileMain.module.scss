@@ -19,6 +19,12 @@
     @include clamped-h3;
     text-transform: uppercase;
   }
+
+  .mail_link {
+    vertical-align: center;
+    text-decoration: underline;
+    color: $secondary-lighter;
+  }
 }
 
 .user_items {

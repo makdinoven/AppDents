@@ -22,8 +22,6 @@ class LandingInCart(BaseModel):
 class CartItemOut(BaseModel):
     id          : int
     item_type   : Literal["LANDING","BOOK"]
-    landing_id  : Optional[int]
-    book_id     : Optional[int]
     added_at    : datetime
     # ← новое поле со всей информацией о лендинге
     landing     : Optional[LandingInCart]

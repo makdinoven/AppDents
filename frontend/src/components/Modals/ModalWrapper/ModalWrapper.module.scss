@@ -30,10 +30,11 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 .modal_header {
   position: relative;
   background: $primary;
+  box-shadow: 0 4px 0 $primary;
 }
 
 .topRight {
-  border-top-left-radius: var(--border-radius);
+  border-top-left-radius: 20px;
   border-top-right-radius: 15px;
 
   @include circle-angle(
@@ -44,6 +45,22 @@ $content-padding-y: clamp(18px, 2vw, 26px);
     $offset-y: 20px,
     $shadow-color: $primary,
     $border-bottom-left-radius: 20px
+  );
+}
+
+.topLeft {
+  margin-left: auto;
+  border-top-right-radius: 20px;
+  border-top-left-radius: 10px;
+
+  @include circle-angle(
+    $bottom: 0,
+    $left: -20px,
+    $size: 20px,
+    $offset-x: 10px,
+    $offset-y: 10px,
+    $shadow-color: $primary,
+    $border-bottom-right-radius: 10px
   );
 }
 

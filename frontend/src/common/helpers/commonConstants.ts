@@ -1,4 +1,5 @@
 import { Path } from "../../routes/routes.ts";
+import { HomeIcon, ProfessorsIcon } from "../../assets/logos/index";
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },
@@ -7,6 +8,14 @@ export const LANGUAGES = [
   { label: "العربية", value: "AR" },
   { label: "Português", value: "PT" },
   { label: "Italiano", value: "IT" },
+];
+
+export const NAV_BUTTONS = [
+  { icon: HomeIcon, text: "nav.home", link: Path.main },
+  // { icon: CoursesIcon, text: "nav.courses", link: "Path.courses" },
+  // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
+  { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
+  // { icon: CartIcon, text: "nav.cart", link: "Path.cart" },
 ];
 
 export const AUTH_MODAL_ROUTES = [Path.login, Path.signUp, Path.passwordReset];
@@ -43,6 +52,8 @@ export const INITIAL_USER = {
   password: "Newuserpassword123!",
   role: "user",
 };
+
+export const OPEN_SEARCH_KEY = "GS";
 
 export const BASE_URL = "https://dent-s.com";
 

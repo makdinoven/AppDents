@@ -1,0 +1,67 @@
+.scroll_btn {
+  width: 50px;
+  height: 50px;
+  padding: 10px;
+  @include flex-center;
+  position: fixed;
+  bottom: 30px;
+  right: 50px;
+  background-color: $background-color;
+  border: 0.5px solid $accent;
+  border-radius: 100%;
+  z-index: 300;
+  opacity: 0;
+  @include transition;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+
+  &.show {
+    opacity: 1;
+  }
+
+  svg {
+    $size: 19px;
+    width: $size;
+    height: $size;
+    min-width: $size;
+    min-height: $size;
+    transform: rotate(-90deg);
+
+    path {
+      @include transition;
+      fill: $accent;
+    }
+  }
+
+  &:active {
+    background-color: $primary;
+    //border-color: $primary;
+
+    svg {
+      path {
+        fill: $background-color;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $primary;
+      border-color: $primary;
+
+      svg {
+        path {
+          fill: $background-color;
+        }
+      }
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    & {
+      width: 42px;
+      height: 42px;
+      bottom: 75px;
+      right: 10px;
+    }
+  }
+}

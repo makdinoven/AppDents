@@ -14,6 +14,7 @@ import { getCourses } from "../../../store/actions/mainActions.ts";
 type props = {
   sectionTitle: string;
   pageSize: number;
+  isClient?: boolean;
   tags?: any[];
   activeFilter?: string;
   activeSort?: string;
@@ -21,11 +22,14 @@ type props = {
   showSort?: boolean;
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
+  ref?: React.RefObject<any>;
 };
 
 const CoursesSection = ({
+  ref,
   sectionTitle,
   pageSize,
+  isClient = true,
   tags,
   showFilters = false,
   showSort = false,
@@ -99,7 +103,7 @@ const CoursesSection = ({
   };
 
   return (
-    <section className={s.courses}>
+    <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         <SectionHeader name={sectionTitle} />
         {showFilters && tags && tags.length > 0 && (
@@ -121,6 +125,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isClient={isClient}
         filter={activeFilter}
         handleSeeMore={handleSeeMore}
         loading={loading}

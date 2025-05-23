@@ -3,6 +3,8 @@ import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
 import { t } from "i18next";
 import { Path } from "../../routes/routes";
+import { NAV_BUTTONS } from "../../common/helpers/commonConstants.ts";
+import NavButton from "../Header/modules/NavButton/NavButton.tsx";
 
 type FooterItem = {
   type: string;
@@ -93,12 +95,26 @@ const Footer = () => {
 
   return (
     <footer className={s.footer}>
-      <div className={s.content}>
-        {footerSections.map((section) => renderFooterSection(section))}
+      <div className={s.footer_container}>
+        <div className={s.content}>
+          {footerSections.map((section) => renderFooterSection(section))}
+
+          <nav className={s.nav_buttons}>
+            {NAV_BUTTONS.map((btn) => (
+              <NavButton
+                key={btn.text}
+                appearance={"footer"}
+                icon={btn.icon}
+                text={btn.text}
+                link={btn.link}
+              />
+            ))}
+          </nav>
+        </div>
+        <p className={s.copyright}>
+          <Trans i18nKey={"footer.copyright"} />
+        </p>
       </div>
-      {/*<div className={s.logo}>*/}
-      {/*  <DentsLogo />*/}
-      {/*</div>*/}
     </footer>
   );
 };

@@ -23,6 +23,7 @@ import AuthModalManager from "../components/AuthModalManager/AuthModalManager.ts
 import { AUTH_MODAL_ROUTES } from "../common/helpers/commonConstants.ts";
 import ProtectedRoute from "./protected/ProtectedRoute.tsx";
 import AdminRoute from "./protected/AdminRoute.tsx";
+import Cart from "../pages/Cart/Cart.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -36,8 +37,17 @@ export const AppRoutes: FC = () => {
           {AUTH_MODAL_ROUTES.map((path) => (
             <Route key={path} path={path} element={<MainPage />} />
           ))}
+          <Route path={Path.cart} element={<MainPage />} />
+
           <Route index element={<MainPage />} />
-          <Route path={`${Path.landing}/:landingPath?`} element={<Landing />} />
+          <Route
+            path={`${Path.landing}/:landingPath?`}
+            element={<Landing isClient={false} />}
+          />
+          <Route
+            path={`${Path.landingClient}/:landingPath?`}
+            element={<Landing isClient={true} />}
+          />
           <Route path={Path.successPayment} element={<SuccessPayment />} />
           <Route
             path={`${Path.professor}/:professorId`}
@@ -97,6 +107,7 @@ export const AppRoutes: FC = () => {
       </Routes>
 
       {(backgroundLocation || isModalRoute) && <AuthModalManager />}
+      {location.pathname === Path.cart && backgroundLocation && <Cart />}
     </>
   );
 };

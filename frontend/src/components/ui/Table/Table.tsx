@@ -35,7 +35,7 @@ const Table = <T extends Record<string, any>>({
                 <td key={key}>
                   {key === "landing_name" ? (
                     <a
-                      href={`${Path.landing}/${row.slug ? row.slug : row.landing_slug}`}
+                      href={`${Path.landingClient}/${row.slug ? row.slug : row.landing_slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

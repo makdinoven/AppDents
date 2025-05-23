@@ -1,0 +1,120 @@
+$hoverColor: $primary;
+
+.navButton {
+  color: $text-color-accent;
+  font-size: 20px;
+  @include transition();
+  @include flex-center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 10px;
+
+  &.vertical {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+
+    .icon {
+      width: 23px;
+      height: 23px;
+    }
+  }
+
+  .icon {
+    width: 27px;
+    height: 34px;
+
+    path {
+      @include transition;
+    }
+  }
+
+  &.active {
+    color: $hoverColor;
+    .icon {
+      path {
+        stroke: $hoverColor;
+      }
+    }
+  }
+
+  &.light {
+    color: $background-color;
+
+    .icon {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+
+  &.light.active {
+    color: $accent;
+
+    .icon {
+      path {
+        stroke: $accent;
+      }
+    }
+  }
+
+  //@media (hover: hover) {
+  &:hover {
+    color: $hoverColor;
+
+    .icon {
+      path {
+        stroke: $hoverColor;
+      }
+    }
+  }
+
+  &.light:hover {
+    color: $accent;
+
+    .icon {
+      path {
+        stroke: $accent;
+      }
+    }
+  }
+  //}
+
+  &.footer {
+    color: $background-color;
+
+    .icon {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &.footer:hover {
+      color: $primary;
+
+      .icon {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .navButton {
+    gap: 5px;
+    font-size: 16px;
+
+    &.vertical {
+      gap: 3px;
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
