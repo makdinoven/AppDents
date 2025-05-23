@@ -6,6 +6,7 @@ import { t } from "i18next";
 import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import Arrow from "../../../../assets/Icons/Arrow.tsx";
+import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 
 type OutletContextType = {
   course: any;
@@ -23,6 +24,13 @@ const LessonPage = () => {
       prepareLesson();
     }
   }, [course, sectionId, lessonId]);
+
+  const isPdfLink = (link: string) => {
+    return (
+      link.endsWith(".pdf") ||
+      (link.includes("drive.google.com") && link.includes("/view"))
+    );
+  };
 
   const prepareLesson = () => {
     const sectionIndex = course.sections.findIndex(
@@ -69,8 +77,20 @@ const LessonPage = () => {
         <BackButton link={`${Path.profile}/${Path.myCourse}/${course.id}`} />
         <div className={s.lesson_page}>
           <h3>{lesson.lesson_name}</h3>
-          <div className={s.video_container}>
-            {lesson.video_link?.length > 0 ? (
+          {isPdfLink(lesson.video_link) ? (
+            <p className={s.pdf_text}>
+              <span>
+                <Trans i18nKey="profile.pdfText" />
+              </span>
+              <ViewLink
+                className={s.pdf_link}
+                text={"profile.openPdf"}
+                link={lesson.video_link}
+                isExternal={true}
+              />
+            </p>
+          ) : lesson.video_link?.length > 0 ? (
+            <div className={s.video_container}>
               <iframe
                 src={lesson.video_link}
                 width="100%"
@@ -79,12 +99,12 @@ const LessonPage = () => {
                 allow="autoplay; fullscreen"
                 allowFullScreen
               />
-            ) : (
-              <p>
-                <Trans i18nKey={"landing.noVideoLink"} />
-              </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <p>
+              <Trans i18nKey={"landing.noVideoLink"} />
+            </p>
+          )}
           <div className={s.navigation_links}>
             {prevLesson && (
               <Link
@@ -105,18 +125,19 @@ const LessonPage = () => {
               </Link>
             )}
           </div>
-
-          <p className={s.failed_to_load}>
-            {t("videoFailedToLoad")}{" "}
-            <a
-              href={lesson.video_link}
-              target="_blank"
-              className="highlight"
-              rel="noopener noreferrer"
-            >
-              {t("watchHere")}
-            </a>
-          </p>
+          {!isPdfLink(lesson.video_link) && (
+            <p className={s.failed_to_load}>
+              {t("videoFailedToLoad")}{" "}
+              <a
+                href={lesson.video_link}
+                target="_blank"
+                className="highlight"
+                rel="noopener noreferrer"
+              >
+                {t("watchHere")}
+              </a>
+            </p>
+          )}
         </div>
       </>
     );

@@ -2,17 +2,24 @@ import s from "./ProfessorCard.module.scss";
 import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Link } from "react-router-dom";
 import INITIAL_PHOTO from "../../../assets/no-pictures.png";
+import { Trans } from "react-i18next";
+import { t } from "i18next";
+import React from "react";
 
 const ProfessorCard = ({
   variant,
   name,
   photo,
   description,
+  tags,
+  courses_count,
   link,
 }: {
   variant: "vertical" | "horizontal";
   name: string;
   photo: string;
+  courses_count: number;
+  tags: string[];
   description: string;
   link: string;
 }) => {
@@ -32,21 +39,32 @@ const ProfessorCard = ({
             <img src={photo ? photo : INITIAL_PHOTO} alt="professor photo" />
           </div>
           <div className={s.description_wrapper}>
-            {/*<span>*/}
-            {/*  <span className={"highlight"}>*/}
-            {/*    <Trans i18nKey={"professor.specialization"} />*/}
-            {/*  </span>{" "}*/}
-            {/*  orthodontics*/}
-            {/*</span>*/}
-            {/*<span>*/}
-            {/*  <span className={"highlight"}>*/}
-            {/*    <Trans i18nKey={"professor.coursesCount"} />*/}
-            {/*  </span>{" "}*/}
-            {/*  13 courses*/}
-            {/*</span>*/}
+            {courses_count > 0 && (
+              <span
+                style={{
+                  alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
+                }}
+                className={s.courses_count}
+              >
+                <Trans i18nKey="professor.coursesCount" count={courses_count} />
+              </span>
+            )}
             <p className={s.description}>{description}</p>
-            <ViewLink className={s.professor_link} text={"professor.about"} />
+            {tags.length > 0 && (
+              <span className={s.tags}>
+                <span className={"highlight"}>
+                  <Trans i18nKey={"professor.specialization"} />
+                </span>{" "}
+                {tags.map((tag, index) => (
+                  <React.Fragment key={tag}>
+                    {t(tag)}
+                    {index !== tags.length - 1 && ", "}
+                  </React.Fragment>
+                ))}
+              </span>
+            )}
           </div>
+          <ViewLink className={s.professor_link} text={"professor.about"} />
         </div>
       </div>
     </Link>

@@ -13,10 +13,10 @@ import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { LoginType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const LoginModal = () => {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { error } = useSelector((state: AppRootStateType) => state.user);
   const {
@@ -29,14 +29,16 @@ const LoginModal = () => {
   });
 
   const handleLogIn = async (data: LoginType) => {
+    setLoading(true);
     const loginResponse = await dispatch(login(data));
 
     if (loginResponse.meta.requestStatus === "fulfilled") {
       await dispatch(getMe());
-      navigate(Path.profile, { replace: true });
     } else {
       console.log(loginResponse.payload);
     }
+
+    setLoading(false);
   };
 
   return (
@@ -58,7 +60,7 @@ const LoginModal = () => {
             {...register("password")}
             error={errors.password?.message}
           />
-          <Button text={t("login")} type="submit" />
+          <Button loading={loading} text={t("login")} type="submit" />
         </>
       </Form>
       <div className={s.modal_bottom}>

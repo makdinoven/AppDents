@@ -1,4 +1,6 @@
 .btn {
+  position: relative;
+  overflow: hidden;
   @include clamped-h3;
   @include transition;
   display: block;
@@ -9,6 +11,10 @@
   border-radius: 40px;
   padding: 5.5px;
   min-height: clamp(40px, 10vw, 50.5px);
+
+  &.loading {
+    pointer-events: none;
+  }
 
   @media (hover: hover) {
     &:hover {

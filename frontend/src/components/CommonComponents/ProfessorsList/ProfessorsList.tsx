@@ -9,6 +9,8 @@ type Professor = {
   name: string;
   photo: string;
   description: string;
+  tags: string[];
+  courses_count: number;
 };
 
 type props = {
@@ -41,6 +43,8 @@ const ProfessorsList = ({ professors, loading }: props) => {
                 name={professor.name}
                 photo={professor.photo}
                 description={professor.description}
+                tags={professor.tags}
+                courses_count={professor.courses_count}
                 link={`${Path.professor}/${professor.id}`}
               />
             </li>

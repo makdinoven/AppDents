@@ -17,6 +17,7 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 
 const ForgotPasswordModal = () => {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
@@ -32,12 +33,15 @@ const ForgotPasswordModal = () => {
   });
 
   const handleResetPassword = async (email: any) => {
+    setLoading(true);
     try {
       await userApi.forgotPassword(email, language);
       alert(t("forgotPasswordSuccess"));
       navigate("/login");
     } catch (error: any) {
       setError(error.response.data.detail.error.translation_key);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,7 +55,7 @@ const ForgotPasswordModal = () => {
             error={errors.email?.message}
             {...register("email")}
           />
-          <Button text={t("reset")} type="submit" />
+          <Button loading={loading} text={t("reset")} type="submit" />
         </>
       </Form>
       <div className={s.modal_bottom}>

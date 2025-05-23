@@ -6,15 +6,16 @@
   @include transition();
 
   svg {
+    width: 27px;
+    height: 27px;
     path {
       @include transition();
       fill: $accent;
     }
   }
 
-  &:hover {
+  &.active {
     color: $primary;
-
     svg {
       path {
         fill: $primary;
@@ -22,40 +23,60 @@
     }
   }
 
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+
+      svg {
+        path {
+          fill: $primary;
+        }
+      }
+    }
+  }
+
   .language_preview {
-    @include clamped-h3;
+    text-transform: capitalize;
+    font-size: 20px;
   }
 }
 
 .language_changer_modal {
   @include flex-column;
-  @include clamped-p1;
+  font-size: 24px;
   gap: 14px;
   align-items: flex-start;
   justify-content: space-between;
 
   li {
+    text-transform: capitalize;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 30px;
+    gap: 20px;
     cursor: pointer;
     @include transition(color);
 
     svg {
+      width: 22px;
+      height: 22px;
+
       path {
-        @include transition(stroke);
         stroke: $text-color;
       }
     }
 
     &:hover {
-      color: $accent;
+      color: $accent-glass;
+    }
+
+    &.checked {
+      color: $accent-glass;
 
       svg {
         path {
-          stroke: $accent;
+          stroke: $accent-glass;
         }
       }
     }
@@ -65,18 +86,26 @@
 @media (max-width: $mobile-breakpoint) {
   .language_changer {
     gap: 5px;
+    font-size: 16px;
 
     svg {
       width: 20px;
       height: 20px;
     }
+
+    .language_preview {
+      font-size: 16px;
+    }
   }
   .language_changer_modal {
+    font-size: 16px;
     li {
-      gap: 20px;
+      gap: 5px;
       svg {
+        width: 18px;
+        height: 18px;
         path {
-          stroke-width: 1px;
+          stroke-width: 1.5px;
         }
       }
     }

@@ -3,7 +3,7 @@
   position: relative;
   align-items: center;
   gap: 60px;
-  button {
+  .seeMoreBtn {
     min-width: clamp(200px, 35vw, 400px);
   }
 }

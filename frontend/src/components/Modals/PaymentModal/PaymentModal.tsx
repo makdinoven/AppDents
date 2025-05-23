@@ -35,7 +35,8 @@ const logos = [
   VisaLogo,
 ];
 
-type PaymentDataType = {
+export type PaymentDataType = {
+  landing_ids?: number[];
   course_ids: number[];
   price_cents: number;
   total_new_price: number;

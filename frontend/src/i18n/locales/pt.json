@@ -2,6 +2,7 @@
   "home": "Início",
   "pay": "Pagar",
   "buy": "Comprar",
+  "buyNow": "Comprar agora",
   "buyFor": "Comprar por",
   "etAl": "e outros",
   "nothingFound": "Nada encontrado",
@@ -47,6 +48,22 @@
   "registrationSuccess": "Cadastro realizado com sucesso! Sua senha foi enviada para seu e-mail. Agora você pode fazer login. Se não encontrar o e-mail, verifique a pasta de spam.",
   "showLess": "Mostrar menos",
   "readMore": "Leia mais",
+  "support": "Suporte",
+
+  "nav": {
+    "home": "Início",
+    "courses": "Cursos",
+    "books": "Livros",
+    "professors": "Professores",
+    "cart": "Carrinho",
+    "search": "Buscar",
+    "profile": "Perfil",
+    "promote": {
+      "professors": "Professores do curso",
+      "program": "Programa do curso"
+    }
+  },
+
 
   "search": {
     "searchCourses": "Buscar cursos",
@@ -79,7 +96,8 @@
     "privacy": "Política de privacidade",
     "home": "Página inicial",
     "tour": "Tour",
-    "templates": "Modelos"
+    "templates": "Modelos",
+    "copyright": "© 2025 Dent-S. Todos os direitos reservados."
   },
 
   "tag": {
@@ -116,22 +134,46 @@
     "savings": "economia",
     "courseProgram": "Programa do curso",
     "fullCourseProgram": "O programa completo do curso",
-    "buyFor": "Comprar por <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "buyForFull": "Comprar curso por <1>{{old_price}}</1> <2>{{new_price}}</2>",
-    "youCanBuyEntireCourse": "Você pode comprar o <1>curso completo</1> agora pelo novo preço <2>{{new_price}}</2>, em vez do antigo - {{old_price}}",
+    "buyFor": "Comprar por <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyForFull": "Comprar curso por <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "Você pode comprar o <1>curso completo</1> agora pelo novo preço <2>${{new_price}}</2>, em vez do antigo - ${{old_price}}",
     "fiveMinuteFragment": "Aqui você pode assistir a um <1>fragmento de cinco minutos</1>",
     "durationOfLesson": "Duração:",
     "noVideoLink": "Não há link de vídeo ou o link não é válido",
     "videoIsNotSupported": "Seu navegador não suporta vídeo",
     "specialOffer": "Oferta especial",
-    "accessFull": "O acesso ao curso é ilimitado no tempo!"
+    "accessFull": "O acesso ao curso é ilimitado no tempo!",
+    "faq": {
+      "faq": "Perguntas Frequentes",
+      "1_question": "Como acesso meu curso após a compra?",
+      "1_answer": "Assim que o pagamento for concluído, você terá acesso imediato ao seu curso. Após o pagamento, você será direcionado automaticamente para sua conta, onde verá o curso adquirido (recomendamos alterar sua senha imediatamente para não esquecê-la). Você também receberá um recibo e confirmação de inscrição por e-mail. Se não encontrar o e-mail, verifique a pasta de spam (e outras pastas; o remetente é 'no-reply'). O material estará disponível instantaneamente para que você estude no seu próprio ritmo.",
+      "2_question": "Há um prazo para concluir os cursos?",
+      "2_answer": "Não, todos os nossos cursos são autoguiados. Você poderá começar, pausar e retomar a qualquer momento e terá acesso vitalício ao conteúdo.",
+      "3_question": "Quais métodos de pagamento são aceitos?",
+      "3_answer": "Aceitamos todos os principais cartões de crédito, como Visa, MasterCard e American Express, além de sistemas globais como ApplePay, GooglePay, SamsungPay, etc. Utilizamos Stripe para pagamentos seguros.",
+      "4_question": "Por que seus preços são mais baratos?",
+      "4_answer": "Na Dent-S, acreditamos que a educação de qualidade deve ser acessível a todos. Médicos melhores resultam em uma humanidade mais saudável. Por isso, oferecemos nossos cursos com os menores preços possíveis. Seu apoio nos ajuda a expandir esse projeto.",
+      "5_question": "Posso acessar meus cursos pelo celular ou tablet?",
+      "5_answer": "Sim! Nossa plataforma é totalmente otimizada para dispositivos móveis e tablets, permitindo estudar de onde quiser.",
+      "6_question": "Vou receber uma fatura da minha compra?",
+      "6_answer": "Se precisar de uma fatura, entre em contato com nossa equipe de suporte (os dados estão no recibo) e enviaremos para você.",
+      "7_question": "E se eu não estiver satisfeito com o curso?",
+      "7_answer": "Oferecemos troca do curso ou reembolso completo. Basta entrar em contato com nosso suporte dentro de 15 dias da compra.",
+      "8_question": "Como entro em contato com o suporte?",
+      "8_answer": "Você pode entrar em contato pelo seu perfil no site <link1>dent-s.com</link1> ou através do e-mail que consta no recibo de pagamento.",
+      "9_question": "Como redefinir minha senha?",
+      "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha."
+    }
+
   },
 
   "profile": {
     "yourCourses": "Seus cursos",
     "noCourses": "Nenhum curso",
     "nextLesson": "Próxima lição",
-    "prevLesson": "Lição anterior"
+    "prevLesson": "Lição anterior",
+    "pdfText": "Esta aula contém materiais em PDF em vez de um vídeo. Clique no link abaixo para abrir o arquivo.",
+    "openPdf": "Abrir materiais em PDF"
   },
 
   "professor": {
@@ -143,7 +185,11 @@
     "search": "Procurar professores...",
     "found": "Professores encontrados: {{count}}",
     "noProfessors": "Nenhum professor encontrado",
-    "about": "Sobre o professor"
+    "about": "Detalhado",
+    "specialization": "Especialização:",
+    "coursesCount_one": "{{count}} curso",
+    "coursesCount_other": "{{count}} cursos"
+
   },
   "other": {
     "otherCourses": "Outros cursos"

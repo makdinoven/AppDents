@@ -27,34 +27,37 @@ const LanguageChanger = () => {
       <button
         onClick={handleOpenModal}
         ref={triggerRef}
-        className={s.language_changer}
+        className={`${s.language_changer} ${isModalOpen ? s.active : ""}`}
       >
         <LanguageIcon />
-        <span className={s.language_preview}>{language.toUpperCase()}</span>
+        <span className={s.language_preview}>{language.toLowerCase()}</span>
       </button>
-      <ModalWrapper
-        isLang={true}
-        hasTitle={false}
-        hasCloseButton={false}
-        cutoutPosition="top-right"
-        cutoutOffsetY={10}
-        cutoutOffsetX={15}
-        triggerElement={triggerRef.current}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      >
-        <ul className={s.language_changer_modal}>
-          {LANGUAGES.map((button) => (
-            <li
-              key={button.value}
-              onClick={() => handleLanguageChange(button.value)}
-            >
-              ({button.value}) {button.label}
-              {button.value === language.toUpperCase() && <CheckMark />}
-            </li>
-          ))}
-        </ul>
-      </ModalWrapper>
+      {isModalOpen && (
+        <ModalWrapper
+          isDropdown={true}
+          hasTitle={false}
+          hasCloseButton={false}
+          cutoutPosition="top-right"
+          cutoutOffsetY={10}
+          cutoutOffsetX={15}
+          triggerElement={triggerRef.current}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        >
+          <ul className={s.language_changer_modal}>
+            {LANGUAGES.map((button) => (
+              <li
+                key={button.value}
+                className={`${button.value === language.toUpperCase() ? s.checked : ""}`}
+                onClick={() => handleLanguageChange(button.value)}
+              >
+                ({button.value.toLowerCase()}) {button.label}
+                {button.value === language.toUpperCase() && <CheckMark />}
+              </li>
+            ))}
+          </ul>
+        </ModalWrapper>
+      )}
     </>
   );
 };

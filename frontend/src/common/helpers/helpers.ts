@@ -51,6 +51,18 @@ export const scrollToElement = (triggerRef: any) => {
   triggerRef.current?.scrollIntoView({ behavior: "smooth" });
 };
 
+export const scrollToElementById = (id: string, offset = 100) => {
+  const element = document.getElementById(id);
+  if (element) {
+    const topPosition =
+      element.getBoundingClientRect().top + window.pageYOffset - offset;
+    window.scrollTo({
+      top: topPosition,
+      behavior: "smooth",
+    });
+  }
+};
+
 export const keepFirstTwoWithInsert = (initialStr: string) => {
   const parts = initialStr.split(" ");
   if (parts.length < 2) return initialStr;
@@ -60,8 +72,8 @@ export const keepFirstTwoWithInsert = (initialStr: string) => {
 };
 
 export const getPricesData = (landing: any) => ({
-  old_price: landing?.old_price ? `$${landing?.old_price}` : "",
-  new_price: landing?.new_price ? `$${landing?.new_price}` : "",
+  old_price: landing?.old_price ? `${landing?.old_price}` : "",
+  new_price: landing?.new_price ? `${landing?.new_price}` : "",
 });
 
 export const calculateDiscount = (oldPrice: number, newPrice: number) => {

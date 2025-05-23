@@ -14,6 +14,24 @@
   }
 }
 
+.pdf_text {
+  @include clamped-p2;
+  width: 100%;
+  align-self: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  margin-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pdf_link {
+  flex-shrink: 0;
+  max-width: unset !important;
+}
+
 .navigation_links {
   display: flex;
   gap: 20px;
@@ -91,6 +109,10 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .pdf_text {
+    margin-bottom: unset;
+  }
+
   .lesson_page {
     gap: 20px;
     h3 {

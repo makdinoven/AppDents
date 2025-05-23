@@ -1,0 +1,46 @@
+.burger_menu_content {
+  @include flex-column;
+  padding: 15px 5px;
+  gap: 10px;
+  width: 100%;
+
+  a {
+    min-width: 120px;
+    justify-content: flex-start;
+  }
+}
+
+.burger_btn {
+  min-width: 25px;
+  height: 18px;
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+
+  span {
+    @include transition;
+    display: block;
+    height: 1.5px;
+    background-color: $accent;
+    border-radius: 2px;
+    width: 100%;
+  }
+
+  &.active {
+    span {
+      background-color: $primary;
+    }
+  }
+
+  @media (hover: hover) {
+    span {
+      background-color: $primary;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .burger_btn {
+    display: flex;
+  }
+}

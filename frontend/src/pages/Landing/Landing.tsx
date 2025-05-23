@@ -1,6 +1,6 @@
 import s from "./Landing.module.scss";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
@@ -8,7 +8,6 @@ import {
   keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
-import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import Loader from "../../components/ui/Loader/Loader.tsx";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";
@@ -29,8 +28,15 @@ import { setLanguage } from "../../store/slices/userSlice.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
+import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import Faq from "./modules/Faq/Faq.tsx";
+import {
+  closeModal,
+  openModal,
+  setPrices,
+} from "../../store/slices/landingSlice.ts";
 
-const Landing = () => {
+const Landing = ({ isClient }: { isClient: boolean }) => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
@@ -38,32 +44,39 @@ const Landing = () => {
     <FormattedAuthorsDesc authors={landing?.authors} />
   );
   const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role } = useSelector((state: AppRootStateType) => state.user);
-  const isFromFacebookAds = () => {
+  const isModalOpen = useSelector(
+    (state: AppRootStateType) => state.landing.isModalOpen,
+  );
+  const isPromotionLanding =
+    location.pathname.includes(Path.landing) &&
+    !location.pathname.includes(Path.landingClient);
+
+  const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
-    return searchParams.has("fbclid");
-  };
+    return searchParams.has("fbclid") || isPromotionLanding;
+  }, [location.search]);
 
   useEffect(() => {
-    if (isFromFacebookAds()) {
+    if (isFromFacebook) {
       trackFacebookAd();
     }
     fetchLandingData();
   }, [landingPath]);
 
   const handleOpenModal = () => {
-    setIsModalOpen(true);
+    dispatch(openModal());
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    dispatch(closeModal());
   };
 
   const fetchLandingData = async () => {
+    setLoading(true);
     try {
       const res = await mainApi.getLanding(landingPath);
       setLanding({
@@ -71,9 +84,16 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
+      dispatch(
+        setPrices({
+          newPrice: res.data.new_price,
+          oldPrice: res.data.old_price,
+        }),
+      );
       setLoading(false);
     } catch (error) {
       console.error(error);
+      setLoading(false);
     }
   };
 
@@ -91,7 +111,7 @@ const Landing = () => {
           ...getPricesData(landing),
         }}
         components={{
-          1: <span className="crossed" />,
+          1: <span className="crossed-15" />,
           2: <span className="highlight" />,
         }}
       />
@@ -141,6 +161,8 @@ const Landing = () => {
   };
 
   const paymentData = {
+    from_ad: isPromotionLanding,
+    landing_ids: [landing?.id],
     course_ids: landing?.course_ids,
     price_cents: landing?.new_price * 100,
     total_new_price: landing?.new_price,
@@ -160,13 +182,23 @@ const Landing = () => {
   return (
     <>
       <div className={s.landing_top}>
-        <BackButton />
-        {role === "admin" && (
-          <PrettyButton
-            variant="primary"
-            text={"admin.landings.edit"}
-            onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
-          />
+        {isClient && <BackButton />}
+        {role === "admin" && isClient && (
+          <div className={s.admin_btns}>
+            <a
+              href={`${BASE_URL}${Path.landing}/${landingPath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PrettyButton variant="default" text={"promo link"} />
+            </a>
+
+            <PrettyButton
+              variant="primary"
+              text={"admin.landings.edit"}
+              onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
+            />
+          </div>
         )}
       </div>
       {loading ? (
@@ -179,7 +211,9 @@ const Landing = () => {
           <LessonsProgram data={lessonsProgramData} />
           <Professors data={landing?.authors} />
           <Offer data={offerData} />
+          <Faq />
           <CoursesSection
+            isClient={isClient}
             showSort={true}
             sectionTitle={"similarCourses"}
             pageSize={4}

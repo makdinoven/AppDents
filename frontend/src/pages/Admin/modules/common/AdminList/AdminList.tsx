@@ -113,7 +113,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                 name={item[itemName]}
                 landingPath={
                   item.page_name
-                    ? `${Path.landing}/${item.page_name}`
+                    ? `/${Path.landingClient}/${item.page_name}`
                     : undefined
                 }
                 key={item.id}
