@@ -53,11 +53,7 @@ def remove_item(db: Session, user: User, item_id: int) -> Cart:
         db.refresh(cart)
     return cart
 
-def clear_cart(db: Session, user: User) -> Cart:
-    cart = get_or_create_cart(db, user)
-    for i in list(cart.items):
-        db.delete(i)
-    cart.total_amount = 0
-    db.commit()
-    db.refresh(cart)
-    return cart
+
+
+
+
