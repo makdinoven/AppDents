@@ -70,7 +70,7 @@ def my_cart(
         "total_old_amount": total_old,
         "current_discount": round(disc_curr * 100, 2),
         "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": pay_with_balance,
+        "total_amount_with_balance_discount": round(pay_with_balance,2),
         "updated_at": cart.updated_at,
         "items": cart.items,
     }
