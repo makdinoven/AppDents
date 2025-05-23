@@ -12,6 +12,8 @@ class LandingInCart(BaseModel):
     preview_photo: Optional[str]
     course_ids   : List[int]
     authors      : List[AuthorCardResponse]
+    old_price : str
+    new_price : str
 
     class Config:
         orm_mode = True
@@ -22,9 +24,7 @@ class CartItemOut(BaseModel):
     item_type   : Literal["LANDING","BOOK"]
     landing_id  : Optional[int]
     book_id     : Optional[int]
-    price       : float
     added_at    : datetime
-
     # ← новое поле со всей информацией о лендинге
     landing     : Optional[LandingInCart]
 
