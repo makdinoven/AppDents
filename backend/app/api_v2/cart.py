@@ -45,7 +45,10 @@ def my_cart(
           .first()
     )
     # 3) Считаем суммы по новым и старым ценам
-    total_new = sum(item.landing.new_price for item in cart.items)
+    total_new = sum(
+        _safe_price(item.landing.new_price or 0)
+        for item in cart.items if item.landing
+                    )
     total_old = sum(
         _safe_price(item.landing.old_price or 0)
         for item in cart.items if item.landing
