@@ -62,6 +62,7 @@ def my_cart(
     discounted = total_new * (1 - disc_curr)
     final_pay = max(discounted - current_user.balance, 0.0)
     pay_with_balance = max(discounted - current_user.balance, 0.0)
+    print(f"DEBUG: discounted={discounted}, balance={current_user.balance}")
 
     # 7) Возвращаем dict под Pydantic
     return {
