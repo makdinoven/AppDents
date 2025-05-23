@@ -30,6 +30,7 @@ class CartItemOut(BaseModel):
 class CartResponse(BaseModel):
     total_amount                       : float
     total_old_amount                   : float
+    total_new_amount : float
     current_discount                   : float  # в процентах, например 15.0
     next_discount                      : float  # в процентах, например 17.5
     total_amount_with_balance_discount : float
