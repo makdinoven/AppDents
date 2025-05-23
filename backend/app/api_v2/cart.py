@@ -61,6 +61,7 @@ def my_cart(
     # 6) Итоговая сумма с учётом скидки и баланса
     discounted = total_new * (1 - disc_curr)
     final_pay = max(discounted - current_user.balance, 0.0)
+    pay_with_balance = max(discounted - current_user.balance, 0.0)
 
     # 7) Возвращаем dict под Pydantic
     return {
@@ -68,7 +69,7 @@ def my_cart(
         "total_old_amount": total_old,
         "current_discount": round(disc_curr * 100, 2),
         "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": final_pay,
+        "total_amount_with_balance_discount": pay_with_balance,
         "updated_at": cart.updated_at,
         "items": cart.items,
     }
