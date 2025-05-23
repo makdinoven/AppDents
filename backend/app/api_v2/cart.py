@@ -52,8 +52,7 @@ def my_cart(
     )
 
     # 4) Собираем уникальные course_ids
-    count = sum(1 for item in cart.items
-                if item.type == CartItemType.LANDING)
+    count = sum(1 for item in cart.items)
 
     # 5) Вычисляем текущую и следующую скидку
     disc_curr = _calc_discount(count)
