@@ -118,8 +118,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserRead)
-def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+def me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    cart_count = len(current_user.cart.items) if current_user.cart else 0
+    return UserRead(
+        id=current_user.id,
+        email=current_user.email,
+        role=current_user.role,
+        balance=current_user.balance,
+        cart_items_count=cart_count,
+    )
 
 @router.get("/search", response_model=List[UserRead], summary="Поиск  пользователей по email")
 def search_users(email: str = Query(..., description="Часть email для поиска"), db: Session = Depends(get_db)):

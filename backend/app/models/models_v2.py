@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
 
@@ -69,6 +70,11 @@ class Landing(Base):
     courses = relationship("Course", secondary=landing_course)
     tags = relationship("Tag", secondary=landing_tags, back_populates="landings")
 
+    @hybrid_property
+    def course_ids(self) -> list[int]:
+        """Список ID курсов, связанных с этим лендингом."""
+        return [c.id for c in self.courses]
+
 class Tag(Base):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True)
@@ -96,6 +102,8 @@ class User(Base):
     balance = Column(Float, default=0.0, nullable=False)
     referral_code = Column(String(20), unique=True, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id"))
+
+    cart = relationship("Cart", uselist=False, back_populates="user")
 
     courses = relationship("Course", secondary=users_courses, back_populates="users")
     invited_users = relationship(
@@ -162,3 +170,38 @@ class AdVisit(Base):
     ip_address  = Column(String(45))
 
     landing = relationship("Landing", backref="ad_visits")
+
+class Cart(Base):
+    __tablename__ = "carts"
+
+    id           = Column(Integer, primary_key=True)
+    user_id      = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    total_amount = Column(Float, default=0.0, nullable=False)
+    updated_at   = Column(DateTime, server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp(), nullable=False)
+
+    user = relationship("User", back_populates="cart")
+    items = relationship(
+        "CartItem",
+        back_populates="cart",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+class CartItemType(str, PyEnum):
+    LANDING = "LANDING"
+    BOOK    = "BOOK"            # резерв под будущее
+
+class CartItem(Base):
+    __tablename__ = "cart_items"
+
+    id         = Column(Integer, primary_key=True)
+    cart_id    = Column(Integer, ForeignKey("carts.id"), nullable=False)
+    item_type  = Column(Enum(CartItemType, name="cart_item_type"), nullable=False)
+    landing_id = Column(Integer, ForeignKey("landings.id"))
+    book_id    = Column(Integer)                      # для книг позже
+    price      = Column(Float, nullable=False)
+    added_at   = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    cart = relationship("Cart", back_populates="items")
+    landing = relationship("Landing")
