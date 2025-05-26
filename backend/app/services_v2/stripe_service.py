@@ -34,7 +34,7 @@ from ..utils.email_sender import (
     send_already_owned_course_email,
     send_successful_purchase_email,
 )
-from ..services_v2.wallet_service import get_cashback_percent
+
 
 logging.basicConfig(level=logging.INFO)
 
