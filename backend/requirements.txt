@@ -19,3 +19,5 @@ rapidfuzz==3.12.1
 aiomysql==0.2.0
 jose
 rapidfuzz
+boto3
+botocore
