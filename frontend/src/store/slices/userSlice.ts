@@ -12,6 +12,7 @@ interface UserState {
   error: ErrorResponse | null;
   isLogged: boolean;
   language: string;
+  balance: number | null;
   courses: [];
 }
 
@@ -30,6 +31,7 @@ const initialState: UserState = {
   loading: true,
   error: null,
   isLogged: false,
+  balance: null,
   language: savedLanguage,
   courses: [],
 };
@@ -84,6 +86,7 @@ const userSlice = createSlice({
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
           state.isLogged = true;
+          state.balance = action.payload.res.data.balance;
           state.email = action.payload.res.data.email;
           state.role = action.payload.res.data.role;
           state.id = action.payload.res.data.id;

@@ -13,6 +13,7 @@ $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
 $background-color: rgb(237, 248, 255);
+$cart-background: #edf8ff66;
 $background-color-05: rgba(237, 248, 255, 0.5);
 $background-color-08: rgba(237, 248, 255, 0.8);
 $primary: #7fdfd5;
@@ -26,6 +27,7 @@ $quaternary: #5b6968;
 $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #fe0502;
+$error-color-lighten: #ffbebf;
 $hover-color: rgba(100, 116, 139, 0.1);
 
 $font-sz-h1-desk: 95px;
@@ -117,6 +119,11 @@ $font-sz-err-mob: 14px;
   transition: $property $duration ease-in-out;
 }
 
+@mixin lightBlurBackground($blur: 5px) {
+  background-color: $cart-background;
+  backdrop-filter: blur($blur);
+}
+
 @mixin horizontal-line(
   $color: $accent,
   $height: 2px,
@@ -173,12 +180,13 @@ $font-sz-err-mob: 14px;
   // Скроллбар трек
   &::-webkit-scrollbar {
     width: 5px;
+    border-radius: 10px;
   }
 
   // Полоса (ползунок)
   &::-webkit-scrollbar-thumb {
     background-color: $primary;
-    border-radius: 4px;
+    border-radius: 10px;
   }
 
   // Трек (фон под полосой)
@@ -189,6 +197,7 @@ $font-sz-err-mob: 14px;
   // Для Firefox
   scrollbar-width: thin; // толщина: auto | thin | none
   scrollbar-color: $primary transparent; // thumb track
+  border-radius: 10px;
 }
 
 @mixin circle-angle(
@@ -252,6 +261,14 @@ $font-sz-err-mob: 14px;
   animation: fadeInMove $duration $timing forwards;
 }
 
+@mixin fadeInMoveFromTop($duration: 0.3s, $timing: ease-in-out) {
+  animation: fadeInMoveFromTopAnim $duration $timing;
+}
+
+@mixin fadeOutMoveToTop($duration: 0.3s, $timing: ease-in-out) {
+  animation: fadeOutMoveToTopAnim $duration $timing;
+}
+
 @mixin shake($duration: 0.5s, $timing: ease) {
   animation: shake $duration $timing;
 }
@@ -264,6 +281,28 @@ $font-sz-err-mob: 14px;
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fadeInMoveFromTopAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(-920px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOutMoveToTopAnim {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-920px);
   }
 }
 

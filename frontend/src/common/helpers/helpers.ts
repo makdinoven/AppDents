@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Path } from "../../routes/routes.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem("access_token");
@@ -150,4 +151,12 @@ export const denormalizeLessons = (lessons: any) => {
       },
     };
   });
+};
+
+export const isPromotionLanding = (pathname: string): boolean => {
+  return (
+    pathname.includes(Path.landing) &&
+    !pathname.includes(Path.landingClient) &&
+    !pathname.includes(Path.profile)
+  );
 };

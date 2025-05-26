@@ -111,6 +111,7 @@ $card-body-padding-bottom: calc(
 }
 
 .card_bottom {
+  cursor: pointer;
   @include flex-center;
   position: absolute;
   box-shadow: 0 -4px 0 $primary;

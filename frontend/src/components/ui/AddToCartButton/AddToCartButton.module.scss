@@ -1,4 +1,6 @@
 .btn {
+  overflow: hidden;
+  position: relative;
   @include transition();
   @include flex-center;
   border: 2px solid $accent;
@@ -23,6 +25,7 @@
   }
 
   &.active {
+    padding: 8px 13px;
     background-color: $accent;
     border-color: $accent;
   }
@@ -43,6 +46,10 @@
       padding: 3px 15px;
       position: absolute;
       bottom: -41px;
+    }
+
+    &.active {
+      padding: 3px 15px;
     }
   }
 }
