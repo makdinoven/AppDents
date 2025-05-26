@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User, Cart, CartItem, Landing, CartItemType
-from ..schemas_v2.cart import CartResponse
+from ..schemas_v2.cart import CartResponse, CartItemOut
 from ..services_v2.cart_service import get_or_create_cart, _safe_price
 from ..services_v2 import cart_service as cs
 
@@ -79,7 +79,7 @@ def my_cart(
         "items": cart.items,
     }
 
-@router.post("/landing/{landing_id}", response_model=CartResponse)
+@router.post("/landing/{landing_id}", response_model=CartItemOut)
 def add_landing(
     landing_id: int,
     db: Session = Depends(get_db),
