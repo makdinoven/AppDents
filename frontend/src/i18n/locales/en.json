@@ -29,6 +29,7 @@
   "open": "open",
   "view": "View",
   "viewCourse": "View course",
+  "viewBook": "View book",
   "watchLesson": "Watch lesson",
   "onlineCourse": "Online course",
   "professors": "Professors",
@@ -229,6 +230,20 @@
     "title": "Page not found",
     "sorry": "Sorry, the page you are looking for does not exist",
     "goBack": "Go back"
+  },
+
+  "cart" : {
+    "title": "Your cart ( {{count}} )",
+    "balance": "Your balance",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "replenish": "Replenish balance",
+    "returnToShop": "Return to shop",
+    "empty": {
+      "title": "Your cart is empty",
+      "haventAdded": "Looks like you haven’t added anything yet. Browse our catalog and add something now!"
+    }
   },
 
   "admin": {

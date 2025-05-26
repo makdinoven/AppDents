@@ -15,7 +15,7 @@ export const NAV_BUTTONS = [
   // { icon: CoursesIcon, text: "nav.courses", link: "Path.courses" },
   // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
   { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
-  // { icon: CartIcon, text: "nav.cart", link: "Path.cart" },
+  // { icon: CartIcon, text: "nav.cart", link: Path.cart },
 ];
 
 export const AUTH_MODAL_ROUTES = [Path.login, Path.signUp, Path.passwordReset];

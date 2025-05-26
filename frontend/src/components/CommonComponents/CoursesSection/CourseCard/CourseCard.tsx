@@ -3,7 +3,7 @@ import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
 import { useState } from "react";
@@ -15,7 +15,7 @@ import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
-// import Book from "../../../../assets/Icons/Book.tsx";
+// const LANDING_ID = 1293; //TODO CHANGE TO REAL LANDING ID
 
 interface CourseCardProps {
   name: string;
@@ -40,12 +40,16 @@ const CourseCard = ({
   authors,
   lessons_count,
 }: CourseCardProps) => {
+  const navigate = useNavigate();
+  // const [cartLoading, setCartLoading] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
+  // const isInCart = useSelector(selectIsInCart(LANDING_ID));
+  const cleanLink = link.replace(/^\/(client\/)?course/, "");
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -63,8 +67,6 @@ const CourseCard = ({
   };
 
   const fetchLandingDataAndOpenModal = async () => {
-    const cleanLink = link.replace(/^\/(client\/)?course/, "");
-
     try {
       const res = await mainApi.getLanding(cleanLink);
       setPaymentData({
@@ -95,6 +97,22 @@ const CourseCard = ({
   const handleCloseModal = () => {
     setModalOpen(false);
   };
+
+  // const handleAddToCart = () => {
+  //   const item = {
+  //     id: LANDING_ID,
+  //     landing_name: name,
+  //     authors: authors,
+  //     old_price: old_price,
+  //     new_price: new_price,
+  //     page_name: cleanLink,
+  //     preview_photo: photo,
+  //     course_ids: [],
+  //   };
+  //
+  //   setCartLoading(false);
+  //   cartStorage.addItem(item);
+  // };
 
   return (
     <>
@@ -151,14 +169,14 @@ const CourseCard = ({
                 <Trans i18nKey={"buyNow"} />
               </button>
               {/*<AddToCartButton*/}
-              {/*  handleClick={() => {*/}
-              {/*    console.log("cart");*/}
-              {/*  }}*/}
+              {/*  loading={cartLoading}*/}
+              {/*  isActive={isInCart}*/}
+              {/*  handleClick={handleAddToCart}*/}
               {/*/>*/}
             </div>
           </div>
 
-          <Link to={link} className={s.card_bottom}></Link>
+          <div onClick={() => navigate(link)} className={s.card_bottom}></div>
         </Link>
       </li>
 

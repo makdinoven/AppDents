@@ -22,6 +22,7 @@ import {
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
+import { useState } from "react";
 
 const logos = [
   AmexLogo,
@@ -54,6 +55,7 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
+  const [loading, setLoading] = useState(false);
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
@@ -67,6 +69,7 @@ const PaymentModal = ({
   });
 
   const handlePayment = async (form: any) => {
+    setLoading(true);
     const dataToSend = {
       ...paymentData,
       user_email: isLogged ? email : form.email,
@@ -74,6 +77,7 @@ const PaymentModal = ({
     try {
       const res = await mainApi.buyCourse(dataToSend);
       const checkoutUrl = res.data.checkout_url;
+      setLoading(false);
 
       if (checkoutUrl) {
         const newTab = window.open(checkoutUrl, "_blank");
@@ -134,7 +138,7 @@ const PaymentModal = ({
             </div>
           </>
         )}
-        <Button text={t("pay")} type="submit" />
+        <Button loading={loading} text={t("pay")} type="submit" />
       </Form>
       <p className={s.modal_text}>
         <Trans i18nKey="paymentWarn" />

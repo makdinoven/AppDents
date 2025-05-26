@@ -107,7 +107,7 @@ export const AppRoutes: FC = () => {
       </Routes>
 
       {(backgroundLocation || isModalRoute) && <AuthModalManager />}
-      {location.pathname === Path.cart && backgroundLocation && <Cart />}
+      {location.pathname === Path.cart && <Cart />}
     </>
   );
 };
