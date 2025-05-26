@@ -14,7 +14,7 @@ from ..schemas_v2.wallet import (
 )
 from ..services_v2 import wallet_service as ws
 
-router = APIRouter(prefix="wallet", tags=["wallet"])
+router = APIRouter(tags=["wallet"])
 
 
 @router.get("/referral-link", response_model=ReferralLinkResponse)

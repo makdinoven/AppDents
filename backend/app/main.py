@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI
-from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, wallet, boomstream_migration
+from .api_v2 import  users, courses, landings, authors, photo, stripe, wallet, boomstream_migration
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
