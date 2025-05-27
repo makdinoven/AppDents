@@ -20,7 +20,7 @@ class LandingInCart(BaseModel):
 
 class CartItemOut(BaseModel):
     id         : int
-    item_type  : Literal["LANDING","BOOK"]
+    item_type  : Literal["LANDING","BOOK"] = "LANDING"
     added_at   : datetime
     landing    : Optional[LandingInCart]
 
