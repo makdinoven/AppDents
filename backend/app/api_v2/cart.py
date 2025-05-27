@@ -92,7 +92,7 @@ def add_landing(
 @router.delete("/landing/{landing_id}", response_model=CartResponse)
 def delete_landing(
     landing_id: int,
-    db: Session = Depends(get_db),
+    db: Session        = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     cs.remove_by_landing(db, current_user, landing_id)
