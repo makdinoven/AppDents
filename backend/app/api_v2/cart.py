@@ -79,7 +79,7 @@ def my_cart(
         "items": cart.items,
     }
 
-@router.post("/landing/{landing_id}", response_model=CartResponse)
+@router.post("/landing/{landing_id}", response_model=CartItemOut)
 def add_landing(
     landing_id: int,
     db: Session = Depends(get_db),
@@ -87,7 +87,7 @@ def add_landing(
 ):
     return cs.add_landing(db, current_user, landing_id)
 
-@router.delete("/item/{item_id}", response_model=CartResponse)
+@router.delete("/item/{item_id}", response_model=CartItemOut)
 def delete_item(
     item_id: int,
     db: Session = Depends(get_db),
