@@ -79,7 +79,7 @@ def my_cart(
         "items": cart.items,
     }
 
-@router.post("/landing/{landing_id}", response_model=[])
+@router.post("/landing/{landing_id}", response_model=CartResponse)
 def add_landing(
     landing_id: int,
     db: Session = Depends(get_db),

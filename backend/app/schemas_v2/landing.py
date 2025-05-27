@@ -110,7 +110,7 @@ class AuthorCardResponse(BaseModel):
         orm_mode = True
 
 class LandingCardResponse(BaseModel):
-    landing_id : str
+    id : int
     first_tag: Optional[str] = None
     landing_name: str
     authors: List[AuthorCardResponse]
