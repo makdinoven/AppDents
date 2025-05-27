@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 from ..models.models_v2 import Cart, CartItem, CartItemType, Landing, User
 
@@ -36,6 +38,7 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
         item_type = CartItemType.LANDING,
         landing_id= landing_id,
         price     = _safe_price(landing.new_price),
+        added_at = datetime.utcnow(),
     )
     db.add(item)
     _recalc_total(cart)
