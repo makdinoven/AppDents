@@ -46,14 +46,14 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
     db.refresh(cart)
     return cart
 
-def remove_item(db: Session, user: User, item_id: int) -> Cart:
+def remove_by_landing(db: Session, user: User, landing_id: int) -> Cart:
     cart = get_or_create_cart(db, user)
-    item = next((i for i in cart.items if i.id == item_id), None)
+    # находим CartItem по landing_id
+    item = next((i for i in cart.items if i.landing_id == landing_id), None)
     if item:
         db.delete(item)
         _recalc_total(cart)
         db.commit()
-        db.refresh(cart)
     return cart
 
 
