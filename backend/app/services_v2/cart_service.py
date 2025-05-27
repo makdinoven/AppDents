@@ -49,7 +49,7 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
 def remove_by_landing(db: Session, user: User, landing_id: int) -> Cart:
     cart = get_or_create_cart(db, user)
     # находим CartItem по landing_id
-    item = next((i for i in cart.items if i.landing_id == landing_id), None)
+    item = next((i for i in cart.items if i.id == landing_id), None)
     if item:
         db.delete(item)
         _recalc_total(cart)
