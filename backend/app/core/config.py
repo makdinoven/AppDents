@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     FACEBOOK_PIXEL_ID_LEARNWORLDS: str
     FACEBOOK_ACCESS_TOKEN_LEARNWORLDS: str
 
+    FACEBOOK_PIXEL_ID_DONATION: str
+    FACEBOOK_ACCESS_TOKEN_DONATION: str
+
     class Config:
         env_file = ".env"
 

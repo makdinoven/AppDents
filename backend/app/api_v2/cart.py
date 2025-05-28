@@ -3,24 +3,42 @@ from sqlalchemy.orm import Session, selectinload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User, Cart, CartItem, Landing, CartItemType
-from ..schemas_v2.cart import CartResponse
+from ..schemas_v2.cart import CartResponse, CartItemOut
 from ..services_v2.cart_service import get_or_create_cart, _safe_price
 from ..services_v2 import cart_service as cs
 
 router = APIRouter()
 
+MAX_COURSES_FOR_DISCOUNT = 25      # точка, на которой скидка фиксируется
+_EXTRA_STEP = 0.025               # 2,5 % → 0.025 в дробном виде
+
+
 def _calc_discount(n: int) -> float:
     """
-    Возвращает дробную скидку для n курсов:
-      0–1 courses -> 0%
-      2 -> 5%; 3 -> 10%; 4 -> 15%
-      >4 -> 15% + (n-4)*2.5%
+    Возвращает дробную скидку для n курсов.
+
+    Правила:
+      ▸ 0–1 курс   → 0 %
+      ▸ 2 курс     → 5 %
+      ▸ 3 курс     → 10 %
+      ▸ 4 курс     → 15 %
+      ▸ 5 курс     → 20 %
+      ▸ 6–25 курсов→ 20 % + 2,5 % за каждый курс сверх пяти
+      ▸ >25        → такая же скидка, как при 25 (70 %)
+
+    При n > 25 можно заменить "срез" на ValueError, если нужно жёсткое
+    ограничение.
     """
     if n < 2:
         return 0.0
-    if n <= 4:
-        return 0.05 * (n - 1)
-    return 0.15 + 0.025 * (n - 4)
+
+    n = min(n, MAX_COURSES_FOR_DISCOUNT)   # «срезаем» всё, что выше 25
+
+    if n <= 5:
+        return 0.05 * (n - 1)              # шаг 5 % до 5 курсов
+
+    # линейно наращиваем от 20 % (при n=5) до 70 % (при n=25)
+    return 0.20 + _EXTRA_STEP * (n - 5)
 
 @router.get("", response_model=CartResponse)
 def my_cart(
@@ -44,6 +62,7 @@ def my_cart(
           .filter(Cart.id == cart.id)
           .first()
     )
+    cart.items = sorted(cart.items, key=lambda it: it.id, reverse=True)
     # 3) Считаем суммы по новым и старым ценам
     total_new = sum(
         _safe_price(item.landing.new_price or 0)
@@ -85,12 +104,14 @@ def add_landing(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return cs.add_landing(db, current_user, landing_id)
+    cs.add_landing(db, current_user, landing_id)
+    return my_cart(db, current_user)
 
-@router.delete("/item/{item_id}", response_model=CartResponse)
-def delete_item(
-    item_id: int,
-    db: Session = Depends(get_db),
+@router.delete("/landing/{landing_id}", response_model=CartResponse)
+def delete_landing(
+    landing_id: int,
+    db: Session        = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return cs.remove_item(db, current_user, item_id)
+    cs.remove_by_landing(db, current_user, landing_id)
+    return my_cart(db, current_user)

@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from ..models.models_v2 import Cart, CartItem, CartItemType, Landing, User
 
@@ -36,6 +39,7 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
         item_type = CartItemType.LANDING,
         landing_id= landing_id,
         price     = _safe_price(landing.new_price),
+        added_at = datetime.utcnow(),
     )
     db.add(item)
     _recalc_total(cart)
@@ -43,15 +47,17 @@ def add_landing(db: Session, user: User, landing_id: int) -> Cart:
     db.refresh(cart)
     return cart
 
-def remove_item(db: Session, user: User, item_id: int) -> Cart:
+def remove_by_landing(db: Session, user: User, landing_id: int) -> Cart:
     cart = get_or_create_cart(db, user)
-    item = next((i for i in cart.items if i.id == item_id), None)
-    if item:
-        db.delete(item)
-        _recalc_total(cart)
-        db.commit()
-        db.refresh(cart)
+    item = next((i for i in cart.items if i.landing_id == landing_id), None)
+    if not item:
+        raise HTTPException(404, "Лендинг не найден в корзине")
+    db.delete(item)
+    _recalc_total(cart)
+    db.commit()
+    db.refresh(cart)
     return cart
+
 
 
 
