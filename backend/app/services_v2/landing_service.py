@@ -209,7 +209,7 @@ def get_landing_cards(
             for author in landing.authors
         ]
         card = {
-            "landing_id": landing.id,
+            "id": landing.id,
             "first_tag": first_tag,
             "landing_name": landing.landing_name,
             "authors": authors,

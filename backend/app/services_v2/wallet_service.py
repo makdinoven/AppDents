@@ -1,10 +1,12 @@
 from typing import List
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, Integer, cast
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models import models_v2 as m
+from ..models.models_v2 import User, WalletTransaction, WalletTxTypes, Purchase, ReferralRule
+from ..schemas_v2.wallet import ReferralReportItem
 from ..services_v2.user_service import generate_unique_referral_code
 
 
@@ -34,31 +36,96 @@ def get_wallet_transactions(db: Session, user_id: int) -> List[m.WalletTransacti
     )
 
 
-def get_referral_report(db: Session, inviter_id: int):
-    """Возвращает список (User, total_paid, total_cashback)."""
-
-    # Все приглашённые пользователи
-    invitees: List[m.User] = db.query(m.User).filter(m.User.invited_by_id == inviter_id).all()
-
+def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
+    """
+    Возвращает список приглашённых + суммы.
+    Работает и в MySQL, и в PostgreSQL.
+    """
+    invited = db.query(m.User).filter(m.User.invited_by_id == inviter_id).all()
     report = []
-    for u in invitees:
+
+    for u in invited:
+        # 1) сколько потратил приглашённый
         total_paid = (
             db.query(func.coalesce(func.sum(m.Purchase.amount), 0.0))
-            .filter(m.Purchase.user_id == u.id)
-            .scalar()
-            or 0.0
+              .filter(m.Purchase.user_id == u.id)
+              .scalar() or 0.0
         )
+
+        # 2) сколько кэшбэка получили с этого приглашённого
+        # --- MySQL-совместимый фильтр JSON ---
+        from_user_filter = cast(
+            func.JSON_UNQUOTE(
+                func.JSON_EXTRACT(m.WalletTransaction.meta, '$.from_user')
+            ),
+            Integer
+        ) == u.id
 
         total_cashback = (
             db.query(func.coalesce(func.sum(m.WalletTransaction.amount), 0.0))
-            .filter(
-                m.WalletTransaction.user_id == inviter_id,
-                m.WalletTransaction.type == m.WalletTxTypes.REFERRAL_CASHBACK,
-                m.WalletTransaction.meta['from_user'].astext.cast("int") == u.id,
-            )
-            .scalar()
-            or 0.0
+              .filter(
+                  m.WalletTransaction.user_id == inviter_id,
+                  m.WalletTransaction.type == m.WalletTxTypes.REFERRAL_CASHBACK,
+                  from_user_filter
+              )
+              .scalar() or 0.0
         )
-        report.append((u, total_paid, total_cashback))
+
+        report.append(
+            ReferralReportItem(
+                user_id=u.id,
+                email=u.email,
+                total_paid=total_paid,
+                total_cashback=total_cashback
+            )
+        )
 
     return report
+
+def debit_balance(
+    db: Session,
+    user_id: int,
+    amount: float,
+    meta: dict | None = None
+) -> None:
+    """
+    Списывает amount (USD) с баланса – исключение, если денег не хватает.
+    """
+    user = db.query(User).get(user_id)
+    if user.balance < amount - 1e-6:      # небольшой допуск на float
+        raise ValueError("Not enough balance")
+    user.balance -= amount
+    db.add(
+        WalletTransaction(
+            user_id=user_id,
+            amount=-amount,
+            type=WalletTxTypes.INTERNAL_PURCHASE,
+            meta=meta or {}
+        )
+    )
+    db.commit()
+
+def get_cashback_percent(db: Session, invitee_id: int) -> float:
+    """
+    Находит порядковый номер покупки invitee_id (1,2,…),
+    ищет в referral_rules подходящий диапазон и возвращает percent.
+    """
+    purchase_count = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.user_id == invitee_id)
+          .scalar()
+        or 0
+    )
+    rule = (
+        db.query(ReferralRule)
+          .filter(
+              ReferralRule.min_purchase_no <= purchase_count,
+              or_(
+                  ReferralRule.max_purchase_no == None,
+                  ReferralRule.max_purchase_no >= purchase_count
+              )
+          )
+          .order_by(ReferralRule.min_purchase_no.desc())
+          .first()
+    )
+    return rule.percent if rule else 0.0

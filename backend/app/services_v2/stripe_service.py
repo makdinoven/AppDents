@@ -1,203 +1,233 @@
+
+
 import hashlib
+import json
 import logging
-import re
-from datetime import datetime, timedelta
+import uuid
+from datetime import datetime
 from typing import List
+from urllib.parse import urlparse
 
 import requests
 import stripe
-from sqlalchemy import func, or_
+from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status, Request
 
+from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, AdVisit, WalletTxTypes, ReferralRule
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User
 from ..services_v2.user_service import (
-    get_user_by_email,
-    create_user,
     add_course_to_user,
-    generate_random_password, credit_balance
+    create_user,
+    generate_random_password,
+    get_user_by_email, credit_balance,
 )
 from ..utils.email_sender import (
+    send_already_owned_course_email,
     send_successful_purchase_email,
-    send_already_owned_course_email
 )
 
-AD_INACTIVITY_HOURS   = 1   # TTL, который даёт покупка
-AD_VISIT_WINDOW_HOURS = 3   #  окно для поиска рекламных визитов
+
+logging.basicConfig(level=logging.INFO)
+
+# ────────────────────────────────────────────────────────────────
+# Вспомогательные функции
 # ────────────────────────────────────────────────────────────────
 
-def _landing_has_recent_ad_visits(db: Session, landing_id: int) -> bool:
-    """
-    True ‑ если у лендинга были визиты из рекламы
-    хотя бы один раз за последние AD_VISIT_WINDOW_HOURS.
-    """
-    since = datetime.utcnow() - timedelta(hours=AD_VISIT_WINDOW_HOURS)
-    return db.query(
-        db.query(AdVisit)
-              .filter(
-                  AdVisit.landing_id == landing_id,
-                  AdVisit.visited_at >= since
-              )
-              .exists()
-    ).scalar()
-
-def _get_cashback_percent(db: Session, invitee_id: int) -> float:
-    """
-    Считает порядковый номер текущей покупки invitee_id (1-я, 2-я, ...),
-    ищет в referral_rules правило, попадающее в этот диапазон,
-    и возвращает percent. Если не нашлось — 0.
-    """
-    # сколько покупок уже было у приглашённого (включая эту текущую)
-    purchase_count = db.query(func.count(Purchase.id))\
-        .filter(Purchase.user_id == invitee_id)\
-        .scalar() or 0
-
-    rule = db.query(ReferralRule)\
-        .filter(
-            ReferralRule.min_purchase_no <= purchase_count,
-            or_(
-                ReferralRule.max_purchase_no == None,
-                ReferralRule.max_purchase_no >= purchase_count
-            )
-        )\
-        .order_by(ReferralRule.min_purchase_no.desc())\
-        .first()
-
-    return rule.percent if rule else 0.0
 
 def _hash_email(email: str) -> str:
-    """
-    Приводим к нижнему регистру, убираем пробелы вокруг
-    и хэшируем алгоритмом SHA-256 (hexdigest).
-    """
-    normalized = email.strip().lower()
-    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
-
-def _build_fb_event(email: str,
-                    amount: float,
-                    currency: str,
-                    course_ids: list[int],
-                    client_ip: str,
-                    user_agent: str,
-                    fbp: str | None,
-                    fbc: str | None,
-                    first_name: str | None,
-                    last_name: str | None) -> dict:
-    """
-    Формирует payload **один раз** – его можно многократно посылать
-    в разные пиксели.
-    """
-    if not email:
-        raise ValueError("Empty email for Facebook Purchase event")
-
-    hashed_email = _hash_email(email)
-    event = {
-        "data": [{
-            "event_name": "Purchase",
-            "event_time": int(datetime.now().timestamp()),
-            "user_data": {
-                "em": [hashed_email],
-                "client_ip_address": client_ip if client_ip != "0.0.0.0" else None,
-                "client_user_agent": user_agent or None,
-            },
-            "custom_data": {
-                "currency": currency,
-                "value": amount,
-                "content_ids": [str(cid) for cid in course_ids],
-                "content_type": "course",
-            },
-        }]
-    }
-
-    u = event["data"][0]["user_data"]
-    if fbp: u["fbp"] = fbp
-    if fbc: u["fbc"] = fbc
-    if first_name:
-        u["fn"] = [_hash_email(first_name)]
-    if last_name and last_name != first_name:
-        u["ln"] = [_hash_email(last_name)]
-
-    return event
+    """Нормализуем e-mail и хэшируем его (SHA-256 → hexdigest)."""
+    return hashlib.sha256(email.strip().lower().encode("utf-8")).hexdigest()
 
 
-def _send_facebook_purchase(
+def _hash_plain(value: str) -> str:
+    """Trim → lower → SHA-256. Для first_name / last_name и др. персональных полей."""
+    return hashlib.sha256(value.strip().lower().encode("utf-8")).hexdigest()
+
+
+# ────────────────────────────────────────────────────────────────
+# Facebook Conversions API
+# ────────────────────────────────────────────────────────────────
+def _build_fb_event(
+    *,
+    event_name: str = "Purchase",           # новое
     email: str,
     amount: float,
     currency: str,
     course_ids: list[int],
     client_ip: str,
     user_agent: str,
+    event_time: int,
+    external_id: str | None = None,
     fbp: str | None = None,
     fbc: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
-):
+) -> dict:
     """
-    Отправляет событие **во все пиксели из settings**.
-    Любые ошибки логируем, но не прерываем цикл,
-    чтобы попытаться отправить в остальные.
+    Формирует payload для Facebook Conversions API.
+    ``event_name`` — "Purchase" или "Donate".
     """
-    try:
-        event_data = _build_fb_event(
-            email, amount, currency, course_ids,
-            client_ip, user_agent, fbp, fbc, first_name, last_name
-        )
-        pixels = [
-            {"id": settings.FACEBOOK_PIXEL_ID,   "token": settings.FACEBOOK_ACCESS_TOKEN},
-            {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+
+    if not email:
+        raise ValueError("Empty email for Facebook event")
+
+    # ---------- 1. user_data ----------
+    user_data: dict = {
+        "em": [_hash_email(email)],
+        "client_ip_address": None if client_ip == "0.0.0.0" else client_ip,
+        "client_user_agent": user_agent or None,
+    }
+
+    # дополнительные Facebook-идентификаторы
+    if external_id:
+        user_data["external_id"] = [external_id]
+    if fbp:
+        user_data["fbp"] = fbp
+    if fbc:
+        user_data["fbc"] = fbc
+
+    # персональные поля
+    if first_name:
+        user_data["fn"] = [_hash_plain(first_name)]
+    if last_name and last_name != first_name:
+        user_data["ln"] = [_hash_plain(last_name)]
+
+    # ---------- 2. финальный event ----------
+    event = {
+        "data": [
+            {
+                "event_name": event_name,          # <-- главное отличие
+                "event_time": event_time,
+                "user_data": user_data,
+                "custom_data": {
+                    "currency": currency,
+                    "value": amount,
+                    "content_ids": [str(cid) for cid in course_ids],
+                    "content_type": "course",
+                },
+            }
         ]
+    }
 
-        for p in pixels:
-            try:
-                resp = requests.post(
-                    f"https://graph.facebook.com/v18.0/{p['id']}/events",
-                    params={"access_token": p["token"]},
-                    json=event_data,
-                    timeout=3
-                )
-                if resp.status_code == 200:
-                    logging.info("FB Pixel %s: ok for %s", p["id"], email)
-                else:
-                    logging.error(
-                        "FB Pixel %s error %s – %s",
-                        p["id"], resp.status_code, resp.text
-                    )
-            except Exception as e:
-                logging.error("FB Pixel %s failed: %s", p["id"], e, exc_info=True)
+    logging.info(
+        "FB event built → %s | %s | amount=%s %s | courses=%s",
+        email, event_name, amount, currency.upper(), course_ids,
+    )
+    return event
+def _send_facebook_events(
+    *,
+    email: str,
+    amount: float,
+    currency: str,
+    course_ids: list[int],
+    client_ip: str,
+    user_agent: str,
+    event_time: int,
+    external_id: str | None = None,
+    fbp: str | None = None,
+    fbc: str | None = None,
+    first_name: str | None = None,
+    last_name: str | None = None,
+) -> None:
+    """Шлёт Purchase в два пикселя и Donate в третий."""
 
-    except Exception as e:
-        logging.error("Failed to build/send FB events: %s", e, exc_info=True)
+    # ——— 1. Собираем payload-ы
+    purchase_payload = _build_fb_event(
+        event_name="Purchase",
+        email=email,
+        amount=amount,
+        currency=currency,
+        course_ids=course_ids,
+        client_ip=client_ip,
+        user_agent=user_agent,
+        event_time=event_time,
+        external_id=external_id,
+        fbp=fbp,
+        fbc=fbc,
+        first_name=first_name,
+        last_name=last_name,
+    )
+    donate_payload = _build_fb_event(            # отличается только именем
+        event_name="Donate",
+        email=email,
+        amount=amount,
+        currency=currency,
+        course_ids=course_ids,
+        client_ip=client_ip,
+        user_agent=user_agent,
+        event_time=event_time,
+        external_id=external_id,
+        fbp=fbp,
+        fbc=fbc,
+        first_name=first_name,
+        last_name=last_name,
+    )
 
+    # ——— 2. Список пикселей
+    pixels_purchase = [
+        {"id": settings.FACEBOOK_PIXEL_ID, "token": settings.FACEBOOK_ACCESS_TOKEN},
+        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS,
+         "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+    ]
+    pixel_donation = {
+        "id": settings.FACEBOOK_PIXEL_ID_DONATION,
+        "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
+    }
 
+    # ——— 3. Отправляем
+    def _post(pixel: dict, payload: dict, tag: str):
+        try:
+            resp = requests.post(
+                f"https://graph.facebook.com/v18.0/{pixel['id']}/events",
+                params={"access_token": pixel["token"]},
+                json=payload,
+                timeout=3,
+            )
+            if resp.status_code == 200:
+                logging.info("FB %s Pixel %s — OK (email=%s)",
+                             tag, pixel['id'], email)
+            else:
+                logging.error("FB %s Pixel %s — %s %s",
+                              tag, pixel['id'], resp.status_code, resp.text)
+        except Exception as e:
+            logging.error("FB %s Pixel %s failed: %s",
+                          tag, pixel['id'], e, exc_info=True)
+
+    for p in pixels_purchase:
+        _post(p, purchase_payload, "Purchase")
+    _post(pixel_donation, donate_payload, "Donate")
+
+# ────────────────────────────────────────────────────────────────
+# Stripe helpers
+# ────────────────────────────────────────────────────────────────
 def get_stripe_keys_by_region(region: str) -> dict:
     region = region.upper()
     if region == "RU":
         return {
             "secret_key": settings.STRIPE_SECRET_KEY_RU,
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_RU,
-            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_RU
+            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_RU,
         }
-    elif region == "EN":
-        return {
-            "secret_key": settings.STRIPE_SECRET_KEY_EN,
-            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_EN,
-            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_EN
-        }
-    elif region == "ES":
+    if region == "ES":
         return {
             "secret_key": settings.STRIPE_SECRET_KEY_ES,
             "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_ES,
-            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_ES
+            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_ES,
         }
-    else:
-        return {
-            "secret_key": settings.STRIPE_SECRET_KEY_EN,
-            "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_EN,
-            "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_EN
-        }
+    # fallback → EN
+    return {
+        "secret_key": settings.STRIPE_SECRET_KEY_EN,
+        "publishable_key": settings.STRIPE_PUBLISHABLE_KEY_EN,
+        "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_EN,
+    }
 
+
+# ────────────────────────────────────────────────────────────────
+# Создание Checkout Session
+# ────────────────────────────────────────────────────────────────
 def create_checkout_session(
+    *,
     db: Session,
     email: str,
     course_ids: List[int],
@@ -209,27 +239,59 @@ def create_checkout_session(
     request: Request,
     fbp: str | None = None,
     fbc: str | None = None,
+    landing_ids: list[int] | None = None,
+    from_ad : bool | None = None,
+    extra_metadata: dict | None = None,
 ) -> str:
+    """Создаёт Stripe Checkout Session и возвращает URL оплаты."""
+
     stripe_keys = get_stripe_keys_by_region(region)
     stripe.api_key = stripe_keys["secret_key"]
 
-    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0] or request.client.host or "0.0.0.0"
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0]
+        or request.client.host
+        or "0.0.0.0"
+    )
     user_agent = request.headers.get("User-Agent", "")
-    referer = request.headers.get("Referer")
-    logging.info("Creating checkout session: email=%s, course_ids=%s, Referer=%s", email, course_ids, referer)
+    referer = request.headers.get("Referer", "")
 
-    success_url_with_session = f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
+    logging.info("Creating Checkout Session: email=%s, courses=%s, referer=%s",
+                 email, course_ids, referer)
 
-    metadata = {
+    # внешний ID генерируем сразу (UUID, пока user.id не знаем)
+    user = get_user_by_email(db, email)
+    if user:  # «старый» пользователь
+        external_id = str(user.id)
+    else:  # первый заказ — генерим UUID
+        external_id = str(uuid.uuid4())
+
+    success_url_with_session = (
+        f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
+    )
+
+    metadata: dict = {
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
         "user_agent": user_agent,
-        "referer": referer or "",
+        "referer": referer,
+        "external_id": external_id,
     }
     if fbp:
         metadata["fbp"] = fbp
     if fbc:
         metadata["fbc"] = fbc
+    if landing_ids:
+        # сериализуем список в JSON-строку, чтобы в webhook легко распарсить
+        metadata["landing_ids"] = json.dumps(landing_ids)
+
+    if from_ad is not None:
+        # сохраняем точно то, что придёт с фронта: "true" или "false"
+        metadata["from_ad"] = str(from_ad).lower()
+
+    if extra_metadata:
+        metadata.update(extra_metadata)
+
 
     logging.info("Metadata for Stripe session: %s", metadata)
 
@@ -249,25 +311,30 @@ def create_checkout_session(
         customer_email=email,
         metadata=metadata,
     )
+
     logging.info("Stripe session created: id=%s", session["id"])
     return session.url
 
-logging.basicConfig(level=logging.INFO)
 
-
+# ────────────────────────────────────────────────────────────────
+# Webhook обработчик
+# ────────────────────────────────────────────────────────────────
 def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: str):
     logging.info("Начало обработки webhook для региона: %s", region)
-    stripe_keys = get_stripe_keys_by_region(region)
-    webhook_secret = stripe_keys["webhook_secret"]
-    stripe.api_key = stripe_keys["secret_key"]
 
+    stripe_keys = get_stripe_keys_by_region(region)
+    stripe.api_key = stripe_keys["secret_key"]
+    webhook_secret = stripe_keys["webhook_secret"]
+
+    # 1. Проверяем подпись
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        logging.info("Webhook событие успешно проверено: %s", event["type"])
+        logging.info("Webhook verified: %s", event["type"])
     except stripe.error.SignatureVerificationError:
-        logging.error("Неверная подпись webhook")
+        logging.error("Invalid webhook signature")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
+    # 2. Интересует только completed
     if event["type"] != "checkout.session.completed":
         return {"status": "ignored"}
 
@@ -275,63 +342,79 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     session_id = session_obj["id"]
     logging.info("Получена сессия: %s", session_id)
 
+    # 3. Проверяем, что деньги действительно списаны
+    if session_obj.get("payment_status") != "paid":
+        logging.info("Session %s не оплачена (payment_status=%s) — пропускаем",
+                     session_id, session_obj.get("payment_status"))
+        return {"status": "unpaid"}
+
+
     metadata = session_obj.get("metadata", {}) or {}
+    balance_used_cents = int(metadata.get("balance_used", "0") or 0)
+    balance_used = balance_used_cents / 100
+    logging.info("balance_used (из metadata) = %.2f USD", balance_used)
+
     logging.info("Получены метаданные: %s", metadata)
 
-    # ─────── Разбор метаданных / параметров ─────────────────────
-    full_name  = session_obj.get("customer_details", {}).get("name", "") or ""
-    parts      = full_name.strip().split()
-    first_name = parts[0] if parts else None
-    last_name  = parts[-1] if len(parts) > 1 else None
-
-    course_ids = [int(cid) for cid in (metadata.get("course_ids") or "").split(",") if cid.strip()]
+    # 4. Основные данные заказа
+    email = session_obj.get("customer_email")
+    course_ids = [
+        int(cid) for cid in (metadata.get("course_ids") or "").split(",") if cid.strip()
+    ]
     logging.info("Преобразованные course_ids: %s", course_ids)
 
-    # ─────── Курсы и лендинги, связанные с оплатой ──────────────
-    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
-    all_landings: List[Landing] = (
-        db.query(Landing)
-          .join(Landing.courses)
-          .filter(Course.id.in_(course_ids))
-          .all()
-    )
+    # разбираем landing_ids из metadata
+    # разбираем landing_ids из metadata
+    raw = metadata.get("landing_ids", "")
+    try:
+        landing_ids_list = json.loads(raw) or []
+    except ValueError:
+        landing_ids_list = [int(x) for x in raw.split(",") if x.strip()]
 
-    # лендинги, у которых действительно были рекламные визиты за 3 ч
-    landings_recent_ad = {
-        ln.id for ln in all_landings if _landing_has_recent_ad_visits(db, ln.id)
-    }
-    from_ad = bool(landings_recent_ad)
-    logging.info("from_ad (по визитам) = %s", from_ad)
+    # fallback: если landing_ids не пришёл или пустой — определяем лендинг по referer или первому курсу
+    if not landing_ids_list:
+        referer = metadata.get("referer", "")
+        landing_for_purchase = None
 
-    # ─────── Технические данные клиента ─────────────────────────
-    email       = session_obj.get("customer_email")
-    client_ip   = metadata.get("client_ip", "0.0.0.0")
-    user_agent  = metadata.get("user_agent", "")
-    fbp_value   = metadata.get("fbp")
-    fbc_value   = metadata.get("fbc")
+        # пробуем по slug из referer
+        if referer:
+            slug = urlparse(referer).path.strip("/").split("/")[-1]
+            landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
 
-    # ─────── Основная бизнес‑логика не менялась ─────────────────
-    if not (email and course_ids):
-        logging.warning("Неверные данные для session.completed: email=%s, course_ids=%s", email, course_ids)
-        return {"status": "bad_data"}
+        # если по referer не нашли — первый лендинг первого курса
+        if not landing_for_purchase and course_ids:
+            landing_for_purchase = (
+                db.query(Landing)
+                .join(Landing.courses)
+                .filter(Course.id == course_ids[0])
+                .first()
+            )
 
-    logging.info("Обработка успешной оплаты: email=%s, course_ids=%s", email, course_ids)
+        # сохраняем в список
+        if landing_for_purchase:
+            landing_ids_list = [landing_for_purchase.id]
+    logging.info("Landings: %s", landing_ids_list)
+    # 5. Точное время события
+    event_time = session_obj.get("created", int(datetime.utcnow().timestamp()))
 
-    # 1. Facebook Pixel
-    _send_facebook_purchase(
-        email=email,
-        amount=session_obj["amount_total"] / 100,
-        currency=session_obj["currency"],
-        course_ids=course_ids,
-        client_ip=client_ip,
-        user_agent=user_agent,
-        fbp=fbp_value,
-        fbc=fbc_value,
-        first_name=first_name,
-        last_name=last_name,
-    )
+    raw_from_ad = metadata.get("from_ad", "false").lower()
+    from_ad = (raw_from_ad == "true")
+    logging.info("from_ad (из metadata) = %s", from_ad)
 
-    # 2. Пользователь
+    # 6. Персональные данные
+    full_name = session_obj.get("customer_details", {}).get("name", "") or ""
+    parts = full_name.strip().split()
+    first_name = parts[0] if parts else None
+    last_name = parts[-1] if len(parts) > 1 else None
+
+    # 7. Технические данные клиента
+    client_ip = metadata.get("client_ip", "0.0.0.0")
+    user_agent = metadata.get("user_agent", "")
+    external_id = metadata.get("external_id")
+    fbp_value = metadata.get("fbp")
+    fbc_value = metadata.get("fbc")
+
+    # 10. Пользователь
     user = get_user_by_email(db, email)
     new_user_created, random_pass = False, None
     if not user:
@@ -345,64 +428,114 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     else:
         logging.info("Найден существующий пользователь: %s", user.id)
 
-    # 3. Курсы
+    #. Пользователь (user уже получен) создаем корзину для него.
+    if metadata.get("transfer_cart") == "true":
+        cart_ids_raw = metadata.get("cart_landing_ids", "[]")
+        try:
+            cart_ids = json.loads(cart_ids_raw)
+        except Exception:
+            cart_ids = []
+        from ..services_v2 import cart_service as cs
+        for lid in cart_ids:
+            try:
+                cs.add_landing(db, user, int(lid))
+            except Exception as e:
+                logging.warning("Не удалось добавить лендинг %s в корзину пользователя %s: %s",
+                                lid, user.id, e)
+
+    # ───── Привязка реферального кода гостя ─────
+    ref_code = metadata.get("ref_code")
+    if ref_code and user.invited_by_id is None:
+        inviter = db.query(User).filter(User.referral_code == ref_code).first()
+        if inviter and inviter.id != user.id:
+            user.invited_by_id = inviter.id
+            db.commit()
+            logging.info("Ref-code %s применён: user %s → inviter %s",
+                         ref_code, user.id, inviter.id)
+        else:
+            logging.info("Ref-code %s невалиден или self-referral (user %s)",
+                         ref_code, user.id)
+    # ─────────────────────────────────────────────
+
+    # 11. Курсы → пользователю
+    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
     already_owned, new_courses = [], []
     for course_obj in courses_db:
         if course_obj in user.courses:
             already_owned.append(course_obj)
             logging.info("Пользователь %s уже имеет курс %s (ID=%s)",
                          user.id, course_obj.name, course_obj.id)
-            continue
+        else:
+            add_course_to_user(db, user.id, course_obj.id)
+            new_courses.append(course_obj)
+            logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
+                         course_obj.name, course_obj.id, user.id)
 
-        add_course_to_user(db, user.id, course_obj.id)
-        new_courses.append(course_obj)
-        logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
-                     course_obj.name, course_obj.id, user.id)
-
-        # лендинги конкретно под этот курс
-        course_landings: List[Landing] = (
-            db.query(Landing)
-              .join(Landing.courses)
-              .filter(Course.id == course_obj.id)
-              .all()
-        )
-
-        for landing in course_landings:
-            landing.sales_count += 1
-            logging.info("Увеличен sales_count для лендинга (ID=%s), новый sales_count=%s",
-                         landing.id, landing.sales_count)
-
-            # ─────── Флаг «в рекламе» — только для тех, где был визит ─────
-            if landing.id in landings_recent_ad:
-                landing.in_advertising = True
-                expiry_time = datetime.utcnow() + timedelta(hours=AD_INACTIVITY_HOURS)
-                if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < expiry_time:
-                    landing.ad_flag_expires_at = expiry_time
-            # ───────────────────────────────────────────────────────────────
-
-        db.add(
-            Purchase(
+    # Запись Purchase с правильным landing_id
+    for lid in landing_ids_list:
+        ln = db.query(Landing).filter_by(id=lid).one_or_none()
+        if ln:
+            ln.sales_count = (ln.sales_count or 0) + 1
+            logging.info("sales_count++ для лендинга ID=%s → %s", ln.id, ln.sales_count)
+    purchase = None
+    if new_courses:
+        # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
+        amount_total = session_obj["amount_total"] / 100.0
+        for idx, lid in enumerate(landing_ids_list):
+            p = Purchase(
                 user_id=user.id,
-                course_id=course_obj.id,
-                landing_id=course_landings[0].id if course_landings else None,
+                course_id=None,
+                landing_id=lid,
                 from_ad=from_ad,
-                amount=session_obj["amount_total"] / 100,
+                amount=amount_total if idx == 0 else 0.0,
             )
-        )
-
+            db.add(p)
+            if idx == 0:
+                purchase = p
     db.commit()
 
-    if user.invited_by_id and new_purchases:
-        for purchase in new_purchases:
-            percent = _get_cashback_percent(db, user.id)
-            if percent <= 0:
-                continue  # для безопасности не начисляем, если правило не задано
+    if balance_used > 0:
+        try:
+            debit_balance(
+                db,
+                user_id=user.id,
+                amount=balance_used,
+                meta={
+                    "reason": "partial_purchase",
+                    "purchase_id": purchase.id if purchase else None,
+                },
+            )
+            logging.info("С баланса пользователя %s списано %.2f USD (partial)",
+                         user.id, balance_used)
+        except ValueError:
+            # на случай, если баланс внезапно меньше, просто логируем
+            logging.error("Не удалось снять %.2f USD с баланса user=%s",
+                          balance_used, user.id)
 
-            reward_usd = purchase.amount * (percent / 100)
+    # 9. Отправляем событие Purchase в FB
+    _send_facebook_events(
+        email=email,
+        amount=session_obj["amount_total"] / 100,
+        currency=session_obj["currency"],
+        course_ids=course_ids,
+        client_ip=client_ip,
+        user_agent=user_agent,
+        external_id=external_id,
+        fbp=fbp_value,
+        fbc=fbc_value,
+        first_name=first_name,
+        last_name=last_name,
+        event_time=event_time,
+    )
+
+    if purchase and user.invited_by_id:
+        percent = get_cashback_percent(db, user.id)
+        if percent > 0:
+            reward = purchase.amount * (percent / 100)
             credit_balance(
                 db,
                 user_id=user.invited_by_id,
-                amount=reward_usd,
+                amount=reward,
                 tx_type=WalletTxTypes.REFERRAL_CASHBACK,
                 meta={
                     "from_user": user.id,
@@ -411,15 +544,13 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 }
             )
             logging.info(
-                "Начислен кэшбэк %.2f USD (%s%%) "
-                "пригласителю %s за purchase_id=%s",
-                reward_usd, percent, user.invited_by_id, purchase.id
+                "Начислен кэшбэк %.2f USD (%s%%) пригласителю %s "
+                "за purchase_id=%s",
+                reward, percent, user.invited_by_id, purchase.id
             )
 
-    # 4. Письма
+    # 13. Письма
     if already_owned:
-        owned_names = [c.name for c in already_owned]
-        logging.info("Пользователь оплатил курсы, которые уже имеет: %s", owned_names)
         send_already_owned_course_email(
             recipient_email=email,
             course_names=[c.name for c in already_owned],
@@ -427,8 +558,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         )
 
     if new_courses:
-        new_names = [c.name for c in new_courses]
-        logging.info("Новые курсы, добавленные пользователю: %s", new_names)
         send_successful_purchase_email(
             recipient_email=email,
             course_names=[c.name for c in new_courses],
@@ -437,4 +566,5 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             region=region,
         )
 
+    logging.info("Обработка завершена успешно (session=%s)", session_id)
     return {"status": "ok"}
