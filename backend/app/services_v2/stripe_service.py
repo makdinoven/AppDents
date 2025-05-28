@@ -1,19 +1,10 @@
-"""
-Полный модуль обработчика Stripe-платежей с отправкой события Purchase
-в Facebook Conversions API. Включает:
 
-• external_id (user/uuid) → user_data.external_id
-• правильный event_time — timestamp создания Stripe-сессии
-• хэширование first_name / last_name (SHA-256, lower-case)
-• проверку payment_status == “paid”
-• подробное логирование всех этапов
-"""
 
 import hashlib
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List
 from urllib.parse import urlparse
 
@@ -22,8 +13,9 @@ import stripe
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
 
+from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -249,6 +241,7 @@ def create_checkout_session(
     fbc: str | None = None,
     landing_ids: list[int] | None = None,
     from_ad : bool | None = None,
+    extra_metadata: dict | None = None,
 ) -> str:
     """Создаёт Stripe Checkout Session и возвращает URL оплаты."""
 
@@ -295,6 +288,10 @@ def create_checkout_session(
     if from_ad is not None:
         # сохраняем точно то, что придёт с фронта: "true" или "false"
         metadata["from_ad"] = str(from_ad).lower()
+
+    if extra_metadata:
+        metadata.update(extra_metadata)
+
 
     logging.info("Metadata for Stripe session: %s", metadata)
 
@@ -353,9 +350,11 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
 
     metadata = session_obj.get("metadata", {}) or {}
+    balance_used_cents = int(metadata.get("balance_used", "0") or 0)
+    balance_used = balance_used_cents / 100
+    logging.info("balance_used (из metadata) = %.2f USD", balance_used)
+
     logging.info("Получены метаданные: %s", metadata)
-
-
 
     # 4. Основные данные заказа
     email = session_obj.get("customer_email")
@@ -368,7 +367,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # разбираем landing_ids из metadata
     raw = metadata.get("landing_ids", "")
     try:
-        landing_ids_list = json.loads(raw)
+        landing_ids_list = json.loads(raw) or []
     except ValueError:
         landing_ids_list = [int(x) for x in raw.split(",") if x.strip()]
 
@@ -429,6 +428,35 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     else:
         logging.info("Найден существующий пользователь: %s", user.id)
 
+    #. Пользователь (user уже получен) создаем корзину для него.
+    if metadata.get("transfer_cart") == "true":
+        cart_ids_raw = metadata.get("cart_landing_ids", "[]")
+        try:
+            cart_ids = json.loads(cart_ids_raw)
+        except Exception:
+            cart_ids = []
+        from ..services_v2 import cart_service as cs
+        for lid in cart_ids:
+            try:
+                cs.add_landing(db, user, int(lid))
+            except Exception as e:
+                logging.warning("Не удалось добавить лендинг %s в корзину пользователя %s: %s",
+                                lid, user.id, e)
+
+    # ───── Привязка реферального кода гостя ─────
+    ref_code = metadata.get("ref_code")
+    if ref_code and user.invited_by_id is None:
+        inviter = db.query(User).filter(User.referral_code == ref_code).first()
+        if inviter and inviter.id != user.id:
+            user.invited_by_id = inviter.id
+            db.commit()
+            logging.info("Ref-code %s применён: user %s → inviter %s",
+                         ref_code, user.id, inviter.id)
+        else:
+            logging.info("Ref-code %s невалиден или self-referral (user %s)",
+                         ref_code, user.id)
+    # ─────────────────────────────────────────────
+
     # 11. Курсы → пользователю
     courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
     already_owned, new_courses = [], []
@@ -465,6 +493,24 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             if idx == 0:
                 purchase = p
     db.commit()
+
+    if balance_used > 0:
+        try:
+            debit_balance(
+                db,
+                user_id=user.id,
+                amount=balance_used,
+                meta={
+                    "reason": "partial_purchase",
+                    "purchase_id": purchase.id if purchase else None,
+                },
+            )
+            logging.info("С баланса пользователя %s списано %.2f USD (partial)",
+                         user.id, balance_used)
+        except ValueError:
+            # на случай, если баланс внезапно меньше, просто логируем
+            logging.error("Не удалось снять %.2f USD с баланса user=%s",
+                          balance_used, user.id)
 
     # 9. Отправляем событие Purchase в FB
     _send_facebook_events(

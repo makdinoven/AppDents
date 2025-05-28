@@ -1,4 +1,5 @@
 # api/stripe_api.py
+import json
 import logging
 import time
 
@@ -11,7 +12,9 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
 from ..models.models_v2 import Course
-from ..services_v2.user_service import get_user_by_email, create_user, create_access_token
+from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
+from ..services_v2.wallet_service import debit_balance
+from ..utils.email_sender import send_successful_purchase_email
 
 router = APIRouter()
 
@@ -24,6 +27,10 @@ class CheckoutRequest(BaseModel):
     cancel_url: str = "https://example.com/payment-cancel"
     fbp: str | None = None  # Из cookie _fbp
     fbc: str | None = None  # Из cookie _fbc
+    use_balance: bool = False
+    transfer_cart: bool = False  # ←
+    cart_landing_ids: list[int] | None = None
+    ref_code: str | None = None
 
 @router.post("/checkout")
 def stripe_checkout(
@@ -50,6 +57,12 @@ def stripe_checkout(
         email = data.user_email
         logging.info("Неавторизованный пользователь, email: %s", email)
 
+    if data.use_balance and current_user is None:
+        raise HTTPException(400, "use_balance=true доступно только авторизованным")
+
+    if data.transfer_cart and not data.cart_landing_ids:
+        raise HTTPException(400, "cart_landing_ids required when transfer_cart=true")
+
     # 2. Проверяем курсы в БД
     courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
     if not courses or len(courses) != len(data.course_ids):
@@ -64,19 +77,61 @@ def stripe_checkout(
     logging.info("Сформировано название продукта: %s", product_name)
     logging.info("Регион: %s", data.region)
 
+    total_price_usd = data.price_cents / 100
+    balance_used = 0.0  # ← объявляем заранее
+
+    if data.use_balance and current_user:
+        balance_avail = float(current_user.balance or 0)
+
+        if balance_avail >= total_price_usd - 1e-6:
+            # --- Полная оплата балансом ---
+            debit_balance(
+                db,
+                user_id=current_user.id,
+                amount=total_price_usd,
+                meta={"reason": "full_purchase", "courses": data.course_ids},
+            )
+            for c in courses:
+                add_course_to_user(db, current_user.id, c.id)
+            send_successful_purchase_email(
+                recipient_email=current_user.email,
+                course_names=[c.name for c in courses],
+                new_account=False,
+                region=data.region,
+            )
+            return {"checkout_url": None, "paid_with_balance": True}
+
+        # --- Частичная ---
+        balance_used = balance_avail
+
+    stripe_amount_cents = data.price_cents - int(round(balance_used * 100))
+    if stripe_amount_cents <= 0:
+        # сюда не попадём: полная оплата балансом уже обработана выше
+        stripe_amount_cents = 0
+
+    extra = {}
+    if data.transfer_cart:
+        extra["transfer_cart"] = "true"
+        extra["cart_landing_ids"] = json.dumps(data.cart_landing_ids)
+    if balance_used:
+        extra["balance_used"] = str(int(round(balance_used * 100)))
+    if data.ref_code:
+        extra["ref_code"] = data.ref_code
+
     # 4. Вызываем функцию для создания сессии Stripe
     checkout_url = create_checkout_session(
         db=db,
         email=email,
         course_ids=data.course_ids,
         product_name=product_name,
-        price_cents=data.price_cents,
+        price_cents=stripe_amount_cents,
         region=data.region,
         success_url=data.success_url,
         cancel_url=data.cancel_url,
         request=request,
         fbp=data.fbp,
         fbc=data.fbc,
+        extra_metadata=extra
     )
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
@@ -153,7 +208,6 @@ def complete_purchase(
             status_code=400,
             detail="No customer_email in checkout session"
         )
-
     user = None
     max_retries = 10
     retry_delay = 0.5
