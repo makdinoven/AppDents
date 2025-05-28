@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..models import models_v2 as m
+from ..models.models_v2 import User, WalletTransaction, WalletTxTypes, Purchase, ReferralRule
 from ..schemas_v2.wallet import ReferralReportItem
 from ..services_v2.user_service import generate_unique_referral_code
 
@@ -80,3 +81,51 @@ def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
         )
 
     return report
+
+def debit_balance(
+    db: Session,
+    user_id: int,
+    amount: float,
+    meta: dict | None = None
+) -> None:
+    """
+    Списывает amount (USD) с баланса – исключение, если денег не хватает.
+    """
+    user = db.query(User).get(user_id)
+    if user.balance < amount - 1e-6:      # небольшой допуск на float
+        raise ValueError("Not enough balance")
+    user.balance -= amount
+    db.add(
+        WalletTransaction(
+            user_id=user_id,
+            amount=-amount,
+            type=WalletTxTypes.INTERNAL_PURCHASE,
+            meta=meta or {}
+        )
+    )
+    db.commit()
+
+def get_cashback_percent(db: Session, invitee_id: int) -> float:
+    """
+    Находит порядковый номер покупки invitee_id (1,2,…),
+    ищет в referral_rules подходящий диапазон и возвращает percent.
+    """
+    purchase_count = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.user_id == invitee_id)
+          .scalar()
+        or 0
+    )
+    rule = (
+        db.query(ReferralRule)
+          .filter(
+              ReferralRule.min_purchase_no <= purchase_count,
+              or_(
+                  ReferralRule.max_purchase_no == None,
+                  ReferralRule.max_purchase_no >= purchase_count
+              )
+          )
+          .order_by(ReferralRule.min_purchase_no.desc())
+          .first()
+    )
+    return rule.percent if rule else 0.0

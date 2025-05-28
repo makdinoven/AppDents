@@ -122,13 +122,11 @@ def me(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    cart_count = len(current_user.cart.items) if current_user.cart else 0
     return UserRead(
         id=current_user.id,
         email=current_user.email,
         role=current_user.role,
         balance=current_user.balance,
-        cart_items_count=cart_count,
     )
 
 @router.get("/search", response_model=List[UserRead], summary="Поиск  пользователей по email")
