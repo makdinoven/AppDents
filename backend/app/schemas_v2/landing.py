@@ -120,6 +120,7 @@ class LandingCardResponse(BaseModel):
     main_image: Optional[str] = None
     old_price: Optional[str] = None    # старая цена
     new_price: Optional[str] = None    # новая цена
+    course_ids: List[int] = []
 
     class Config:
         orm_mode = True

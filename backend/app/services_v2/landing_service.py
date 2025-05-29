@@ -218,6 +218,7 @@ def get_landing_cards(
             "main_image": landing.preview_photo,
             "old_price": landing.old_price,
             "new_price": landing.new_price,
+            "course_ids": [c.id for c in landing.courses],
         }
         cards.append(card)
 
