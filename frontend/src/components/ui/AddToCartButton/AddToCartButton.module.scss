@@ -8,6 +8,7 @@
   padding: 8px 17px 8px 13px;
   width: 100%;
   flex-shrink: 0;
+  font-size: 18px;
 
   svg {
     width: clamp(20px, 2.5vw, 32px);
@@ -62,6 +63,7 @@
       position: absolute;
       bottom: -41px;
       border-width: 1.5px;
+      font-size: 16px;
     }
 
     &.active {

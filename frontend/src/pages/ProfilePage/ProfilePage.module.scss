@@ -7,7 +7,7 @@
   margin-bottom: 140px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: $tablet-breakpoint) {
   .profilePage {
     margin-bottom: 80px;
   }
