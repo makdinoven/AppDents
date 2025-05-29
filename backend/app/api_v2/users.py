@@ -1,3 +1,4 @@
+import json
 import logging
 import secrets
 import string
@@ -5,6 +6,7 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from requests import Request
 from sqlalchemy.orm import Session, joinedload
 
 from ..db.database import get_db
@@ -70,7 +72,7 @@ def register(
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:
@@ -113,6 +115,22 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             logger.info(f"Successful login with correct password (email={form_data.username}, role={user.role})")
         else:
             logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
+
+    transfer_cart = getattr(form_data, "transfer_cart", "false").lower() == "true"
+    ids_raw = getattr(form_data, "cart_landing_ids", "[]")
+
+    try:
+        cart_ids = json.loads(ids_raw) if ids_raw else []
+    except Exception:
+        cart_ids = []
+
+    if transfer_cart and cart_ids:
+        from ..services_v2 import cart_service as cs
+        for lid in cart_ids:
+            try:
+                cs.add_landing(db, user, int(lid))
+            except Exception as e:
+                logger.warning("Cannot transfer landing %s: %s", lid, e)
 
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
