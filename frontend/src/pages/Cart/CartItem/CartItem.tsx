@@ -4,17 +4,17 @@ import ViewLink from "../../../components/ui/ViewLink/ViewLink.tsx";
 import { Path } from "../../../routes/routes.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import FormattedAuthorsDesc from "../../../common/helpers/FormattedAuthorsDesc.tsx";
-import { CartItemType } from "../../../api/cartApi/types.ts";
+import { CartLandingType } from "../../../api/cartApi/types.ts";
 
 interface CartItemProps {
-  loading: boolean;
-  item: CartItemType;
+  loading?: boolean;
+  item: CartLandingType;
   type: string;
   onDelete: (value: number) => void;
 }
 
 const CartItem = ({ loading, item, type, onDelete }: CartItemProps) => {
-  const visibleAuthors = item.authors
+  const visibleAuthors = item?.authors
     ?.slice(0, 3)
     .filter((author) => author.photo);
 
@@ -27,7 +27,7 @@ const CartItem = ({ loading, item, type, onDelete }: CartItemProps) => {
 
       <div className={s.item_middle}>
         <div className={`${s.img_wrapper} ${s[type.toLowerCase()]}`}>
-          {item.preview_photo && (
+          {item?.preview_photo && (
             <img src={item.preview_photo} alt={`${type} photo`} />
           )}
         </div>

@@ -55,6 +55,9 @@ const Header = () => {
   const newPrice = useSelector(
     (state: AppRootStateType) => state.landing.newPrice,
   );
+  const quantity = useSelector(
+    (state: AppRootStateType) => state.cart.quantity,
+  );
 
   useEffect(() => {
     if (localTriggerRef.current) {
@@ -168,6 +171,7 @@ const Header = () => {
                           key={btn.text}
                           icon={btn.icon}
                           text={btn.text}
+                          quantity={quantity}
                           onClick={() =>
                             navigate(Path.cart, {
                               state: { backgroundLocation: location },

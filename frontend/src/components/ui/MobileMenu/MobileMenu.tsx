@@ -15,6 +15,9 @@ const MobileMenu = () => {
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
+  const quantity = useSelector(
+    (state: AppRootStateType) => state.cart.quantity,
+  );
 
   const buttons: {
     icon: any;
@@ -56,6 +59,7 @@ const MobileMenu = () => {
                 icon={btn.icon}
                 text={btn.text}
                 direction={"vertical"}
+                quantity={quantity}
                 onClick={() =>
                   navigate(Path.cart, {
                     state: { backgroundLocation: location },

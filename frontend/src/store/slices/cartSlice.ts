@@ -1,23 +1,38 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { CartType } from "../../api/cartApi/types.ts";
-import { cartStorage } from "../../api/cartApi/cartStorage.ts";
+import { cartStorage, getInitialCart } from "../../api/cartApi/cartStorage.ts";
 import {
   addCartItem,
   getCart,
   removeCartItem,
 } from "../actions/cartActions.ts";
+import { CartApiResponse, CartTypeExtended } from "../../api/cartApi/types.ts";
 import { AppRootStateType } from "../store.ts";
 
-const initialState: CartType = cartStorage.getCart() || {
-  items: [],
-  loading: false,
-  quantity: 0,
-};
+const initialState: CartTypeExtended =
+  cartStorage.getCart() ?? getInitialCart();
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCart: (state) => {
+      state.items = [];
+      state.quantity = 0;
+      state.current_discount = 0;
+      state.next_discount = 0;
+      state.total_amount = 0;
+      state.total_amount_with_balance_discount = 0;
+      state.total_new_amount = 0;
+      state.total_old_amount = 0;
+      cartStorage.setCart(state);
+    },
+    syncCartFromStorage: (state) => {
+      const storedCart = cartStorage.getCart();
+      if (storedCart) {
+        Object.assign(state, storedCart);
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getCart.pending, (state) => {
@@ -25,10 +40,12 @@ const cartSlice = createSlice({
       })
       .addCase(
         getCart.fulfilled,
-        (state, action: PayloadAction<{ res: any }>) => {
+        (state, action: PayloadAction<{ res: { data: CartApiResponse } }>) => {
           state.loading = false;
-          state.items = action.payload.res.data.items; // TODO CHANGE TO REAL RES DATA CONF
-          state.quantity = state.items.length;
+          Object.assign(state, {
+            ...action.payload.res.data,
+            quantity: action.payload.res.data.items.length,
+          });
           cartStorage.setCart(state);
         },
       );
@@ -40,8 +57,10 @@ const cartSlice = createSlice({
         addCartItem.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.items = action.payload.res.data.items; // TODO CHANGE TO REAL RES DATA CONF
-          state.quantity = state.items.length;
+          Object.assign(state, {
+            ...action.payload.res.data,
+            quantity: action.payload.res.data.items.length,
+          });
           cartStorage.setCart(state);
         },
       );
@@ -51,10 +70,12 @@ const cartSlice = createSlice({
       })
       .addCase(
         removeCartItem.fulfilled,
-        (state, action: PayloadAction<{ res: any }>) => {
+        (state, action: PayloadAction<{ res: { data: CartApiResponse } }>) => {
           state.loading = false;
-          state.items = action.payload.res.data.items; // TODO CHANGE TO REAL RES DATA CONF
-          state.quantity = state.items.length;
+          Object.assign(state, {
+            ...action.payload.res.data,
+            quantity: action.payload.res.data.items.length,
+          });
           cartStorage.setCart(state);
         },
       );
@@ -62,6 +83,8 @@ const cartSlice = createSlice({
 });
 
 export const selectIsInCart = (id: number) => (state: AppRootStateType) =>
-  state.cart.items.some((item) => item.id === id);
+  state.cart.items.some((item) => item.landing.id === id);
+
+export const { clearCart, syncCartFromStorage } = cartSlice.actions;
 
 export const cartReducer = cartSlice.reducer;

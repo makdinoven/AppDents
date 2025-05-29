@@ -16,6 +16,8 @@ import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.ts
 import ResetPasswordModal from "../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import { getCourses } from "../../../../store/actions/userActions.ts";
+import ReferralSection from "./ReferralSection/ReferralSection.tsx";
+import { clearCart } from "../../../../store/slices/cartSlice.ts";
 // import ConfirmModal from "../../../../components/Modals/ConfirmModal/ConfirmModal.tsx";
 
 const ProfileMain = () => {
@@ -32,6 +34,7 @@ const ProfileMain = () => {
   const handleLogout = () => {
     navigate(Path.main);
     dispatch(logout());
+    dispatch(clearCart());
   };
 
   useEffect(() => {
@@ -50,29 +53,36 @@ const ProfileMain = () => {
       <div className={s.profile_page}>
         <div className={s.page_header}>
           <div className={s.user_info}>
-            <User />
-            <div className={s.user_items}>
-              <div>
-                <span>
-                  <Trans i18nKey="mail" />:{" "}
-                </span>
-                {email}
-              </div>
-              <PrettyButton
-                variant="danger"
-                onClick={() => setShowResetPasswordModal(true)}
-                text={"resetPassword"}
-              />
-              <div>
-                <span>
-                  <Trans i18nKey="support" />:{" "}
-                </span>
-                <a className={s.mail_link} href="mailto:info.dis.org@gmail.com">
-                  info.dis.org@gmail.com
-                </a>
+            <div className={s.left}>
+              <User />
+              <div className={s.user_items}>
+                <div>
+                  <span>
+                    <Trans i18nKey="mail" />:{" "}
+                  </span>
+                  {email}
+                </div>
+                <PrettyButton
+                  variant="danger"
+                  onClick={() => setShowResetPasswordModal(true)}
+                  text={"resetPassword"}
+                />
+                <div>
+                  <span>
+                    <Trans i18nKey="support" />:{" "}
+                  </span>
+                  <a
+                    className={s.mail_link}
+                    href="mailto:info.dis.org@gmail.com"
+                  >
+                    info.dis.org@gmail.com
+                  </a>
+                </div>
               </div>
             </div>
+            <ReferralSection />
           </div>
+
           <LineWrapper>
             <ArrowButton text={t("logout")} onClick={handleLogout} />
           </LineWrapper>
