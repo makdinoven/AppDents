@@ -13,6 +13,7 @@ class LangEnum(str, Enum):
     AR = "AR"
     PT = "PT"
 
+
 class TagResponse(BaseModel):
     id: int
     name: str
