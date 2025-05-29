@@ -49,6 +49,9 @@
   "showLess": "Mostrar menos",
   "readMore": "Leia mais",
   "support": "Suporte",
+  "copy": "Copiar",
+  "copied": "Copiado!",
+
 
   "nav": {
     "home": "Início",
@@ -173,7 +176,20 @@
     "nextLesson": "Próxima lição",
     "prevLesson": "Lição anterior",
     "pdfText": "Esta aula contém materiais em PDF em vez de um vídeo. Clique no link abaixo para abrir o arquivo.",
-    "openPdf": "Abrir materiais em PDF"
+    "openPdf": "Abrir materiais em PDF",
+    "referral": {
+      "myReferrals": "Meus indicados",
+      "balance": "Seu saldo: <1>{{count}}$</1>",
+      "spend": "Gaste em qualquer curso!",
+      "link": "Link de convite:",
+      "invite": "Convide um amigo e ganhe um bônus.",
+      "friendsPurchases": "<1>50%</1> das compras dos seus amigos vão direto para o seu saldo!",
+      "step_1": "1. Copie seu link pessoal abaixo.",
+      "step_2": "2. Envie para um amigo via WhatsApp, Telegram, e-mail ou como preferir.",
+      "step_3": "3. Seu amigo compra qualquer curso por <1>$29</1>.",
+      "step_4": "4. Você recebe <1>50%</1> do pagamento dele (<1>$14.50</1>) como crédito na sua carteira."
+    }
+
   },
 
   "professor": {
@@ -222,5 +238,29 @@
     "title": "Página não encontrada",
     "sorry": "Desculpe, a página que você procura não existe",
     "goBack": "Voltar"
+  },
+
+  "cart": {
+    "title": "Seu carrinho",
+    "balance": "Seu saldo",
+    "subtotal": "Subtotal",
+    "discount": "Desconto",
+    "total": "Total",
+    "useBalance": "Usar saldo",
+    "replenish": "Recarregar saldo",
+    "returnToShop": "Voltar à loja",
+    "inCart": "No carrinho",
+    "priceWithoutDiscount_one": "Subtotal por {{count}} curso",
+    "priceWithoutDiscount_other": "Subtotal por {{count}} cursos",
+    "balanceDiscount": "Do saldo",
+    "currentDiscount": "Desconto atual",
+    "barText_1": "Agora você tem <1>{{current}}%</1> de desconto.",
+    "barText_2": "Adicione mais 1 curso para <2>{{next}}%</2>!",
+    "barTextMaxDiscount": "Você atingiu o desconto máximo de <1>{{current}}%</1>!",
+    "empty": {
+      "title": "Seu carrinho está vazio",
+      "haventAdded": "Parece que você ainda não adicionou nada. Explore nosso catálogo e adicione algo agora!"
+    }
   }
+
 }

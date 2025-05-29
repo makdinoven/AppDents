@@ -76,7 +76,8 @@ $card-body-padding-bottom: calc(
 .card_header_background {
   display: flex;
   align-items: end;
-  position: relative;
+  position: absolute;
+  top: -$card-header-height;
   text-transform: uppercase;
   box-shadow: 0 4px 0 $primary;
   width: $card_header-width;
@@ -111,12 +112,13 @@ $card-body-padding-bottom: calc(
 }
 
 .card_bottom {
+  margin-left: auto;
   cursor: pointer;
   @include flex-center;
-  position: absolute;
+  position: relative;
   box-shadow: 0 -4px 0 $primary;
-  bottom: -$card_bottom-height;
-  right: 0;
+  //bottom: -$card_bottom-height;
+  //right: 0;
   height: $card_bottom-height;
   width: $card_bottom-width;
   padding-left: 7px;
@@ -372,11 +374,15 @@ $card-body-padding-bottom: calc(
       position: absolute;
       bottom: 16px;
     }
+  }
 
-    .card_bottom {
-      height: 46px;
-      bottom: -46px;
-    }
+  .card_bottom {
+    height: 45px;
+  }
+
+  .card_header_background {
+    height: 45px;
+    top: -45px;
   }
 }
 

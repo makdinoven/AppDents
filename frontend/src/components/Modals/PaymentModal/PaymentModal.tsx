@@ -23,17 +23,23 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
+import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
+import {
+  REF_CODE_LS_KEY,
+  REF_CODE_PARAM,
+} from "../../../common/helpers/commonConstants.ts";
+import { cartStorage } from "../../../api/cartApi/cartStorage.ts";
 
 const logos = [
-  AmexLogo,
+  VisaLogo,
+  MastercardLogo,
   ApplePayLogo,
+  GooglePayLogo,
+  AmexLogo,
+  JcbLogo,
+  UnionPayLogo,
   DinnerClubLogo,
   DiscoverLogo,
-  GooglePayLogo,
-  JcbLogo,
-  MastercardLogo,
-  UnionPayLogo,
-  VisaLogo,
 ];
 
 export type PaymentDataType = {
@@ -55,9 +61,13 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
+  const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
+  );
+  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
+    isLogged && balance ? balance > 0 : false,
   );
   const {
     register,
@@ -68,15 +78,35 @@ const PaymentModal = ({
     mode: "onTouched",
   });
 
+  const handleCheckboxToggle = () => {
+    if (balance! !== 0) {
+      setIsBalanceUsed(!isBalanceUsed);
+    }
+  };
+
+  const balancePrice = isBalanceUsed
+    ? Math.max(paymentData.total_new_price - balance!, 0)
+    : paymentData.total_new_price;
+
   const handlePayment = async (form: any) => {
     setLoading(true);
+    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+    const cartLandingIds = cartStorage.getLandingIds();
     const dataToSend = {
       ...paymentData,
+      use_balance: isBalanceUsed,
       user_email: isLogged ? email : form.email,
+      transfer_cart: !isLogged && cartLandingIds.length > 0,
+      cart_landing_ids: cartLandingIds,
+      cancel_url:
+        !isLogged && rcCode
+          ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
+          : paymentData.cancel_url,
     };
     try {
-      const res = await mainApi.buyCourse(dataToSend);
+      const res = await mainApi.buyCourse(dataToSend, isLogged);
       const checkoutUrl = res.data.checkout_url;
+      localStorage.removeItem(REF_CODE_LS_KEY);
       setLoading(false);
 
       if (checkoutUrl) {
@@ -108,11 +138,28 @@ const PaymentModal = ({
           </div>
         ))}
       </div>
-      <div className={s.total_text}>
-        <Trans i18nKey="total" />
-        <div>
-          <span className={"highlight"}>${paymentData.total_new_price}</span>
-          <span className={"crossed"}>${paymentData.total_old_price}</span>
+      <div className={s.total_container}>
+        {isLogged && (
+          <div className={s.balance_container}>
+            <p>
+              <Trans i18nKey="cart.useBalance" />:<span> ${balance}</span>
+            </p>
+            <ToggleCheckbox
+              disabled={balance! === 0}
+              variant={"small"}
+              onChange={handleCheckboxToggle}
+              isChecked={isBalanceUsed}
+            />
+          </div>
+        )}
+        <div className={`${s.total_text} ${!isLogged ? s.center : ""}`}>
+          <Trans i18nKey="total" />
+          <div>
+            <span className={"highlight"}>
+              ${isBalanceUsed ? balancePrice : paymentData.total_new_price}
+            </span>
+            <span className={"crossed"}>${paymentData.total_old_price}</span>
+          </div>
         </div>
       </div>
 
@@ -140,9 +187,11 @@ const PaymentModal = ({
         )}
         <Button loading={loading} text={t("pay")} type="submit" />
       </Form>
-      <p className={s.modal_text}>
-        <Trans i18nKey="paymentWarn" />
-      </p>
+      {!isLogged && (
+        <p className={s.modal_text}>
+          <Trans i18nKey="paymentWarn" />
+        </p>
+      )}
 
       <ul className={s.logos}>
         {logos.map((Logo, index) => (

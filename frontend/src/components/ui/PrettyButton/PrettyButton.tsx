@@ -1,7 +1,7 @@
 import s from "./PrettyButton.module.scss";
 import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
-import Loader from "../Loader/Loader.tsx";
 import { Trans } from "react-i18next";
+import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
 const PrettyButton = ({
   text,
@@ -12,7 +12,7 @@ const PrettyButton = ({
 }: {
   text: string;
   loading?: boolean;
-  variant?: "danger" | "primary" | "default";
+  variant?: "danger" | "primary" | "default" | "default_white_hover";
   onClick?: any;
   className?: string;
 }) => {
@@ -21,7 +21,7 @@ const PrettyButton = ({
       onClick={onClick}
       className={`${s.btn} ${className ? className : ""} ${s[variant] || ""}`}
     >
-      {loading ? <Loader /> : <Trans i18nKey={text} />}
+      {loading ? <LoaderOverlay /> : <Trans i18nKey={text} />}
     </UnstyledButton>
   );
 };

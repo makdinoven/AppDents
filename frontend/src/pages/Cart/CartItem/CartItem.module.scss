@@ -3,13 +3,13 @@
   position: relative;
   @include flex-column;
   justify-content: space-between;
-  font-size: 12px;
-  gap: 10px;
-  padding: 20px 20px 15px;
+  font-size: 14px;
+  padding: 15px;
   background-color: $primary;
   color: $accent;
   width: 100%;
   border-radius: 20px;
+  flex-shrink: 0;
 }
 
 .delete_btn {
@@ -81,15 +81,13 @@
 
 .text_wrapper {
   @include flex-column;
-  gap: 10px;
+  gap: 5px;
+  padding-right: 38px;
 }
 
 .item_middle {
   display: flex;
   gap: 20px;
-  h4 {
-    padding-right: 36px;
-  }
 }
 
 .prices {
@@ -111,15 +109,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+}
 
-  .link {
-    min-width: 100px;
-    font-size: 12px !important;
+.link {
+  min-width: 100px;
+  font-size: 14px !important;
 
-    svg {
-      width: 11px;
-      height: 10.5px;
-    }
+  svg {
+    width: 11px;
+    height: 10.5px;
   }
 }
 
@@ -158,6 +156,10 @@
     height: 30px;
   }
 
+  .text_wrapper {
+    padding-right: 28px;
+  }
+
   .img_wrapper {
     &.book {
       width: 55px;
@@ -177,8 +179,12 @@
   .item_middle {
     gap: 12px;
     h4 {
-      padding-right: 26px;
+      font-size: 12px;
     }
+  }
+
+  .link {
+    font-size: 12px !important;
   }
 
   .item {

@@ -59,10 +59,10 @@ $row-gap: clamp(20px, 5vw, 43px);
 .nav_buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: min-content;
   column-gap: 30px;
   row-gap: 20px;
   align-items: flex-start;
-  justify-items: center;
 }
 
 .copyright {

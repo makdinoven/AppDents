@@ -49,6 +49,9 @@
   "showLess": "Mostra meno",
   "readMore": "Leggi di più",
   "support": "Supporto",
+  "copy": "Copia",
+  "copied": "Copiato!",
+
 
   "nav": {
     "home": "Home",
@@ -172,7 +175,19 @@
     "nextLesson": "Lezione successiva",
     "prevLesson": "Lezione precedente",
     "pdfText": "Questa lezione contiene materiali in formato PDF invece di un video. Clicca sul link qui sotto per aprire il file.",
-    "openPdf": "Apri materiali PDF"
+    "openPdf": "Apri materiali PDF",
+    "referral": {
+      "myReferrals": "I miei referenti",
+      "balance": "Il tuo saldo: <1>{{count}}$</1>",
+      "spend": "Spendi su qualsiasi corso!",
+      "link": "Link di invito:",
+      "invite": "Invita un amico e guadagna un bonus.",
+      "friendsPurchases": "<1>50%</1> degli acquisti dei tuoi amici va direttamente al tuo saldo!",
+      "step_1": "1. Copia il tuo link personale qui sotto.",
+      "step_2": "2. Invia il link a un amico tramite WhatsApp, Telegram, email o come preferisci.",
+      "step_3": "3. Il tuo amico acquista qualsiasi corso per <1>$29</1>.",
+      "step_4": "4. Ricevi <1>50%</1> del suo pagamento (<1>$14.50</1>) come credito nel tuo portafoglio."
+    }
 
   },
 
@@ -221,5 +236,29 @@
     "title": "Pagina non trovata",
     "sorry": "Spiacenti, la pagina che stai cercando non esiste",
     "goBack": "Torna indietro"
+  },
+
+  "cart": {
+    "title": "Сarrello",
+    "balance": "Il tuo saldo",
+    "subtotal": "Subtotale",
+    "discount": "Sconto",
+    "total": "Totale",
+    "useBalance": "Usa il saldo",
+    "replenish": "Ricarica saldo",
+    "returnToShop": "Torna al negozio",
+    "inCart": "Nel carrello",
+    "priceWithoutDiscount_one": "Subtotale per {{count}} corso",
+    "priceWithoutDiscount_other": "Subtotale per {{count}} corsi",
+    "balanceDiscount": "Dal saldo",
+    "currentDiscount": "Sconto attuale",
+    "barText_1": "Ora hai uno sconto del <1>{{current}}%</1>.",
+    "barText_2": "Aggiungi un altro corso per il <2>{{next}}%</2>!",
+    "barTextMaxDiscount": "Hai raggiunto lo sconto massimo del <1>{{current}}%</1>!",
+    "empty": {
+      "title": "Il tuo carrello è vuoto",
+      "haventAdded": "Sembra che tu non abbia ancora aggiunto nulla. Sfoglia il nostro catalogo e aggiungi qualcosa ora!"
+    }
   }
+
 }

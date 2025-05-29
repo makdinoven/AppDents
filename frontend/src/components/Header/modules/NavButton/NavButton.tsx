@@ -9,6 +9,7 @@ const NavButton = ({
   onClick,
   appearance,
   isActive,
+  quantity,
   direction = "horizontal",
 }: {
   direction?: "horizontal" | "vertical";
@@ -18,6 +19,7 @@ const NavButton = ({
   text?: string;
   link?: string;
   onClick?: () => void;
+  quantity?: number;
 }) => {
   if (link) {
     return (
@@ -30,7 +32,14 @@ const NavButton = ({
             ${direction === "vertical" ? s.vertical : ""}`}
         to={link}
       >
-        {Icon && <Icon className={s.icon} />}
+        {Icon && (
+          <span className={s.icon_wrapper}>
+            <Icon className={s.icon} />
+            {!!quantity && (
+              <span className={s.quantity_circle}>{quantity}</span>
+            )}
+          </span>
+        )}
         {text && <Trans i18nKey={text} />}
       </Link>
     );
@@ -44,7 +53,14 @@ const NavButton = ({
            ${isActive ? s.active : ""}
             ${direction === "vertical" ? s.vertical : ""}`}
       >
-        {Icon && <Icon className={s.icon} />}
+        {Icon && (
+          <span className={s.icon_wrapper}>
+            <Icon className={s.icon} />
+            {!!quantity && (
+              <span className={s.quantity_circle}>{quantity}</span>
+            )}
+          </span>
+        )}
         {text && <Trans i18nKey={text} />}
       </button>
     );
