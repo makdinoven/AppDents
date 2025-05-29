@@ -47,7 +47,6 @@ const Cart = () => {
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
     balance ? balance > 0 : false,
   );
-  console.log(balance);
   const isCartEmpty = quantity === 0;
 
   useEffect(() => {
