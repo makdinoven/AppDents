@@ -89,6 +89,9 @@ def register(
     background_tasks: BackgroundTasks,
     region: str = "EN",
     ref: str | None = Query(None, description="Referral code"),
+    transfer_cart: bool = False,
+    cart_landing_ids: Optional[str] = Query(None, alias="cart_landing_ids"),
+
     db: Session = Depends(get_db)
 ):
     """
@@ -118,6 +121,16 @@ def register(
     )
 
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
+
+    if cart_landing_ids and transfer_cart :
+        cart_ids = _parse_cart_ids(cart_landing_ids)
+        if transfer_cart and cart_ids:
+            from ..services_v2 import cart_service as cs
+            for lid in cart_ids:
+                try:
+                    cs.add_landing(db, user, lid)
+                except Exception as e:
+                    logger.warning("Cannot transfer landing %s: %s", lid, e)
     return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
 logger = logging.getLogger("auth")
