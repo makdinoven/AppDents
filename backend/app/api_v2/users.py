@@ -147,8 +147,8 @@ async def login(form_data: OAuth2PasswordRequestFormExt = Depends(), db: Session
         else:
             logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
 
-    transfer_cart = getattr(form_data, "transfer_cart", "false").lower() == "true"
-    ids_raw = getattr(form_data, "cart_landing_ids", "[]")
+    transfer_cart = form_data.transfer_cart  # bool
+    ids_raw = form_data.cart_landing_ids_raw or "[]"
 
     try:
         cart_ids = json.loads(ids_raw) if ids_raw else []
