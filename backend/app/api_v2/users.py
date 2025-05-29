@@ -72,7 +72,7 @@ def register(
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
-async def login(request : Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:
@@ -116,9 +116,8 @@ async def login(request : Request, form_data: OAuth2PasswordRequestForm = Depend
         else:
             logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
 
-    form = await request.form()
-    transfer_cart = form.get("transfer_cart", "false").lower() == "true"
-    ids_raw = form.get("cart_landing_ids", "[]")
+    transfer_cart = getattr(form_data, "transfer_cart", "false").lower() == "true"
+    ids_raw = getattr(form_data, "cart_landing_ids", "[]")
 
     try:
         cart_ids = json.loads(ids_raw) if ids_raw else []
@@ -131,7 +130,7 @@ async def login(request : Request, form_data: OAuth2PasswordRequestForm = Depend
             try:
                 cs.add_landing(db, user, int(lid))
             except Exception as e:
-                logging.warning("Cannot transfer landing %s: %s", lid, e)
+                logger.warning("Cannot transfer landing %s: %s", lid, e)
 
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
