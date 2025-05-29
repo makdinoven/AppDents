@@ -1,9 +1,10 @@
 
 from fastapi import FastAPI
-from .api_v2 import cleaner, users, courses, landings, authors, photo, stripe, wallet, boomstream_migration
+from .api_v2 import  users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
+from .services_v2 import wallet_service
 
 
 def create_app() -> FastAPI:
@@ -36,6 +37,8 @@ def create_app() -> FastAPI:
     app.include_router(photo.router, prefix="/api/photo", tags=["photo"])
     app.include_router(stripe.router, prefix="/api/stripe", tags=["stripe"])
     app.include_router(wallet.router, prefix="/api/wallet", tags=["wallet"])
+
+    app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
 
     app.include_router(boomstream_migration.router, prefix="/api/boomstream", tags=["boomstream"])
 

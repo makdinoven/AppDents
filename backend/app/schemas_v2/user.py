@@ -22,6 +22,7 @@ class UserRead(BaseModel):
     email: EmailStr
     role: str
     balance: float
+    cart_items_count: int = 0
 
     class Config:
         orm_mode = True

@@ -307,7 +307,7 @@ def get_all_tags(db: Session = Depends(get_db)):
     return tags
 
 @router.delete("/{landing_id}", response_model=dict)
-def delete_landing_route(landing_id: int, db: Session = Depends(get_db),current_admin: User = Depends(require_roles("admin"))):
+def delete_landing_route(landing_id: int, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     delete_landing(db, landing_id)
     return {"detail": "Landing deleted successfully"}
 

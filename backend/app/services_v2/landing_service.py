@@ -209,6 +209,7 @@ def get_landing_cards(
             for author in landing.authors
         ]
         card = {
+            "id": landing.id,
             "first_tag": first_tag,
             "landing_name": landing.landing_name,
             "authors": authors,
@@ -217,6 +218,7 @@ def get_landing_cards(
             "main_image": landing.preview_photo,
             "old_price": landing.old_price,
             "new_price": landing.new_price,
+            "course_ids": [c.id for c in landing.courses],
         }
         cards.append(card)
 
