@@ -64,6 +64,25 @@ def generate_random_password(length=12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
+def _parse_cart_ids(raw: str | None) -> list[int]:
+    if not raw:
+        return []
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        # fallback: "1,2,3"
+        return [int(x) for x in raw.split(",") if x.strip()]
+
+    # JSON мог быть int / str / list
+    if isinstance(data, int):
+        return [data]
+    if isinstance(data, str):
+        return [int(data)]
+    if isinstance(data, list):
+        return [int(x) for x in data if str(x).strip()]
+    return []
+
 @router.post("/register", response_model=UserRegistrationResponse)
 def register(
     user_data: UserCreate,
@@ -148,18 +167,13 @@ async def login(form_data: OAuth2PasswordRequestFormExt = Depends(), db: Session
             logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
 
     transfer_cart = form_data.transfer_cart  # bool
-    ids_raw = form_data.cart_landing_ids_raw or "[]"
 
-    try:
-        cart_ids = json.loads(ids_raw) if ids_raw else []
-    except Exception:
-        cart_ids = []
-
+    cart_ids = _parse_cart_ids(form_data.cart_landing_ids_raw)
     if transfer_cart and cart_ids:
         from ..services_v2 import cart_service as cs
         for lid in cart_ids:
             try:
-                cs.add_landing(db, user, int(lid))
+                cs.add_landing(db, user, lid)
             except Exception as e:
                 logger.warning("Cannot transfer landing %s: %s", lid, e)
 
