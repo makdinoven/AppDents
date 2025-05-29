@@ -66,7 +66,7 @@ const Header = () => {
   }, [localTriggerRef, setTriggerRef]);
 
   const renderLoginButton = () => {
-    if (screenWidth > 767) {
+    if (screenWidth > 768) {
       if (!isLogged) {
         return (
           <UnstyledButton
