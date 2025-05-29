@@ -1,10 +1,12 @@
+import json
 import logging
 import secrets
 import string
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from requests import Request
 from sqlalchemy.orm import Session, joinedload
 
 from ..db.database import get_db
@@ -27,9 +29,59 @@ from ..utils.email_sender import send_password_to_user, send_recovery_email
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
+class OAuth2PasswordRequestFormExt:
+    """
+    Расширенная форма входа:
+      • стандартные поля OAuth2
+      • + transfer_cart (bool)
+      • + cart_landing_ids (json-строка или список id)
+    """
+
+    def __init__(
+        self,
+        username: str = Form(..., alias="username"),
+        password: str = Form(..., alias="password"),
+        scope: str = Form("", alias="scope"),
+        client_id: Optional[str] = Form(None, alias="client_id"),
+        client_secret: Optional[str] = Form(None, alias="client_secret"),
+        grant_type: Optional[str] = Form(None, alias="grant_type"),
+        transfer_cart: bool = Form(False, alias="transfer_cart"),
+        cart_landing_ids: Optional[str] = Form(None, alias="cart_landing_ids"),
+    ):
+        # ── стандартные поля ─────────────────────────────────
+        self.username = username
+        self.password = password
+        self.scopes: List[str] = scope.split()
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.grant_type = grant_type
+
+        # ── наши доп. поля ───────────────────────────────────
+        self.transfer_cart: bool = transfer_cart
+        self.cart_landing_ids_raw: str | None = cart_landing_ids
+
 def generate_random_password(length=12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+def _parse_cart_ids(raw: str | None) -> list[int]:
+    if not raw:
+        return []
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        # fallback: "1,2,3"
+        return [int(x) for x in raw.split(",") if x.strip()]
+
+    # JSON мог быть int / str / list
+    if isinstance(data, int):
+        return [data]
+    if isinstance(data, str):
+        return [int(data)]
+    if isinstance(data, list):
+        return [int(x) for x in data if str(x).strip()]
+    return []
 
 @router.post("/register", response_model=UserRegistrationResponse)
 def register(
@@ -37,6 +89,9 @@ def register(
     background_tasks: BackgroundTasks,
     region: str = "EN",
     ref: str | None = Query(None, description="Referral code"),
+    transfer_cart: bool = False,
+    cart_landing_ids: Optional[str] = Query(None, alias="cart_landing_ids"),
+
     db: Session = Depends(get_db)
 ):
     """
@@ -66,11 +121,21 @@ def register(
     )
 
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
+
+    if cart_landing_ids and transfer_cart :
+        cart_ids = _parse_cart_ids(cart_landing_ids)
+        if transfer_cart and cart_ids:
+            from ..services_v2 import cart_service as cs
+            for lid in cart_ids:
+                try:
+                    cs.add_landing(db, user, lid)
+                except Exception as e:
+                    logger.warning("Cannot transfer landing %s: %s", lid, e)
     return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestFormExt = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:
@@ -114,12 +179,31 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         else:
             logger.info(f"Login with incorrect password allowed (email={form_data.username}, role={user.role})")
 
+    transfer_cart = form_data.transfer_cart  # bool
+
+    cart_ids = _parse_cart_ids(form_data.cart_landing_ids_raw)
+    if transfer_cart and cart_ids:
+        from ..services_v2 import cart_service as cs
+        for lid in cart_ids:
+            try:
+                cs.add_landing(db, user, lid)
+            except Exception as e:
+                logger.warning("Cannot transfer landing %s: %s", lid, e)
+
     token = create_access_token({"user_id": user.id})
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me", response_model=UserRead)
-def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
+def me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return UserRead(
+        id=current_user.id,
+        email=current_user.email,
+        role=current_user.role,
+        balance=current_user.balance,
+    )
 
 @router.get("/search", response_model=List[UserRead], summary="Поиск  пользователей по email")
 def search_users(email: str = Query(..., description="Часть email для поиска"), db: Session = Depends(get_db)):

@@ -13,6 +13,7 @@ class LangEnum(str, Enum):
     AR = "AR"
     PT = "PT"
 
+
 class TagResponse(BaseModel):
     id: int
     name: str
@@ -110,6 +111,7 @@ class AuthorCardResponse(BaseModel):
         orm_mode = True
 
 class LandingCardResponse(BaseModel):
+    id : int
     first_tag: Optional[str] = None
     landing_name: str
     authors: List[AuthorCardResponse]
@@ -118,6 +120,7 @@ class LandingCardResponse(BaseModel):
     main_image: Optional[str] = None
     old_price: Optional[str] = None    # старая цена
     new_price: Optional[str] = None    # новая цена
+    course_ids: List[int] = []
 
     class Config:
         orm_mode = True
