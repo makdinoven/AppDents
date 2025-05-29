@@ -29,6 +29,37 @@ from ..utils.email_sender import send_password_to_user, send_recovery_email
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 
+class OAuth2PasswordRequestFormExt:
+    """
+    Расширенная форма входа:
+      • стандартные поля OAuth2
+      • + transfer_cart (bool)
+      • + cart_landing_ids (json-строка или список id)
+    """
+
+    def __init__(
+        self,
+        username: str = Form(..., alias="username"),
+        password: str = Form(..., alias="password"),
+        scope: str = Form("", alias="scope"),
+        client_id: Optional[str] = Form(None, alias="client_id"),
+        client_secret: Optional[str] = Form(None, alias="client_secret"),
+        grant_type: Optional[str] = Form(None, alias="grant_type"),
+        transfer_cart: bool = Form(False, alias="transfer_cart"),
+        cart_landing_ids: Optional[str] = Form(None, alias="cart_landing_ids"),
+    ):
+        # ── стандартные поля ─────────────────────────────────
+        self.username = username
+        self.password = password
+        self.scopes: List[str] = scope.split()
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.grant_type = grant_type
+
+        # ── наши доп. поля ───────────────────────────────────
+        self.transfer_cart: bool = transfer_cart
+        self.cart_landing_ids_raw: str | None = cart_landing_ids
+
 def generate_random_password(length=12) -> str:
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
@@ -72,7 +103,7 @@ def register(
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(form_data: OAuth2PasswordRequestFormExt = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:
