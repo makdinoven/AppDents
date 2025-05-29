@@ -78,7 +78,9 @@ const CartFooter = ({
       component: (
         <span>
           <span className="highlight">${total_new_amount}</span>{" "}
-          <span className={s.old_price_total}>${total_old_amount}</span>
+          <span className={`${s.old_price_total} crossed-15`}>
+            ${total_old_amount}
+          </span>
         </span>
       ),
       show: quantity > 1,
