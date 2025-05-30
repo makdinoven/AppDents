@@ -205,3 +205,10 @@ class CartItem(Base):
 
     cart = relationship("Cart", back_populates="items")
     landing = relationship("Landing")
+
+class ProcessedStripeEvent(Base):
+    __tablename__ = "processed_stripe_events"
+
+    id           = Column(String, primary_key=True)       # event.id от Stripe
+    processed_at = Column(DateTime(timezone=True),
+                          server_default=func.now())
