@@ -197,7 +197,6 @@ $font-sz-err-mob: 14px;
   // Для Firefox
   scrollbar-width: thin; // толщина: auto | thin | none
   scrollbar-color: $primary transparent; // thumb track
-  border-radius: 10px;
 }
 
 @mixin circle-angle(

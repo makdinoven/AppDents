@@ -28,11 +28,13 @@ const ProfilePage = () => {
       <div className={s.profilePage}>
         <Outlet />
       </div>
-      <CoursesSection
-        showSort={true}
-        sectionTitle={"similarCourses"}
-        pageSize={4}
-      />
+      <div id={"profile_courses"}>
+        <CoursesSection
+          showSort={true}
+          sectionTitle={"similarCourses"}
+          pageSize={4}
+        />
+      </div>
     </>
   );
 };

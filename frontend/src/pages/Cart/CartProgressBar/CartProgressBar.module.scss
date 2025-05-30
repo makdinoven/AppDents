@@ -1,0 +1,66 @@
+.bar_container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 20px;
+  background-color: $background-color;
+  //border: 2px solid $background-color;
+  height: 15px;
+  position: relative;
+  //overflow: hidden;
+}
+
+.ticks {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+}
+
+.tick {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background-color: $secondary-lighter;
+}
+
+.fill {
+  background-color: $primary;
+  height: 100%;
+  border-radius: 20px;
+  @include transition();
+}
+
+.bar_percents {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  font-size: 14px;
+
+  .min {
+    opacity: 0.6;
+  }
+}
+
+.discount_text {
+  font-size: 16px;
+  text-align: center;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .bar_percents {
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .discount_text {
+    font-size: 15px;
+  }
+}

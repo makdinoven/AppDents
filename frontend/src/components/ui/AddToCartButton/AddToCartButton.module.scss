@@ -8,6 +8,7 @@
   padding: 8px 17px 8px 13px;
   width: 100%;
   flex-shrink: 0;
+  font-size: 18px;
 
   svg {
     width: clamp(20px, 2.5vw, 32px);
@@ -21,21 +22,36 @@
     &:hover {
       background-color: $text-color;
       border-color: $text-color;
+      color: $primary;
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
     }
   }
 
   &.active {
-    padding: 8px 13px;
-    background-color: $accent;
-    border-color: $accent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 15px;
+    background-color: $text-color;
+    border-color: $text-color;
+
+    svg {
+      width: 25px;
+      height: 25px;
+    }
   }
 
   &:active {
-    background-color: $accent;
-    border-color: $accent;
+    background-color: $text-color;
+    border-color: $text-color;
     svg {
       path {
-        stroke: $text-color;
+        stroke: $accent;
       }
     }
   }
@@ -46,10 +62,17 @@
       padding: 3px 15px;
       position: absolute;
       bottom: -41px;
+      border-width: 1.5px;
+      font-size: 16px;
     }
 
     &.active {
-      padding: 3px 15px;
+      padding: 3.5px 15px;
+
+      svg {
+        width: 21px;
+        height: 21px;
+      }
     }
   }
 }

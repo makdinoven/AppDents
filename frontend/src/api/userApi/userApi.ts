@@ -1,6 +1,8 @@
 import { instance } from "../api-instance.ts";
-import { ChangePasswordType, LoginType, SignUpType } from "./types.ts";
+import { ChangePasswordType, SignUpType } from "./types.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
+import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
+import { cartStorage } from "../cartApi/cartStorage.ts";
 
 export const userApi = {
   getMe() {
@@ -22,14 +24,26 @@ export const userApi = {
   },
 
   signUp(data: SignUpType, language: string) {
+    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+    const cartLandingIds = cartStorage.getLandingIds();
+
     return instance.post(`users/register`, data, {
       params: {
         region: language,
+        ...(rcCode && { ref_code: rcCode }),
+        ...(cartLandingIds.length > 0 && {
+          transfer_cart: true,
+          cart_landing_ids: cartLandingIds.join(","),
+        }),
       },
     });
   },
 
-  login(data: LoginType) {
+  getRefLink() {
+    return instance.get(`wallet/referral-link`, { headers: getAuthHeaders() });
+  },
+
+  login(data: any) {
     const params = new URLSearchParams();
     params.append("grant_type", "password");
     params.append("username", data.email);
@@ -37,6 +51,13 @@ export const userApi = {
     params.append("scope", "");
     params.append("client_id", "string");
     params.append("client_secret", "string");
+
+    const cartLandingIds = cartStorage.getLandingIds();
+
+    if (cartLandingIds.length > 0) {
+      params.append("transfer_cart", "true");
+      params.append("cart_landing_ids", cartLandingIds.join(","));
+    }
 
     return instance.post("users/login", params, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

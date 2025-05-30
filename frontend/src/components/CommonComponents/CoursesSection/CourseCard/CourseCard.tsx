@@ -3,7 +3,7 @@ import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
 import { useState } from "react";
@@ -14,10 +14,22 @@ import PaymentModal, {
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
-
-// const LANDING_ID = 1293; //TODO CHANGE TO REAL LANDING ID
+import { useDispatch, useSelector } from "react-redux";
+import {
+  selectIsInCart,
+  syncCartFromStorage,
+} from "../../../../store/slices/cartSlice.ts";
+import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
+import {
+  addCartItem,
+  removeCartItem,
+} from "../../../../store/actions/cartActions.ts";
+import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import { cartStorage } from "../../../../api/cartApi/cartStorage.ts";
 
 interface CourseCardProps {
+  isClient?: boolean;
+  id: number;
   name: string;
   tag: string;
   link: string;
@@ -27,9 +39,12 @@ interface CourseCardProps {
   new_price: number;
   authors: any[];
   lessons_count: string;
+  course_ids: number[];
 }
 
 const CourseCard = ({
+  isClient,
+  id,
   name,
   tag,
   link,
@@ -39,17 +54,21 @@ const CourseCard = ({
   index,
   authors,
   lessons_count,
+  course_ids,
 }: CourseCardProps) => {
-  const navigate = useNavigate();
-  // const [cartLoading, setCartLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
-  // const isInCart = useSelector(selectIsInCart(LANDING_ID));
+  const isInCart = useSelector(selectIsInCart(id));
   const cleanLink = link.replace(/^\/(client\/)?course/, "");
+  const dispatch = useDispatch<AppDispatchType>();
+  const isLogged = useSelector(
+    (state: AppRootStateType) => state.user.isLogged,
+  );
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -98,21 +117,37 @@ const CourseCard = ({
     setModalOpen(false);
   };
 
-  // const handleAddToCart = () => {
-  //   const item = {
-  //     id: LANDING_ID,
-  //     landing_name: name,
-  //     authors: authors,
-  //     old_price: old_price,
-  //     new_price: new_price,
-  //     page_name: cleanLink,
-  //     preview_photo: photo,
-  //     course_ids: [],
-  //   };
-  //
-  //   setCartLoading(false);
-  //   cartStorage.addItem(item);
-  // };
+  const toggleCardInCart = async () => {
+    setCartLoading(true);
+    if (!isInCart) {
+      if (isLogged) {
+        await dispatch(addCartItem(id));
+      } else {
+        const item = {
+          landing: {
+            id: id,
+            landing_name: name,
+            authors: authors,
+            page_name: cleanLink,
+            old_price: old_price,
+            new_price: new_price,
+            preview_photo: photo,
+            course_ids: course_ids,
+          },
+        };
+        cartStorage.addItem(item);
+        dispatch(syncCartFromStorage());
+      }
+    } else {
+      if (isLogged) {
+        await dispatch(removeCartItem(id));
+      } else {
+        cartStorage.removeItem(id);
+        dispatch(syncCartFromStorage());
+      }
+    }
+    setCartLoading(false);
+  };
 
   return (
     <>
@@ -168,16 +203,17 @@ const CourseCard = ({
                 {paymentDataLoading && <LoaderOverlay />}
                 <Trans i18nKey={"buyNow"} />
               </button>
-              {/*<AddToCartButton*/}
-              {/*  loading={cartLoading}*/}
-              {/*  isActive={isInCart}*/}
-              {/*  handleClick={handleAddToCart}*/}
-              {/*/>*/}
+              {isClient && (
+                <AddToCartButton
+                  loading={cartLoading}
+                  isActive={isInCart}
+                  handleClick={toggleCardInCart}
+                />
+              )}
             </div>
           </div>
-
-          <div onClick={() => navigate(link)} className={s.card_bottom}></div>
         </Link>
+        <Link to={link} className={s.card_bottom}></Link>
       </li>
 
       {isModalOpen && paymentData && (

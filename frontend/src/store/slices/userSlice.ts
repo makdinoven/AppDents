@@ -46,6 +46,7 @@ const userSlice = createSlice({
       state.loading = true;
       state.error = null;
       state.isLogged = false;
+      state.balance = null;
       localStorage.removeItem("access_token");
     },
     setLanguage: (state, action: PayloadAction<string>) => {
