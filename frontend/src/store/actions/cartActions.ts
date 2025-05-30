@@ -3,9 +3,9 @@ import { cartApi } from "../../api/cartApi/cartApi.ts";
 
 export const getCart = createAppAsyncThunk(
   "cart/get",
-  async (data: any, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await cartApi.getCart(data);
+      const res = await cartApi.getCart();
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -19,10 +19,10 @@ export const getCart = createAppAsyncThunk(
 
 export const addCartItem = createAppAsyncThunk(
   "cart/addItem",
-  async (data: any, { rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
-      const res = await cartApi.addCartItem(data);
-      if (res.data.error) {
+      const res = await cartApi.addCartItem(id);
+      if (res?.data.error) {
         return rejectWithValue(res.data.error);
       }
 
@@ -35,9 +35,9 @@ export const addCartItem = createAppAsyncThunk(
 
 export const removeCartItem = createAppAsyncThunk(
   "cart/removeItem",
-  async (data: any, { rejectWithValue }) => {
+  async (id: number, { rejectWithValue }) => {
     try {
-      const res = await cartApi.removeCartItem(data);
+      const res = await cartApi.removeCartItem(id);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }

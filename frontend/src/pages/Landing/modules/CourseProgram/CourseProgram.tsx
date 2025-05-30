@@ -72,12 +72,12 @@ const CourseProgram = ({
       <div className={s.card}>
         <div className={s.card_header}>
           <div className={s.card_header_background}>
-            {screenWidth >= 768 ? <h6>{name}</h6> : null}
+            {screenWidth >= 767 ? <h6>{name}</h6> : null}
           </div>
           <span className={s.lessons_count}>{lessonsCount}</span>
         </div>
         <div className={s.card_body}>
-          {screenWidth < 768 ? <h6>{name}</h6> : null}
+          {screenWidth < 767 ? <h6>{name}</h6> : null}
           <ProgramContent
             programData={program}
             textClassName={s.text}

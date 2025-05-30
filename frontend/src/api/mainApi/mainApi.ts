@@ -1,6 +1,10 @@
 import { instance } from "../api-instance.ts";
-import { getFacebookData } from "../../common/helpers/helpers.ts";
+import {
+  getAuthHeaders,
+  getFacebookData,
+} from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
+import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 
 export const mainApi = {
   getTags() {
@@ -11,13 +15,19 @@ export const mainApi = {
     return instance.get(`landings/detail/by-page/${pageName}`);
   },
 
-  buyCourse(data: any) {
+  buyCourse(data: any, isLogged: boolean) {
     const { fbp, fbc } = getFacebookData();
-    return instance.post(`stripe/checkout`, {
-      ...data,
-      fbp,
-      fbc,
-    });
+    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+    return instance.post(
+      `stripe/checkout`,
+      {
+        ...data,
+        fbp,
+        fbc,
+        ...(rcCode && { ref: rcCode }),
+      },
+      { headers: isLogged ? getAuthHeaders() : undefined },
+    );
   },
 
   getTokenAfterPurchase(data: any) {

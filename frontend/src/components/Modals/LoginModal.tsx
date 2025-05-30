@@ -30,6 +30,7 @@ const LoginModal = () => {
 
   const handleLogIn = async (data: LoginType) => {
     setLoading(true);
+
     const loginResponse = await dispatch(login(data));
 
     if (loginResponse.meta.requestStatus === "fulfilled") {

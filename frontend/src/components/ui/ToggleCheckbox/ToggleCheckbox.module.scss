@@ -12,24 +12,40 @@
   border-radius: 25px;
   position: relative;
   transition: background-color 0.3s ease-in-out;
+
+  &.checked {
+    background-color: $primary;
+  }
+
+  &::before {
+    content: "";
+    width: 25px;
+    height: 25px;
+    background-color: $background-color;
+    border-radius: 50%;
+    position: absolute;
+    top: 2.5px;
+    left: 2.5px;
+    @include transition();
+  }
+
+  &.checked::before {
+    transform: translateX(25px);
+  }
 }
 
-.toggle.checked {
-  background-color: $primary;
-}
+.small {
+  width: 50px;
+  height: 26px;
 
-.toggle::before {
-  content: "";
-  width: 25px;
-  height: 25px;
-  background-color: $background-color;
-  border-radius: 50%;
-  position: absolute;
-  top: 2.5px;
-  left: 2.5px;
-  @include transition();
-}
+  &.checked::before {
+    transform: translateX(23.5px);
+  }
 
-.toggle.checked::before {
-  transform: translateX(25px);
+  &::before {
+    width: 22px;
+    height: 22px;
+    top: 2px;
+    left: 2px;
+  }
 }

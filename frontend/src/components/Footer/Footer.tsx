@@ -100,15 +100,18 @@ const Footer = () => {
           {footerSections.map((section) => renderFooterSection(section))}
 
           <nav className={s.nav_buttons}>
-            {NAV_BUTTONS.map((btn) => (
-              <NavButton
-                key={btn.text}
-                appearance={"footer"}
-                icon={btn.icon}
-                text={btn.text}
-                link={btn.link}
-              />
-            ))}
+            {NAV_BUTTONS.map(
+              (btn) =>
+                !btn.text.includes("cart") && (
+                  <NavButton
+                    key={btn.text}
+                    appearance={"footer"}
+                    icon={btn.icon}
+                    text={btn.text}
+                    link={btn.link}
+                  />
+                ),
+            )}
           </nav>
         </div>
         <p className={s.copyright}>
