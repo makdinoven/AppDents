@@ -24,7 +24,7 @@ export const mainApi = {
         ...data,
         fbp,
         fbc,
-        ...(rcCode && { ref: rcCode }),
+        ...(rcCode && { ref_code: rcCode }),
       },
       { headers: isLogged ? getAuthHeaders() : undefined },
     );
