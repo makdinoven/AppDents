@@ -30,7 +30,7 @@ export const userApi = {
     return instance.post(`users/register`, data, {
       params: {
         region: language,
-        ...(rcCode && { ref_code: rcCode }),
+        ...(rcCode && { ref: rcCode }),
         ...(cartLandingIds.length > 0 && {
           transfer_cart: true,
           cart_landing_ids: cartLandingIds.join(","),
