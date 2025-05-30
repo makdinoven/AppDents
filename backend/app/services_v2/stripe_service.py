@@ -11,11 +11,12 @@ from urllib.parse import urlparse
 import requests
 import stripe
 from fastapi import HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -50,7 +51,6 @@ def _hash_plain(value: str) -> str:
 # ────────────────────────────────────────────────────────────────
 def _build_fb_event(
     *,
-    event_name: str = "Purchase",           # новое
     email: str,
     amount: float,
     currency: str,
@@ -58,6 +58,8 @@ def _build_fb_event(
     client_ip: str,
     user_agent: str,
     event_time: int,
+    event_id: str,
+    event_name: str = "Purchase",
     external_id: str | None = None,
     fbp: str | None = None,
     fbc: str | None = None,
@@ -99,6 +101,7 @@ def _build_fb_event(
             {
                 "event_name": event_name,          # <-- главное отличие
                 "event_time": event_time,
+                "event_id": event_id,
                 "user_data": user_data,
                 "custom_data": {
                     "currency": currency,
@@ -117,6 +120,7 @@ def _build_fb_event(
     return event
 def _send_facebook_events(
     *,
+    event_id: str,
     email: str,
     amount: float,
     currency: str,
@@ -130,6 +134,10 @@ def _send_facebook_events(
     first_name: str | None = None,
     last_name: str | None = None,
 ) -> None:
+
+    if not event_id:
+        raise ValueError("event_id is required for FB deduplication")
+
     """Шлёт Purchase в два пикселя и Donate в третий."""
 
     # ——— 1. Собираем payload-ы
@@ -142,6 +150,7 @@ def _send_facebook_events(
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
+        event_id=event_id,
         external_id=external_id,
         fbp=fbp,
         fbc=fbc,
@@ -157,6 +166,7 @@ def _send_facebook_events(
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
+        event_id=event_id,
         external_id=external_id,
         fbp=fbp,
         fbc=fbc,
@@ -334,9 +344,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.error("Invalid webhook signature")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
+
+
     # 2. Интересует только completed
     if event["type"] != "checkout.session.completed":
         return {"status": "ignored"}
+
 
     session_obj = event["data"]["object"]
     session_id = session_obj["id"]
@@ -347,6 +360,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.info("Session %s не оплачена (payment_status=%s) — пропускаем",
                      session_id, session_obj.get("payment_status"))
         return {"status": "unpaid"}
+
+    stripe_event_id: str = event["id"]
+    try:
+        db.add(ProcessedStripeEvent(id=stripe_event_id))
+        db.flush()  # пытаемся вставить сразу
+    except IntegrityError:
+        db.rollback()  # было уже в таблице → дубликат
+        logging.info("Duplicate webhook %s — skip", stripe_event_id)
+        return {"status": "duplicate"}
 
 
     metadata = session_obj.get("metadata", {}) or {}
@@ -413,6 +435,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     external_id = metadata.get("external_id")
     fbp_value = metadata.get("fbp")
     fbc_value = metadata.get("fbc")
+
 
     # 10. Пользователь
     user = get_user_by_email(db, email)
@@ -526,6 +549,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         first_name=first_name,
         last_name=last_name,
         event_time=event_time,
+        event_id=session_obj["id"]
     )
 
     if purchase and user.invited_by_id:
