@@ -63,13 +63,22 @@ def stripe_checkout(
     if data.transfer_cart and not data.cart_landing_ids:
         raise HTTPException(400, "cart_landing_ids required when transfer_cart=true")
 
+    unique_course_ids = list(dict.fromkeys(data.course_ids))
+    logging.info("Уникальные course_ids → %s", unique_course_ids)
+
     # 2. Проверяем курсы в БД
-    courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
-    if not courses or len(courses) != len(data.course_ids):
-        logging.error("Не найдены все курсы. Передано: %s, найдено: %s", data.course_ids,
-                      [course.id for course in courses])
+    courses = db.query(Course).filter(Course.id.in_(unique_course_ids)).all()
+    found_ids = [c.id for c in courses]
+    logging.info("Найдено в БД: %s", found_ids)
+
+    if not courses or set(found_ids) != set(unique_course_ids):
+        logging.error(
+            "Не найдены все курсы. Передано: %s, найдено: %s",
+            unique_course_ids, found_ids
+        )
         raise HTTPException(status_code=404, detail="One or more courses not found")
-    logging.info("Найдены курсы: %s", [course.id for course in courses])
+
+    logging.info("Найдены курсы: %s", found_ids)
 
     # 3. Формируем название продукта
     course_names = [course.name for course in courses]
@@ -89,7 +98,7 @@ def stripe_checkout(
                 db,
                 user_id=current_user.id,
                 amount=total_price_usd,
-                meta={"reason": "full_purchase", "courses": data.course_ids},
+                meta={"reason": "full_purchase", "courses": unique_course_ids},
             )
             for c in courses:
                 add_course_to_user(db, current_user.id, c.id)
@@ -122,7 +131,7 @@ def stripe_checkout(
     checkout_url = create_checkout_session(
         db=db,
         email=email,
-        course_ids=data.course_ids,
+        course_ids=unique_course_ids,
         product_name=product_name,
         price_cents=stripe_amount_cents,
         region=data.region,
