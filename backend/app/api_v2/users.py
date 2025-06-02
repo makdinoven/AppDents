@@ -23,7 +23,7 @@ from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
-    search_users_paginated, verify_password
+    search_users_paginated, verify_password, get_referral_analytics
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -460,8 +460,8 @@ def referral_stats(
         end_dt   = now
 
     elif start_date is not None and end_date is not None:
-        start_dt = datetime.combine(start_date, time.min)
-        end_dt   = datetime.combine(end_date + timedelta(days=1), time.min)
+        start_dt = datetime.combine(start_date, datetime.time.min)
+        end_dt   = datetime.combine(end_date + datetime.timedelta(days=1), datetime.time.min)
 
     else:
         raise HTTPException(
