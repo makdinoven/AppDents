@@ -6,7 +6,7 @@ from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy import delete, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
@@ -330,4 +330,103 @@ def search_users_paginated(
         "page": page,
         "size": size,
         "items": users,
+    }
+
+def get_referral_analytics(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+) -> dict:
+    """
+    Формирует словарь:
+      {
+        "inviters": [...],
+        "referrals": [...],
+        "total_referrals": int
+      }
+
+    • В выборку попадают только те рефералы, чья дата регистрации
+      попадает в [start_dt, end_dt).
+    • Сумма `total_credited` — агрегат всех транзакций по кошельку
+      (WalletTransaction.amount) конкретного пригласителя **за всё время**
+      -- так обычно понимают «все деньги, которые были на балансе».
+      Если нужно ограничить суммирование тем же периодом —
+      добавьте фильтр по `WalletTransaction.created_at`.
+    """
+
+    # --- 1. пригласители + счётчик рефералов (subquery) --------------------
+    ref_count_subq = (
+        db.query(
+            User.invited_by_id.label("inviter_id"),
+            func.count(User.id).label("ref_count"),
+        )
+        .filter(
+            User.invited_by_id.is_not(None),
+            User.created_at >= start_dt,
+            User.created_at < end_dt,
+        )
+        .group_by(User.invited_by_id)
+        .subquery()
+    )
+
+    # --- 2. итоговый запрос по пригласителям ------------------------------
+    inviter_rows = (
+        db.query(
+            User.id.label("inviter_id"),
+            User.email,
+            User.balance,
+            func.coalesce(func.sum(func.abs(WalletTransaction.amount)), 0).label("total_credited"),
+            ref_count_subq.c.ref_count,
+        )
+        .join(ref_count_subq, ref_count_subq.c.inviter_id == User.id)
+        .outerjoin(WalletTransaction, WalletTransaction.user_id == User.id)
+        .group_by(User.id, ref_count_subq.c.ref_count)
+        .all()
+    )
+
+    inviters_data = [
+        {
+            "inviter_id": r.inviter_id,
+            "email":     r.email,
+            "referrals": r.ref_count,
+            "balance":   f"{r.balance:.2f} $",
+            "total_credited": f"{r.total_credited:.2f} $",
+        }
+        for r in inviter_rows
+    ]
+
+    total_referrals = sum(r.ref_count for r in inviter_rows)
+
+    # --- 3. подробный список рефералов ------------------------------------
+    inviter_alias = aliased(User)
+
+    referral_rows = (
+        db.query(
+            inviter_alias.email.label("inviter_email"),
+            User.email.label("referral_email"),
+            User.created_at.label("registered_at"),
+        )
+        .join(inviter_alias, inviter_alias.id == User.invited_by_id)
+        .filter(
+            User.invited_by_id.is_not(None),
+            User.created_at >= start_dt,
+            User.created_at < end_dt,
+        )
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
+    referrals_data = [
+        {
+            "inviter_email":  r.inviter_email,
+            "referral_email": r.referral_email,
+            "registered_at":  r.registered_at.isoformat() + "Z",
+        }
+        for r in referral_rows
+    ]
+
+    return {
+        "inviters": inviters_data,
+        "referrals": referrals_data,
+        "total_referrals": total_referrals,
     }

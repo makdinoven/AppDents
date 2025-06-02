@@ -102,6 +102,7 @@ class User(Base):
     balance = Column(Float, default=0.0, nullable=False)
     referral_code = Column(String(20), unique=True, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
 
     cart = relationship("Cart", uselist=False, back_populates="user")
 

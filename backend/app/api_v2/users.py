@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import secrets
@@ -424,3 +425,48 @@ def update_user_full_route(
     """
     updated_user = update_user_full(db, user_id, user_data)
     return updated_user
+
+@router.get("/analytics/referral-stats")
+def referral_stats(
+    start_date: datetime.date | None = Query(
+        None,
+        description="Дата начала (YYYY-MM-DD)."
+    ),
+    end_date: datetime.date | None = Query(
+        None,
+        description="Дата конца (YYYY-MM-DD, включительно)."
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает аналитику по реферальной системе.
+
+    Правила периода аналогичны другим аналитическим роутам:
+
+    * **нет** `start_date`, `end_date` → сегодняшний UTC-день [00:00 – сейчас);
+    * только `start_date` → от начала `start_date` до текущего момента;
+    * оба `start_date` и `end_date` → от начала `start_date` до конца `end_date`
+      (00:00 следующего дня);
+    * только `end_date` → 400 Bad Request.
+    """
+    now = datetime.utcnow()
+
+    if start_date is None and end_date is None:
+        start_dt = datetime(now.year, now.month, now.day)
+        end_dt   = now
+
+    elif start_date is not None and end_date is None:
+        start_dt = datetime.combine(start_date, datetime.time.min)
+        end_dt   = now
+
+    elif start_date is not None and end_date is not None:
+        start_dt = datetime.combine(start_date, time.min)
+        end_dt   = datetime.combine(end_date + timedelta(days=1), time.min)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    return get_referral_analytics(db, start_dt, end_dt)
