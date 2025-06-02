@@ -453,7 +453,7 @@ def referral_stats(
     now = dt.datetime.now(timezone.utc)
 
     if start_date is None and end_date is None:
-        start_dt = dt(now.year, now.month, now.day)
+        start_dt = dt.datetime(now.year, now.month, now.day)
         end_dt   = now
 
     elif start_date is not None and end_date is None:
