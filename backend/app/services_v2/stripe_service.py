@@ -118,8 +118,10 @@ def _build_fb_event(
         email, event_name, amount, currency.upper(), course_ids,
     )
     return event
+
 def _send_facebook_events(
     *,
+    region: str,                #  ← НОВЫЙ параметр
     event_id: str,
     email: str,
     amount: float,
@@ -134,13 +136,20 @@ def _send_facebook_events(
     first_name: str | None = None,
     last_name: str | None = None,
 ) -> None:
+    """
+    Отправляет событие Purchase (и Donate) в Facebook CAPI.
+
+    • Всегда публикуем:
+        – два «глобальных» purchase-пикселя
+        – один donation-пиксель
+    • Дополнительно публикуем Purchase в регион-специфичный пиксель
+      (RU / EN / ES / IT) – если он сконфигурирован.
+    """
 
     if not event_id:
         raise ValueError("event_id is required for FB deduplication")
 
-    """Шлёт Purchase в два пикселя и Donate в третий."""
-
-    # ——— 1. Собираем payload-ы
+    # ---------- 1. payload'ы ----------
     purchase_payload = _build_fb_event(
         event_name="Purchase",
         email=email,
@@ -157,7 +166,7 @@ def _send_facebook_events(
         first_name=first_name,
         last_name=last_name,
     )
-    donate_payload = _build_fb_event(            # отличается только именем
+    donate_payload = _build_fb_event(
         event_name="Donate",
         email=email,
         amount=amount,
@@ -174,18 +183,33 @@ def _send_facebook_events(
         last_name=last_name,
     )
 
-    # ——— 2. Список пикселей
-    pixels_purchase = [
-        {"id": settings.FACEBOOK_PIXEL_ID, "token": settings.FACEBOOK_ACCESS_TOKEN},
-        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS,
-         "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+    # ---------- 2. список пикселей ----------
+    pixels_purchase: list[dict] = [
+        {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
+        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
     ]
+
+    # регион-специфичные purchase-пиксели
+    REGIONAL_PURCHASE_PIXELS: dict[str, dict] = {
+        "RU": {"id": settings.FACEBOOK_PIXEL_ID_RU, "token": settings.FACEBOOK_ACCESS_TOKEN_RU},
+        "EN": {"id": settings.FACEBOOK_PIXEL_ID_EN, "token": settings.FACEBOOK_ACCESS_TOKEN_EN},
+        "ES": {"id": settings.FACEBOOK_PIXEL_ID_ES, "token": settings.FACEBOOK_ACCESS_TOKEN_ES},
+        "IT": {"id": settings.FACEBOOK_PIXEL_ID_IT, "token": settings.FACEBOOK_ACCESS_TOKEN_IT},
+    }
+
+    region_key = (region or "").upper()
+    regional_pixel = REGIONAL_PURCHASE_PIXELS.get(region_key)
+    if regional_pixel and regional_pixel["id"] and regional_pixel["token"]:
+        pixels_purchase.append(regional_pixel)
+    else:
+        logging.warning("Regional FB pixel is not configured for region=%s", region_key)
+
     pixel_donation = {
         "id": settings.FACEBOOK_PIXEL_ID_DONATION,
         "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
     }
 
-    # ——— 3. Отправляем
+    # ---------- 3. отправка ----------
     def _post(pixel: dict, payload: dict, tag: str):
         try:
             resp = requests.post(
@@ -206,6 +230,7 @@ def _send_facebook_events(
 
     for p in pixels_purchase:
         _post(p, purchase_payload, "Purchase")
+
     _post(pixel_donation, donate_payload, "Donate")
 
 # ────────────────────────────────────────────────────────────────
@@ -536,6 +561,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # 9. Отправляем событие Purchase в FB
     _send_facebook_events(
+        region=region,
         email=email,
         amount=session_obj["amount_total"] / 100,
         currency=session_obj["currency"],
