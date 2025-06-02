@@ -429,11 +429,11 @@ def update_user_full_route(
 
 @router.get("/analytics/referral-stats")
 def referral_stats(
-    start_date: dt.datetime.date | None = Query(
+    start_date: dt.date | None = Query(
         None,
         description="Дата начала (YYYY-MM-DD)."
     ),
-    end_date: dt.datetime.date | None = Query(
+    end_date: dt.date | None = Query(
         None,
         description="Дата конца (YYYY-MM-DD, включительно)."
     ),
@@ -450,19 +450,19 @@ def referral_stats(
       (00:00 следующего дня);
     * только `end_date` → 400 Bad Request.
     """
-    now = dt.datetime.utcnow()
+    now = dt.datetime.now(timezone.utc)
 
     if start_date is None and end_date is None:
         start_dt = dt(now.year, now.month, now.day)
         end_dt   = now
 
     elif start_date is not None and end_date is None:
-        start_dt = dt.datetime.combine(start_date, dt.datetime.time.min)
+        start_dt = dt.datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
         end_dt   = now
 
     elif start_date is not None and end_date is not None:
-        start_dt = dt.datetime.combine(start_date, dt.datetime.time.min)
-        end_dt   = dt.datetime.combine(end_date + dt.datetime.timedelta(days=1), dt.datetime.time.min)
+        start_dt = dt.datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+        end_dt   = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
 
     else:
         raise HTTPException(
