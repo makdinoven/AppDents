@@ -222,10 +222,24 @@ def delete_user(db: Session, user_id: int) -> None:
         where(users_courses.c.user_id == user_id)
     )
 
-    # 4) удаляем самого пользователя
+    # 4) удаляем все элементы корзины (cart_items) и саму корзину
+    #    Проверяем, есть ли у пользователя связанная корзина
+    if user.cart:
+        # 4.1) удаляем все элементы из cart_items для этой корзины
+        db.execute(
+            delete(CartItem).
+            where(CartItem.cart_id == user.cart.id)
+        )
+        # 4.2) удаляем саму корзину
+        db.execute(
+            delete(Cart).
+            where(Cart.user_id == user_id)
+        )
+
+    # 5) удаляем самого пользователя
     db.delete(user)
 
-    # 5) коммитим изменения разом
+    # 6) коммитим изменения разом
     db.commit()
 
 def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: str = "EN") -> User:
