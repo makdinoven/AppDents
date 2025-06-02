@@ -16,6 +16,18 @@
   gap: 20px;
 }
 
+.totals_row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-end;
+  justify-content: flex-end;
+
+  span {
+    margin-left: 5px;
+  }
+}
+
 .languages_table {
   height: 100%;
   flex: 1;
