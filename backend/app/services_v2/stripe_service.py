@@ -386,7 +386,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     logging.info("Преобразованные course_ids: %s", course_ids)
 
     # разбираем landing_ids из metadata
-    # разбираем landing_ids из metadata
     raw = metadata.get("landing_ids", "")
     try:
         landing_ids_list = json.loads(raw) or []

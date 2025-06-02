@@ -312,9 +312,10 @@ def get_purchases_by_language(
     results = query.all()
 
     return [
-        {"language": row.language, "count": row.purchase_count, "total_amount": f"{row.total_amount} $"}
+        {"language": row.language, "count": row.purchase_count, "total_amount": f"{row.total_amount:.2f} $"}
         for row in results
     ]
+
 def check_and_reset_ad_flag(landing: Landing, db: Session):
     """
     Если у лендинга in_advertising=True, но ad_flag_expires_at < now,
