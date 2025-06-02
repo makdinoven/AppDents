@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+import datetime as dt         # ← модуль целиком
+from datetime import timezone
 import json
 import logging
 import secrets
@@ -428,11 +429,11 @@ def update_user_full_route(
 
 @router.get("/analytics/referral-stats")
 def referral_stats(
-    start_date: datetime.date | None = Query(
+    start_date: dt.date | None = Query(
         None,
         description="Дата начала (YYYY-MM-DD)."
     ),
-    end_date: datetime.date | None = Query(
+    end_date: dt.date | None = Query(
         None,
         description="Дата конца (YYYY-MM-DD, включительно)."
     ),
@@ -449,19 +450,19 @@ def referral_stats(
       (00:00 следующего дня);
     * только `end_date` → 400 Bad Request.
     """
-    now = datetime.utcnow()
+    now = dt.utcnow()
 
     if start_date is None and end_date is None:
-        start_dt = datetime(now.year, now.month, now.day)
+        start_dt = dt(now.year, now.month, now.day)
         end_dt   = now
 
     elif start_date is not None and end_date is None:
-        start_dt = datetime.combine(start_date, datetime.time.min)
+        start_dt = dt.combine(start_date, dt.time.min)
         end_dt   = now
 
     elif start_date is not None and end_date is not None:
-        start_dt = datetime.combine(start_date, datetime.time.min)
-        end_dt   = datetime.combine(end_date + datetime.timedelta(days=1), datetime.time.min)
+        start_dt = dt.combine(start_date, dt.time.min)
+        end_dt   = dt.combine(end_date + dt.timedelta(days=1), dt.time.min)
 
     else:
         raise HTTPException(
