@@ -393,6 +393,16 @@ $card-body-padding-bottom: calc(
       font-size: 12px;
     }
   }
+  .card_body {
+    .photo {
+      position: relative;
+      max-height: 280px;
+
+      img {
+        max-height: 280px;
+      }
+    }
+  }
 
   .author_photo {
     width: 30px;

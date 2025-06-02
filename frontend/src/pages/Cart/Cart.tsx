@@ -180,9 +180,9 @@ const Cart = () => {
         {!isCartEmpty ? (
           <>
             <ul className={s.cart_items}>
-              {items.map((item, i) => (
+              {items.map((item) => (
                 <CartItem
-                  key={i}
+                  key={item.landing.id}
                   item={item.landing}
                   type={"LANDING"}
                   onDelete={handleDeleteCartItem}
