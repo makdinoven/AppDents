@@ -114,16 +114,38 @@ const Analytics = () => {
         </div>
       </div>
       {languageStats && (
-        <div className={s.languages_table}>
-          <Table
-            data={languageStats}
-            columnLabels={{
-              language: "Lang",
-              count: "Sales",
-              total_amount: "Total",
-            }}
-          />
-        </div>
+        <>
+          <div className={s.totals_row}>
+            <div>
+              Total sales:
+              <span className={"highlight_blue_bold"}>
+                {languageStats.reduce((sum, item: any) => sum + item.count, 0)}
+              </span>
+            </div>
+            <span>
+              Total amount:
+              <span className={"highlight_blue_bold"}>
+                {languageStats
+                  .reduce(
+                    (sum, item: any) => sum + parseFloat(item.total_amount),
+                    0,
+                  )
+                  .toFixed(2)}{" "}
+                $
+              </span>
+            </span>
+          </div>
+          <div className={s.languages_table}>
+            <Table
+              data={languageStats}
+              columnLabels={{
+                language: "Lang",
+                count: "Sales",
+                total_amount: "Total",
+              }}
+            />
+          </div>
+        </>
       )}
 
       <div className={s.analytics_options}>
