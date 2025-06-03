@@ -328,7 +328,7 @@ def get_cards(
     return result
 
 @router.get(
-    "v1/cards",
+    "/v1/cards",
     response_model=LandingCardsResponsePaginations,
     summary="Карточки лендингов с пагинацией по страницам"
 )
