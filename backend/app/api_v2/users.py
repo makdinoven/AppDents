@@ -482,13 +482,14 @@ def user_growth(
         start_dt = now - dt.timedelta(days=30)
         end_dt   = now
 
+
     elif start_date is not None and end_date is None:
-        start_dt = dt.datetime.combine(start_date, dt.time.min)
-        end_dt   = now
+        start_dt = dt.datetime.combine(start_date, dt.time.min)  # 00:00 UTC
+        end_dt = now
 
     elif start_date is not None and end_date is not None:
         start_dt = dt.datetime.combine(start_date, dt.time.min)
-        end_dt   = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
+        end_dt = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
 
     else:
         raise HTTPException(
