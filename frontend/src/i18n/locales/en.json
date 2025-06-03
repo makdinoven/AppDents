@@ -53,6 +53,7 @@
   "support": "Support",
   "copy": "Copy",
   "copied": "Copied!",
+  "successPaymentWithBalance": "Payment successful! You now have access to the course. Remaining balance: ${{balance}}. You will be redirected to your profile shortly.",
 
   "nav": {
     "home": "Home",
@@ -266,6 +267,12 @@
       "title": "Your cart is empty",
       "haventAdded": "Looks like you haven’t added anything yet. Browse our catalog and add something now!"
     }
+  },
+
+  "courses": {
+    "title": "all courses",
+    "search": "Search courses...",
+    "found": "Courses found: {{count}}"
   },
 
   "admin": {

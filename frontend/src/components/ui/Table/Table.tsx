@@ -15,7 +15,7 @@ const Table = <T extends Record<string, any>>({
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
-  const excludedKeys = ["slug", "landing_slug", "inviter_id"];
+  const excludedKeys = ["slug", "landing_slug", "inviter_id", "course_id"];
   const headers = Object.keys(data[0]).filter(
     (key) => !excludedKeys.includes(key),
   );
@@ -34,7 +34,7 @@ const Table = <T extends Record<string, any>>({
       );
     }
 
-    if (key === "registered_at") {
+    if (key === "registered_at" || key === "created_at") {
       return formatIsoToLocalDatetime(value);
     }
 

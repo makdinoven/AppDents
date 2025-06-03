@@ -29,6 +29,8 @@ import {
   REF_CODE_PARAM,
 } from "../../../common/helpers/commonConstants.ts";
 import { cartStorage } from "../../../api/cartApi/cartStorage.ts";
+import { useNavigate } from "react-router-dom";
+import { Path } from "../../../routes/routes.ts";
 
 const logos = [
   VisaLogo,
@@ -61,6 +63,7 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
+  const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
   const { isLogged, email } = useSelector(
@@ -106,6 +109,7 @@ const PaymentModal = ({
     try {
       const res = await mainApi.buyCourse(dataToSend, isLogged);
       const checkoutUrl = res.data.checkout_url;
+      const balanceLeft = res.data.balance_left;
       localStorage.removeItem(REF_CODE_LS_KEY);
       setLoading(false);
 
@@ -119,6 +123,11 @@ const PaymentModal = ({
         }
       } else {
         console.error("Checkout URL is missing");
+      }
+
+      if (balanceLeft) {
+        alert(t("successPaymentWithBalance", { balance: balanceLeft }));
+        navigate(Path.profile);
       }
     } catch (error) {
       console.log(error);
@@ -142,14 +151,17 @@ const PaymentModal = ({
         {isLogged && (
           <div className={s.balance_container}>
             <p>
-              <Trans i18nKey="cart.useBalance" />:<span> ${balance}</span>
+              <Trans i18nKey="cart.balance" />:<span> ${balance}</span>
             </p>
-            <ToggleCheckbox
-              disabled={balance! === 0}
-              variant={"small"}
-              onChange={handleCheckboxToggle}
-              isChecked={isBalanceUsed}
-            />
+            <div className={s.checkbox_container}>
+              <ToggleCheckbox
+                disabled={balance! === 0}
+                variant={"small"}
+                onChange={handleCheckboxToggle}
+                isChecked={isBalanceUsed}
+              />
+              <Trans i18nKey="cart.useBalance" />
+            </div>
           </div>
         )}
         <div className={`${s.total_text} ${!isLogged ? s.center : ""}`}>

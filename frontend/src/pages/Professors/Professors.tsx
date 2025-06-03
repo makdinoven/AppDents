@@ -19,6 +19,7 @@ const Professors = () => {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const loadProfessors = async ({ page, language, q, size }: ParamsType) => {
     setLoading(true);
@@ -34,6 +35,7 @@ const Professors = () => {
       setProfessors(res.data.items);
       setTotal(res.data.total);
       setTotalPages(res.data.total_pages);
+      setIsFirstLoad(false);
     } catch (error) {
       console.log(error);
     } finally {
@@ -54,7 +56,7 @@ const Professors = () => {
       >
         <ProfessorsList professors={professors} loading={loading} />
       </ListController>
-      {!loading && (
+      {!isFirstLoad && (
         <CoursesSection
           showSort={true}
           sectionTitle={"other.otherCourses"}
