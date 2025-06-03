@@ -330,36 +330,21 @@ def get_cards(
 @router.get(
     "/v1/cards",
     response_model=LandingCardsResponsePaginations,
-    summary="Карточки лендингов с пагинацией по страницам"
+    summary="Карточки лендингов с пагинацией, сортировкой и поиском"
 )
 def get_cards(
-    tags: Optional[List[str]] = Query(
-        None, description="Фильтрация по тегам"
+    tags: Optional[List[str]] = Query(None, description="Фильтрация по тегам"),
+    sort: Optional[str] = Query(None, description="Сортировка: popular, discount, new"),
+    language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
+    q: Optional[str] = Query(
+        None,
+        min_length=1,
+        description="Строка поиска (landing_name, page_name)"
     ),
-    sort: Optional[str] = Query(
-        None, description="Сортировка: popular, discount, new"
-    ),
-    language: Optional[str] = Query(
-        None, description="Язык лендинга: ES, EN, RU"
-    ),
-    page: int = Query(
-        1, ge=1, description="Номер страницы (начиная с 1)"
-    ),
-    size: int = Query(
-        20, gt=0, description="Размер страницы"
-    ),
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(20, gt=0, description="Размер страницы"),
     db: Session = Depends(get_db),
-) -> dict:
-    """
-    Возвращает:
-    {
-      total: <общее число лендингов после фильтров>,
-      total_pages: <число страниц при данном size>,
-      page: <текущая страница>,
-      size: <размер страницы>,
-      cards: [ ...список карточек... ]
-    }
-    """
+):
     return get_landing_cards_pagination(
         db,
         page=page,
@@ -367,6 +352,7 @@ def get_cards(
         tags=tags,
         sort=sort,
         language=language,
+        q=q,
     )
 
 
