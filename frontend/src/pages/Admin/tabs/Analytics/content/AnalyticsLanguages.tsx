@@ -71,6 +71,7 @@ const AnalyticsLanguages = () => {
           <label htmlFor="start_date">Start date</label>
           <input
             id="start_date"
+            placeholder="Start date"
             value={startDate}
             className={s.date_input}
             onChange={handleStartDateChange}
@@ -80,6 +81,7 @@ const AnalyticsLanguages = () => {
         <div className={s.input_wrapper}>
           <label htmlFor="end_date">End date</label>
           <input
+            placeholder="End date"
             id="end_date"
             value={endDate}
             className={s.date_input}
