@@ -436,7 +436,7 @@ def referral_stats(
     now = dt.datetime.utcnow()                      # naive-UTC
 
     if start_date is None and end_date is None:
-        start_dt = dt.datetime(now.year, now.month, now.day)   # 00:00 сегодня (UTC)
+        start_dt = dt.datetime.min
         end_dt   = now
 
     elif start_date is not None and end_date is None:
