@@ -58,8 +58,23 @@ def remove_by_landing(db: Session, user: User, landing_id: int) -> Cart:
     db.refresh(cart)
     return cart
 
+def clear_cart(db: Session, user: User):
+    """
+    Полностью очищает корзину пользователя и обнуляет сумму.
+    """
+    cart = get_or_create_cart(db, user)
+    if not cart.items:
+        return cart                    # корзина уже пуста
 
+    # удаляем все позиции
+    for item in list(cart.items):
+        db.delete(item)
 
+    cart.total_amount = 0.0
+    cart.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(cart)
+    return cart
 
 
 
