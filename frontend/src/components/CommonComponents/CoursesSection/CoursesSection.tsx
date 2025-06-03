@@ -12,7 +12,7 @@ import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { getCourses } from "../../../store/actions/mainActions.ts";
 
 type props = {
-  sectionTitle: string;
+  sectionTitle?: string;
   pageSize: number;
   isClient?: boolean;
   tags?: any[];
@@ -105,7 +105,7 @@ const CoursesSection = ({
   return (
     <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
-        <SectionHeader name={sectionTitle} />
+        {sectionTitle && <SectionHeader name={sectionTitle} />}
         {showFilters && tags && tags.length > 0 && (
           <>
             <SelectableList
