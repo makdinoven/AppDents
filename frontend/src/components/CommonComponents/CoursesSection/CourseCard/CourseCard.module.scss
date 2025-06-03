@@ -337,6 +337,16 @@ $card-body-padding-bottom: calc(
     height: 45px;
   }
 
+  .cart_btn {
+    z-index: 5;
+    padding: 3px 15px !important;
+    position: absolute !important;
+    bottom: -41px;
+    border-width: 1.5px !important;
+    font-size: 16px !important;
+    width: 100%;
+  }
+
   .content_bottom {
     margin-bottom: 10px;
   }
