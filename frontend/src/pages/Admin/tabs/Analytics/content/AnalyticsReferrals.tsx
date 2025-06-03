@@ -1,25 +1,21 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { ANALYTICS_LIMITS } from "../../../../../common/helpers/commonConstants.ts";
-import { t } from "i18next";
+import Table from "../../../../../components/ui/Table/Table.tsx";
 
 const AnalyticsReferrals = () => {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-  const [limit, setLimit] = useState<string>("10");
-  const [users, setUsers] = useState<[] | null>(null);
-
-  console.log(users);
+  // const [limit, setLimit] = useState<string>("10");
+  const [data, setData] = useState<any>(null);
 
   const fetchReferrals = async () => {
     const params: {
-      limit: string;
+      // limit: string;
       start_date?: string;
       end_date?: string;
     } = {
-      limit: limit,
+      // limit: limit,
     };
 
     if (startDate) {
@@ -31,7 +27,7 @@ const AnalyticsReferrals = () => {
 
     try {
       const res = await adminApi.getReferrals(params);
-      setUsers(res.data);
+      setData(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -39,7 +35,8 @@ const AnalyticsReferrals = () => {
 
   useEffect(() => {
     fetchReferrals();
-  }, [limit, endDate, startDate]);
+  }, [endDate, startDate]);
+  if (!data) return null;
 
   return (
     <>
@@ -66,19 +63,39 @@ const AnalyticsReferrals = () => {
             type="date"
           />
         </div>
-        <MultiSelect
-          isSearchable={false}
-          id={"limits"}
-          options={ANALYTICS_LIMITS}
-          placeholder={""}
-          label={t("admin.analytics.size")}
-          selectedValue={limit}
-          isMultiple={false}
-          onChange={(e) => setLimit(e.value as string)}
-          valueKey="value"
-          labelKey="name"
-        />
+        {/*<MultiSelect*/}
+        {/*  isSearchable={false}*/}
+        {/*  id={"limits"}*/}
+        {/*  options={ANALYTICS_LIMITS}*/}
+        {/*  placeholder={""}*/}
+        {/*  label={t("admin.analytics.size")}*/}
+        {/*  selectedValue={limit}*/}
+        {/*  isMultiple={false}*/}
+        {/*  onChange={(e) => setLimit(e.value as string)}*/}
+        {/*  valueKey="value"*/}
+        {/*  labelKey="name"*/}
+        {/*/>*/}
       </div>
+      <Table
+        title={"Inviters"}
+        data={data.inviters}
+        columnLabels={{
+          inviter_id: "Inviter id",
+          email: "Email",
+          referrals: "Count",
+          balance: "Balance",
+          total_credited: "Total Credited",
+        }}
+      />
+      <Table
+        title={"Referral users"}
+        data={data.referrals}
+        columnLabels={{
+          inviter_email: "Inviter email",
+          referral_email: "Referral email",
+          registered_at: "Register date",
+        }}
+      />
     </>
   );
 };
