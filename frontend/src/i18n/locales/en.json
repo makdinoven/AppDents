@@ -381,7 +381,10 @@
     },
     "analytics": {
       "analytics": "Analytics",
-      "size": "Size"
+      "size": "Size",
+      "landings": "Language stats",
+      "listing": "Ad listing",
+      "referrals": "Referrals"
     }
   }
 }

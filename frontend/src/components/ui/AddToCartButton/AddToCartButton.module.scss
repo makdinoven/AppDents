@@ -6,9 +6,31 @@
   border: 2px solid $accent;
   border-radius: 20px;
   padding: 8px 17px 8px 13px;
-  width: 100%;
   flex-shrink: 0;
+  gap: 5px;
   font-size: 18px;
+
+  &.primary {
+    background-color: $primary;
+    border-color: $primary;
+    color: $text-color;
+    svg {
+      path {
+        stroke: $text-color;
+      }
+    }
+
+    &.active {
+      color: $accent;
+      border-color: $accent;
+
+      svg {
+        path {
+          stroke: $accent;
+        }
+      }
+    }
+  }
 
   svg {
     width: clamp(20px, 2.5vw, 32px);
@@ -57,15 +79,6 @@
   }
 
   @media (max-width: $middle-breakpoint) {
-    & {
-      z-index: 5;
-      padding: 3px 15px;
-      position: absolute;
-      bottom: -41px;
-      border-width: 1.5px;
-      font-size: 16px;
-    }
-
     &.active {
       padding: 3.5px 15px;
 

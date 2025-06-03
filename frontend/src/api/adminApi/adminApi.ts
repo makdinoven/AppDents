@@ -144,4 +144,9 @@ export const adminApi = {
       params: params,
     });
   },
+  getReferrals(params: any) {
+    return instance.get("users/analytics/referral-stats", {
+      params: params,
+    });
+  },
 };
