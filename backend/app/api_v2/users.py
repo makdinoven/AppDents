@@ -429,39 +429,22 @@ def update_user_full_route(
 
 @router.get("/analytics/referral-stats")
 def referral_stats(
-    start_date: dt.date | None = Query(
-        None,
-        description="Дата начала (YYYY-MM-DD)."
-    ),
-    end_date: dt.date | None = Query(
-        None,
-        description="Дата конца (YYYY-MM-DD, включительно)."
-    ),
+    start_date: dt.date | None = Query(None, description="Дата начала (YYYY-MM-DD)."),
+    end_date:   dt.date | None = Query(None, description="Дата конца (YYYY-MM-DD, включительно)."),
     db: Session = Depends(get_db),
 ):
-    """
-    Возвращает аналитику по реферальной системе.
-
-    Правила периода аналогичны другим аналитическим роутам:
-
-    * **нет** `start_date`, `end_date` → сегодняшний UTC-день [00:00 – сейчас);
-    * только `start_date` → от начала `start_date` до текущего момента;
-    * оба `start_date` и `end_date` → от начала `start_date` до конца `end_date`
-      (00:00 следующего дня);
-    * только `end_date` → 400 Bad Request.
-    """
-    now = dt.datetime.now(timezone.utc)
+    now = dt.datetime.utcnow()                      # naive-UTC
 
     if start_date is None and end_date is None:
-        start_dt = dt.datetime(now.year, now.month, now.day)
+        start_dt = dt.datetime(now.year, now.month, now.day)   # 00:00 сегодня (UTC)
         end_dt   = now
 
     elif start_date is not None and end_date is None:
-        start_dt = dt.datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
         end_dt   = now
 
     elif start_date is not None and end_date is not None:
-        start_dt = dt.datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
         end_dt   = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
 
     else:
