@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import {
   initFacebookPixel,
+  initLanguagePixel,
   trackPageView,
 } from "./common/helpers/facebookPixel.ts";
 import { AppDispatchType } from "./store/store.ts";
@@ -23,14 +24,12 @@ function App() {
   const isLogged = useSelector((state: any) => state.user.isLogged);
 
   useEffect(() => {
-    initFacebookPixel();
-  }, []);
-
-  useEffect(() => {
+    initLanguagePixel(language);
     trackPageView();
-  }, [location.pathname]);
+  }, [location.pathname, language]);
 
   useEffect(() => {
+    initFacebookPixel();
     dispatch(getMe());
     const storedLanguage = localStorage.getItem("DENTS_LANGUAGE") || language;
     dispatch(setLanguage(storedLanguage));
