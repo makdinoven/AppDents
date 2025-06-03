@@ -14,18 +14,7 @@ import PaymentModal, {
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  selectIsInCart,
-  syncCartFromStorage,
-} from "../../../../store/slices/cartSlice.ts";
 import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
-import {
-  addCartItem,
-  removeCartItem,
-} from "../../../../store/actions/cartActions.ts";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { cartStorage } from "../../../../api/cartApi/cartStorage.ts";
 
 interface CourseCardProps {
   isClient?: boolean;
@@ -56,19 +45,13 @@ const CourseCard = ({
   lessons_count,
   course_ids,
 }: CourseCardProps) => {
-  const [cartLoading, setCartLoading] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
-  const isInCart = useSelector(selectIsInCart(id));
   const cleanLink = link.replace(/^\/(client\/)?course/, "");
-  const dispatch = useDispatch<AppDispatchType>();
-  const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
-  );
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -115,38 +98,6 @@ const CourseCard = ({
 
   const handleCloseModal = () => {
     setModalOpen(false);
-  };
-
-  const toggleCardInCart = async () => {
-    setCartLoading(true);
-    if (!isInCart) {
-      if (isLogged) {
-        await dispatch(addCartItem(id));
-      } else {
-        const item = {
-          landing: {
-            id: id,
-            landing_name: name,
-            authors: authors,
-            page_name: cleanLink,
-            old_price: old_price,
-            new_price: new_price,
-            preview_photo: photo,
-            course_ids: course_ids,
-          },
-        };
-        cartStorage.addItem(item);
-        dispatch(syncCartFromStorage());
-      }
-    } else {
-      if (isLogged) {
-        await dispatch(removeCartItem(id));
-      } else {
-        cartStorage.removeItem(id);
-        dispatch(syncCartFromStorage());
-      }
-    }
-    setCartLoading(false);
   };
 
   return (
@@ -205,9 +156,19 @@ const CourseCard = ({
               </button>
               {isClient && (
                 <AddToCartButton
-                  loading={cartLoading}
-                  isActive={isInCart}
-                  handleClick={toggleCardInCart}
+                  item={{
+                    landing: {
+                      id: id,
+                      landing_name: name,
+                      authors: authors,
+                      page_name: cleanLink,
+                      old_price: old_price,
+                      new_price: new_price,
+                      preview_photo: photo,
+                      course_ids: course_ids,
+                    },
+                  }}
+                  className={s.cart_btn}
                 />
               )}
             </div>
