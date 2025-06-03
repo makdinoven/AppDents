@@ -11,6 +11,8 @@ const AnalyticsReferrals = () => {
   const [limit, setLimit] = useState<string>("10");
   const [users, setUsers] = useState<[] | null>(null);
 
+  console.log(users);
+
   const fetchReferrals = async () => {
     const params: {
       limit: string;
