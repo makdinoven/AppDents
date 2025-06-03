@@ -1,5 +1,10 @@
 import { Path } from "../../routes/routes.ts";
-import { CartIcon, HomeIcon, ProfessorsIcon } from "../../assets/logos/index";
+import {
+  CartIcon,
+  CoursesIcon,
+  HomeIcon,
+  ProfessorsIcon,
+} from "../../assets/logos/index";
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },
@@ -12,7 +17,7 @@ export const LANGUAGES = [
 
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
-  // { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
+  { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
   // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
   { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
   { icon: CartIcon, text: "nav.cart", link: Path.cart },
