@@ -5,7 +5,7 @@ from typing import Optional
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from sqlalchemy import delete, func
+from sqlalchemy import delete, func, cast, Date
 from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
