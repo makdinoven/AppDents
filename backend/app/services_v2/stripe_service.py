@@ -304,13 +304,14 @@ def create_checkout_session(
     success_url_with_session = (
         f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
     )
-
+    purchase_lang = region.upper()
     metadata: dict = {
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
         "user_agent": user_agent,
         "referer": referer,
         "external_id": external_id,
+        "purchase_lang": purchase_lang,
     }
     if fbp:
         metadata["fbp"] = fbp
@@ -560,8 +561,9 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                           balance_used, user.id)
 
     # 9. Отправляем событие Purchase в FB
+    purchase_lang = (metadata.get("purchase_lang") or region).upper()
     _send_facebook_events(
-        region=region,
+        region=purchase_lang,
         email=email,
         amount=session_obj["amount_total"] / 100,
         currency=session_obj["currency"],
