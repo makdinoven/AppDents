@@ -430,3 +430,79 @@ def get_referral_analytics(
         "referrals": referrals_data,
         "total_referrals": total_referrals,
     }
+
+def get_user_growth_stats(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+) -> dict:
+    """
+    Возвращает:
+      {
+        "data": [
+          {"date": "2025-06-01", "new_users": 35, "total_users": 10235},
+          …
+        ],
+        "total_new_users": 120,
+        "start_total_users": 10115,
+        "end_total_users":   10235
+      }
+    • new_users   — количество регистраций за сутки;
+    • total_users — общее число пользователей *на конец дня*.
+    Гарантирует непрерывную шкалу дат (если в какой-то день нет
+    регистраций, new_users = 0).
+    """
+
+    # 1) пользователи по дням внутри периода ------------------------------
+    rows = (
+        db.query(
+            cast(User.created_at, Date).label("day"),
+            func.count(User.id).label("cnt"),
+        )
+        .filter(
+            User.created_at >= start_dt,
+            User.created_at <  end_dt,
+        )
+        .group_by("day")
+        .order_by("day")
+        .all()
+    )
+    # rows: [(2025-06-01, 35), (2025-06-02, 85), …]
+
+    # 2) приводим к словарю day → new_users
+    per_day = {r.day: r.cnt for r in rows}
+
+    # 3) формируем полный диапазон дат (чтобы не было «дыр»)
+    days = []
+    cur = start_dt.date()
+    while cur < end_dt.date():
+        days.append(cur)
+        cur += timedelta(days=1)
+
+    # 4) стартовое общее число пользователей до периода
+    start_total_users: int = (
+        db.query(func.count(User.id))
+        .filter(User.created_at < start_dt)
+        .scalar()
+    )
+
+    # 5) формируем результат + кумулятив
+    data = []
+    running_total = start_total_users
+    for d in days:
+        new_users = per_day.get(d, 0)
+        running_total += new_users
+        data.append(
+            {
+                "date": d.isoformat(),
+                "new_users": new_users,
+                "total_users": running_total,
+            }
+        )
+
+    return {
+        "data": data,
+        "total_new_users": running_total - start_total_users,
+        "start_total_users": start_total_users,
+        "end_total_users":   running_total,
+    }
