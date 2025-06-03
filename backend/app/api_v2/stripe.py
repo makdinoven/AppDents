@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
+from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
 from ..models.models_v2 import Course
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
@@ -102,13 +103,17 @@ def stripe_checkout(
             )
             for c in courses:
                 add_course_to_user(db, current_user.id, c.id)
+
+            clear_cart(db, current_user)
+            db.refresh(current_user)
+
             send_successful_purchase_email(
                 recipient_email=current_user.email,
                 course_names=[c.name for c in courses],
                 new_account=False,
                 region=data.region,
             )
-            return {"checkout_url": None, "paid_with_balance": True}
+            return {"checkout_url": None, "paid_with_balance": True, "balance_left": round(float(current_user.balance or 0), 2)}
 
         # --- Частичная ---
         balance_used = balance_avail
@@ -228,8 +233,6 @@ def complete_purchase(
         time.sleep(retry_delay)
 
     if not user:
-        # Если через 5 секунд пользователь так и не появился,
-        # значит что-то пошло не так (вебхук не сработал, сбой и т.д.).
         raise HTTPException(
             status_code=404,
             detail="User not found. Possibly webhook is delayed or user creation failed."
