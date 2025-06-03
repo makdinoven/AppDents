@@ -20,6 +20,7 @@ import {
   REF_CODE_PARAM,
 } from "../../common/helpers/commonConstants.ts";
 import { cartApi } from "../../api/cartApi/cartApi.ts";
+import { CartItemType } from "../../api/cartApi/types.ts";
 
 const Cart = () => {
   const location = useLocation();
@@ -93,7 +94,11 @@ const Cart = () => {
     setLoading(true);
     const dataToSend = {
       landing_ids: items.map((item) => item.landing.id),
-      course_ids: items.map((item) => item.landing.course_ids).flat(),
+      course_ids: isLogged
+        ? items.map((item) => item.landing.course_ids).flat()
+        : unloggedCartData.items
+            .map((item: CartItemType) => item.landing.course_ids)
+            .flat(),
       region: language,
       price_cents: isLogged
         ? (total_amount * 100).toFixed(0)

@@ -13,6 +13,7 @@ import ModalCloseButton from "../ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
+import AddToCartButton from "../AddToCartButton/AddToCartButton.tsx";
 
 const SearchModal = ({ openKey }: { openKey: string }) => {
   const SEARCH_KEY = "global_courses_search";
@@ -159,11 +160,29 @@ const SearchModal = ({ openKey }: { openKey: string }) => {
                       <h4>{item.landing_name}</h4>
                       <p>{formatAuthorsDesc(item?.authors)}</p>
                     </div>
-                    {item?.preview_photo && (
-                      <div className={s.img_wrapper}>
-                        <img src={item?.preview_photo} alt="" />
-                      </div>
-                    )}
+                    <div className={s.photo_cart_wrapper}>
+                      {item?.preview_photo && (
+                        <div className={s.img_wrapper}>
+                          <img src={item?.preview_photo} alt="" />
+                        </div>
+                      )}
+                      <AddToCartButton
+                        item={{
+                          landing: {
+                            id: item.id,
+                            landing_name: item.landing_name,
+                            authors: item.authors,
+                            page_name: item.page_name,
+                            old_price: item.old_price,
+                            new_price: item.new_price,
+                            preview_photo: item.preview_photo,
+                            course_ids: item.course_ids,
+                          },
+                        }}
+                        className={s.cart_btn}
+                        variant={"primary"}
+                      />
+                    </div>
                   </Link>
                 </li>
               ))}

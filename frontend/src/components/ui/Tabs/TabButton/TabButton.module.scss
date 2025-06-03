@@ -1,0 +1,26 @@
+.btn {
+  display: flex;
+  @include clamped-p2;
+  color: $accent;
+  padding: 2px 5px;
+  border-bottom: 2px solid $background-color;
+  @include transition;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+      border-color: $primary;
+    }
+  }
+
+  &.active {
+    color: $primary;
+    border-color: $primary;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      border-width: 1px;
+    }
+  }
+}
