@@ -38,6 +38,10 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
+  getCoursesPagination(params: any) {
+    return instance.get(`landings/v1/cards`, { params: params });
+  },
+
   searchCourses(params: { q: string; language: string }) {
     return instance.get(`landings/search`, {
       params,
