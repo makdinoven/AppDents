@@ -129,3 +129,5 @@ def get_cashback_percent(db: Session, invitee_id: int) -> float:
           .first()
     )
     return rule.percent if rule else 0.0
+
+

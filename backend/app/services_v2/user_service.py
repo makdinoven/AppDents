@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 from math import ceil
-from typing import Optional
+from typing import Optional, Dict, Any, List
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -506,3 +506,92 @@ def get_user_growth_stats(
         "start_total_users": start_total_users,
         "end_total_users":   running_total,
     }
+
+def get_purchase_analytics(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+    *,
+    page: int | None = None,
+    size: int | None = None,
+) -> Dict[str, Any]:
+    """
+    Возвращает словарь:
+      {
+        "total": 123,
+        "total_pages": 7,
+        "page": 1,
+        "size": 20,
+        "total_amount": "999.90 $",
+        "items": [
+          {
+            "user_id":  42,
+            "email":    "[email protected]",
+            "amount":   "49.90 $",
+            "source":   "LANDING",
+            "from_ad":  true,
+            "paid_at":  "2025-06-02T13:44:32Z"
+          },
+          …
+        ]
+      }
+    Если page/size не заданы → возвращает *все* записи без пагинации,
+    поля total_pages/page/size опущены.
+    """
+
+    base_q = (
+        db.query(
+            Purchase,
+            User.email.label("email"),
+        )
+        .join(User, User.id == Purchase.user_id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+        )
+        .order_by(Purchase.created_at.desc())
+    )
+
+    total = base_q.count()
+    total_amount_val: float = (
+        db.query(func.coalesce(func.sum(Purchase.amount), 0))
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+        )
+        .scalar()
+    )
+
+    # пагинация --------------------------------------------
+    if page and size:
+        offset = (page - 1) * size
+        rows = base_q.offset(offset).limit(size).all()
+        total_pages = (total + size - 1) // size
+    else:
+        rows = base_q.all()
+        total_pages = None
+
+    items: List[dict] = [
+        {
+            "user_id":   p.user_id,
+            "email":     email,
+            "amount":    f"{p.amount:.2f} $",
+            "source":    p.source.value,
+            "from_ad":   p.from_ad,
+            "paid_at":   p.created_at.isoformat() + "Z",
+        }
+        for p, email in rows
+    ]
+
+    result: Dict[str, Any] = {
+        "total": total,
+        "total_amount": f"{total_amount_val:.2f} $",
+        "items": items,
+    }
+    if page and size:
+        result.update({
+            "total_pages": total_pages,
+            "page": page,
+            "size": size,
+        })
+    return result
