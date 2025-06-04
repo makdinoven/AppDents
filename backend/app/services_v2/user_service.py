@@ -418,7 +418,6 @@ def get_referral_analytics(
 
     referrals_data = [
         {
-            "inviter_id": r.inviter_id,
             "inviter_email":  r.inviter_email,
             "referral_id": r.referral_id,
             "referral_email": r.referral_email,
