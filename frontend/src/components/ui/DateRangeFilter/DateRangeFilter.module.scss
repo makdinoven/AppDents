@@ -1,0 +1,27 @@
+.input_wrapper {
+  @include clamped-p2;
+  @include flex-column;
+  justify-content: flex-end;
+  position: relative;
+
+  label {
+    margin-left: 5px;
+    @include clamped-p3();
+  }
+
+  input {
+    @include transition;
+    width: 100%;
+    min-height: 35px;
+    &:hover {
+      background-color: $hover-color;
+    }
+  }
+}
+
+.date_input {
+  border: 1.5px solid $hover-color;
+  padding: 0 15px;
+  border-radius: 15px;
+  min-height: 39px;
+}
