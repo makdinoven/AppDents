@@ -77,6 +77,29 @@ export const ANALYTICS_LIMITS = [
   { name: "500", value: "500" },
 ];
 
+export const PAGE_SIZES = [
+  { name: "10", value: "10" },
+  { name: "20", value: "20" },
+  { name: "50", value: "50" },
+  { name: "100", value: "100" },
+  { name: "200", value: "200" },
+];
+
+export const PAYMENT_SOURCES = [
+  { name: "HOMEPAGE", path: Path.main },
+  { name: "CART", path: Path.cart },
+  { name: "LANDING", path: `/${Path.landingClient}` },
+  { name: "LANDING", path: Path.landing },
+  { name: "PROFESSOR_PAGE", path: Path.professor },
+  { name: "PROFESSOR_OFFER", path: Path.professor },
+  { name: "PROF_LIST_OFFER", path: Path.professors },
+  { name: "CABINET_OFFER", path: Path.profile },
+  { name: "LANDING_OFFER", path: Path.landing },
+  { name: "LANDING_OFFER", path: `/${Path.landingClient}` },
+  { name: "COURSES_PAGE", path: Path.courses },
+  { name: "COURSES_OFFER", path: Path.courses },
+];
+
 export const REF_CODE_PARAM = "rc";
 
 export const REF_CODE_LS_KEY = "DENTS_RC";

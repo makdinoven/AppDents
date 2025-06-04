@@ -4,7 +4,6 @@ import {
   ANALYTICS_LIMITS,
   LANGUAGES,
 } from "../../../../../common/helpers/commonConstants.ts";
-import { t } from "i18next";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
@@ -79,7 +78,6 @@ const AnalyticsListing = () => {
           id={"language"}
           options={LANGUAGES}
           placeholder={"Choose a language"}
-          label={t("admin.landings.language")}
           selectedValue={language}
           isMultiple={false}
           onChange={(e) => setLanguage(e.value as string)}
@@ -91,7 +89,6 @@ const AnalyticsListing = () => {
           id={"limits"}
           options={ANALYTICS_LIMITS}
           placeholder={""}
-          label={t("admin.analytics.size")}
           selectedValue={limit}
           isMultiple={false}
           onChange={(e) => setLimit(e.value as string)}

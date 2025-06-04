@@ -23,6 +23,7 @@ type props = {
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
   ref?: React.RefObject<any>;
+  isOffer?: boolean;
 };
 
 const CoursesSection = ({
@@ -37,6 +38,7 @@ const CoursesSection = ({
   activeSort: externalSort,
   handleSetActiveFilter,
   handleSetActiveSort,
+  isOffer = false,
 }: props) => {
   const dispatch = useDispatch<AppDispatchType>();
   const cards = useSelector((state: AppRootStateType) => state.main.courses);
@@ -125,6 +127,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isOffer={isOffer}
         isClient={isClient}
         filter={activeFilter}
         handleSeeMore={handleSeeMore}

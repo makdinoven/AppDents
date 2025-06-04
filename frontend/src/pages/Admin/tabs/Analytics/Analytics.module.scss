@@ -4,9 +4,10 @@
 }
 
 .date_input {
-  border: 1px solid $accent;
-  padding: 5px 10px;
-  border-radius: 10px;
+  border: 1.5px solid $hover-color;
+  padding: 0 15px;
+  border-radius: 15px;
+  min-height: 39px;
 }
 
 .analytics_options {
@@ -39,12 +40,21 @@
 .input_wrapper {
   @include clamped-p2;
   @include flex-column;
+  justify-content: flex-end;
   position: relative;
   gap: 5px;
 
+  label {
+    margin-left: 5px;
+  }
+
   input {
+    @include transition;
     width: 100%;
     min-height: 35px;
+    &:hover {
+      background-color: $hover-color;
+    }
   }
 }
 
