@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -519,6 +519,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)
 
+    if user.cart and landing_ids_list:
+        from ..services_v2 import cart_service as cs
+        for lid in landing_ids_list:
+            cs.remove_silent(db, user, lid)
+
+        # если корзина опустела – почистим полностью (обнулим total_amount)
+        if not user.cart.items:
+            cs.clear_cart(db, user)
+
     # Запись Purchase с правильным landing_id
     for lid in landing_ids_list:
         ln = db.query(Landing).filter_by(id=lid).one_or_none()
@@ -529,6 +538,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     if new_courses:
         # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
         amount_total = session_obj["amount_total"] / 100.0
+        raw_source = metadata.get("source", PurchaseSource.OTHER.value)
+        try:
+            purchase_source = PurchaseSource(raw_source)
+        except ValueError:
+            purchase_source = PurchaseSource.OTHER
+
         for idx, lid in enumerate(landing_ids_list):
             p = Purchase(
                 user_id=user.id,
@@ -536,6 +551,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 landing_id=lid,
                 from_ad=from_ad,
                 amount=amount_total if idx == 0 else 0.0,
+                source=purchase_source,
             )
             db.add(p)
             if idx == 0:

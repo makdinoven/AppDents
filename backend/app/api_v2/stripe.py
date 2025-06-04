@@ -12,7 +12,7 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course
+from ..models.models_v2 import Course, PurchaseSource
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import send_successful_purchase_email
@@ -32,6 +32,8 @@ class CheckoutRequest(BaseModel):
     transfer_cart: bool = False  # ←
     cart_landing_ids: list[int] | None = None
     ref_code: str | None = None
+    source: PurchaseSource | None = None
+    from_ad: bool | None = None
 
 @router.post("/checkout")
 def stripe_checkout(
@@ -94,7 +96,7 @@ def stripe_checkout(
         balance_avail = float(current_user.balance or 0)
 
         if balance_avail >= total_price_usd - 1e-6:
-            # --- Полная оплата балансом ---
+            # ---- 1. списываем деньги и открываем курсы --------------------
             debit_balance(
                 db,
                 user_id=current_user.id,
@@ -104,16 +106,39 @@ def stripe_checkout(
             for c in courses:
                 add_course_to_user(db, current_user.id, c.id)
 
-            clear_cart(db, current_user)
+            # ---- 2. синхронизируем корзину --------------------------------
+            from ..services_v2 import cart_service as cs
+
+            # набор купленных course_id
+            purchased = set(unique_course_ids)
+
+            # для каждого CartItem проверяем: ВСЕ ли его курсы куплены
+            for item in list(current_user.cart.items or []):
+                landing_course_ids = {cr.id for cr in item.landing.courses}
+                if landing_course_ids and landing_course_ids.issubset(purchased):
+                    cs.remove_silent(db, current_user, item.landing_id)
+
+            if not current_user.cart.items:  # корзина опустела
+                cs.clear_cart(db, current_user)
+
+            # если после удаления корзина пуста – полностью обнуляем
+            if current_user.cart and not current_user.cart.items:
+                cs.clear_cart(db, current_user)
+
             db.refresh(current_user)
 
+            # ---- 3. письмо и ответ фронту ---------------------------------
             send_successful_purchase_email(
                 recipient_email=current_user.email,
                 course_names=[c.name for c in courses],
                 new_account=False,
                 region=data.region,
             )
-            return {"checkout_url": None, "paid_with_balance": True, "balance_left": round(float(current_user.balance or 0), 2)}
+            return {
+                "checkout_url": None,
+                "paid_with_balance": True,
+                "balance_left": round(float(current_user.balance or 0), 2)
+            }
 
         # --- Частичная ---
         balance_used = balance_avail
@@ -123,6 +148,8 @@ def stripe_checkout(
         # сюда не попадём: полная оплата балансом уже обработана выше
         stripe_amount_cents = 0
 
+    purchase_source = data.source or PurchaseSource.OTHER
+
     extra = {}
     if data.transfer_cart:
         extra["transfer_cart"] = "true"
@@ -131,6 +158,7 @@ def stripe_checkout(
         extra["balance_used"] = str(int(round(balance_used * 100)))
     if data.ref_code:
         extra["ref_code"] = data.ref_code
+    extra["source"] = purchase_source.value
 
     # 4. Вызываем функцию для создания сессии Stripe
     checkout_url = create_checkout_session(
@@ -145,7 +173,8 @@ def stripe_checkout(
         request=request,
         fbp=data.fbp,
         fbc=data.fbc,
-        extra_metadata=extra
+        extra_metadata=extra,
+        from_ad=data.from_ad
     )
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
