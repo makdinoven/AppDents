@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Path } from "../../routes/routes.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem("access_token");
@@ -150,4 +151,22 @@ export const denormalizeLessons = (lessons: any) => {
       },
     };
   });
+};
+
+export const isPromotionLanding = (pathname: string): boolean => {
+  return pathname === Path.landing || pathname.startsWith(`${Path.landing}/`);
+};
+
+export const formatIsoToLocalDatetime = (isoString: string): string => {
+  const date = new Date(isoString);
+
+  const pad = (n: number): string => n.toString().padStart(2, "0");
+
+  const day = pad(date.getDate());
+  const month = pad(date.getMonth() + 1);
+  const year = date.getFullYear();
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+
+  return `${hours}:${minutes} ${day}.${month}.${year} `;
 };

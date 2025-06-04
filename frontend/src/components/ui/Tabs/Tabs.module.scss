@@ -1,0 +1,19 @@
+.btns_container {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  padding: 10px 20px;
+  border: 1px solid $hover-color;
+  border-radius: 10px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      padding: 10px;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+  }
+}

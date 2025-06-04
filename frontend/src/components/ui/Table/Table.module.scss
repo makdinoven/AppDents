@@ -4,6 +4,13 @@
   border: 1px solid $hover-color;
 }
 
+.table_title {
+  width: 100%;
+  text-align: center;
+  @include clamped-h3;
+  text-transform: uppercase;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

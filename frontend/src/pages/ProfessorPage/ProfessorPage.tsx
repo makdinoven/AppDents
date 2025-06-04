@@ -21,7 +21,7 @@ import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 const ProfessorPage = () => {
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const language = useSelector((state: any) => state.user.language);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
@@ -33,6 +33,7 @@ const ProfessorPage = () => {
   }, [professorId]);
 
   const fetchProfessorData = async () => {
+    setLoading(true);
     try {
       const res = await mainApi.getProfessorDetail(Number(professorId));
       setProfessor(res.data);
@@ -110,7 +111,7 @@ const ProfessorPage = () => {
   return (
     <>
       <BackButton />
-      {loading ? (
+      {loading || !professor ? (
         <Loader />
       ) : (
         <div className={s.professor_page}>

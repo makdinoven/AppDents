@@ -1,3 +1,5 @@
+import datetime as dt         # ← модуль целиком
+from datetime import timezone
 import json
 import logging
 import secrets
@@ -22,7 +24,7 @@ from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
-    search_users_paginated, verify_password
+    search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -89,6 +91,9 @@ def register(
     background_tasks: BackgroundTasks,
     region: str = "EN",
     ref: str | None = Query(None, description="Referral code"),
+    transfer_cart: bool = False,
+    cart_landing_ids: Optional[str] = Query(None, alias="cart_landing_ids"),
+
     db: Session = Depends(get_db)
 ):
     """
@@ -118,6 +123,16 @@ def register(
     )
 
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
+
+    if cart_landing_ids and transfer_cart :
+        cart_ids = _parse_cart_ids(cart_landing_ids)
+        if transfer_cart and cart_ids:
+            from ..services_v2 import cart_service as cs
+            for lid in cart_ids:
+                try:
+                    cs.add_landing(db, user, lid)
+                except Exception as e:
+                    logger.warning("Cannot transfer landing %s: %s", lid, e)
     return {**UserRead.from_orm(user).dict(), "password": random_pass}
 
 logger = logging.getLogger("auth")
@@ -411,3 +426,75 @@ def update_user_full_route(
     """
     updated_user = update_user_full(db, user_id, user_data)
     return updated_user
+
+@router.get("/analytics/referral-stats")
+def referral_stats(
+    start_date: dt.date | None = Query(None, description="Дата начала (YYYY-MM-DD)."),
+    end_date:   dt.date | None = Query(None, description="Дата конца (YYYY-MM-DD, включительно)."),
+    db: Session = Depends(get_db),
+):
+    now = dt.datetime.utcnow()                      # naive-UTC
+
+    if start_date is None and end_date is None:
+        start_dt = dt.datetime.min
+        end_dt   = now
+
+    elif start_date is not None and end_date is None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
+        end_dt   = now
+
+    elif start_date is not None and end_date is not None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
+        end_dt   = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    return get_referral_analytics(db, start_dt, end_dt)
+
+@router.get("/analytics/user-growth")
+def user_growth(
+    start_date: dt.date | None = Query(
+        None, description="Дата начала (YYYY-MM-DD)."
+    ),
+    end_date: dt.date | None = Query(
+        None, description="Дата конца (YYYY-MM-DD, включительно)."
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    Динамика пользователей:
+
+    * **нет** `start_date`, `end_date` — последние 30 суток вплоть до «сейчас».
+    * только `start_date` — от начала `start_date` до текущего времени.
+    * обе даты     — полный интервал от начала `start_date`
+      до конца `end_date` (00:00 следующего дня).
+    * только `end_date` — 400 Bad Request.
+
+    Формат ответа пригоден для построения графика (одна точка = один день).
+    """
+    now = dt.datetime.utcnow()
+
+    if start_date is None and end_date is None:
+        start_dt = now - dt.timedelta(days=30)
+        end_dt   = now
+
+
+    elif start_date is not None and end_date is None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)  # 00:00 UTC
+        end_dt = now
+
+    elif start_date is not None and end_date is not None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
+        end_dt = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    return get_user_growth_stats(db, start_dt, end_dt)

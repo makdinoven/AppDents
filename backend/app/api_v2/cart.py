@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, Depends, Body, HTTPException
 from sqlalchemy.orm import Session, selectinload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User, Cart, CartItem, Landing, CartItemType
-from ..schemas_v2.cart import CartResponse, CartItemOut
+from ..schemas_v2.cart import CartResponse, CartItemOut, LandingInCart
 from ..services_v2.cart_service import get_or_create_cart, _safe_price
 from ..services_v2 import cart_service as cs
 
@@ -115,3 +118,83 @@ def delete_landing(
 ):
     cs.remove_by_landing(db, current_user, landing_id)
     return my_cart(db, current_user)
+
+@router.post(
+    "/preview",
+    response_model=CartResponse,
+    summary="Предпросмотр корзины (без сохранения в БД)",
+)
+def cart_preview(
+    landing_ids: List[int] = Body(..., embed=True, example=[101, 102, 103]),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает все те же поля, что `/api/cart`, **но**:
+
+    * корзина и элементы НЕ создаются в БД;
+    * `added_at` = `datetime.utcnow()` (он фронту обычно не критичен);
+    * `user_id` не нужен — работает для гостей.
+    """
+
+    # 1. Убираем дубликаты, сохраняем порядок
+    uniq_ids = []
+    seen = set()
+    for lid in landing_ids:
+        if lid not in seen:
+            uniq_ids.append(lid)
+            seen.add(lid)
+
+    if not uniq_ids:
+        raise HTTPException(400, "landing_ids array is empty")
+
+    # 2. Тащим лендинги одним запросом + авторы + курсы
+    landings = (
+        db.query(Landing)
+          .options(
+              selectinload(Landing.authors),
+              selectinload(Landing.courses),
+          )
+          .filter(Landing.id.in_(uniq_ids))
+          .all()
+    )
+    if len(landings) != len(uniq_ids):
+        missing = set(uniq_ids) - {l.id for l in landings}
+        raise HTTPException(404, f"Landing(s) not found: {sorted(missing)}")
+
+    # 3. Отсортируем в том же порядке, что пришёл с фронта
+    landing_by_id = {l.id: l for l in landings}
+    ordered = [landing_by_id[lid] for lid in uniq_ids]
+
+    # 4. Считаем суммы
+    total_new = sum(_safe_price(l.new_price) for l in ordered)
+    total_old = sum(_safe_price(l.old_price) for l in ordered)
+
+    count = len(ordered)
+    disc_curr = _calc_discount(count)
+    disc_next = _calc_discount(count + 1)
+
+    discounted = total_new * (1 - disc_curr)
+
+    # 5. Собираем items под CartResponse
+    now = datetime.utcnow()
+    items: List[CartItemOut] = []
+    for l in ordered:
+        items.append(
+            CartItemOut(
+                id=0,                     # фиктивный
+                item_type="LANDING",
+                added_at=now,
+                landing=LandingInCart.from_orm(l),
+            )
+        )
+
+    return {
+        "total_amount": round(discounted, 2),
+        "total_old_amount": total_old,
+        "total_new_amount": total_new,
+        "current_discount": round(disc_curr * 100, 2),
+        "next_discount": round(disc_next * 100, 2),
+        "total_amount_with_balance_discount": 0,
+        "updated_at": now,
+        "items": items,
+    }

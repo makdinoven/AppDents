@@ -7,6 +7,7 @@ import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Path } from "../../../../routes/routes.ts";
 
 type Course = {
+  id: number;
   landing_name: string;
   authors: any[];
   first_tag: string;
@@ -15,6 +16,7 @@ type Course = {
   old_price: number;
   new_price: number;
   lessons_count: string;
+  course_ids: number[];
 };
 
 interface CardsListProps {
@@ -46,8 +48,10 @@ const CardsList: React.FC<CardsListProps> = ({
           <ul className={s.list}>
             {cards.map((course, index) => (
               <CourseCard
+                isClient={isClient}
                 key={index}
                 index={index}
+                id={course.id}
                 authors={course.authors}
                 old_price={course.old_price}
                 new_price={course.new_price}
@@ -56,6 +60,7 @@ const CardsList: React.FC<CardsListProps> = ({
                 link={`${isClient ? `/${Path.landingClient}` : Path.landing}/${course.slug}`}
                 photo={course.main_image}
                 lessons_count={course.lessons_count}
+                course_ids={course.course_ids}
               />
             ))}
           </ul>

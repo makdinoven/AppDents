@@ -11,11 +11,12 @@ from urllib.parse import urlparse
 import requests
 import stripe
 from fastapi import HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -50,7 +51,6 @@ def _hash_plain(value: str) -> str:
 # ────────────────────────────────────────────────────────────────
 def _build_fb_event(
     *,
-    event_name: str = "Purchase",           # новое
     email: str,
     amount: float,
     currency: str,
@@ -58,6 +58,8 @@ def _build_fb_event(
     client_ip: str,
     user_agent: str,
     event_time: int,
+    event_id: str,
+    event_name: str = "Purchase",
     external_id: str | None = None,
     fbp: str | None = None,
     fbc: str | None = None,
@@ -99,6 +101,7 @@ def _build_fb_event(
             {
                 "event_name": event_name,          # <-- главное отличие
                 "event_time": event_time,
+                "event_id": event_id,
                 "user_data": user_data,
                 "custom_data": {
                     "currency": currency,
@@ -115,8 +118,11 @@ def _build_fb_event(
         email, event_name, amount, currency.upper(), course_ids,
     )
     return event
+
 def _send_facebook_events(
     *,
+    region: str,                #  ← НОВЫЙ параметр
+    event_id: str,
     email: str,
     amount: float,
     currency: str,
@@ -130,9 +136,20 @@ def _send_facebook_events(
     first_name: str | None = None,
     last_name: str | None = None,
 ) -> None:
-    """Шлёт Purchase в два пикселя и Donate в третий."""
+    """
+    Отправляет событие Purchase (и Donate) в Facebook CAPI.
 
-    # ——— 1. Собираем payload-ы
+    • Всегда публикуем:
+        – два «глобальных» purchase-пикселя
+        – один donation-пиксель
+    • Дополнительно публикуем Purchase в регион-специфичный пиксель
+      (RU / EN / ES / IT) – если он сконфигурирован.
+    """
+
+    if not event_id:
+        raise ValueError("event_id is required for FB deduplication")
+
+    # ---------- 1. payload'ы ----------
     purchase_payload = _build_fb_event(
         event_name="Purchase",
         email=email,
@@ -142,13 +159,14 @@ def _send_facebook_events(
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
+        event_id=event_id,
         external_id=external_id,
         fbp=fbp,
         fbc=fbc,
         first_name=first_name,
         last_name=last_name,
     )
-    donate_payload = _build_fb_event(            # отличается только именем
+    donate_payload = _build_fb_event(
         event_name="Donate",
         email=email,
         amount=amount,
@@ -157,6 +175,7 @@ def _send_facebook_events(
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
+        event_id=event_id,
         external_id=external_id,
         fbp=fbp,
         fbc=fbc,
@@ -164,18 +183,33 @@ def _send_facebook_events(
         last_name=last_name,
     )
 
-    # ——— 2. Список пикселей
-    pixels_purchase = [
-        {"id": settings.FACEBOOK_PIXEL_ID, "token": settings.FACEBOOK_ACCESS_TOKEN},
-        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS,
-         "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+    # ---------- 2. список пикселей ----------
+    pixels_purchase: list[dict] = [
+        {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
+        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
     ]
+
+    # регион-специфичные purchase-пиксели
+    REGIONAL_PURCHASE_PIXELS: dict[str, dict] = {
+        "RU": {"id": settings.FACEBOOK_PIXEL_ID_RU, "token": settings.FACEBOOK_ACCESS_TOKEN_RU},
+        "EN": {"id": settings.FACEBOOK_PIXEL_ID_EN, "token": settings.FACEBOOK_ACCESS_TOKEN_EN},
+        "ES": {"id": settings.FACEBOOK_PIXEL_ID_ES, "token": settings.FACEBOOK_ACCESS_TOKEN_ES},
+        "IT": {"id": settings.FACEBOOK_PIXEL_ID_IT, "token": settings.FACEBOOK_ACCESS_TOKEN_IT},
+    }
+
+    region_key = (region or "").upper()
+    regional_pixel = REGIONAL_PURCHASE_PIXELS.get(region_key)
+    if regional_pixel and regional_pixel["id"] and regional_pixel["token"]:
+        pixels_purchase.append(regional_pixel)
+    else:
+        logging.warning("Regional FB pixel is not configured for region=%s", region_key)
+
     pixel_donation = {
         "id": settings.FACEBOOK_PIXEL_ID_DONATION,
         "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
     }
 
-    # ——— 3. Отправляем
+    # ---------- 3. отправка ----------
     def _post(pixel: dict, payload: dict, tag: str):
         try:
             resp = requests.post(
@@ -196,6 +230,7 @@ def _send_facebook_events(
 
     for p in pixels_purchase:
         _post(p, purchase_payload, "Purchase")
+
     _post(pixel_donation, donate_payload, "Donate")
 
 # ────────────────────────────────────────────────────────────────
@@ -269,13 +304,14 @@ def create_checkout_session(
     success_url_with_session = (
         f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
     )
-
+    purchase_lang = region.upper()
     metadata: dict = {
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
         "user_agent": user_agent,
         "referer": referer,
         "external_id": external_id,
+        "purchase_lang": purchase_lang,
     }
     if fbp:
         metadata["fbp"] = fbp
@@ -334,9 +370,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.error("Invalid webhook signature")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
+
+
     # 2. Интересует только completed
     if event["type"] != "checkout.session.completed":
         return {"status": "ignored"}
+
 
     session_obj = event["data"]["object"]
     session_id = session_obj["id"]
@@ -347,6 +386,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.info("Session %s не оплачена (payment_status=%s) — пропускаем",
                      session_id, session_obj.get("payment_status"))
         return {"status": "unpaid"}
+
+    stripe_event_id: str = event["id"]
+    try:
+        db.add(ProcessedStripeEvent(id=stripe_event_id))
+        db.flush()  # пытаемся вставить сразу
+    except IntegrityError:
+        db.rollback()  # было уже в таблице → дубликат
+        logging.info("Duplicate webhook %s — skip", stripe_event_id)
+        return {"status": "duplicate"}
 
 
     metadata = session_obj.get("metadata", {}) or {}
@@ -363,7 +411,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     ]
     logging.info("Преобразованные course_ids: %s", course_ids)
 
-    # разбираем landing_ids из metadata
     # разбираем landing_ids из metadata
     raw = metadata.get("landing_ids", "")
     try:
@@ -413,6 +460,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     external_id = metadata.get("external_id")
     fbp_value = metadata.get("fbp")
     fbc_value = metadata.get("fbc")
+
 
     # 10. Пользователь
     user = get_user_by_email(db, email)
@@ -471,6 +519,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)
 
+    if user.cart and landing_ids_list:
+        from ..services_v2 import cart_service as cs
+        for lid in landing_ids_list:
+            cs.remove_silent(db, user, lid)
+
+        # если корзина опустела – почистим полностью (обнулим total_amount)
+        if not user.cart.items:
+            cs.clear_cart(db, user)
+
     # Запись Purchase с правильным landing_id
     for lid in landing_ids_list:
         ln = db.query(Landing).filter_by(id=lid).one_or_none()
@@ -481,6 +538,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     if new_courses:
         # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
         amount_total = session_obj["amount_total"] / 100.0
+        raw_source = metadata.get("source", PurchaseSource.OTHER.value)
+        try:
+            purchase_source = PurchaseSource(raw_source)
+        except ValueError:
+            purchase_source = PurchaseSource.OTHER
+
         for idx, lid in enumerate(landing_ids_list):
             p = Purchase(
                 user_id=user.id,
@@ -488,6 +551,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 landing_id=lid,
                 from_ad=from_ad,
                 amount=amount_total if idx == 0 else 0.0,
+                source=purchase_source,
             )
             db.add(p)
             if idx == 0:
@@ -513,7 +577,9 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                           balance_used, user.id)
 
     # 9. Отправляем событие Purchase в FB
+    purchase_lang = (metadata.get("purchase_lang") or region).upper()
     _send_facebook_events(
+        region=purchase_lang,
         email=email,
         amount=session_obj["amount_total"] / 100,
         currency=session_obj["currency"],
@@ -526,6 +592,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         first_name=first_name,
         last_name=last_name,
         event_time=event_time,
+        event_id=session_obj["id"]
     )
 
     if purchase and user.invited_by_id:

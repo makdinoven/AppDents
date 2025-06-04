@@ -35,6 +35,19 @@ landing_tags = Table(
     Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
 )
 
+class PurchaseSource(str, PyEnum):
+    HOMEPAGE                  = "HOMEPAGE"          # 1
+    LANDING                   = "LANDING"           # 2
+    PROFESSORS_PAGE           = "PROFESSORS_PAGE"   # 3
+    CABINET_OFFER             = "CABINET_OFFER"     # 4
+    PROFESSOR_OFFER           = "PROFESSOR_OFFER"   # 5
+    PROFESSORS_LIST_OFFER     = "PROF_LIST_OFFER"   # 6
+    LANDING_OFFER             = "LANDING_OFFER"     # 7
+    CART                      = "CART"              # 8
+    COURSES_PAGE              = "COURSES_PAGE"      # 9
+    COURSES_PAGE_OFFER        = "COURSES_OFFER"     # 10
+    OTHER                     = "OTHER"
+
 class Course(Base):
     __tablename__ = 'courses'
     id = Column(Integer, primary_key=True)
@@ -102,6 +115,7 @@ class User(Base):
     balance = Column(Float, default=0.0, nullable=False)
     referral_code = Column(String(20), unique=True, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
 
     cart = relationship("Cart", uselist=False, back_populates="user")
 
@@ -124,6 +138,12 @@ class Purchase(Base):
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
     amount = Column(Float, nullable=False, default=0.0)
+
+    source = Column(
+        Enum(PurchaseSource, name="purchase_source"),
+        nullable=False,
+        server_default=PurchaseSource.OTHER.value
+    )
 
     user = relationship("User", backref="purchases")
     landing = relationship("Landing", backref="purchases")
@@ -205,3 +225,10 @@ class CartItem(Base):
 
     cart = relationship("Cart", back_populates="items")
     landing = relationship("Landing")
+
+class ProcessedStripeEvent(Base):
+    __tablename__ = "processed_stripe_events"
+
+    id           = Column(String, primary_key=True)       # event.id от Stripe
+    processed_at = Column(DateTime(timezone=True),
+                          server_default=func.now())

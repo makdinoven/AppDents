@@ -20,7 +20,7 @@ def get_referral_link(db: Session, user: m.User) -> str:
         db.commit()
         db.refresh(user)
 
-    return f"{settings.APP_URL}/sign-up?ref={user.referral_code}"
+    return f"{user.referral_code}"
 
 
 def get_wallet_balance(user: m.User) -> float:

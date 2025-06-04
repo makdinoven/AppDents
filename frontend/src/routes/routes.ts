@@ -4,6 +4,8 @@ export const Path = {
   passwordReset: "/password-reset",
   search: "/search",
   cart: "/cart",
+  courses: "/courses",
+  books: "/books",
   signUp: "/sign-up",
   landing: "/course",
   landingClient: "client/course",

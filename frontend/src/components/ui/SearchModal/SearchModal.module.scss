@@ -1,20 +1,20 @@
 .dropdown_wrapper {
   display: flex;
-  background-color: rgba(0, 0, 0, 0.06);
+  @include lightBlurBackground();
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   z-index: 1000;
-}
 
-.dropdown_wrapper.fadeIn {
-  @include fadeIn();
-}
+  &.fadeIn {
+    @include fadeIn();
+  }
 
-.dropdown_wrapper.fadeOut {
-  @include fadeOut();
+  &.fadeOut {
+    @include fadeOut();
+  }
 }
 
 .dropdown_container {
@@ -92,11 +92,21 @@
   width: 100%;
 }
 
+.photo_cart_wrapper {
+  @include flex-column;
+  gap: 10px;
+  min-width: 170px;
+}
+
+.cart_btn {
+  width: 100%;
+  height: 51px;
+}
+
 .dropdown_item {
   padding: 10px;
   display: flex;
   gap: 20px;
-  align-items: center;
   position: relative;
   @include transition;
   border-radius: 10px;
@@ -118,6 +128,7 @@
   @media (hover: hover) {
     &:hover {
       background-color: $hover-color;
+
       .dropdown_item_inner {
         &::after {
           width: 100%;
@@ -125,9 +136,11 @@
         }
       }
 
-      svg {
-        path {
-          stroke: $primary;
+      .icon {
+        svg {
+          path {
+            stroke: $primary;
+          }
         }
       }
     }
@@ -184,7 +197,7 @@
   }
 
   .prices {
-    @include clamped-p4;
+    @include clamped-p2;
   }
 
   h4 {
@@ -206,8 +219,8 @@
   min-width: 140px;
   overflow: hidden;
   border-radius: 10px;
-  width: 140px;
-  height: 80px;
+  width: 100%;
+  height: 100px;
   img {
     width: 100%;
     height: 100%;
@@ -251,7 +264,7 @@
     position: relative;
     margin-right: 0;
     gap: 10px;
-    padding: 80px 5px 5px;
+    padding: 100px 5px 5px;
     align-items: start;
 
     .icon {
@@ -267,12 +280,28 @@
   }
 
   .img_wrapper {
-    min-width: 120px;
-    width: 100px;
-    height: 70px;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    min-width: 140px;
+    width: 140px;
+    height: 90px;
+    //top: 0;
+    //left: 0;
+    //position: absolute;
+  }
+
+  .photo_cart_wrapper {
     position: absolute;
+    min-width: unset;
+    width: 100%;
+    top: 0;
+    left: 0;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .cart_btn {
+    font-size: 14px;
+    width: 130px;
+    height: 35px;
   }
 }

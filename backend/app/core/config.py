@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     FACEBOOK_PIXEL_ID_DONATION: str
     FACEBOOK_ACCESS_TOKEN_DONATION: str
 
+    # Facebook Pixels — региональные «Purchase»
+    FACEBOOK_PIXEL_ID_RU: str
+    FACEBOOK_ACCESS_TOKEN_RU: str
+    FACEBOOK_PIXEL_ID_EN: str
+    FACEBOOK_ACCESS_TOKEN_EN: str
+    FACEBOOK_PIXEL_ID_ES: str
+    FACEBOOK_ACCESS_TOKEN_ES: str
+    FACEBOOK_PIXEL_ID_IT: str
+    FACEBOOK_ACCESS_TOKEN_IT: str
+
     class Config:
         env_file = ".env"
 

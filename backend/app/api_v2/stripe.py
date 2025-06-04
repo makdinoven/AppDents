@@ -10,8 +10,9 @@ from sqlalchemy.orm import Session
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
+from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course
+from ..models.models_v2 import Course, PurchaseSource
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import send_successful_purchase_email
@@ -31,6 +32,8 @@ class CheckoutRequest(BaseModel):
     transfer_cart: bool = False  # ←
     cart_landing_ids: list[int] | None = None
     ref_code: str | None = None
+    source: PurchaseSource | None = None
+    from_ad: bool | None = None
 
 @router.post("/checkout")
 def stripe_checkout(
@@ -63,13 +66,22 @@ def stripe_checkout(
     if data.transfer_cart and not data.cart_landing_ids:
         raise HTTPException(400, "cart_landing_ids required when transfer_cart=true")
 
+    unique_course_ids = list(dict.fromkeys(data.course_ids))
+    logging.info("Уникальные course_ids → %s", unique_course_ids)
+
     # 2. Проверяем курсы в БД
-    courses = db.query(Course).filter(Course.id.in_(data.course_ids)).all()
-    if not courses or len(courses) != len(data.course_ids):
-        logging.error("Не найдены все курсы. Передано: %s, найдено: %s", data.course_ids,
-                      [course.id for course in courses])
+    courses = db.query(Course).filter(Course.id.in_(unique_course_ids)).all()
+    found_ids = [c.id for c in courses]
+    logging.info("Найдено в БД: %s", found_ids)
+
+    if not courses or set(found_ids) != set(unique_course_ids):
+        logging.error(
+            "Не найдены все курсы. Передано: %s, найдено: %s",
+            unique_course_ids, found_ids
+        )
         raise HTTPException(status_code=404, detail="One or more courses not found")
-    logging.info("Найдены курсы: %s", [course.id for course in courses])
+
+    logging.info("Найдены курсы: %s", found_ids)
 
     # 3. Формируем название продукта
     course_names = [course.name for course in courses]
@@ -84,22 +96,49 @@ def stripe_checkout(
         balance_avail = float(current_user.balance or 0)
 
         if balance_avail >= total_price_usd - 1e-6:
-            # --- Полная оплата балансом ---
+            # ---- 1. списываем деньги и открываем курсы --------------------
             debit_balance(
                 db,
                 user_id=current_user.id,
                 amount=total_price_usd,
-                meta={"reason": "full_purchase", "courses": data.course_ids},
+                meta={"reason": "full_purchase", "courses": unique_course_ids},
             )
             for c in courses:
                 add_course_to_user(db, current_user.id, c.id)
+
+            # ---- 2. синхронизируем корзину --------------------------------
+            from ..services_v2 import cart_service as cs
+
+            # набор купленных course_id
+            purchased = set(unique_course_ids)
+
+            # для каждого CartItem проверяем: ВСЕ ли его курсы куплены
+            for item in list(current_user.cart.items or []):
+                landing_course_ids = {cr.id for cr in item.landing.courses}
+                if landing_course_ids and landing_course_ids.issubset(purchased):
+                    cs.remove_silent(db, current_user, item.landing_id)
+
+            if not current_user.cart.items:  # корзина опустела
+                cs.clear_cart(db, current_user)
+
+            # если после удаления корзина пуста – полностью обнуляем
+            if current_user.cart and not current_user.cart.items:
+                cs.clear_cart(db, current_user)
+
+            db.refresh(current_user)
+
+            # ---- 3. письмо и ответ фронту ---------------------------------
             send_successful_purchase_email(
                 recipient_email=current_user.email,
                 course_names=[c.name for c in courses],
                 new_account=False,
                 region=data.region,
             )
-            return {"checkout_url": None, "paid_with_balance": True}
+            return {
+                "checkout_url": None,
+                "paid_with_balance": True,
+                "balance_left": round(float(current_user.balance or 0), 2)
+            }
 
         # --- Частичная ---
         balance_used = balance_avail
@@ -109,6 +148,8 @@ def stripe_checkout(
         # сюда не попадём: полная оплата балансом уже обработана выше
         stripe_amount_cents = 0
 
+    purchase_source = data.source or PurchaseSource.OTHER
+
     extra = {}
     if data.transfer_cart:
         extra["transfer_cart"] = "true"
@@ -117,12 +158,13 @@ def stripe_checkout(
         extra["balance_used"] = str(int(round(balance_used * 100)))
     if data.ref_code:
         extra["ref_code"] = data.ref_code
+    extra["source"] = purchase_source.value
 
     # 4. Вызываем функцию для создания сессии Stripe
     checkout_url = create_checkout_session(
         db=db,
         email=email,
-        course_ids=data.course_ids,
+        course_ids=unique_course_ids,
         product_name=product_name,
         price_cents=stripe_amount_cents,
         region=data.region,
@@ -131,7 +173,8 @@ def stripe_checkout(
         request=request,
         fbp=data.fbp,
         fbc=data.fbc,
-        extra_metadata=extra
+        extra_metadata=extra,
+        from_ad=data.from_ad
     )
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
@@ -219,8 +262,6 @@ def complete_purchase(
         time.sleep(retry_delay)
 
     if not user:
-        # Если через 5 секунд пользователь так и не появился,
-        # значит что-то пошло не так (вебхук не сработал, сбой и т.д.).
         raise HTTPException(
             status_code=404,
             detail="User not found. Possibly webhook is delayed or user creation failed."

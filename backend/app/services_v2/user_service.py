@@ -5,12 +5,12 @@ from typing import Optional
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from sqlalchemy import delete, func
-from sqlalchemy.orm import Session
+from sqlalchemy import delete, func, cast, Date
+from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction
+from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -222,10 +222,24 @@ def delete_user(db: Session, user_id: int) -> None:
         where(users_courses.c.user_id == user_id)
     )
 
-    # 4) удаляем самого пользователя
+    # 4) удаляем все элементы корзины (cart_items) и саму корзину
+    #    Проверяем, есть ли у пользователя связанная корзина
+    if user.cart:
+        # 4.1) удаляем все элементы из cart_items для этой корзины
+        db.execute(
+            delete(CartItem).
+            where(CartItem.cart_id == user.cart.id)
+        )
+        # 4.2) удаляем саму корзину
+        db.execute(
+            delete(Cart).
+            where(Cart.user_id == user_id)
+        )
+
+    # 5) удаляем самого пользователя
     db.delete(user)
 
-    # 5) коммитим изменения разом
+    # 6) коммитим изменения разом
     db.commit()
 
 def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: str = "EN") -> User:
@@ -316,4 +330,179 @@ def search_users_paginated(
         "page": page,
         "size": size,
         "items": users,
+    }
+
+def get_referral_analytics(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+) -> dict:
+    """
+    Формирует словарь:
+      {
+        "inviters": [...],
+        "referrals": [...],
+        "total_referrals": int
+      }
+
+    • В выборку попадают только те рефералы, чья дата регистрации
+      попадает в [start_dt, end_dt).
+    • Сумма `total_credited` — агрегат всех транзакций по кошельку
+      (WalletTransaction.amount) конкретного пригласителя **за всё время**
+      -- так обычно понимают «все деньги, которые были на балансе».
+      Если нужно ограничить суммирование тем же периодом —
+      добавьте фильтр по `WalletTransaction.created_at`.
+    """
+
+    # --- 1. пригласители + счётчик рефералов (subquery) --------------------
+    ref_count_subq = (
+        db.query(
+            User.invited_by_id.label("inviter_id"),
+            func.count(User.id).label("ref_count"),
+        )
+        .filter(
+            User.invited_by_id.is_not(None),
+            User.created_at >= start_dt,
+            User.created_at < end_dt,
+        )
+        .group_by(User.invited_by_id)
+        .subquery()
+    )
+
+    # --- 2. итоговый запрос по пригласителям ------------------------------
+    inviter_rows = (
+        db.query(
+            User.id.label("inviter_id"),
+            User.email,
+            User.balance,
+            func.coalesce(func.sum(func.abs(WalletTransaction.amount)), 0).label("total_credited"),
+            ref_count_subq.c.ref_count,
+        )
+        .join(ref_count_subq, ref_count_subq.c.inviter_id == User.id)
+        .outerjoin(WalletTransaction, WalletTransaction.user_id == User.id)
+        .group_by(User.id, ref_count_subq.c.ref_count)
+        .all()
+    )
+
+    inviters_data = [
+        {
+            "inviter_id": r.inviter_id,
+            "email":     r.email,
+            "referrals": r.ref_count,
+            "balance":   f"{r.balance:.2f} $",
+            "total_credited": f"{r.total_credited:.2f} $",
+        }
+        for r in inviter_rows
+    ]
+
+    total_referrals = sum(r.ref_count for r in inviter_rows)
+
+    # --- 3. подробный список рефералов ------------------------------------
+    inviter_alias = aliased(User)
+
+    referral_rows = (
+        db.query(
+            inviter_alias.email.label("inviter_email"),
+            User.email.label("referral_email"),
+            User.created_at.label("registered_at"),
+        )
+        .join(inviter_alias, inviter_alias.id == User.invited_by_id)
+        .filter(
+            User.invited_by_id.is_not(None),
+            User.created_at >= start_dt,
+            User.created_at < end_dt,
+        )
+        .order_by(User.created_at.desc())
+        .all()
+    )
+
+    referrals_data = [
+        {
+            "inviter_email":  r.inviter_email,
+            "referral_email": r.referral_email,
+            "registered_at":  r.registered_at.isoformat() + "Z",
+        }
+        for r in referral_rows
+    ]
+
+    return {
+        "inviters": inviters_data,
+        "referrals": referrals_data,
+        "total_referrals": total_referrals,
+    }
+
+def get_user_growth_stats(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+) -> dict:
+    """
+    Возвращает:
+      {
+        "data": [
+          {"date": "2025-06-01", "new_users": 35, "total_users": 10235},
+          …
+        ],
+        "total_new_users": 120,
+        "start_total_users": 10115,
+        "end_total_users":   10235
+      }
+    • new_users   — количество регистраций за сутки;
+    • total_users — общее число пользователей *на конец дня*.
+    Гарантирует непрерывную шкалу дат (если в какой-то день нет
+    регистраций, new_users = 0).
+    """
+
+    # 1) пользователи по дням внутри периода ------------------------------
+    rows = (
+        db.query(
+            cast(User.created_at, Date).label("day"),
+            func.count(User.id).label("cnt"),
+        )
+        .filter(
+            User.created_at >= start_dt,
+            User.created_at <  end_dt,
+        )
+        .group_by("day")
+        .order_by("day")
+        .all()
+    )
+    # rows: [(2025-06-01, 35), (2025-06-02, 85), …]
+
+    # 2) приводим к словарю day → new_users
+    per_day = {r.day: r.cnt for r in rows}
+
+    # 3) формируем полный диапазон дат (чтобы не было «дыр»)
+    days = []
+    cur = start_dt.date()
+    while cur < end_dt.date():
+        days.append(cur)
+        cur += timedelta(days=1)
+
+    # 4) стартовое общее число пользователей до периода
+    start_total_users: int = (
+        db.query(func.count(User.id))
+        .filter(User.created_at < start_dt)
+        .scalar()
+    )
+
+    # 5) формируем результат + кумулятив
+    data = []
+    running_total = start_total_users
+    for d in days:
+        new_users = per_day.get(d, 0)
+        running_total += new_users
+        data.append(
+            {
+                "date": d.isoformat(),
+                "new_users": new_users,
+                "total_users": running_total,
+            }
+        )
+
+    return {
+        "data": data,
+        "total_new_users": running_total - start_total_users,
+        "start_total_users": start_total_users,
+        "end_total_users":   running_total,
     }

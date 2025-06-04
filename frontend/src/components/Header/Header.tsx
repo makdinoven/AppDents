@@ -29,7 +29,10 @@ import {
 import UserIcon from "../../assets/Icons/UserIcon.tsx";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import { useScroll } from "../../common/hooks/useScroll.ts";
-import { scrollToElementById } from "../../common/helpers/helpers.ts";
+import {
+  isPromotionLanding,
+  scrollToElementById,
+} from "../../common/helpers/helpers.ts";
 import BurgerMenu from "../ui/BurgerMenu/BurgerMenu.tsx";
 import { openModal } from "../../store/slices/landingSlice.ts";
 
@@ -45,15 +48,15 @@ const Header = () => {
   );
   const screenWidth = useScreenWidth();
   const isScrolled = useScroll();
-  const isPromotionLanding =
-    location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient) &&
-    !location.pathname.includes(Path.profile);
+  const isPromotion = isPromotionLanding(location.pathname);
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.landing.oldPrice,
   );
   const newPrice = useSelector(
     (state: AppRootStateType) => state.landing.newPrice,
+  );
+  const quantity = useSelector(
+    (state: AppRootStateType) => state.cart.quantity,
   );
 
   useEffect(() => {
@@ -63,7 +66,7 @@ const Header = () => {
   }, [localTriggerRef, setTriggerRef]);
 
   const renderLoginButton = () => {
-    if (screenWidth > 767) {
+    if (screenWidth > 768) {
       if (!isLogged) {
         return (
           <UnstyledButton
@@ -121,12 +124,12 @@ const Header = () => {
         <div className={s.content}>
           <nav className={s.nav}>
             <Link
-              className={`${s.logo} ${isPromotionLanding ? s.logoPromo : ""}`}
+              className={`${s.logo} ${isPromotion ? s.logoPromo : ""}`}
               to={Path.main}
             >
               <DentsLogo />
             </Link>
-            {isPromotionLanding ? (
+            {isPromotion ? (
               <>
                 <div className={s.nav_center}>
                   {NAV_BUTTONS_PROMOTE.map((btn) => (
@@ -161,24 +164,34 @@ const Header = () => {
             ) : (
               <>
                 <div className={s.nav_center}>
-                  {/*<button*/}
-                  {/*  onClick={() =>*/}
-                  {/*    navigate(Path.cart, {*/}
-                  {/*      state: { backgroundLocation: location },*/}
-                  {/*    })*/}
-                  {/*  }*/}
-                  {/*>*/}
-                  {/*  Открыть корзину*/}
-                  {/*</button>*/}
-                  {NAV_BUTTONS.map((btn) => (
-                    <NavButton
-                      key={btn.text}
-                      icon={btn.icon}
-                      text={btn.text}
-                      link={btn.link}
-                      isActive={location.pathname === btn.link}
-                    />
-                  ))}
+                  {NAV_BUTTONS.map((btn) => {
+                    if (btn.text.includes("cart")) {
+                      return (
+                        <NavButton
+                          key={btn.text}
+                          icon={btn.icon}
+                          text={btn.text}
+                          quantity={quantity}
+                          onClick={() =>
+                            navigate(Path.cart, {
+                              state: { backgroundLocation: location },
+                            })
+                          }
+                          isActive={location.pathname === btn.link}
+                        />
+                      );
+                    }
+
+                    return (
+                      <NavButton
+                        key={btn.text}
+                        icon={btn.icon}
+                        text={btn.text}
+                        link={btn.link}
+                        isActive={location.pathname === btn.link}
+                      />
+                    );
+                  })}
                 </div>
                 <div className={s.nav_side}>
                   <NavButton
