@@ -30,6 +30,7 @@ const ProfilePage = () => {
       </div>
       <div id={"profile_courses"}>
         <CoursesSection
+          isOffer={true}
           showSort={true}
           sectionTitle={"similarCourses"}
           pageSize={4}
