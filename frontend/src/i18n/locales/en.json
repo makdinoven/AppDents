@@ -29,6 +29,7 @@
   "open": "open",
   "view": "View",
   "viewCourse": "View course",
+  "viewBook": "View book",
   "watchLesson": "Watch lesson",
   "onlineCourse": "Online course",
   "professors": "Professors",
@@ -50,6 +51,9 @@
   "showLess": "Show Less",
   "readMore": "Read more",
   "support": "Support",
+  "copy": "Copy",
+  "copied": "Copied!",
+  "successPaymentWithBalance": "Payment successful! You now have access to the course. Remaining balance: ${{balance}}. You will be redirected to your profile shortly.",
 
   "nav": {
     "home": "Home",
@@ -179,7 +183,19 @@
     "nextLesson": "Next lesson",
     "prevLesson": "Prev lesson",
     "pdfText": "This lesson contains PDF materials instead of a video. Click the link below to open the file.",
-    "openPdf": "Open PDF materials"
+    "openPdf": "Open PDF materials",
+    "referral" : {
+      "myReferrals": "My referrals",
+      "balance": "Your balance: <1>{{count}}$</1>",
+      "spend": "Spend on any course!",
+      "link": "Invite link:",
+      "invite": "Invite a friend — earn a bonus.",
+      "friendsPurchases": "<1>50%</1> of your friends’ purchases go straight to your balance!",
+      "step_1": "1. Copy your personal link below.",
+      "step_2": "2. Send it to a friend via WhatsApp, Telegram, email — whatever works for you.",
+      "step_3": "3. Your friend buys any course — for example, one that costs <1>$19</1>.",
+      "step_4": "4. You receive <1>50%</1> of their payment (e.g. <1>$9.50</1>) as credit in your wallet."
+    }
   },
 
   "professor": {
@@ -229,6 +245,34 @@
     "title": "Page not found",
     "sorry": "Sorry, the page you are looking for does not exist",
     "goBack": "Go back"
+  },
+
+  "cart" : {
+    "title": "Your cart",
+    "balance": "Your balance",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "useBalance": "Spend balance",
+    "replenish": "Replenish balance",
+    "returnToShop": "Return to shop",
+    "inCart": "In cart",
+    "priceWithoutDiscount": "Subtotal for {{count}} courses",
+    "balanceDiscount": "From balance",
+    "currentDiscount": "Current discount",
+    "barText_1": "You now have <1>{{current}}%</1> discount.",
+    "barText_2": "Add 1 more course for <2>{{next}}%</2> !",
+    "barTextMaxDiscount": "You've reached the maximum discount of <1>{{current}}%</1>!",
+    "empty": {
+      "title": "Your cart is empty",
+      "haventAdded": "Looks like you haven’t added anything yet. Browse our catalog and add something now!"
+    }
+  },
+
+  "courses": {
+    "title": "all courses",
+    "search": "Search courses...",
+    "found": "Courses found: {{count}}"
   },
 
   "admin": {
@@ -344,7 +388,10 @@
     },
     "analytics": {
       "analytics": "Analytics",
-      "size": "Size"
+      "size": "Size",
+      "landings": "Language stats",
+      "listing": "Ad listing",
+      "referrals": "Referrals"
     }
   }
 }

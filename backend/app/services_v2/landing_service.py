@@ -218,6 +218,7 @@ def get_landing_cards(
             "main_image": landing.preview_photo,
             "old_price": landing.old_price,
             "new_price": landing.new_price,
+            "course_ids": [c.id for c in landing.courses],
         }
         cards.append(card)
 
@@ -231,6 +232,7 @@ def get_landing_cards_pagination(
     tags: Optional[List[str]] = None,
     sort: Optional[str] = None,  # "popular", "discount", "new"
     language: Optional[str] = None,
+    q: Optional[str] = None,
 ) -> dict:
     # 1) Базовый запрос и фильтры
     query = db.query(Landing).filter(Landing.is_hidden == False)
@@ -238,6 +240,12 @@ def get_landing_cards_pagination(
         query = query.filter(Landing.language == language.upper().strip())
     if tags:
         query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+    if q:
+        ilike_q = f"%{q}%"
+        query = query.filter(
+            or_(Landing.landing_name.ilike(ilike_q),
+                Landing.page_name.ilike(ilike_q))
+        )
     # 2) Считаем общее число (без пагинации)
     total = query.distinct(Landing.id).count()
     # 3) Сортировка
@@ -264,6 +272,7 @@ def get_landing_cards_pagination(
             for a in landing.authors
         ]
         cards.append({
+            "id": landing.id,
             "first_tag": first_tag,
             "landing_name": landing.landing_name,
             "authors": authors,
@@ -272,6 +281,7 @@ def get_landing_cards_pagination(
             "main_image": landing.preview_photo,
             "old_price": landing.old_price,
             "new_price": landing.new_price,
+            "course_ids": [c.id for c in landing.courses]
         })
     # 6) Подсчёт общего числа страниц
     total_pages = ceil(total / size) if total else 0
@@ -311,9 +321,10 @@ def get_purchases_by_language(
     results = query.all()
 
     return [
-        {"language": row.language, "count": row.purchase_count, "total_amount": f"{row.total_amount} $"}
+        {"language": row.language, "count": row.purchase_count, "total_amount": f"{row.total_amount:.2f} $"}
         for row in results
     ]
+
 def check_and_reset_ad_flag(landing: Landing, db: Session):
     """
     Если у лендинга in_advertising=True, но ad_flag_expires_at < now,

@@ -12,8 +12,23 @@
 .analytics_options {
   height: fit-content;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
+}
+
+.analytics_options_three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.totals_row {
+  @include clamped-p2;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+
+  span {
+    margin-left: 5px;
+  }
 }
 
 .languages_table {
@@ -29,14 +44,18 @@
 
   input {
     width: 100%;
+    min-height: 35px;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
-  //.analytics_options {
-  //  @include flex-column;
-  //  gap: 10px;
-  //}
+  .analytics_options {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .totals_row {
+    justify-content: space-between;
+  }
 
   //.languages_table {
   //  width: 100%;

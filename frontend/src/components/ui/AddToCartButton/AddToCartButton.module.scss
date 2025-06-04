@@ -1,11 +1,36 @@
 .btn {
+  overflow: hidden;
+  position: relative;
   @include transition();
   @include flex-center;
   border: 2px solid $accent;
   border-radius: 20px;
   padding: 8px 17px 8px 13px;
-  width: 100%;
   flex-shrink: 0;
+  gap: 5px;
+  font-size: 18px;
+
+  &.primary {
+    background-color: $primary;
+    border-color: $primary;
+    color: $text-color;
+    svg {
+      path {
+        stroke: $text-color;
+      }
+    }
+
+    &.active {
+      color: $accent;
+      border-color: $accent;
+
+      svg {
+        path {
+          stroke: $accent;
+        }
+      }
+    }
+  }
 
   svg {
     width: clamp(20px, 2.5vw, 32px);
@@ -19,30 +44,48 @@
     &:hover {
       background-color: $text-color;
       border-color: $text-color;
+      color: $primary;
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
     }
   }
 
   &.active {
-    background-color: $accent;
-    border-color: $accent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 15px;
+    background-color: $text-color;
+    border-color: $text-color;
+
+    svg {
+      width: 25px;
+      height: 25px;
+    }
   }
 
   &:active {
-    background-color: $accent;
-    border-color: $accent;
+    background-color: $text-color;
+    border-color: $text-color;
     svg {
       path {
-        stroke: $text-color;
+        stroke: $accent;
       }
     }
   }
 
   @media (max-width: $middle-breakpoint) {
-    & {
-      z-index: 5;
-      padding: 3px 15px;
-      position: absolute;
-      bottom: -41px;
+    &.active {
+      padding: 3.5px 15px;
+
+      svg {
+        width: 21px;
+        height: 21px;
+      }
     }
   }
 }

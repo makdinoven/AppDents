@@ -14,10 +14,11 @@ import PaymentModal, {
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
-
-// import Book from "../../../../assets/Icons/Book.tsx";
+import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
 
 interface CourseCardProps {
+  isClient?: boolean;
+  id: number;
   name: string;
   tag: string;
   link: string;
@@ -27,9 +28,12 @@ interface CourseCardProps {
   new_price: number;
   authors: any[];
   lessons_count: string;
+  course_ids: number[];
 }
 
 const CourseCard = ({
+  isClient,
+  id,
   name,
   tag,
   link,
@@ -39,6 +43,7 @@ const CourseCard = ({
   index,
   authors,
   lessons_count,
+  course_ids,
 }: CourseCardProps) => {
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
@@ -46,6 +51,7 @@ const CourseCard = ({
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
+  const cleanLink = link.replace(/^\/(client\/)?course/, "");
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -63,8 +69,6 @@ const CourseCard = ({
   };
 
   const fetchLandingDataAndOpenModal = async () => {
-    const cleanLink = link.replace(/^\/(client\/)?course/, "");
-
     try {
       const res = await mainApi.getLanding(cleanLink);
       setPaymentData({
@@ -150,16 +154,27 @@ const CourseCard = ({
                 {paymentDataLoading && <LoaderOverlay />}
                 <Trans i18nKey={"buyNow"} />
               </button>
-              {/*<AddToCartButton*/}
-              {/*  handleClick={() => {*/}
-              {/*    console.log("cart");*/}
-              {/*  }}*/}
-              {/*/>*/}
+              {isClient && (
+                <AddToCartButton
+                  item={{
+                    landing: {
+                      id: id,
+                      landing_name: name,
+                      authors: authors,
+                      page_name: cleanLink,
+                      old_price: old_price,
+                      new_price: new_price,
+                      preview_photo: photo,
+                      course_ids: course_ids,
+                    },
+                  }}
+                  className={s.cart_btn}
+                />
+              )}
             </div>
           </div>
-
-          <Link to={link} className={s.card_bottom}></Link>
         </Link>
+        <Link to={link} className={s.card_bottom}></Link>
       </li>
 
       {isModalOpen && paymentData && (

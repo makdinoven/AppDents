@@ -25,6 +25,20 @@
   color: $primary;
 }
 
+.highlight_bold {
+  color: $primary;
+  font-weight: 500;
+}
+
+.highlight_blue {
+  color: $secondary-lighter;
+}
+
+.highlight_blue_bold {
+  color: $secondary-lighter;
+  font-weight: 500;
+}
+
 .error {
   color: $error-color;
 }

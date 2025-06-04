@@ -28,6 +28,7 @@ const AdminPanel = () => {
     if (value === "analytics") {
       newParams.delete("page");
     } else {
+      newParams.delete("content");
       newParams.set("page", "1");
     }
     setSearchParams(newParams);
