@@ -29,8 +29,8 @@ services:
     restart: always
     env_file:
       - .env
-    ports:
-      - "8001:8000"
+    expose:
+      - "8000"
     depends_on:
       mysql_preprod:
         condition: service_healthy
