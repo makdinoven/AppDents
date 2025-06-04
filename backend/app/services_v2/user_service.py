@@ -553,7 +553,7 @@ def get_purchase_analytics(
     )
 
     total = base_q.count()
-    total_amount_val: float = (
+    total_amount_val: float | None = (
         db.query(func.coalesce(func.sum(Purchase.amount), 0))
         .filter(
             Purchase.created_at >= start_dt,
@@ -575,7 +575,7 @@ def get_purchase_analytics(
         {
             "user_id":   p.user_id,
             "email":     email,
-            "amount":    f"{p.amount:.2f} $",
+            "amount":    f"{(p.amount or 0):.2f} $",
             "source":    p.source.value,
             "from_ad":   p.from_ad,
             "paid_at":   p.created_at.isoformat() + "Z",
@@ -585,7 +585,7 @@ def get_purchase_analytics(
 
     result: Dict[str, Any] = {
         "total": total,
-        "total_amount": f"{total_amount_val:.2f} $",
+        "total_amount": f"{(total_amount_val or 0):.2f} $",
         "items": items,
     }
     if page and size:
