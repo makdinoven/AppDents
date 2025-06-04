@@ -94,7 +94,11 @@ const CartFooter = ({
       ),
       line: false,
       show: isLogged && isBalanceUsed,
-      component: <span className={s.blue}>- ${balance}</span>,
+      component: (
+        <span className={s.blue}>
+          - ${balance > total_amount ? total_amount : balance}
+        </span>
+      ),
     },
     {
       label: (

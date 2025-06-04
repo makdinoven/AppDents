@@ -154,11 +154,7 @@ export const denormalizeLessons = (lessons: any) => {
 };
 
 export const isPromotionLanding = (pathname: string): boolean => {
-  return (
-    pathname.includes(Path.landing) &&
-    !pathname.includes(Path.landingClient) &&
-    !pathname.includes(Path.profile)
-  );
+  return pathname === Path.landing || pathname.startsWith(`${Path.landing}/`);
 };
 
 export const formatIsoToLocalDatetime = (isoString: string): string => {

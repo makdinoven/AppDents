@@ -51,6 +51,8 @@
   "support": "Suporte",
   "copy": "Copiar",
   "copied": "Copiado!",
+  "successPaymentWithBalance": "Pagamento realizado com sucesso! Você agora tem acesso ao curso. Saldo restante: ${{balance}}. Você será redirecionado para o seu perfil em breve.",
+
 
 
   "nav": {
@@ -261,6 +263,11 @@
       "title": "Seu carrinho está vazio",
       "haventAdded": "Parece que você ainda não adicionou nada. Explore nosso catálogo e adicione algo agora!"
     }
+  },
+  "courses": {
+    "title": "todos os cursos",
+    "search": "Pesquisar cursos...",
+    "found": "Cursos encontrados: {{count}}"
   }
 
 }

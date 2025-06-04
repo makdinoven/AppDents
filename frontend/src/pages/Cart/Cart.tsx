@@ -8,7 +8,7 @@ import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseBut
 import CartItem from "./CartItem/CartItem.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
-import { removeCartItem } from "../../store/actions/cartActions.ts";
+import { getCart, removeCartItem } from "../../store/actions/cartActions.ts";
 import { CartIcon } from "../../assets/logos/index";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import CartFooter from "./CartFooter/CartFooter.tsx";
@@ -21,6 +21,7 @@ import {
 } from "../../common/helpers/commonConstants.ts";
 import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
+import { t } from "i18next";
 
 const Cart = () => {
   const location = useLocation();
@@ -115,6 +116,7 @@ const Cart = () => {
       const res = await mainApi.buyCourse(dataToSend, isLogged);
       localStorage.removeItem(REF_CODE_LS_KEY);
       const checkoutUrl = res.data.checkout_url;
+      const balanceLeft = res.data.balance_left;
       setLoading(false);
 
       if (checkoutUrl) {
@@ -128,6 +130,13 @@ const Cart = () => {
       } else {
         console.error("Checkout URL is missing");
       }
+
+      if (balanceLeft) {
+        alert(t("successPaymentWithBalance", { balance: balanceLeft }));
+        navigate(Path.profile);
+      }
+
+      dispatch(getCart());
     } catch (error) {
       setLoading(false);
       console.log(error);

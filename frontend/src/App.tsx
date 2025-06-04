@@ -29,8 +29,12 @@ function App() {
   }, [location.pathname, language]);
 
   useEffect(() => {
-    initFacebookPixel();
     dispatch(getMe());
+  }, [location.pathname]);
+
+  useEffect(() => {
+    initFacebookPixel();
+    // dispatch(getMe());
     const storedLanguage = localStorage.getItem("DENTS_LANGUAGE") || language;
     dispatch(setLanguage(storedLanguage));
   }, []);
