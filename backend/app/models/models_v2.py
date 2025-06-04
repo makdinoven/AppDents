@@ -38,7 +38,7 @@ landing_tags = Table(
 class PurchaseSource(str, PyEnum):
     HOMEPAGE                  = "HOMEPAGE"          # 1
     LANDING                   = "LANDING"           # 2
-    PROFESSORS_PAGE           = "PROFESSORS_PAGE"   # 3
+    PROFESSOR_PAGE           = "PROFESSOR_PAGE"   # 3
     CABINET_OFFER             = "CABINET_OFFER"     # 4
     PROFESSOR_OFFER           = "PROFESSOR_OFFER"   # 5
     PROFESSORS_LIST_OFFER     = "PROF_LIST_OFFER"   # 6
