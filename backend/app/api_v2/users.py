@@ -505,35 +505,34 @@ def purchase_stats(
     end_date:   dt.date | None = Query(None, description="Дата конца (YYYY-MM-DD, включительно)."),
     page: int | None = Query(None, gt=0, description="Номер страницы (опц.)"),
     size: int | None = Query(None, gt=0, le=500, description="Размер страницы (опц.)"),
+    source: str | None = Query(
+        None,
+        description="Показывать только покупки с данным source (например LANDING, CART, HOMEPAGE).",
+    ),
     db: Session = Depends(get_db),
 ):
     """
     Список покупок за период.
 
-    Правила выбора периода:
-
-    * **нет** `start_date`, `end_date` → *за всё время*.
+    * **нет** `start_date`, `end_date` → за всё время.
     * только `start_date` → от начала `start_date` до текущего момента.
-    * обе даты         → от начала `start_date`
-                         до конца `end_date` (00:00 следующего дня).
-    * только `end_date` → 400 Bad Request.
+    * обе даты            → от начала `start_date` до конца `end_date`
+                             (00:00 следующего дня).
+    * только `end_date`   → 400 Bad Request.
 
-    Можно задать `page` и `size` для пагинации.
+    Можно задать `page`/`size` (пагинация) и `source` (фильтр).
     """
     now = dt.datetime.utcnow()
 
     if start_date is None and end_date is None:
         start_dt = dt.datetime.min
         end_dt   = now
-
     elif start_date is not None and end_date is None:
         start_dt = dt.datetime.combine(start_date, dt.time.min)
         end_dt   = now
-
     elif start_date is not None and end_date is not None:
         start_dt = dt.datetime.combine(start_date, dt.time.min)
         end_dt   = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
-
     else:
         raise HTTPException(
             status_code=400,
@@ -546,4 +545,5 @@ def purchase_stats(
         end_dt,
         page=page,
         size=size,
+        source_filter=source,
     )
