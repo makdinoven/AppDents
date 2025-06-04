@@ -1,35 +1,33 @@
 .analytics_page {
   @include flex-column;
   gap: 20px;
-}
 
-.date_input {
-  border: 1.5px solid $hover-color;
-  padding: 0 15px;
-  border-radius: 15px;
-  min-height: 39px;
+  h2 {
+    width: 100%;
+    text-align: center;
+    @include clamped-h2;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
 }
 
 .analytics_options {
   height: fit-content;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-items: flex-end;
   gap: 20px;
+
+  p {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    @include clamped-p2();
+  }
 }
 
 .analytics_options_three {
   grid-template-columns: 1fr 1fr 1fr;
-}
-
-.totals_row {
-  @include clamped-p2;
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-
-  span {
-    margin-left: 5px;
-  }
 }
 
 .languages_table {
@@ -37,34 +35,15 @@
   flex: 1;
 }
 
-.input_wrapper {
-  @include clamped-p2;
-  @include flex-column;
-  justify-content: flex-end;
-  position: relative;
-  gap: 5px;
-
-  label {
-    margin-left: 5px;
-  }
-
-  input {
-    @include transition;
-    width: 100%;
-    min-height: 35px;
-    &:hover {
-      background-color: $hover-color;
-    }
-  }
-}
-
 @media (max-width: $mobile-breakpoint) {
   .analytics_options {
     grid-template-columns: 1fr 1fr;
   }
 
-  .totals_row {
-    justify-content: space-between;
+  .analytics_page {
+    h2 {
+      margin-bottom: 20px;
+    }
   }
 
   //.languages_table {

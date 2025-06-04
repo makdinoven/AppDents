@@ -391,7 +391,8 @@
       "size": "Size",
       "landings": "Language stats",
       "listing": "Ad listing",
-      "referrals": "Referrals"
+      "referrals": "Referrals",
+      "purchases": "Purchases"
     }
   }
 }
