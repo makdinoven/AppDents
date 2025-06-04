@@ -403,6 +403,8 @@ def get_referral_analytics(
     referral_rows = (
         db.query(
             inviter_alias.email.label("inviter_email"),
+            inviter_alias.id.label("inviter_id"),
+            User.id.label("referral_id"),
             User.email.label("referral_email"),
             User.created_at.label("registered_at"),
         )
@@ -418,6 +420,7 @@ def get_referral_analytics(
 
     referrals_data = [
         {
+            "inviter_id": r.inviter_id,
             "inviter_email":  r.inviter_email,
             "referral_id": r.referral_id,
             "referral_email": r.referral_email,
