@@ -76,5 +76,19 @@ def clear_cart(db: Session, user: User):
     db.refresh(cart)
     return cart
 
+def remove_landing_raw(db: Session, cart: Cart, landing_id: int) -> None:
+    item = next((i for i in cart.items if i.landing_id == landing_id), None)
+    if item:
+        db.delete(item)
+
+def remove_silent(db: Session, user: User, landing_id: int) -> Cart:
+    """Удаляет landing без HTTP-исключений и пересчёта ошибок."""
+    cart = get_or_create_cart(db, user)
+    remove_landing_raw(db, cart, landing_id)
+    _recalc_total(cart)
+    db.commit()
+    db.refresh(cart)
+    return cart
+
 
 
