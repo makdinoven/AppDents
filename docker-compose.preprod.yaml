@@ -40,16 +40,16 @@ services:
     volumes:
       - ./assets:/var/www/AppDents/assets
 
-#  frontend:
-#    build:
-#      context: ./frontend
-#      dockerfile: Dockerfile
-#    container_name: frontend_preprod
-#    restart: always
-#    ports:
-#      - "3003:80"
-#    networks:
-#      - pub
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend_preprod
+    restart: always
+    ports:
+      - "3003:80"
+    networks:
+      - pub
 
   adminer:
     image: adminer
@@ -72,6 +72,7 @@ services:
     restart: always
     depends_on:
       - backend
+      - frontend
       - adminer
     ports:
       - "80:80"
