@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart
+from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, PurchaseSource
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -518,29 +518,14 @@ def get_purchase_analytics(
     *,
     page: int | None = None,
     size: int | None = None,
+    source_filter: str | None = None,        # ← Фильтр по source
 ) -> Dict[str, Any]:
     """
-    Возвращает словарь:
-      {
-        "total": 123,
-        "total_pages": 7,
-        "page": 1,
-        "size": 20,
-        "total_amount": "999.90 $",
-        "items": [
-          {
-            "user_id":  42,
-            "email":    "[email protected]",
-            "amount":   "49.90 $",
-            "source":   "LANDING",
-            "from_ad":  true,
-            "paid_at":  "2025-06-02T13:44:32Z"
-          },
-          …
-        ]
-      }
-    Если page/size не заданы → возвращает *все* записи без пагинации,
-    поля total_pages/page/size опущены.
+    Аналитика покупок.
+
+    Если page/size не заданы — возвращаем все записи без пагинации.
+    При source_filter принимаем строку-значение enum (LANDING, CART …)
+    и оставляем только такие покупки.
     """
 
     base_q = (
@@ -553,20 +538,37 @@ def get_purchase_analytics(
             Purchase.created_at >= start_dt,
             Purchase.created_at <  end_dt,
         )
-        .order_by(Purchase.created_at.desc())
     )
 
+    # ── фильтр по source --------------------------------------------------
+    if source_filter:
+        try:
+            src_enum = PurchaseSource[source_filter.upper()]
+        except KeyError:
+            # неизвестное значение — сразу отдаём «пустой» результат
+            return {
+                "total": 0,
+                "total_amount": "0.00 $",
+                "items": [],
+            }
+        base_q = base_q.filter(Purchase.source == src_enum)
+
+    # сортировка по дате ↓
+    base_q = base_q.order_by(Purchase.created_at.desc())
+
     total = base_q.count()
+
     total_amount_val: float | None = (
         db.query(func.coalesce(func.sum(Purchase.amount), 0))
         .filter(
             Purchase.created_at >= start_dt,
             Purchase.created_at <  end_dt,
+            *( [Purchase.source == src_enum] if source_filter else [] )
         )
         .scalar()
     )
 
-    # пагинация --------------------------------------------
+    # ── пагинация ---------------------------------------------------------
     if page and size:
         offset = (page - 1) * size
         rows = base_q.offset(offset).limit(size).all()
