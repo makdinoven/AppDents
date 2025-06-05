@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional, Dict
 from ..db.database import get_db
-from ..dependencies.auth import get_current_user
+from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
@@ -563,7 +563,7 @@ def grant_free_access(
     landing_id: int,
     data: FreeAccessRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """
     • Авторизованным — просто выдаём partial.
