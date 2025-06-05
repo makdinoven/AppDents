@@ -149,4 +149,14 @@ export const adminApi = {
       params: params,
     });
   },
+  getPurchases(params: any) {
+    return instance.get("users/analytics/purchases", {
+      params: params,
+    });
+  },
+  getUserGrowth(params: any) {
+    return instance.get("users/analytics/user-growth", {
+      params: params,
+    });
+  },
 };

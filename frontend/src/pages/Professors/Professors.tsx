@@ -58,6 +58,7 @@ const Professors = () => {
       </ListController>
       {!isFirstLoad && (
         <CoursesSection
+          isOffer={true}
           showSort={true}
           sectionTitle={"other.otherCourses"}
           pageSize={4}

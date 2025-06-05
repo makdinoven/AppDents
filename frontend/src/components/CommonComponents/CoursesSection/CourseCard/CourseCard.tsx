@@ -28,11 +28,13 @@ interface CourseCardProps {
   new_price: number;
   authors: any[];
   lessons_count: string;
+  isOffer?: boolean;
   course_ids: number[];
 }
 
 const CourseCard = ({
   isClient,
+  isOffer = false,
   id,
   name,
   tag,
@@ -186,6 +188,7 @@ const CourseCard = ({
           onClose={handleCloseModal}
         >
           <PaymentModal
+            isOffer={isOffer}
             paymentData={paymentData}
             handleCloseModal={handleCloseModal}
           />
