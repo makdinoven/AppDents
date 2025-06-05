@@ -17,7 +17,9 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum
-from ..services_v2.user_service import add_partial_course_to_user
+from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
+    generate_random_password, get_user_by_email
+from ..utils.email_sender import send_password_to_user
 
 router = APIRouter()
 
@@ -559,15 +561,15 @@ def track_ad(slug: str,
 @router.post("/free-access/{landing_id}")
 def grant_free_access(
     landing_id: int,
+    data: FreeAccessRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """
-    Вызывается фронтом, когда пользователь оставил e-mail
-    на «бесплатном» лендинге.
-
-    • всем курсам лендинга выдаём частичный доступ;
-    • ничего не покупаем, деньги не списываем.
+    • Авторизованным — просто выдаём partial.
+    • Неавторизованным — создаём аккаунт (если нужно), даём partial,
+      шлём пароль, логиним (JWT в ответе).
+    • Один бесплатный курс на аккаунт.
     """
     landing = (
         db.query(Landing)
@@ -578,10 +580,37 @@ def grant_free_access(
     if not landing:
         raise HTTPException(404, "Landing not found")
 
-    for course in landing.courses:
-        add_partial_course_to_user(db, current_user.id, course.id)
+    # ----- определяем / создаём пользователя -----
+    random_pass = None
+    if current_user:
+        user = current_user
+    else:
+        if not data.email:
+            raise HTTPException(400, "email_required")
+        user = get_user_by_email(db, data.email)
+        if not user:
+            random_pass = generate_random_password()
+            user = create_user(db, data.email, random_pass)
+            send_password_to_user(user.email, random_pass, data.region)
+        # автологин
+        token = create_access_token({"user_id": user.id})
 
-    return {
+    # ----- пытаемся выдать partial -----
+    for course in landing.courses:
+        try:
+            add_partial_course_to_user(db, user.id, course.id)
+        except ValueError as e:
+            if str(e) == "free_course_already_taken":
+                raise HTTPException(409, "Free course already used")
+            # дубликат бесплатного доступа к тому же курсу — молча игнорируем
+
+    resp = {
         "detail": "Partial access granted",
         "course_ids": [c.id for c in landing.courses],
     }
+    if not current_user:
+        resp["access_token"] = token
+        if random_pass:
+            resp["password"] = random_pass   # фронт покажет и сразу затрёт
+
+    return resp
