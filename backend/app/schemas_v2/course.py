@@ -12,6 +12,9 @@ class Section(BaseModel):
     section_name: str = ""
     lessons: Optional[List[Lesson]] = []
 
+class LandingSnippet(BaseModel):
+    id: int
+
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):
     id: int
@@ -20,6 +23,7 @@ class CourseDetailResponse(BaseModel):
     # Теперь sections возвращается как список объектов, например: [{ "1": { ... } }, { "2": { ... } }]
     sections: List[Dict[str, Section]]
     access_level: Literal["full", "partial"]
+    cheapest_landing: LandingSnippet | None = None
 
     class Config:
         orm_mode = True

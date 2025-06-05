@@ -10,6 +10,7 @@ from ..services_v2.course_service import create_course, delete_course, search_co
 from ..services_v2.course_service import get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
     CourseListPageResponse
+from ..services_v2.landing_service import get_cheapest_landing_for_course
 
 router = APIRouter()
 
@@ -96,12 +97,21 @@ def get_course_by_id(
             data["lessons"] = new_lessons
             sec[key] = data
 
+    cheapest_landing = None
+    if not has_full:  # full-покупателям не нужно
+        landing_obj = get_cheapest_landing_for_course(db, course_id)
+        if landing_obj:
+            cheapest_landing = {
+                "id": landing_obj.id,
+            }
+
     return {
         "id": course.id,
         "name": course.name,
         "description": course.description,
         "sections": sections,
         "access_level": "full" if has_full else "partial",
+        "cheapest_landing": cheapest_landing,
     }
 
 
