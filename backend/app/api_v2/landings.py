@@ -355,6 +355,10 @@ def get_cards(
         min_length=1,
         description="Строка поиска (landing_name, page_name)"
     ),
+    single_course: Optional[bool] = Query(
+        False,
+        description="Если true — только лендинги, у которых ровно один курс"
+    ),
     page: int = Query(1, ge=1, description="Номер страницы"),
     size: int = Query(20, gt=0, description="Размер страницы"),
     db: Session = Depends(get_db),
@@ -367,7 +371,9 @@ def get_cards(
         sort=sort,
         language=language,
         q=q,
+        single_course=single_course,
     )
+
 
 
 @router.get("/search", response_model=LandingSearchResponse)

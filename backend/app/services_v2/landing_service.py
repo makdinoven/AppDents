@@ -230,9 +230,10 @@ def get_landing_cards_pagination(
     page: int = 1,
     size: int = 20,
     tags: Optional[List[str]] = None,
-    sort: Optional[str] = None,  # "popular", "discount", "new"
+    sort: Optional[str] = None,      # "popular", "discount", "new"
     language: Optional[str] = None,
     q: Optional[str] = None,
+    single_course: bool = False,     # ← новый параметр
 ) -> dict:
     # 1) Базовый запрос и фильтры
     query = db.query(Landing).filter(Landing.is_hidden == False)
@@ -246,8 +247,14 @@ def get_landing_cards_pagination(
             or_(Landing.landing_name.ilike(ilike_q),
                 Landing.page_name.ilike(ilike_q))
         )
-    # 2) Считаем общее число (без пагинации)
-    total = query.distinct(Landing.id).count()
+
+    # 1.1) Группируем по лендингу и, если нужно, оставляем ровно один курс
+    query = query.join(Landing.courses).group_by(Landing.id)
+    if single_course:
+        query = query.having(func.count(Course.id) == 1)
+
+    # 2) Общее число
+    total = query.count()
     # 3) Сортировка
     if sort == "popular":
         query = query.order_by(Landing.sales_count.desc())
