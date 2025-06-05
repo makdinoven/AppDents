@@ -553,3 +553,33 @@ def track_ad(slug: str,
         ip=request.client.host
     )
     return {"ok": True}
+
+@router.post("/free-access/{landing_id}")
+def grant_free_access(
+    landing_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Вызывается фронтом, когда пользователь оставил e-mail
+    на «бесплатном» лендинге.
+
+    • всем курсам лендинга выдаём частичный доступ;
+    • ничего не покупаем, деньги не списываем.
+    """
+    landing = (
+        db.query(Landing)
+          .options(selectinload(Landing.courses))
+          .filter(Landing.id == landing_id)
+          .first()
+    )
+    if not landing:
+        raise HTTPException(404, "Landing not found")
+
+    for course in landing.courses:
+        add_partial_course_to_user(db, current_user.id, course.id)
+
+    return {
+        "detail": "Partial access granted",
+        "course_ids": [c.id for c in landing.courses],
+    }
