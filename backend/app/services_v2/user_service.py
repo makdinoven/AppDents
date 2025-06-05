@@ -10,7 +10,8 @@ from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, PurchaseSource
+from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, \
+    PurchaseSource, FreeCourseAccess
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -195,6 +196,57 @@ def remove_course_from_user(db: Session, user_id: int, course_id: int) -> None:
     if course in user.courses:
         user.courses.remove(course)
         db.commit()
+
+# ──────────────────────────────────────────────────────────────
+#  Бесплатный доступ к первому уроку
+# ──────────────────────────────────────────────────────────────
+def add_partial_course_to_user(db: Session, user_id: int, course_id: int) -> None:
+    """
+    • Один free-курс на аккаунт.
+    • Нельзя брать free, если курс уже куплен.
+    • Нельзя дублировать уже полученный partial.
+    Исключения → ValueError с кодом-строкой.
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("user_not_found")
+
+    # курс уже куплен полностью
+    if any(c.id == course_id for c in user.courses):
+        raise ValueError("course_already_purchased")
+
+    # он же уже получен бесплатно
+    exists = (
+        db.query(FreeCourseAccess)
+          .filter_by(user_id=user_id, course_id=course_id)
+          .first()
+    )
+    if exists:
+        raise ValueError("partial_already_granted")
+
+    # бесплатный курс уже был, а просят другой
+    if user.free_trial_used:
+        raise ValueError("free_course_already_taken")
+
+    # выдаём
+    db.add(FreeCourseAccess(user_id=user_id, course_id=course_id))
+    user.free_trial_used = True
+    db.commit()
+
+
+
+
+def promote_course_to_full(db: Session, user_id: int, course_id: int) -> None:
+    """
+    После оплаты убираем частичный доступ и
+    добавляем курс в полную коллекцию.
+    """
+    add_course_to_user(db, user_id, course_id)
+    db.query(FreeCourseAccess).filter_by(
+        user_id=user_id, course_id=course_id
+    ).delete()
+    db.commit()
+
 
 def delete_user(db: Session, user_id: int) -> None:
     # 1) получаем пользователя

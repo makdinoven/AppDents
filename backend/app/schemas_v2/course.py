@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Literal
+
 
 # Схема для элемента урока
 class Lesson(BaseModel):
@@ -11,6 +12,9 @@ class Section(BaseModel):
     section_name: str = ""
     lessons: Optional[List[Lesson]] = []
 
+class LandingSnippet(BaseModel):
+    id: int
+
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):
     id: int
@@ -18,6 +22,8 @@ class CourseDetailResponse(BaseModel):
     description: Optional[str] = ""
     # Теперь sections возвращается как список объектов, например: [{ "1": { ... } }, { "2": { ... } }]
     sections: List[Dict[str, Section]]
+    access_level: Literal["full", "partial"]
+    cheapest_landing: LandingSnippet | None = None
 
     class Config:
         orm_mode = True

@@ -157,3 +157,8 @@ class LandingListPageResponse(BaseModel):
     page: int             # текущая страница
     size: int             # размер страницы
     items: List[LandingListResponse]
+
+class FreeAccessRequest(BaseModel):
+    email: str
+    region: str = "EN"
+    ref_code: str | None = None

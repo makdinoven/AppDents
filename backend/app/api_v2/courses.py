@@ -3,12 +3,14 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..db.database import get_db
 from ..dependencies.access_course import get_course_detail_with_access
+from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Course, User
 from ..services_v2.course_service import create_course, delete_course, search_courses_paginated, list_courses_paginated
 from ..services_v2.course_service import get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
     CourseListPageResponse
+from ..services_v2.landing_service import get_cheapest_landing_for_course
 
 router = APIRouter()
 
@@ -51,22 +53,67 @@ def search_course_listing(
     return search_courses_paginated(db, q=q, page=page, size=size)
 
 @router.get("/detail/{course_id}", response_model=CourseDetailResponse)
-def get_course_by_id(course_id: int, db: Session = Depends(get_db), course : Course = Depends(get_course_detail_with_access)):
+def get_course_by_id(
+    course_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    full     – курс куплен, все видео доступны;
+    partial  – курс получен бесплатно, доступ только к первому видео,
+               остальные уроки видны, но без ссылки.
+    """
+    print("User %s requests course %s", current_user.email, course_id)
+
     course = get_course_detail(db, course_id)
-    # Если sections хранится как словарь, преобразуем его в список
-    sections = course.sections
-    if isinstance(sections, dict):
-        sections_list = [{k: v} for k, v in sections.items()]
-    elif isinstance(sections, list):
-        sections_list = sections
-    else:
-        sections_list = []
+
+    # --- определяем уровень доступа ---
+    has_full  = any(c.id == course_id for c in current_user.courses)
+    has_part  = hasattr(current_user, "partial_course_ids") \
+                and course_id in current_user.partial_course_ids
+
+    if not (has_full or has_part):
+        print("!Access denied for user %s to course %s", current_user.id, course_id)
+        raise HTTPException(403, "Нет доступа к курсу")
+
+    # --- нормализуем sections в список ---
+    raw_sections = course.sections or {}
+    sections = [{k: v} for k, v in raw_sections.items()] if isinstance(raw_sections, dict) \
+               else list(raw_sections)
+
+    # --- если доступ частичный, скрываем все video_link кроме первого ---
+    if has_part:
+        unlocked = False                       # флаг: уже выдали одну ссылку
+        for sec in sections:
+            key, data = next(iter(sec.items()))
+            new_lessons = []
+            for lesson in data["lessons"]:
+                lesson_copy = dict(lesson)     # не трогаем оригинал из БД
+                if unlocked:
+                    lesson_copy.pop("video_link", None)  # «замок»
+                else:
+                    unlocked = True            # оставляем ссылку лишь у самого первого
+                new_lessons.append(lesson_copy)
+            data["lessons"] = new_lessons
+            sec[key] = data
+
+    cheapest_landing = None
+    if not has_full:  # full-покупателям не нужно
+        landing_obj = get_cheapest_landing_for_course(db, course_id)
+        if landing_obj:
+            cheapest_landing = {
+                "id": landing_obj.id,
+            }
+
     return {
         "id": course.id,
         "name": course.name,
         "description": course.description,
-        "sections": sections_list
+        "sections": sections,
+        "access_level": "full" if has_full else "partial",
+        "cheapest_landing": cheapest_landing,
     }
+
 
 @router.put("/{course_id}", response_model=CourseDetailResponse)
 def update_course_full(
