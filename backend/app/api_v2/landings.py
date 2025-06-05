@@ -16,7 +16,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     track_ad_visit
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
-    LandingListPageResponse, LangEnum
+    LandingListPageResponse, LangEnum, FreeAccessRequest
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
 from ..utils.email_sender import send_password_to_user
@@ -563,7 +563,7 @@ def grant_free_access(
     landing_id: int,
     data: FreeAccessRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User | None = Depends(get_current_user),
 ):
     """
     • Авторизованным — просто выдаём partial.
