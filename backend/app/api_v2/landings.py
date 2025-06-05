@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional, Dict
 from ..db.database import get_db
+from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
@@ -15,7 +16,10 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     track_ad_visit
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
-    LandingListPageResponse, LangEnum
+    LandingListPageResponse, LangEnum, FreeAccessRequest
+from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
+    generate_random_password, get_user_by_email
+from ..utils.email_sender import send_password_to_user
 
 router = APIRouter()
 
@@ -74,7 +78,17 @@ def get_landing_by_id(
           .first()
     )
     if not landing:
-        raise HTTPException(status_code=404, detail="Landing not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "LANDING_NOT_FOUND",
+                    "message": "Landing not found",
+                    "translation_key": "error.landing_not_found",
+                    "params": {}
+                }
+            },
+        )
 
     # 2) Приводим lessons_info к списку
     lessons = landing.lessons_info
@@ -553,3 +567,112 @@ def track_ad(slug: str,
         ip=request.client.host
     )
     return {"ok": True}
+
+@router.post("/free-access/{landing_id}")
+def grant_free_access(
+    landing_id: int,
+    data: FreeAccessRequest,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """
+    • Авторизованным — просто выдаём partial.
+    • Неавторизованным — создаём аккаунт (если нужно), даём partial,
+      шлём пароль, логиним (JWT в ответе).
+    • Один бесплатный курс на аккаунт.
+    """
+    landing = (
+        db.query(Landing)
+          .options(selectinload(Landing.courses))
+          .filter(Landing.id == landing_id)
+          .first()
+    )
+    if not landing:
+        raise HTTPException(404, "Landing not found")
+    inviter = None
+    if data.ref_code:
+        inviter = (
+            db.query(User)
+            .filter(User.referral_code == data.ref_code)
+            .first()
+        )
+        if not inviter:
+            print("Ref-code %s не найден", data.ref_code)
+
+    # ----- определяем / создаём пользователя -----
+    random_pass = None
+    if current_user:
+        user = current_user
+    else:
+        if not data.email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": {
+                        "code": "EMAIL_REQUIRED",
+                        "message": "E-mail required",
+                        "translation_key": "error.email_required",
+                        "params": {}
+                    }
+                },
+            )
+        user = get_user_by_email(db, data.email)
+        if not user:
+            random_pass = generate_random_password()
+            user = create_user(db, data.email, random_pass, invited_by=inviter)
+            send_password_to_user(user.email, random_pass, data.region)
+        # автологин
+        token = create_access_token({"user_id": user.id})
+
+    # ----- пытаемся выдать partial -----
+    for course in landing.courses:
+        try:
+            add_partial_course_to_user(db, user.id, course.id)
+        except ValueError as exc:
+            if str(exc) == "free_course_already_taken":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "FREE_COURSE_ALREADY_TAKEN",
+                            "message": "Free course already used",
+                            "translation_key": "error.free_course_already_taken",
+                            "params": {}
+                        }
+                    },
+                )
+            elif str(exc) == "course_already_purchased":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "COURSE_ALREADY_PURCHASED",
+                            "message": "Course already purchased",
+                            "translation_key": "error.course_already_purchased",
+                            "params": {}
+                        }
+                    },
+                )
+            elif str(exc) == "partial_already_granted":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "PARTIAL_ALREADY_GRANTED",
+                            "message": "Partial access already granted",
+                            "translation_key": "error.partial_already_granted",
+                            "params": {}
+                        }
+                    },
+                )
+
+    resp = {
+        "detail": "Partial access granted",
+        "course_ids": [c.id for c in landing.courses],
+    }
+    if not current_user:
+        resp["access_token"] = token
+        if random_pass:
+            resp["password"] = random_pass   # фронт покажет и сразу затрёт
+
+    return resp

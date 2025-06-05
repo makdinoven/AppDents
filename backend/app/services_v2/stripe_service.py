@@ -515,6 +515,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                          user.id, course_obj.name, course_obj.id)
         else:
             add_course_to_user(db, user.id, course_obj.id)
+            from ..services_v2.user_service import promote_course_to_full
+            promote_course_to_full(db, user.id, course_obj.id)
             new_courses.append(course_obj)
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)

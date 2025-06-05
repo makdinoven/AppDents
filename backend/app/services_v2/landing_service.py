@@ -428,3 +428,29 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
         landing.in_advertising = True
         landing.ad_flag_expires_at = datetime.utcnow() + AD_TTL
     db.commit()
+
+def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
+    """
+    Возвращает объект Landing с минимальным new_price
+    для заданного course_id. Скрытые лендинги (is_hidden=True)
+    игнорируются.  new_price приводим к float для корректного сравнения.
+    """
+    rows = (
+        db.query(Landing)
+          .join(Landing.courses)
+          .filter(
+              Course.id == course_id,
+              Landing.is_hidden == False,
+          )
+          .all()
+    )
+    if not rows:
+        return None
+
+    def _price(landing: Landing) -> float:
+        try:
+            return float(landing.new_price)
+        except Exception:
+            return float("inf")
+
+    return min(rows, key=_price)
