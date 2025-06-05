@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Purchase
+from ..models.models_v2 import User, Purchase, Course
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -246,10 +246,43 @@ def purchase_course(purchase_data: UserAddCourse, current_user: User = Depends(g
     add_course_to_user(db, current_user.id, purchase_data.course_id)
     return {"message": "Курс успешно куплен"}
 
-@router.get("/me/courses", summary="Получить купленные курсы пользователя", response_model=List[CourseListResponse])
-def get_purchased_courses(current_user: User = Depends(get_current_user)):
-    purchased_courses = current_user.courses
-    return purchased_courses
+@router.get("/me/courses", summary="Получить курсы пользователя")
+def get_user_courses(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает список всех курсов со статусом:
+      • full     – куплен,
+      • partial  – бесплатный первый урок.
+    """
+    # 1) полные
+    full = {
+        c.id: {
+            "id": c.id,
+            "name": c.name,
+            "access_level": "full",
+        } for c in current_user.courses
+    }
+
+    # 2) частичные
+    partial_ids = current_user.partial_course_ids
+    if partial_ids:
+        partial_courses = (
+            db.query(Course)
+              .filter(Course.id.in_(partial_ids))
+              .all()
+        )
+        for c in partial_courses:
+            if c.id not in full:
+                full[c.id] = {
+                    "id": c.id,
+                    "name": c.name,
+                    "access_level": "partial",
+                }
+
+    # 3) сортируем по id ↓
+    return sorted(full.values(), key=lambda x: x["id"], reverse=True)
 
 @router.post("/forgot-password", summary="Восстановление пароля", response_model=dict)
 def forgot_password(

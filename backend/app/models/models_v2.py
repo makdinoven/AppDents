@@ -116,6 +116,8 @@ class User(Base):
     referral_code = Column(String(20), unique=True, index=True)
     invited_by_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+    free_trial_used = Column(Boolean, default=False, nullable=False)   # <- NEW
+
 
     cart = relationship("Cart", uselist=False, back_populates="user")
 
