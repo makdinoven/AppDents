@@ -582,7 +582,7 @@ def get_purchase_analytics(
             "amount":    f"{(p.amount or 0):.2f} $",
             "source":    p.source.value,
             "from_ad":   p.from_ad,
-            "paid_at":   p.created_at.isoformat() + "Z",
+            "paid_at":   p.created_at.isoformat(),
         }
         for p, email in rows
     ]
