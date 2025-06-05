@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional, Dict
 from ..db.database import get_db
+from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author
 from ..schemas_v2.author import AuthorResponse
@@ -16,6 +17,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum
+from ..services_v2.user_service import add_partial_course_to_user
 
 router = APIRouter()
 
