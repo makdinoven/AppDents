@@ -78,7 +78,17 @@ def get_landing_by_id(
           .first()
     )
     if not landing:
-        raise HTTPException(status_code=404, detail="Landing not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "LANDING_NOT_FOUND",
+                    "message": "Landing not found",
+                    "translation_key": "error.landing_not_found",
+                    "params": {}
+                }
+            },
+        )
 
     # 2) Приводим lessons_info к списку
     lessons = landing.lessons_info
@@ -586,7 +596,17 @@ def grant_free_access(
         user = current_user
     else:
         if not data.email:
-            raise HTTPException(400, "email_required")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": {
+                        "code": "EMAIL_REQUIRED",
+                        "message": "E-mail required",
+                        "translation_key": "error.email_required",
+                        "params": {}
+                    }
+                },
+            )
         user = get_user_by_email(db, data.email)
         if not user:
             random_pass = generate_random_password()
@@ -599,10 +619,43 @@ def grant_free_access(
     for course in landing.courses:
         try:
             add_partial_course_to_user(db, user.id, course.id)
-        except ValueError as e:
-            if str(e) == "free_course_already_taken":
-                raise HTTPException(409, "Free course already used")
-            # дубликат бесплатного доступа к тому же курсу — молча игнорируем
+        except ValueError as exc:
+            if str(exc) == "free_course_already_taken":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "FREE_COURSE_ALREADY_TAKEN",
+                            "message": "Free course already used",
+                            "translation_key": "error.free_course_already_taken",
+                            "params": {}
+                        }
+                    },
+                )
+            elif str(exc) == "course_already_purchased":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "COURSE_ALREADY_PURCHASED",
+                            "message": "Course already purchased",
+                            "translation_key": "error.course_already_purchased",
+                            "params": {}
+                        }
+                    },
+                )
+            elif str(exc) == "partial_already_granted":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail={
+                        "error": {
+                            "code": "PARTIAL_ALREADY_GRANTED",
+                            "message": "Partial access already granted",
+                            "translation_key": "error.partial_already_granted",
+                            "params": {}
+                        }
+                    },
+                )
 
     resp = {
         "detail": "Partial access granted",
