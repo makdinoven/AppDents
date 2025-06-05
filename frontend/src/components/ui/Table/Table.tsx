@@ -15,7 +15,14 @@ const Table = <T extends Record<string, any>>({
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
-  const excludedKeys = ["slug", "landing_slug", "inviter_id", "course_id"];
+  const excludedKeys = [
+    "slug",
+    "landing_slug",
+    "inviter_id",
+    "referral_id",
+    "course_id",
+    "user_id",
+  ];
   const headers = Object.keys(data[0]).filter(
     (key) => !excludedKeys.includes(key),
   );
@@ -25,7 +32,7 @@ const Table = <T extends Record<string, any>>({
       const slug = row.slug || row.landing_slug;
       return (
         <a
-          href={`${Path.landingClient}/${slug}`}
+          href={`/${Path.landingClient}/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -34,7 +41,30 @@ const Table = <T extends Record<string, any>>({
       );
     }
 
-    if (key === "registered_at" || key === "created_at") {
+    if (
+      key === "email" ||
+      key === "inviter_email" ||
+      key === "referral_email"
+    ) {
+      const id =
+        key === "email" || key === "inviter_email"
+          ? row.inviter_id
+            ? row.inviter_id
+            : row.user_id
+          : row.referral_id;
+
+      return (
+        <a
+          href={`${Path.userDetail}/${id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {value}
+        </a>
+      );
+    }
+
+    if (key === "registered_at" || key === "created_at" || key === "paid_at") {
       return formatIsoToLocalDatetime(value);
     }
 
