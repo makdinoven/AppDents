@@ -170,3 +170,7 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
 
   return `${hours}:${minutes} ${day}.${month}.${year} `;
 };
+
+export const getFormattedDate = (date: Date) => {
+  return date.toISOString().split("T")[0];
+};

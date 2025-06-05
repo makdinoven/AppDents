@@ -213,6 +213,7 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
           <Offer data={offerData} />
           <Faq />
           <CoursesSection
+            isOffer={true}
             isClient={isClient}
             showSort={true}
             sectionTitle={"similarCourses"}

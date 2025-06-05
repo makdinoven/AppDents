@@ -2,104 +2,100 @@ import s from "../Analytics.module.scss";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
+import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
+import { Trans } from "react-i18next";
+import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
-const getFormattedDate = (date: Date) => {
-  return date.toISOString().split("T")[0];
-};
+const AnalyticsLanguages = ({ title }: { title: string }) => {
+  const [languageStats, setLanguageStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState(() => ({
+    startDate: getFormattedDate(new Date()),
+    endDate: getFormattedDate(new Date()),
+  }));
 
-const AnalyticsLanguages = () => {
-  const [languageStats, setLanguageStats] = useState<[] | null>(null);
-  const [startDate, setStartDate] = useState<string>(() =>
-    getFormattedDate(new Date()),
-  );
-  const [endDate, setEndDate] = useState<string>(() =>
-    getFormattedDate(new Date()),
-  );
-
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStartDate(e.target.value);
+  const handleStartDateChange = (value: string) => {
+    setDateRange((prev) => ({ ...prev, startDate: value }));
   };
 
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(e.target.value);
+  const handleEndDateChange = (value: string) => {
+    setDateRange((prev) => ({ ...prev, endDate: value }));
   };
 
   useEffect(() => {
     fetchLandingsStats();
-  }, [startDate, endDate]);
+  }, [dateRange]);
 
   const fetchLandingsStats = async () => {
+    setLoading(true);
     const params = {
-      start_date: startDate,
-      end_date: endDate,
+      start_date: dateRange.startDate,
+      end_date: dateRange.endDate,
     };
 
     try {
       const res = await adminApi.getLanguageStats(params);
       setLanguageStats(res.data.data);
+      setLoading(false);
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (!languageStats) return;
-
   return (
     <>
-      <div className={s.totals_row}>
-        <p>
-          Total sales:
-          <span className={"highlight_blue_bold"}>
-            {languageStats.reduce((sum, item: any) => sum + item.count, 0)}
-          </span>
-        </p>
-        <p>
-          Total amount:
-          <span className={"highlight_blue_bold"}>
-            {languageStats
-              .reduce(
-                (sum, item: any) => sum + parseFloat(item.total_amount),
-                0,
-              )
-              .toFixed(2)}{" "}
-            $
-          </span>
-        </p>
-      </div>
+      <h2>
+        <Trans i18nKey={title} />
+      </h2>
       <div className={s.analytics_options}>
-        <div className={s.input_wrapper}>
-          <label htmlFor="start_date">Start date</label>
-          <input
-            id="start_date"
-            placeholder="Start date"
-            value={startDate}
-            className={s.date_input}
-            onChange={handleStartDateChange}
-            type="date"
-          />
-        </div>
-        <div className={s.input_wrapper}>
-          <label htmlFor="end_date">End date</label>
-          <input
-            placeholder="End date"
-            id="end_date"
-            value={endDate}
-            className={s.date_input}
-            onChange={handleEndDateChange}
-            type="date"
-          />
-        </div>
-      </div>
-      <div className={s.languages_table}>
-        <Table
-          data={languageStats}
-          columnLabels={{
-            language: "Lang",
-            count: "Sales",
-            total_amount: "Total",
-          }}
+        <DateRangeFilter
+          startDate={dateRange.startDate}
+          endDate={dateRange.endDate}
+          onEndDateChange={handleEndDateChange}
+          onStartDateChange={handleStartDateChange}
         />
+        {languageStats && (
+          <>
+            <p>
+              Sales:
+              <span className={"highlight_blue_bold"}>
+                {languageStats.reduce(
+                  (sum: number, item: any) => sum + item.count,
+                  0,
+                )}
+              </span>
+            </p>
+            <p>
+              Amount:
+              <span className={"highlight_blue_bold"}>
+                {languageStats
+                  .reduce(
+                    (sum: number, item: any) =>
+                      sum + parseFloat(item.total_amount),
+                    0,
+                  )
+                  .toFixed(2)}{" "}
+                $
+              </span>
+            </p>
+          </>
+        )}
       </div>
+      {languageStats && loading ? (
+        <Loader />
+      ) : (
+        <div className={s.languages_table}>
+          <Table
+            data={languageStats}
+            columnLabels={{
+              language: "Lang",
+              count: "Sales",
+              total_amount: "Total",
+            }}
+          />
+        </div>
+      )}
     </>
   );
 };

@@ -162,6 +162,7 @@ const ProfessorPage = () => {
           </div>
           {renderBuySection()}
           <CoursesSection
+            isOffer={true}
             showSort={true}
             sectionTitle={"other.otherCourses"}
             pageSize={6}

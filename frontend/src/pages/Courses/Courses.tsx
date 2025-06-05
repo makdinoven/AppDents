@@ -48,6 +48,7 @@ const Courses = () => {
         loadData={(params) => loadCourses(params)}
         total={total}
         totalPages={totalPages}
+        // filters={["tags", "sort", "size"]}
       >
         <CardsList
           isClient={true}
@@ -59,6 +60,7 @@ const Courses = () => {
       </ListController>
       {!isFirstLoad && (
         <CoursesSection
+          isOffer={true}
           showSort={true}
           sectionTitle={"other.otherCourses"}
           pageSize={4}
