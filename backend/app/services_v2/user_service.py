@@ -201,31 +201,39 @@ def remove_course_from_user(db: Session, user_id: int, course_id: int) -> None:
 #  Бесплатный доступ к первому уроку
 # ──────────────────────────────────────────────────────────────
 def add_partial_course_to_user(db: Session, user_id: int, course_id: int) -> None:
+    """
+    • Один free-курс на аккаунт.
+    • Нельзя брать free, если курс уже куплен.
+    • Нельзя дублировать уже полученный partial.
+    Исключения → ValueError с кодом-строкой.
+    """
     user = get_user_by_id(db, user_id)
     if not user:
-        raise ValueError(f"user {user_id} not found")
+        raise ValueError("user_not_found")
 
-    # 1) курс уже куплен полностью
+    # курс уже куплен полностью
     if any(c.id == course_id for c in user.courses):
-        return
+        raise ValueError("course_already_purchased")
 
-    # 2) пользователя уже был любой free-курс → блокируем
-    if user.free_trial_used and course_id not in [fc.course_id for fc in user.free_courses]:
-        raise ValueError("free_course_already_taken")
-
-    # 3) если именно этот курс уже выдавался – тоже ничего не делаем
+    # он же уже получен бесплатно
     exists = (
         db.query(FreeCourseAccess)
           .filter_by(user_id=user_id, course_id=course_id)
           .first()
     )
     if exists:
-        return
+        raise ValueError("partial_already_granted")
 
-    # 4) выдаём
+    # бесплатный курс уже был, а просят другой
+    if user.free_trial_used:
+        raise ValueError("free_course_already_taken")
+
+    # выдаём
     db.add(FreeCourseAccess(user_id=user_id, course_id=course_id))
-    user.free_trial_used = True          # фиксируем факт использования
+    user.free_trial_used = True
     db.commit()
+
+
 
 
 def promote_course_to_full(db: Session, user_id: int, course_id: int) -> None:

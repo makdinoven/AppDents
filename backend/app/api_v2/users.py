@@ -282,7 +282,12 @@ def get_user_courses(
                 }
 
     # 3) сортируем по id ↓
-    return sorted(full.values(), key=lambda x: x["id"], reverse=True)
+    # partial первыми, внутри групп – по id убыв.
+    return sorted(
+        full.values(),
+        key=lambda x: (0 if x["access_level"] == "partial" else 1, -x["id"]),
+    )
+
 
 @router.post("/forgot-password", summary="Восстановление пароля", response_model=dict)
 def forgot_password(
