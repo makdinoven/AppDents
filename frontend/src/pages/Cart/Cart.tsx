@@ -107,6 +107,7 @@ const Cart = () => {
       user_email: isLogged ? email : form.email,
       success_url: `${BASE_URL}${Path.successPayment}`,
       use_balance: isBalanceUsed,
+      source: "CART",
       cancel_url:
         !isLogged && rcCode
           ? `${BASE_URL}/${Path.cart}?${REF_CODE_PARAM}=${rcCode}`

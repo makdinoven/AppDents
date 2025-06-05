@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const instance = axios.create({
-  baseURL: "http://test.dent-s.com/api",
+  baseURL: "https://dent-s.com/api",
   withCredentials: false,
 });
 

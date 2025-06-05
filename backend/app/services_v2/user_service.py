@@ -1,7 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 from math import ceil
-from typing import Optional
+from typing import Optional, Dict, Any, List
 
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
-from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart
+from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, PurchaseSource
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -403,6 +403,8 @@ def get_referral_analytics(
     referral_rows = (
         db.query(
             inviter_alias.email.label("inviter_email"),
+            inviter_alias.id.label("inviter_id"),
+            User.id.label("referral_id"),
             User.email.label("referral_email"),
             User.created_at.label("registered_at"),
         )
@@ -418,7 +420,9 @@ def get_referral_analytics(
 
     referrals_data = [
         {
+            "inviter_id": r.inviter_id,
             "inviter_email":  r.inviter_email,
+            "referral_id": r.referral_id,
             "referral_email": r.referral_email,
             "registered_at":  r.registered_at.isoformat() + "Z",
         }
@@ -506,3 +510,94 @@ def get_user_growth_stats(
         "start_total_users": start_total_users,
         "end_total_users":   running_total,
     }
+
+def get_purchase_analytics(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+    *,
+    page: int | None = None,
+    size: int | None = None,
+    source_filter: str | None = None,        # ← Фильтр по source
+) -> Dict[str, Any]:
+    """
+    Аналитика покупок.
+
+    Если page/size не заданы — возвращаем все записи без пагинации.
+    При source_filter принимаем строку-значение enum (LANDING, CART …)
+    и оставляем только такие покупки.
+    """
+
+    base_q = (
+        db.query(
+            Purchase,
+            User.email.label("email"),
+        )
+        .join(User, User.id == Purchase.user_id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+        )
+    )
+
+    # ── фильтр по source --------------------------------------------------
+    if source_filter:
+        try:
+            src_enum = PurchaseSource[source_filter.upper()]
+        except KeyError:
+            # неизвестное значение — сразу отдаём «пустой» результат
+            return {
+                "total": 0,
+                "total_amount": "0.00 $",
+                "items": [],
+            }
+        base_q = base_q.filter(Purchase.source == src_enum)
+
+    # сортировка по дате ↓
+    base_q = base_q.order_by(Purchase.created_at.desc())
+
+    total = base_q.count()
+
+    total_amount_val: float | None = (
+        db.query(func.coalesce(func.sum(Purchase.amount), 0))
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+            *( [Purchase.source == src_enum] if source_filter else [] )
+        )
+        .scalar()
+    )
+
+    # ── пагинация ---------------------------------------------------------
+    if page and size:
+        offset = (page - 1) * size
+        rows = base_q.offset(offset).limit(size).all()
+        total_pages = (total + size - 1) // size
+    else:
+        rows = base_q.all()
+        total_pages = None
+
+    items: List[dict] = [
+        {
+            "user_id":   p.user_id,
+            "email":     email,
+            "amount":    f"{(p.amount or 0):.2f} $",
+            "source":    p.source.value,
+            "from_ad":   p.from_ad,
+            "paid_at":   p.created_at.isoformat(),
+        }
+        for p, email in rows
+    ]
+
+    result: Dict[str, Any] = {
+        "total": total,
+        "total_amount": f"{(total_amount_val or 0):.2f} $",
+        "items": items,
+    }
+    if page and size:
+        result.update({
+            "total_pages": total_pages,
+            "page": page,
+            "size": size,
+        })
+    return result

@@ -97,7 +97,7 @@
     "contacts.address": "X44G+755 - Mina Jebel Ali - Jabal Ali Industrial Second - Dubai - UAE",
     "contacts.phoneNumber": "+971 55 633 5434",
     "contacts.email": "dent.school.com@gmail.com",
-    "polities": "Polities",
+    "polities": "Policies",
     "product": "Product",
     "terms": "Terms of Use",
     "cookie": "Cookie Policy",
@@ -391,7 +391,8 @@
       "size": "Size",
       "landings": "Language stats",
       "listing": "Ad listing",
-      "referrals": "Referrals"
+      "referrals": "Referrals",
+      "purchases": "Purchases"
     }
   }
 }

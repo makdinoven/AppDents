@@ -25,6 +25,7 @@ import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
+  PAYMENT_SOURCES,
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
 } from "../../../common/helpers/commonConstants.ts";
@@ -57,9 +58,11 @@ export type PaymentDataType = {
 };
 
 const PaymentModal = ({
+  isOffer = false,
   paymentData,
   handleCloseModal,
 }: {
+  isOffer?: boolean;
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
@@ -87,6 +90,22 @@ const PaymentModal = ({
     }
   };
 
+  const getPaymentSource = () => {
+    const pathname = location.pathname.startsWith("/")
+      ? location.pathname
+      : "/" + location.pathname;
+
+    const sources = PAYMENT_SOURCES.filter((s) => {
+      const isCorrectType = isOffer
+        ? s.name.endsWith("_OFFER")
+        : !s.name.endsWith("_OFFER");
+      return isCorrectType && s.path && pathname.startsWith(s.path);
+    });
+
+    const sorted = sources.sort((a, b) => b.path.length - a.path.length);
+    return sorted[0]?.name || "OTHER";
+  };
+
   const balancePrice = isBalanceUsed
     ? Math.max(paymentData.total_new_price - balance!, 0)
     : paymentData.total_new_price;
@@ -101,6 +120,7 @@ const PaymentModal = ({
       user_email: isLogged ? email : form.email,
       transfer_cart: !isLogged && cartLandingIds.length > 0,
       cart_landing_ids: cartLandingIds,
+      source: getPaymentSource(),
       cancel_url:
         !isLogged && rcCode
           ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`

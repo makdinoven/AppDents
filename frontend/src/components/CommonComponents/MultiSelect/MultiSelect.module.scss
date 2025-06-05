@@ -1,6 +1,7 @@
 .multi_select {
   @include clamped-p2;
   @include flex-column;
+  justify-content: flex-end;
   position: relative;
   //gap: 5px;
   //min-height: 95px;

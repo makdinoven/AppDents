@@ -27,9 +27,11 @@ interface CardsListProps {
   filter?: string;
   cards: Course[] | null;
   showEndOfList?: boolean;
+  isOffer?: boolean;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
+  isOffer = false,
   isClient = false,
   loading,
   cards,
@@ -48,6 +50,7 @@ const CardsList: React.FC<CardsListProps> = ({
           <ul className={s.list}>
             {cards.map((course, index) => (
               <CourseCard
+                isOffer={isOffer}
                 isClient={isClient}
                 key={index}
                 index={index}
