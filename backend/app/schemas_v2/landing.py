@@ -159,5 +159,6 @@ class LandingListPageResponse(BaseModel):
     items: List[LandingListResponse]
 
 class FreeAccessRequest(BaseModel):
-        email: str | None = None  # обязателен, если пользователь не логин
-        region: str = "EN"
+    email: str
+    region: str = "EN"
+    ref_code: str | None = None

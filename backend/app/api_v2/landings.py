@@ -589,6 +589,15 @@ def grant_free_access(
     )
     if not landing:
         raise HTTPException(404, "Landing not found")
+    inviter = None
+    if data.ref_code:
+        inviter = (
+            db.query(User)
+            .filter(User.referral_code == data.ref_code)
+            .first()
+        )
+        if not inviter:
+            print("Ref-code %s не найден", data.ref_code)
 
     # ----- определяем / создаём пользователя -----
     random_pass = None
@@ -610,7 +619,7 @@ def grant_free_access(
         user = get_user_by_email(db, data.email)
         if not user:
             random_pass = generate_random_password()
-            user = create_user(db, data.email, random_pass)
+            user = create_user(db, data.email, random_pass, invited_by=inviter)
             send_password_to_user(user.email, random_pass, data.region)
         # автологин
         token = create_access_token({"user_id": user.id})
