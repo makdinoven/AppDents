@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..db.database import get_db
 from ..dependencies.access_course import get_course_detail_with_access
+from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Course, User
 from ..services_v2.course_service import create_course, delete_course, search_courses_paginated, list_courses_paginated
@@ -61,7 +62,7 @@ def get_course_by_id(
     partial  – курс получен бесплатно, доступ только к первому видео,
                остальные уроки видны, но без ссылки.
     """
-    logger.info("User %s requests course %s", current_user.id, course_id)
+    print("User %s requests course %s", current_user.email, course_id)
 
     course = get_course_detail(db, course_id)
 
@@ -71,7 +72,7 @@ def get_course_by_id(
                 and course_id in current_user.partial_course_ids
 
     if not (has_full or has_part):
-        logger.warning("Access denied for user %s to course %s", current_user.id, course_id)
+        print("!Access denied for user %s to course %s", current_user.id, course_id)
         raise HTTPException(403, "Нет доступа к курсу")
 
     # --- нормализуем sections в список ---
