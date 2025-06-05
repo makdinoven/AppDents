@@ -125,6 +125,17 @@ class User(Base):
         backref=backref("inviter", remote_side=[id]),
         foreign_keys="[User.invited_by_id]",
     )
+    free_courses = relationship(
+        "FreeCourseAccess",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    @hybrid_property
+    def partial_course_ids(self) -> list[int]:
+        """ID курсов, к которым пока открыт только первый урок."""
+        return [fc.course_id for fc in self.free_courses]
 
 
 class Purchase(Base):
@@ -232,3 +243,20 @@ class ProcessedStripeEvent(Base):
     id           = Column(String, primary_key=True)       # event.id от Stripe
     processed_at = Column(DateTime(timezone=True),
                           server_default=func.now())
+
+class FreeCourseAccess(Base):
+    """
+    Храним факт, что пользователь получил бесплатный
+    доступ к первому уроку курса.
+    Если позже курс будет куплен полностью – запись удаляем.
+    """
+    __tablename__ = "free_course_access"
+
+    user_id   = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    course_id = Column(Integer, ForeignKey("courses.id"), primary_key=True)
+    granted_at = Column(DateTime,
+                        server_default=func.utc_timestamp(),
+                        nullable=False)
+
+    user   = relationship("User", back_populates="free_courses")
+    course = relationship("Course")
