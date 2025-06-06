@@ -63,17 +63,21 @@ def get_course_by_id(
     partial  – курс получен бесплатно, доступ только к первому видео,
                остальные уроки видны, но без ссылки.
     """
-    print("User %s requests course %s", current_user.email, course_id)
 
     course = get_course_detail(db, course_id)
+    is_admin = getattr(current_user, "role", None) == "admin"
 
     # --- определяем уровень доступа ---
-    has_full  = any(c.id == course_id for c in current_user.courses)
-    has_part  = hasattr(current_user, "partial_course_ids") \
-                and course_id in current_user.partial_course_ids
+    has_full = (
+        is_admin                      # ← админ = всегда полный доступ
+        or any(c.id == course_id for c in current_user.courses)
+    )
+    has_part = (
+        not is_admin                  # админ не может быть "partial"
+        and course_id in getattr(current_user, "partial_course_ids", [])
+    )
 
     if not (has_full or has_part):
-        print("!Access denied for user %s to course %s", current_user.id, course_id)
         raise HTTPException(403, "Нет доступа к курсу")
 
     # --- нормализуем sections в список ---
