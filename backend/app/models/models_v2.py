@@ -46,6 +46,7 @@ class PurchaseSource(str, PyEnum):
     CART                      = "CART"              # 8
     COURSES_PAGE              = "COURSES_PAGE"      # 9
     COURSES_PAGE_OFFER        = "COURSES_OFFER"     # 10
+    CABINET_FREE = "CABINET_FREE"
     OTHER                     = "OTHER"
 
 class Course(Base):
