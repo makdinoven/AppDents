@@ -39,16 +39,24 @@ export const AppRoutes: FC = () => {
             <Route key={path} path={path} element={<MainPage />} />
           ))}
           <Route path={Path.cart} element={<MainPage />} />
-          <Route path={Path.courses} element={<Courses />} />
-
+          <Route path={Path.courses} element={<Courses isFree={false} />} />
+          <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
           <Route index element={<MainPage />} />
           <Route
             path={`${Path.landing}/:landingPath?`}
-            element={<Landing isClient={false} />}
+            element={<Landing isClient={false} isFree={false} />}
           />
           <Route
             path={`${Path.landingClient}/:landingPath?`}
-            element={<Landing isClient={true} />}
+            element={<Landing isClient={true} isFree={false} />}
+          />
+          <Route
+            path={`${Path.freeLanding}/:landingPath?`}
+            element={<Landing isClient={false} isFree={true} />}
+          />
+          <Route
+            path={`${Path.freeLandingClient}/:landingPath?`}
+            element={<Landing isClient={true} isFree={true} />}
           />
           <Route path={Path.successPayment} element={<SuccessPayment />} />
           <Route

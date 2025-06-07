@@ -383,6 +383,13 @@ $card-body-padding-bottom: calc(
       left: 14px;
       position: absolute;
       bottom: 16px;
+
+      &.free {
+        left: unset;
+        right: 29px;
+        z-index: 20;
+        bottom: -31px;
+      }
     }
   }
 

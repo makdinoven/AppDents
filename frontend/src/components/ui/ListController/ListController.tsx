@@ -43,11 +43,12 @@ const ListController = ({
   const debouncedSearchValue = useDebounce(searchValue, 300);
   const prevLanguage = useRef<string | undefined>("");
   const prevSearch = useRef(debouncedSearchValue);
-  const [limit, setLimit] = useState("10");
-  const [sort, setSort] = useState("popular");
   const dispatch = useDispatch<AppDispatchType>();
   const tags = useSelector((state: any) => state.main.tags);
   const [tag, setTag] = useState("all");
+  const [pageSize, setPageSize] = useState<string | number>(size);
+  const [sort, setSort] = useState("popular");
+
   useEffect(() => {
     if (tags.length < 1) {
       dispatch(getTags());
@@ -71,7 +72,7 @@ const ListController = ({
           page: pageFromUrl,
           language,
           q: debouncedSearchValue ?? undefined,
-          size,
+          size: Number(pageSize),
         });
       }
 
@@ -87,51 +88,45 @@ const ListController = ({
       page: pageFromUrl,
       language,
       q: debouncedSearchValue ?? undefined,
-      size,
+      size: Number(pageSize),
     });
   }, [pageFromUrl]);
+
+  const commonFilterProps = {
+    isWider: true,
+    isSearchable: false,
+    placeholder: "",
+    isMultiple: false,
+    valueKey: "value" as const,
+    labelKey: "name" as const,
+  };
 
   const allFilters: { [key: string]: JSX.Element } = {
     tags: (
       <MultiSelect
-        isWider={true}
-        isSearchable={false}
-        id={"tags"}
+        {...commonFilterProps}
         options={tags}
-        placeholder={""}
+        id={"tags"}
         selectedValue={tag}
-        isMultiple={false}
         onChange={(e) => setTag(e.value as string)}
-        valueKey="value"
-        labelKey="name"
       />
     ),
     sort: (
       <MultiSelect
-        isWider={true}
-        isSearchable={false}
-        id={"sort"}
+        {...commonFilterProps}
         options={SORT_FILTERS}
-        placeholder={""}
+        id={"sort"}
         selectedValue={sort}
-        isMultiple={false}
         onChange={(e) => setSort(e.value as string)}
-        valueKey="value"
-        labelKey="name"
       />
     ),
     size: (
       <MultiSelect
-        isWider={true}
-        isSearchable={false}
-        id={"limits"}
+        {...commonFilterProps}
         options={PAGE_SIZES}
-        placeholder={""}
-        selectedValue={limit}
-        isMultiple={false}
-        onChange={(e) => setLimit(e.value as string)}
-        valueKey="value"
-        labelKey="name"
+        id={"size"}
+        selectedValue={pageSize}
+        onChange={(e) => setPageSize(e.value as string)}
       />
     ),
   };

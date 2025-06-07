@@ -21,4 +21,5 @@ export interface ResetPasswordType {
 export interface PaymentType {
   email: string;
   name: string;
+  password: string;
 }

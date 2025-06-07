@@ -17,9 +17,9 @@ export const LANGUAGES = [
 
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
-  { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
   // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
   { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
+  { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
   { icon: CartIcon, text: "nav.cart", link: Path.cart },
 ];
 
@@ -94,6 +94,7 @@ export const PAYMENT_SOURCES = [
   { name: "PROFESSOR_OFFER", path: Path.professor },
   { name: "PROF_LIST_OFFER", path: Path.professors },
   { name: "CABINET_OFFER", path: Path.profile },
+  { name: "CABINET_FREE", path: `${Path.profile}/${Path.myCourse}` },
   { name: "LANDING_OFFER", path: Path.landing },
   { name: "LANDING_OFFER", path: `/${Path.landingClient}` },
   { name: "COURSES_PAGE", path: Path.courses },

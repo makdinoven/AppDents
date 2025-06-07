@@ -47,10 +47,6 @@ const AnalyticsPurchases = ({ title }: { title: string }) => {
     fetchData();
   }, [dateRange]);
 
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
-
   return (
     <>
       <h2>

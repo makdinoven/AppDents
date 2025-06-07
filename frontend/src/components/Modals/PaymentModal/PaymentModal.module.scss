@@ -57,6 +57,26 @@
     }
   }
 
+  .free_text {
+    text-transform: uppercase;
+    text-align: right;
+    color: $primary;
+  }
+
+  .total_prices {
+    position: relative;
+    &.free {
+      width: fit-content;
+      @include horizontal-line(
+        $left: -10,
+        $right: -10,
+        $top: 50%,
+        $color: $text-color,
+        $transform: y50
+      );
+    }
+  }
+
   .total_text {
     @include clamped-h3;
     display: flex;

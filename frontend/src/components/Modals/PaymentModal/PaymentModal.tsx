@@ -6,7 +6,6 @@ import s from "./PaymentModal.module.scss";
 import Form from "../modules/Form/Form";
 import Input from "../modules/Input/Input";
 import Button from "../../ui/Button/Button";
-import { PaymentType } from "../../../api/userApi/types";
 import { paymentSchema } from "../../../common/schemas/paymentSchema";
 import {
   AmexLogo,
@@ -32,6 +31,7 @@ import {
 import { cartStorage } from "../../../api/cartApi/cartStorage.ts";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
+import { PaymentType } from "../../../api/userApi/types.ts";
 
 const logos = [
   VisaLogo,
@@ -59,9 +59,11 @@ export type PaymentDataType = {
 
 const PaymentModal = ({
   isOffer = false,
+  isFree = false,
   paymentData,
   handleCloseModal,
 }: {
+  isFree?: boolean;
   isOffer?: boolean;
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
@@ -95,6 +97,8 @@ const PaymentModal = ({
       ? location.pathname
       : "/" + location.pathname;
 
+    console.log(pathname);
+
     const sources = PAYMENT_SOURCES.filter((s) => {
       const isCorrectType = isOffer
         ? s.name.endsWith("_OFFER")
@@ -112,45 +116,71 @@ const PaymentModal = ({
 
   const handlePayment = async (form: any) => {
     setLoading(true);
-    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
-    const cartLandingIds = cartStorage.getLandingIds();
-    const dataToSend = {
-      ...paymentData,
-      use_balance: isBalanceUsed,
-      user_email: isLogged ? email : form.email,
-      transfer_cart: !isLogged && cartLandingIds.length > 0,
-      cart_landing_ids: cartLandingIds,
-      source: getPaymentSource(),
-      cancel_url:
-        !isLogged && rcCode
-          ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
-          : paymentData.cancel_url,
-    };
-    try {
-      const res = await mainApi.buyCourse(dataToSend, isLogged);
-      const checkoutUrl = res.data.checkout_url;
-      const balanceLeft = res.data.balance_left;
-      localStorage.removeItem(REF_CODE_LS_KEY);
-      setLoading(false);
+    if (!isFree) {
+      const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+      const cartLandingIds = cartStorage.getLandingIds();
+      const dataToSend = {
+        ...paymentData,
+        use_balance: isBalanceUsed,
+        user_email: isLogged ? email : form.email,
+        transfer_cart: !isLogged && cartLandingIds.length > 0,
+        cart_landing_ids: cartLandingIds,
+        source: getPaymentSource(),
+        cancel_url:
+          !isLogged && rcCode
+            ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
+            : paymentData.cancel_url,
+      };
+      try {
+        const res = await mainApi.buyCourse(dataToSend, isLogged);
+        const checkoutUrl = res.data.checkout_url;
+        const balanceLeft = res.data.balance_left;
+        localStorage.removeItem(REF_CODE_LS_KEY);
+        setLoading(false);
 
-      if (checkoutUrl) {
-        const newTab = window.open(checkoutUrl, "_blank");
+        if (checkoutUrl) {
+          const newTab = window.open(checkoutUrl, "_blank");
 
-        if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
-          window.location.href = checkoutUrl;
+          if (
+            !newTab ||
+            newTab.closed ||
+            typeof newTab.closed === "undefined"
+          ) {
+            window.location.href = checkoutUrl;
+          } else {
+            handleCloseModal();
+          }
         } else {
-          handleCloseModal();
+          console.error("Checkout URL is missing");
         }
-      } else {
-        console.error("Checkout URL is missing");
-      }
 
-      if (balanceLeft) {
-        alert(t("successPaymentWithBalance", { balance: balanceLeft }));
-        navigate(Path.profile);
+        if (balanceLeft) {
+          alert(t("successPaymentWithBalance", { balance: balanceLeft }));
+          navigate(Path.profile);
+        }
+      } catch (error) {
+        console.log(error);
       }
-    } catch (error) {
-      console.log(error);
+    } else {
+      const dataToSend = {
+        id: paymentData.landing_ids![0],
+        email: isLogged ? email : form.email,
+        region: paymentData.region,
+      };
+
+      try {
+        const res = await mainApi.getFreeCourse(dataToSend, isLogged);
+        console.log(res);
+        if (isLogged) {
+          navigate(Path.profile);
+        } else {
+          localStorage.setItem("access_token", res.data.access_token);
+          navigate(Path.profile);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.log(error);
+      }
     }
   };
 
@@ -160,15 +190,21 @@ const PaymentModal = ({
         {paymentData.courses.map((course, index: number) => (
           <div key={index} className={s.course}>
             <p>{course.name}</p>
-            <div className={s.course_prices}>
-              <span className={"highlight"}>${course.new_price}</span>
-              <span className={"crossed"}>${course.old_price}</span>
-            </div>
+            {!isFree ? (
+              <div className={s.course_prices}>
+                <span className={"highlight"}>${course.new_price}</span>
+                <span className={"crossed"}>${course.old_price}</span>
+              </div>
+            ) : (
+              <p className={s.free_text}>
+                <Trans i18nKey={"firstFreeLesson"} />
+              </p>
+            )}
           </div>
         ))}
       </div>
       <div className={s.total_container}>
-        {isLogged && (
+        {isLogged && !isFree && (
           <div className={s.balance_container}>
             <p>
               <Trans i18nKey="cart.balance" />:<span> ${balance}</span>
@@ -184,17 +220,23 @@ const PaymentModal = ({
             </div>
           </div>
         )}
-        <div className={`${s.total_text} ${!isLogged ? s.center : ""}`}>
-          <Trans i18nKey="total" />
-          <div>
-            <span className={"highlight"}>
-              ${isBalanceUsed ? balancePrice : paymentData.total_new_price}
-            </span>
-            <span className={"crossed"}>${paymentData.total_old_price}</span>
+        {!isFree && (
+          <div className={`${s.total_text} ${!isLogged ? s.center : ""}`}>
+            <Trans i18nKey="total" />
+            <div>
+              <span className={"highlight"}>
+                ${isBalanceUsed ? balancePrice : paymentData.total_new_price}
+              </span>
+              <span className={"crossed"}>${paymentData.total_old_price}</span>
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
+      {isFree && (
+        <h3>
+          <Trans i18nKey={"freeCourse.registerToWatch"} />
+        </h3>
+      )}
       <Form handleSubmit={handleSubmit(handlePayment)}>
         {!isLogged && (
           <>
@@ -211,27 +253,51 @@ const PaymentModal = ({
                 error={errors.email?.message}
                 {...register("email")}
               />
-              <p className={s.modal_text}>
-                <Trans i18nKey="emailGrant" />
-              </p>
+              {!isFree && (
+                <p className={s.modal_text}>
+                  <Trans i18nKey="emailGrant" />
+                </p>
+              )}
             </div>
+            {isFree && (
+              <Input
+                type={"password"}
+                id="password"
+                placeholder={t("password")}
+                error={errors.password?.message}
+                {...register("password")}
+              />
+            )}
           </>
         )}
-        <Button loading={loading} text={t("pay")} type="submit" />
+        <Button
+          variant={"filled"}
+          loading={loading}
+          text={isFree ? "tryCourseForFree" : "pay"}
+          type="submit"
+        />
       </Form>
-      {!isLogged && (
-        <p className={s.modal_text}>
-          <Trans i18nKey="paymentWarn" />
-        </p>
-      )}
 
-      <ul className={s.logos}>
-        {logos.map((Logo, index) => (
-          <li key={index}>
-            <Logo width="100%" height="100%" />
-          </li>
-        ))}
-      </ul>
+      <>
+        {!isLogged && (
+          <p className={s.modal_text}>
+            {isFree ? (
+              <Trans i18nKey="freePaymentWarn" />
+            ) : (
+              <Trans i18nKey="paymentWarn" />
+            )}
+          </p>
+        )}
+        {!isFree && (
+          <ul className={s.logos}>
+            {logos.map((Logo, index) => (
+              <li key={index}>
+                <Logo width="100%" height="100%" />
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
     </div>
   );
 };

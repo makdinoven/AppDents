@@ -7,6 +7,26 @@
   }
 }
 
+.buy_and_free_btns {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+
+  .or {
+    @include clamped-p2;
+    background-color: $background-color;
+    padding: 0 10px;
+    border-radius: 10px;
+  }
+
+  .free_btn {
+    border-radius: var(--border-radius);
+    min-height: 60px;
+    height: fit-content;
+  }
+}
+
 .admin_btns {
   display: flex;
   gap: 10px;
@@ -32,6 +52,14 @@
 @media (max-width: $mobile-breakpoint) {
   .landing {
     gap: 60px;
+  }
+
+  .buy_and_free_btns {
+    flex-direction: column;
+    .free_btn {
+      min-height: unset;
+      height: 40px;
+    }
   }
 
   .admin_btns {

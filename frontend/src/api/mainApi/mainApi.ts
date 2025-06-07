@@ -30,6 +30,18 @@ export const mainApi = {
     );
   },
 
+  getFreeCourse(data: any, isLogged: boolean) {
+    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+    return instance.post(
+      `landings/free-access/${data.id}`,
+      {
+        ...data,
+        ...(rcCode && { ref_code: rcCode }),
+      },
+      { headers: isLogged ? getAuthHeaders() : undefined },
+    );
+  },
+
   getTokenAfterPurchase(data: any) {
     return instance.post(`stripe/complete-purchase`, data);
   },

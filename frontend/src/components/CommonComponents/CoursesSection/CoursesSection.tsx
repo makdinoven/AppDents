@@ -24,6 +24,7 @@ type props = {
   handleSetActiveSort?: any;
   ref?: React.RefObject<any>;
   isOffer?: boolean;
+  isFree?: boolean;
 };
 
 const CoursesSection = ({
@@ -31,6 +32,7 @@ const CoursesSection = ({
   sectionTitle,
   pageSize,
   isClient = true,
+  isFree = false,
   tags,
   showFilters = false,
   showSort = false,
@@ -127,6 +129,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isFree={isFree}
         isOffer={isOffer}
         isClient={isClient}
         filter={activeFilter}

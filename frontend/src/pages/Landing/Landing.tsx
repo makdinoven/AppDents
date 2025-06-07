@@ -35,8 +35,15 @@ import {
   openModal,
   setPrices,
 } from "../../store/slices/landingSlice.ts";
+import { getCourses } from "../../store/actions/userActions.ts";
 
-const Landing = ({ isClient }: { isClient: boolean }) => {
+const Landing = ({
+  isClient,
+  isFree,
+}: {
+  isClient: boolean;
+  isFree: boolean;
+}) => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
@@ -47,10 +54,13 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
   const location = useLocation();
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
-  const { role } = useSelector((state: AppRootStateType) => state.user);
+  const { role, isLogged, courses } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
   const isModalOpen = useSelector(
     (state: AppRootStateType) => state.landing.isModalOpen,
   );
+  const [isModalFree, setIsModalFree] = useState(false);
   const isPromotionLanding =
     location.pathname.includes(Path.landing) &&
     !location.pathname.includes(Path.landingClient);
@@ -61,18 +71,38 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
   }, [location.search]);
 
   useEffect(() => {
+    if (isLogged && isFree) {
+      dispatch(getCourses());
+    }
+  }, [isLogged]);
+
+  useEffect(() => {
+    if (courses.length > 0 && isFree) {
+      navigate(
+        isClient
+          ? `/${Path.landingClient}/${landingPath}`
+          : `${Path.landing}/${landingPath}`,
+      );
+    }
+  }, [courses]);
+
+  useEffect(() => {
     if (isFromFacebook) {
       trackFacebookAd();
     }
     fetchLandingData();
   }, [landingPath]);
 
-  const handleOpenModal = () => {
+  const handleOpenModal = (isModalFree?: boolean) => {
+    if (isModalFree) {
+      setIsModalFree(true);
+    }
     dispatch(openModal());
   };
 
   const handleCloseModal = () => {
     dispatch(closeModal());
+    setIsModalFree(false);
   };
 
   const fetchLandingData = async () => {
@@ -101,22 +131,54 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
     mainApi.trackFacebookAd(landingPath!);
   };
 
-  const renderBuyButton = (variant: "full" | "default") => (
-    <ArrowButton onClick={handleOpenModal}>
-      <Trans
-        i18nKey={
-          variant === "default" ? "landing.buyFor" : "landing.buyForFull"
-        }
-        values={{
-          ...getPricesData(landing),
-        }}
-        components={{
-          1: <span className="crossed-15" />,
-          2: <span className="highlight" />,
-        }}
-      />
-    </ArrowButton>
-  );
+  const renderBuyButton = (variant: "full" | "default") => {
+    if (!isFree) {
+      return (
+        <ArrowButton onClick={() => handleOpenModal(false)}>
+          <Trans
+            i18nKey={
+              variant === "default" ? "landing.buyFor" : "landing.buyForFull"
+            }
+            values={{
+              ...getPricesData(landing),
+            }}
+            components={{
+              1: <span className="crossed-15" />,
+              2: <span className="highlight" />,
+            }}
+          />
+        </ArrowButton>
+      );
+    } else {
+      return (
+        <div className={s.buy_and_free_btns}>
+          <ArrowButton onClick={() => handleOpenModal(false)}>
+            <Trans
+              i18nKey={
+                variant === "default" ? "landing.buyFor" : "landing.buyForFull"
+              }
+              values={{
+                ...getPricesData(landing),
+              }}
+              components={{
+                1: <span className="crossed-15" />,
+                2: <span className="highlight" />,
+              }}
+            />
+          </ArrowButton>
+          <span className={s.or}>
+            <Trans i18nKey={"or"} />
+          </span>
+          <PrettyButton
+            className={s.free_btn}
+            variant={"primary"}
+            onClick={() => handleOpenModal(true)}
+            text={"freeCourse.tryFirstLesson"}
+          />
+        </div>
+      );
+    }
+  };
 
   const heroData = {
     landing_name: landing?.landing_name,
@@ -192,6 +254,13 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
             >
               <PrettyButton variant="default" text={"promo link"} />
             </a>
+            <a
+              href={`${BASE_URL}/${Path.freeLanding}/${landingPath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PrettyButton variant="default" text={"promo free link"} />
+            </a>
 
             <PrettyButton
               variant="primary"
@@ -213,6 +282,7 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
           <Offer data={offerData} />
           <Faq />
           <CoursesSection
+            isFree={isFree}
             isOffer={true}
             isClient={isClient}
             showSort={true}
@@ -231,6 +301,7 @@ const Landing = ({ isClient }: { isClient: boolean }) => {
           onClose={handleCloseModal}
         >
           <PaymentModal
+            isFree={isModalFree}
             paymentData={paymentData}
             handleCloseModal={handleCloseModal}
           />

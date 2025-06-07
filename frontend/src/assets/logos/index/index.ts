@@ -21,3 +21,4 @@ export { default as CheckMarkIcon } from "../../Icons/check-mark.svg?react";
 export { default as ProfileIcon } from "../../Icons/profile.svg?react";
 export { default as QuestionMark } from "../../Icons/question-mark.svg?react";
 export { default as TrashCan } from "../../Icons/trash-can-icon.svg?react";
+export { default as Lock } from "../../Icons/lock.svg?react";

@@ -10,10 +10,13 @@ import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 
 type OutletContextType = {
   course: any;
+  handleOpenModal: () => void;
+  isPartial: boolean;
 };
 
 const LessonPage = () => {
-  const { course } = useOutletContext<OutletContextType>();
+  const { course, handleOpenModal, isPartial } =
+    useOutletContext<OutletContextType>();
   const { sectionId, lessonId } = useParams();
   const [lesson, setLesson] = useState<any | null>(null);
   const [prevLesson, setPrevLesson] = useState<any | null>(null);
@@ -123,15 +126,24 @@ const LessonPage = () => {
                 <Trans i18nKey={"profile.prevLesson"} />
               </Link>
             )}
-            {nextLesson && (
-              <Link
-                to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
-                className={s.next_link}
-              >
-                <Trans i18nKey={"profile.nextLesson"} />
-                <Arrow />
-              </Link>
-            )}
+            {nextLesson &&
+              (isPartial ? (
+                <button
+                  onClick={handleOpenModal}
+                  className={`${s.next_link} ${s.disabled}`}
+                >
+                  <Trans i18nKey={"profile.nextLesson"} />
+                  <Arrow />
+                </button>
+              ) : (
+                <Link
+                  to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
+                  className={s.next_link}
+                >
+                  <Trans i18nKey={"profile.nextLesson"} />
+                  <Arrow />
+                </Link>
+              ))}
           </div>
           {!isPdfLink(lesson.video_link) && (
             <p className={s.failed_to_load}>
