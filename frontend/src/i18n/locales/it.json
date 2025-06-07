@@ -56,7 +56,7 @@
   "get": "Ottieni",
   "freeWebinar": "Webinar gratuito",
   "free": "Gratis",
-  "freePaymentWarn": "Verrai loggato automaticamente per vedere la prima lezione gratuita. Se non si apre, ricarica o controlla l'email.",
+  "freePaymentWarn": "Verrai automaticamente connesso al tuo account personale, dove potrai guardare la prima lezione gratuita del corso. Se non si apre, accedi manualmente con email e password.",
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
   "freeCourse": {

@@ -56,7 +56,7 @@
   "get": "Obtener",
   "freeWebinar": "Webinar gratis",
   "free": "Gratis",
-  "freePaymentWarn": "Se te iniciará sesión automáticamente para ver la primera clase gratis. Si no abre, actualiza la página o revisa tu correo.",
+  "freePaymentWarn": "Se iniciará sesión automáticamente en tu cuenta, donde podrás ver la primera lección gratis del curso. Si no se abre, inicia sesión manualmente con tu correo y contraseña.",
   "firstFreeLesson": "Primera clase gratis",
   "or": "o",
   "freeCourse": {

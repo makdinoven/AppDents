@@ -58,7 +58,7 @@
   "get": "Get",
   "freeWebinar": "Free webinar",
   "free": "Free",
-  "freePaymentWarn": "You’ll be automatically logged into your personal account, where you can watch the first free lesson of the webinar.If it doesn’t open right away, try refreshing the page or check your email for access details.",
+  "freePaymentWarn": "You’ll be automatically logged into your personal account, where you can watch the first free lesson of the course. If it doesn’t open right away, try logging in manually using the email and password you provided.",
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "freeCourse": {
