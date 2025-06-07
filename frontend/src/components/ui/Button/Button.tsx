@@ -9,6 +9,7 @@ interface ButtonProps {
   link?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
+  variant?: "filled" | "outlined";
 }
 
 const Button = ({
@@ -16,6 +17,7 @@ const Button = ({
   onClick,
   text,
   link,
+  variant = "outlined",
   type = "button",
 }: ButtonProps) => {
   return link ? (
@@ -25,7 +27,7 @@ const Button = ({
   ) : (
     <button
       onClick={onClick}
-      className={`${s.btn} ${loading ? s.loading : ""}`}
+      className={`${s.btn} ${variant === "filled" ? s.filled : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
       <Trans i18nKey={text} />

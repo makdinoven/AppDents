@@ -1,0 +1,153 @@
+.card_wrapper {
+  @include fadeInMove();
+  position: relative;
+  background-color: $primary;
+  border: 2px solid $primary;
+  border-radius: var(--border-radius);
+  @include transition;
+
+  @media (hover: hover) {
+    &:not(&.partial):hover {
+      background-color: $background-color;
+    }
+  }
+
+  &.blue {
+    border-color: $secondary-lighter;
+    background-color: $secondary-lighter;
+    color: $secondary;
+  }
+}
+
+.lock {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.upgrade_required {
+  text-transform: uppercase;
+  @include clamped-h3;
+  color: $text-color;
+}
+
+.part_of_course {
+  @include clamped-p2;
+}
+
+.partial_card_content_text {
+  max-width: 40%;
+}
+
+.partial_card_content {
+  cursor: pointer;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+
+  &.blue {
+    border-color: $secondary-lighter;
+  }
+
+  button {
+    @include clamped-p2;
+    max-width: 500px;
+    background-color: $accent;
+    color: $text-color;
+    outline: 2px solid $accent;
+    @media (hover: hover) {
+      &:hover {
+        color: $primary;
+        background-color: $background-color;
+        outline: 2px solid $background-color;
+      }
+    }
+  }
+}
+
+.card {
+  cursor: pointer;
+  min-height: 110px;
+  display: flex;
+  justify-content: space-between;
+  border-radius: var(--border-radius);
+  gap: 20px;
+  padding: 20px 45px;
+  color: $accent;
+
+  &.blocked {
+    //opacity: 0.4;
+    //pointer-events: none;
+    //background-color: $quaternary;
+    background-color: $background-color;
+    overflow: hidden;
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background-color: $primary;
+      opacity: 0.4;
+      z-index: 3;
+    }
+  }
+
+  h3 {
+    @include clamped-p1;
+    max-width: 80%;
+  }
+
+  span {
+    align-self: flex-end;
+  }
+
+  &.blue {
+    a {
+      color: $accent;
+    }
+
+    &.blocked {
+      &::after {
+        background-color: $secondary-lighter;
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .partial_card_content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .partial_card_content_text {
+    max-width: unset;
+    text-align: center;
+  }
+
+  .card {
+    flex-direction: column;
+    gap: 5px;
+    padding: 20px;
+    border-radius: 30px;
+
+    h3 {
+      max-width: unset;
+    }
+
+    a {
+      align-self: flex-start;
+    }
+  }
+}

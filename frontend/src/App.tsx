@@ -30,7 +30,7 @@ function App() {
 
   useEffect(() => {
     dispatch(getMe());
-  }, [location.pathname]);
+  }, []);
 
   useEffect(() => {
     initFacebookPixel();

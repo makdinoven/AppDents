@@ -1,7 +1,7 @@
 import s from "./MyCourses.module.scss";
 import { Trans } from "react-i18next";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import CourseCard from "../CourseCard/CourseCard.tsx";
+import ProfileCourseCard from "../ProfileCourseCard/ProfileCourseCard.tsx";
 import { Path } from "../../../../routes/routes.ts";
 
 const MyCourses = ({ courses }: { courses: any }) => {
@@ -11,7 +11,7 @@ const MyCourses = ({ courses }: { courses: any }) => {
       <ul className={s.courses_list}>
         {courses.length > 0 ? (
           courses.map((course: any, index: number) => (
-            <CourseCard
+            <ProfileCourseCard
               viewText={"viewCourse"}
               key={course.id}
               isEven={index % 2 === 0}

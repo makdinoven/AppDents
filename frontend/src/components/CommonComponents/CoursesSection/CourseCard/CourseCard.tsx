@@ -30,6 +30,7 @@ interface CourseCardProps {
   lessons_count: string;
   isOffer?: boolean;
   course_ids: number[];
+  isFree?: boolean;
 }
 
 const CourseCard = ({
@@ -46,6 +47,7 @@ const CourseCard = ({
   authors,
   lessons_count,
   course_ids,
+  isFree = false,
 }: CourseCardProps) => {
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
@@ -53,7 +55,7 @@ const CourseCard = ({
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
   const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
-  const cleanLink = link.replace(/^\/(client\/)?course/, "");
+  const cleanLink = link.replace(/^\/(client\/)?course(\/free)?/, "");
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -137,7 +139,10 @@ const CourseCard = ({
               </p>
             </div>
             <div className={s.content_bottom}>
-              <ViewLink className={s.link_btn} text={"viewCourse"} />
+              <ViewLink
+                className={`${s.link_btn} ${isFree ? s.free : ""}`}
+                text={"viewCourse"}
+              />
               {photo ? (
                 <div className={s.photo}>
                   <img src={photo} alt="Course image" />
@@ -151,29 +156,38 @@ const CourseCard = ({
                 </div>
               )}
             </div>
-            <div className={s.buttons}>
+            {!isFree ? (
+              <div className={s.buttons}>
+                <button
+                  onClick={(e) => handleBuyClick(e)}
+                  className={s.buy_btn}
+                >
+                  {paymentDataLoading && <LoaderOverlay />}
+                  <Trans i18nKey={"buyNow"} />
+                </button>
+                {isClient && (
+                  <AddToCartButton
+                    item={{
+                      landing: {
+                        id: id,
+                        landing_name: name,
+                        authors: authors,
+                        page_name: cleanLink,
+                        old_price: old_price,
+                        new_price: new_price,
+                        preview_photo: photo,
+                        course_ids: course_ids,
+                      },
+                    }}
+                    className={s.cart_btn}
+                  />
+                )}
+              </div>
+            ) : (
               <button onClick={(e) => handleBuyClick(e)} className={s.buy_btn}>
-                {paymentDataLoading && <LoaderOverlay />}
-                <Trans i18nKey={"buyNow"} />
+                <Trans i18nKey={"tryCourseForFree"} />
               </button>
-              {isClient && (
-                <AddToCartButton
-                  item={{
-                    landing: {
-                      id: id,
-                      landing_name: name,
-                      authors: authors,
-                      page_name: cleanLink,
-                      old_price: old_price,
-                      new_price: new_price,
-                      preview_photo: photo,
-                      course_ids: course_ids,
-                    },
-                  }}
-                  className={s.cart_btn}
-                />
-              )}
-            </div>
+            )}
           </div>
         </Link>
         <Link to={link} className={s.card_bottom}></Link>
@@ -182,12 +196,13 @@ const CourseCard = ({
       {isModalOpen && paymentData && (
         <ModalWrapper
           variant="dark"
-          title={"yourOrder"}
+          title={isFree ? "freeWebinar" : "yourOrder"}
           cutoutPosition="none"
           isOpen={isModalOpen}
           onClose={handleCloseModal}
         >
           <PaymentModal
+            isFree={isFree}
             isOffer={isOffer}
             paymentData={paymentData}
             handleCloseModal={handleCloseModal}

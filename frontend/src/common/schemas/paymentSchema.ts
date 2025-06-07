@@ -10,4 +10,5 @@ export const paymentSchema = Joi.object({
       "any.required": "error.email.required",
     }),
   name: Joi.any().optional(),
+  password: Joi.any().optional(),
 });

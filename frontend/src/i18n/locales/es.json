@@ -52,6 +52,22 @@
   "copy": "Copiar",
   "copied": "¡Copiado!",
   "successPaymentWithBalance": "¡Pago exitoso! Ahora tienes acceso al curso. Saldo restante: ${{balance}}. Serás redirigido a tu perfil en breve.",
+  "tryCourseForFree": "Prueba gratis",
+  "get": "Obtener",
+  "freeWebinar": "Webinar gratis",
+  "free": "Gratis",
+  "freePaymentWarn": "Se te iniciará sesión automáticamente para ver la primera clase gratis. Si no abre, actualiza la página o revisa tu correo.",
+  "firstFreeLesson": "Primera clase gratis",
+  "or": "o",
+  "freeCourse": {
+    "registerToWatch": "Regístrate para ver",
+    "tryFirstLesson": "Prueba la primera clase",
+    "fullAccess": "Curso completo",
+    "get": "Accede por solo ${{count}}",
+    "title": "Curso completo requerido",
+    "desc": "Esta clase es parte del curso completo. Compra para acceder a todo."
+  },
+
 
 
   "nav": {

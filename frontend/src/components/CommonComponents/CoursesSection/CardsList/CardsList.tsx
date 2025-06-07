@@ -28,11 +28,13 @@ interface CardsListProps {
   cards: Course[] | null;
   showEndOfList?: boolean;
   isOffer?: boolean;
+  isFree?: boolean;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
   isOffer = false,
   isClient = false,
+  isFree = false,
   loading,
   cards,
   filter = "all",
@@ -50,6 +52,7 @@ const CardsList: React.FC<CardsListProps> = ({
           <ul className={s.list}>
             {cards.map((course, index) => (
               <CourseCard
+                isFree={isFree}
                 isOffer={isOffer}
                 isClient={isClient}
                 key={index}
@@ -60,7 +63,11 @@ const CardsList: React.FC<CardsListProps> = ({
                 new_price={course.new_price}
                 name={course.landing_name}
                 tag={course.first_tag}
-                link={`${isClient ? `/${Path.landingClient}` : Path.landing}/${course.slug}`}
+                link={
+                  isFree
+                    ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${course.slug}`
+                    : `/${isClient ? Path.landingClient : Path.landing}/${course.slug}`
+                }
                 photo={course.main_image}
                 lessons_count={course.lessons_count}
                 course_ids={course.course_ids}
