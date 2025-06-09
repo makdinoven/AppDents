@@ -1,6 +1,6 @@
 
 from fastapi import FastAPI
-from .api_v2 import  users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart
+from .api_v2 import  users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
@@ -41,6 +41,10 @@ def create_app() -> FastAPI:
     app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
 
     app.include_router(boomstream_migration.router, prefix="/api/boomstream", tags=["boomstream"])
+
+    app.include_router(helpers.router, prefix="/api/helpers", tags=["helpers"])
+
+
 
     # app.include_router(utils.router, prefix="/api/utils", tags=["utils"])
     # app.include_router(migrate_user.router, prefix="/api/migrate", tags=["migrate"])
