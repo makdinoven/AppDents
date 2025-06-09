@@ -46,6 +46,48 @@ def _hash_plain(value: str) -> str:
     """Trim → lower → SHA-256. Для first_name / last_name и др. персональных полей."""
     return hashlib.sha256(value.strip().lower().encode("utf-8")).hexdigest()
 
+# ───────────────────────────────────────────────────────────────
+# Lead helper
+# ───────────────────────────────────────────────────────────────
+def _save_lead(db: Session, session_obj: dict, email: str | None, region: str):
+    """
+    Пишем запись в AbandonedCheckout или подробно логируем,
+    почему запись не была создана.
+    """
+    session_id = session_obj["id"]
+
+    # 0.  нет email → бессмысленно
+    if not email:
+        logging.info("Skip lead: no email in session %s", session_id)
+        return False
+
+    # 1.  e-mail уже зарегистрирован
+    if get_user_by_email(db, email):
+        logging.info("Skip lead: email %s already registered (session %s)",
+                     email, session_id)
+        return False
+
+    # 2.  пытаемся вставить
+    try:
+        db.add(AbandonedCheckout(
+            session_id = session_id,
+            email      = email,
+            course_ids = (session_obj.get("metadata") or {}).get("course_ids", ""),
+            region     = (session_obj.get("metadata") or {})
+                         .get("purchase_lang", region).upper(),
+        ))
+        db.commit()
+        logging.info("Lead saved to AbandonedCheckout: %s (session %s)",
+                     email, session_id)
+        return True
+
+    except IntegrityError:
+        db.rollback()
+        logging.info("Skip lead: duplicate for session %s (email %s)",
+                     session_id, email)
+        return False
+
+
 
 # ────────────────────────────────────────────────────────────────
 # Facebook Conversions API
@@ -349,17 +391,7 @@ def create_checkout_session(
         metadata=metadata,
     )
     if not user:
-        try:
-            db.add(AbandonedCheckout(
-                session_id=session["id"],
-                email=email,
-                course_ids=",".join(map(str, course_ids)),
-                region=region.upper(),
-            ))
-            db.commit()
-            logging.info("Lead saved to AbandonedCheckout: %s", email)
-        except IntegrityError:
-            db.rollback()  # дубликат — ничего страшного
+        _save_lead(db, session, email, region)
 
     logging.info("Stripe session created: id=%s", session["id"])
     return session.url
@@ -393,20 +425,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     if event_type.startswith("checkout.session.") and event_type != "checkout.session.completed":
         # unpaid / no_payment_required / paid
-        if (session_obj.get("payment_status") != "paid"
-                and email
-                and not get_user_by_email(db, email)):
-            try:
-                db.add(AbandonedCheckout(
-                    session_id=session_id,
-                    email=email,
-                    course_ids=session_obj["metadata"].get("course_ids", ""),
-                    region=session_obj["metadata"].get("purchase_lang", region).upper(),
-                ))
-                db.commit()
-                logging.info("Lead saved (%s) for %s", event_type, email)
-            except IntegrityError:
-                db.rollback()
+        if (session_obj.get("payment_status") != "paid"):
+            _save_lead(db, session_obj, email, region)
         return {"status": "non_paid_logged"}
 
     if event["type"] != "checkout.session.completed":
@@ -415,17 +435,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # 3. Проверяем, что деньги действительно списаны
     if session_obj.get("payment_status") != "paid":
             if email and not get_user_by_email(db, email):
-                try:
-                    db.add(AbandonedCheckout(
-                        session_id=session_id,
-                        email=email,
-                        course_ids=session_obj["metadata"].get("course_ids", ""),
-                        region=session_obj["metadata"].get("purchase_lang", region).upper(),
-                    ))
-                    db.commit()
-                    logging.info("Lead saved (completed_unpaid) for %s", email)
-                except IntegrityError:
-                    db.rollback()
+                _save_lead(db, session_obj, email, region)
             return {"status": "completed_unpaid"}
 
 
