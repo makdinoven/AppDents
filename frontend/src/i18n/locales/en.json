@@ -69,6 +69,9 @@
     "title": "Full course required",
     "desc": "This lesson is part of a full course. Get full access by purchasing the course."
   },
+  "banner": {
+    "title": "<1>Today</1> only: Dental course <1> -{{discount}} % off!</1>"
+  },
 
   "nav": {
     "home": "Home",

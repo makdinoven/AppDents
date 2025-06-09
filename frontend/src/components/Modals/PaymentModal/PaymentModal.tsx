@@ -97,8 +97,6 @@ const PaymentModal = ({
       ? location.pathname
       : "/" + location.pathname;
 
-    console.log(pathname);
-
     const sources = PAYMENT_SOURCES.filter((s) => {
       const isCorrectType = isOffer
         ? s.name.endsWith("_OFFER")

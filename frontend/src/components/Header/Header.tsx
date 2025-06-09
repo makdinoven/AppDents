@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import { Trans } from "react-i18next";
 import UnstyledButton from "../CommonComponents/UnstyledButton.tsx";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { Path } from "../../routes/routes.ts";
@@ -35,6 +35,7 @@ import {
 } from "../../common/helpers/helpers.ts";
 import BurgerMenu from "../ui/BurgerMenu/BurgerMenu.tsx";
 import { openModal } from "../../store/slices/landingSlice.ts";
+import TimerBanner from "../ui/TimerBanner/TimerBanner.tsx";
 
 const Header = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -58,12 +59,43 @@ const Header = () => {
   const quantity = useSelector(
     (state: AppRootStateType) => state.cart.quantity,
   );
+  const [showStickyBanner, setShowStickyBanner] = useState(false);
+  const [renderStickyBanner, setRenderStickyBanner] = useState(false);
+  const discount = Number(
+    (((oldPrice - newPrice) / oldPrice) * 100).toFixed(0),
+  );
+  const bannerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (localTriggerRef.current) {
       setTriggerRef(localTriggerRef);
     }
   }, [localTriggerRef, setTriggerRef]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          setRenderStickyBanner(true);
+          setShowStickyBanner(true);
+        } else {
+          setShowStickyBanner(false);
+          setTimeout(() => setRenderStickyBanner(false), 300); // длительность анимации
+        }
+      },
+      { threshold: 0 },
+    );
+
+    if (bannerRef.current) {
+      observer.observe(bannerRef.current);
+    }
+
+    return () => {
+      if (bannerRef.current) {
+        observer.unobserve(bannerRef.current);
+      }
+    };
+  }, []);
 
   const renderLoginButton = () => {
     if (screenWidth > 768) {
@@ -120,6 +152,23 @@ const Header = () => {
 
   return (
     <>
+      {isPromotion && (
+        <>
+          <TimerBanner
+            discount={discount}
+            onClick={() => dispatch(openModal())}
+            ref={bannerRef}
+          />
+          {renderStickyBanner && (
+            <TimerBanner
+              discount={discount}
+              onClick={() => dispatch(openModal())}
+              isSticky
+              isHiding={!showStickyBanner}
+            />
+          )}
+        </>
+      )}
       <header className={`${s.header} ${isScrolled ? s.scrolled : ""}`}>
         <div className={s.content}>
           <nav className={s.nav}>
