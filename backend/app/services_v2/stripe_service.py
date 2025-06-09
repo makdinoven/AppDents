@@ -16,7 +16,8 @@ from sqlalchemy.orm import Session
 
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
-from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource
+from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource, \
+    AbandonedCheckout
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -347,6 +348,18 @@ def create_checkout_session(
         customer_email=email,
         metadata=metadata,
     )
+    if not user:
+        try:
+            db.add(AbandonedCheckout(
+                session_id=session["id"],
+                email=email,
+                course_ids=",".join(map(str, course_ids)),
+                region=region.upper(),
+            ))
+            db.commit()
+            logging.info("Lead saved to AbandonedCheckout: %s", email)
+        except IntegrityError:
+            db.rollback()  # дубликат — ничего страшного
 
     logging.info("Stripe session created: id=%s", session["id"])
     return session.url
@@ -370,22 +383,46 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         logging.error("Invalid webhook signature")
         raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
-
+    session_obj = event["data"]["object"]
+    session_id = session_obj["id"]
+    logging.info("Получена сессия: %s", session_id)
+    email = session_obj.get("customer_email")
 
     # 2. Интересует только completed
     if event["type"] != "checkout.session.completed":
         return {"status": "ignored"}
 
-
-    session_obj = event["data"]["object"]
-    session_id = session_obj["id"]
-    logging.info("Получена сессия: %s", session_id)
+    if event["type"] == "checkout.session.expired":
+        # e-mail приходит только если вы передали customer_email в сессию
+        email = session_obj.get("customer_email")
+        if email and not get_user_by_email(db, email):
+            # Дубли уже защищены unique(session_id), так что пробуем вставить
+            try:
+                db.add(AbandonedCheckout(
+                    session_id=session_id,
+                    email=email,
+                    course_ids=session_obj["metadata"].get("course_ids", ""),
+                    region=session_obj["metadata"].get("purchase_lang", region).upper(),
+                ))
+                db.commit()
+            except IntegrityError:
+                db.rollback()
+        return {"status": "expired_logged"}
 
     # 3. Проверяем, что деньги действительно списаны
     if session_obj.get("payment_status") != "paid":
         logging.info("Session %s не оплачена (payment_status=%s) — пропускаем",
                      session_id, session_obj.get("payment_status"))
         return {"status": "unpaid"}
+
+    deleted = (
+        db.query(AbandonedCheckout)
+        .filter(AbandonedCheckout.email == email)  # email уже извлечён выше
+        .delete(synchronize_session=False)
+    )
+    if deleted:
+        db.commit()
+        logging.info("Removed %s abandoned leads for email %s", deleted, email)
 
     stripe_event_id: str = event["id"]
     try:
@@ -405,7 +442,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     logging.info("Получены метаданные: %s", metadata)
 
     # 4. Основные данные заказа
-    email = session_obj.get("customer_email")
+
     course_ids = [
         int(cid) for cid in (metadata.get("course_ids") or "").split(",") if cid.strip()
     ]
