@@ -425,17 +425,13 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     if event_type.startswith("checkout.session.") and event_type != "checkout.session.completed":
         # unpaid / no_payment_required / paid
-        if (session_obj.get("payment_status") != "paid"):
+        if session_obj.get("payment_status") != "paid":
             _save_lead(db, session_obj, email, region)
         return {"status": "non_paid_logged"}
 
-    if event["type"] != "checkout.session.completed":
-        return {"status": "ignored"}
-
     # 3. Проверяем, что деньги действительно списаны
     if session_obj.get("payment_status") != "paid":
-            if email and not get_user_by_email(db, email):
-                _save_lead(db, session_obj, email, region)
+            _save_lead(db, session_obj, email, region)
             return {"status": "completed_unpaid"}
 
 
