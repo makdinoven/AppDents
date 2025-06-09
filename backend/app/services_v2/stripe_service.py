@@ -387,16 +387,15 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     session_id = session_obj["id"]
     logging.info("Получена сессия: %s", session_id)
     email = session_obj.get("customer_email")
+    event_type = event["type"]
 
-    # 2. Интересует только completed
-    if event["type"] != "checkout.session.completed":
-        return {"status": "ignored"}
+    # 2. Интересует только complete
 
-    if event["type"] == "checkout.session.expired":
-        # e-mail приходит только если вы передали customer_email в сессию
-        email = session_obj.get("customer_email")
-        if email and not get_user_by_email(db, email):
-            # Дубли уже защищены unique(session_id), так что пробуем вставить
+    if event_type.startswith("checkout.session.") and event_type != "checkout.session.completed":
+        # unpaid / no_payment_required / paid
+        if (session_obj.get("payment_status") != "paid"
+                and email
+                and not get_user_by_email(db, email)):
             try:
                 db.add(AbandonedCheckout(
                     session_id=session_id,
@@ -405,15 +404,30 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                     region=session_obj["metadata"].get("purchase_lang", region).upper(),
                 ))
                 db.commit()
+                logging.info("Lead saved (%s) for %s", event_type, email)
             except IntegrityError:
                 db.rollback()
-        return {"status": "expired_logged"}
+        return {"status": "non_paid_logged"}
+
+    if event["type"] != "checkout.session.completed":
+        return {"status": "ignored"}
 
     # 3. Проверяем, что деньги действительно списаны
     if session_obj.get("payment_status") != "paid":
-        logging.info("Session %s не оплачена (payment_status=%s) — пропускаем",
-                     session_id, session_obj.get("payment_status"))
-        return {"status": "unpaid"}
+            if email and not get_user_by_email(db, email):
+                try:
+                    db.add(AbandonedCheckout(
+                        session_id=session_id,
+                        email=email,
+                        course_ids=session_obj["metadata"].get("course_ids", ""),
+                        region=session_obj["metadata"].get("purchase_lang", region).upper(),
+                    ))
+                    db.commit()
+                    logging.info("Lead saved (completed_unpaid) for %s", email)
+                except IntegrityError:
+                    db.rollback()
+            return {"status": "completed_unpaid"}
+
 
     deleted = (
         db.query(AbandonedCheckout)
