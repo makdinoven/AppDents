@@ -69,15 +69,16 @@ const Landing = ({
     const searchParams = new URLSearchParams(location.search);
     return searchParams.has("fbclid") || isPromotionLanding;
   }, [location.search]);
+  const isAdmin = role === "admin";
 
   useEffect(() => {
-    if (isLogged && isFree) {
+    if (isLogged && isFree && !isAdmin) {
       dispatch(getCourses());
     }
   }, [isLogged]);
 
   useEffect(() => {
-    if (courses.length > 0 && isFree) {
+    if (courses.length > 0 && isFree && !isAdmin) {
       navigate(
         isClient
           ? `/${Path.landingClient}/${landingPath}`
@@ -245,7 +246,7 @@ const Landing = ({
     <>
       <div className={s.landing_top}>
         {isClient && <BackButton />}
-        {role === "admin" && isClient && (
+        {isAdmin && isClient && (
           <div className={s.admin_btns}>
             <a
               href={`${BASE_URL}${Path.landing}/${landingPath}`}
