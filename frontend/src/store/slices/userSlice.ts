@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { getCourses, getMe, login } from "../actions/userActions.ts";
 import i18n from "i18next";
+import { LS_LANGUAGE_KEY } from "../../common/helpers/commonConstants.ts";
 
-const savedLanguage = localStorage.getItem("DENTS_LANGUAGE") || "EN";
+const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
 
 interface UserState {
   email: string | null;
@@ -52,7 +53,7 @@ const userSlice = createSlice({
     setLanguage: (state, action: PayloadAction<string>) => {
       const newLanguage = action.payload;
       state.language = newLanguage;
-      localStorage.setItem("DENTS_LANGUAGE", newLanguage);
+      localStorage.setItem(LS_LANGUAGE_KEY, newLanguage);
       i18n.changeLanguage(newLanguage);
     },
   },

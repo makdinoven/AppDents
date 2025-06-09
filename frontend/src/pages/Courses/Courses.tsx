@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { ParamsType } from "../../api/adminApi/types.ts";
 import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
-import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
@@ -39,11 +39,11 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
     }
   }, [userCourses]);
 
-  const loadCourses = async ({ page, language, q, size }: ParamsType) => {
+  const loadCourses = async (params: ParamsType) => {
     setLoading(true);
     try {
-      const params = { language, page, size, q, single_course: isFree };
-      const res = await mainApi.getCoursesPagination(params);
+      const paramsToSend = { ...params, single_course: isFree };
+      const res = await mainApi.getCoursesPagination(paramsToSend);
 
       setCourses(res.data.cards);
       setTotal(res.data.total);
@@ -66,7 +66,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         loadData={(params) => loadCourses(params)}
         total={total}
         totalPages={totalPages}
-        // filters={["tags", "sort", "size"]}
+        filters={["tags", "sort", "size"]}
       >
         <CardsList
           isFree={isFree}
