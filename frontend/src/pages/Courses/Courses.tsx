@@ -15,7 +15,7 @@ import CoursesSection from "../../components/CommonComponents/CoursesSection/Cou
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatchType>();
-  const { language, isLogged } = useSelector(
+  const { language, isLogged, role } = useSelector(
     (state: AppRootStateType) => state.user,
   );
   const userCourses = useSelector(
@@ -26,15 +26,16 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const isAdmin = role === "admin";
 
   useEffect(() => {
-    if (isLogged && isFree) {
+    if (isLogged && isFree && !isAdmin) {
       dispatch(getCourses());
     }
   }, [isLogged]);
 
   useEffect(() => {
-    if (userCourses.length > 0 && isFree) {
+    if (userCourses.length > 0 && isFree && !isAdmin) {
       navigate(Path.courses);
     }
   }, [userCourses]);
