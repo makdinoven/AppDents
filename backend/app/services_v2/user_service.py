@@ -6,12 +6,13 @@ from typing import Optional, Dict, Any, List
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from sqlalchemy import delete, func, cast, Date
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased
 from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, \
-    PurchaseSource, FreeCourseAccess
+    PurchaseSource, FreeCourseAccess, AbandonedCheckout
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -54,7 +55,14 @@ def credit_balance(
     )
     db.commit()
 
-def create_user(db: Session, email: str, password: str, role: str = "user", invited_by: Optional[User] = None) -> User:
+def create_user(
+    db: Session,
+    email: str,
+    password: str,
+    role: str = "user",
+    invited_by: Optional[User] = None,
+) -> User:
+    # 1. создаём самого пользователя (ещё без commit’а)
     user = User(
         email=email,
         password=hash_password(password),
@@ -63,7 +71,19 @@ def create_user(db: Session, email: str, password: str, role: str = "user", invi
     )
     user.referral_code = generate_unique_referral_code(db)
     db.add(user)
-    db.commit()
+
+    # 2. сразу удаляем все «заброшенные» лиды по e-mail
+    db.query(AbandonedCheckout) \
+      .filter(AbandonedCheckout.email == email) \
+      .delete(synchronize_session=False)
+
+    # 3. один общий commit
+    try:
+        db.commit()
+    except IntegrityError:                # если e-mail уже зарегистрирован
+        db.rollback()
+        raise ValueError("User with this email already exists")
+
     db.refresh(user)
     return user
 

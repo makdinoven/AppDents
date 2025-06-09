@@ -263,3 +263,17 @@ class FreeCourseAccess(Base):
 
     user   = relationship("User", back_populates="free_courses")
     course = relationship("Course")
+
+class AbandonedCheckout(Base):
+    """
+    E-mails тех, кто открыл Checkout, но не заплатил.
+    Запись удаляется, когда по этому session_id приходит completed.
+    """
+    __tablename__ = "abandoned_checkouts"
+
+    id         = Column(Integer, primary_key=True)
+    session_id = Column(String(255), unique=True, nullable=False, index=True)
+    email      = Column(String(255), nullable=False, index=True)
+    course_ids = Column(String(255))                 # "12,34,56"
+    region     = Column(String(10))
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
