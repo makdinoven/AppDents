@@ -3,4 +3,6 @@ export interface ParamsType {
   page?: number;
   size: number;
   q?: string;
+  sort?: string;
+  tags?: string;
 }

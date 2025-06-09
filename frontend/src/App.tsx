@@ -13,6 +13,7 @@ import { getMe } from "./store/actions/userActions.ts";
 import ScrollToTop from "./common/helpers/ScrollToTop.tsx";
 import { getCart } from "./store/actions/cartActions.ts";
 import {
+  LS_LANGUAGE_KEY,
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
 } from "./common/helpers/commonConstants.ts";
@@ -35,7 +36,7 @@ function App() {
   useEffect(() => {
     initFacebookPixel();
     // dispatch(getMe());
-    const storedLanguage = localStorage.getItem("DENTS_LANGUAGE") || language;
+    const storedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || language;
     dispatch(setLanguage(storedLanguage));
   }, []);
 

@@ -8,11 +8,6 @@
   gap: 20px;
 }
 
-.filters {
-  display: flex;
-  gap: 10px;
-}
-
 .search_container {
   @include flex-column;
   gap: 10px;

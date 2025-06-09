@@ -15,6 +15,15 @@ export const LANGUAGES = [
   { label: "Italiano", value: "IT" },
 ];
 
+export const LANGUAGES_NAME = [
+  { name: "English", value: "EN" },
+  { name: "Русский", value: "RU" },
+  { name: "Español", value: "ES" },
+  { name: "العربية", value: "AR" },
+  { name: "Português", value: "PT" },
+  { name: "Italiano", value: "IT" },
+];
+
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
   // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
@@ -68,6 +77,15 @@ export const SORT_FILTERS = [
   { name: "tag.common.new", value: "new" },
 ];
 
+export type FilterKeys = "tags" | "sort" | "size" | "language";
+
+export const FILTER_PARAM_KEYS: Record<FilterKeys, string> = {
+  tags: "tags",
+  sort: "sort",
+  size: "size",
+  language: "lang",
+};
+
 export const ANALYTICS_LIMITS = [
   { name: "10", value: "10" },
   { name: "20", value: "20" },
@@ -82,7 +100,6 @@ export const PAGE_SIZES = [
   { name: "20", value: "20" },
   { name: "50", value: "50" },
   { name: "100", value: "100" },
-  { name: "200", value: "200" },
 ];
 
 export const PAYMENT_SOURCES = [
@@ -104,3 +121,5 @@ export const PAYMENT_SOURCES = [
 export const REF_CODE_PARAM = "rc";
 
 export const REF_CODE_LS_KEY = "DENTS_RC";
+
+export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
