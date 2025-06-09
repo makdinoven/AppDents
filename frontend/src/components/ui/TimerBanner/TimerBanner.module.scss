@@ -18,7 +18,7 @@
     margin: 0 auto;
     z-index: 10;
     box-shadow: 0 4px 8px rgba(1, 67, 61, 0.1);
-    @include clamped-h4;
+    @include clamped-p3;
   }
 
   &.hiding {
@@ -33,7 +33,7 @@
   .banner_content {
     display: flex;
     justify-content: space-between;
-    gap: 25px;
+    gap: 10px;
     align-items: center;
     width: 100%;
 
@@ -76,8 +76,8 @@
       }
 
       .timer {
-        padding: 3px 10px;
-        gap: 10px;
+        padding: 3px 6px;
+        gap: 8px;
 
         svg {
           width: 20px;
