@@ -68,6 +68,10 @@
     "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo."
   },
 
+  "banner": {
+    "title": "<1>Solo</1> oggi: Corso di odontoiatria <1>– {{discount}}% di sconto!</1>"
+  },
+
 
 
   "nav": {

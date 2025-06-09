@@ -68,6 +68,10 @@
     "desc": "Esta aula é parte de um curso. Compre o acesso completo."
   },
 
+  "banner": {
+    "title": "<1>Apenas</1> hoje: Curso de odontologia <1>– {{discount}}% de desconto!</1>"
+  },
+
 
 
 
