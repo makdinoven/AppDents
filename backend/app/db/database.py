@@ -13,7 +13,14 @@ DATABASE_URL = (
     f"?charset=utf8"
 )
 
-engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True,)
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=20,          # ↑ больше одновременных соединений
+    max_overflow=10,       # запас
+    pool_timeout=60,       # ↑ ждём минуту
+    pool_pre_ping=True,
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

@@ -8,7 +8,7 @@ from datetime import datetime
 import boto3
 from sqlalchemy.orm import Session
 
-from ..db.database import get_db
+from ..db.database import get_db, SessionLocal
 from ..models.models_v2 import LessonPreview
 from ..celery_app import celery  # ваш главный Celery-инстанс
 
@@ -32,32 +32,24 @@ s3 = boto3.client(
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def generate_preview(self, video_link: str):
     """
-    Вырезаем кадр на первой секунде, заливаем в S3,
-    путь вида  /previews/<sha1>.jpg
+    Вырезаем кадр, кладём в S3, пишем URL в БД.
     """
-    db: Session = next(get_db())
-
-    # защита от гонок
-    if db.query(LessonPreview).filter_by(video_link=video_link).first():
-        logger.debug("Preview already exists for %s", video_link)
-        return
-
-    # tmp.jpg → ffmpeg
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp_path = tmp.name
-
+    db: Session = SessionLocal()          # ← открываем вручную
     try:
+        if db.query(LessonPreview).filter_by(video_link=video_link).first():
+            return
+
+        # --- ffmpeg ---
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = tmp.name
         cmd = [
             "ffmpeg", "-loglevel", "error",
-            "-ss", "00:00:01",
-            "-i", video_link,
-            "-frames:v", "1",
-            "-q:v", "3",
-            tmp_path,
+            "-ss", "00:00:01", "-i", video_link,
+            "-frames:v", "1", "-q:v", "3", tmp_path,
         ]
         subprocess.check_call(cmd, timeout=30)
-        logger.info("Frame extracted for %s", video_link)
 
+        # --- S3 upload ---
         sha1 = hashlib.sha1(video_link.encode()).hexdigest()
         s3_key = f"{S3_PREVIEW_DIR}/{sha1}.jpg"
         s3.upload_file(
@@ -66,17 +58,23 @@ def generate_preview(self, video_link: str):
         )
         preview_url = f"{S3_PUBLIC_HOST}/{s3_key}"
 
-        db.add(LessonPreview(video_link=video_link, preview_url=preview_url,
-                             generated_at=datetime.utcnow()))
+        db.add(LessonPreview(
+            video_link=video_link,
+            preview_url=preview_url,
+            generated_at=datetime.utcnow(),
+        ))
         db.commit()
         logger.info("Preview uploaded to %s", preview_url)
 
     except subprocess.CalledProcessError as exc:
+        db.rollback()
         logger.warning("ffmpeg error %s for %s", exc, video_link)
-        self.retry(exc=exc)
+        raise self.retry(exc=exc)
     except Exception as exc:
+        db.rollback()
         logger.exception("Generate preview failed for %s", video_link)
-        self.retry(exc=exc)
+        raise self.retry(exc=exc)
     finally:
+        db.close()                # ← ОБЯЗАТЕЛЬНО
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
