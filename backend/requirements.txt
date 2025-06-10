@@ -21,3 +21,4 @@ jose
 rapidfuzz
 boto3
 botocore
+celery
