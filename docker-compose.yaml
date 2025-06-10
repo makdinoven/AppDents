@@ -21,6 +21,31 @@ services:
     networks:
       - priv
 
+  redis:
+    image: redis:7
+    container_name: redis_prod
+    restart: always
+    expose:
+      - "6379"
+    networks:
+      - priv
+
+  celery_worker:
+      build:
+        context: ./backend
+        dockerfile: Dockerfile
+      container_name: celery_worker_prod
+      command: celery -A app.celery_app worker --loglevel=info
+      env_file:
+        - .env
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_started
+      networks:
+        - priv
+
   backend:
     build:
       context: ./backend

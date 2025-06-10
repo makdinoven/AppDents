@@ -277,3 +277,14 @@ class AbandonedCheckout(Base):
     course_ids = Column(String(255))                 # "12,34,56"
     region     = Column(String(10))
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+
+class LessonPreview(Base):
+    """
+    Сохранённые превью одного кадра из видео-урока.
+    Ключ – сама ссылка на Boomstream.
+    """
+    __tablename__ = "lesson_previews"
+
+    video_link   = Column(String(255), primary_key=True)
+    preview_url  = Column(String(255), nullable=False)
+    generated_at = Column(DateTime, nullable=False, default=func.now())
