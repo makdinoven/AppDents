@@ -22,3 +22,5 @@ rapidfuzz
 boto3
 botocore
 celery
+celery[redis]
+redis
