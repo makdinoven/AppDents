@@ -19,7 +19,7 @@ celery = Celery(
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=[
-        "backend.tasks.preview_tasks",   # пути до ваших модулей с тасками
+        "app.tasks.preview_tasks",   # пути до ваших модулей с тасками
         # добавляйте другие tasks-модули сюда
     ],
 )
