@@ -8,9 +8,10 @@ import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOver
 import { ParamsType } from "../../../../../api/adminApi/types.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import ListController from "../../../../../components/ui/ListController/ListController.tsx";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
-import { useState } from "react";
+import {
+  FILTER_PARAM_KEYS,
+  FilterKeys,
+} from "../../../../../common/helpers/commonConstants.ts";
 
 interface AdminListProps<T> {
   data: any;
@@ -41,22 +42,17 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const tab = searchParams.get("tab");
   const SEARCH_KEY = `admin.${tab}`;
   const itemsList = data.list as T[];
-  const [language, setLanguage] = useState<any>("all");
-
-  const getLanguageParam = () => {
-    return language !== "all" ? language : undefined;
-  };
 
   const handleCreateItem = async () => {
     try {
       await onCreate();
       const newParams = new URLSearchParams(searchParams);
       newParams.set("page", "1");
+      newParams.delete(FILTER_PARAM_KEYS.language);
       setSearchParams(newParams, { replace: true });
       onFetch({
         page: 1,
         size: SIZE,
-        language: getLanguageParam(),
       });
     } catch (err: any) {
       alert(
@@ -65,27 +61,15 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     }
   };
 
-  const languagesOptions = [{ label: "All", value: "all" }, ...LANGUAGES];
+  const filters: FilterKeys[] = ["size"];
+
+  if (showLanguageFilter) {
+    filters.unshift("language");
+  }
 
   return (
     <div className={s.list_container}>
       <div className={s.list_header}>
-        {showLanguageFilter && (
-          <div className={s.multi_select_wrapper}>
-            <MultiSelect
-              isSearchable={false}
-              id={"language"}
-              options={languagesOptions}
-              placeholder={"Choose a language"}
-              selectedValue={language}
-              isMultiple={false}
-              onChange={({ value }) => setLanguage(value)}
-              valueKey="value"
-              labelKey="label"
-            />
-          </div>
-        )}
-
         <PrettyButton
           variant={"primary"}
           text={`admin.${tab}.create`}
@@ -94,11 +78,11 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       </div>
       <ListController
         type={SEARCH_KEY}
-        language={getLanguageParam()}
         loadData={(params) => onFetch(params)}
         total={data.total}
         totalPages={data.total_pages}
         size={SIZE}
+        filters={filters}
       >
         <div className={s.list}>
           {loading && (

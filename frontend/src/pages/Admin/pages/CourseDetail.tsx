@@ -129,8 +129,69 @@ const CourseDetail = () => {
       await adminApi.updateCourse(courseId, denormalizeCourse(course));
       navigate(-1);
     } catch (error) {
+      alert(`Error updating course data`);
       console.error("Error updating course:", error);
     }
+  };
+
+  const moveSectionUp = (sectionId: number) => {
+    updateCourseState((prev) => {
+      const idx = prev.sections.findIndex((s: any) => s.id === sectionId);
+      if (idx <= 0) return prev;
+
+      const sections = [...prev.sections];
+      [sections[idx - 1], sections[idx]] = [sections[idx], sections[idx - 1]];
+
+      return { ...prev, sections };
+    });
+  };
+
+  const moveSectionDown = (sectionId: number) => {
+    updateCourseState((prev) => {
+      const idx = prev.sections.findIndex((s: any) => s.id === sectionId);
+      if (idx === -1 || idx === prev.sections.length - 1) return prev;
+
+      const sections = [...prev.sections];
+      [sections[idx], sections[idx + 1]] = [sections[idx + 1], sections[idx]];
+
+      return { ...prev, sections };
+    });
+  };
+
+  const moveLessonUp = (sectionId: number, lessonId: number) => {
+    updateCourseState((prev) => {
+      const sections = prev.sections.map((section: any) => {
+        if (section.id !== sectionId) return section;
+
+        const idx = section.lessons.findIndex((l: any) => l.id === lessonId);
+        if (idx <= 0) return section;
+
+        const lessons = [...section.lessons];
+        [lessons[idx - 1], lessons[idx]] = [lessons[idx], lessons[idx - 1]];
+
+        return { ...section, lessons };
+      });
+
+      return { ...prev, sections };
+    });
+  };
+
+  const moveLessonDown = (sectionId: number, lessonId: number) => {
+    updateCourseState((prev) => {
+      const sections = prev.sections.map((section: any) => {
+        if (section.id !== sectionId) return section;
+
+        const idx = section.lessons.findIndex((l: any) => l.id === lessonId);
+        if (idx === -1 || idx === section.lessons.length - 1) return section;
+
+        const lessons = [...section.lessons];
+        [lessons[idx], lessons[idx + 1]] = [lessons[idx + 1], lessons[idx]];
+
+        return { ...section, lessons };
+      });
+
+      return { ...prev, sections };
+    });
   };
 
   return (
@@ -157,6 +218,8 @@ const CourseDetail = () => {
                 <EditSection
                   key={section.id}
                   section={section}
+                  moveSectionUp={() => moveSectionUp(section.id)}
+                  moveSectionDown={() => moveSectionDown(section.id)}
                   setCourse={setCourse}
                   handleDelete={() => handleDeleteItem("section", section.id)}
                 >
@@ -174,6 +237,12 @@ const CourseDetail = () => {
                     {section.lessons.length > 0 ? (
                       section.lessons.map((lesson: any, index: number) => (
                         <EditLesson
+                          moveLessonUp={() =>
+                            moveLessonUp(section.id, lesson.id)
+                          }
+                          moveLessonDown={() =>
+                            moveLessonDown(section.id, lesson.id)
+                          }
                           key={index}
                           section={section}
                           lesson={lesson}

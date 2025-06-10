@@ -16,6 +16,7 @@ export const LANGUAGES = [
 ];
 
 export const LANGUAGES_NAME = [
+  { name: "All", value: "all" },
   { name: "English", value: "EN" },
   { name: "Русский", value: "RU" },
   { name: "Español", value: "ES" },
