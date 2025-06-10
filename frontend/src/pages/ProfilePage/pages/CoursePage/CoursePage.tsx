@@ -61,10 +61,6 @@ const CoursePage = () => {
     setModalOpen(false);
   };
 
-  useEffect(() => {
-    // console.log(landing);
-  }, [landing]);
-
   const paymentData = {
     landing_ids: [landing?.id],
     course_ids: landing?.course_ids,
@@ -136,7 +132,6 @@ const CoursePage = () => {
                         handleClick={handleOpenModal}
                         name={lesson.lesson_name}
                         link={`${Path.lesson}/${section.id}/${lesson.id}`}
-                        // link={lesson.video_link}
                         viewText={"watchLesson"}
                       />
                     ))}

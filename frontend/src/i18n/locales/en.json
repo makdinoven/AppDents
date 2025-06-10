@@ -298,6 +298,7 @@
     "update": "update",
     "view": "view",
     "open": "open",
+    "promo": "promo link",
     "courses": {
       "courses": "courses",
       "search": "Search courses...",

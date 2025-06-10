@@ -8,6 +8,8 @@ const EditLesson = ({
   lesson,
   setCourse,
   handleDelete,
+  moveLessonUp,
+  moveLessonDown,
 }: {
   type?: "landing" | "course";
   section?: SectionType;
@@ -15,6 +17,8 @@ const EditLesson = ({
   index?: number;
   setCourse: any;
   handleDelete: any;
+  moveLessonUp: () => void;
+  moveLessonDown: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -106,6 +110,8 @@ const EditLesson = ({
   return (
     <CollapsibleSection
       title="admin.lessons"
+      handleMoveToTop={moveLessonUp}
+      handleMoveToBottom={moveLessonDown}
       data={
         type === "course"
           ? {

@@ -20,6 +20,50 @@
   }
 }
 
+.section_content {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.arrows {
+  @include flex-column;
+  gap: 5px;
+  align-items: center;
+  width: 40px;
+  justify-content: center;
+
+  svg {
+    width: 30px;
+    height: 30px;
+    path {
+      @include transition();
+      stroke: $accent;
+    }
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
+
+  .top_arrow {
+    transform: rotate(90deg);
+  }
+
+  .bottom_arrow {
+    transform: rotate(-90deg);
+  }
+}
+
 .section_closed {
   position: relative;
   display: flex;

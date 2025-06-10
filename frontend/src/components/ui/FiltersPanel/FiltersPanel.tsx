@@ -32,7 +32,7 @@ const FiltersPanel = ({ filters, defaultSize }: FiltersPanelProps) => {
     tags: searchParams.get(FILTER_PARAM_KEYS.tags) || "all",
     sort: searchParams.get(FILTER_PARAM_KEYS.sort) || "popular",
     size: searchParams.get(FILTER_PARAM_KEYS.size) || defaultSize.toString(),
-    language: searchParams.get(FILTER_PARAM_KEYS.language) || "EN",
+    language: searchParams.get(FILTER_PARAM_KEYS.language) || "all",
   };
 
   const filterConfig: Record<
@@ -56,7 +56,7 @@ const FiltersPanel = ({ filters, defaultSize }: FiltersPanelProps) => {
     },
     language: {
       options: LANGUAGES_NAME,
-      defaultValue: "EN",
+      defaultValue: "all",
     },
   };
 

@@ -29,10 +29,10 @@ const PanelItem = ({
     return landingPath ? (
       <div className={s.buttons}>
         <Link to={link}>
-          <PrettyButton text={t("admin.update")} />
+          <PrettyButton text={"admin.update"} />
         </Link>
         <Link to={landingPath}>
-          <PrettyButton variant={"primary"} text={t("admin.view")} />
+          <PrettyButton variant={"primary"} text={"admin.view"} />
         </Link>
         {showToggle && (
           <a
@@ -40,7 +40,7 @@ const PanelItem = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-            <PrettyButton variant="default" text={"promo link"} />
+            <PrettyButton variant="default" text={"admin.promo"} />
           </a>
         )}
       </div>
