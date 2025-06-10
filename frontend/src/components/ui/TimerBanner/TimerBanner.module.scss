@@ -72,8 +72,10 @@
       }
 
       .timer {
-        padding: 3px 6px;
+        border-width: 1px;
+        padding: 2px 6px;
         gap: 8px;
+        font-size: 18px;
 
         svg {
           width: 20px;
