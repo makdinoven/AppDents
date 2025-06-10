@@ -1,3 +1,5 @@
+import copy
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
@@ -11,6 +13,7 @@ from ..services_v2.course_service import get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
     CourseListPageResponse
 from ..services_v2.landing_service import get_cheapest_landing_for_course
+from ..services_v2.preview_service import get_or_schedule_preview
 
 router = APIRouter()
 
@@ -58,56 +61,50 @@ def get_course_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    full     – курс куплен, все видео доступны;
-    partial  – курс получен бесплатно, доступ только к первому видео,
-               остальные уроки видны, но без ссылки.
-    """
 
     course = get_course_detail(db, course_id)
     is_admin = getattr(current_user, "role", None) == "admin"
 
-    # --- определяем уровень доступа ---
-    has_full = (
-        is_admin                      # ← админ = всегда полный доступ
-        or any(c.id == course_id for c in current_user.courses)
-    )
-    has_part = (
-        not is_admin                  # админ не может быть "partial"
-        and course_id in getattr(current_user, "partial_course_ids", [])
-    )
+    # — уровень доступа —
+    has_full = is_admin or any(c.id == course_id for c in current_user.courses)
+    has_part = (not is_admin) and course_id in getattr(current_user, "partial_course_ids", [])
 
-    if not (has_full or has_part):
-        raise HTTPException(403, "Нет доступа к курсу")
-
-    # --- нормализуем sections в список ---
+    # — нормализуем sections в список —
     raw_sections = course.sections or {}
-    sections = [{k: v} for k, v in raw_sections.items()] if isinstance(raw_sections, dict) \
-               else list(raw_sections)
+    sections = (
+        [{k: v} for k, v in raw_sections.items()]
+        if isinstance(raw_sections, dict)
+        else list(raw_sections)
+    )
 
-    # --- если доступ частичный, скрываем все video_link кроме первого ---
+    # --- добавляем превью сразу, пока video_link ещё на месте ---
+    for sec in sections:
+        key, data = next(iter(sec.items()))
+        new_lessons = []
+        for lesson in data["lessons"]:
+            lesson_copy = copy.deepcopy(lesson)
+            lesson_copy["preview"] = get_or_schedule_preview(db, lesson_copy["video_link"])
+            new_lessons.append(lesson_copy)
+        data["lessons"] = new_lessons
+        sec[key] = data
+
+    # --- если partial, вырезаем ссылки (картинки остаются) ---
     if has_part:
-        unlocked = False                       # флаг: уже выдали одну ссылку
+        unlocked = False
         for sec in sections:
             key, data = next(iter(sec.items()))
-            new_lessons = []
             for lesson in data["lessons"]:
-                lesson_copy = dict(lesson)     # не трогаем оригинал из БД
                 if unlocked:
-                    lesson_copy.pop("video_link", None)  # «замок»
+                    lesson.pop("video_link", None)
                 else:
-                    unlocked = True            # оставляем ссылку лишь у самого первого
-                new_lessons.append(lesson_copy)
-            data["lessons"] = new_lessons
-            sec[key] = data
+                    unlocked = True
 
+    # --- самый дешёвый лендинг ---
     cheapest_landing = None
-    if not has_full:  # full-покупателям не нужно
-        landing_obj = get_cheapest_landing_for_course(db, course_id)
-        if landing_obj:
-            cheapest_landing = {
-                "id": landing_obj.id,
-            }
+    if not has_full:
+        landing = get_cheapest_landing_for_course(db, course_id)
+        if landing:
+            cheapest_landing = {"id": landing.id}
 
     return {
         "id": course.id,
@@ -117,6 +114,7 @@ def get_course_by_id(
         "access_level": "full" if has_full else "partial",
         "cheapest_landing": cheapest_landing,
     }
+
 
 
 @router.put("/{course_id}", response_model=CourseDetailResponse)
