@@ -69,7 +69,7 @@
   },
 
   "banner": {
-    "title": "<1>Solo</1> hoy: Curso de odontología <1>– ¡{{discount}}% de descuento!</1>"
+    "title": "Sólo <1>hoy</1> <1>– {{discount}}% de descuento!</1>"
   },
 
 
