@@ -45,6 +45,7 @@ services:
           condition: service_started
       networks:
         - priv
+        - pub
 
   backend:
     build:

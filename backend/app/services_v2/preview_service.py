@@ -13,7 +13,7 @@ def get_or_schedule_preview(db: Session, video_link: str) -> str:
     if row:
         return row.preview_url
 
-    logger.info("⏳ scheduling preview for %s", video_link)  # ← ДОБАВЬТЕ
+    logger.info("⏳ scheduling preview for  %s", video_link)  # ← ДОБАВЬТЕ
     try:
         generate_preview.delay(video_link)
     except Exception as exc:
