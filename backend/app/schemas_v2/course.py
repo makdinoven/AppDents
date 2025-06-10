@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Literal
 
 
@@ -6,6 +6,13 @@ from typing import Optional, List, Dict, Literal
 class Lesson(BaseModel):
     video_link: str = ""
     lesson_name: str = ""
+    preview: str | None = Field(
+        None,
+        description="URL JPEG-превью; присутствует всегда, даже при partial-доступе",
+    )
+
+    class Config:
+        orm_mode = True
 
 # Схема для секции: объект с названием и списком уроков
 class Section(BaseModel):
