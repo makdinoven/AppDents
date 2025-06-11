@@ -50,6 +50,10 @@ const ListController = ({
     return obj;
   };
 
+  const initialAppLang = language
+    ? localStorage.getItem(LS_LANGUAGE_KEY)
+    : undefined;
+
   const currentFilters = getCurrentFilters();
 
   const prevFilters = useRef<{
@@ -58,7 +62,7 @@ const ListController = ({
     byKey: Record<FilterKeys, string | undefined>;
   }>({
     search: debouncedSearchValue,
-    appLanguage: localStorage.getItem(LS_LANGUAGE_KEY) || undefined,
+    appLanguage: initialAppLang || undefined,
     byKey: getCurrentFilters(),
   });
 
