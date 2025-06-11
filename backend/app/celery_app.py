@@ -1,8 +1,4 @@
-"""
-Единый Celery-инстанс для всего проекта.
-Импортируйте как:  from backend.celery_app import celery
-(замените 'backend' на фактическое имя корневого пакета).
-"""
+
 import os
 from celery import Celery
 from dotenv import load_dotenv
@@ -31,4 +27,8 @@ celery.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    task_annotations={
+        #  не более 4 кадров в минуту, чтобы не забить CPU
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "4/m"},
+    },
 )
