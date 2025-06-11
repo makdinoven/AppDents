@@ -125,6 +125,43 @@ def _boomstream_poster(vid: str) -> str | None:
             pass
     return None
 
+def _kinescope_poster(embed_url: str) -> str | None:
+    """
+    Принимает URL вида  https://kinescope.io/embed/<ID>
+    Возвращает thumbnailUrl из <script type="application/ld+json">,
+    либо None, если не найден.
+    """
+    # убираем query (?title=0 и т. д.)
+    base = urlsplit(embed_url)
+    page = f"https://kinescope.io{base.path}"
+    try:
+        r = requests.get(page, timeout=REQUEST_TIMEOUT)
+        if r.status_code != 200:
+            return None
+        m = re.search(r'"thumbnailUrl"\s*:\s*"([^"]+)"', r.text)
+        if m:
+            return m.group(1)
+    except requests.RequestException:
+        pass
+    return None
+
+def _vimeo_poster(embed_url: str) -> str | None:
+    """
+    GET https://player.vimeo.com/video/<ID>
+    Ищем "thumbnailUrl": "…jpg|webp"
+    """
+    try:
+        r = requests.get(embed_url.split("?")[0], timeout=REQUEST_TIMEOUT)
+        if r.status_code != 200:
+            return None
+        m = re.search(r'"thumbnailUrl"\s*:\s*"([^"]+)"', r.text)
+        if m:
+            return m.group(1)
+    except requests.RequestException:
+        pass
+    return None
+
+
 def _may_enqueue(video_link: str) -> bool:
     """
     Лукасный счётчик в Redis: key=preview_enqueue:<epoch>
@@ -149,6 +186,16 @@ def preview_url_for(video_link: str) -> tuple[str | None, bool]:
         if poster:
             return poster, False          # готовый JPEG
         return None, False                # постера нет → плейсхолдер
+
+    if "kinescope.io/embed/" in video_link:
+        poster = _kinescope_poster(video_link)
+        if poster:
+            return poster, False  # jpeg, ffmpeg не нужен
+        return None, False
+
+    if "player.vimeo.com/video/" in video_link:
+        poster = _vimeo_poster(video_link)
+        return (poster, False) if poster else (None, False)
 
     if "cdn.dent-s.com" in video_link:
         p = urlsplit(video_link)
