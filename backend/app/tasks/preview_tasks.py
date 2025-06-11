@@ -169,17 +169,16 @@ def generate_preview(self, video_link: str) -> None:
         if db.query(LessonPreview).filter_by(video_link=video_link).first():
             return
 
-        safe_url = preview_url_for(video_link)
+        safe_url, need_ffmpeg = preview_url_for(video_link)
 
-        # неизвестный источник → сразу плейсхолдер
+        # неизвестный источник → плейсхолдер
         if safe_url is None:
             logger.info("Unknown source for %s — placeholder", video_link)
             _save_preview_row(db, video_link, PLACEHOLDER_URL)
             return
 
-        # Boomstream JPEG
-        if safe_url.endswith(".jpg"):
-            logger.debug("Use Boomstream poster for %s", video_link)
+        # Boomstream-JPEG (или другой прямой jpg) — ffmpeg не нужен
+        if not need_ffmpeg:
             _save_preview_row(db, video_link, safe_url)
             return
 
