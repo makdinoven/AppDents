@@ -24,10 +24,13 @@ import boto3
 import requests
 from celery import Celery
 from sqlalchemy.orm import Session
+from botocore.config import Config
+
 
 from ..db.database import SessionLocal
 from ..models.models_v2 import LessonPreview
 from ..celery_app import celery
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +55,9 @@ s3 = boto3.client(
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4"),
 )
+
 
 REQUEST_TIMEOUT = 10   # сек для HEAD/GET Boomstream
 
@@ -198,13 +203,17 @@ def generate_preview(self, video_link: str) -> None:
 
         sha1 = hashlib.sha1(video_link.encode()).hexdigest()
         s3_key = f"{S3_DIR}/{sha1}.jpg"
-        s3.upload_file(
-            tmp_path,
-            S3_BUCKET,
-            s3_key,
-            ExtraArgs={"ACL": "public-read", "ContentType": "image/jpeg"},
-        )
+
+        with open(tmp_path, "rb") as fh:
+            s3.put_object(
+                Bucket=S3_BUCKET,
+                Key=s3_key,
+                Body=fh,
+                ACL="public-read",
+                ContentType="image/jpeg",
+            )
         public_url = f"{S3_PUBLIC_HOST}/{s3_key}"
+
         _save_preview_row(db, video_link, public_url)
         logger.info("Preview uploaded → %s", public_url)
 
