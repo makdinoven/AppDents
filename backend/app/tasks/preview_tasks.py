@@ -126,29 +126,28 @@ def _may_enqueue(video_link: str) -> bool:
 
 
 # ───────────  какой URL вернуть для данного video_link  ───────────
-def preview_url_for(video_link: str) -> str | None:
+def preview_url_for(video_link: str) -> tuple[str | None, bool]:
     """
-    • Boomstream  → готовый JPEG
-    • CDN-mp4     → sanitised-URL для ffmpeg
-    • Иное        → None (плейсхолдер)
+    Возвращает (url_or_none, use_ffmpeg)
+      • Boom stream : (poster .jpg, False)  либо (None, False)
+      • CDN mp4     : (sanitised .mp4, True)
+      • Иное        : (None, False)
     """
     if "play.boomstream.com" in video_link:
         poster = _boomstream_html_poster(video_link)
         if poster:
-            return poster, False  # jpeg найден — ffmpeg не нужен
-        return None, False  # None если постера нет
+            return poster, False          # готовый JPEG
+        return None, False                # постера нет → плейсхолдер
 
     if "cdn.dent-s.com" in video_link:
-        parts = urlsplit(video_link)
-        safe_path  = _sanitize_cdn_path(parts.path)      # ← вот здесь
-        safe_query = quote(unquote(parts.query), safe="=&")
-        return urlunsplit((parts.scheme,
-                           parts.netloc,
-                           safe_path,
-                           safe_query,
-                           ""))
+        p = urlsplit(video_link)
+        safe_path  = _sanitize_cdn_path(p.path)
+        safe_query = quote(unquote(p.query), safe="=&")
+        safe_url   = urlunsplit((p.scheme, p.netloc, safe_path, safe_query, ""))
+        return safe_url, True             # нужен ffmpeg
 
-    return None
+    return None, False                    # неизвестный источник
+
 
 
 def _save_preview_row(db: Session, video_link: str, url: str) -> None:
