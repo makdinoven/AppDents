@@ -57,7 +57,7 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     config=Config(
         signature_version="s3v4",
-        s3={"use_unsigned_payload": True},
+        s3={"use_unsigned_payload": False},
 
     ),
 )
