@@ -41,6 +41,7 @@ PLACEHOLDER_NAME = "placeholder.jpg"
 PLACEHOLDER_URL  = f"{S3_PUBLIC_HOST}/{S3_DIR}/{PLACEHOLDER_NAME}"
 NEW_TASKS_WINDOW = 30
 NEW_TASKS_LIMIT  = 10
+SAFE_CHARS = "/()[]_,-."
 
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=False)
 
@@ -53,6 +54,16 @@ s3 = boto3.client(
 )
 
 REQUEST_TIMEOUT = 10   # сек для HEAD/GET Boomstream
+
+def _sanitize_cdn_path(path: str) -> str:
+    """
+    1. Снимаем ВСЮ прежнюю кодировку (`%25`→`%`, потом ещё раз).
+    2. Перекодируем строку в UTF-8-bytes.
+    3. Кодируем *ровно один раз*, оставляя SAFE_CHARS нетронутыми.
+    """
+    decoded = unquote(unquote(path))           # убираем двойные %XX
+    utf8_bytes = decoded.encode("utf-8")       # теперь это bytes
+    return quote(utf8_bytes, safe=SAFE_CHARS)
 
 def _boomstream_poster(vid: str) -> str | None:
     """
@@ -83,33 +94,29 @@ def _may_enqueue(video_link: str) -> bool:
         rds.expire(key, NEW_TASKS_WINDOW)
     return val <= NEW_TASKS_LIMIT
 
-# ─────────────────────────  HELPERS  ────────────────────────────
-def _sanitize_cdn_path(path: str) -> str:
-    """Снимаем все старые %XX и кодируем заново один раз."""
-    decoded = unquote(unquote(path))
-    return quote(decoded, safe="/")
-
 
 # ───────────  какой URL вернуть для данного video_link  ───────────
 def preview_url_for(video_link: str) -> str | None:
     """
-    • Boomstream  → постер snapshot.boomstream.com/frames/<ID>_*.jpg
-    • CDN mp4     → sanitised URL для ffmpeg
-    • Иное        → None  (плейсхолдер)
+    • Boomstream  → готовый JPEG
+    • CDN-mp4     → sanitised-URL для ffmpeg
+    • Иное        → None (плейсхолдер)
     """
     if "play.boomstream.com" in video_link:
         vid = urlsplit(video_link).path.lstrip("/")
-        return _boomstream_poster(vid)
+        return _boomstream_poster(vid)          # None если постера нет
 
     if "cdn.dent-s.com" in video_link:
         parts = urlsplit(video_link)
-        safe_path  = quote(unquote(unquote(parts.path)), safe="/")
+        safe_path  = _sanitize_cdn_path(parts.path)      # ← вот здесь
         safe_query = quote(unquote(parts.query), safe="=&")
-        return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, ""))
+        return urlunsplit((parts.scheme,
+                           parts.netloc,
+                           safe_path,
+                           safe_query,
+                           ""))
 
     return None
-
-
 
 
 def _save_preview_row(db: Session, video_link: str, url: str) -> None:
