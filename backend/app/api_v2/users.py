@@ -9,12 +9,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Purchase, Course
+from ..models.models_v2 import User, Purchase, Course, Landing
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -252,37 +253,73 @@ def get_user_courses(
     db: Session = Depends(get_db),
 ):
     """
-    Возвращает список всех курсов со статусом:
-      • full     – куплен,
-      • partial  – бесплатный первый урок.
+    То же, что и выше, но без N+1-запросов.
     """
-    # 1) полные
-    full = {
+    # ids всех курсов, которые попадут в ответ
+    course_ids: set[int] = {c.id for c in current_user.courses}
+    course_ids.update(current_user.partial_course_ids or [])
+
+    if course_ids:
+        # --- один запрос: «минимальная цена → preview_photo» для каждого курса ---
+        # ① подзапрос: минимальная new_price на курс
+        cheapest_subq = (
+            db.query(
+                Landing.id.label("landing_id"),
+                Course.id.label("course_id"),
+                Landing.new_price
+            )
+            .join(Landing.courses)
+            .filter(
+                Course.id.in_(course_ids),
+                Landing.is_hidden == False,
+            )
+            .subquery()
+        )
+
+        # ② оконная функция, чтобы выбрать строку с min(new_price) внутри каждого course_id
+        cheapest_landings = (
+            db.query(
+                cheapest_subq.c.course_id,
+                Landing.preview_photo
+            )
+            .join(Landing, Landing.id == cheapest_subq.c.landing_id)
+            .filter(
+                Landing.new_price == db.query(func.min(cheapest_subq.c.new_price))
+                                .filter(cheapest_subq.c.course_id == cheapest_subq.c.course_id)
+            )
+            .all()
+        )
+
+        preview_by_course: dict[int, str] = {
+            row.course_id: row.preview_photo for row in cheapest_landings
+        }
+    else:
+        preview_by_course = {}
+
+    def _preview(cid: int) -> str | None:
+        return preview_by_course.get(cid)
+
+    # 1) full
+    full: dict[int, dict] = {
         c.id: {
             "id": c.id,
             "name": c.name,
             "access_level": "full",
-        } for c in current_user.courses
+            "preview": _preview(c.id),
+        }
+        for c in current_user.courses
     }
 
-    # 2) частичные
-    partial_ids = current_user.partial_course_ids
-    if partial_ids:
-        partial_courses = (
-            db.query(Course)
-              .filter(Course.id.in_(partial_ids))
-              .all()
-        )
-        for c in partial_courses:
-            if c.id not in full:
-                full[c.id] = {
-                    "id": c.id,
-                    "name": c.name,
-                    "access_level": "partial",
-                }
+    # 2) partial
+    for c in db.query(Course).filter(Course.id.in_(current_user.partial_course_ids or [])).all():
+        full.setdefault(c.id, {
+            "id": c.id,
+            "name": c.name,
+            "access_level": "partial",
+            "preview": _preview(c.id),
+        })
 
-    # 3) сортируем по id ↓
-    # partial первыми, внутри групп – по id убыв.
+    # 3) сортировка
     return sorted(
         full.values(),
         key=lambda x: (0 if x["access_level"] == "partial" else 1, -x["id"]),
