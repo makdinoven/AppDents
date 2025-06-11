@@ -9,13 +9,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
-from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, Float, and_, case
+from sqlalchemy.orm import Session, joinedload, aliased
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Purchase, Course, Landing
+from ..models.models_v2 import User, Purchase, Course, Landing, landing_course
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -247,6 +247,11 @@ def purchase_course(purchase_data: UserAddCourse, current_user: User = Depends(g
     add_course_to_user(db, current_user.id, purchase_data.course_id)
     return {"message": "Курс успешно куплен"}
 
+
+class LandingCourse:
+    pass
+
+
 @router.get("/me/courses", summary="Получить курсы пользователя")
 def get_user_courses(
     current_user: User = Depends(get_current_user),
@@ -262,36 +267,36 @@ def get_user_courses(
     if course_ids:
         # --- один запрос: «минимальная цена → preview_photo» для каждого курса ---
         # ① подзапрос: минимальная new_price на курс
-        cheapest_subq = (
+        ranked_landings = (
             db.query(
-                Landing.id.label("landing_id"),
-                Course.id.label("course_id"),
-                Landing.new_price
+                landing_course.c.course_id.label("course_id"),
+                Landing.preview_photo.label("preview_photo"),
+                # window-функция: 0 → есть картинка, 1 → NULL
+                func.row_number().over(
+                    partition_by=landing_course.c.course_id,
+                    order_by=[
+                        case((Landing.preview_photo.is_(None), 1), else_=0),
+                        Landing.new_price.cast(Float)
+                    ]
+                ).label("rn")
             )
-            .join(Landing.courses)
+            .join(Landing, landing_course.c.landing_id == Landing.id)
             .filter(
-                Course.id.in_(course_ids),
-                Landing.is_hidden == False,
+                Landing.is_hidden.is_(False),
+                landing_course.c.course_id.in_(course_ids),
             )
-            .subquery()
-        )
+        ).subquery()
 
-        # ② оконная функция, чтобы выбрать строку с min(new_price) внутри каждого course_id
-        cheapest_landings = (
-            db.query(
-                cheapest_subq.c.course_id,
-                Landing.preview_photo
-            )
-            .join(Landing, Landing.id == cheapest_subq.c.landing_id)
-            .filter(
-                Landing.new_price == db.query(func.min(cheapest_subq.c.new_price))
-                                .filter(cheapest_subq.c.course_id == cheapest_subq.c.course_id)
-            )
+        # -------- выбираем строку rn == 1 (нужный лендинг) --------
+        cheapest = (
+            db.query(ranked_landings.c.course_id,
+                     ranked_landings.c.preview_photo)
+            .filter(ranked_landings.c.rn == 1)
             .all()
         )
 
-        preview_by_course: dict[int, str] = {
-            row.course_id: row.preview_photo for row in cheapest_landings
+        preview_by_course: dict[int, str | None] = {
+            row.course_id: row.preview_photo for row in cheapest
         }
     else:
         preview_by_course = {}
