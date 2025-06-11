@@ -205,20 +205,23 @@ def generate_preview(self, video_link: str) -> None:
         subprocess.check_call(cmd, timeout=60)
         logger.info("Frame extracted for %s", video_link)
 
+        # ---------- загрузка в S3 (один цельный Body) ----------
         sha1 = hashlib.sha1(video_link.encode()).hexdigest()
         s3_key = f"{S3_DIR}/{sha1}.jpg"
 
         with open(tmp_path, "rb") as fh:
-            s3.put_object(
-                Bucket=S3_BUCKET,
-                Key=s3_key,
-                Body=fh,
-                ACL="public-read",
-                ContentType="image/jpeg",
-            )
-        public_url = f"{S3_PUBLIC_HOST}/{s3_key}"
+            data = fh.read()  # читаем целиком
 
+        s3.put_object(
+            Bucket=S3_BUCKET,
+            Key=s3_key,
+            Body=data,  # ← 1 цельный блок
+            ACL="public-read",
+            ContentType="image/jpeg",
+        )
+        public_url = f"{S3_PUBLIC_HOST}/{s3_key}"
         _save_preview_row(db, video_link, public_url)
+
         logger.info("Preview uploaded → %s", public_url)
 
     except subprocess.CalledProcessError as exc:
