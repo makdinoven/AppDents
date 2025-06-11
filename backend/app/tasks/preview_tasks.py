@@ -4,7 +4,7 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime
-from urllib.parse import urlunsplit, quote, urlsplit
+from urllib.parse import urlunsplit, quote, urlsplit, unquote
 
 import boto3
 import requests
@@ -31,16 +31,24 @@ s3 = boto3.client(
 )
 REQUEST_TIMEOUT = 10
 def resolve_and_sanitize(url: str) -> str:
-    """
-    • HEAD|GET с редиректами → получаем real_url
-    • percent-кодируем path/query (кириллица, пробелы, запятые …)
-    """
+    # 0) выполняем GET/HEAD с редиректами (как сейчас)
     real = requests.get(url, allow_redirects=True, timeout=REQUEST_TIMEOUT).url
 
+    # 1) разбираем URL
     parts = urlsplit(real)
-    safe_path  = quote(parts.path,  safe="/")
-    safe_query = quote(parts.query, safe="=&")
-    return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, parts.fragment))
+
+    # 2) Снимаем прежнюю кодировку, затем кодируем заново
+    decoded_path  = unquote(parts.path)          #  %XX → символ
+    decoded_query = unquote(parts.query)
+
+    safe_path  = quote(decoded_path,  safe="/")   # кодируем ТОЛЬКО 1 раз
+    safe_query = quote(decoded_query, safe="=&")
+
+    return urlunsplit((parts.scheme,
+                       parts.netloc,
+                       safe_path,
+                       safe_query,
+                       parts.fragment))
 
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
