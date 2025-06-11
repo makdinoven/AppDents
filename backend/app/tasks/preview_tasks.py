@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import time
@@ -57,13 +58,34 @@ REQUEST_TIMEOUT = 10   # сек для HEAD/GET Boomstream
 
 def _sanitize_cdn_path(path: str) -> str:
     """
-    1. Снимаем ВСЮ прежнюю кодировку (`%25`→`%`, потом ещё раз).
-    2. Перекодируем строку в UTF-8-bytes.
-    3. Кодируем *ровно один раз*, оставляя SAFE_CHARS нетронутыми.
+    Снимаем все старые %XX → кодируем один раз.
+    ()[]_,-. остаются, пробел → %20, кириллица → %D0%....
     """
-    decoded = unquote(unquote(path))           # убираем двойные %XX
-    utf8_bytes = decoded.encode("utf-8")       # теперь это bytes
-    return quote(utf8_bytes, safe=SAFE_CHARS)
+    decoded = unquote(unquote(path))          # str
+    return quote(decoded, safe=SAFE_CHARS)    # str in → str out
+
+def _boomstream_html_poster(video_link: str) -> str | None:
+    """
+    GET https://play.boomstream.com/<ID>
+    Ищем og:image или link[rel=image_src].
+    Возвращаем URL JPEG или None.
+    """
+    try:
+        r = requests.get(video_link, timeout=REQUEST_TIMEOUT)
+        if r.status_code != 200 or "text/html" not in r.headers.get("content-type", ""):
+            return None
+        html = r.text
+        # 1) <meta property="og:image" … content="URL">
+        m = re.search(r'property="og:image"[^>]+content="([^"]+)"', html)
+        if m:
+            return m.group(1)
+        # 2) <link rel="image_src" href="URL">
+        m = re.search(r'rel="image_src"[^>]+href="([^"]+)"', html)
+        if m:
+            return m.group(1)
+    except requests.RequestException:
+        pass
+    return None
 
 def _boomstream_poster(vid: str) -> str | None:
     """
@@ -103,8 +125,10 @@ def preview_url_for(video_link: str) -> str | None:
     • Иное        → None (плейсхолдер)
     """
     if "play.boomstream.com" in video_link:
-        vid = urlsplit(video_link).path.lstrip("/")
-        return _boomstream_poster(vid)          # None если постера нет
+        poster = _boomstream_html_poster(video_link)
+        if poster:
+            return poster, False  # jpeg найден — ffmpeg не нужен
+        return None, False  # None если постера нет
 
     if "cdn.dent-s.com" in video_link:
         parts = urlsplit(video_link)
