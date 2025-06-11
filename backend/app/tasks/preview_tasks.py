@@ -55,7 +55,11 @@ s3 = boto3.client(
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4"),
+    config=Config(
+        signature_version="s3v4",
+        s3={"use_unsigned_payload": True},
+
+    ),
 )
 
 
