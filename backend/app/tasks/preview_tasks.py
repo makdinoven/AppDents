@@ -76,10 +76,18 @@ def generate_preview(self, video_link: str):
         db.commit()
         logger.info("Preview uploaded to %s", preview_url)
 
+
     except subprocess.CalledProcessError as exc:
         db.rollback()
-        logger.warning("ffmpeg error %s for %s", exc, video_link)
-        raise self.retry(exc=exc)
+        logger.warning("ffmpeg error (%s). Give up.", exc)
+        if self.request.retries >= self.max_retries:
+            placeholder = f""
+            db.add(LessonPreview(video_link=video_link,
+                                 preview_url=placeholder,
+                                 generated_at=datetime.utcnow()))
+            db.commit()
+        else:
+            raise self.retry(exc=exc)
     except Exception as exc:
         db.rollback()
         logger.exception("Generate preview failed for %s", video_link)
