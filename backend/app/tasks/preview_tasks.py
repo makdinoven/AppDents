@@ -52,14 +52,15 @@ rds = redis.Redis.from_url(REDIS_URL, decode_responses=False)
 
 s3 = boto3.client(
     "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
+    endpoint_url=S3_ENDPOINT,           # https://s3.timeweb.com
+    region_name=S3_REGION,             # ru-1
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     config=Config(
-        signature_version="s3v4",
-        s3={"addressing_style": "path"},
-
+        signature_version="s3",         # ← V2-подпись, без SHA-256
+        s3={
+            "addressing_style": "path", # путь /bucket/key
+        },
     ),
 )
 
