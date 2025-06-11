@@ -7,6 +7,7 @@ from datetime import datetime
 from urllib.parse import urlunsplit, quote, urlsplit
 
 import boto3
+import requests
 from sqlalchemy.orm import Session
 
 from ..db.database import get_db, SessionLocal
@@ -28,17 +29,19 @@ s3 = boto3.client(
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
 )
+REQUEST_TIMEOUT = 10
+def resolve_and_sanitize(url: str) -> str:
+    """
+    • HEAD|GET с редиректами → получаем real_url
+    • percent-кодируем path/query (кириллица, пробелы, запятые …)
+    """
+    real = requests.get(url, allow_redirects=True, timeout=REQUEST_TIMEOUT).url
 
-def sanitize_url(url: str) -> str:
-    """
-    • Кодирует любой non-ASCII символ, пробел, запятую, двоеточие и т. д.
-    • Схема и хост оставляются как есть.
-    """
-    parts = urlsplit(url)
-    safe_path     = quote(parts.path,     safe="/")   # «/» оставляем, остальное кодируем
-    safe_query    = quote(parts.query,    safe="=&")  # «=» и «&» разрешены в query
-    safe_fragment = quote(parts.fragment, safe="")
-    return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, safe_fragment))
+    parts = urlsplit(real)
+    safe_path  = quote(parts.path,  safe="/")
+    safe_query = quote(parts.query, safe="=&")
+    return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, parts.fragment))
+
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def generate_preview(self, video_link: str):
@@ -53,7 +56,7 @@ def generate_preview(self, video_link: str):
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
-        safe_url = sanitize_url(video_link)
+        safe_url = resolve_and_sanitize(video_link)
         cmd = [
             "ffmpeg", "-loglevel", "error",
             "-ss", "00:00:01", "-i", safe_url,
@@ -77,15 +80,13 @@ def generate_preview(self, video_link: str):
 
     except subprocess.CalledProcessError as exc:
         db.rollback()
-        logger.warning("ffmpeg error %s for %s", exc, video_link)
-        if self.request.retries >= self.max_retries:
-            placeholder = f"{S3_PUBLIC_HOST}/{S3_PREVIEW_DIR}/placeholder.jpg"
-            db.add(LessonPreview(video_link=video_link,
-                                 preview_url=placeholder,
-                                 generated_at=datetime.utcnow()))
-            db.commit()
-        else:
-            raise self.retry(exc=exc)
+        logger.warning("ffmpeg exit-1 for %s", video_link)
+        placeholder = f"{S3_PUBLIC_HOST}/{S3_PREVIEW_DIR}/placeholder.jpg"
+
+        db.add(LessonPreview(video_link=video_link,
+                             preview_url=placeholder,
+                             generated_at=datetime.utcnow()))
+        db.commit()
 
     except Exception as exc:
         db.rollback()
