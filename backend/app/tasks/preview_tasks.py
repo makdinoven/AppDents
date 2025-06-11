@@ -54,6 +54,25 @@ s3 = boto3.client(
 
 REQUEST_TIMEOUT = 10   # сек для HEAD/GET Boomstream
 
+def _boomstream_poster(vid: str) -> str | None:
+    """
+    Возвращает URL существующего JPEG-постера для Boomstream-ID
+    или None, если найти не удалось.
+    """
+    candidates = [
+        f"https://snapshot.boomstream.com/frames/{vid}_1.jpg",
+        f"https://snapshot.boomstream.com/frames/{vid}_0.jpg",
+        f"https://snapshot.boomstream.com/frames/{vid}_0001.jpg",
+    ]
+    for url in candidates:
+        try:
+            r = requests.head(url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            if r.status_code == 200:
+                return url
+        except requests.RequestException:
+            pass
+    return None
+
 def _may_enqueue(video_link: str) -> bool:
     """
     Лукасный счётчик в Redis: key=preview_enqueue:<epoch>
@@ -74,18 +93,13 @@ def _sanitize_cdn_path(path: str) -> str:
 # ───────────  какой URL вернуть для данного video_link  ───────────
 def preview_url_for(video_link: str) -> str | None:
     """
-    Возвращает:
-      • direct JPEG  – если это Boomstream (моментально, без ffmpeg),
-      • sanitised mp4 – если наш CDN,
-      • None         – всё прочее (дам плейсхолдер).
+    • Boomstream  → постер snapshot.boomstream.com/frames/<ID>_*.jpg
+    • CDN mp4     → sanitised URL для ffmpeg
+    • Иное        → None  (плейсхолдер)
     """
     if "play.boomstream.com" in video_link:
-        # формат https://play.boomstream.com/<ID>[?title=0...]
         vid = urlsplit(video_link).path.lstrip("/")
-        # вариант 1: их стандартный постер 640×360
-        return f"https://play.boomstream.com/{vid}.jpg"
-        #  или, если нужен кадр №1:
-        # return f"https://snapshot.boomstream.com/frames/{vid}_1.jpg"
+        return _boomstream_poster(vid)
 
     if "cdn.dent-s.com" in video_link:
         parts = urlsplit(video_link)
@@ -93,7 +107,8 @@ def preview_url_for(video_link: str) -> str | None:
         safe_query = quote(unquote(parts.query), safe="=&")
         return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, ""))
 
-    return None          # неизвестный протокол → плейсхолдер
+    return None
+
 
 
 
