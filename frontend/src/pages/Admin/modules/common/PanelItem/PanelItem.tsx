@@ -1,7 +1,6 @@
 import s from "./PanelItem.module.scss";
 import { Link } from "react-router-dom";
 import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import { t } from "i18next";
 import ToggleCheckbox from "../../../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import { BASE_URL } from "../../../../../common/helpers/commonConstants.ts";
 import { Path } from "../../../../../routes/routes.ts";
@@ -46,7 +45,7 @@ const PanelItem = ({
       </div>
     ) : (
       <Link to={link}>
-        <PrettyButton text={t("admin.update")} />
+        <PrettyButton text={"admin.update"} />
       </Link>
     );
   };
