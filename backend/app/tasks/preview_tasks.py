@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime
+from urllib.parse import urlunsplit, quote, urlsplit
 
 import boto3
 from sqlalchemy.orm import Session
@@ -28,6 +29,14 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
 )
 
+def _sanitize(url: str) -> str:
+    """
+    Замени ':' в path на %3A (и любые пробелы на %20, если забыли),
+    оставив схему/домен нетронутыми.
+    """
+    parts = urlsplit(url)
+    safe_path = quote(parts.path, safe="/%")          # ':' → %3A
+    return urlunsplit((*parts[:2], safe_path, parts.query, parts.fragment))
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def generate_preview(self, video_link: str):
@@ -42,6 +51,7 @@ def generate_preview(self, video_link: str):
         # --- ffmpeg ---
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
+        video_link = _sanitize(video_link)
         cmd = [
             "ffmpeg", "-loglevel", "error",
             "-ss", "00:00:01", "-i", video_link,
