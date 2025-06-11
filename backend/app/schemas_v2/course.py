@@ -35,6 +35,16 @@ class CourseDetailResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class CourseDetailResponsePutRequest(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = ""
+    sections: List[Dict[str, Section]]
+
+
+    class Config:
+        orm_mode = True
+
 # Схема для обновления курса (PUT запрос)
 class CourseUpdate(BaseModel):
     name: str
