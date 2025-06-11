@@ -7,6 +7,7 @@ import AdminUsersTab from "../tabs/AdminUsersTab.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
+import { FILTER_PARAM_KEYS } from "../../../common/helpers/commonConstants.ts";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,7 +25,8 @@ const AdminPanel = () => {
   const handleSelectTab = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", value);
-    newParams.delete("language");
+    newParams.delete(FILTER_PARAM_KEYS.language);
+    newParams.delete(FILTER_PARAM_KEYS.size);
     if (value === "analytics") {
       newParams.delete("page");
     } else {

@@ -113,6 +113,40 @@ const LandingDetail = () => {
     }
   };
 
+  const moveLessonUp = (lessonId: number) => {
+    setLanding((prev: any) => {
+      if (!prev) return prev;
+
+      const idx = prev.lessons_info.findIndex((l: any) => l.id === lessonId);
+      if (idx <= 0) return prev;
+
+      const lessons_info = [...prev.lessons_info];
+      [lessons_info[idx - 1], lessons_info[idx]] = [
+        lessons_info[idx],
+        lessons_info[idx - 1],
+      ];
+
+      return { ...prev, lessons_info };
+    });
+  };
+
+  const moveLessonDown = (lessonId: number) => {
+    setLanding((prev: any) => {
+      if (!prev) return prev;
+
+      const idx = prev.lessons_info.findIndex((l: any) => l.id === lessonId);
+      if (idx === -1 || idx === prev.lessons_info.length - 1) return prev; // если последний — не двигаем
+
+      const lessons_info = [...prev.lessons_info];
+      [lessons_info[idx], lessons_info[idx + 1]] = [
+        lessons_info[idx + 1],
+        lessons_info[idx],
+      ];
+
+      return { ...prev, lessons_info };
+    });
+  };
+
   return (
     <div className={s.detail_container}>
       <DetailHeader title={"admin.landings.edit"} />
@@ -141,6 +175,8 @@ const LandingDetail = () => {
             {landing?.lessons_info.length > 0 ? (
               landing.lessons_info.map((lesson: any, index: number) => (
                 <EditLesson
+                  moveLessonUp={() => moveLessonUp(lesson.id)}
+                  moveLessonDown={() => moveLessonDown(lesson.id)}
                   type={"landing"}
                   key={index}
                   lesson={lesson}

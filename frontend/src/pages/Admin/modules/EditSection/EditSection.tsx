@@ -7,11 +7,15 @@ const EditSection = ({
   children,
   handleDelete,
   setCourse,
+  moveSectionUp,
+  moveSectionDown,
 }: {
   section: SectionType;
   setCourse: any;
   children?: React.ReactNode;
   handleDelete: any;
+  moveSectionUp: () => void;
+  moveSectionDown: () => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -35,6 +39,8 @@ const EditSection = ({
   return (
     <CollapsibleSection
       title="admin.sections"
+      handleMoveToTop={moveSectionUp}
+      handleMoveToBottom={moveSectionDown}
       data={{
         id: section.id,
         name: section.section_name,
