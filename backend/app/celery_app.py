@@ -28,7 +28,7 @@ celery.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_annotations={
-        #  не более 4 кадров в минуту, чтобы не забить CPU
-        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "4/m"},
+        #  не более 10 кадров в минуту, чтобы не забить CPU
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "10/m"},
     },
 )
