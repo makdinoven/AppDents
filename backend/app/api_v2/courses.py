@@ -11,7 +11,7 @@ from ..models.models_v2 import Course, User
 from ..services_v2.course_service import create_course, delete_course, search_courses_paginated, list_courses_paginated
 from ..services_v2.course_service import get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
-    CourseListPageResponse
+    CourseListPageResponse, CourseDetailResponsePutRequest
 from ..services_v2.landing_service import get_cheapest_landing_for_course
 from ..services_v2.preview_service import get_or_schedule_preview
 
@@ -117,7 +117,7 @@ def get_course_by_id(
 
 
 
-@router.put("/{course_id}", response_model=CourseDetailResponse)
+@router.put("/{course_id}", response_model=CourseDetailResponsePutRequest)
 def update_course_full(
     course_id: int,
     update_data: CourseUpdate,
