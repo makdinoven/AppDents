@@ -71,23 +71,30 @@ def _sanitize_cdn_path(path: str) -> str:
     return quote(decoded, safe="/")
 
 
+# ───────────  какой URL вернуть для данного video_link  ───────────
 def preview_url_for(video_link: str) -> str | None:
     """
-    • Boomstream: отдаём готовый постер → https://play.boomstream.com/<ID>.jpg
-    • CDN-mp4:      возвращаем sanitised cdn-url для ffmpeg
-    • Остальное:   None → будет плейсхолдер
+    Возвращает:
+      • direct JPEG  – если это Boomstream (моментально, без ffmpeg),
+      • sanitised mp4 – если наш CDN,
+      • None         – всё прочее (дам плейсхолдер).
     """
     if "play.boomstream.com" in video_link:
+        # формат https://play.boomstream.com/<ID>[?title=0...]
         vid = urlsplit(video_link).path.lstrip("/")
+        # вариант 1: их стандартный постер 640×360
         return f"https://play.boomstream.com/{vid}.jpg"
+        #  или, если нужен кадр №1:
+        # return f"https://snapshot.boomstream.com/frames/{vid}_1.jpg"
 
     if "cdn.dent-s.com" in video_link:
         parts = urlsplit(video_link)
-        safe_path  = _sanitize_cdn_path(parts.path)
+        safe_path  = quote(unquote(unquote(parts.path)), safe="/")
         safe_query = quote(unquote(parts.query), safe="=&")
         return urlunsplit((parts.scheme, parts.netloc, safe_path, safe_query, ""))
 
-    return None
+    return None          # неизвестный протокол → плейсхолдер
+
 
 
 def _save_preview_row(db: Session, video_link: str, url: str) -> None:
