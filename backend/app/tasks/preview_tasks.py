@@ -67,20 +67,28 @@ def _sanitize_cdn_path(path: str) -> str:
 def _boomstream_html_poster(video_link: str) -> str | None:
     """
     GET https://play.boomstream.com/<ID>
-    Ищем og:image или link[rel=image_src].
-    Возвращаем URL JPEG или None.
+    Возвращает URL JPEG из og:image или link[rel=image_src].
     """
+    # ⚑ убираем query (?title=0) — он не нужен для HTML-страницы
+    base_url = urlsplit(video_link)
+    page_url = f"https://play.boomstream.com/{base_url.path.lstrip('/')}"
     try:
-        r = requests.get(video_link, timeout=REQUEST_TIMEOUT)
-        if r.status_code != 200 or "text/html" not in r.headers.get("content-type", ""):
+        r = requests.get(page_url, timeout=REQUEST_TIMEOUT)
+        if r.status_code != 200:
             return None
         html = r.text
-        # 1) <meta property="og:image" … content="URL">
-        m = re.search(r'property="og:image"[^>]+content="([^"]+)"', html)
+
+        # meta og:image  (любые кавычки и порядок атрибутов)
+        m = re.search(
+            r'<meta[^>]+property=[\'"]og:image[\'"][^>]+content=[\'"]([^\'"]+)[\'"]',
+            html, flags=re.I)
         if m:
             return m.group(1)
-        # 2) <link rel="image_src" href="URL">
-        m = re.search(r'rel="image_src"[^>]+href="([^"]+)"', html)
+
+        # link rel=image_src
+        m = re.search(
+            r'<link[^>]+rel=[\'"]image_src[\'"][^>]+href=[\'"]([^\'"]+)[\'"]',
+            html, flags=re.I)
         if m:
             return m.group(1)
     except requests.RequestException:
@@ -176,16 +184,14 @@ def generate_preview(self, video_link: str) -> None:
             return
 
         # ───── CDN-mp4: режем кадр ffmpeg-ом ─────
+        # ───── CDN-mp4 или HLS: режем кадр ffmpeg-ом ─────
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
         cmd = [
-            "ffmpeg", "-loglevel", "error",
-            "-ss", "00:00:01",
-            "-i", safe_url,
-            "-frames:v", "1",
-            "-q:v", "3",
-            tmp_path,
+            "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
+            "-ss", "00:00:01", "-i", safe_url,
+            "-frames:v", "1", "-q:v", "4", tmp_path,
         ]
 
         logger.debug("ffmpeg cmd: %s", " ".join(cmd))
