@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import logging
 import os
@@ -57,7 +58,7 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     config=Config(
         signature_version="s3v4",
-        s3={"use_unsigned_payload": False},
+        s3={"addressing_style": "path"},
 
     ),
 )
@@ -210,14 +211,19 @@ def generate_preview(self, video_link: str) -> None:
         s3_key = f"{S3_DIR}/{sha1}.jpg"
 
         with open(tmp_path, "rb") as fh:
-            data = fh.read()  # читаем целиком
+            data = fh.read()
+
+        # ---- добавляем MD5 заголовок ----
+        md5_b64 = base64.b64encode(hashlib.md5(data).digest()).decode()
 
         s3.put_object(
             Bucket=S3_BUCKET,
             Key=s3_key,
-            Body=data,  # ← 1 цельный блок
+            Body=data,  # один цельный блок
             ACL="public-read",
             ContentType="image/jpeg",
+            ContentLength=len(data),
+            ContentMD5=md5_b64,  # ← критично!
         )
         public_url = f"{S3_PUBLIC_HOST}/{s3_key}"
         _save_preview_row(db, video_link, public_url)
