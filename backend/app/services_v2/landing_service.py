@@ -1,5 +1,6 @@
-from datetime import time, datetime, timedelta, date
+from datetime import datetime, timedelta, date
 from math import ceil
+import time
 
 from sqlalchemy import func, or_, desc, Date, cast, select
 from sqlalchemy.types import Float
@@ -7,8 +8,25 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 from typing import List, Optional
-from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit
+from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit, users_courses
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
+
+def _user_course_ids(db: Session, user_id: int) -> list[int]:
+    """
+    Все ID курсов, которыми пользователь уже владеет
+    (users_courses ∪ purchases.course_id), без дублей.
+    """
+    direct = (
+        db.query(users_courses.c.course_id)
+          .filter(users_courses.c.user_id == user_id)
+    )
+    via_pur = (
+        db.query(Purchase.course_id)
+          .filter(Purchase.user_id == user_id,
+                  Purchase.course_id.isnot(None))
+    )
+    # set → список, чтобы точно убрать повторы
+    return list({row[0] for row in direct.union(via_pur).all()})
 
 
 def _paginate(query: Query, *, page: int, size: int) -> dict:
@@ -476,51 +494,56 @@ def get_recommended_landing_cards(
     Фоллбэк        : самые популярные (sales_count DESC).
     Формат ответа  : тот же, что get_landing_cards().
     """
-    # 1) курсы, которые уже есть у пользователя
-    user_courses_subq = (
-        db.query(Purchase.course_id)
-          .filter(
-              Purchase.user_id == user_id,
-              Purchase.course_id.isnot(None)
-          )
-          .subquery()
-    )
+    bought_ids: list[int] = _user_course_ids(db, user_id)
 
-    # если у пользователя нет покупок – сразу уходим в fallback
-    if not db.query(user_courses_subq).first():
-        return _fallback_landing_cards(db, user_id, skip, limit, language)
+    # если покупок нет – сразу fallback
+    if not bought_ids:
+        return _fallback_landing_cards(
+            db, user_id, skip, limit, language
+        )
 
-    # 2) похожие пользователи
+    # 2) похожие пользователи (по users_courses)
     similar_users_subq = (
-        db.query(Purchase.user_id)
-          .filter(Purchase.course_id.in_(select(user_courses_subq)))
-          .filter(Purchase.user_id != user_id)
-          .distinct()
-          .subquery()
+        db.query(users_courses.c.user_id)
+        .filter(users_courses.c.course_id.in_(bought_ids))
+        .filter(users_courses.c.user_id != user_id)
+        .distinct()
+        .subquery()
     )
 
-    # 3) какие ещё курсы они брали, рейтинг по частоте
+    # 3) что ещё они брали – считаем взвешенный score
+    overlap_expr = func.count(func.distinct(users_courses.c.user_id))
+    score_expr = (
+            func.count().cast(Float) /
+            func.nullif(overlap_expr, 0)
+    ).label("score")
+
     recommended_courses_subq = (
         db.query(
-            Purchase.course_id.label("course_id"),
-            func.count(Purchase.id).label("cnt")
+            users_courses.c.course_id.label("course_id"),
+            score_expr,
         )
         .filter(
-            Purchase.user_id.in_(select(similar_users_subq)),
-            Purchase.course_id.isnot(None),
-            ~Purchase.course_id.in_(select(user_courses_subq))
+            users_courses.c.user_id.in_(select(similar_users_subq)),
+            ~users_courses.c.course_id.in_(bought_ids),
         )
-        .group_by(Purchase.course_id)
-        .order_by(func.count(Purchase.id).desc())
+        .group_by(users_courses.c.course_id)
+        .order_by(score_expr.desc())
         .subquery()
     )
 
     # 4) ограничиваем и превращаем в список id
     recommended_ids = [
         row.course_id
-        for row in db.query(recommended_courses_subq.c.course_id)
-                      .offset(skip)
-                      .limit(limit*2)           # берём небольшой запас
+        for row in (
+            db.query(
+                recommended_courses_subq.c.course_id,
+                recommended_courses_subq.c.score
+            )
+            .order_by(recommended_courses_subq.c.score.desc())  # ← вернул сортировку
+            .offset(skip)
+            .limit(limit * 2)
+        )
     ]
 
     cards: list[dict] = []
@@ -568,30 +591,23 @@ def _fallback_landing_cards(
     limit: int,
     language: str | None,
 ) -> dict:
-    """
-    Бэкап-логика: top-seller'ы, которых пользователь ещё не купил.
-    """
-    purchased_course_ids = (
-        db.query(Purchase.course_id)
-          .filter(
-              Purchase.user_id == user_id,
-              Purchase.course_id.isnot(None)
-          )
-          .subquery()
-    )
+    bought_ids = _user_course_ids(db, user_id)
 
     query = (
         db.query(Landing)
           .filter(Landing.is_hidden.is_(False))
-          .filter(~Landing.courses.any(Course.id.in_(select(purchased_course_ids))))
-          .order_by(Landing.sales_count.desc())
+          .filter(~Landing.courses.any(Course.id.in_(bought_ids)))
     )
     if language:
         query = query.filter(Landing.language == language.upper())
 
-    landings = query.offset(skip).limit(limit).all()
+    landings = (query
+                .order_by(Landing.sales_count.desc())   # ← важно
+                .offset(skip)
+                .limit(limit)
+                .all())
 
-    cards = []
+    cards: list[dict] = []
     for l in landings:
         cards.append({
             "id": l.id,
@@ -610,6 +626,7 @@ def _fallback_landing_cards(
         })
 
     return {"total": len(cards), "cards": cards}
+
 
 def get_personalized_landing_cards(
     db: Session,
@@ -638,20 +655,19 @@ def get_personalized_landing_cards(
         )
 
     # 2. Базовый список с фильтрами + исключение покупок
-    query = db.query(Landing).filter(Landing.is_hidden.is_(False))
+    bought_ids = _user_course_ids(db, user_id)
+
+    query = (
+        db.query(Landing)
+        .filter(Landing.is_hidden.is_(False))
+        .filter(~Landing.courses.any(Course.id.in_(bought_ids)))  # <--
+    )
 
     if language:
         query = query.filter(Landing.language == language.upper().strip())
 
     if tags:
         query = query.join(Landing.tags).filter(Tag.name.in_(tags)).distinct()
-
-    purchased_subq = (
-        db.query(Purchase.course_id)
-          .filter(Purchase.user_id == user_id, Purchase.course_id.isnot(None))
-          .subquery()
-    )
-    query = query.filter(~Landing.courses.any(Course.id.in_(select(purchased_subq))))
 
     # 3. Сортировки
     if sort == "popular":
@@ -682,3 +698,4 @@ def get_personalized_landing_cards(
         })
 
     return {"total": len(cards), "cards": cards}
+
