@@ -148,43 +148,51 @@ def _kinescope_poster(embed_url: str) -> str | None:
 
 VIMEO_ID_RE = re.compile(r"(?:player\.vimeo\.com\/video\/|vimeo\.com\/)(\d{6,12})")
 
-@functools.lru_cache(maxsize=512)            # кешируем на всякий случай
+@functools.lru_cache(maxsize=512)
 def _vimeo_poster(video_link: str) -> str | None:
     """
-    • Принимаем любой вид ссылки –  https://vimeo.com/123,
-      https://player.vimeo.com/video/123?foo…
-    • Делаем GET https://player.vimeo.com/video/<ID>
-    • Ищем thumbnail в двух вариантах:
-        "thumbnailUrl": "…"
-        "thumbnail_url": "…"
-    Возвращаем полный URL JPEG / WEBP или None.
+    • Принимаем любые ссылки (player.vimeo.com/… или vimeo.com/…)
+    • Сначала пробуем oEmbed (100 % работает без ключей)
+    • Если не удалось — fallback к HTML-странице
     """
-    # --- 1. вытаскиваем numeric id ---
     m = VIMEO_ID_RE.search(video_link)
     if not m:
         return None
     vid = m.group(1)
 
-    # --- 2. качаем embed-страницу ---
+    # ───── 1. oEmbed ─────
+    try:
+        oembed = f"https://vimeo.com/api/oembed.json?url=https://vimeo.com/{vid}"
+        r = requests.get(oembed, timeout=REQUEST_TIMEOUT)
+        if r.status_code == 200:
+            j = r.json()
+            url = j.get("thumbnail_url")
+            if url:
+                # oEmbed даёт превью 640 px; заменим на 1280 px, если нужно
+                return re.sub(r"_[0-9x]+\.([a-z]+)$", r"_1280.\1", url)
+    except Exception:
+        pass
+
+    # ───── 2. fallback: HTML-страница ─────
     try:
         url = f"https://player.vimeo.com/video/{vid}"
-        r = requests.get(url, timeout=REQUEST_TIMEOUT,
-                         headers={"User-Agent": "Mozilla/5.0"})  # бывает 403 без UA
+        r = requests.get(
+            url,
+            timeout=REQUEST_TIMEOUT,
+            headers={"User-Agent": "Mozilla/5.0"}  # без UA бывает 403
+        )
         if r.status_code != 200:
             return None
-    except requests.RequestException:
-        return None
 
-    # --- 3. ищем thumbnail ---
-    html = r.text
-    for key in ("thumbnailUrl", "thumbnail_url"):
-        m = re.search(fr'"{key}"\s*:\s*"([^"]+)"', html)
-        if m:
-            thumb = m.group(1)
-            # oEmbed встраивает ?mw=80  → увеличим до 1280, если предстоит показывать крупно
-            thumb = thumb.replace("?mw=80", "?mw=1280")
-            return thumb
+        html = r.text
+        for key in ("thumbnailUrl", "thumbnail_url"):
+            m = re.search(fr'"{key}"\s*:\s*"([^"]+)"', html)
+            if m:
+                return m.group(1).replace("?mw=80", "?mw=1280")
+    except requests.RequestException:
+        pass
     return None
+
 
 
 def _may_enqueue(video_link: str) -> bool:
