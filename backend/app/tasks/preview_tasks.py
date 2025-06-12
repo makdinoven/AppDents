@@ -271,8 +271,8 @@ def generate_preview(self, video_link: str) -> None:
 
         cmd = [
             "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
-            "-ss", "00:00:01", "-i", safe_url,
-            "-frames:v", "58", "-q:v", "4", tmp_path,
+            "-ss", "00:00:58", "-i", safe_url,
+            "-frames:v", "1", "-q:v", "4", tmp_path,
         ]
 
         logger.debug("ffmpeg cmd: %s", " ".join(cmd))
