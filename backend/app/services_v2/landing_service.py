@@ -1,40 +1,130 @@
 from datetime import datetime, timedelta, date
 from math import ceil
 import time
+from typing import List, Optional
 
-from sqlalchemy import func, or_, desc, Date, cast, select
+from sqlalchemy import (
+    func, or_, desc, Date, cast, select,
+)
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
-from typing import List, Optional
-from ..models.models_v2 import Landing, Author, Course, Tag, Purchase, AdVisit, users_courses
+
+from ..models.models_v2 import (
+    Landing,
+    Author,
+    Course,
+    Tag,
+    Purchase,
+    AdVisit,
+    users_courses,
+)
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
 
+
+# 1. Все курсы, которые уже принадлежат пользователю
 def _user_course_ids(db: Session, user_id: int) -> list[int]:
-    """
-    Все ID курсов, которыми пользователь уже владеет
-    (users_courses ∪ purchases.course_id), без дублей.
-    """
-    direct = (
-        db.query(users_courses.c.course_id)
-          .filter(users_courses.c.user_id == user_id)
+    """Возвращает уникальные course_id, которыми владеет пользователь."""
+    direct = db.query(users_courses.c.course_id).filter(
+        users_courses.c.user_id == user_id
     )
     via_pur = (
         db.query(Purchase.course_id)
-          .filter(Purchase.user_id == user_id,
-                  Purchase.course_id.isnot(None))
+        .filter(Purchase.user_id == user_id, Purchase.course_id.isnot(None))
     )
-    # set → список, чтобы точно убрать повторы
     return list({row[0] for row in direct.union(via_pur).all()})
 
+# 2. Превращаем ORM‑объект Landing → ответную «карточку»
+def _landing_to_card(landing: Landing) -> dict:
+    return {
+        "id": landing.id,
+        "first_tag": landing.tags[0].name if landing.tags else None,
+        "landing_name": landing.landing_name,
+        "authors": [
+            {"id": a.id, "name": a.name, "photo": a.photo} for a in landing.authors
+        ],
+        "slug": landing.page_name,
+        "lessons_count": landing.lessons_count,
+        "main_image": landing.preview_photo,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_ids": [c.id for c in landing.courses],
+    }
+
+# 3. Формула процента скидки, пригодная в ORDER BY
+def _discount_expr():
+    old = cast(Landing.__table__.c.old_price, Float())
+    new = cast(Landing.__table__.c.new_price, Float())
+    return ((old - new) / old) * 100
+
+# 4. Базовый SELECT по лендингам + обнуление истёкших реклам
+def reset_expired_ad_flags(db: Session):
+    updated = (
+        db.query(Landing)
+        .filter(
+            Landing.in_advertising.is_(True),
+            Landing.ad_flag_expires_at < func.utc_timestamp(),
+        )
+        .update(
+            {Landing.in_advertising: False, Landing.ad_flag_expires_at: None},
+            synchronize_session=False,
+        )
+    )
+    if updated:
+        db.commit()
+
+def _base_landing_query(db: Session) -> Query:
+    """Общий базовый запрос: не скрытые лендинги."""
+    reset_expired_ad_flags(db)
+    return db.query(Landing).filter(Landing.is_hidden.is_(False))
+
+
+# 5. Фильтры и сортировки, применяемые «конвейером»
+def _apply_common_filters(
+    query: Query,
+    *,
+    language: str | None = None,
+    tags: List[str] | None = None,
+    search_q: str | None = None,
+) -> Query:
+    if language:
+        query = query.filter(Landing.language == language.upper().strip())
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+    if search_q:
+        ilike_q = f"%{search_q}%"
+        query = query.filter(
+            or_(Landing.landing_name.ilike(ilike_q), Landing.page_name.ilike(ilike_q))
+        )
+    return query
+
+
+_SORT_MAP = {
+    "popular": Landing.sales_count.desc(),
+    "discount": _discount_expr().desc(),
+    "new": Landing.id.desc(),
+}
+
+def _apply_sort(query: Query, sort: str | None) -> Query:
+    expr = _SORT_MAP.get((sort or "").lower())
+    return query.order_by(expr) if expr is not None else query.order_by(Landing.id)
+
+
+
+# 6. Исключение уже купленных курсов
+def _exclude_bought(query: Query, bought_ids: list[int]) -> Query:
+    return (
+        query
+        if not bought_ids
+        else query.filter(~Landing.courses.any(Course.id.in_(bought_ids)))
+    )
+
+# -------------------- ПАГИНАЦИЯ ОБЩЕГО НАЗНАЧЕНИЯ ---------------------------
 
 def _paginate(query: Query, *, page: int, size: int) -> dict:
     total = query.count()
-    items = (query
-             .offset((page - 1) * size)
-             .limit(size)
-             .all())
+    items = query.offset((page - 1) * size).limit(size).all()
     return {
         "total": total,
         "total_pages": ceil(total / size) if total else 0,
@@ -43,27 +133,35 @@ def _paginate(query: Query, *, page: int, size: int) -> dict:
         "items": items,
     }
 
+
+# ------------------ PUBLIC LIST / SEARCH ЭНД‑ПОИНТЫ -------------------------
+
 def list_landings_paginated(
     db: Session, *, language: Optional[LangEnum], page: int = 1, size: int = 10
 ) -> dict:
-    q = db.query(Landing).order_by(desc(Landing.id))        # новые сверху
-    if language:                                                # фильтр, если задан
-        q = q.filter(Landing.language == language.value)
+    q = _apply_common_filters(
+        _base_landing_query(db), language=language.value if language else None
+    )
+    q = _apply_sort(q, "new")  # новые сверху
     return _paginate(q, page=page, size=size)
 
-def search_landings_paginated(
-    db: Session, *, q: str, language: Optional[LangEnum], page: int = 1, size: int = 10
-) -> dict:
-    q_base = (db.query(Landing)
-                .filter(or_(
-                    Landing.landing_name.ilike(f"%{q}%"),
-                    Landing.page_name.ilike(f"%{q}%")
-                ))
-                .order_by(desc(Landing.id)))
-    if language:
-        q_base = q_base.filter(Landing.language == language.value)
-    return _paginate(q_base, page=page, size=size)
 
+def search_landings_paginated(
+    db: Session,
+    *,
+    q: str,
+    language: Optional[LangEnum],
+    page: int = 1,
+    size: int = 10,
+) -> dict:
+    query = _apply_common_filters(
+        _base_landing_query(db), language=language.value if language else None, search_q=q
+    )
+    query = _apply_sort(query, "new")
+    return _paginate(query, page=page, size=size)
+
+
+# --------------------- CRUD ОПЕРАЦИИ ДЛЯ АДМИНКИ ---------------------------
 
 def get_landing_detail(db: Session, landing_id: int) -> Landing:
     landing = db.query(Landing).filter(Landing.id == landing_id).first()
@@ -180,67 +278,25 @@ def delete_landing(db: Session, landing_id: int) -> None:
     db.commit()
 
 
+
+
 def get_landing_cards(
-        db: Session,
-        skip: int = 0,
-        limit: int = 20,
-        tags: Optional[List[str]] = None,
-        sort: Optional[str] = None,  # Возможные значения: "popular", "discount", "new"
-        language: Optional[str] = None
+    db: Session,
+    *,
+    skip: int = 0,
+    limit: int = 20,
+    tags: Optional[List[str]] = None,
+    sort: Optional[str] = None,
+    language: Optional[str] = None,
 ) -> dict:
-    query = db.query(Landing).filter(Landing.is_hidden == False)
-
-    if language:
-        language = language.upper().strip()
-        query = query.filter(Landing.language == language)
-
-    # Фильтрация по тегам (если передан список тегов)
-    if tags:
-        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
-
-    # Применяем сортировку
-    if sort:
-        if sort == "popular":
-            query = query.order_by(Landing.sales_count.desc())
-        elif sort == "discount":
-            old_price_expr = func.cast(Landing.__table__.c.old_price, Float())
-            new_price_expr = func.cast(Landing.__table__.c.new_price, Float())
-            discount_expr = ((old_price_expr - new_price_expr) / old_price_expr) * 100
-            query = query.order_by(discount_expr.desc())
-        elif sort == "new":
-            query = query.order_by(Landing.id.desc())
-    else:
-        query = query.order_by(Landing.id)
-
-    # Подсчитываем общее число записей по фильтрам (без offset/limit)
-    total = query.distinct(Landing.id).count()
-
-    # Применяем пагинацию
+    query = _apply_sort(
+        _apply_common_filters(_base_landing_query(db), language=language, tags=tags),
+        sort,
+    )
+    total = query.count()
     landings = query.offset(skip).limit(limit).all()
+    return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
 
-    # Формируем карточки с нужными полями
-    cards = []
-    for landing in landings:
-        first_tag = landing.tags[0].name if landing.tags else None
-        authors = [
-            {"id": author.id, "name": author.name, "photo": author.photo}
-            for author in landing.authors
-        ]
-        card = {
-            "id": landing.id,
-            "first_tag": first_tag,
-            "landing_name": landing.landing_name,
-            "authors": authors,
-            "slug": landing.page_name,
-            "lessons_count": landing.lessons_count,
-            "main_image": landing.preview_photo,
-            "old_price": landing.old_price,
-            "new_price": landing.new_price,
-            "course_ids": [c.id for c in landing.courses],
-        }
-        cards.append(card)
-
-    return {"total": total, "cards": cards}
 
 def get_landing_cards_pagination(
     db: Session,
@@ -248,77 +304,28 @@ def get_landing_cards_pagination(
     page: int = 1,
     size: int = 20,
     tags: Optional[List[str]] = None,
-    sort: Optional[str] = None,      # "popular", "discount", "new"
+    sort: Optional[str] = None,
     language: Optional[str] = None,
     q: Optional[str] = None,
-    single_course: bool = False,     # ← новый параметр
+    single_course: bool = False,
 ) -> dict:
-    # 1) Базовый запрос и фильтры
-    query = db.query(Landing).filter(Landing.is_hidden == False)
-    if language:
-        query = query.filter(Landing.language == language.upper().strip())
-    if tags:
-        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
-    if q:
-        ilike_q = f"%{q}%"
-        query = query.filter(
-            or_(Landing.landing_name.ilike(ilike_q),
-                Landing.page_name.ilike(ilike_q))
-        )
-
-    # 1.1) Группируем по лендингу и, если нужно, оставляем ровно один курс
+    query = _apply_common_filters(
+        _base_landing_query(db), language=language, tags=tags, search_q=q
+    )
     query = query.join(Landing.courses).group_by(Landing.id)
     if single_course:
         query = query.having(func.count(Course.id) == 1)
+    query = _apply_sort(query, sort)
 
-    # 2) Общее число
     total = query.count()
-    # 3) Сортировка
-    if sort == "popular":
-        query = query.order_by(Landing.sales_count.desc())
-    elif sort == "discount":
-        old_p = func.cast(Landing.__table__.c.old_price, Float())
-        new_p = func.cast(Landing.__table__.c.new_price, Float())
-        discount = ((old_p - new_p) / old_p) * 100
-        query = query.order_by(discount.desc())
-    elif sort == "new":
-        query = query.order_by(Landing.id.desc())
-    else:
-        query = query.order_by(Landing.id)
-    # 4) Пагинация по страницам
-    offset = (page - 1) * size
-    items = query.offset(offset).limit(size).all()
-    # 5) Формируем карточки
-    cards = []
-    for landing in items:
-        first_tag = landing.tags[0].name if landing.tags else None
-        authors = [
-            {"id": a.id, "name": a.name, "photo": a.photo}
-            for a in landing.authors
-        ]
-        cards.append({
-            "id": landing.id,
-            "first_tag": first_tag,
-            "landing_name": landing.landing_name,
-            "authors": authors,
-            "slug": landing.page_name,
-            "lessons_count": landing.lessons_count,
-            "main_image": landing.preview_photo,
-            "old_price": landing.old_price,
-            "new_price": landing.new_price,
-            "course_ids": [c.id for c in landing.courses]
-        })
-    # 6) Подсчёт общего числа страниц
-    total_pages = ceil(total / size) if total else 0
-
+    items = query.offset((page - 1) * size).limit(size).all()
     return {
         "total": total,
-        "total_pages": total_pages,
+        "total_pages": ceil(total / size) if total else 0,
         "page": page,
         "size": size,
-        "cards": cards,
+        "cards": [_landing_to_card(l) for l in items],
     }
-
 
 def get_purchases_by_language(
     db: Session,
@@ -360,25 +367,6 @@ def check_and_reset_ad_flag(landing: Landing, db: Session):
         if landing.ad_flag_expires_at < now:
             landing.in_advertising = False
             landing.ad_flag_expires_at = None
-
-def reset_expired_ad_flags(db: Session):
-    """
-    Сбрасывает in_advertising у лендингов,
-    у которых истёк ad_flag_expires_at.
-    """
-    updated = db.query(Landing).filter(
-        Landing.in_advertising.is_(True),
-        Landing.ad_flag_expires_at < func.utc_timestamp()
-    ).update(
-        {
-            Landing.in_advertising: False,
-            Landing.ad_flag_expires_at: None
-        },
-        synchronize_session=False      # быстрее, чем проход по каждому объекту
-    )
-    if updated:
-        db.commit()
-
 
 def get_top_landings_by_sales(
     db: Session,
@@ -436,7 +424,6 @@ def get_top_landings_by_sales(
     return result
 
 
-# services_v2/landing_service.py
 AD_TTL = timedelta(hours=3)
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
@@ -480,6 +467,24 @@ def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | No
 
     return min(rows, key=_price)
 
+def _fallback_landing_cards(
+    db: Session,
+    user_id: int,
+    skip: int,
+    limit: int,
+    language: str | None,
+) -> dict:
+    bought = _user_course_ids(db, user_id)
+    query = _exclude_bought(_base_landing_query(db), bought)
+    query = _apply_common_filters(query, language=language)
+    landings = (
+        query.order_by(Landing.sales_count.desc()).offset(skip).limit(limit).all()
+    )
+    return {"total": len(landings), "cards": [_landing_to_card(l) for l in landings]}
+
+
+# ---------------------------  COLLAB‑FILTER  --------------------------------
+
 def get_recommended_landing_cards(
     db: Session,
     *,
@@ -488,145 +493,60 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    """
-    Карточки лендингов, рекомендованных пользователю.
-    Алгоритм       : частотные co-purchases.
-    Фоллбэк        : самые популярные (sales_count DESC).
-    Формат ответа  : тот же, что get_landing_cards().
-    """
-    bought_ids: list[int] = _user_course_ids(db, user_id)
+    bought = _user_course_ids(db, user_id)
+    if not bought:
+        return _fallback_landing_cards(db, user_id, skip, limit, language)
 
-    # если покупок нет – сразу fallback
-    if not bought_ids:
-        return _fallback_landing_cards(
-            db, user_id, skip, limit, language
-        )
-
-    # 2) похожие пользователи (по users_courses)
     similar_users_subq = (
         db.query(users_courses.c.user_id)
-        .filter(users_courses.c.course_id.in_(bought_ids))
+        .filter(users_courses.c.course_id.in_(bought))
         .filter(users_courses.c.user_id != user_id)
         .distinct()
         .subquery()
     )
 
-    # 3) что ещё они брали – считаем взвешенный score
     overlap_expr = func.count(func.distinct(users_courses.c.user_id))
-    score_expr = (
-            func.count().cast(Float) /
-            func.nullif(overlap_expr, 0)
-    ).label("score")
+    score_expr = cast(func.count(), Float) / func.nullif(overlap_expr, 0)
 
-    recommended_courses_subq = (
-        db.query(
-            users_courses.c.course_id.label("course_id"),
-            score_expr,
-        )
+    recommended_subq = (
+        db.query(users_courses.c.course_id.label("cid"), score_expr.label("score"))
         .filter(
             users_courses.c.user_id.in_(select(similar_users_subq)),
-            ~users_courses.c.course_id.in_(bought_ids),
+            ~users_courses.c.course_id.in_(bought),
         )
         .group_by(users_courses.c.course_id)
-        .order_by(score_expr.desc())
         .subquery()
     )
 
-    # 4) ограничиваем и превращаем в список id
-    recommended_ids = [
-        row.course_id
-        for row in (
-            db.query(
-                recommended_courses_subq.c.course_id,
-                recommended_courses_subq.c.score
-            )
-            .order_by(recommended_courses_subq.c.score.desc())  # ← вернул сортировку
-            .offset(skip)
-            .limit(limit * 2)
-        )
+    course_ids = [
+        row.cid
+        for row in db.query(recommended_subq.c.cid, recommended_subq.c.score)
+        .order_by(recommended_subq.c.score.desc())
+        .offset(skip)
+        .limit(limit * 2)
     ]
 
-    cards: list[dict] = []
-    for cid in recommended_ids:
+    cards: List[dict] = []
+    for cid in course_ids:
         landing = get_cheapest_landing_for_course(db, cid)
         if not landing:
             continue
         if language and landing.language != language.upper():
             continue
-        # — формируем карточку ровно как в get_landing_cards —
-        cards.append({
-            "id":      landing.id,
-            "first_tag": landing.tags[0].name if landing.tags else None,
-            "landing_name": landing.landing_name,
-            "authors": [
-                {"id": a.id, "name": a.name, "photo": a.photo}
-                for a in landing.authors
-            ],
-            "slug":     landing.page_name,
-            "lessons_count": landing.lessons_count,
-            "main_image":    landing.preview_photo,
-            "old_price": landing.old_price,
-            "new_price": landing.new_price,
-            "course_ids": [c.id for c in landing.courses],
-        })
+        cards.append(_landing_to_card(landing))
         if len(cards) == limit:
             break
 
-    # 5) докидываем fallback, если рекомендаций мало
     if len(cards) < limit:
-        need = limit - len(cards)
-        backup = _fallback_landing_cards(
-            db, user_id, skip=0, limit=need, language=language
+        extra = _fallback_landing_cards(
+            db, user_id, skip=0, limit=limit - len(cards), language=language
         )["cards"]
-        cards.extend(backup)
+        cards.extend(extra)
 
     return {"total": len(cards), "cards": cards}
 
 
-# ---------------------------------------------------------------------------
-def _fallback_landing_cards(
-    db: Session,
-    user_id: int,
-    skip: int,
-    limit: int,
-    language: str | None,
-) -> dict:
-    bought_ids = _user_course_ids(db, user_id)
-
-    query = (
-        db.query(Landing)
-          .filter(Landing.is_hidden.is_(False))
-          .filter(~Landing.courses.any(Course.id.in_(bought_ids)))
-    )
-    if language:
-        query = query.filter(Landing.language == language.upper())
-
-    landings = (query
-                .order_by(Landing.sales_count.desc())   # ← важно
-                .offset(skip)
-                .limit(limit)
-                .all())
-
-    cards: list[dict] = []
-    for l in landings:
-        cards.append({
-            "id": l.id,
-            "first_tag": l.tags[0].name if l.tags else None,
-            "landing_name": l.landing_name,
-            "authors": [
-                {"id": a.id, "name": a.name, "photo": a.photo}
-                for a in l.authors
-            ],
-            "slug": l.page_name,
-            "lessons_count": l.lessons_count,
-            "main_image": l.preview_photo,
-            "old_price": l.old_price,
-            "new_price": l.new_price,
-            "course_ids": [c.id for c in l.courses],
-        })
-
-    return {"total": len(cards), "cards": cards}
-
+# -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
 
 def get_personalized_landing_cards(
     db: Session,
@@ -635,67 +555,22 @@ def get_personalized_landing_cards(
     skip: int = 0,
     limit: int = 20,
     tags: Optional[List[str]] = None,
-    sort: str = "popular",                      # popular | new | discount | reccomend
+    sort: str = "popular",  # popular | new | discount | reccomend
     language: Optional[str] = None,
 ) -> dict:
-    """
-    Старые сортировки (popular/new/discount) + новая reccomend,
-    причём курсы, уже купленные пользователем, не попадают в выдачу.
-    """
-    sort = (sort or "popular").lower()
-
-    # 1. «Умная» выдача
-    if sort == "reccomend":
+    if sort.lower() == "reccomend":
         return get_recommended_landing_cards(
-            db,
-            user_id=user_id,
-            skip=skip,
-            limit=limit,
-            language=language,
+            db, user_id=user_id, skip=skip, limit=limit, language=language
         )
 
-    # 2. Базовый список с фильтрами + исключение покупок
-    bought_ids = _user_course_ids(db, user_id)
-
-    query = (
-        db.query(Landing)
-        .filter(Landing.is_hidden.is_(False))
-        .filter(~Landing.courses.any(Course.id.in_(bought_ids)))  # <--
+    bought = _user_course_ids(db, user_id)
+    query = _exclude_bought(
+        _apply_common_filters(_base_landing_query(db), language=language, tags=tags),
+        bought,
     )
+    query = _apply_sort(query, sort)
 
-    if language:
-        query = query.filter(Landing.language == language.upper().strip())
-
-    if tags:
-        query = query.join(Landing.tags).filter(Tag.name.in_(tags)).distinct()
-
-    # 3. Сортировки
-    if sort == "popular":
-        query = query.order_by(Landing.sales_count.desc())
-    elif sort == "discount":
-        query = query.order_by((Landing.old_price - Landing.new_price).desc())
-    elif sort == "new":
-        query = query.order_by(Landing.created_at.desc())
-
+    total = query.count()
     landings = query.offset(skip).limit(limit).all()
-
-    cards: list[dict] = []
-    for l in landings:
-        cards.append({
-            "id": l.id,
-            "first_tag": l.tags[0].name if l.tags else None,
-            "landing_name": l.landing_name,
-            "authors": [
-                {"id": a.id, "name": a.name, "photo": a.photo}
-                for a in l.authors
-            ],
-            "slug": l.page_name,
-            "lessons_count": l.lessons_count,
-            "main_image": l.preview_photo,
-            "old_price": l.old_price,
-            "new_price": l.new_price,
-            "course_ids": [c.id for c in l.courses],
-        })
-
-    return {"total": len(cards), "cards": cards}
+    return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
 
