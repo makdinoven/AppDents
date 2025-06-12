@@ -340,7 +340,14 @@ def get_cards(
     Получение карточек лендингов с пагинацией, фильтрацией по тегам и сортировкой.
     В ответе возвращаются общее количество лендингов по фильтрам и список карточек.
     """
-    result = get_landing_cards(db, skip, limit, tags, sort, language)
+    result = get_landing_cards(
+        db=db,
+        skip=skip,
+        limit=limit,
+        tags=tags,
+        sort=sort,
+        language=language,
+    )
     return result
 
 @router.get(
