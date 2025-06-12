@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, time, date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
@@ -20,6 +21,7 @@ from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, Lan
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
 from ..utils.email_sender import send_password_to_user
+from ..utils.facebook import send_registration_event
 
 router = APIRouter()
 
@@ -578,6 +580,7 @@ def track_ad(slug: str,
 def grant_free_access(
     landing_id: int,
     data: FreeAccessRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -607,6 +610,7 @@ def grant_free_access(
 
     # ----- определяем / создаём пользователя -----
     random_pass = None
+    new_user_created = False
     if current_user:
         user = current_user
     else:
@@ -626,6 +630,7 @@ def grant_free_access(
         if not user:
             random_pass = generate_random_password()
             user = create_user(db, data.email, random_pass, invited_by=inviter)
+            new_user_created = True  # ④
             send_password_to_user(user.email, random_pass, data.region)
         # автологин
         token = create_access_token({"user_id": user.id})
@@ -671,6 +676,26 @@ def grant_free_access(
                         }
                     },
                 )
+    db.commit()
+    if new_user_created:  # посылаем только при реальной регистрации
+        client_ip = (
+                request.headers.get("X-Forwarded-For", "").split(",")[0]
+                or request.client.host
+                or "0.0.0.0"
+        )
+        user_agent = request.headers.get("User-Agent", "")
+        send_registration_event(
+            email=user.email,
+            region=data.region,
+            client_ip=client_ip,
+            user_agent=user_agent,
+            event_id=data.event_id or str(uuid.uuid4()),
+            event_source_url=data.event_source_url,
+            external_id=str(user.id),
+            fbp=data.fbp,
+            fbc=data.fbc,
+
+        )
 
     resp = {
         "detail": "Partial access granted",

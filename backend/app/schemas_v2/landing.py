@@ -162,3 +162,8 @@ class FreeAccessRequest(BaseModel):
     email: str
     region: str = "EN"
     ref_code: str | None = None
+    event_id: str | None = None  # тот же, что отправили в fbq('track', …, {eventID})
+    fbp: str | None = None  # _fbp cookie
+    fbc: str | None = None  # _fbc cookie
+    event_source_url: str | None = None
+    first_name: str | None = None

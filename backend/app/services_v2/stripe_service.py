@@ -28,23 +28,9 @@ from ..utils.email_sender import (
     send_already_owned_course_email,
     send_successful_purchase_email,
 )
-
+from ..utils.facebook import send_facebook_events
 
 logging.basicConfig(level=logging.INFO)
-
-# ────────────────────────────────────────────────────────────────
-# Вспомогательные функции
-# ────────────────────────────────────────────────────────────────
-
-
-def _hash_email(email: str) -> str:
-    """Нормализуем e-mail и хэшируем его (SHA-256 → hexdigest)."""
-    return hashlib.sha256(email.strip().lower().encode("utf-8")).hexdigest()
-
-
-def _hash_plain(value: str) -> str:
-    """Trim → lower → SHA-256. Для first_name / last_name и др. персональных полей."""
-    return hashlib.sha256(value.strip().lower().encode("utf-8")).hexdigest()
 
 # ───────────────────────────────────────────────────────────────
 # Lead helper
@@ -87,196 +73,6 @@ def _save_lead(db: Session, session_obj: dict, email: str | None, region: str):
                      session_id, email)
         return False
 
-
-
-# ────────────────────────────────────────────────────────────────
-# Facebook Conversions API
-# ────────────────────────────────────────────────────────────────
-def _build_fb_event(
-    *,
-    email: str,
-    amount: float,
-    currency: str,
-    course_ids: list[int],
-    client_ip: str,
-    user_agent: str,
-    event_time: int,
-    event_id: str,
-    event_name: str = "Purchase",
-    external_id: str | None = None,
-    fbp: str | None = None,
-    fbc: str | None = None,
-    first_name: str | None = None,
-    last_name: str | None = None,
-) -> dict:
-    """
-    Формирует payload для Facebook Conversions API.
-    ``event_name`` — "Purchase" или "Donate".
-    """
-
-    if not email:
-        raise ValueError("Empty email for Facebook event")
-
-    # ---------- 1. user_data ----------
-    user_data: dict = {
-        "em": [_hash_email(email)],
-        "client_ip_address": None if client_ip == "0.0.0.0" else client_ip,
-        "client_user_agent": user_agent or None,
-    }
-
-    # дополнительные Facebook-идентификаторы
-    if external_id:
-        user_data["external_id"] = [external_id]
-    if fbp:
-        user_data["fbp"] = fbp
-    if fbc:
-        user_data["fbc"] = fbc
-
-    # персональные поля
-    if first_name:
-        user_data["fn"] = [_hash_plain(first_name)]
-    if last_name and last_name != first_name:
-        user_data["ln"] = [_hash_plain(last_name)]
-
-    # ---------- 2. финальный event ----------
-    event = {
-        "data": [
-            {
-                "event_name": event_name,          # <-- главное отличие
-                "event_time": event_time,
-                "event_id": event_id,
-                "user_data": user_data,
-                "custom_data": {
-                    "currency": currency,
-                    "value": amount,
-                    "content_ids": [str(cid) for cid in course_ids],
-                    "content_type": "course",
-                },
-            }
-        ]
-    }
-
-    logging.info(
-        "FB event built → %s | %s | amount=%s %s | courses=%s",
-        email, event_name, amount, currency.upper(), course_ids,
-    )
-    return event
-
-def _send_facebook_events(
-    *,
-    region: str,                #  ← НОВЫЙ параметр
-    event_id: str,
-    email: str,
-    amount: float,
-    currency: str,
-    course_ids: list[int],
-    client_ip: str,
-    user_agent: str,
-    event_time: int,
-    external_id: str | None = None,
-    fbp: str | None = None,
-    fbc: str | None = None,
-    first_name: str | None = None,
-    last_name: str | None = None,
-) -> None:
-    """
-    Отправляет событие Purchase (и Donate) в Facebook CAPI.
-
-    • Всегда публикуем:
-        – два «глобальных» purchase-пикселя
-        – один donation-пиксель
-    • Дополнительно публикуем Purchase в регион-специфичный пиксель
-      (RU / EN / ES / IT) – если он сконфигурирован.
-    """
-
-    if not event_id:
-        raise ValueError("event_id is required for FB deduplication")
-
-    # ---------- 1. payload'ы ----------
-    purchase_payload = _build_fb_event(
-        event_name="Purchase",
-        email=email,
-        amount=amount,
-        currency=currency,
-        course_ids=course_ids,
-        client_ip=client_ip,
-        user_agent=user_agent,
-        event_time=event_time,
-        event_id=event_id,
-        external_id=external_id,
-        fbp=fbp,
-        fbc=fbc,
-        first_name=first_name,
-        last_name=last_name,
-    )
-    donate_payload = _build_fb_event(
-        event_name="Donate",
-        email=email,
-        amount=amount,
-        currency=currency,
-        course_ids=course_ids,
-        client_ip=client_ip,
-        user_agent=user_agent,
-        event_time=event_time,
-        event_id=event_id,
-        external_id=external_id,
-        fbp=fbp,
-        fbc=fbc,
-        first_name=first_name,
-        last_name=last_name,
-    )
-
-    # ---------- 2. список пикселей ----------
-    pixels_purchase: list[dict] = [
-        {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
-        {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
-    ]
-
-    # регион-специфичные purchase-пиксели
-    REGIONAL_PURCHASE_PIXELS: dict[str, dict] = {
-        "RU": {"id": settings.FACEBOOK_PIXEL_ID_RU, "token": settings.FACEBOOK_ACCESS_TOKEN_RU},
-        "EN": {"id": settings.FACEBOOK_PIXEL_ID_EN, "token": settings.FACEBOOK_ACCESS_TOKEN_EN},
-        "ES": {"id": settings.FACEBOOK_PIXEL_ID_ES, "token": settings.FACEBOOK_ACCESS_TOKEN_ES},
-        "IT": {"id": settings.FACEBOOK_PIXEL_ID_IT, "token": settings.FACEBOOK_ACCESS_TOKEN_IT},
-    }
-
-    region_key = (region or "").upper()
-    regional_pixel = REGIONAL_PURCHASE_PIXELS.get(region_key)
-    if regional_pixel and regional_pixel["id"] and regional_pixel["token"]:
-        pixels_purchase.append(regional_pixel)
-    else:
-        logging.warning("Regional FB pixel is not configured for region=%s", region_key)
-
-    pixel_donation = {
-        "id": settings.FACEBOOK_PIXEL_ID_DONATION,
-        "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
-    }
-
-    # ---------- 3. отправка ----------
-    def _post(pixel: dict, payload: dict, tag: str):
-        try:
-            resp = requests.post(
-                f"https://graph.facebook.com/v18.0/{pixel['id']}/events",
-                params={"access_token": pixel["token"]},
-                json=payload,
-                timeout=3,
-            )
-            if resp.status_code == 200:
-                logging.info("FB %s Pixel %s — OK (email=%s)",
-                             tag, pixel['id'], email)
-            else:
-                logging.error("FB %s Pixel %s — %s %s",
-                              tag, pixel['id'], resp.status_code, resp.text)
-        except Exception as e:
-            logging.error("FB %s Pixel %s failed: %s",
-                          tag, pixel['id'], e, exc_info=True)
-
-    for p in pixels_purchase:
-        _post(p, purchase_payload, "Purchase")
-
-    _post(pixel_donation, donate_payload, "Donate")
-
-# ────────────────────────────────────────────────────────────────
 # Stripe helpers
 # ────────────────────────────────────────────────────────────────
 def get_stripe_keys_by_region(region: str) -> dict:
@@ -637,7 +433,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # 9. Отправляем событие Purchase в FB
     purchase_lang = (metadata.get("purchase_lang") or region).upper()
-    _send_facebook_events(
+    send_facebook_events(
         region=purchase_lang,
         email=email,
         amount=session_obj["amount_total"] / 100,
