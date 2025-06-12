@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import base64
+import functools
 import hashlib
 import logging
 import os
@@ -145,20 +146,44 @@ def _kinescope_poster(embed_url: str) -> str | None:
         pass
     return None
 
-def _vimeo_poster(embed_url: str) -> str | None:
+VIMEO_ID_RE = re.compile(r"(?:player\.vimeo\.com\/video\/|vimeo\.com\/)(\d{6,12})")
+
+@functools.lru_cache(maxsize=512)            # кешируем на всякий случай
+def _vimeo_poster(video_link: str) -> str | None:
     """
-    GET https://player.vimeo.com/video/<ID>
-    Ищем "thumbnailUrl": "…jpg|webp"
+    • Принимаем любой вид ссылки –  https://vimeo.com/123,
+      https://player.vimeo.com/video/123?foo…
+    • Делаем GET https://player.vimeo.com/video/<ID>
+    • Ищем thumbnail в двух вариантах:
+        "thumbnailUrl": "…"
+        "thumbnail_url": "…"
+    Возвращаем полный URL JPEG / WEBP или None.
     """
+    # --- 1. вытаскиваем numeric id ---
+    m = VIMEO_ID_RE.search(video_link)
+    if not m:
+        return None
+    vid = m.group(1)
+
+    # --- 2. качаем embed-страницу ---
     try:
-        r = requests.get(embed_url.split("?")[0], timeout=REQUEST_TIMEOUT)
+        url = f"https://player.vimeo.com/video/{vid}"
+        r = requests.get(url, timeout=REQUEST_TIMEOUT,
+                         headers={"User-Agent": "Mozilla/5.0"})  # бывает 403 без UA
         if r.status_code != 200:
             return None
-        m = re.search(r'"thumbnailUrl"\s*:\s*"([^"]+)"', r.text)
-        if m:
-            return m.group(1)
     except requests.RequestException:
-        pass
+        return None
+
+    # --- 3. ищем thumbnail ---
+    html = r.text
+    for key in ("thumbnailUrl", "thumbnail_url"):
+        m = re.search(fr'"{key}"\s*:\s*"([^"]+)"', html)
+        if m:
+            thumb = m.group(1)
+            # oEmbed встраивает ?mw=80  → увеличим до 1280, если предстоит показывать крупно
+            thumb = thumb.replace("?mw=80", "?mw=1280")
+            return thumb
     return None
 
 
@@ -193,7 +218,7 @@ def preview_url_for(video_link: str) -> tuple[str | None, bool]:
             return poster, False  # jpeg, ffmpeg не нужен
         return None, False
 
-    if "player.vimeo.com/video/" in video_link:
+    if "vimeo.com" in video_link:
         poster = _vimeo_poster(video_link)
         return (poster, False) if poster else (None, False)
 
@@ -247,7 +272,7 @@ def generate_preview(self, video_link: str) -> None:
         cmd = [
             "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
             "-ss", "00:00:01", "-i", safe_url,
-            "-frames:v", "1", "-q:v", "4", tmp_path,
+            "-frames:v", "58", "-q:v", "4", tmp_path,
         ]
 
         logger.debug("ffmpeg cmd: %s", " ".join(cmd))
