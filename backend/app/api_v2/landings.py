@@ -14,7 +14,7 @@ from ..schemas_v2.author import AuthorResponse
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
-    track_ad_visit
+    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
@@ -707,3 +707,35 @@ def grant_free_access(
             resp["password"] = random_pass   # фронт покажет и сразу затрёт
 
     return resp
+
+@router.get(
+    "/recommend/cards",
+    response_model=LandingCardsResponse,
+    summary="Персональные карточки лендингов"
+)
+def personalized_cards(
+    limit: int = Query(20, gt=0, le=100),
+    skip: int = Query(0, ge=0),
+    tags: Optional[List[str]] = Query(None, description="Фильтр по тегам"),
+    sort: str = Query(
+        "popular",
+        regex="^(popular|discount|new|reccomend)$",
+        description="popular | discount | new | reccomend"
+    ),
+    language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """
+    • **popular / discount / new** — старая логика, но без уже купленных курсов.
+    • **reccomend** — collaborative filtering (co-purchases).
+    """
+    return get_personalized_landing_cards(
+        db,
+        user_id=current.id,
+        skip=skip,
+        limit=limit,
+        tags=tags,
+        sort=sort,
+        language=language,
+    )

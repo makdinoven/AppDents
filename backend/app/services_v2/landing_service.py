@@ -1,7 +1,7 @@
 from datetime import time, datetime, timedelta, date
 from math import ceil
 
-from sqlalchemy import func, or_, desc, Date, cast
+from sqlalchemy import func, or_, desc, Date, cast, select
 from sqlalchemy.types import Float
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
@@ -461,3 +461,224 @@ def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | No
             return float("inf")
 
     return min(rows, key=_price)
+
+def get_recommended_landing_cards(
+    db: Session,
+    *,
+    user_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    language: str | None = None,
+) -> dict:
+    """
+    Карточки лендингов, рекомендованных пользователю.
+    Алгоритм       : частотные co-purchases.
+    Фоллбэк        : самые популярные (sales_count DESC).
+    Формат ответа  : тот же, что get_landing_cards().
+    """
+    # 1) курсы, которые уже есть у пользователя
+    user_courses_subq = (
+        db.query(Purchase.course_id)
+          .filter(
+              Purchase.user_id == user_id,
+              Purchase.course_id.isnot(None)
+          )
+          .subquery()
+    )
+
+    # если у пользователя нет покупок – сразу уходим в fallback
+    if not db.query(user_courses_subq).first():
+        return _fallback_landing_cards(db, user_id, skip, limit, language)
+
+    # 2) похожие пользователи
+    similar_users_subq = (
+        db.query(Purchase.user_id)
+          .filter(Purchase.course_id.in_(select(user_courses_subq)))
+          .filter(Purchase.user_id != user_id)
+          .distinct()
+          .subquery()
+    )
+
+    # 3) какие ещё курсы они брали, рейтинг по частоте
+    recommended_courses_subq = (
+        db.query(
+            Purchase.course_id.label("course_id"),
+            func.count(Purchase.id).label("cnt")
+        )
+        .filter(
+            Purchase.user_id.in_(select(similar_users_subq)),
+            Purchase.course_id.isnot(None),
+            ~Purchase.course_id.in_(select(user_courses_subq))
+        )
+        .group_by(Purchase.course_id)
+        .order_by(func.count(Purchase.id).desc())
+        .subquery()
+    )
+
+    # 4) ограничиваем и превращаем в список id
+    recommended_ids = [
+        row.course_id
+        for row in db.query(recommended_courses_subq.c.course_id)
+                      .offset(skip)
+                      .limit(limit*2)           # берём небольшой запас
+    ]
+
+    cards: list[dict] = []
+    for cid in recommended_ids:
+        landing = get_cheapest_landing_for_course(db, cid)
+        if not landing:
+            continue
+        if language and landing.language != language.upper():
+            continue
+        # — формируем карточку ровно как в get_landing_cards —
+        cards.append({
+            "id":      landing.id,
+            "first_tag": landing.tags[0].name if landing.tags else None,
+            "landing_name": landing.landing_name,
+            "authors": [
+                {"id": a.id, "name": a.name, "photo": a.photo}
+                for a in landing.authors
+            ],
+            "slug":     landing.page_name,
+            "lessons_count": landing.lessons_count,
+            "main_image":    landing.preview_photo,
+            "old_price": landing.old_price,
+            "new_price": landing.new_price,
+            "course_ids": [c.id for c in landing.courses],
+        })
+        if len(cards) == limit:
+            break
+
+    # 5) докидываем fallback, если рекомендаций мало
+    if len(cards) < limit:
+        need = limit - len(cards)
+        backup = _fallback_landing_cards(
+            db, user_id, skip=0, limit=need, language=language
+        )["cards"]
+        cards.extend(backup)
+
+    return {"total": len(cards), "cards": cards}
+
+
+# ---------------------------------------------------------------------------
+def _fallback_landing_cards(
+    db: Session,
+    user_id: int,
+    skip: int,
+    limit: int,
+    language: str | None,
+) -> dict:
+    """
+    Бэкап-логика: top-seller'ы, которых пользователь ещё не купил.
+    """
+    purchased_course_ids = (
+        db.query(Purchase.course_id)
+          .filter(
+              Purchase.user_id == user_id,
+              Purchase.course_id.isnot(None)
+          )
+          .subquery()
+    )
+
+    query = (
+        db.query(Landing)
+          .filter(Landing.is_hidden.is_(False))
+          .filter(~Landing.courses.any(Course.id.in_(select(purchased_course_ids))))
+          .order_by(Landing.sales_count.desc())
+    )
+    if language:
+        query = query.filter(Landing.language == language.upper())
+
+    landings = query.offset(skip).limit(limit).all()
+
+    cards = []
+    for l in landings:
+        cards.append({
+            "id": l.id,
+            "first_tag": l.tags[0].name if l.tags else None,
+            "landing_name": l.landing_name,
+            "authors": [
+                {"id": a.id, "name": a.name, "photo": a.photo}
+                for a in l.authors
+            ],
+            "slug": l.page_name,
+            "lessons_count": l.lessons_count,
+            "main_image": l.preview_photo,
+            "old_price": l.old_price,
+            "new_price": l.new_price,
+            "course_ids": [c.id for c in l.courses],
+        })
+
+    return {"total": len(cards), "cards": cards}
+
+def get_personalized_landing_cards(
+    db: Session,
+    *,
+    user_id: int,
+    skip: int = 0,
+    limit: int = 20,
+    tags: Optional[List[str]] = None,
+    sort: str = "popular",                      # popular | new | discount | reccomend
+    language: Optional[str] = None,
+) -> dict:
+    """
+    Старые сортировки (popular/new/discount) + новая reccomend,
+    причём курсы, уже купленные пользователем, не попадают в выдачу.
+    """
+    sort = (sort or "popular").lower()
+
+    # 1. «Умная» выдача
+    if sort == "reccomend":
+        return get_recommended_landing_cards(
+            db,
+            user_id=user_id,
+            skip=skip,
+            limit=limit,
+            language=language,
+        )
+
+    # 2. Базовый список с фильтрами + исключение покупок
+    query = db.query(Landing).filter(Landing.is_hidden.is_(False))
+
+    if language:
+        query = query.filter(Landing.language == language.upper().strip())
+
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags)).distinct()
+
+    purchased_subq = (
+        db.query(Purchase.course_id)
+          .filter(Purchase.user_id == user_id, Purchase.course_id.isnot(None))
+          .subquery()
+    )
+    query = query.filter(~Landing.courses.any(Course.id.in_(select(purchased_subq))))
+
+    # 3. Сортировки
+    if sort == "popular":
+        query = query.order_by(Landing.sales_count.desc())
+    elif sort == "discount":
+        query = query.order_by((Landing.old_price - Landing.new_price).desc())
+    elif sort == "new":
+        query = query.order_by(Landing.created_at.desc())
+
+    landings = query.offset(skip).limit(limit).all()
+
+    cards: list[dict] = []
+    for l in landings:
+        cards.append({
+            "id": l.id,
+            "first_tag": l.tags[0].name if l.tags else None,
+            "landing_name": l.landing_name,
+            "authors": [
+                {"id": a.id, "name": a.name, "photo": a.photo}
+                for a in l.authors
+            ],
+            "slug": l.page_name,
+            "lessons_count": l.lessons_count,
+            "main_image": l.preview_photo,
+            "old_price": l.old_price,
+            "new_price": l.new_price,
+            "course_ids": [c.id for c in l.courses],
+        })
+
+    return {"total": len(cards), "cards": cards}
