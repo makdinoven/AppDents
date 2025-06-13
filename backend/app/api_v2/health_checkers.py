@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
+from fastapi import status
 
 from ..db.database import get_async_db                   # ваша обёртка
 from ..models.models_v2 import Course, Landing        # ваши модели
