@@ -109,11 +109,17 @@ def extract_from_landing(landing: Landing) -> List[BadLandingVideo]:
 
 # ---------- сам роут ---------- #
 
-@router.get("/check", response_model=VideosCheckReport)
+@router.get("/video", response_model=VideosCheckReport)
 async def check_all_videos(db: AsyncSession = Depends(get_async_db)):
     # 1. достаём JSON-поля одним ходом
-    courses: List[Course]  = (await db.scalars(select(Course.id, Course.sections))).all()
-    landings: List[Landing] = (await db.scalars(select(Landing.id, Landing.lessons_info))).all()
+    courses: list[Course] = (
+        await db.scalars(select(Course))  # теперь приходит полноценный Course
+    ).all()
+
+    # landings аналогично
+    landings: list[Landing] = (
+        await db.scalars(select(Landing))
+    ).all()
 
     # 2. «расплющиваем»
     course_videos   = [*(
