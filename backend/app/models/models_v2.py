@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, E
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
+import datetime as _dt
 
 Base = declarative_base()
 
@@ -140,6 +141,15 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    @hybrid_property
+    def active_special_offer_ids(self) -> list[int]:
+        """
+        ID курсов из действующих спец-предложений.
+        Используется в /me/courses и /detail/{id}.
+        """
+        now = _dt.datetime.utcnow()
+        return [so.course_id for so in self.special_offers if so.expires_at > now]
 
     @hybrid_property
     def partial_course_ids(self) -> list[int]:
