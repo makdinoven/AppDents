@@ -1,6 +1,7 @@
 
 from fastapi import FastAPI
-from .api_v2 import  users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers
+from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
+    health_checkers
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
@@ -43,6 +44,8 @@ def create_app() -> FastAPI:
     app.include_router(boomstream_migration.router, prefix="/api/boomstream", tags=["boomstream"])
 
     app.include_router(helpers.router, prefix="/api/helpers", tags=["helpers"])
+
+    app.include_router(health_checkers.router, prefix="/api/healthcheckers", tags=["Health Checkers"])
 
 
 

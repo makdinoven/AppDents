@@ -25,3 +25,4 @@ celery
 celery[redis]
 redis
 requests
+aiohttp
