@@ -1,26 +1,23 @@
-
 import os
 from celery import Celery
 from dotenv import load_dotenv
 
-# подгружаем .env ещё до создания Celery, чтобы переменные были в os.environ
-load_dotenv()
+load_dotenv()  # .env → os.environ
 
-# адрес брокера и бэкенда можно менять в .env
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1")
 
 celery = Celery(
-    "dent_backend",                      # любое название
+    "dent_backend",
     broker=CELERY_BROKER_URL,
     backend=CELERY_RESULT_BACKEND,
     include=[
-        "app.tasks.preview_tasks",   # пути до ваших модулей с тасками
-        # добавляйте другие tasks-модули сюда
+        "app.tasks.preview_tasks",      # генерация превью
+        "app.tasks.special_offers",     # спец-офферы ← добавили
     ],
 )
 
-# Настройки по умолчанию (можно дополнять)
+# базовые настройки Celery
 celery.conf.update(
     task_serializer="json",
     accept_content=["json"],
@@ -28,7 +25,15 @@ celery.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_annotations={
-        #  не более 10 кадров в минуту, чтобы не забить CPU
+        # ограничиваем скорость тяжёлого таска
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "30/m"},
     },
 )
+
+# расписание Beat
+celery.conf.beat_schedule = {
+    "special-offers-every-hour": {
+        "task": "app.tasks.special_offers.process_special_offers",
+        "schedule": 3600,   # сек
+    },
+}

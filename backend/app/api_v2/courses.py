@@ -56,20 +56,39 @@ def search_course_listing(
     return search_courses_paginated(db, q=q, page=page, size=size)
 
 @router.get("/detail/{course_id}", response_model=CourseDetailResponse)
-def get_course_by_id(
+def get_course_by_id(                     # noqa: C901 – cyclomatic OK
     course_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Подробности курса с учётом уровня доступа.
+
+    Уровни:
+        • full           – купил курс / админ
+        • special_offer  – спец-предложение (24 ч, первый урок открыт)
+        • partial        – бесплатный первый урок
+        • none           – доступа нет
+    """
+    import copy
+    import logging
+    logger = logging.getLogger(__name__)
 
     course = get_course_detail(db, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
     is_admin = getattr(current_user, "role", None) == "admin"
 
-    # — уровень доступа —
+    # --------- определяем права ----------
     has_full = is_admin or any(c.id == course_id for c in current_user.courses)
-    has_part = (not is_admin) and course_id in getattr(current_user, "partial_course_ids", [])
+    has_special = course_id in getattr(current_user, "active_special_offer_ids", [])
+    has_part = (
+        (not is_admin)
+        and course_id in getattr(current_user, "partial_course_ids", [])
+    )
 
-    # — нормализуем sections в список —
+    # --------- sections → list ----------
     raw_sections = course.sections or {}
     sections = (
         [{k: v} for k, v in raw_sections.items()]
@@ -77,19 +96,21 @@ def get_course_by_id(
         else list(raw_sections)
     )
 
-    # --- добавляем превью сразу, пока video_link ещё на месте ---
+    # --------- вставляем превью ----------
     for sec in sections:
         key, data = next(iter(sec.items()))
         new_lessons = []
         for lesson in data["lessons"]:
             lesson_copy = copy.deepcopy(lesson)
-            lesson_copy["preview"] = get_or_schedule_preview(db, lesson_copy["video_link"])
+            lesson_copy["preview"] = get_or_schedule_preview(  # миниатюра
+                db, lesson_copy["video_link"]
+            )
             new_lessons.append(lesson_copy)
         data["lessons"] = new_lessons
         sec[key] = data
 
-    # --- если partial, вырезаем ссылки (картинки остаются) ---
-    if has_part:
+    # --------- скрываем видео после первого ----------
+    if has_part or has_special:
         unlocked = False
         for sec in sections:
             key, data = next(iter(sec.items()))
@@ -99,19 +120,34 @@ def get_course_by_id(
                 else:
                     unlocked = True
 
-    # --- самый дешёвый лендинг ---
+    # --------- лендинг с минимальной ценой ----------
     cheapest_landing = None
     if not has_full:
         landing = get_cheapest_landing_for_course(db, course_id)
         if landing:
             cheapest_landing = {"id": landing.id}
 
+    # --------- итоговый уровень ----------
+    if has_full:
+        access_level = "full"
+    elif has_special:
+        access_level = "special_offer"
+    elif has_part:
+        access_level = "partial"
+    else:
+        access_level = "none"
+
+    logger.debug(
+        "User %s → course %s → %s access",
+        current_user.id, course_id, access_level,
+    )
+
     return {
         "id": course.id,
         "name": course.name,
         "description": course.description,
         "sections": sections,
-        "access_level": "full" if has_full else "partial",
+        "access_level": access_level,
         "cheapest_landing": cheapest_landing,
     }
 
