@@ -301,8 +301,8 @@ class LessonPreview(Base):
     """
     __tablename__ = "lesson_previews"
 
-    video_link   = Column(String(255), primary_key=True)
-    preview_url  = Column(String(255), nullable=False)
+    video_link   = Column(String(500), primary_key=True)
+    preview_url  = Column(String(500), nullable=False)
     generated_at = Column(DateTime, nullable=False, default=func.now())
 
 class SpecialOffer(Base):
