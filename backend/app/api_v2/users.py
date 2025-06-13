@@ -264,6 +264,7 @@ def get_user_courses(
     course_ids: set[int] = {c.id for c in current_user.courses}
     course_ids.update(current_user.partial_course_ids or [])
 
+
     if course_ids:
         # --- один запрос: «минимальная цена → preview_photo» для каждого курса ---
         # ① подзапрос: минимальная new_price на курс
@@ -321,6 +322,14 @@ def get_user_courses(
             "id": c.id,
             "name": c.name,
             "access_level": "partial",
+            "preview": _preview(c.id),
+        })
+
+    for c in db.query(Course).filter(Course.id.in_(current_user.active_special_offer_ids)).all():
+        full.setdefault(c.id, {
+            "id": c.id,
+            "name": c.name,
+            "access_level": "special_offer",
             "preview": _preview(c.id),
         })
 

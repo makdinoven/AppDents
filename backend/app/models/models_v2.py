@@ -134,6 +134,12 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    special_offers = relationship(
+        "SpecialOffer",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     @hybrid_property
     def partial_course_ids(self) -> list[int]:
@@ -288,3 +294,22 @@ class LessonPreview(Base):
     video_link   = Column(String(255), primary_key=True)
     preview_url  = Column(String(255), nullable=False)
     generated_at = Column(DateTime, nullable=False, default=func.now())
+
+class SpecialOffer(Base):
+    """
+    Специальное предложение («­кабинетная акция»).
+    • один курс в оффере на пользователя;
+    • действует 24 ч (expires_at);
+    • после покупки или экспирации запись удаляем Celery-таском.
+    """
+    __tablename__ = "special_offers"
+
+    user_id    = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    course_id  = Column(Integer, ForeignKey("courses.id"), primary_key=True)
+    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False)
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+
+    user    = relationship("User", back_populates="special_offers")
+    course  = relationship("Course")
+    landing = relationship("Landing")
