@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from ..db.database import get_async_db                   # ваша обёртка
 from ..models.models_v2 import Course, Landing        # ваши модели
@@ -142,14 +143,24 @@ async def broken_videos_stream(db: AsyncSession, concurrency: int = 30):
 # --------------------------------------------------------------------------- #
 
 @router.get(
-    "/video/stream",
+    "/check/stream",
     summary="Проверить все видео и стримить список битых",
-    description=(
-        "Отдаёт JSON-массив объектов с информацией о **битых** ссылках.\n"
-        "Элементы приходят по мере проверки, поэтому соединение не обрывается "
-        "тайм-аутом proxy/браузера."
-    ),
-    response_class=StreamingResponse,          # Swagger покажет «binary», это норм.
+    response_class=StreamingResponse,
+    status_code=status.HTTP_200_OK,
+
+    # ↓↓↓ добавляем описание ответа 200
+    responses={
+        200: {
+            "description": "Потоковый JSON-массив объектов с битым видео",
+            "content": {
+                "application/json": {
+                    # для стрима хватит простейшей схемы «строка»,
+                    # Swagger-UI больше не отметит ответ как Undocumented
+                    "schema": {"type": "string", "example": '[{"source":"course",…}]'},
+                }
+            },
+        }
+    },
 )
 async def check_videos_stream(db: AsyncSession = Depends(get_async_db)):
     generator = broken_videos_stream(db)
