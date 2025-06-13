@@ -139,10 +139,9 @@ def _paginate(query: Query, *, page: int, size: int) -> dict:
 def list_landings_paginated(
     db: Session, *, language: Optional[LangEnum], page: int = 1, size: int = 10
 ) -> dict:
-    q = _apply_common_filters(
-        db.query(Landing.id.desc()), language=language.value if language else None
-    )
-    q = _apply_sort(q, "new")  # новые сверху
+    q = db.query(Landing).order_by(desc(Landing.id))        # новые сверху
+    if language:                                                # фильтр, если задан
+        q = q.filter(Landing.language == language.value)
     return _paginate(q, page=page, size=size)
 
 
