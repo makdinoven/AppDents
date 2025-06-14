@@ -18,8 +18,8 @@ import {
   UnionPayLogo,
   VisaLogo,
 } from "../../../assets/logos/index";
-import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../store/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
@@ -32,6 +32,7 @@ import { cartStorage } from "../../../api/cartApi/cartStorage.ts";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
+import { getMe } from "../../../store/actions/userActions.ts";
 
 const logos = [
   VisaLogo,
@@ -71,6 +72,7 @@ const PaymentModal = ({
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
@@ -168,11 +170,11 @@ const PaymentModal = ({
 
       try {
         const res = await mainApi.getFreeCourse(dataToSend, isLogged);
-        console.log(res);
         if (isLogged) {
           navigate(Path.profile);
         } else {
           localStorage.setItem("access_token", res.data.access_token);
+          await dispatch(getMe());
           navigate(Path.profile);
         }
         setLoading(false);
