@@ -492,10 +492,17 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
+    """
+    Рекомендации (co-purchases) + fallback-популярные.
+    • total — общее число всех доступных карточек (реком. + fallback),
+      не зависит от skip/limit.
+    """
+    # ------------------------------------------------------------------ 1) курсы пользователя
     bought = _user_course_ids(db, user_id)
     if not bought:
         return _fallback_landing_cards(db, user_id, skip, limit, language)
 
+    # ------------------------------------------------------------------ 2) похожие пользователи и score
     similar_users_subq = (
         db.query(users_courses.c.user_id)
         .filter(users_courses.c.course_id.in_(bought))
@@ -504,11 +511,11 @@ def get_recommended_landing_cards(
         .subquery()
     )
 
-    overlap_expr = func.count(func.distinct(users_courses.c.user_id))
-    score_expr = cast(func.count(), Float) / func.nullif(overlap_expr, 0)
+    overlap = func.count(func.distinct(users_courses.c.user_id))
+    score   = (cast(func.count(), Float) / func.nullif(overlap, 0)).label("score")
 
-    recommended_subq = (
-        db.query(users_courses.c.course_id.label("cid"), score_expr.label("score"))
+    rec_subq = (
+        db.query(users_courses.c.course_id.label("cid"), score)
         .filter(
             users_courses.c.user_id.in_(select(similar_users_subq)),
             ~users_courses.c.course_id.in_(bought),
@@ -517,14 +524,22 @@ def get_recommended_landing_cards(
         .subquery()
     )
 
-    course_ids = [
-        row.cid
-        for row in db.query(recommended_subq.c.cid, recommended_subq.c.score)
-        .order_by(recommended_subq.c.score.desc())
-        .offset(skip)
-        .limit(limit * 2)
-    ]
+    # ------------------------------------------------------------------ 3) total для рекомендованных
+    total_recommended: int = (
+        db.query(func.count()).select_from(rec_subq).scalar() or 0
+    )
 
+    # ------------------------------------------------------------------ 4) применяем skip/limit
+    course_rows = (
+        db.query(rec_subq.c.cid, rec_subq.c.score)
+        .order_by(rec_subq.c.score.desc())
+        .offset(skip)
+        .limit(limit * 2)          # берём запас — часть карточек может отфильтроваться
+        .all()
+    )
+    course_ids = [r.cid for r in course_rows]
+
+    # ------------------------------------------------------------------ 5) превращаем в лендинги
     cards: List[dict] = []
     for cid in course_ids:
         landing = get_cheapest_landing_for_course(db, cid)
@@ -536,13 +551,25 @@ def get_recommended_landing_cards(
         if len(cards) == limit:
             break
 
+    # ------------------------------------------------------------------ 6) fallback, если мало карточек
     if len(cards) < limit:
-        extra = _fallback_landing_cards(
-            db, user_id, skip=0, limit=limit - len(cards), language=language
+        need = limit - len(cards)
+        extra_cards = _fallback_landing_cards(
+            db, user_id, skip=0, limit=need, language=language
         )["cards"]
-        cards.extend(extra)
+        cards.extend(extra_cards)
 
-    return {"total": len(cards), "cards": cards}
+    # ------------------------------------------------------------------ 7) считаем суммарный total
+    # fallback-часть: все популярные лендинги, которых нет у пользователя
+    fallback_query = _exclude_bought(_base_landing_query(db), bought)
+    if language:
+        fallback_query = fallback_query.filter(Landing.language == language.upper())
+    total_fallback = fallback_query.count()
+
+    total = total_recommended + total_fallback
+
+    return {"total": total, "cards": cards}
+
 
 
 # -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
