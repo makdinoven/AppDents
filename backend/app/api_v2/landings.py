@@ -725,9 +725,9 @@ def personalized_cards(
     skip: int = Query(0, ge=0),
     tags: Optional[List[str]] = Query(None, description="Фильтр по тегам"),
     sort: str = Query(
-        "reccomend",
+        "recommend",
         regex="^(popular|discount|new|reccomend)$",
-        description="popular | discount | new | reccomend"
+        description="popular | discount | new | recommend"
     ),
     language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
     db: Session = Depends(get_db),
