@@ -726,7 +726,7 @@ def personalized_cards(
     tags: Optional[List[str]] = Query(None, description="Фильтр по тегам"),
     sort: str = Query(
         "recommend",
-        regex="^(popular|discount|new|reccomend)$",
+        regex="^(popular|discount|new|recommend)$",
         description="popular | discount | new | recommend"
     ),
     language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
