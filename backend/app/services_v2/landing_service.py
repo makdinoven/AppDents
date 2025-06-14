@@ -554,10 +554,10 @@ def get_personalized_landing_cards(
     skip: int = 0,
     limit: int = 20,
     tags: Optional[List[str]] = None,
-    sort: str = "popular",  # popular | new | discount | reccomend
+    sort: str = "popular",  # popular | new | discount | recommend
     language: Optional[str] = None,
 ) -> dict:
-    if sort.lower() == "reccomend":
+    if sort.lower() == "recommend":
         return get_recommended_landing_cards(
             db, user_id=user_id, skip=skip, limit=limit, language=language
         )
