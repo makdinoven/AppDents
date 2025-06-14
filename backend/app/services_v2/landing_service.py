@@ -552,24 +552,20 @@ def get_recommended_landing_cards(
             break
 
     # ------------------------------------------------------------------ 6) fallback, если мало карточек
+    # ------------------------------------------------------------------ 6) fallback, если мало карточек
     if len(cards) < limit:
-        need = limit - len(cards)
-        extra_cards = _fallback_landing_cards(
-            db, user_id, skip=0, limit=need, language=language
+        extra = _fallback_landing_cards(
+            db, user_id, skip=0, limit=limit - len(cards), language=language
         )["cards"]
-        cards.extend(extra_cards)
+        cards.extend(extra)
 
-    # ------------------------------------------------------------------ 7) считаем суммарный total
-    # fallback-часть: все популярные лендинги, которых нет у пользователя
-    fallback_query = _exclude_bought(_base_landing_query(db), bought)
+    # ------------------------------------------------------------------ 7) итоговый total — все лендинги, ещё не купленные
+    total_query = _exclude_bought(_base_landing_query(db), bought)
     if language:
-        fallback_query = fallback_query.filter(Landing.language == language.upper())
-    total_fallback = fallback_query.count()
-
-    total = total_recommended + total_fallback
+        total_query = total_query.filter(Landing.language == language.upper())
+    total = total_query.count()
 
     return {"total": total, "cards": cards}
-
 
 
 # -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
