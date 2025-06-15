@@ -23,7 +23,9 @@ const MainPage = () => {
   const coursesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setActiveSort(isLogged ? "recommend" : "popular");
+    if (!sortFromUrl) {
+      setActiveSort(isLogged ? "recommend" : "popular");
+    }
   }, [isLogged]);
 
   useEffect(() => {
