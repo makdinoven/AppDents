@@ -101,6 +101,7 @@ export const normalizeCourse = (course: any) => {
             id: index + 1,
             lesson_name: lesson.lesson_name,
             video_link: lesson.video_link,
+            preview: lesson.preview,
           }),
         ),
       };

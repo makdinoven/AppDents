@@ -1,153 +1,152 @@
-.card_wrapper {
+$border-radius: 20px;
+
+.card {
+  hyphens: auto;
   @include fadeInMove();
+  @include flex-column;
   position: relative;
-  background-color: $primary;
-  border: 2px solid $primary;
-  border-radius: var(--border-radius);
-  @include transition;
+
+  &::before {
+    @include transition();
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: $primary;
+    border-radius: $border-radius;
+    z-index: -1;
+  }
 
   @media (hover: hover) {
-    &:not(&.partial):hover {
-      background-color: $background-color;
+    &:hover {
+      .card_content {
+        background-color: $primary;
+      }
+
+      &::before {
+        width: calc(100% + 10px);
+        height: calc(100% + 20px);
+      }
+
+      &.blue {
+        .card_content {
+          background-color: $secondary-lighter;
+        }
+      }
     }
   }
 
   &.blue {
-    border-color: $secondary-lighter;
-    background-color: $secondary-lighter;
+    &::before {
+      background-color: $secondary-lighter;
+    }
+
+    .card_content {
+      border-color: $secondary-lighter;
+    }
     color: $secondary;
   }
 }
 
-.lock {
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 5;
-}
-
-.upgrade_required {
-  text-transform: uppercase;
-  @include clamped-h3;
-  color: $text-color;
-}
-
-.part_of_course {
+.card_content {
+  @include flex-column;
   @include clamped-p2;
+  @include transition();
+  background-color: $background-color;
+  border-radius: $border-radius;
+  padding: 15px;
+  flex: 1;
+  gap: 10px;
+  justify-content: space-between;
+  border: 2px solid $primary;
+
+  img {
+    border-radius: $border-radius;
+    width: 100%;
+    aspect-ratio: 16/9;
+  }
+
+  .no_photo {
+    background-color: $accent-glass;
+    object-fit: contain;
+  }
 }
 
-.partial_card_content_text {
-  max-width: 40%;
+.card_bottom {
+  @include clamped-p3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  color: $accent;
 }
 
-.partial_card_content {
-  cursor: pointer;
-  padding: 20px;
+.status {
+  border-radius: $border-radius;
+}
+
+.watch {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 100%;
+  gap: 10px;
+  text-transform: lowercase;
+  padding: 2px 15px;
+  background-color: $accent;
+  color: $text-color;
+  border-radius: $border-radius;
+  @include transition();
 
-  &.blue {
-    border-color: $secondary-lighter;
-  }
-
-  button {
-    @include clamped-p2;
-    max-width: 500px;
-    background-color: $accent;
-    color: $text-color;
-    outline: 2px solid $accent;
-    @media (hover: hover) {
-      &:hover {
-        color: $primary;
-        background-color: $background-color;
-        outline: 2px solid $background-color;
-      }
-    }
-  }
-}
-
-.card {
-  cursor: pointer;
-  min-height: 110px;
-  display: flex;
-  justify-content: space-between;
-  border-radius: var(--border-radius);
-  gap: 20px;
-  padding: 20px 45px;
-  color: $accent;
-
-  &.blocked {
-    //opacity: 0.4;
-    //pointer-events: none;
-    //background-color: $quaternary;
-    background-color: $background-color;
-    overflow: hidden;
-    position: relative;
-
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
-      background-color: $primary;
-      opacity: 0.4;
-      z-index: 3;
+  svg {
+    width: 16px;
+    height: 16px;
+    path {
+      @include transition();
+      fill: $background-color;
+      stroke-width: 1px;
     }
   }
 
-  h3 {
-    @include clamped-p1;
-    max-width: 80%;
-  }
-
-  span {
-    align-self: flex-end;
-  }
-
-  &.blue {
-    a {
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
       color: $accent;
-    }
 
-    &.blocked {
-      &::after {
-        background-color: $secondary-lighter;
+      svg {
+        path {
+          fill: $accent;
+        }
       }
     }
   }
 }
 
-@media (max-width: $tablet-breakpoint) {
-  .partial_card_content {
-    flex-direction: column;
-    gap: 10px;
-  }
+@media (max-width: $mobile-breakpoint) {
+  .card_content {
+    flex-direction: row;
+    padding: 10px;
+    border-width: 1px;
 
-  .partial_card_content_text {
-    max-width: unset;
-    text-align: center;
-  }
-
-  .card {
-    flex-direction: column;
-    gap: 5px;
-    padding: 20px;
-    border-radius: 30px;
-
-    h3 {
-      max-width: unset;
+    img {
+      flex-shrink: 0;
+      width: 40%;
+      height: auto;
+      max-height: 75px;
+      border-radius: 10px;
     }
+  }
 
-    a {
-      align-self: flex-start;
+  .card_bottom {
+    padding: 8px 10px;
+  }
+
+  .watch {
+    gap: 5px;
+    svg {
+      width: 10px;
+      height: 10px;
     }
   }
 }
