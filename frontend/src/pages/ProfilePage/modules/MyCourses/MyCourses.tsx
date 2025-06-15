@@ -14,6 +14,7 @@ const MyCourses = ({ courses }: { courses: any }) => {
             <ProfileCourseCard
               index={index}
               isPartial={course.access_level === "partial"}
+              isOffer={course.access_level === "special_offer"}
               viewText={"viewCourse"}
               key={course.id}
               name={course.name}

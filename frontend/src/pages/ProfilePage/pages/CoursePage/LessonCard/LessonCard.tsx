@@ -44,7 +44,7 @@ const LessonCard = ({
         </div>
         {previewPhoto ? (
           <div className={s.photo}>
-            <img src={previewPhoto} alt={t("lesson.image")} />
+            <img src={previewPhoto} alt={""} />
           </div>
         ) : (
           <div className={s.photo}>
