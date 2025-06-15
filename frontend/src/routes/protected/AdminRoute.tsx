@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../routes.ts";
 import Loader from "../../components/ui/Loader/Loader.tsx";
 import { useEffect } from "react";
+import { LS_TOKEN_KEY } from "../../common/helpers/commonConstants.ts";
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
@@ -12,10 +13,11 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   );
   const loading = useSelector((state: AppRootStateType) => state.user.loading);
   const role = useSelector((state: AppRootStateType) => state.user.role);
+  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const isAdmin = role === "admin";
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !accessToken) {
       if (!isLogged) {
         navigate(Path.login, { replace: true, state: {} });
       } else if (!isAdmin) {
@@ -28,7 +30,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <Loader />;
   }
 
-  if (!isLogged || !isAdmin) {
+  if (!isLogged || !isAdmin || !accessToken) {
     return null;
   }
 

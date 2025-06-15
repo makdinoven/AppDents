@@ -44,7 +44,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
     setLoading(true);
     try {
       const paramsToSend = { ...params, single_course: isFree };
-      const res = await mainApi.getCoursesPagination(paramsToSend);
+      const res = await mainApi.getLandingCards(paramsToSend);
 
       setCourses(res.data.cards);
       setTotal(res.data.total);

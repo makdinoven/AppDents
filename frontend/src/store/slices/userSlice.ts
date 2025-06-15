@@ -1,7 +1,15 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { getCourses, getMe, login } from "../actions/userActions.ts";
+import {
+  getCourses,
+  getMe,
+  login,
+  logoutAsync,
+} from "../actions/userActions.ts";
 import i18n from "i18next";
-import { LS_LANGUAGE_KEY } from "../../common/helpers/commonConstants.ts";
+import {
+  LS_LANGUAGE_KEY,
+  LS_TOKEN_KEY,
+} from "../../common/helpers/commonConstants.ts";
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
 
@@ -29,7 +37,7 @@ const initialState: UserState = {
   id: null,
   email: null,
   role: null,
-  loading: true,
+  loading: false,
   error: null,
   isLogged: false,
   balance: null,
@@ -42,13 +50,13 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
+      localStorage.removeItem(LS_TOKEN_KEY);
       state.email = null;
       state.role = null;
-      state.loading = true;
+      state.loading = false;
       state.error = null;
       state.isLogged = false;
       state.balance = null;
-      localStorage.removeItem("access_token");
     },
     setLanguage: (state, action: PayloadAction<string>) => {
       const newLanguage = action.payload;
@@ -59,6 +67,17 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(logoutAsync.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logoutAsync.fulfilled, (state) => {
+        state.email = null;
+        state.role = null;
+        state.loading = false;
+        state.error = null;
+        state.isLogged = false;
+        state.balance = null;
+      })
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -69,7 +88,7 @@ const userSlice = createSlice({
           state.loading = false;
           state.isLogged = true;
           localStorage.setItem(
-            "access_token",
+            LS_TOKEN_KEY,
             action.payload.res.data.access_token,
           );
         },
@@ -95,9 +114,9 @@ const userSlice = createSlice({
         },
       )
       .addCase(getMe.rejected, (state, action) => {
-        state.loading = false;
         state.error = action.payload as ErrorResponse;
         userSlice.caseReducers.logout(state);
+        state.loading = false;
       })
       .addCase(getCourses.pending, (state) => {
         state.error = null;

@@ -24,6 +24,7 @@ import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
+  LS_TOKEN_KEY,
   PAYMENT_SOURCES,
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
@@ -173,7 +174,7 @@ const PaymentModal = ({
         if (isLogged) {
           navigate(Path.profile);
         } else {
-          localStorage.setItem("access_token", res.data.access_token);
+          localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
           await dispatch(getMe());
           navigate(Path.profile);
         }

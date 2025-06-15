@@ -139,7 +139,8 @@
     "management": "Менеджмент",
     "common.popular": "Популярные",
     "common.bestPrices": "Лучшие цены",
-    "common.new": "Новые"
+    "common.new": "Новые",
+    "common.rec": "Для вас"
   },
 
   "landing": {

@@ -1,8 +1,9 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
+import { LS_TOKEN_KEY } from "./commonConstants.ts";
 
 export const getAuthHeaders = () => {
-  const accessToken = localStorage.getItem("access_token");
+  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
 
   if (!accessToken) {
     throw new Error("No access token found");
@@ -135,6 +136,7 @@ export const normalizeLessons = (lessons: any[]): any[] => {
       duration: lesson.duration || "",
       name: lesson.name || "",
       lecturer: lesson.lecturer || "",
+      preview: lesson.preview || "",
     };
   });
 };
