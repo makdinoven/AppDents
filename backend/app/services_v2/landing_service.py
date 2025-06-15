@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timedelta, date
 from math import ceil
 import time
@@ -11,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 
+from .preview_service import get_or_schedule_preview
 from ..models.models_v2 import (
     Landing,
     Author,
@@ -585,4 +587,50 @@ def get_personalized_landing_cards(
     total = query.count()
     landings = query.offset(skip).limit(limit).all()
     return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
+
+def get_landing_detail_with_previews(db: Session, landing_id: int) -> dict:
+    """
+    Возвращает словарь с полной информацией о лендинге,
+    где в lessons_info каждому уроку добавлено поле preview.
+    """
+    landing: Landing | None = (
+        db.query(Landing).filter(Landing.id == landing_id).first()
+    )
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    # ------- копируем lessons_info и вставляем превью --------
+    lessons_src = landing.lessons_info or []          # JSON → list[dict]
+    lessons_out = []
+
+    for item in lessons_src:
+        key, lesson = next(iter(item.items()))
+        lesson_copy = copy.deepcopy(lesson)
+
+        video_link = lesson_copy.get("link") or lesson_copy.get("video_link")
+        # если ссылки нет — просто передаём как есть
+        if video_link:
+            lesson_copy["preview"] = get_or_schedule_preview(db, video_link)
+
+        lessons_out.append({key: lesson_copy})
+
+    # ------- собираем финальный ответ --------
+    return {
+        "id": landing.id,
+        "page_name": landing.page_name,
+        "landing_name": landing.landing_name,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_program": landing.course_program,
+        "lessons_info": lessons_out,
+        "preview_photo": landing.preview_photo,
+        "sales_count": landing.sales_count,
+        "duration": landing.duration,
+        "lessons_count": landing.lessons_count,
+        "authors": [a.name for a in landing.authors],
+        "course_ids": landing.course_ids,
+        "tag_ids": [t.id for t in landing.tags],
+        "language": landing.language,
+        "in_advertising": landing.in_advertising,
+    }
 
