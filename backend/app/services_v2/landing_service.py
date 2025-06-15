@@ -115,12 +115,17 @@ def _apply_sort(query: Query, sort: str | None) -> Query:
 
 
 # 6. Исключение уже купленных курсов
-def _exclude_bought(query: Query, bought_ids: list[int]) -> Query:
-    return (
-        query
-        if not bought_ids
-        else query.filter(~Landing.courses.any(Course.id.in_(bought_ids)))
-    )
+def _exclude_bought(
+    query: Query,
+    bought_courses: list[int],
+    bought_landings: set[int],
+) -> Query:
+    if bought_courses:
+        query = query.filter(~Landing.courses.any(Course.id.in_(bought_courses)))
+    if bought_landings:
+        query = query.filter(~Landing.id.in_(bought_landings))
+    return query
+
 
 # -------------------- ПАГИНАЦИЯ ОБЩЕГО НАЗНАЧЕНИЯ ---------------------------
 
@@ -475,9 +480,12 @@ def _fallback_landing_cards(
     limit: int,
     language: str | None,
 ) -> dict:
-    bought = _user_course_ids(db, user_id)
-    query = _exclude_bought(_base_landing_query(db), bought)
+    b_courses = _user_course_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)
+
+    query = _exclude_bought(_base_landing_query(db), b_courses, b_landings)
     query = _apply_common_filters(query, language=language)
+
     landings = (
         query.order_by(Landing.sales_count.desc()).offset(skip).limit(limit).all()
     )
@@ -486,6 +494,7 @@ def _fallback_landing_cards(
 
 # ---------------------------  COLLAB‑FILTER  --------------------------------
 
+# ---------------------------  COLLAB-FILTER  --------------------------------
 def get_recommended_landing_cards(
     db: Session,
     *,
@@ -494,14 +503,18 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    bought = _user_course_ids(db, user_id)
-    if not bought:
+    # --- 0.  что пользователь уже купил -----------------------------------
+    b_courses  = _user_course_ids(db, user_id)    # список course_id
+    b_landings = _user_landing_ids(db, user_id)   # set   landing_id
+
+    # если нет ни одного купленного курса — отдаём fallback
+    if not b_courses:
         return _fallback_landing_cards(db, user_id, skip, limit, language)
 
-    # --- 1.  под-запрос со score ------------------------------------------
+    # --- 1.  ищем похожих пользователей, считаем score --------------------
     similar_users = (
         db.query(users_courses.c.user_id)
-          .filter(users_courses.c.course_id.in_(bought),
+          .filter(users_courses.c.course_id.in_(b_courses),
                   users_courses.c.user_id != user_id)
           .distinct()
           .subquery()
@@ -513,50 +526,47 @@ def get_recommended_landing_cards(
     rec_q = (
         db.query(users_courses.c.course_id.label("cid"), score)
           .filter(users_courses.c.user_id.in_(select(similar_users)),
-                  ~users_courses.c.course_id.in_(bought))
+                  ~users_courses.c.course_id.in_(b_courses))
           .group_by(users_courses.c.course_id)
           .order_by(score.desc())
     )
 
-    # --- 2.  итерируем, отдаём ТОЛЬКО уникальные landings -----------------
-    unique_ids: set[int] = set()          # landing.id уже отданные
+    # --- 2.  отбираем уникальные лендинги с учётом skip/limit -------------
+    unique_ids: set[int] = set()
     cards: list[dict] = []
-    seen = 0                               # сколько уникальных landing уже «пропустили»
+    passed = 0          # сколько уникальных лендингов «пропустили» для skip
 
     for row in rec_q.yield_per(200):
         landing = get_cheapest_landing_for_course(db, row.cid)
         if not landing or (language and landing.language != language.upper()):
             continue
         if landing.id in unique_ids:
-            continue                       # второй курс того же лендинга — пропускаем
-
+            continue
         unique_ids.add(landing.id)
 
-        # фазa «skip»
-        if seen < skip:
-            seen += 1
+        if passed < skip:          # фаза пропуска
+            passed += 1
             continue
 
-        # фазa «take»
         cards.append(_landing_to_card(landing))
         if len(cards) == limit:
             break
 
-    # --- 3.  если не добрали limit – fallback -----------------------------
+    # --- 3.  добираем fallback, если нужно --------------------------------
     if len(cards) < limit:
-        need = limit - len(cards)
         extra = _fallback_landing_cards(
-            db, user_id, skip=0, limit=need, language=language
+            db, user_id, skip=0, limit=limit - len(cards), language=language
         )["cards"]
         cards.extend(extra)
 
-    # --- 4.  total: все доступные лендинги, ещё не купленные --------------
-    total_q = _exclude_bought(_base_landing_query(db), bought)
+    # --- 4.  total: все НЕкупленные лендинги ------------------------------
+    total_q = _exclude_bought(_base_landing_query(db), b_courses, b_landings)
     if language:
         total_q = total_q.filter(Landing.language == language.upper())
     total = total_q.count()
 
     return {"total": total, "cards": cards}
+
 
 
 
@@ -577,11 +587,15 @@ def get_personalized_landing_cards(
             db, user_id=user_id, skip=skip, limit=limit, language=language
         )
 
-    bought = _user_course_ids(db, user_id)
+    b_courses = _user_course_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)
+
     query = _exclude_bought(
         _apply_common_filters(_base_landing_query(db), language=language, tags=tags),
-        bought,
+        b_courses,
+        b_landings,
     )
+
     query = _apply_sort(query, sort)
 
     total = query.count()
@@ -634,3 +648,12 @@ def get_landing_detail_with_previews(db: Session, landing_id: int) -> dict:
         "in_advertising": landing.in_advertising,
     }
 
+def _user_landing_ids(db: Session, user_id: int) -> set[int]:
+    """Все landing.id, которые пользователь купил напрямую."""
+    rows = (
+        db.query(Purchase.landing_id)
+          .filter(Purchase.user_id == user_id,
+                  Purchase.landing_id.isnot(None))
+          .all()
+    )
+    return {r[0] for r in rows}
