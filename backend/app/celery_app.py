@@ -26,7 +26,7 @@ celery.conf.update(
     enable_utc=True,
     task_annotations={
         # ограничиваем скорость тяжёлого таска
-        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "30/m"},
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "40/m"},
     },
 )
 

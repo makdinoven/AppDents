@@ -7,7 +7,7 @@ from ..tasks.preview_tasks import generate_preview
 logger = logging.getLogger(__name__)
 PLACEHOLDER = ""
 
-# services_v2/preview_service.py
+
 def get_or_schedule_preview(db: Session, video_link: str) -> str:
     row = db.query(LessonPreview).filter_by(video_link=video_link).first()
     if row:
