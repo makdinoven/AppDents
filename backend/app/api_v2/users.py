@@ -258,28 +258,44 @@ def get_user_courses(
     db: Session = Depends(get_db),
 ):
     """
-    То же, что и выше, но без N+1-запросов.
+    Курсы пользователя без N+1-запросов.
+    • special_offer → первый в списке
+    • partial       → второй
+    • full          → третий
     """
-    # ids всех курсов, которые попадут в ответ
+    import datetime as _dt
+
+    # -------- активные спец-офферы ------------
+    now = _dt.datetime.utcnow()
+    active_offers = [
+        so for so in current_user.special_offers if so.expires_at > now
+    ]
+    offer_ids         = {so.course_id for so in active_offers}
+    expires_by_course = {so.course_id: so.expires_at for so in active_offers}
+    offer_preview     = {
+        so.course_id: so.landing.preview_photo
+        for so in active_offers
+        if so.landing and so.landing.preview_photo
+    }
+
+    # -------- собираем все course_id ----------
     course_ids: set[int] = {c.id for c in current_user.courses}
     course_ids.update(current_user.partial_course_ids or [])
+    course_ids.update(offer_ids)                          # ← добавили
 
-
+    # -------- достаём preview ------------------
     if course_ids:
-        # --- один запрос: «минимальная цена → preview_photo» для каждого курса ---
-        # ① подзапрос: минимальная new_price на курс
         ranked_landings = (
             db.query(
                 landing_course.c.course_id.label("course_id"),
                 Landing.preview_photo.label("preview_photo"),
-                # window-функция: 0 → есть картинка, 1 → NULL
                 func.row_number().over(
                     partition_by=landing_course.c.course_id,
                     order_by=[
                         case((Landing.preview_photo.is_(None), 1), else_=0),
-                        Landing.new_price.cast(Float)
-                    ]
-                ).label("rn")
+                        Landing.new_price.cast(Float),
+                    ],
+                ).label("rn"),
             )
             .join(Landing, landing_course.c.landing_id == Landing.id)
             .filter(
@@ -288,7 +304,6 @@ def get_user_courses(
             )
         ).subquery()
 
-        # -------- выбираем строку rn == 1 (нужный лендинг) --------
         cheapest = (
             db.query(ranked_landings.c.course_id,
                      ranked_landings.c.preview_photo)
@@ -299,44 +314,50 @@ def get_user_courses(
         preview_by_course: dict[int, str | None] = {
             row.course_id: row.preview_photo for row in cheapest
         }
+        # оффер-лендинг, если есть картинка, перекрывает «дешёвый»
+        preview_by_course.update(offer_preview)
     else:
         preview_by_course = {}
 
     def _preview(cid: int) -> str | None:
         return preview_by_course.get(cid)
 
-    # 1) full
-    full: dict[int, dict] = {
-        c.id: {
+    # -------- наполняем словарь ответов -------
+    result: dict[int, dict] = {}
+
+    # full
+    for c in current_user.courses:
+        result[c.id] = {
             "id": c.id,
             "name": c.name,
             "access_level": "full",
             "preview": _preview(c.id),
         }
-        for c in current_user.courses
-    }
 
-    # 2) partial
+    # partial
     for c in db.query(Course).filter(Course.id.in_(current_user.partial_course_ids or [])).all():
-        full.setdefault(c.id, {
+        result.setdefault(c.id, {
             "id": c.id,
             "name": c.name,
             "access_level": "partial",
             "preview": _preview(c.id),
         })
 
-    for c in db.query(Course).filter(Course.id.in_(current_user.active_special_offer_ids)).all():
-        full.setdefault(c.id, {
+    # special_offer
+    for c in db.query(Course).filter(Course.id.in_(offer_ids)).all():
+        result.setdefault(c.id, {
             "id": c.id,
             "name": c.name,
             "access_level": "special_offer",
             "preview": _preview(c.id),
+            "expires_at": expires_by_course[c.id].isoformat() + "Z",
         })
 
-    # 3) сортировка
+    # -------- сортировка ----------------------
+    _order = {"special_offer": 0, "partial": 1, "full": 2}
     return sorted(
-        full.values(),
-        key=lambda x: (0 if x["access_level"] == "partial" else 1, -x["id"]),
+        result.values(),
+        key=lambda x: (_order[x["access_level"]], -x["id"]),
     )
 
 
