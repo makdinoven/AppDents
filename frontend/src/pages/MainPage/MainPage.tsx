@@ -12,18 +12,25 @@ const PAGE_SIZE = 14;
 
 const MainPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
+  const isLogged = useSelector((state: any) => state.user.isLogged);
   const tags = useSelector((state: any) => state.main.tags);
   const [searchParams, setSearchParams] = useSearchParams();
   const filterFromUrl = searchParams.get("filter") || "all";
-  const sortFromUrl = searchParams.get("sort") || "popular";
+  const sortFromUrl = searchParams.get("sort");
   const [activeFilter, setActiveFilter] = useState<string>("");
   const [activeSort, setActiveSort] = useState<string>("");
   const [skip, setSkip] = useState(0);
   const coursesRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    setActiveSort(isLogged ? "recommend" : "popular");
+  }, [isLogged]);
+
+  useEffect(() => {
     handleSetActiveParam("filter", filterFromUrl);
-    handleSetActiveParam("sort", sortFromUrl);
+    if (sortFromUrl) {
+      handleSetActiveParam("sort", sortFromUrl);
+    }
     if (tags.length < 1) {
       dispatch(getTags());
     }
@@ -39,10 +46,7 @@ const MainPage = () => {
 
     const newParams = new URLSearchParams(searchParams);
 
-    if (
-      (param === "filter" && value === "all") ||
-      (param === "sort" && value === "popular")
-    ) {
+    if (param === "filter" && value === "all") {
       newParams.delete(param);
     } else {
       newParams.set(param, value);

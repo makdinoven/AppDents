@@ -23,6 +23,7 @@ import { useTriggerRef } from "../../common/context/TriggerRefContext.tsx";
 import NavButton from "./modules/NavButton/NavButton.tsx";
 import {
   AUTH_MODAL_ROUTES,
+  LS_TOKEN_KEY,
   NAV_BUTTONS,
   OPEN_SEARCH_KEY,
 } from "../../common/helpers/commonConstants.ts";
@@ -47,6 +48,7 @@ const Header = () => {
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
+  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const screenWidth = useScreenWidth();
   const isScrolled = useScroll();
   const isPromotion = isPromotionLanding(location.pathname);
@@ -99,7 +101,7 @@ const Header = () => {
 
   const renderLoginButton = () => {
     if (screenWidth > 768) {
-      if (!isLogged) {
+      if (!isLogged && !accessToken) {
         return (
           <UnstyledButton
             ref={localTriggerRef}

@@ -34,3 +34,20 @@ export const getCourses = createAppAsyncThunk(
     }
   },
 );
+
+export const getCoursesRecommend = createAppAsyncThunk(
+  "main/getCoursesRecommend",
+  async (params: any, { rejectWithValue }) => {
+    try {
+      const res = await mainApi.getCourseCardsRecommend(params);
+
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data || "Unknown error");
+    }
+  },
+);

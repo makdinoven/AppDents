@@ -1,6 +1,7 @@
 import { userApi } from "../../api/userApi/userApi.ts";
 import { createAppAsyncThunk } from "../createAppAsynkThunk.ts";
 import { LoginType } from "../../api/userApi/types.ts";
+import { LS_TOKEN_KEY } from "../../common/helpers/commonConstants.ts";
 
 export const login = createAppAsyncThunk(
   "user/login",
@@ -49,5 +50,13 @@ export const getCourses = createAppAsyncThunk(
     } catch (e: any) {
       return rejectWithValue(e.response?.data || "Unknown error");
     }
+  },
+);
+
+export const logoutAsync = createAppAsyncThunk(
+  "user/logoutAsync",
+  async (_) => {
+    localStorage.removeItem(LS_TOKEN_KEY);
+    return;
   },
 );
