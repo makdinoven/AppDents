@@ -69,7 +69,8 @@
     "desc": "Esta aula é parte de um curso. Compre o acesso completo.",
     "access": {
       "full": "Acesso completo",
-      "partial": "Acesso parcial"
+      "partial": "Acesso parcial",
+      "offer": "Oferta especial"
     }
   },
 

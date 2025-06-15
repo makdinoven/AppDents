@@ -14,30 +14,48 @@ $border-radius: 25px;
     transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
-    background-color: $primary;
+    background-color: $primary-06;
+    backdrop-filter: blur(10px);
+    border: 1.5px solid $primary;
     border-radius: $border-radius;
     z-index: -1;
   }
 
   @media (hover: hover) {
     &:not(&.partial):hover {
-      //background-color: $background-color;
-
       &::before {
-        width: 102%;
-        height: 105%;
+        width: calc(100% + 15px);
+        height: calc(100% + 15px);
+        background-color: $primary;
+      }
+
+      &.blue {
+        &::before {
+          background-color: $secondary-lighter;
+        }
       }
     }
   }
 
   &.blue {
     &::before {
-      background-color: $secondary-lighter;
+      background-color: $secondary-lighter-06;
+      border-color: $secondary-lighter;
     }
+
+    .photo {
+      border-color: $secondary-lighter;
+    }
+
     color: $secondary;
 
     .partial_card_content {
       background-color: $secondary-lighter-06;
+      border-color: $secondary-lighter;
+    }
+
+    .blocked_card_wrapper {
+      border-color: $secondary-lighter;
     }
   }
 }
@@ -48,6 +66,7 @@ $border-radius: 25px;
   align-self: center;
   max-width: 280px;
   width: 100%;
+  border: 1.5px solid $primary;
 
   aspect-ratio: 16/9;
   border-radius: $border-radius;
@@ -87,6 +106,7 @@ $border-radius: 25px;
   z-index: 2;
   cursor: pointer;
   overflow: hidden;
+  border: 1.5px solid $primary;
 }
 
 .lock_wrapper {
@@ -135,6 +155,7 @@ $border-radius: 25px;
   justify-content: space-between;
   width: 50%;
   flex-shrink: 0;
+  border-left: 1.5px solid $primary;
 
   p {
     text-align: center;
@@ -239,7 +260,8 @@ $border-radius: 25px;
   }
 
   .partial_card_content {
-    border-top: 2px solid $background-color;
+    border-left: unset;
+    border-top: 1.5px solid $primary;
     padding: 10px;
     width: 100%;
   }
