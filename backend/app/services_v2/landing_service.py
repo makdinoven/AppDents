@@ -492,80 +492,70 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    """
-    Рекомендации (co-purchases) + fallback-популярные.
-    • total — общее число всех доступных карточек (реком. + fallback),
-      не зависит от skip/limit.
-    """
-    # ------------------------------------------------------------------ 1) курсы пользователя
     bought = _user_course_ids(db, user_id)
     if not bought:
         return _fallback_landing_cards(db, user_id, skip, limit, language)
 
-    # ------------------------------------------------------------------ 2) похожие пользователи и score
-    similar_users_subq = (
+    # --- 1.  под-запрос со score ------------------------------------------
+    similar_users = (
         db.query(users_courses.c.user_id)
-        .filter(users_courses.c.course_id.in_(bought))
-        .filter(users_courses.c.user_id != user_id)
-        .distinct()
-        .subquery()
+          .filter(users_courses.c.course_id.in_(bought),
+                  users_courses.c.user_id != user_id)
+          .distinct()
+          .subquery()
     )
 
     overlap = func.count(func.distinct(users_courses.c.user_id))
     score   = (cast(func.count(), Float) / func.nullif(overlap, 0)).label("score")
 
-    rec_subq = (
+    rec_q = (
         db.query(users_courses.c.course_id.label("cid"), score)
-        .filter(
-            users_courses.c.user_id.in_(select(similar_users_subq)),
-            ~users_courses.c.course_id.in_(bought),
-        )
-        .group_by(users_courses.c.course_id)
-        .subquery()
+          .filter(users_courses.c.user_id.in_(select(similar_users)),
+                  ~users_courses.c.course_id.in_(bought))
+          .group_by(users_courses.c.course_id)
+          .order_by(score.desc())
     )
 
-    # ------------------------------------------------------------------ 3) total для рекомендованных
-    total_recommended: int = (
-        db.query(func.count()).select_from(rec_subq).scalar() or 0
-    )
+    # --- 2.  итерируем, отдаём ТОЛЬКО уникальные landings -----------------
+    unique_ids: set[int] = set()          # landing.id уже отданные
+    cards: list[dict] = []
+    seen = 0                               # сколько уникальных landing уже «пропустили»
 
-    # ------------------------------------------------------------------ 4) применяем skip/limit
-    course_rows = (
-        db.query(rec_subq.c.cid, rec_subq.c.score)
-        .order_by(rec_subq.c.score.desc())
-        .offset(skip)
-        .limit(limit * 2)          # берём запас — часть карточек может отфильтроваться
-        .all()
-    )
-    course_ids = [r.cid for r in course_rows]
-
-    # ------------------------------------------------------------------ 5) превращаем в лендинги
-    cards: List[dict] = []
-    for cid in course_ids:
-        landing = get_cheapest_landing_for_course(db, cid)
-        if not landing:
+    for row in rec_q.yield_per(200):
+        landing = get_cheapest_landing_for_course(db, row.cid)
+        if not landing or (language and landing.language != language.upper()):
             continue
-        if language and landing.language != language.upper():
+        if landing.id in unique_ids:
+            continue                       # второй курс того же лендинга — пропускаем
+
+        unique_ids.add(landing.id)
+
+        # фазa «skip»
+        if seen < skip:
+            seen += 1
             continue
+
+        # фазa «take»
         cards.append(_landing_to_card(landing))
         if len(cards) == limit:
             break
 
-    # ------------------------------------------------------------------ 6) fallback, если мало карточек
-    # ------------------------------------------------------------------ 6) fallback, если мало карточек
+    # --- 3.  если не добрали limit – fallback -----------------------------
     if len(cards) < limit:
+        need = limit - len(cards)
         extra = _fallback_landing_cards(
-            db, user_id, skip=0, limit=limit - len(cards), language=language
+            db, user_id, skip=0, limit=need, language=language
         )["cards"]
         cards.extend(extra)
 
-    # ------------------------------------------------------------------ 7) итоговый total — все лендинги, ещё не купленные
-    total_query = _exclude_bought(_base_landing_query(db), bought)
+    # --- 4.  total: все доступные лендинги, ещё не купленные --------------
+    total_q = _exclude_bought(_base_landing_query(db), bought)
     if language:
-        total_query = total_query.filter(Landing.language == language.upper())
-    total = total_query.count()
+        total_q = total_q.filter(Landing.language == language.upper())
+    total = total_q.count()
 
     return {"total": total, "cards": cards}
+
 
 
 # -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
