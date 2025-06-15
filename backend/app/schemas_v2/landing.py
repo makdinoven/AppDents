@@ -27,6 +27,7 @@ class LessonInfoItem(BaseModel):
     program: Optional[str] = ""
     duration: Optional[str] = ""
     lecturer: Optional[str] = ""
+    preview: Optional[str] = None
 
 class LandingListResponse(BaseModel):
     id: int
