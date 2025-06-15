@@ -29,6 +29,7 @@
   "open": "apri",
   "viewCourse": "Vedi corso",
   "view": "Vedi",
+  "watch": "Guarda",
   "watchLesson": "Guarda lezione",
   "onlineCourse": "Corso online",
   "professors": "Professori",
@@ -65,7 +66,11 @@
     "fullAccess": "Corso completo",
     "get": "Ottieni il corso a ${{count}}",
     "title": "Serve il corso completo",
-    "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo."
+    "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo.",
+    "access": {
+      "full": "Accesso completo",
+      "partial": "Accesso parziale"
+    }
   },
 
   "banner": {

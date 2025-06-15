@@ -1,70 +1,63 @@
 import s from "./ProfileCourseCard.module.scss";
-import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
+import initialPhoto from "../../../../assets/no-pictures.png";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
-import Button from "../../../../components/ui/Button/Button.tsx";
-import { t } from "i18next";
-import { Lock } from "../../../../assets/logos/index/index.ts";
+import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import Arrow from "../../../../assets/Icons/Arrow.tsx";
 
 const ProfileCourseCard = ({
   isPartial = false,
   name,
   link,
-  isEven,
-  viewText,
-  price,
-  handleClick,
+  index,
+  previewPhoto,
 }: {
   isPartial?: boolean;
   viewText: string;
   name: string;
   link: string;
-  isEven: boolean;
-  handleClick?: () => void;
-  price?: number;
+  index: number;
+  previewPhoto?: string;
 }) => {
+  const screenWidth = useScreenWidth();
+
+  const setCardColor = () => {
+    if (screenWidth < 577) {
+      return index % 2 === 0 ? "" : s.blue;
+    } else if (screenWidth > 577 && screenWidth < 1025) {
+      return index % 4 === 0 || index % 4 === 3 ? "" : s.blue;
+    } else {
+      return index % 2 === 0 ? "" : s.blue;
+    }
+  };
+
   return (
-    <div
-      className={`${s.card_wrapper} ${isPartial ? s.partial : ""} ${isEven ? "" : s.blue}`}
-    >
-      {isPartial ? (
-        <>
-          <div
-            onClick={handleClick}
-            className={`${s.card} ${isPartial ? s.blocked : ""} ${isEven ? "" : s.blue}`}
-          >
-            <Lock className={s.lock} />
-            <h3>{name}</h3>
-            <ViewLink text={viewText} />
-          </div>
-          <div
-            onClick={handleClick}
-            className={`${s.partial_card_content} ${isEven ? "" : s.blue}`}
-          >
-            <div className={s.partial_card_content_text}>
-              <p className={s.upgrade_required}>
-                <Trans i18nKey={"freeCourse.title"} />
-              </p>
-              <p className={s.part_of_course}>
-                <Trans i18nKey={"freeCourse.desc"} />
-              </p>
-            </div>
-            <Button
-              variant={"outlined"}
-              text={t("freeCourse.get", { count: price })}
-            />
-          </div>
-        </>
-      ) : (
-        <Link
-          to={link}
-          className={`${s.card} ${isPartial ? s.blocked : ""} ${isEven ? "" : s.blue}`}
-        >
-          <h3>{name}</h3>
-          <ViewLink text={viewText} />
-        </Link>
-      )}
-    </div>
+    <Link to={link} className={`${s.card} ${setCardColor()}`}>
+      <div
+        // style={{ backgroundImage: `url('${previewPhoto}')` }}
+        className={s.card_content}
+      >
+        <h3>{name}</h3>
+        {previewPhoto ? (
+          <img src={previewPhoto} alt="Course image" />
+        ) : (
+          <img className={s.no_photo} src={initialPhoto} alt="Course image" />
+        )}
+      </div>
+      <div className={s.card_bottom}>
+        <div className={s.status}>
+          <Trans
+            i18nKey={
+              isPartial ? "freeCourse.access.partial" : "freeCourse.access.full"
+            }
+          />
+        </div>
+        <button className={s.watch}>
+          <Trans i18nKey="watch" />
+          <Arrow />
+        </button>
+      </div>
+    </Link>
   );
 };
 
