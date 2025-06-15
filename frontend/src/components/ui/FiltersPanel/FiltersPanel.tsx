@@ -47,7 +47,7 @@ const FiltersPanel = ({ filters, defaultSize }: FiltersPanelProps) => {
       defaultValue: "all",
     },
     sort: {
-      options: SORT_FILTERS,
+      options: SORT_FILTERS.filter((item) => item.value !== "recommend"),
       defaultValue: "popular",
     },
     size: {

@@ -50,7 +50,14 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  getCoursesPagination(params: any) {
+  getCourseCardsRecommend(params: any) {
+    return instance.get(`landings/recommend/cards`, {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+
+  getLandingCards(params: any) {
     return instance.get(`landings/v1/cards`, { params: params });
   },
 

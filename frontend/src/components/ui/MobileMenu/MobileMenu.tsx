@@ -1,5 +1,8 @@
 import s from "./MobileMenu.module.scss";
-import { NAV_BUTTONS } from "../../../common/helpers/commonConstants.ts";
+import {
+  LS_TOKEN_KEY,
+  NAV_BUTTONS,
+} from "../../../common/helpers/commonConstants.ts";
 import NavButton from "../../Header/modules/NavButton/NavButton.tsx";
 import { ProfileIcon } from "../../../assets/logos/index";
 import { Path } from "../../../routes/routes.ts";
@@ -12,6 +15,7 @@ import { isPromotionLanding } from "../../../common/helpers/helpers.ts";
 const MobileMenu = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,
   );
@@ -26,13 +30,13 @@ const MobileMenu = () => {
     onClick?: () => void;
   }[] = [...NAV_BUTTONS];
 
-  if (isLogged) {
+  if (isLogged && accessToken) {
     buttons.push({
       icon: ProfileIcon,
       text: "nav.profile",
       link: Path.profile,
     });
-  } else {
+  } else if (!isLogged && !accessToken) {
     buttons.push({
       icon: ProfileIcon,
       text: "login",
@@ -42,6 +46,11 @@ const MobileMenu = () => {
             backgroundLocation: location,
           },
         }),
+    });
+  } else {
+    buttons.push({
+      icon: ProfileIcon,
+      text: "...",
     });
   }
 

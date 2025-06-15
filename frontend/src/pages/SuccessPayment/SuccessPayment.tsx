@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { Path } from "../../routes/routes.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
+import { LS_TOKEN_KEY } from "../../common/helpers/commonConstants.ts";
 
 const SuccessPayment = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -34,7 +35,7 @@ const SuccessPayment = () => {
         session_id: sessionId,
         region: region,
       });
-      localStorage.setItem("access_token", res.data.access_token);
+      localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
       await dispatch(getMe());
       navigate(Path.profile);
     } catch (error) {

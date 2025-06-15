@@ -73,6 +73,7 @@ export const OPEN_SEARCH_KEY = "GS";
 export const BASE_URL = "https://dent-s.com";
 
 export const SORT_FILTERS = [
+  { name: "tag.common.rec", value: "recommend" },
   { name: "tag.common.popular", value: "popular" },
   { name: "tag.common.bestPrices", value: "discount" },
   { name: "tag.common.new", value: "new" },
@@ -124,3 +125,7 @@ export const REF_CODE_PARAM = "rc";
 export const REF_CODE_LS_KEY = "DENTS_RC";
 
 export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
+
+export const LS_TOKEN_KEY = "access_token";
+
+export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
