@@ -55,6 +55,7 @@ const AuthModalManager = () => {
   useEffect(() => {
     if (isLogged && isModalOpen) {
       navigate(Path.profile, { replace: true });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [isLogged, isModalOpen, navigate]);
 

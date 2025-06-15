@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../../../../store/slices/userSlice.ts";
 import { t } from "i18next";
 import { useNavigate } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
@@ -15,7 +14,10 @@ import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrappe
 import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import ResetPasswordModal from "../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../routes/routes.ts";
-import { getCourses } from "../../../../store/actions/userActions.ts";
+import {
+  getCourses,
+  logoutAsync,
+} from "../../../../store/actions/userActions.ts";
 import ReferralSection from "./ReferralSection/ReferralSection.tsx";
 import { clearCart } from "../../../../store/slices/cartSlice.ts";
 // import ConfirmModal from "../../../../components/Modals/ConfirmModal/ConfirmModal.tsx";
@@ -32,9 +34,11 @@ const ProfileMain = () => {
   );
 
   const handleLogout = () => {
-    navigate(Path.main);
-    dispatch(logout());
+    dispatch(logoutAsync());
     dispatch(clearCart());
+    setTimeout(() => {
+      navigate(Path.main);
+    }, 0);
   };
 
   useEffect(() => {

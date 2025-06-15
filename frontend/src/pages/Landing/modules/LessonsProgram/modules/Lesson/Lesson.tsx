@@ -18,7 +18,7 @@ const Lesson = ({ lesson, renderBuyButton }: any) => {
             <div className={s.video_wrapper}>
               {lesson.link?.length > 0 ? (
                 // <iframe src={lesson.link} frameBorder="0" />
-                <video controls>
+                <video poster={lesson.preview} controls>
                   <source src={lesson.link} type="video/mp4" />
                   <source
                     src={lesson.link.replace(".mp4", ".webm")}
