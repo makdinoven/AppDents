@@ -25,7 +25,8 @@ from ..services_v2.user_service import (
     create_user, authenticate_user, create_access_token,
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
-    search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics
+    search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
+    get_free_course_stats
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -657,3 +658,10 @@ def purchase_stats(
         size=size,
         source_filter=source,
     )
+
+@router.get("/analytics/free-course-stats")
+def free_course_stats(db: Session = Depends(get_db)):
+    """
+    Статистика по бесплатным курсам и их конверсиям.
+    """
+    return get_free_course_stats(db)
