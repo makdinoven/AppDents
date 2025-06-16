@@ -321,6 +321,7 @@ class LessonPreview(Base):
     video_link   = Column(String(500), primary_key=True)
     preview_url  = Column(String(500), nullable=False)
     generated_at = Column(DateTime, nullable=False, default=func.now())
+    checked_at = Column(DateTime(timezone=False), nullable=True)
 
 class SpecialOffer(Base):
     """
