@@ -5,6 +5,7 @@ import AnalyticsListing from "./content/AnalyticsListing.tsx";
 import AnalyticsReferrals from "./content/AnalyticsReferrals.tsx";
 import { useSearchParams } from "react-router-dom";
 import AnalyticsPurchases from "./content/AnalyticsPurchases.tsx";
+import AnalyticsUserGrowth from "./content/AnalyticsUserGrowth.tsx";
 
 const QUERY_KEY = "content";
 
@@ -32,6 +33,11 @@ const Analytics = () => {
       name: "admin.analytics.purchases",
       value: "purchases",
       component: (title: string) => <AnalyticsPurchases title={title} />,
+    },
+    {
+      name: "admin.analytics.userGrowth",
+      value: "user_growth",
+      component: (title: string) => <AnalyticsUserGrowth title={title} />,
     },
   ];
 
