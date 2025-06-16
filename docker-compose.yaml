@@ -48,6 +48,9 @@ services:
       command: celery -A app.celery_app worker --loglevel=info --concurrency=2
       env_file:
         - .env
+      working_dir: /app
+      environment:
+        - PYTHONPATH=/app
       depends_on:
         mysql:
           condition: service_healthy
@@ -64,6 +67,8 @@ services:
     command: celery -A app.celery_app beat -l info --pidfile=
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
     depends_on:
       mysql:
         condition: service_healthy
