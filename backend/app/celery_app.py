@@ -11,9 +11,10 @@ celery = Celery(
 )
 
 #    ↓↓↓  вместо include используем autodiscover
-celery.autodiscover_tasks([
-    "app.tasks",
-])
+celery.autodiscover_tasks(
+    ["app"],          # ←  это ВАШ корневой пакет
+    related_name="tasks",  # default, можно не писать
+)
 
 celery.conf.update(
     task_serializer="json",
