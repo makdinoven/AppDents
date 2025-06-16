@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator, validator
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Literal
 
 from AppDents.backend.app.services_v2.course_service import convert_storage_url
