@@ -2,7 +2,7 @@ import datetime as _dt
 import logging
 from collections import Counter
 
-from sqlalchemy import func, case, Float
+from sqlalchemy import func, case, Float, cast
 from sqlalchemy.orm import Session, selectinload
 
 from .user_service import add_partial_course_to_user
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 _OFFER_TTL_HOURS = 24
 _INTERVAL_HOURS  = 48         # каждые 3 суток
 _HISTORY_LIMIT = 5
+BATCH = 1000
 
 def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     """Возвращает дешёвые лендинги по каждому купленному курсу."""
@@ -31,7 +32,7 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
             Landing.is_hidden.is_(False),
         )
         .options(selectinload(Landing.tags))
-        .order_by(Landing.new_price.cast(Float))
+        .order_by(cast(Landing.new_price, Float))
         .all()
     )
 
@@ -158,13 +159,30 @@ def cleanup_expired_offers(db: Session) -> int:
 
 
 def generate_offers_for_all_users(db: Session) -> None:
-    """Обходит всех пользователей и выдаёт офферы при необходимости."""
-    users = db.query(User).options(selectinload(User.purchases), selectinload(User.special_offers)).all()
-    for u in users:
-        try:
-            generate_offer_for_user(db, u)
-        except Exception:            # не падаем на одном юзере
-            logger.exception("Special-offer generation failed for user %s", u.id)
+    offset = 0
+    while True:
+        users = (
+            db.query(User)
+              .options(
+                  selectinload(User.purchases),
+                  selectinload(User.special_offers),
+              )
+              .order_by(User.id)     # фиксированный порядок
+              .limit(BATCH)
+              .offset(offset)
+              .all()
+        )
+        if not users:
+            break
+
+        for u in users:
+            try:
+                generate_offer_for_user(db, u)
+            except Exception:
+                logger.exception("Special-offer generation failed for user %s", u.id)
+
+        offset += BATCH
+        db.expunge_all()
 
 # --- добавить куда-нибудь после cleanup_expired_offers ---
 def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
