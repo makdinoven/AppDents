@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
+import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 
-const AnalyticsPurchases = () => {
+const AnalyticsFreeCourses = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState(() => ({
-    startDate: getFormattedDate(new Date()),
-    endDate: getFormattedDate(new Date()),
-  }));
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    return {
+      startDate: getFormattedDate(today),
+      endDate: getFormattedDate(today),
+    };
+  });
 
   const handleStartDateChange = (value: string) => {
     setDateRange((prev) => ({ ...prev, startDate: value }));
@@ -30,12 +33,8 @@ const AnalyticsPurchases = () => {
     };
 
     try {
-      const res = await adminApi.getPurchases(params);
-      setData({
-        items: res.data.items,
-        total: res.data.total,
-        total_amount: res.data.total_amount,
-      });
+      const res = await adminApi.getFreewebStats(params);
+      setData(res.data);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -58,12 +57,16 @@ const AnalyticsPurchases = () => {
         {data && (
           <>
             <p>
-              Total:
-              <span className={"highlight_blue_bold"}>{data.total}</span>
+              Freeweb users:
+              <span className={"highlight_blue_bold"}>
+                {data.summary.freebie_users}
+              </span>
             </p>
             <p>
-              Amount:
-              <span className={"highlight_blue_bold"}>{data.total_amount}</span>
+              All freeweb users:
+              <span className={"highlight_blue_bold"}>
+                {data.summary.active_free_users}
+              </span>
             </p>
           </>
         )}
@@ -73,13 +76,14 @@ const AnalyticsPurchases = () => {
         <Loader />
       ) : (
         <Table
-          data={data.items}
+          data={data.courses}
           columnLabels={{
-            email: "Email",
-            amount: "Amount",
-            source: "Source",
-            from_ad: "Ad",
-            paid_at: "Payment date",
+            course_name: "Course",
+            free_taken: "Count",
+            converted_to_course: "Bought",
+            converted_to_course_rate: "Buy rate",
+            converted_to_any_course: "Bought another",
+            converted_to_any_course_rate: "Bought another rate",
           }}
         />
       )}
@@ -87,4 +91,4 @@ const AnalyticsPurchases = () => {
   );
 };
 
-export default AnalyticsPurchases;
+export default AnalyticsFreeCourses;

@@ -3,10 +3,9 @@ import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { Trans } from "react-i18next";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
-const AnalyticsReferrals = ({ title }: { title: string }) => {
+const AnalyticsReferrals = () => {
   // const [limit, setLimit] = useState<string>("10");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -54,28 +53,13 @@ const AnalyticsReferrals = ({ title }: { title: string }) => {
 
   return (
     <>
-      <h2>
-        <Trans i18nKey={title} />
-      </h2>
-      <div className={`${s.analytics_options} ${s.analytics_options_three}`}>
+      <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
         />
-        {/*<MultiSelect*/}
-        {/*  isSearchable={false}*/}
-        {/*  id={"limits"}*/}
-        {/*  options={ANALYTICS_LIMITS}*/}
-        {/*  placeholder={""}*/}
-        {/*  label={t("admin.analytics.size")}*/}
-        {/*  selectedValue={limit}*/}
-        {/*  isMultiple={false}*/}
-        {/*  onChange={(e) => setLimit(e.value as string)}*/}
-        {/*  valueKey="value"*/}
-        {/*  labelKey="name"*/}
-        {/*/>*/}
       </div>
       {loading ? (
         <Loader />
@@ -89,7 +73,7 @@ const AnalyticsReferrals = ({ title }: { title: string }) => {
               email: "Email",
               referrals: "Count",
               balance: "Balance",
-              total_credited: "Total Credited",
+              total_credited: "Spend",
             }}
           />
           <Table

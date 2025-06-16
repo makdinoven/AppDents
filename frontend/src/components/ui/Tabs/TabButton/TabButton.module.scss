@@ -5,6 +5,7 @@
   padding: 2px 5px;
   border-bottom: 2px solid $background-color;
   @include transition;
+  flex-shrink: 0;
 
   @media (hover: hover) {
     &:hover {

@@ -27,6 +27,7 @@
   "endOfListFilter": "Corsi filtrati per «{{filter}}». Questo è tutto per ora. Presto ce ne saranno altri!",
   "password": "Password...",
   "open": "apri",
+  "daysShort": "g",
   "viewCourse": "Vedi corso",
   "view": "Vedi",
   "watch": "Guarda",

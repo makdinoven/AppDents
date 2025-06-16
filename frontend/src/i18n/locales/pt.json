@@ -23,6 +23,7 @@
   "yourName": "Seu nome...",
   "yourOrder": "Seu pedido",
   "seeMore": "Ver mais",
+  "daysShort": "d",
   "endOfList": "Estes são todos os cursos por agora. Mais em breve!",
   "endOfListFilter": "Cursos filtrados por «{{filter}}». Isso é tudo por agora. Mais em breve!",
   "password": "Senha...",

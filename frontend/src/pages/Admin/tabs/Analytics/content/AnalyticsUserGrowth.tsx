@@ -1,6 +1,5 @@
 // import s from "../Analytics.module.scss"
 
-import { Trans } from "react-i18next";
 import { useEffect, useState } from "react";
 import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
@@ -9,7 +8,7 @@ import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRa
 import UserGrowthChart from "../Charts/UserGrowthChart.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
-const AnalyticsUserGrowth = ({ title }: { title: string }) => {
+const AnalyticsUserGrowth = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => {
@@ -51,15 +50,8 @@ const AnalyticsUserGrowth = ({ title }: { title: string }) => {
     fetchData();
   }, [dateRange]);
 
-  useEffect(() => {
-    console.log(data);
-  }, [data]);
-
   return (
     <>
-      <h2>
-        <Trans i18nKey={title} />
-      </h2>
       <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}

@@ -6,6 +6,7 @@ import AnalyticsReferrals from "./content/AnalyticsReferrals.tsx";
 import { useSearchParams } from "react-router-dom";
 import AnalyticsPurchases from "./content/AnalyticsPurchases.tsx";
 import AnalyticsUserGrowth from "./content/AnalyticsUserGrowth.tsx";
+import AnalyticsFreeCourses from "./content/AnalyticsFreeCourses.tsx";
 
 const QUERY_KEY = "content";
 
@@ -15,29 +16,34 @@ const Analytics = () => {
 
   const analyticsContent = [
     {
+      name: "admin.analytics.purchases",
+      value: "purchases",
+      component: <AnalyticsPurchases />,
+    },
+    {
       name: "admin.analytics.landings",
       value: "landings",
-      component: (title: string) => <AnalyticsLanguages title={title} />,
+      component: <AnalyticsLanguages />,
     },
     {
       name: "admin.analytics.listing",
       value: "listing",
-      component: (title: string) => <AnalyticsListing title={title} />,
+      component: <AnalyticsListing />,
     },
     {
       name: "admin.analytics.referrals",
       value: "referrals",
-      component: (title: string) => <AnalyticsReferrals title={title} />,
-    },
-    {
-      name: "admin.analytics.purchases",
-      value: "purchases",
-      component: (title: string) => <AnalyticsPurchases title={title} />,
+      component: <AnalyticsReferrals />,
     },
     {
       name: "admin.analytics.userGrowth",
       value: "user_growth",
-      component: (title: string) => <AnalyticsUserGrowth title={title} />,
+      component: <AnalyticsUserGrowth />,
+    },
+    {
+      name: "admin.analytics.freeCourses",
+      value: "free_courses",
+      component: <AnalyticsFreeCourses />,
     },
   ];
 
@@ -45,9 +51,15 @@ const Analytics = () => {
 
   return (
     <div className={s.analytics_page}>
-      <Tabs queryKey={QUERY_KEY} mainTab={"landings"} tabs={analyticsContent} />
-
-      {activeTab?.component(activeTab.name)}
+      <Tabs
+        queryKey={QUERY_KEY}
+        mainTab={"purchases"}
+        tabs={analyticsContent}
+      />
+      {/*<h2>*/}
+      {/*  <Trans i18nKey={activeTab?.name} />*/}
+      {/*</h2>*/}
+      {activeTab?.component}
     </div>
   );
 };

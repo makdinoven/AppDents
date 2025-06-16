@@ -36,6 +36,7 @@
   "professors": "Professors",
   "logout": "Log out",
   "mail": "mail",
+  "daysShort": "d",
   "successPayment": "Your purchase was successful. You will be redirected to your profile shortly, where you can access the course and start learning.",
   "videoFailedToLoad": "Video failed to load? Try watching it directly",
   "watchHere": "here.",
@@ -419,7 +420,8 @@
       "listing": "Ad listing",
       "referrals": "Referrals",
       "purchases": "Purchases",
-      "userGrowth": "User growth"
+      "userGrowth": "User growth",
+      "freeCourses": "Freewebs"
     }
   }
 }
