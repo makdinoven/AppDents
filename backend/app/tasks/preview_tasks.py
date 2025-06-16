@@ -25,6 +25,7 @@ from urllib.parse import urlsplit, urlunsplit, quote, unquote
 import boto3
 import requests
 from celery import shared_task
+from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 from botocore.config import Config
 
@@ -240,11 +241,22 @@ def preview_url_for(video_link: str) -> tuple[str | None, bool]:
 
 
 
-def _save_preview_row(db: Session, video_link: str, url: str) -> None:
-    db.add(LessonPreview(video_link=video_link,
-                         preview_url=url,
-                         generated_at=datetime.utcnow()))
-    db.commit()
+def _save_preview_row(db, video_link: str, url: str) -> None:
+    try:
+        db.add(LessonPreview(
+            video_link=video_link,
+            preview_url=url,
+            generated_at=datetime.utcnow()))
+        db.commit()
+    except DataError:
+        db.rollback()                 # сбросили failed-transaction
+        # отрезаем до 1024, чтобы точно влезло
+        short = video_link[:700]
+        db.add(LessonPreview(
+            video_link=short,
+            preview_url=url,
+            generated_at=datetime.utcnow()))
+        db.commit()
 
 
 # ─────────────────────────  MAIN TASK  ──────────────────────────

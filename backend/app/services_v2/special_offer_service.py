@@ -159,30 +159,26 @@ def cleanup_expired_offers(db: Session) -> int:
 
 
 def generate_offers_for_all_users(db: Session) -> None:
+    q = (
+        db.query(User)
+          .options(selectinload(User.purchases),
+                   selectinload(User.special_offers))
+          .order_by(User.id)
+    )
     offset = 0
     while True:
-        users = (
-            db.query(User)
-              .options(
-                  selectinload(User.purchases),
-                  selectinload(User.special_offers),
-              )
-              .order_by(User.id)     # фиксированный порядок
-              .limit(BATCH)
-              .offset(offset)
-              .all()
-        )
-        if not users:
+        chunk = q.limit(BATCH).offset(offset).all()
+        if not chunk:
             break
 
-        for u in users:
+        for u in chunk:
             try:
                 generate_offer_for_user(db, u)
             except Exception:
                 logger.exception("Special-offer generation failed for user %s", u.id)
 
         offset += BATCH
-        db.expunge_all()
+        _dt.time.sleep(1)      # «подышать» 1 с между пачками
 
 # --- добавить куда-нибудь после cleanup_expired_offers ---
 def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
