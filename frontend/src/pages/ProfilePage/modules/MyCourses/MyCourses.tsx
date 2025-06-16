@@ -12,10 +12,13 @@ const MyCourses = ({ courses }: { courses: any }) => {
         {courses.length > 0 ? (
           courses.map((course: any, index: number) => (
             <ProfileCourseCard
+              index={index}
+              isPartial={course.access_level === "partial"}
+              isOffer={course.access_level === "special_offer"}
               viewText={"viewCourse"}
               key={course.id}
-              isEven={index % 2 === 0}
               name={course.name}
+              previewPhoto={course.preview}
               link={`${Path.myCourse}/${course.id}`}
             />
           ))

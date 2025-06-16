@@ -29,6 +29,7 @@ class LessonInfoItem(BaseModel):
     program: Optional[str] = ""
     duration: Optional[str] = ""
     lecturer: Optional[str] = ""
+    preview: Optional[str] = None
 
     @field_validator("link", mode="before")
     def fix_link(cls, v: Optional[str]) -> Optional[str]:

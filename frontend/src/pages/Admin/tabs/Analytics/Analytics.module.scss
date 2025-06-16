@@ -11,6 +11,11 @@
   }
 }
 
+.chart_container {
+  color: $accent;
+  @include clamped-p3;
+}
+
 .analytics_options {
   height: fit-content;
   display: grid;

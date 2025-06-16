@@ -29,6 +29,7 @@
   "open": "abrir",
   "viewCourse": "Ver curso",
   "view": "Ver",
+  "watch": "Assistir",
   "watchLesson": "Assistir aula",
   "onlineCourse": "Curso online",
   "professors": "Professores",
@@ -65,7 +66,12 @@
     "fullAccess": "Curso completo",
     "get": "Curso por apenas ${{count}}",
     "title": "Curso completo necessário",
-    "desc": "Esta aula é parte de um curso. Compre o acesso completo."
+    "desc": "Esta aula é parte de um curso. Compre o acesso completo.",
+    "access": {
+      "full": "Acesso completo",
+      "partial": "Acesso parcial",
+      "offer": "Oferta especial"
+    }
   },
 
   "banner": {
@@ -141,7 +147,8 @@
     "management": "Gestão",
     "common.popular": "Popular",
     "common.bestPrices": "Melhores preços",
-    "common.new": "Novo"
+    "common.new": "Novo",
+    "common.rec": "Para você"
   },
 
   "landing": {

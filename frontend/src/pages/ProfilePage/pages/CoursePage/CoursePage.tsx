@@ -6,11 +6,11 @@ import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import ProfileCourseCard from "../../modules/ProfileCourseCard/ProfileCourseCard.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../../../components/Modals/PaymentModal/PaymentModal.tsx";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
+import LessonCard from "./LessonCard/LessonCard.tsx";
 
 const CoursePage = () => {
   const { courseId, lessonId } = useParams();
@@ -124,13 +124,15 @@ const CoursePage = () => {
                   )}
                   <ul>
                     {section.lessons.map((lesson: any, index: number) => (
-                      <ProfileCourseCard
+                      <LessonCard
+                        type="lesson"
                         price={landing?.new_price}
                         isPartial={isPartial && !lesson.video_link}
-                        isEven={index % 2 === 0}
+                        index={index}
                         key={lesson.id}
                         handleClick={handleOpenModal}
                         name={lesson.lesson_name}
+                        previewPhoto={lesson.preview}
                         link={`${Path.lesson}/${section.id}/${lesson.id}`}
                         viewText={"watchLesson"}
                       />
