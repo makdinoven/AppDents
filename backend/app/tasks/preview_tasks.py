@@ -24,14 +24,13 @@ from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
 import boto3
 import requests
-from celery import Celery, shared_task
+from celery import shared_task
 from sqlalchemy.orm import Session
 from botocore.config import Config
 
 
 from ..db.database import SessionLocal
 from ..models.models_v2 import LessonPreview
-from ..celery_app import celery
 
 
 logger = logging.getLogger(__name__)
@@ -249,7 +248,11 @@ def _save_preview_row(db: Session, video_link: str, url: str) -> None:
 
 
 # ─────────────────────────  MAIN TASK  ──────────────────────────
-@shared_task(name="app.tasks.preview_tasks.generate_preview", bind=True, max_retries=0)
+@shared_task(
+    name="app.tasks.preview_tasks.generate_preview",
+    bind=True,
+    max_retries=0     # 1 попытка
+)
 def generate_preview(self, video_link: str) -> None:
     db: Session = SessionLocal()
     tmp_path: str | None = None
