@@ -15,6 +15,7 @@ def process_special_offers():
     Запускается Celery beat-ом.
     """
     db = SessionLocal()
+
     try:
         generate_offers_for_all_users(db)
         cleanup_expired_offers(db)
