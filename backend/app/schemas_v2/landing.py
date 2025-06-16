@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, validator
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
@@ -31,8 +31,8 @@ class LessonInfoItem(BaseModel):
     lecturer: Optional[str] = ""
     preview: Optional[str] = None
 
-    @field_validator("link", mode="before")
-    def fix_link(cls, v: Optional[str]) -> Optional[str]:
+    @validator("link", pre=True)
+    def fix_link(cls, v):
         return convert_storage_url(v)
 
 class LandingListResponse(BaseModel):

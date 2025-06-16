@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, validator
 from typing import Optional, List, Dict, Literal
 
 from AppDents.backend.app.services_v2.course_service import convert_storage_url
@@ -13,8 +13,8 @@ class Lesson(BaseModel):
         description="URL JPEG-превью; присутствует всегда, даже при partial-доступе",
     )
 
-    @field_validator("video_link", mode="before")
-    def fix_link(cls, v: str) -> str:
+    @validator("video_link", pre=True)
+    def fix_link(cls, v):
         return convert_storage_url(v)
 
     class Config:
