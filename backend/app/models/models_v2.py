@@ -279,7 +279,7 @@ class FreeCourseAccess(Base):
 
     user_id   = Column(Integer, ForeignKey("users.id"), primary_key=True)
     course_id = Column(Integer, ForeignKey("courses.id"), primary_key=True)
-    generated_at = Column(DateTime,
+    granted_at = Column(DateTime,
                         server_default=func.utc_timestamp(),
                         nullable=False)
     converted_to_full = Column(
