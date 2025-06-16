@@ -23,7 +23,8 @@ celery.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_annotations={
-        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "40/m"},
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "50/m"},
+        "app.tasks.special_offers.process_special_offers": {"rate_limit": "5/m"},
     },
     beat_schedule={
         "special-offers-every-hour": {
