@@ -14,7 +14,7 @@
 
   ul {
     @include flex-column;
-    gap: 15px;
+    gap: 20px;
   }
 }
 
@@ -22,5 +22,11 @@
   .course_page {
     @include flex-column;
     gap: 40px;
+  }
+
+  .modules_list {
+    ul {
+      gap: 10px;
+    }
   }
 }

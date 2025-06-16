@@ -6,10 +6,13 @@ import {
   LANGUAGES,
   SORT_FILTERS,
 } from "../../../common/helpers/commonConstants.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { getCourses } from "../../../store/actions/mainActions.ts";
+import {
+  getCourses,
+  getCoursesRecommend,
+} from "../../../store/actions/mainActions.ts";
 
 type props = {
   sectionTitle?: string;
@@ -47,16 +50,23 @@ const CoursesSection = ({
   const total = useSelector(
     (state: AppRootStateType) => state.main.totalCourses,
   );
+  const userLoading = useSelector(
+    (state: AppRootStateType) => state.user.loading,
+  );
+  const isLogged = useSelector(
+    (state: AppRootStateType) => state.user.isLogged,
+  );
   const loading = useSelector((state: AppRootStateType) => state.main.loading);
   const [skip, setSkip] = useState(0);
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
   const [internalFilter, setInternalFilter] = useState("all");
-  const [internalSort, setInternalSort] = useState("popular");
+  const [internalSort, setInternalSort] = useState<string>("");
   const [isReady, setIsReady] = useState(false);
   const filter = externalFilter ?? internalFilter;
   const sort = externalSort ?? internalSort;
+  const skipResetInProgress = useRef(false);
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
@@ -64,15 +74,27 @@ const CoursesSection = ({
     }
   }, [language, filter, sort]);
 
+  useEffect(() => {
+    setInternalSort(isLogged ? "recommend" : "popular");
+  }, [isLogged]);
+
   const activeFilter = externalFilter ?? internalFilter;
   const activeSort = externalSort ?? internalSort;
 
   useEffect(() => {
-    setSkip(0);
+    if (skip !== 0) {
+      skipResetInProgress.current = true;
+      setSkip(0);
+    }
   }, [language, activeFilter, activeSort]);
 
   useEffect(() => {
-    if (isReady) {
+    if (isReady && !userLoading) {
+      if (skipResetInProgress.current) {
+        skipResetInProgress.current = false;
+        return;
+      }
+
       const params = {
         language,
         limit: pageSize,
@@ -80,9 +102,14 @@ const CoursesSection = ({
         ...(filter !== "all" && filter !== "" && { tags: filter }),
         ...(sort !== "" && { sort }),
       };
-      dispatch(getCourses(params));
+
+      if (isLogged) {
+        dispatch(getCoursesRecommend(params));
+      } else {
+        dispatch(getCourses(params));
+      }
     }
-  }, [isReady, language, skip, filter, sort]);
+  }, [isReady, language, skip, filter, sort, userLoading, isLogged]);
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
@@ -122,7 +149,11 @@ const CoursesSection = ({
         )}
         {showSort && cards.length > 0 && (
           <SelectableList
-            items={SORT_FILTERS}
+            items={
+              isLogged
+                ? SORT_FILTERS
+                : SORT_FILTERS.filter((item) => item.value !== "recommend")
+            }
             activeValue={activeSort}
             onSelect={onSortChange}
           />

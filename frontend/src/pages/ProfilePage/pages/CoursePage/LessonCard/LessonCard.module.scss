@@ -1,0 +1,281 @@
+$border-radius: 25px;
+
+.card_wrapper {
+  @include fadeInMove();
+  display: flex;
+  position: relative;
+
+  &::before {
+    @include transition;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: $primary-06;
+    backdrop-filter: blur(10px);
+    border: 1.5px solid $primary;
+    border-radius: $border-radius;
+    z-index: -1;
+  }
+
+  @media (hover: hover) {
+    &:not(&.partial):hover {
+      &::before {
+        width: calc(100% + 15px);
+        height: calc(100% + 15px);
+        background-color: $primary;
+      }
+
+      &.blue {
+        &::before {
+          background-color: $secondary-lighter;
+        }
+      }
+    }
+  }
+
+  &.blue {
+    &::before {
+      background-color: $secondary-lighter-06;
+      border-color: $secondary-lighter;
+    }
+
+    .photo {
+      border-color: $secondary-lighter;
+    }
+
+    color: $secondary;
+
+    .partial_card_content {
+      background-color: $secondary-lighter-06;
+      border-color: $secondary-lighter;
+    }
+
+    .blocked_card_wrapper {
+      border-color: $secondary-lighter;
+    }
+  }
+}
+
+.photo {
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: center;
+  max-width: 280px;
+  width: 100%;
+  border: 1.5px solid $primary;
+
+  aspect-ratio: 16/9;
+  border-radius: $border-radius;
+  background-color: $accent-glass;
+
+  img {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.no_photo {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+  width: 100%;
+  height: 100%;
+  background-color: $accent-glass;
+  border-radius: 20px;
+}
+
+.card_inner {
+  @include flex-column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.blocked_card_wrapper {
+  border-radius: $border-radius;
+  position: absolute;
+  display: flex;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  flex: 1;
+  z-index: 2;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1.5px solid $primary;
+}
+
+.lock_wrapper {
+  position: relative;
+  //background-color: $primary;
+  //opacity: 0.4;
+  flex: 1;
+  border-radius: $border-radius;
+}
+
+.lock {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+
+.upgrade_required {
+  text-transform: uppercase;
+  @include clamped-h4;
+  color: $text-color;
+}
+
+.part_of_course {
+  width: 100%;
+  @include clamped-p3;
+}
+
+.partial_card_content_text {
+  @include flex-column;
+  gap: 5px;
+}
+
+.partial_card_content {
+  background-color: $primary-06;
+  backdrop-filter: blur(5px);
+  border-radius: $border-radius;
+  cursor: pointer;
+  padding: 20px;
+  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 50%;
+  flex-shrink: 0;
+  border-left: 1.5px solid $primary;
+
+  p {
+    text-align: center;
+  }
+
+  button {
+    @include clamped-p3;
+    background-color: $accent;
+    min-height: unset;
+    color: $text-color;
+    outline: 2px solid $accent;
+    @media (hover: hover) {
+      &:hover {
+        color: $primary;
+        background-color: $background-color;
+        outline: 2px solid $background-color;
+      }
+    }
+  }
+}
+
+.card {
+  cursor: pointer;
+  min-height: 110px;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  border-radius: $border-radius;
+  padding: 20px;
+  width: 100%;
+  height: 100%;
+  color: $accent;
+
+  &.blocked {
+    background-color: $background-color;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      content: "";
+      background-color: $primary;
+      opacity: 0.4;
+      backdrop-filter: blur(5px);
+    }
+  }
+
+  span {
+    max-width: unset;
+    width: fit-content;
+  }
+
+  h3 {
+    @include clamped-p1;
+  }
+
+  &.blue {
+    a {
+      color: $accent;
+    }
+
+    &.blocked {
+      &::after {
+        background-color: $secondary-lighter;
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .photo {
+    max-width: 220px;
+  }
+
+  .partial_card_content {
+    width: 60%;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .card {
+    padding: 15px;
+    flex-direction: column;
+
+    span {
+      margin-left: auto;
+    }
+  }
+
+  .card:not(.blocked) {
+    flex-direction: column-reverse;
+  }
+
+  .blocked_card_wrapper {
+    flex-direction: column;
+  }
+
+  .partial_card_content {
+    border-left: unset;
+    border-top: 1.5px solid $primary;
+    padding: 10px;
+    width: 100%;
+  }
+
+  .photo {
+    max-width: 200px;
+  }
+
+  .photo {
+    border-radius: 15px;
+  }
+
+  .lock {
+    width: 60px;
+    height: 60px;
+  }
+}

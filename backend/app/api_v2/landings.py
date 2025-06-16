@@ -1,4 +1,6 @@
+import copy
 import uuid
+import logging
 from datetime import datetime, timedelta, time, date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
@@ -18,6 +20,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
+from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
 from ..utils.email_sender import send_password_to_user
@@ -169,13 +172,25 @@ def get_landing_by_id(
         "is_hidden": landing.is_hidden,
     }
 
-@router.get("/detail/by-page/{page_name}", response_model=LandingDetailResponse)
+@router.get(
+    "/detail/by-page/{page_name}",
+    response_model=LandingDetailResponse,
+    summary="Детали лендинга по slug с превью уроков",
+)
 def get_landing_by_page(
     page_name: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    # 1) забираем лендинг по page_name + нужные связи
-    landing = (
+    """
+    • Возвращает подробную информацию о лендинге **page_name**.
+    • Для каждого урока в `lessons_info` добавляется поле **preview** –
+      CDN-ссылка на кадр (или плейсхолдер, пока кадр не готов).
+    • Если видео ещё не обрабатывалось – Celery-таска `generate_preview`
+      ставится в очередь асинхронно; фронт сразу получает плейсхолдер.
+    """
+    log = logging.getLogger("landing-detail")
+    # 1. Берём лендинг + связи (авторы ➝ их лендинги ➝ курсы / теги)
+    landing: Landing | None = (
         db.query(Landing)
           .options(
               selectinload(Landing.authors)
@@ -185,32 +200,47 @@ def get_landing_by_page(
                 .selectinload(Author.landings)
                   .selectinload(Landing.tags),
           )
-          .filter(Landing.page_name == page_name)    # <-- фильтр по page_name
+          .filter(Landing.page_name == page_name)
           .first()
     )
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    # 2) приводим lessons_info к списку
-    lessons = landing.lessons_info
-    if isinstance(lessons, dict):
-        lessons_list = [{k: v} for k, v in lessons.items()]
-    elif isinstance(lessons, list):
-        lessons_list = lessons
-    else:
-        lessons_list = []
+    # 2. Приводим lessons_info → list[dict]  (как и раньше)
+    raw_lessons = landing.lessons_info or []
+    lessons_list: List[dict] = (
+        [{k: v} for k, v in raw_lessons.items()]
+        if isinstance(raw_lessons, dict) else
+        list(raw_lessons)
+    )
 
-    # 3) вспомогательный safe_price
+    # 3. Добавляем превью к каждому уроку (in-place копия, чтобы не мутировать ORM)
+    lessons_out: List[dict] = []
+    for item in lessons_list:
+        key, lesson = next(iter(item.items()))
+        lesson_copy = copy.deepcopy(lesson)
+
+        # поддерживаем оба возможных ключа ссылки
+        video_link = lesson_copy.get("link") or lesson_copy.get("video_link")
+        if video_link:
+            try:
+                lesson_copy["preview"] = get_or_schedule_preview(db, video_link)
+            except Exception:
+                log.exception("Failed preview for %s", video_link)
+
+        lessons_out.append({key: lesson_copy})
+
+    # 4. Вспомогательная обёртка для безопасного сравнения цен
     def _safe_price(v) -> float:
         try:
             return float(v)
-        except:
+        except Exception:
             return float("inf")
 
-    # 4) строим authors_list с нужными полями
-    authors_list = []
+    # 5. Собираем authors_list (точно как раньше, чтобы схема не изменилась)
+    authors_list: List[dict] = []
     for a in landing.authors:
-        # 4.1) минимальная цена по каждому курсу
+        # 5.1 минимальная цена на каждый курс у автора
         min_price: Dict[int, float] = {}
         for l in a.landings:
             p = _safe_price(l.new_price)
@@ -218,7 +248,7 @@ def get_landing_by_page(
                 if p < min_price.get(c.id, float("inf")):
                     min_price[c.id] = p
 
-        # 4.2) оставляем только «дешёвые» лендинги
+        # 5.2 оставляем лендинги, у которых цена не выше min_price их курсов
         kept = [
             l for l in a.landings
             if not any(
@@ -227,7 +257,6 @@ def get_landing_by_page(
             )
         ]
 
-        # 4.3) собираем уникальные курсы и теги
         unique_courses = {c.id for l in kept for c in l.courses}
         unique_tags    = sorted({t.name for l in kept for t in l.tags})
 
@@ -238,15 +267,10 @@ def get_landing_by_page(
             "photo": a.photo or "",
             "language": a.language,
             "courses_count": len(unique_courses),
-            "tags": sorted(unique_tags),
+            "tags": unique_tags,
         })
 
-    # 5) детали самого лендинга
-    tags_list   = [{"id": t.id, "name": t.name} for t in landing.tags]
-    course_ids  = [c.id for c in landing.courses]
-    author_ids  = [a.id for a in landing.authors]
-    tag_ids     = [t.id for t in landing.tags]
-
+    # 6. Финальный ответ под LandingDetailResponse
     return {
         "id": landing.id,
         "page_name": landing.page_name,
@@ -255,14 +279,14 @@ def get_landing_by_page(
         "old_price": landing.old_price,
         "new_price": landing.new_price,
         "course_program": landing.course_program,
-        "lessons_info": lessons_list,
+        "lessons_info": lessons_out,          # <- уже с preview
         "preview_photo": landing.preview_photo,
         "sales_count": landing.sales_count,
-        "author_ids": author_ids,
-        "course_ids": course_ids,
-        "tag_ids": tag_ids,
-        "authors": authors_list,   # <-- только id, courses_count и tags
-        "tags": tags_list,
+        "author_ids": [a.id for a in landing.authors],
+        "course_ids": [c.id for c in landing.courses],
+        "tag_ids":    [t.id for t in landing.tags],
+        "authors": authors_list,
+        "tags": [{"id": t.id, "name": t.name} for t in landing.tags],
         "duration": landing.duration,
         "lessons_count": landing.lessons_count,
         "is_hidden": landing.is_hidden,
@@ -725,9 +749,9 @@ def personalized_cards(
     skip: int = Query(0, ge=0),
     tags: Optional[List[str]] = Query(None, description="Фильтр по тегам"),
     sort: str = Query(
-        "reccomend",
-        regex="^(popular|discount|new|reccomend)$",
-        description="popular | discount | new | reccomend"
+        "recommend",
+        regex="^(popular|discount|new|recommend)$",
+        description="popular | discount | new | recommend"
     ),
     language: Optional[str] = Query(None, description="Язык лендинга: ES, EN, RU"),
     db: Session = Depends(get_db),

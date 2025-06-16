@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timedelta, date
 from math import ceil
 import time
@@ -11,6 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 
+from .preview_service import get_or_schedule_preview
 from ..models.models_v2 import (
     Landing,
     Author,
@@ -113,12 +115,17 @@ def _apply_sort(query: Query, sort: str | None) -> Query:
 
 
 # 6. Исключение уже купленных курсов
-def _exclude_bought(query: Query, bought_ids: list[int]) -> Query:
-    return (
-        query
-        if not bought_ids
-        else query.filter(~Landing.courses.any(Course.id.in_(bought_ids)))
-    )
+def _exclude_bought(
+    query: Query,
+    bought_courses: list[int],
+    bought_landings: set[int],
+) -> Query:
+    if bought_courses:
+        query = query.filter(~Landing.courses.any(Course.id.in_(bought_courses)))
+    if bought_landings:
+        query = query.filter(~Landing.id.in_(bought_landings))
+    return query
+
 
 # -------------------- ПАГИНАЦИЯ ОБЩЕГО НАЗНАЧЕНИЯ ---------------------------
 
@@ -473,9 +480,12 @@ def _fallback_landing_cards(
     limit: int,
     language: str | None,
 ) -> dict:
-    bought = _user_course_ids(db, user_id)
-    query = _exclude_bought(_base_landing_query(db), bought)
+    b_courses = _user_course_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)
+
+    query = _exclude_bought(_base_landing_query(db), b_courses, b_landings)
     query = _apply_common_filters(query, language=language)
+
     landings = (
         query.order_by(Landing.sales_count.desc()).offset(skip).limit(limit).all()
     )
@@ -484,6 +494,7 @@ def _fallback_landing_cards(
 
 # ---------------------------  COLLAB‑FILTER  --------------------------------
 
+# ---------------------------  COLLAB-FILTER  --------------------------------
 def get_recommended_landing_cards(
     db: Session,
     *,
@@ -492,57 +503,71 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    bought = _user_course_ids(db, user_id)
-    if not bought:
+    # --- 0.  что пользователь уже купил -----------------------------------
+    b_courses  = _user_course_ids(db, user_id)    # список course_id
+    b_landings = _user_landing_ids(db, user_id)   # set   landing_id
+
+    # если нет ни одного купленного курса — отдаём fallback
+    if not b_courses:
         return _fallback_landing_cards(db, user_id, skip, limit, language)
 
-    similar_users_subq = (
+    # --- 1.  ищем похожих пользователей, считаем score --------------------
+    similar_users = (
         db.query(users_courses.c.user_id)
-        .filter(users_courses.c.course_id.in_(bought))
-        .filter(users_courses.c.user_id != user_id)
-        .distinct()
-        .subquery()
+          .filter(users_courses.c.course_id.in_(b_courses),
+                  users_courses.c.user_id != user_id)
+          .distinct()
+          .subquery()
     )
 
-    overlap_expr = func.count(func.distinct(users_courses.c.user_id))
-    score_expr = cast(func.count(), Float) / func.nullif(overlap_expr, 0)
+    overlap = func.count(func.distinct(users_courses.c.user_id))
+    score   = (cast(func.count(), Float) / func.nullif(overlap, 0)).label("score")
 
-    recommended_subq = (
-        db.query(users_courses.c.course_id.label("cid"), score_expr.label("score"))
-        .filter(
-            users_courses.c.user_id.in_(select(similar_users_subq)),
-            ~users_courses.c.course_id.in_(bought),
-        )
-        .group_by(users_courses.c.course_id)
-        .subquery()
+    rec_q = (
+        db.query(users_courses.c.course_id.label("cid"), score)
+          .filter(users_courses.c.user_id.in_(select(similar_users)),
+                  ~users_courses.c.course_id.in_(b_courses))
+          .group_by(users_courses.c.course_id)
+          .order_by(score.desc())
     )
 
-    course_ids = [
-        row.cid
-        for row in db.query(recommended_subq.c.cid, recommended_subq.c.score)
-        .order_by(recommended_subq.c.score.desc())
-        .offset(skip)
-        .limit(limit * 2)
-    ]
+    # --- 2.  отбираем уникальные лендинги с учётом skip/limit -------------
+    unique_ids: set[int] = set()
+    cards: list[dict] = []
+    passed = 0          # сколько уникальных лендингов «пропустили» для skip
 
-    cards: List[dict] = []
-    for cid in course_ids:
-        landing = get_cheapest_landing_for_course(db, cid)
-        if not landing:
+    for row in rec_q.yield_per(200):
+        landing = get_cheapest_landing_for_course(db, row.cid)
+        if not landing or (language and landing.language != language.upper()):
             continue
-        if language and landing.language != language.upper():
+        if landing.id in unique_ids:
             continue
+        unique_ids.add(landing.id)
+
+        if passed < skip:          # фаза пропуска
+            passed += 1
+            continue
+
         cards.append(_landing_to_card(landing))
         if len(cards) == limit:
             break
 
+    # --- 3.  добираем fallback, если нужно --------------------------------
     if len(cards) < limit:
         extra = _fallback_landing_cards(
             db, user_id, skip=0, limit=limit - len(cards), language=language
         )["cards"]
         cards.extend(extra)
 
-    return {"total": len(cards), "cards": cards}
+    # --- 4.  total: все НЕкупленные лендинги ------------------------------
+    total_q = _exclude_bought(_base_landing_query(db), b_courses, b_landings)
+    if language:
+        total_q = total_q.filter(Landing.language == language.upper())
+    total = total_q.count()
+
+    return {"total": total, "cards": cards}
+
+
 
 
 # -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
@@ -554,22 +579,81 @@ def get_personalized_landing_cards(
     skip: int = 0,
     limit: int = 20,
     tags: Optional[List[str]] = None,
-    sort: str = "popular",  # popular | new | discount | reccomend
+    sort: str = "popular",  # popular | new | discount | recommend
     language: Optional[str] = None,
 ) -> dict:
-    if sort.lower() == "reccomend":
+    if sort.lower() == "recommend":
         return get_recommended_landing_cards(
             db, user_id=user_id, skip=skip, limit=limit, language=language
         )
 
-    bought = _user_course_ids(db, user_id)
+    b_courses = _user_course_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)
+
     query = _exclude_bought(
         _apply_common_filters(_base_landing_query(db), language=language, tags=tags),
-        bought,
+        b_courses,
+        b_landings,
     )
+
     query = _apply_sort(query, sort)
 
     total = query.count()
     landings = query.offset(skip).limit(limit).all()
     return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
 
+def get_landing_detail_with_previews(db: Session, landing_id: int) -> dict:
+    """
+    Возвращает словарь с полной информацией о лендинге,
+    где в lessons_info каждому уроку добавлено поле preview.
+    """
+    landing: Landing | None = (
+        db.query(Landing).filter(Landing.id == landing_id).first()
+    )
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    # ------- копируем lessons_info и вставляем превью --------
+    lessons_src = landing.lessons_info or []          # JSON → list[dict]
+    lessons_out = []
+
+    for item in lessons_src:
+        key, lesson = next(iter(item.items()))
+        lesson_copy = copy.deepcopy(lesson)
+
+        video_link = lesson_copy.get("link") or lesson_copy.get("video_link")
+        # если ссылки нет — просто передаём как есть
+        if video_link:
+            lesson_copy["preview"] = get_or_schedule_preview(db, video_link)
+
+        lessons_out.append({key: lesson_copy})
+
+    # ------- собираем финальный ответ --------
+    return {
+        "id": landing.id,
+        "page_name": landing.page_name,
+        "landing_name": landing.landing_name,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_program": landing.course_program,
+        "lessons_info": lessons_out,
+        "preview_photo": landing.preview_photo,
+        "sales_count": landing.sales_count,
+        "duration": landing.duration,
+        "lessons_count": landing.lessons_count,
+        "authors": [a.name for a in landing.authors],
+        "course_ids": landing.course_ids,
+        "tag_ids": [t.id for t in landing.tags],
+        "language": landing.language,
+        "in_advertising": landing.in_advertising,
+    }
+
+def _user_landing_ids(db: Session, user_id: int) -> set[int]:
+    """Все landing.id, которые пользователь купил напрямую."""
+    rows = (
+        db.query(Purchase.landing_id)
+          .filter(Purchase.user_id == user_id,
+                  Purchase.landing_id.isnot(None))
+          .all()
+    )
+    return {r[0] for r in rows}

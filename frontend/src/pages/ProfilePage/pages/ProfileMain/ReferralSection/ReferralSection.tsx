@@ -7,12 +7,15 @@ import { AppRootStateType } from "../../../../../store/store.ts";
 import { scrollToElementById } from "../../../../../common/helpers/helpers.ts";
 import {
   BASE_URL,
+  LS_REF_LINK_KEY,
   REF_CODE_PARAM,
 } from "../../../../../common/helpers/commonConstants.ts";
 import { userApi } from "../../../../../api/userApi/userApi.ts";
 
 const ReferralSection = () => {
-  const [refLink, setRefLink] = useState("");
+  const [refLink, setRefLink] = useState(
+    localStorage.getItem(LS_REF_LINK_KEY) || "",
+  );
   const [isStepsOpen, setIsStepsOpen] = useState(false);
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [copied, setCopied] = useState<boolean>(false);
@@ -22,7 +25,7 @@ const ReferralSection = () => {
       try {
         await navigator.clipboard.writeText(refLink);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setTimeout(() => setCopied(false), 3000);
       } catch (err) {
         console.error("Не удалось скопировать ссылку:", err);
       }
@@ -30,13 +33,16 @@ const ReferralSection = () => {
   };
 
   useEffect(() => {
+    if (refLink) return;
     getRefLink();
   }, []);
 
   const getRefLink = async () => {
     try {
       const res = await userApi.getRefLink();
-      setRefLink(`${BASE_URL}/?${REF_CODE_PARAM}=${res.data.referral_link}`);
+      const refLinkRes = `${BASE_URL}/?${REF_CODE_PARAM}=${res.data.referral_link}`;
+      setRefLink(refLinkRes);
+      localStorage.setItem(LS_REF_LINK_KEY, refLinkRes);
     } catch (e: any) {
       console.log(e);
     }
@@ -124,7 +130,7 @@ const ReferralSection = () => {
         <div className={s.invite_link_wrapper}>
           <Trans i18nKey="profile.referral.link" />{" "}
           <span className={s.invite_link} onClick={handleCopy}>
-            {refLink.replace("https://", "")}
+            {!refLink ? "..." : refLink.replace("https://", "")}
           </span>
         </div>
 

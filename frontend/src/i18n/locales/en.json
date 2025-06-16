@@ -28,6 +28,7 @@
   "endOfListFilter" : "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
   "open": "open",
   "view": "View",
+  "watch": "Watch",
   "viewCourse": "View course",
   "viewBook": "View book",
   "watchLesson": "Watch lesson",
@@ -67,7 +68,12 @@
     "fullAccess": "Get full course",
     "get": "Get Full course only for ${{count}}",
     "title": "Full course required",
-    "desc": "This lesson is part of a full course. Get full access by purchasing the course."
+    "desc": "This lesson is part of a full course. Get full access by purchasing the course.",
+    "access": {
+      "full": "Full access",
+      "partial": "Partial access",
+      "offer": "Special offer"
+    }
   },
   "banner": {
     "title": "<1>Today</1> only: <1> -{{discount}}% off!</1>"
@@ -145,7 +151,8 @@
     "esthetic": "Esthetic",
     "common.popular": "Popular",
     "common.bestPrices": "Best prices",
-    "common.new": "New"
+    "common.new": "New",
+    "common.rec": "For you"
   },
 
   "landing": {
@@ -411,7 +418,8 @@
       "landings": "Language stats",
       "listing": "Ad listing",
       "referrals": "Referrals",
-      "purchases": "Purchases"
+      "purchases": "Purchases",
+      "userGrowth": "User growth"
     }
   }
 }

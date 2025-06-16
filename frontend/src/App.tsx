@@ -54,10 +54,10 @@ function App() {
   }, [isLogged]);
 
   return (
-    <>
+    <div lang={language.toLowerCase()}>
       <ScrollToTop />
       <AppRoutes />
-    </>
+    </div>
   );
 }
 
