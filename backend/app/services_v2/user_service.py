@@ -732,8 +732,8 @@ def get_free_course_stats(                      # NEW / заменяет ста�
     # 2) Базовый сабквери по free_course_access в рамках периода
     fca_period = (
         db.query(FreeCourseAccess)
-          .filter(FreeCourseAccess.created_at >= start_dt,
-                  FreeCourseAccess.created_at <  end_dt)
+          .filter(FreeCourseAccess.generated_at >= start_dt,
+                  FreeCourseAccess.generated_at <  end_dt)
           .subquery()
     )
 
