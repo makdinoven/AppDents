@@ -1,3 +1,4 @@
+import re
 from math import ceil
 from urllib.parse import urlparse, urlunparse
 
