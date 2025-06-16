@@ -2,7 +2,7 @@ import datetime as _dt
 import logging
 from collections import Counter
 
-from sqlalchemy import func, case
+from sqlalchemy import func, case, Float
 from sqlalchemy.orm import Session, selectinload
 
 from .user_service import add_partial_course_to_user
@@ -31,7 +31,7 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
             Landing.is_hidden.is_(False),
         )
         .options(selectinload(Landing.tags))
-        .order_by(Landing.new_price.cast(func.Float))
+        .order_by(Landing.new_price.cast(Float))
         .all()
     )
 
