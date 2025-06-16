@@ -14,6 +14,10 @@
 .chart_container {
   color: $accent;
   @include clamped-p3;
+
+  tspan {
+    @include clamped-p4;
+  }
 }
 
 .analytics_options {
@@ -43,6 +47,7 @@
 @media (max-width: $mobile-breakpoint) {
   .analytics_options {
     grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
   .analytics_page {

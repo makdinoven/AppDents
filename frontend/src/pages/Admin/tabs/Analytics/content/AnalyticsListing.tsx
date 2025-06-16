@@ -8,10 +8,9 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { Trans } from "react-i18next";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
-const AnalyticsListing = ({ title }: { title: string }) => {
+const AnalyticsListing = () => {
   const [language, setLanguage] = useState<string>("EN");
   const [limit, setLimit] = useState<string>("10");
   const [landings, setLandings] = useState<any>(null);
@@ -64,9 +63,6 @@ const AnalyticsListing = ({ title }: { title: string }) => {
 
   return (
     <>
-      <h2>
-        <Trans i18nKey={title} />
-      </h2>
       <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}

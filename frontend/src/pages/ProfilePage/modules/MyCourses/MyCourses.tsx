@@ -20,6 +20,7 @@ const MyCourses = ({ courses }: { courses: any }) => {
               name={course.name}
               previewPhoto={course.preview}
               link={`${Path.myCourse}/${course.id}`}
+              expires_at={course.expires_at && course.expires_at}
             />
           ))
         ) : (

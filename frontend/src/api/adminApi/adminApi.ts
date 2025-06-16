@@ -159,4 +159,9 @@ export const adminApi = {
       params: params,
     });
   },
+  getFreewebStats(params: any) {
+    return instance.get("users/analytics/free-course-stats", {
+      params: params,
+    });
+  },
 };

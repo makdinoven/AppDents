@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
-import { Trans } from "react-i18next";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
-const AnalyticsLanguages = ({ title }: { title: string }) => {
+const AnalyticsLanguages = () => {
   const [languageStats, setLanguageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState(() => ({
@@ -45,9 +44,6 @@ const AnalyticsLanguages = ({ title }: { title: string }) => {
 
   return (
     <>
-      <h2>
-        <Trans i18nKey={title} />
-      </h2>
       <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}

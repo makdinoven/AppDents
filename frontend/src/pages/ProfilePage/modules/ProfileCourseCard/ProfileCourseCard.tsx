@@ -16,6 +16,7 @@ const ProfileCourseCard = ({
   link,
   index,
   previewPhoto,
+  expires_at,
 }: {
   isPartial?: boolean;
   isOffer?: boolean;
@@ -24,6 +25,7 @@ const ProfileCourseCard = ({
   link: string;
   index: number;
   previewPhoto: string;
+  expires_at?: string;
 }) => {
   const screenWidth = useScreenWidth();
 
@@ -42,7 +44,7 @@ const ProfileCourseCard = ({
       {isOffer && (
         <div className={s.timer}>
           <Clock />
-          <CountdownTimer />
+          <CountdownTimer endsAt={expires_at} />
         </div>
       )}
       <div className={s.card_content}>

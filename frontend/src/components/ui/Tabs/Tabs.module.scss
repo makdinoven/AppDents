@@ -6,7 +6,7 @@
   border: 1px solid $hover-color;
   border-radius: 10px;
   margin-bottom: 40px;
-  flex-wrap: wrap;
+  overflow-y: auto;
 
   @media (max-width: $mobile-breakpoint) {
     & {
