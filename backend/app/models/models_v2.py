@@ -151,10 +151,16 @@ class User(Base):
         now = _dt.datetime.utcnow()
         return [so.course_id for so in self.special_offers if so.expires_at > now]
 
-    @hybrid_property
+    @property
     def partial_course_ids(self) -> list[int]:
-        """ID курсов, к которым пока открыт только первый урок."""
-        return [fc.course_id for fc in self.free_courses]
+        """
+        ID курсов с бесплатным доступом, которые ещё не были куплены.
+        """
+        return [
+            fca.course_id
+            for fca in self.free_courses
+            if not fca.converted_to_full
+        ]
 
 
 class Purchase(Base):

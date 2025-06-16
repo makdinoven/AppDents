@@ -1,3 +1,4 @@
+import logging
 import secrets
 from datetime import datetime, timedelta
 from math import ceil
@@ -15,6 +16,8 @@ from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTy
     PurchaseSource, FreeCourseAccess, AbandonedCheckout
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -256,15 +259,28 @@ def add_partial_course_to_user(db: Session, user_id: int, course_id: int) -> Non
 
 
 
+
 def promote_course_to_full(db: Session, user_id: int, course_id: int) -> None:
     """
-    После оплаты убираем частичный доступ и
-    добавляем курс в полную коллекцию.
+    После оплаты:
+      • курс попадает в полную коллекцию,
+      • запись FreeCourseAccess НЕ удаляется, а помечается как сконвертированная.
     """
-    add_course_to_user(db, user_id, course_id)
-    db.query(FreeCourseAccess).filter_by(
-        user_id=user_id, course_id=course_id
-    ).delete()
+    add_course_to_user(db, user_id, course_id)      # ← уже было
+
+    fca = (
+        db.query(FreeCourseAccess)
+          .filter_by(user_id=user_id, course_id=course_id)
+          .first()
+    )
+    if fca:
+        fca.converted_to_full = True
+        fca.converted_at = datetime.utcnow()
+        logger.info(
+            "Free course %s for user %s marked as converted_at %s",
+            course_id, user_id, fca.converted_at.isoformat()
+        )
+
     db.commit()
 
 
@@ -671,5 +687,65 @@ def get_purchase_analytics(
             "total_pages": total_pages,
             "page": page,
             "size": size,
+        })
+    return result
+
+# services_v2/user_service.py
+from sqlalchemy import case, distinct
+
+def get_free_course_stats(db: Session) -> list[dict]:
+    """
+    Возвращает статистику по бесплатным курсам.
+
+    • free_taken            – сколько уникальных юзеров взяли курс бесплатно
+    • converted_to_course   – сколько из них потом оплатили именно ЭТОТ курс
+    • converted_to_any      – сколько купили КАКОЙ-НИБУДЬ курс
+    Также возвращаются проценты конверсии.
+    """
+    # базовая агрегация по каждому курсу
+    base = (
+        db.query(
+            FreeCourseAccess.course_id.label("cid"),
+            func.count(distinct(FreeCourseAccess.user_id)).label("free_taken"),
+            func.sum(
+                case((FreeCourseAccess.converted_to_full, 1), else_=0)
+            ).label("converted_to_course"),
+        )
+        .group_by(FreeCourseAccess.course_id)
+        .subquery()
+    )
+
+    # привязываем имена курсов
+    rows = (
+        db.query(
+            Course.id,
+            Course.name,
+            base.c.free_taken,
+            base.c.converted_to_course,
+        )
+        .join(base, Course.id == base.c.cid)
+        .all()
+    )
+
+    result = []
+    for cid, name, free_taken, conv_same in rows:
+        # конверсия «купил что-нибудь»
+        conv_any = (
+            db.query(func.count(distinct(FreeCourseAccess.user_id)))
+              .join(Purchase,
+                    Purchase.user_id == FreeCourseAccess.user_id)
+              .filter(FreeCourseAccess.course_id == cid)
+              .scalar()
+        )
+        result.append({
+            "course_id": cid,
+            "course_name": name,
+            "free_taken": free_taken,
+            "converted_to_course": conv_same or 0,
+            "converted_to_course_rate":
+                f"{(conv_same or 0) / free_taken * 100:.1f}%" if free_taken else "0%",
+            "converted_to_any_course": conv_any or 0,
+            "converted_to_any_course_rate":
+                f"{(conv_any or 0) / free_taken * 100:.1f}%" if free_taken else "0%",
         })
     return result
