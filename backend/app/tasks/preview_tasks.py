@@ -24,7 +24,7 @@ from urllib.parse import urlsplit, urlunsplit, quote, unquote
 
 import boto3
 import requests
-from celery import Celery
+from celery import Celery, shared_task
 from sqlalchemy.orm import Session
 from botocore.config import Config
 
@@ -249,7 +249,7 @@ def _save_preview_row(db: Session, video_link: str, url: str) -> None:
 
 
 # ─────────────────────────  MAIN TASK  ──────────────────────────
-@celery.task(bind=True, max_retries=0)  # 0 ретраев: 1 попытка и плейсхолдер
+@shared_task(name="app.tasks.preview_tasks.generate_preview", bind=True, max_retries=0)
 def generate_preview(self, video_link: str) -> None:
     db: Session = SessionLocal()
     tmp_path: str | None = None
