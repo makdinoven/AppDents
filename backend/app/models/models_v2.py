@@ -282,6 +282,17 @@ class FreeCourseAccess(Base):
     granted_at = Column(DateTime,
                         server_default=func.utc_timestamp(),
                         nullable=False)
+    converted_to_full = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="TRUE – пользователь купил полный доступ к этому курсу"
+    )
+    converted_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="UTC-время оплаты полного курса"
+    )
 
     user   = relationship("User", back_populates="free_courses")
     course = relationship("Course")
