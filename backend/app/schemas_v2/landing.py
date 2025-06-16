@@ -1,9 +1,11 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
+from ..services_v2.course_service import convert_storage_url
+
 
 class LangEnum(str, Enum):
     EN = "EN"
@@ -27,6 +29,10 @@ class LessonInfoItem(BaseModel):
     program: Optional[str] = ""
     duration: Optional[str] = ""
     lecturer: Optional[str] = ""
+
+    @field_validator("link", mode="before")
+    def fix_link(cls, v: Optional[str]) -> Optional[str]:
+        return convert_storage_url(v)
 
 class LandingListResponse(BaseModel):
     id: int
@@ -89,7 +95,7 @@ class LandingUpdate(BaseModel):
     old_price: Optional[str] = ""
     new_price: Optional[str] = ""
     course_program: Optional[str] = ""
-    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = ""
+    lessons_info: Optional[List[Dict[str, LessonInfoItem]]] = []
     preview_photo: Optional[str] = ""
     sales_count: Optional[int] = ""
     author_ids: Optional[List[int]] = None
