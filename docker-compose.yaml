@@ -65,6 +65,7 @@ services:
       dockerfile: Dockerfile
     container_name: celery_beat_prod
     command: celery -A app.celery_app beat -l info --pidfile=
+    working_dir: /app
     env_file:
       - .env
     environment:
