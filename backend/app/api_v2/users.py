@@ -660,8 +660,39 @@ def purchase_stats(
     )
 
 @router.get("/analytics/free-course-stats")
-def free_course_stats(db: Session = Depends(get_db)):
+def free_course_stats(
+    start_date: dt.date | None = Query(
+        None, description="Дата начала периода (YYYY-MM-DD)."
+    ),
+    end_date:   dt.date | None = Query(
+        None, description="Дата конца периода (YYYY-MM-DD, включительно)."
+    ),
+    limit: int | None = Query(
+        None, gt=0, le=500,
+        description="Сколько курсов вернуть (по умолчанию – все)"
+    ),
+    db: Session = Depends(get_db),
+):
     """
-    Статистика по бесплатным курсам и их конверсиям.
+    Аналитика free-курсов.
+
+    • summary.active_free_users   – пользователи с неоплаченными free-курсами **сейчас**
+    • summary.freebie_users       – пользователи, взявшие free-курс в указанный период
+    • courses                     – детализация по каждому free-курсу
+
+    Если не заданы даты – статистика «за всё время».
+    end_date без start_date → 400 Bad Request.
     """
-    return get_free_course_stats(db)
+    if end_date and not start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    return get_free_course_stats(
+        db,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+    )
+

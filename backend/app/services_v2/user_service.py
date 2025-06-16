@@ -693,29 +693,63 @@ def get_purchase_analytics(
 # services_v2/user_service.py
 from sqlalchemy import case, distinct
 
-def get_free_course_stats(db: Session) -> list[dict]:
+def get_free_course_stats(                      # NEW / заменяет старую версию
+    db: Session,
+    *,
+    start_date: date | None = None,
+    end_date:   date | None = None,
+    limit: int | None = None,
+) -> dict:
     """
-    Возвращает статистику по бесплатным курсам.
+    Возвращает:
+        • summary:
+            active_free_users   – пользователи, у которых СЕЙЧАС есть неоплаченные free-курсы
+            freebie_users       – пользователи, которые брали free-курс за указанный период
+        • courses: список словарей по каждому free-курсу
+    Период задаётся [start_date, end_date]; если обе даты None – «за всё время».
+    limit – обрезает количество курсов в выдаче.
+    """
+    # 1) Определяем границы периода (UTC)
+    now = datetime.utcnow()
+    if start_date is None and end_date is None:
+        start_dt = datetime.min
+        end_dt   = now
+    elif start_date is not None and end_date is None:
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt   = now
+    elif start_date is not None and end_date is not None:
+        end_incl = end_date + timedelta(days=1)          # включительно
+        start_dt = datetime.combine(start_date, datetime.min.time())
+        end_dt   = datetime.combine(end_incl, datetime.min.time())
+    else:
+        raise ValueError("end_date без start_date недопустим")
 
-    • free_taken            – сколько уникальных юзеров взяли курс бесплатно
-    • converted_to_course   – сколько из них потом оплатили именно ЭТОТ курс
-    • converted_to_any      – сколько купили КАКОЙ-НИБУДЬ курс
-    Также возвращаются проценты конверсии.
-    """
-    # базовая агрегация по каждому курсу
+    logger.debug(
+        "Free-course stats for period %s – %s (limit=%s)",
+        start_dt.isoformat(), end_dt.isoformat(), limit
+    )
+
+    # 2) Базовый сабквери по free_course_access в рамках периода
+    fca_period = (
+        db.query(FreeCourseAccess)
+          .filter(FreeCourseAccess.created_at >= start_dt,
+                  FreeCourseAccess.created_at <  end_dt)
+          .subquery()
+    )
+
+    # 3) Считаем по каждому курсу
     base = (
         db.query(
-            FreeCourseAccess.course_id.label("cid"),
-            func.count(distinct(FreeCourseAccess.user_id)).label("free_taken"),
+            fca_period.c.course_id.label("cid"),
+            func.count(distinct(fca_period.c.user_id)).label("free_taken"),
             func.sum(
-                case((FreeCourseAccess.converted_to_full, 1), else_=0)
+                case((fca_period.c.converted_to_full, 1), else_=0)
             ).label("converted_to_course"),
         )
-        .group_by(FreeCourseAccess.course_id)
+        .group_by(fca_period.c.course_id)
         .subquery()
     )
 
-    # привязываем имена курсов
     rows = (
         db.query(
             Course.id,
@@ -724,28 +758,55 @@ def get_free_course_stats(db: Session) -> list[dict]:
             base.c.converted_to_course,
         )
         .join(base, Course.id == base.c.cid)
-        .all()
+        .order_by(base.c.free_taken.desc())               # сортировка по умолчанию
+        .limit(limit) if limit else
+        db.query(
+            Course.id,
+            Course.name,
+            base.c.free_taken,
+            base.c.converted_to_course,
+        )
+        .join(base, Course.id == base.c.cid)
+        .order_by(base.c.free_taken.desc())
+    ).all()
+
+    # 4) Дополнительные агрегации
+    active_free_users = (
+        db.query(func.count(distinct(FreeCourseAccess.user_id)))
+          .filter(FreeCourseAccess.converted_to_full.is_(False))
+          .scalar()
     )
 
-    result = []
-    for cid, name, free_taken, conv_same in rows:
-        # конверсия «купил что-нибудь»
+    freebie_users = (
+        db.query(func.count(distinct(fca_period.c.user_id))).scalar()
+    )
+
+    # 5) Формируем ответ
+    data = []
+    for cid, name, taken, conv_same in rows:
         conv_any = (
-            db.query(func.count(distinct(FreeCourseAccess.user_id)))
-              .join(Purchase,
-                    Purchase.user_id == FreeCourseAccess.user_id)
-              .filter(FreeCourseAccess.course_id == cid)
+            db.query(func.count(distinct(Purchase.user_id)))
+              .join(fca_period,
+                    Purchase.user_id == fca_period.c.user_id)
+              .filter(fca_period.c.course_id == cid)
               .scalar()
         )
-        result.append({
+        data.append({
             "course_id": cid,
             "course_name": name,
-            "free_taken": free_taken,
+            "free_taken": taken,
             "converted_to_course": conv_same or 0,
             "converted_to_course_rate":
-                f"{(conv_same or 0) / free_taken * 100:.1f}%" if free_taken else "0%",
+                f"{(conv_same or 0) / taken * 100:.1f}%" if taken else "0%",
             "converted_to_any_course": conv_any or 0,
             "converted_to_any_course_rate":
-                f"{(conv_any or 0) / free_taken * 100:.1f}%" if free_taken else "0%",
+                f"{(conv_any or 0) / taken * 100:.1f}%" if taken else "0%",
         })
-    return result
+
+    return {
+        "summary": {
+            "active_free_users": active_free_users,
+            "freebie_users":     freebie_users,
+        },
+        "courses": data,
+    }
