@@ -4,7 +4,7 @@ from pydantic import BaseModel, validator
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
-from ..services_v2.course_service import convert_storage_url
+from ..utils.relink import convert_storage_url
 
 
 class LangEnum(str, Enum):
