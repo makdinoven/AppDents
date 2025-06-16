@@ -7,7 +7,7 @@ from ..services_v2.special_offer_service import (
 
 logger = logging.getLogger(__name__)
 
-@shared_task
+@shared_task(name="app.tasks.special_offers.process_special_offers")
 def process_special_offers():
     """
     1. выдаёт новые офферы тем, кому пора;
