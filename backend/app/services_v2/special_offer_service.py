@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 _OFFER_TTL_HOURS = 24
 _INTERVAL_HOURS  = 48         # каждые 3 суток
 _HISTORY_LIMIT = 5
-BATCH = 1000
+BATCH = 2000
 
 def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     """Возвращает дешёвые лендинги по каждому купленному курсу."""
@@ -47,56 +47,66 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
 
 def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
     """
-    Алгоритм подбора:
-    1. Собираем теги с «дешёвых» лендингов купленных курсов.
-    2. Считаем веса (+3 за first_tag¹).
-    3. Берём самый популярный тег, ищем ТОП-продаваемый лендинг с ним,
-       на курс которого нет покупки/оффера.
+    1. Если есть покупки:
+         • собираем теги с дешёвых лендингов;
+         • выбираем самый «весомый» тег;
+         • находим популярный лендинг с этим тегом.
+    2. Если покупок нет:
+         • берём simply top-selling лендинг.
+    В обоих случаях курс не должен быть куплен / в оффере / в partial.
     """
-    cheapest = _cheapest_landings_for_purchased(db, user)
-    if not cheapest:
-        return None
-
-    tag_weights: Counter[int] = Counter()
-    for l in cheapest:
-        if not l.tags:
-            continue
-        for i, t in enumerate(l.tags):
-            tag_weights[t.id] += 3 if i == 0 else 1    # «­first_tag +2»
-    if not tag_weights:
-        return None
-
-    best_tag_id, _ = tag_weights.most_common(1)[0]
-    logger.debug("User %s → best tag %s", user.id, best_tag_id)
-
-    # кандидаты-лендинги
+    # ----- набор курсов, которые нельзя предлагать -----
     purchased = {p.course_id for p in user.purchases if p.course_id}
     recent_offer_ids = {
         so.course_id
-        for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)[:_HISTORY_LIMIT]
+        for so in sorted(user.special_offers,
+                         key=lambda so: so.created_at,
+                         reverse=True)[:_HISTORY_LIMIT]
     }
-    denied = purchased | set(user.active_special_offer_ids) | recent_offer_ids
+    denied: set[int] = purchased | set(user.active_special_offer_ids) | recent_offer_ids
 
+    # ───────── 1. пробуем «по тегу» ─────────
+    cheapest = _cheapest_landings_for_purchased(db, user)
+    if cheapest:
+        tag_weights: Counter[int] = Counter()
+        for l in cheapest:
+            for i, t in enumerate(l.tags or []):
+                tag_weights[t.id] += 3 if i == 0 else 1
+
+        if tag_weights:
+            best_tag_id, _ = tag_weights.most_common(1)[0]
+            candidate = (
+                db.query(Landing)
+                .join(Landing.tags)
+                .filter(
+                    Tag.id == best_tag_id,
+                    Landing.is_hidden.is_(False),
+                )
+                .options(selectinload(Landing.courses))
+                .order_by(Landing.sales_count.desc())
+                .first()
+            )
+            if candidate:
+                for c in candidate.courses:
+                    if c.id not in denied:
+                        return candidate, c
+
+    # ───────── 2. fallback: топ-продаваемый лендинг ─────────
     candidate = (
         db.query(Landing)
-        .join(Landing.tags)
-        .filter(
-            Tag.id == best_tag_id,
-            Landing.is_hidden.is_(False),
-        )
+        .filter(Landing.is_hidden.is_(False))
         .options(selectinload(Landing.courses))
-        .order_by(Landing.sales_count.desc())          # «популярный»
+        .order_by(Landing.sales_count.desc())
         .first()
     )
     if not candidate:
         return None
 
-    # ищем подходящий курс
     for c in candidate.courses:
         if c.id not in denied:
             return candidate, c
-    return None
 
+    return None
 
 def _need_new_offer(user: User) -> bool:
     """
