@@ -188,7 +188,7 @@ def generate_offers_for_all_users(db: Session) -> None:
                 logger.exception("Special-offer generation failed for user %s", u.id)
 
         offset += BATCH
-        _dt.time.sleep(1)      # «подышать» 1 с между пачками
+
 
 # --- добавить куда-нибудь после cleanup_expired_offers ---
 def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
