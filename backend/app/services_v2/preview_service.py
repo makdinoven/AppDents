@@ -30,6 +30,7 @@ def get_or_schedule_preview(db: Session, video_link: str) -> str:
 
     # --- если строки ещё нет → ставим таску и выдаём плейсхолдер ---
     if not row:
+        logger.info("[preview] нет записи → enqueue generate_preview %s", video_link)
         generate_preview.delay(video_link)
         return PLACEHOLDER_URL
 
@@ -37,6 +38,10 @@ def get_or_schedule_preview(db: Session, video_link: str) -> str:
     if row.preview_url == PLACEHOLDER_URL:
         # «давно» ли в очереди?  (15 мин — абстрактный таймаут генерации)
         if (now - row.generated_at) > _dt.timedelta(minutes=15):
+            logger.info(
+                "[preview] повторная попытка (%s) → enqueue generate_preview",
+                video_link,
+            )
             generate_preview.delay(video_link)        # дублировать не страшно
         return PLACEHOLDER_URL
 
@@ -49,6 +54,10 @@ def get_or_schedule_preview(db: Session, video_link: str) -> str:
         db.commit()
 
         if not _is_url_alive(row.preview_url):
+            logger.warning(
+                "[preview] битое превью %s → плейсхолдер + пере-генерация",
+                row.preview_url,
+            )
             # ссылка мертва → плейсхолдер + пере-генерация
             row.preview_url = PLACEHOLDER_URL
             row.generated_at = now
