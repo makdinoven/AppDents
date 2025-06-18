@@ -40,12 +40,12 @@ services:
         max-size: "5m"    # Redis мало пишет
         max-file: "3"
 
-  celery_worker:
+  celery_worker_default:
       build:
         context: ./backend
         dockerfile: Dockerfile
-      container_name: celery_worker_prod
-      command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+      container_name: celery_worker_prod_default
+      command: celery -A app.celery_app worker -l info -Q default -n default@%h --concurrency=2
       env_file:
         - .env
       working_dir: /app
@@ -59,6 +59,28 @@ services:
       networks:
         - priv
         - pub
+
+  celery_worker_special:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: celery_worker_prod_special
+    command: celery -A app.celery_app worker -l info -Q special -n special@%h --concurrency=2
+    env_file:
+      - .env
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - priv
+      - pub
+
+
   celery_beat:
     build:
       context: ./backend

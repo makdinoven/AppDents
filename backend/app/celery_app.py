@@ -2,6 +2,8 @@ from celery import Celery
 from dotenv import load_dotenv
 import os
 
+from kombu import Queue
+
 load_dotenv()
 
 celery = Celery(
@@ -29,6 +31,20 @@ celery.conf.update(
         "special-offers-every-hour": {
             "task": "app.tasks.special_offers.process_special_offers",
             "schedule": 3600,
+            "options": {"queue": "special"},
         },
     },
 )
+
+celery.conf.task_queues = (
+    Queue("default"),         # превью, e-mails и т.д.
+    Queue("special"),         # спец-предложения
+)
+
+celery.conf.task_routes = {
+    # превью идут как раньше (попадают в default)
+    "app.tasks.preview_tasks.*": {"queue": "default"},
+
+    # спец-офферы — в отдельную очередь
+    "app.tasks.special_offers.process_special_offers": {"queue": "special"},
+}
