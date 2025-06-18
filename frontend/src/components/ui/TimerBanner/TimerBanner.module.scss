@@ -1,10 +1,12 @@
 .banner {
   width: 100%;
-  background-color: $primary;
-  padding: 10px;
+  background-color: $primary-08;
+  backdrop-filter: $blur;
   border-radius: 0 0 15px 15px;
+  padding: 10px;
   cursor: pointer;
   @include clamped-p3;
+  border: 1px solid $primary;
   color: $text-color;
 
   &.sticky {
@@ -25,15 +27,12 @@
 
   .banner_container {
     @include container();
+    min-width: unset;
     padding: 0;
-  }
-
-  .banner_content {
     display: flex;
     justify-content: space-between;
     gap: 10px;
     align-items: center;
-    width: 100%;
 
     .highlight_text {
       //color: $accent;
@@ -45,6 +44,7 @@
       text-transform: uppercase;
     }
   }
+
 
   .timer {
     border: 1.5px solid $background-color;
@@ -65,7 +65,9 @@
 
   @media (max-width: $tablet-breakpoint) {
     & {
-      .banner_content {
+      .banner_container {
+        gap: 5px;
+
         h4 {
           text-align: center;
         }
@@ -85,6 +87,16 @@
 
       &.sticky {
         top: 40px;
+      }
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      padding: 10px 5px;
+
+      &.sticky {
+        padding: 30px 5px 10px;
       }
     }
   }

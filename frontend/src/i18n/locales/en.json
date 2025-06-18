@@ -270,7 +270,8 @@
     "num": "404",
     "title": "Page not found",
     "sorry": "Sorry, the page you are looking for does not exist",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "backToHome": "Back to home"
   },
 
   "cart" : {

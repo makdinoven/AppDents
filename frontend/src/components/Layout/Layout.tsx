@@ -6,13 +6,17 @@ import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
 import ScrollToTopButton from "../ui/ScrollToTopButton/ScrollToTopButton.tsx";
 import SearchModal from "../ui/SearchModal/SearchModal.tsx";
 import { OPEN_SEARCH_KEY } from "../../common/helpers/commonConstants.ts";
+import { isPromotionLanding } from "../../common/helpers/helpers.ts";
+import TimerBanner from "../ui/TimerBanner/TimerBanner.tsx";
 
 const Layout = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
+  const isPromotion = isPromotionLanding(location.pathname);
 
   return (
     <div className={s.main_wrapper}>
+      {isPromotion && <TimerBanner />}
       <Header />
       <main className={s.content}>
         <Outlet />

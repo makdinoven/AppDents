@@ -2,6 +2,7 @@ import s from "./NotFoundPage.module.scss";
 import { useNavigate } from "react-router-dom";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
+import { Path } from "../../routes/routes.ts";
 
 const NotFoundPage = () => {
   const navigate = useNavigate();
@@ -22,8 +23,8 @@ const NotFoundPage = () => {
 
       <PrettyButton
         variant={"primary"}
-        text={"pageNotFound.goBack"}
-        onClick={() => navigate(-1)}
+        text={"pageNotFound.backToHome"}
+        onClick={() => navigate(Path.main)}
       />
     </div>
   );

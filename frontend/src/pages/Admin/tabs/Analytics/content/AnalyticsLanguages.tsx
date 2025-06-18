@@ -78,7 +78,7 @@ const AnalyticsLanguages = () => {
           </>
         )}
       </div>
-      {languageStats && loading ? (
+      {!languageStats && loading ? (
         <Loader />
       ) : (
         <div className={s.languages_table}>

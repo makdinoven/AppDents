@@ -9,6 +9,7 @@ export const Path = {
   books: "/books",
   signUp: "/sign-up",
   landing: "/course",
+  videoLanding: "course/video",
   landingClient: "client/course",
   freeLanding: "course/free",
   freeLandingClient: "client/course/free",

@@ -1,0 +1,163 @@
+.slider {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+
+  .slide {
+    padding: 20px 50px;
+    background-color: $accent-glass;
+    //height: 100%;
+    min-height: 520px;
+    color: $text-color;
+    cursor: pointer;
+  }
+}
+
+.customNav {
+  position: absolute;
+  right: 10px;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+
+  .prev,
+  .next {
+    @include transition();
+    @include flex-center;
+    pointer-events: all;
+    width: 40px;
+    height: 40px;
+    //background: $background-color;
+    //border: 1px solid $background-color;
+    border-radius: 10px;
+    cursor: pointer;
+
+    svg {
+      @include flex-center;
+      @include transition();
+      width: 30px;
+      height: 30px;
+      path {
+        @include transition();
+        stroke: $background-color;
+      }
+    }
+    @media (hover: hover) {
+      &:hover {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+    }
+
+
+    &:active {
+      svg {
+        path {
+          stroke: $accent;
+        }
+      }
+    }
+  }
+
+  .next {
+    svg {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+:global(.swiper) {
+  border-radius: 20px;
+}
+
+:global(.swiper-pagination) {
+  display: flex;
+  padding: 20px 0;
+  align-items: center;
+  justify-content: center;
+  max-width: 90%;
+  bottom: 0 !important;
+  left: 50% !important;
+  transform: translateX(-50%);
+  gap: 10px;
+}
+
+:global(.swiper-pagination-bullet) {
+  @include transition();
+  position: relative;
+  background-color: $background-color;
+  width: 100%;
+  max-width: 30%;
+  height: 4px;
+  border-radius: 10px;
+  opacity: 0.5;
+  overflow: hidden;
+  margin: 0 !important;
+  backdrop-filter: $blur;
+
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      opacity: 1;
+    }
+  }
+}
+
+:global(.swiper-pagination-bullet-active) {
+  background-color: $background-color;
+  opacity: 1;
+
+  :global(.progress) {
+    opacity: 1;
+    animation: fillProgress 5000ms linear forwards;
+  }
+}
+
+:global(.progress) {
+  @include transition();
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  background-color: $primary;
+}
+
+@keyframes fillProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .customNav {
+    left: 0;
+    right: 0;
+    .prev,
+    .next {
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+
+
+  :global(.swiper-pagination) {
+    gap: 5px;
+    padding: 10px 0;
+  }
+}

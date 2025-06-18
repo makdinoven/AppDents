@@ -11,6 +11,7 @@ import { AppRootStateType } from "../../../store/store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { isPromotionLanding } from "../../../common/helpers/helpers.ts";
+import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 
 const MobileMenu = () => {
   const location = useLocation();
@@ -22,6 +23,7 @@ const MobileMenu = () => {
   const quantity = useSelector(
     (state: AppRootStateType) => state.cart.quantity,
   );
+  const screenWidth = useScreenWidth();
 
   const buttons: {
     icon: any;
@@ -54,7 +56,7 @@ const MobileMenu = () => {
     });
   }
 
-  if (isPromotionLanding(location.pathname)) {
+  if (isPromotionLanding(location.pathname) || screenWidth >= 769) {
     return null;
   }
 

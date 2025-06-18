@@ -35,6 +35,20 @@ export const NAV_BUTTONS = [
 
 export const AUTH_MODAL_ROUTES = [Path.login, Path.signUp, Path.passwordReset];
 
+export const LANDING_ROUTES = [
+  Path.landing,
+  Path.landingClient,
+  Path.freeLanding,
+  Path.freeLandingClient,
+  Path.videoLanding,
+];
+
+export const LANDING_AD_ROUTES = [
+  Path.landing,
+  Path.freeLanding,
+  Path.videoLanding,
+];
+
 export const ROLES = [
   {
     label: "Admin",

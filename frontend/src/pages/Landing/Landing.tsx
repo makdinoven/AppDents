@@ -36,14 +36,9 @@ import {
   setPrices,
 } from "../../store/slices/landingSlice.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
+import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 
-const Landing = ({
-  isClient,
-  isFree,
-}: {
-  isClient: boolean;
-  isFree: boolean;
-}) => {
+const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
@@ -70,6 +65,18 @@ const Landing = ({
     return searchParams.has("fbclid") || isPromotionLanding;
   }, [location.search]);
   const isAdmin = role === "admin";
+
+  const basePath = location.pathname
+    .replace(/^\/|\/$/g, "")
+    .split("/")
+    .slice(0, -1)
+    .join("/");
+
+  const isVideo = basePath === Path.videoLanding;
+  const isClient =
+    basePath === Path.landingClient || basePath === Path.freeLandingClient;
+  const isFree =
+    basePath === Path.freeLanding || basePath === Path.freeLandingClient;
 
   useEffect(() => {
     if (isLogged && isFree && !isAdmin) {
@@ -256,6 +263,13 @@ const Landing = ({
               <PrettyButton variant="default" text={"promo link"} />
             </a>
             <a
+              href={`${BASE_URL}/${Path.videoLanding}/${landingPath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PrettyButton variant="default" text={"video link"} />
+            </a>
+            <a
               href={`${BASE_URL}/${Path.freeLanding}/${landingPath}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -275,11 +289,22 @@ const Landing = ({
         <Loader />
       ) : (
         <div className={s.landing}>
-          <LandingHero data={heroData} />
-          <About data={aboutData} />
-          <CourseProgram data={courseProgramData} />
-          <LessonsProgram data={lessonsProgramData} />
-          <Professors data={landing?.authors} />
+          {!isVideo ? (
+            <>
+              <LandingHero data={heroData} />
+              <About data={aboutData} />
+              <CourseProgram data={courseProgramData} />
+              <LessonsProgram data={lessonsProgramData} />
+              <Professors data={landing?.authors} />
+            </>
+          ) : (
+            <>
+              <VideoSection />
+              {/*<CourseProgram data={courseProgramData} />*/}
+              {/*<Professors data={landing?.authors} />*/}
+            </>
+          )}
+
           <Offer data={offerData} />
           <Faq />
           <CoursesSection

@@ -45,6 +45,11 @@ const Analytics = () => {
       value: "free_courses",
       component: <AnalyticsFreeCourses />,
     },
+    // {
+    //   name: "admin.analytics.videoCheck",
+    //   value: "video_check",
+    //   component: <AnalyticsVideoCheck />,
+    // },
   ];
 
   const activeTab = analyticsContent.find((tab) => tab.value === tabFromParams);
