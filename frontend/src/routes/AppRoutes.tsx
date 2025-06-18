@@ -53,22 +53,6 @@ export const AppRoutes: FC = () => {
               element={<Landing />}
             />
           ))}
-          {/*<Route*/}
-          {/*  path={`${Path.landing}/:landingPath?`}*/}
-          {/*  element={<Landing isClient={false} isFree={false} />}*/}
-          {/*/>*/}
-          {/*<Route*/}
-          {/*  path={`${Path.landingClient}/:landingPath?`}*/}
-          {/*  element={<Landing isClient={true} isFree={false} />}*/}
-          {/*/>*/}
-          {/*<Route*/}
-          {/*  path={`${Path.freeLanding}/:landingPath?`}*/}
-          {/*  element={<Landing isClient={false} isFree={true} />}*/}
-          {/*/>*/}
-          {/*<Route*/}
-          {/*  path={`${Path.freeLandingClient}/:landingPath?`}*/}
-          {/*  element={<Landing isClient={true} isFree={true} />}*/}
-          {/*/>*/}
           <Route path={Path.successPayment} element={<SuccessPayment />} />
           <Route
             path={`${Path.professor}/:professorId`}

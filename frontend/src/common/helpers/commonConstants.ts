@@ -123,6 +123,7 @@ export const PAYMENT_SOURCES = [
   { name: "CART", path: Path.cart },
   { name: "LANDING", path: `/${Path.landingClient}` },
   { name: "LANDING", path: Path.landing },
+  { name: "LANDING_VIDEO", path: Path.videoLanding },
   { name: "PROFESSOR_PAGE", path: Path.professor },
   { name: "PROFESSOR_OFFER", path: Path.professor },
   { name: "PROF_LIST_OFFER", path: Path.professors },
