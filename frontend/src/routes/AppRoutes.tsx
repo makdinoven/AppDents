@@ -20,7 +20,10 @@ import UniversalPage from "../pages/UniversalPage/UniversalPage.tsx";
 import Professors from "../pages/Professors/Professors.tsx";
 import NotFoundPage from "../pages/NotFoundPage/NotFoundPage.tsx";
 import AuthModalManager from "../components/AuthModalManager/AuthModalManager.tsx";
-import { AUTH_MODAL_ROUTES } from "../common/helpers/commonConstants.ts";
+import {
+  AUTH_MODAL_ROUTES,
+  LANDING_ROUTES,
+} from "../common/helpers/commonConstants.ts";
 import ProtectedRoute from "./protected/ProtectedRoute.tsx";
 import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
@@ -42,22 +45,30 @@ export const AppRoutes: FC = () => {
           <Route path={Path.courses} element={<Courses isFree={false} />} />
           <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
           <Route index element={<MainPage />} />
-          <Route
-            path={`${Path.landing}/:landingPath?`}
-            element={<Landing isClient={false} isFree={false} />}
-          />
-          <Route
-            path={`${Path.landingClient}/:landingPath?`}
-            element={<Landing isClient={true} isFree={false} />}
-          />
-          <Route
-            path={`${Path.freeLanding}/:landingPath?`}
-            element={<Landing isClient={false} isFree={true} />}
-          />
-          <Route
-            path={`${Path.freeLandingClient}/:landingPath?`}
-            element={<Landing isClient={true} isFree={true} />}
-          />
+
+          {LANDING_ROUTES.map((path) => (
+            <Route
+              key={path}
+              path={`${path}/:landingPath?`}
+              element={<Landing />}
+            />
+          ))}
+          {/*<Route*/}
+          {/*  path={`${Path.landing}/:landingPath?`}*/}
+          {/*  element={<Landing isClient={false} isFree={false} />}*/}
+          {/*/>*/}
+          {/*<Route*/}
+          {/*  path={`${Path.landingClient}/:landingPath?`}*/}
+          {/*  element={<Landing isClient={true} isFree={false} />}*/}
+          {/*/>*/}
+          {/*<Route*/}
+          {/*  path={`${Path.freeLanding}/:landingPath?`}*/}
+          {/*  element={<Landing isClient={false} isFree={true} />}*/}
+          {/*/>*/}
+          {/*<Route*/}
+          {/*  path={`${Path.freeLandingClient}/:landingPath?`}*/}
+          {/*  element={<Landing isClient={true} isFree={true} />}*/}
+          {/*/>*/}
           <Route path={Path.successPayment} element={<SuccessPayment />} />
           <Route
             path={`${Path.professor}/:professorId`}

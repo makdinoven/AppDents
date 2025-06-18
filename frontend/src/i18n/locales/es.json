@@ -265,7 +265,8 @@
     "num": "404",
     "title": "Página no encontrada",
     "sorry": "Lo sentimos, la página que buscas no existe",
-    "goBack": "Volver atrás"
+    "goBack": "Volver atrás",
+    "backToHome": "Volver a la página principal"
   },
 
   "cart": {
