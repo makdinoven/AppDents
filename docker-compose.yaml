@@ -65,7 +65,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: celery_worker_prod_special
-    command: celery -A app.celery_app worker -l info -Q special -n special@%h --concurrency=2
+    command: celery -A app.celery_app worker -l info -Q special -n special@%h --concurrency=1
     env_file:
       - .env
     working_dir: /app
