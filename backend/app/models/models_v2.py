@@ -50,6 +50,14 @@ class PurchaseSource(str, PyEnum):
     CABINET_FREE = "CABINET_FREE"
     OTHER                     = "OTHER"
 
+class FreeCourseSource(str, PyEnum):
+    """
+    Источник, откуда пользователь получил бесплатный доступ к первому уроку.
+    Значения хранятся в MySQL как строки ENUM.
+    """
+    LANDING        = "landing"         # рекламный лендинг
+    SPECIAL_OFFER  = "special_offer"   # кабинетное спец-предложение
+
 class Course(Base):
     __tablename__ = 'courses'
     id = Column(Integer, primary_key=True)
@@ -292,6 +300,12 @@ class FreeCourseAccess(Base):
         DateTime(timezone=True),
         nullable=True,
         comment="UTC-время оплаты полного курса"
+    )
+    source = Column(
+        Enum(FreeCourseSource, name="fca_source"),
+        nullable=False,
+        default=FreeCourseSource.LANDING.value,
+        comment="Источник выдачи partial-курса"
     )
 
     user   = relationship("User", back_populates="free_courses")
