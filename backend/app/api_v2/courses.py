@@ -56,22 +56,12 @@ def search_course_listing(
     return search_courses_paginated(db, q=q, page=page, size=size)
 
 @router.get("/detail/{course_id}", response_model=CourseDetailResponse)
-def get_course_by_id(                     # noqa: C901 – cyclomatic OK
+def get_course_by_id(
     course_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Подробности курса с учётом уровня доступа.
-
-    Уровни:
-        • full           – купил курс / админ
-        • special_offer  – спец-предложение (24 ч, первый урок открыт)
-        • partial        – бесплатный первый урок
-        • none           – доступа нет
-    """
-    import copy
-    import logging
+    import copy, logging
     logger = logging.getLogger(__name__)
 
     course = get_course_detail(db, course_id)
@@ -80,7 +70,6 @@ def get_course_by_id(                     # noqa: C901 – cyclomatic OK
 
     is_admin = getattr(current_user, "role", None) == "admin"
 
-    # --------- определяем права ----------
     has_full = is_admin or any(c.id == course_id for c in current_user.courses)
     has_special = course_id in getattr(current_user, "active_special_offer_ids", [])
     has_part = (
@@ -88,55 +77,43 @@ def get_course_by_id(                     # noqa: C901 – cyclomatic OK
         and course_id in getattr(current_user, "partial_course_ids", [])
     )
 
-    # --------- sections → list ----------
-    raw_sections = copy.deepcopy(course.sections) or {}
-    sections = (
-        [{k: v} for k, v in raw_sections.items()]
-        if isinstance(raw_sections, dict)
-        else list(raw_sections)
-    )
+    # --------- sections (deepcopy once!) ----------
+    sections = copy.deepcopy(course.sections) or []
+    if isinstance(sections, dict):
+        sections = [{k: v} for k, v in sections.items()]
 
     # --------- вставляем превью ----------
     for sec in sections:
-        key, data = next(iter(sec.items()))
+        _, data = next(iter(sec.items()))
         for lesson in data["lessons"]:
-            lesson["preview"] = get_or_schedule_preview(
-                db,
-                lesson["video_link"],
-            )
+            lesson["preview"] = get_or_schedule_preview(db, lesson["video_link"])
 
     # --------- скрываем видео после первого ----------
     if has_part or has_special:
         unlocked = False
         for sec in sections:
-            key, data = next(iter(sec.items()))
+            _, data = next(iter(sec.items()))
             for lesson in data["lessons"]:
                 if unlocked:
                     lesson.pop("video_link", None)
                 else:
                     unlocked = True
 
-    # --------- лендинг с минимальной ценой ----------
     cheapest_landing = None
     if not has_full:
         landing = get_cheapest_landing_for_course(db, course_id)
         if landing:
             cheapest_landing = {"id": landing.id}
 
-    # --------- итоговый уровень ----------
-    if has_full:
-        access_level = "full"
-    elif has_special:
-        access_level = "special_offer"
-    elif has_part:
-        access_level = "partial"
-    else:
-        access_level = "none"
-
-    logger.debug(
-        "User %s → course %s → %s access",
-        current_user.id, course_id, access_level,
+    access_level = (
+        "full" if has_full else
+        "special_offer" if has_special else
+        "partial" if has_part else
+        "none"
     )
+
+    logger.debug("User %s → course %s → %s access",
+                 current_user.id, course_id, access_level)
 
     return {
         "id": course.id,
