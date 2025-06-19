@@ -1,5 +1,5 @@
 import s from "./Header.module.scss";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { DentsLogo } from "../../assets/logos/index";
 import { useScroll } from "../../common/hooks/useScroll.ts";
@@ -8,7 +8,6 @@ import PromoHeaderContent from "./content/PromoHeaderContent.tsx";
 import MainHeaderContent from "./content/MainHeaderContent.tsx";
 
 const Header = () => {
-  const location = useLocation();
   const isScrolled = useScroll();
   const isPromotion = isPromotionLanding(location.pathname);
 

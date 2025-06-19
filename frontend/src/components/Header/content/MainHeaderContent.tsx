@@ -14,12 +14,13 @@ import { Trans } from "react-i18next";
 import UserIcon from "../../../assets/Icons/UserIcon.tsx";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import { useEffect, useRef } from "react";
 import { useTriggerRef } from "../../../common/context/TriggerRefContext.tsx";
 
 const MainHeaderContent = () => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const isLogged = useSelector(
