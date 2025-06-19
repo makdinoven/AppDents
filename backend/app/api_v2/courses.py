@@ -1,4 +1,5 @@
 import copy
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -78,9 +79,14 @@ def get_course_by_id(
     )
 
     # --------- sections (deepcopy once!) ----------
-    sections = copy.deepcopy(course.sections) or []
-    if isinstance(sections, dict):
-        sections = [{k: v} for k, v in sections.items()]
+    sections_raw = course.sections or {}
+    # ① сериализация → ② десериализация
+    sections_plain = json.loads(json.dumps(sections_raw))
+
+    if isinstance(sections_plain, dict):
+        sections = [{k: v} for k, v in sections_plain.items()]
+    else:  # уже list
+        sections = sections_plain
 
     # --------- вставляем превью ----------
     for sec in sections:
