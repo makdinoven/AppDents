@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from .user_service import add_partial_course_to_user
 from ..models.models_v2 import (
-    User, SpecialOffer, Landing, landing_course, Tag, Course, Purchase
+    User, SpecialOffer, Landing, landing_course, Tag, Course, Purchase, FreeCourseSource
 )
 
 
@@ -145,7 +145,7 @@ def generate_offer_for_user(db: Session, user: User) -> bool:
 
     # открываем первый урок (как free-доступ, важно для фронта)
     try:
-        add_partial_course_to_user(db, user.id, course.id)
+        add_partial_course_to_user(db, user.id, course.id, source=FreeCourseSource.SPECIAL_OFFER)
     except ValueError:
         # partial_already_granted и прочее игнорируем ­— оффер всё-равно остаётся
         logger.info("Partial already granted for user %s course %s", user.id, course.id)

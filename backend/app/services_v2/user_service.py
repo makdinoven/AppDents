@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, \
-    PurchaseSource, FreeCourseAccess, AbandonedCheckout
+    PurchaseSource, FreeCourseAccess, AbandonedCheckout, FreeCourseSource
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -223,7 +223,7 @@ def remove_course_from_user(db: Session, user_id: int, course_id: int) -> None:
 # ──────────────────────────────────────────────────────────────
 #  Бесплатный доступ к первому уроку
 # ──────────────────────────────────────────────────────────────
-def add_partial_course_to_user(db: Session, user_id: int, course_id: int) -> None:
+def add_partial_course_to_user(db: Session, user_id: int, course_id: int, source: FreeCourseSource = FreeCourseSource.LANDING) -> None:
     """
     • Один free-курс на аккаунт.
     • Нельзя брать free, если курс уже куплен.
@@ -252,7 +252,13 @@ def add_partial_course_to_user(db: Session, user_id: int, course_id: int) -> Non
         raise ValueError("free_course_already_taken")
 
     # выдаём
-    db.add(FreeCourseAccess(user_id=user_id, course_id=course_id))
+    db.add(
+        FreeCourseAccess(
+            user_id=user_id,
+            course_id=course_id,
+            source=source,  # ← пишем источник
+        )
+    )
     user.free_trial_used = True
     db.commit()
 
@@ -693,7 +699,7 @@ def get_purchase_analytics(
 # services_v2/user_service.py
 from sqlalchemy import case, distinct
 
-def get_free_course_stats(                      # NEW / заменяет старую версию
+def get_free_course_stats(        # полностью заменяет старую версию
     db: Session,
     *,
     start_date: date | None = None,
@@ -701,43 +707,48 @@ def get_free_course_stats(                      # NEW / заменяет ста�
     limit: int | None = None,
 ) -> dict:
     """
+    Аналитика рекламных free-курсов.
+
     Возвращает:
-        • summary:
-            active_free_users   – пользователи, у которых СЕЙЧАС есть неоплаченные free-курсы
-            freebie_users       – пользователи, которые брали free-курс за указанный период
-        • courses: список словарей по каждому free-курсу
-    Период задаётся [start_date, end_date]; если обе даты None – «за всё время».
-    limit – обрезает количество курсов в выдаче.
+        summary:
+            active_free_users – пользователи, у которых СЕЙЧАС есть неоплаченные free-курсы
+            freebie_users     – пользователи, взявшие free-курсы в указанный период
+        courses – массив словарей по каждому курсу
+
+    Период задаётся [start_date, end_date] включительно.
+    Если обе даты None – берём «за всё время».
     """
-    # 1) Определяем границы периода (UTC)
+    # ──────────────────── 1. Диапазон дат UTC ────────────────────────────────
     now = datetime.utcnow()
+
     if start_date is None and end_date is None:
-        start_dt = datetime.min
-        end_dt   = now
-    elif start_date is not None and end_date is None:
+        start_dt, end_dt = datetime.min, now
+    elif start_date and not end_date:
+        start_dt, end_dt = datetime.combine(start_date, datetime.min.time()), now
+    elif start_date and end_date:
+        end_inclusive = end_date + timedelta(days=1)   # +1 день, чтобы включить end_date
         start_dt = datetime.combine(start_date, datetime.min.time())
-        end_dt   = now
-    elif start_date is not None and end_date is not None:
-        end_incl = end_date + timedelta(days=1)          # включительно
-        start_dt = datetime.combine(start_date, datetime.min.time())
-        end_dt   = datetime.combine(end_incl, datetime.min.time())
+        end_dt   = datetime.combine(end_inclusive, datetime.min.time())
     else:
         raise ValueError("end_date без start_date недопустим")
 
     logger.debug(
-        "Free-course stats for period %s – %s (limit=%s)",
+        "Free-course stats | %s – %s | limit=%s",
         start_dt.isoformat(), end_dt.isoformat(), limit
     )
 
-    # 2) Базовый сабквери по free_course_access в рамках периода
+    # ──────────────────── 2. Free-курсы периода (только LANDING) ─────────────
     fca_period = (
         db.query(FreeCourseAccess)
-          .filter(FreeCourseAccess.granted_at >= start_dt,
-                  FreeCourseAccess.granted_at <  end_dt)
+          .filter(
+              FreeCourseAccess.source == FreeCourseSource.LANDING,
+              FreeCourseAccess.granted_at >= start_dt,
+              FreeCourseAccess.granted_at <  end_dt,
+          )
           .subquery()
     )
 
-    # 3) Считаем по каждому курсу
+    # ──────────────────── 3. Агрегация по каждому курсу ─────────────────────
     base = (
         db.query(
             fca_period.c.course_id.label("cid"),
@@ -750,7 +761,7 @@ def get_free_course_stats(                      # NEW / заменяет ста�
         .subquery()
     )
 
-    rows = (
+    q = (
         db.query(
             Course.id,
             Course.name,
@@ -758,32 +769,29 @@ def get_free_course_stats(                      # NEW / заменяет ста�
             base.c.converted_to_course,
         )
         .join(base, Course.id == base.c.cid)
-        .order_by(base.c.free_taken.desc())               # сортировка по умолчанию
-        .limit(limit) if limit else
-        db.query(
-            Course.id,
-            Course.name,
-            base.c.free_taken,
-            base.c.converted_to_course,
-        )
-        .join(base, Course.id == base.c.cid)
-        .order_by(base.c.free_taken.desc())
-    ).all()
+        .order_by(base.c.free_taken.desc())            # сортировка по umолчанию
+    )
+    if limit:
+        q = q.limit(limit)
 
-    # 4) Дополнительные агрегации
+    rows = q.all()
+
+    # ──────────────────── 4. Глобальные цифры ───────────────────────────────
     active_free_users = (
         db.query(func.count(distinct(FreeCourseAccess.user_id)))
-          .filter(FreeCourseAccess.converted_to_full.is_(False))
+          .filter(
+              FreeCourseAccess.source == FreeCourseSource.LANDING,
+              FreeCourseAccess.converted_to_full.is_(False)
+          )
           .scalar()
     )
 
-    freebie_users = (
-        db.query(func.count(distinct(fca_period.c.user_id))).scalar()
-    )
+    freebie_users = db.query(func.count(distinct(fca_period.c.user_id))).scalar()
 
-    # 5) Формируем ответ
-    data = []
+    # ──────────────────── 5. Детализация по курсам ───────────────────────────
+    result_per_course: list[dict] = []
     for cid, name, taken, conv_same in rows:
+        # сколько из взявших купили что-нибудь
         conv_any = (
             db.query(func.count(distinct(Purchase.user_id)))
               .join(fca_period,
@@ -791,7 +799,8 @@ def get_free_course_stats(                      # NEW / заменяет ста�
               .filter(fca_period.c.course_id == cid)
               .scalar()
         )
-        data.append({
+
+        result_per_course.append({
             "course_id": cid,
             "course_name": name,
             "free_taken": taken,
@@ -803,10 +812,11 @@ def get_free_course_stats(                      # NEW / заменяет ста�
                 f"{(conv_any or 0) / taken * 100:.1f}%" if taken else "0%",
         })
 
+    # ──────────────────── 6. Финальный ответ ────────────────────────────────
     return {
         "summary": {
             "active_free_users": active_free_users,
             "freebie_users":     freebie_users,
         },
-        "courses": data,
+        "courses": result_per_course,
     }
