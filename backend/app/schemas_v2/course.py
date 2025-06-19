@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict, Literal
+from typing import Optional, List, Dict
+from enum import Enum as PyEnum
 
 from ..utils.relink import convert_storage_url
 
@@ -28,6 +29,11 @@ class Section(BaseModel):
 class LandingSnippet(BaseModel):
     id: int
 
+class CourseAccessLevel(str, PyEnum):
+    FULL          = "full"           # куплен курс / админ
+    SPECIAL_OFFER = "special_offer"  # спец-предложение (24 ч, первый урок открыт)
+    PARTIAL       = "partial"        # бесплатный первый урок
+    NONE          = "none"           # доступа нет
 # Схема для детального отображения курса (GET ответ)
 class CourseDetailResponse(BaseModel):
     id: int
@@ -35,7 +41,7 @@ class CourseDetailResponse(BaseModel):
     description: Optional[str] = ""
     # Теперь sections возвращается как список объектов, например: [{ "1": { ... } }, { "2": { ... } }]
     sections: List[Dict[str, Section]]
-    access_level: Literal["full", "partial"]
+    access_level: CourseAccessLevel
     cheapest_landing: LandingSnippet | None = None
 
     class Config:
