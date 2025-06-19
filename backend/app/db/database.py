@@ -15,7 +15,7 @@ DATABASE_URL = (
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,
+    echo=False,
     pool_size=20,          # ↑ больше одновременных соединений
     max_overflow=10,       # запас
     pool_timeout=60,       # ↑ ждём минуту
