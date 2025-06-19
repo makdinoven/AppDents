@@ -33,6 +33,12 @@ celery.conf.update(
             "schedule": 3600,
             "options": {"queue": "special"},
         },
+        "replace-storage-links-every-3-hours": {
+                    "task": "app.tasks.special_offers.replace_storage_links",
+                    "schedule": 10800,              # 3 ч * 3600 с
+                    # crontab(minute=0, hour='*/3')  # <- альтернативный вариант
+                    "options": {"queue": "special"},
+                },
     },
 )
 
@@ -42,9 +48,7 @@ celery.conf.task_queues = (
 )
 
 celery.conf.task_routes = {
-    # превью идут как раньше (попадают в default)
     "app.tasks.preview_tasks.*": {"queue": "default"},
-
-    # спец-офферы — в отдельную очередь
     "app.tasks.special_offers.process_special_offers": {"queue": "special"},
+    "app.tasks.storage_links.replace_storage_links": {"queue": "special"},
 }
