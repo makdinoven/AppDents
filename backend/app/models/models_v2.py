@@ -304,7 +304,7 @@ class FreeCourseAccess(Base):
     source = Column(
         Enum(FreeCourseSource, name="fca_source"),
         nullable=False,
-        default=FreeCourseSource.LANDING.value,
+        default=FreeCourseSource.LANDING,
         comment="Источник выдачи partial-курса"
     )
 
