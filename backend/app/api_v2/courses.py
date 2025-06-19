@@ -123,7 +123,7 @@ def get_course_by_id(
     logger.debug("User %s → course %s → %s access",
                  current_user.id, course_id, access_level)
 
-    return {
+    result = {
         "id": course.id,
         "name": course.name,
         "description": course.description,
@@ -131,6 +131,10 @@ def get_course_by_id(
         "access_level": access_level,
         "cheapest_landing": cheapest_landing,
     }
+
+    db.rollback()
+
+    return result
 
 
 
