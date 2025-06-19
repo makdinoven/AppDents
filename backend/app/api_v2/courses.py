@@ -63,41 +63,32 @@ def get_course_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    import copy, logging
+    import json, logging, inspect
     logger = logging.getLogger(__name__)
-    logging.warning("⇢ handler %s", inspect.getfile(inspect.currentframe()))
+    logger.warning("⇢ handler %s", inspect.getfile(inspect.currentframe()))
 
     course = get_course_detail(db, course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    is_admin = getattr(current_user, "role", None) == "admin"
-
-    has_full = is_admin or any(c.id == course_id for c in current_user.courses)
+    is_admin   = getattr(current_user, "role", None) == "admin"
+    has_full   = is_admin or any(c.id == course_id for c in current_user.courses)
     has_special = course_id in getattr(current_user, "active_special_offer_ids", [])
-    has_part = (
-        (not is_admin)
-        and course_id in getattr(current_user, "partial_course_ids", [])
-    )
+    has_part    = (not is_admin) and course_id in getattr(current_user, "partial_course_ids", [])
 
-    # --------- sections (deepcopy once!) ----------
-    sections_raw = course.sections or {}
-    # ① сериализация → ② десериализация
-    sections_plain = json.loads(json.dumps(sections_raw))
+    # ---------- sections (стерильная копия) ----------
+    sections_raw  = course.sections or {}
+    sections_data = json.loads(json.dumps(sections_raw))          # полностью отрываем от ORM
+    sections = [{k: v} for k, v in sections_data.items()] if isinstance(sections_data, dict) else sections_data
 
-    if isinstance(sections_plain, dict):
-        sections = [{k: v} for k, v in sections_plain.items()]
-    else:  # уже list
-        sections = sections_plain
-
-    # --------- вставляем превью ----------
+    # ---------- вставляем превью ----------
     for sec in sections:
         _, data = next(iter(sec.items()))
         for lesson in data["lessons"]:
             lesson["preview"] = get_or_schedule_preview(db, lesson["video_link"])
 
-    # --------- скрываем видео после первого ----------
-    if has_part or has_special:
+    # ---------- скрываем видео после первого ----------
+    if not has_full and (has_part or has_special):
         unlocked = False
         for sec in sections:
             _, data = next(iter(sec.items()))
@@ -107,6 +98,7 @@ def get_course_by_id(
                 else:
                     unlocked = True
 
+    # ---------- лендинг ----------
     cheapest_landing = None
     if not has_full:
         landing = get_cheapest_landing_for_course(db, course_id)
@@ -114,14 +106,11 @@ def get_course_by_id(
             cheapest_landing = {"id": landing.id}
 
     access_level = (
-        "full" if has_full else
+        "full"          if has_full   else
         "special_offer" if has_special else
-        "partial" if has_part else
+        "partial"       if has_part    else
         "none"
     )
-
-    logger.debug("User %s → course %s → %s access",
-                 current_user.id, course_id, access_level)
 
     result = {
         "id": course.id,
@@ -132,10 +121,8 @@ def get_course_by_id(
         "cheapest_landing": cheapest_landing,
     }
 
-    db.rollback()
-
+    db.rollback()          # читающий эндпойнт → ничего не пишем в БД
     return result
-
 
 
 @router.put("/{course_id}", response_model=CourseDetailResponsePutRequest)
