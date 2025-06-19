@@ -14,10 +14,6 @@ class Lesson(BaseModel):
         description="URL JPEG-превью; присутствует всегда, даже при partial-доступе",
     )
 
-    @validator("video_link", pre=True)
-    def fix_link(cls, v):
-        return convert_storage_url(v)
-
     class Config:
         orm_mode = True
 
