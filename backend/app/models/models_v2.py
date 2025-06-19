@@ -281,6 +281,7 @@ class FreeCourseAccess(Base):
     Если позже курс будет куплен полностью – запись удаляем.
     """
     __tablename__ = "free_course_access"
+    __table_args__ = {"extend_existing": True}
 
     user_id   = Column(Integer, ForeignKey("users.id"), primary_key=True)
     course_id = Column(Integer, ForeignKey("courses.id"), primary_key=True)
@@ -301,8 +302,9 @@ class FreeCourseAccess(Base):
     source = Column(
         Enum(
             FreeCourseSource,
-            name="fca_source",  # ⟵ новое имя, не совпадает со старым
-            validate_strings=True,  # проверяем входящие значения
+            name="freecoursesource",  # ⟵ то же имя, что у старого типа!
+            validate_strings=True,
+            values_callable=lambda x: [e.value for e in x],
         ),
         nullable=False,
         server_default=FreeCourseSource.LANDING.value,
