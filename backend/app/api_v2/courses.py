@@ -1,4 +1,5 @@
 import copy
+import inspect
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -64,6 +65,7 @@ def get_course_by_id(
 ):
     import copy, logging
     logger = logging.getLogger(__name__)
+    logging.warning("⇢ handler %s", inspect.getfile(inspect.currentframe()))
 
     course = get_course_detail(db, course_id)
     if not course:
