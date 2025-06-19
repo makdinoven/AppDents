@@ -48,6 +48,8 @@ PLACEHOLDER_URL  = f"{S3_PUBLIC_HOST}/{S3_DIR}/{PLACEHOLDER_NAME}"
 NEW_TASKS_WINDOW = 30
 NEW_TASKS_LIMIT  = 10
 SAFE_CHARS = "/()[]_,-."
+FFMPEG_SEEKS    = ("00:00:58", "00:00:09")      # секунды для попыток  # ← NEW
+FFMPEG_RETRIES  = 3
 
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=False)
 
@@ -67,6 +69,19 @@ s3 = boto3.client(
 
 
 REQUEST_TIMEOUT = 10   # сек для HEAD/GET Boomstream
+def _set_preview_row(db: Session, video_link: str, url: str) -> None:            # ← NEW
+    """
+    Если запись уже есть — обновляем её.
+    Иначе создаём новую (старое название _save_preview_row осталось нетронутым).
+    """
+    row = db.query(LessonPreview).filter_by(video_link=video_link).first()
+    if row:
+        row.preview_url  = url
+        row.generated_at = datetime.utcnow()
+        db.commit()
+        return
+    # если записи нет — вызываем старую функцию
+    _save_preview_row(db, video_link, url)
 
 def _sanitize_cdn_path(path: str) -> str:
     """
@@ -266,12 +281,30 @@ def _save_preview_row(db, video_link: str, url: str) -> None:
     max_retries=0     # 1 попытка
 )
 def generate_preview(self, video_link: str) -> None:
+    """
+    Алгоритм:
+
+      1. Если в базе уже есть НЕ плейсхолдер — выходим.
+         Если есть плейсхолдер — пробуем сгенерировать заново.
+      2. Определяем способ получения превью.
+      3. Для CDN-видео:
+         • пробуем FFMPEG_RETRIES раз извлечь кадр в FFMPEG_SEEKS[0]
+         • при неудаче — столько же попыток со временем FFMPEG_SEEKS[1]
+      4. При успехе грузим jpeg в S3, сохраняем / обновляем строку.
+      5. При всех неудачах — записываем плейсхолдер.
+    """
     db: Session = SessionLocal()
     tmp_path: str | None = None
 
     try:
-        # уже есть?
-        if db.query(LessonPreview).filter_by(video_link=video_link).first():
+        existing = (
+            db.query(LessonPreview)
+              .filter_by(video_link=video_link)
+              .first()
+        )                                                                      # ← CHANGED
+
+        if existing and existing.preview_url != PLACEHOLDER_URL:               # ← CHANGED
+            # Уже есть «живое» превью — делать ничего не нужно
             return
 
         safe_url, need_ffmpeg = preview_url_for(video_link)
@@ -279,62 +312,73 @@ def generate_preview(self, video_link: str) -> None:
         # неизвестный источник → плейсхолдер
         if safe_url is None:
             logger.info("Unknown source for %s — placeholder", video_link)
-            _save_preview_row(db, video_link, PLACEHOLDER_URL)
+            _set_preview_row(db, video_link, PLACEHOLDER_URL)                  # ← CHANGED
             return
 
-        # Boomstream-JPEG (или другой прямой jpg) — ffmpeg не нужен
+        # готовый JPEG (Boomstream и т. п.) — ffmpeg не нужен
         if not need_ffmpeg:
-            _save_preview_row(db, video_link, safe_url)
+            _set_preview_row(db, video_link, safe_url)                         # ← CHANGED
             return
 
-        # ───── CDN-mp4: режем кадр ffmpeg-ом ─────
-        # ───── CDN-mp4 или HLS: режем кадр ffmpeg-ом ─────
+        # ───────────  CDN-mp4: пытаемся вырезать кадр  ───────────
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             tmp_path = tmp.name
 
-        cmd = [
-            "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
-            "-ss", "00:00:58", "-i", safe_url,
-            "-frames:v", "1", "-q:v", "4", tmp_path,
-        ]
+        success = False                                                        # ← NEW
+        for ts in FFMPEG_SEEKS:                                                # ← NEW
+            for attempt in range(1, FFMPEG_RETRIES + 1):                       # ← NEW
+                cmd = [
+                    "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
+                    "-ss", ts, "-i", safe_url,
+                    "-frames:v", "1", "-q:v", "4", tmp_path,
+                ]
+                try:
+                    logger.debug("ffmpeg %s (attempt %d/%d)", ts, attempt,
+                                 FFMPEG_RETRIES)
+                    subprocess.check_call(cmd, timeout=60)
+                    success = True
+                    break
+                except subprocess.CalledProcessError as exc:
+                    logger.warning("ffmpeg failed (%s, attempt %d): %s",
+                                   ts, attempt, exc)
+                    continue
+            if success:
+                break
 
-        logger.debug("ffmpeg cmd: %s", " ".join(cmd))
-        subprocess.check_call(cmd, timeout=60)
-        logger.info("Frame extracted for %s", video_link)
+        if not success:                                                        # ← NEW
+            raise subprocess.CalledProcessError(1, "ffmpeg")                   # ← NEW
 
-        # ---------- загрузка в S3 (один цельный Body) ----------
+        logger.info("Frame extracted for %s (ts=%s)", video_link, ts)          # ← CHANGED
+
+        # ---------- загрузка в S3 ----------
         sha1 = hashlib.sha1(video_link.encode()).hexdigest()
         s3_key = f"{S3_DIR}/{sha1}.jpg"
 
         with open(tmp_path, "rb") as fh:
             data = fh.read()
 
-        # ---- добавляем MD5 заголовок ----
         md5_b64 = base64.b64encode(hashlib.md5(data).digest()).decode()
 
         s3.put_object(
             Bucket=S3_BUCKET,
             Key=s3_key,
-            Body=data,  # один цельный блок
+            Body=data,
             ACL="public-read",
             ContentType="image/jpeg",
             ContentLength=len(data),
-            ContentMD5=md5_b64,  # ← критично!
+            ContentMD5=md5_b64,
         )
         public_url = f"{S3_PUBLIC_HOST}/{s3_key}"
-        _save_preview_row(db, video_link, public_url)
-
+        _set_preview_row(db, video_link, public_url)                           # ← CHANGED
         logger.info("Preview uploaded → %s", public_url)
 
-    except subprocess.CalledProcessError as exc:
-        logger.warning("ffmpeg failed for %s (%s)", video_link, exc)
-        # фиксируем плейсхолдер
-        _save_preview_row(db, video_link, PLACEHOLDER_URL)
+    except subprocess.CalledProcessError:
+        logger.warning("All ffmpeg attempts failed for %s", video_link)        # ← CHANGED
+        _set_preview_row(db, video_link, PLACEHOLDER_URL)                      # ← CHANGED
 
-    except Exception as exc:
-        # любая неучтённая ошибка → плейсхолдер, но логируем стек
+    except Exception:
         logger.exception("Unhandled error for %s", video_link)
-        _save_preview_row(db, video_link, PLACEHOLDER_URL)
+        _set_preview_row(db, video_link, PLACEHOLDER_URL)                      # ← CHANGED
 
     finally:
         db.close()
