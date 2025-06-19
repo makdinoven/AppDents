@@ -89,7 +89,7 @@ def get_course_by_id(                     # noqa: C901 – cyclomatic OK
     )
 
     # --------- sections → list ----------
-    raw_sections = course.sections or {}
+    raw_sections = copy.deepcopy(course.sections) or {}
     sections = (
         [{k: v} for k, v in raw_sections.items()]
         if isinstance(raw_sections, dict)
@@ -99,15 +99,11 @@ def get_course_by_id(                     # noqa: C901 – cyclomatic OK
     # --------- вставляем превью ----------
     for sec in sections:
         key, data = next(iter(sec.items()))
-        new_lessons = []
         for lesson in data["lessons"]:
-            lesson_copy = copy.deepcopy(lesson)
-            lesson_copy["preview"] = get_or_schedule_preview(  # миниатюра
-                db, lesson_copy["video_link"]
+            lesson["preview"] = get_or_schedule_preview(
+                db,
+                lesson["video_link"],
             )
-            new_lessons.append(lesson_copy)
-        data["lessons"] = new_lessons
-        sec[key] = data
 
     # --------- скрываем видео после первого ----------
     if has_part or has_special:
