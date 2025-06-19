@@ -299,12 +299,15 @@ class FreeCourseAccess(Base):
         comment="UTC-время оплаты полного курса"
     )
     source = Column(
-        Enum(FreeCourseSource, name="fca_source",validate_strings=True,),
+        Enum(
+            FreeCourseSource,
+            name="fca_source",  # ⟵ новое имя, не совпадает со старым
+            validate_strings=True,  # проверяем входящие значения
+        ),
         nullable=False,
-        default=FreeCourseSource.LANDING,
-        comment="Источник выдачи partial-курса"
+        server_default=FreeCourseSource.LANDING.value,
+        comment="Источник выдачи partial-курса",
     )
-
     user   = relationship("User", back_populates="free_courses")
     course = relationship("Course")
 
