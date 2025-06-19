@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 _OFFER_TTL_HOURS = 24
 _INTERVAL_HOURS  = 48         # каждые 3 суток
 _HISTORY_LIMIT = 5
-BATCH = 1000
+BATCH = 600
 
 def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     """Возвращает дешёвые лендинги по каждому купленному курсу."""
