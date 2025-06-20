@@ -116,7 +116,6 @@ def create_checkout_session(
     landing_ids: list[int] | None = None,
     from_ad : bool | None = None,
     extra_metadata: dict | None = None,
-    payment_method_configuration : str | None = None,
 ) -> str:
     """Создаёт Stripe Checkout Session и возвращает URL оплаты."""
 
@@ -167,9 +166,6 @@ def create_checkout_session(
 
     if extra_metadata:
         metadata.update(extra_metadata)
-    if region == "RU":
-        payment_method_configuration = "pmc_1PTJeqAQBQHjr4TqLvkSdMpW"
-
 
 
     logging.info("Metadata for Stripe session: %s", metadata)
@@ -189,7 +185,6 @@ def create_checkout_session(
         cancel_url=cancel_url,
         customer_email=email,
         metadata=metadata,
-        payment_method_configuration=payment_method_configuration,
     )
     if not user:
         _save_lead(db, session, email, region)
