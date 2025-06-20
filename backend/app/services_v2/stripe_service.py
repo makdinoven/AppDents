@@ -96,6 +96,16 @@ def get_stripe_keys_by_region(region: str) -> dict:
         "webhook_secret": settings.STRIPE_WEBHOOK_SECRET_EN,
     }
 
+def get_stripe_pmc_by_region(region: str) -> str | None:
+    """Возвращает ID Payment-Method-Configuration для региона
+       или None, если хотим использовать payment_method_types."""
+    region = region.upper()
+    if region == "RU":
+        return settings.STRIPE_PMC_RU
+    if region == "ES":
+        return settings.STRIPE_PMC_ES
+    # fallback → EN
+    return settings.STRIPE_PMC_EN
 
 # ────────────────────────────────────────────────────────────────
 # Создание Checkout Session
@@ -170,9 +180,10 @@ def create_checkout_session(
 
     logging.info("Metadata for Stripe session: %s", metadata)
 
-    session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[{
+    pmc_id = get_stripe_pmc_by_region(region)
+
+    session_params = {
+        "line_items": [{
             "price_data": {
                 "currency": "usd",
                 "product_data": {"name": product_name},
@@ -180,12 +191,21 @@ def create_checkout_session(
             },
             "quantity": 1,
         }],
-        mode="payment",
-        success_url=success_url_with_session,
-        cancel_url=cancel_url,
-        customer_email=email,
-        metadata=metadata,
-    )
+        "mode": "payment",
+        "success_url": success_url_with_session,
+        "cancel_url": cancel_url,
+        "customer_email": email,
+        "metadata": metadata,
+    }
+
+    # либо PMC, либо список методов (одновременно нельзя!)
+    if pmc_id:
+        session_params["payment_method_configuration"] = pmc_id
+    else:
+        session_params["payment_method_types"] = ["card"]
+
+    # ── СОЗДАЁМ СЕССИЮ ────────────────────────────────────────────
+    session = stripe.checkout.Session.create(**session_params)
     if not user:
         _save_lead(db, session, email, region)
 

@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     STRIPE_PUBLISHABLE_KEY_ES: str
     STRIPE_WEBHOOK_SECRET_ES: str
 
+    STRIPE_PMC_RU: str
+    STRIPE_PMC_ES: str
+    STRIPE_PMC_EN: str
+
     EMAIL_HOST: str
     EMAIL_PORT: int = 25
     EMAIL_USERNAME: str = ""
