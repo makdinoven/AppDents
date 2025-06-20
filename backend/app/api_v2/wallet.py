@@ -31,16 +31,8 @@ def my_referrals(
     db: Session = Depends(get_db),
     current_user: m.User = Depends(get_current_user),
 ):
-    data = ws.get_referral_report(db, current_user.id)
-    return [
-        ReferralReportItem(
-            user_id=u.id,
-            email=u.email,
-            total_paid=paid,
-            total_cashback=cash,
-        )
-        for u, paid, cash in data
-    ]
+    # get_referral_report уже возвращает List[ReferralReportItem]
+    return ws.get_referral_report(db, current_user.id)
 
 
 @router.get("/wallet", response_model=WalletResponse)
