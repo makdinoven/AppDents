@@ -172,6 +172,12 @@
     "courseProgram": "برنامج الدورة",
     "fullCourseProgram": "البرنامج الكامل للدورة",
     "buyFor": "شراء مقابل <1>{{old_price,localizedNumber}}$</1> <2>${{new_price, localizedNumber}}</2>",
+    "buyLessonsFor_zero": "اشترِ صفر درس مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_one": "اشترِ درسًا واحدًا مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_two": "اشترِ درسين مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_few": "اشترِ {{count}} دروس مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_many": "اشترِ {{count}} درسًا مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_other": "اشترِ {{count}} درس مقابل <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
     "buyForFull": "شراء الدورة مقابل <1>{{old_price,localizedNumber}}$</1> <2>${{new_price, localizedNumber}}</2>",
     "youCanBuyEntireCourse": "$يمكنك شراء <1>الدورة الكاملة</1> الآن بالسعر الجديد <2>{{new_price, localizedNumber}}$</2> بدلًا من السعر القديم - {{old_price, localizedNumber}}",
     "fiveMinuteFragment": "يمكنك مشاهدة <1>مقطع مدته خمس دقائق</1> هنا",
@@ -180,6 +186,10 @@
     "videoIsNotSupported": "المتصفح لا يدعم الفيديو",
     "specialOffer": "عرض خاص",
     "accessFull": "الوصول إلى الدورة غير محدود بالزمن!",
+    "video": {
+      "modalTitle": "افتح الدورة الكاملة",
+      "buyCourseToWatch": "اشترِ الدورة الكاملة لمتابعة المشاهدة."
+    },
     "faq": {
       "faq": "الأسئلة الشائعة",
       "1_question": "كيف يمكنني الوصول إلى دورتي بعد الشراء؟",

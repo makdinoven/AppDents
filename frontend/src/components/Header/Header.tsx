@@ -1,30 +1,49 @@
 import s from "./Header.module.scss";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { DentsLogo } from "../../assets/logos/index";
 import { useScroll } from "../../common/hooks/useScroll.ts";
-import { isPromotionLanding } from "../../common/helpers/helpers.ts";
 import PromoHeaderContent from "./content/PromoHeaderContent.tsx";
 import MainHeaderContent from "./content/MainHeaderContent.tsx";
+import VideoHeaderContent from "./content/VideoHeaderContent.tsx";
+import {
+  isPromotionLanding,
+  isVideoLanding,
+} from "../../common/helpers/helpers.ts";
+import TimerBanner from "../ui/TimerBanner/TimerBanner.tsx";
 
 const Header = () => {
+  const location = useLocation();
   const isScrolled = useScroll();
   const isPromotion = isPromotionLanding(location.pathname);
+  const isVideo = isVideoLanding(location.pathname);
+
+  const renderHeaderContent = () => {
+    if (isVideo) return <VideoHeaderContent />;
+    if (isPromotion) return <PromoHeaderContent />;
+    return <MainHeaderContent />;
+  };
 
   return (
-    <header className={`${s.header} ${isScrolled ? s.scrolled : ""}`}>
-      <div className={s.content}>
-        <nav className={s.nav}>
-          <Link
-            className={`${s.logo} ${isPromotion ? s.logoPromo : ""}`}
-            to={Path.main}
-          >
-            <DentsLogo />
-          </Link>
-          {isPromotion ? <PromoHeaderContent /> : <MainHeaderContent />}
-        </nav>
-      </div>
-    </header>
+    <>
+      {isPromotion && !isVideo && <TimerBanner />}
+      <header className={`${s.header} ${isScrolled ? s.scrolled : ""}`}>
+        <div className={`${s.content} ${isVideo ? s.video : ""}`}>
+          <nav className={s.nav}>
+            {!isVideo && (
+              <Link
+                className={`${s.logo} ${isPromotion ? s.logoPromo : ""}`}
+                to={Path.main}
+              >
+                <DentsLogo />
+              </Link>
+            )}
+
+            {renderHeaderContent()}
+          </nav>
+        </div>
+      </header>
+    </>
   );
 };
 

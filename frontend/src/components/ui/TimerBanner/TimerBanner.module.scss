@@ -45,24 +45,6 @@
     }
   }
 
-
-  .timer {
-    border: 1.5px solid $background-color;
-    border-radius: 15px;
-    padding: 3px 15px;
-    @include flex-center;
-    gap: 15px;
-    @include clamped-h3;
-
-    svg {
-      width: 35px;
-      height: 35px;
-      path {
-        fill: $background-color;
-      }
-    }
-  }
-
   @media (max-width: $tablet-breakpoint) {
     & {
       .banner_container {
@@ -70,18 +52,6 @@
 
         h4 {
           text-align: center;
-        }
-      }
-
-      .timer {
-        border-width: 1px;
-        padding: 2px 6px;
-        gap: 8px;
-        font-size: 18px;
-
-        svg {
-          width: 20px;
-          height: 20px;
         }
       }
 

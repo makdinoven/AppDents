@@ -160,6 +160,10 @@ export const isPromotionLanding = (pathname: string): boolean => {
   return pathname === Path.landing || pathname.startsWith(`${Path.landing}/`);
 };
 
+export const isVideoLanding = (pathname: string): boolean => {
+  return pathname === Path.landing || pathname.includes("/video/");
+};
+
 export const formatIsoToLocalDatetime = (isoString: string): string => {
   const date = new Date(isoString);
 

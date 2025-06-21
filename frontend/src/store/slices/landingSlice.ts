@@ -3,12 +3,14 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface StateProps {
   newPrice: number;
   oldPrice: number;
+  lessonsCount: string;
   isModalOpen: boolean;
 }
 
 const initialState: StateProps = {
   newPrice: 0,
   oldPrice: 0,
+  lessonsCount: "",
   isModalOpen: false,
 };
 
@@ -23,6 +25,9 @@ const landingSlice = createSlice({
       state.newPrice = action.payload.newPrice;
       state.oldPrice = action.payload.oldPrice;
     },
+    setLessonsCount(state, action: PayloadAction<{ lessonsCount: string }>) {
+      state.lessonsCount = action.payload.lessonsCount;
+    },
     openModal(state) {
       state.isModalOpen = true;
     },
@@ -32,5 +37,6 @@ const landingSlice = createSlice({
   },
 });
 
-export const { setPrices, openModal, closeModal } = landingSlice.actions;
+export const { setPrices, openModal, closeModal, setLessonsCount } =
+  landingSlice.actions;
 export const landingReducer = landingSlice.reducer;

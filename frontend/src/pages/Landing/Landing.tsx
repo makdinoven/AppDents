@@ -33,6 +33,7 @@ import Faq from "./modules/Faq/Faq.tsx";
 import {
   closeModal,
   openModal,
+  setLessonsCount,
   setPrices,
 } from "../../store/slices/landingSlice.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
@@ -128,6 +129,7 @@ const Landing = () => {
           oldPrice: res.data.old_price,
         }),
       );
+      dispatch(setLessonsCount({ lessonsCount: res.data.lessons_count }));
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -230,6 +232,16 @@ const Landing = () => {
     renderBuyButton: renderBuyButton("default"),
   };
 
+  const videoSectionData = {
+    lessons: landing?.lessons_info,
+    renderBuyButton: renderBuyButton("default"),
+    about: aboutData,
+    course_program: landing?.course_program,
+    landing_name: landing?.landing_name,
+    authors: landing?.authors,
+    ...getPricesData(landing),
+  };
+
   const paymentData = {
     from_ad: isPromotionLanding,
     landing_ids: [landing?.id],
@@ -296,21 +308,20 @@ const Landing = () => {
               <CourseProgram data={courseProgramData} />
               <LessonsProgram data={lessonsProgramData} />
               <Professors data={landing?.authors} />
+              <Offer data={offerData} />
             </>
           ) : (
             <>
-              <VideoSection />
-              {/*<CourseProgram data={courseProgramData} />*/}
-              {/*<Professors data={landing?.authors} />*/}
+              <VideoSection data={videoSectionData} />
             </>
           )}
 
-          <Offer data={offerData} />
           <Faq />
           <CoursesSection
             isFree={isFree}
             isOffer={true}
             isClient={isClient}
+            isVideo={isVideo}
             showSort={true}
             sectionTitle={"similarCourses"}
             pageSize={4}

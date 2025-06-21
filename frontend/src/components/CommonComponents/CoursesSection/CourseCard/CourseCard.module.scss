@@ -180,10 +180,6 @@ $card-body-padding-bottom: calc(
     color: $secondary;
   }
 
-  .author_photo {
-    border: 2px solid $secondary-lighter;
-  }
-
   .card_header_background,
   .card_body,
   .card_bottom {
@@ -231,36 +227,7 @@ $card-body-padding-bottom: calc(
   gap: 5px;
 }
 
-.course_authors {
-  display: flex;
-  align-items: center;
-  gap: 5px;
 
-  p {
-    max-width: 375px;
-  }
-}
-.authors_photos_list {
-  display: flex;
-  gap: 5px;
-}
-
-.author_photo {
-  border: 2px solid $primary;
-  background-color: $accent;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-  margin-left: -10px;
-  z-index: 1;
-}
-
-.author_photo:first-child {
-  margin-left: 0;
-}
 
 .lessons_count {
   font-weight: 500;
@@ -395,12 +362,6 @@ $card-body-padding-bottom: calc(
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .course_authors {
-    gap: 5px;
-    p {
-      font-size: 12px;
-    }
-  }
   .card_body {
     .photo {
       position: relative;
@@ -410,10 +371,5 @@ $card-body-padding-bottom: calc(
         max-height: 280px;
       }
     }
-  }
-
-  .author_photo {
-    width: 30px;
-    height: 30px;
   }
 }

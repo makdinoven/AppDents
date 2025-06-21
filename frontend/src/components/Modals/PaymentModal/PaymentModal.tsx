@@ -15,6 +15,7 @@ import {
   GooglePayLogo,
   JcbLogo,
   MastercardLogo,
+  PaypalLogo,
   UnionPayLogo,
   VisaLogo,
 } from "../../../assets/logos/index";
@@ -40,6 +41,7 @@ const logos = [
   MastercardLogo,
   ApplePayLogo,
   GooglePayLogo,
+  PaypalLogo,
   AmexLogo,
   JcbLogo,
   UnionPayLogo,

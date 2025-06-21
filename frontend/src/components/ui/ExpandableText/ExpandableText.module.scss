@@ -1,0 +1,78 @@
+.wrapper {
+  overflow: hidden;
+  max-width: 100%;
+  position: relative;
+}
+
+.text {
+  white-space: pre-line;
+  position: relative;
+  overflow: hidden;
+  @include transition($duration: 0.4s);
+  line-height: 1.5;
+  font-size: 16px;
+
+  p {
+    padding-bottom: 20px;
+  }
+}
+
+.button {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  font-size: inherit;
+  cursor: pointer;
+  z-index: 1;
+  padding: 0;
+  text-transform: lowercase;
+  @include transition();
+
+
+  &:after {
+    pointer-events: none;
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 160%;
+    height: 100%;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, #edf8ff 30%);
+  }
+
+  &.primary {
+    color: $primary;
+    &:after {
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, $background-color 30%);
+    }
+  }
+
+  &.light {
+    color: $background-color;
+    &:after {
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0), $primary-light 30%);
+    }
+  }
+
+  &.dark {
+    color: $accent;
+    &:after {
+      background: linear-gradient(90deg, rgba(0, 0, 0, 0), $primary-light 30%);
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: $accent;
+    }
+  }
+
+  &:active {
+    color: $accent;
+
+    &.dark {
+      color: $text-color;
+    }
+  }
+}

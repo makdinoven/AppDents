@@ -166,6 +166,10 @@
     "courseProgram": "Программа курса",
     "fullCourseProgram": "Полная программа курса",
     "buyFor": "Купить за <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyLessonsFor_one": "Купить {{count}} урок:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_few": "Купить {{count}} урока:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_many": "Купить {{count}} уроков:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_other": "Купить {{count}} урока:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
     "buyForFull": "Купить полный курс за <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "youCanBuyEntireCourse": "Вы можете купить <1>весь курс</1> сейчас по новой цене <2>${{new_price}}</2>, вместо старой - ${{old_price}}",
     "fiveMinuteFragment": "Здесь вы можете посмотреть <1>пяти минутный фрагмент</1>",
@@ -174,6 +178,10 @@
     "videoIsNotSupported": "Ваш браузер не поддерживает видео",
     "specialOffer": "Специальное предложение",
     "accessFull": "Доступ к курсу не ограничен во времени!",
+    "video": {
+      "modalTitle": "Откройте полный доступ к курсу",
+      "buyCourseToWatch": "Купите полный курс, чтобы продолжить просмотр."
+    },
     "faq": {
       "faq": "Часто задаваемые вопросы",
       "1_question": "Как получить доступ к курсу после покупки?",

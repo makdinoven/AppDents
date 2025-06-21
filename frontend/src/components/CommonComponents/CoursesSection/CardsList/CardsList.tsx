@@ -5,6 +5,7 @@ import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Path } from "../../../../routes/routes.ts";
+import { useLocation } from "react-router-dom";
 
 type Course = {
   id: number;
@@ -29,12 +30,14 @@ interface CardsListProps {
   showEndOfList?: boolean;
   isOffer?: boolean;
   isFree?: boolean;
+  isVideo?: boolean;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
   isOffer = false,
   isClient = false,
   isFree = false,
+  isVideo = false,
   loading,
   cards,
   filter = "all",
@@ -43,14 +46,19 @@ const CardsList: React.FC<CardsListProps> = ({
   showEndOfList = true,
 }) => {
   const filterName = t(filter);
+  const location = useLocation();
+  const currentSlug = location.pathname.split("/").filter(Boolean).pop();
+  const filteredCards = currentSlug
+    ? cards?.filter((course) => course.slug !== currentSlug)
+    : cards;
 
   return (
     <div className={s.list_wrapper}>
       {loading && <LoaderOverlay />}
-      {cards && cards.length > 0 ? (
+      {filteredCards && filteredCards.length > 0 ? (
         <>
           <ul className={s.list}>
-            {cards.map((course, index) => (
+            {filteredCards.map((course, index) => (
               <CourseCard
                 isFree={isFree}
                 isOffer={isOffer}
@@ -63,10 +71,13 @@ const CardsList: React.FC<CardsListProps> = ({
                 new_price={course.new_price}
                 name={course.landing_name}
                 tag={course.first_tag}
+                slug={course.slug}
                 link={
                   isFree
                     ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${course.slug}`
-                    : `/${isClient ? Path.landingClient : Path.landing.slice(1)}/${course.slug}`
+                    : isVideo
+                      ? `/${Path.videoLanding}/${course.slug}`
+                      : `/${isClient ? Path.landingClient : Path.landing.slice(1)}/${course.slug}`
                 }
                 photo={course.main_image}
                 lessons_count={course.lessons_count}

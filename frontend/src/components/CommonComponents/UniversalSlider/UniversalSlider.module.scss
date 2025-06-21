@@ -5,25 +5,36 @@
   border-radius: 20px;
 
   .slide {
-    padding: 20px 50px;
-    background-color: $accent-glass;
+    //padding: 20px 50px;
+    //background-color: $accent-glass;
     //height: 100%;
-    min-height: 520px;
-    color: $text-color;
+    //min-height: 520px;
+    //color: $text-color;
     cursor: pointer;
   }
 }
 
 .customNav {
   position: absolute;
-  right: 10px;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
   justify-content: space-between;
   pointer-events: none;
   z-index: 10;
+
+  &.center {
+    top: 50%;
+    transform: translateY(-50%);
+    right: 10px;
+    left: 10px;
+  }
+
+  &.bottom {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 90%;
+  }
 
   .prev,
   .next {
@@ -44,7 +55,7 @@
       height: 30px;
       path {
         @include transition();
-        stroke: $background-color;
+        stroke: $accent;
       }
     }
     @media (hover: hover) {
@@ -57,11 +68,10 @@
       }
     }
 
-
     &:active {
       svg {
         path {
-          stroke: $accent;
+          stroke: $primary;
         }
       }
     }
@@ -76,33 +86,28 @@
 
 :global(.swiper) {
   border-radius: 20px;
+  padding-bottom: 20px;
 }
 
 :global(.swiper-pagination) {
   display: flex;
-  padding: 20px 0;
+  height: 10px;
   align-items: center;
   justify-content: center;
-  max-width: 90%;
-  bottom: 0 !important;
+  max-width: 80%;
+  bottom: 5px !important;
   left: 50% !important;
   transform: translateX(-50%);
   gap: 10px;
 }
 
 :global(.swiper-pagination-bullet) {
-  @include transition();
+  @include transition($duration: 0.3s);
   position: relative;
-  background-color: $background-color;
-  width: 100%;
-  max-width: 30%;
-  height: 4px;
-  border-radius: 10px;
   opacity: 0.5;
   overflow: hidden;
   margin: 0 !important;
   backdrop-filter: $blur;
-
 
   @media (hover: hover) {
     &:hover {
@@ -110,6 +115,26 @@
       opacity: 1;
     }
   }
+}
+
+:global(.swiper-pagination-bullet.dots) {
+  background-color: $primary;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+:global(.swiper-pagination-bullet-active.dots) {
+  width: 8px;
+  height: 8px;
+}
+
+:global(.swiper-pagination-bullet.story) {
+  background-color: $background-color;
+  width: 100%;
+  max-width: 30%;
+  height: 4px;
+  border-radius: 10px;
 }
 
 :global(.swiper-pagination-bullet-active) {
@@ -120,6 +145,28 @@
     opacity: 1;
     animation: fillProgress 5000ms linear forwards;
   }
+
+  :global(.filled) {
+    display: block;
+    opacity: 1;
+    background-color: $primary;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+:global(.swiper-slide-prev),
+:global(.swiper-slide-next) {
+  @include transition($duration: 0.3s);
+  opacity: 0.4;
+  transform: scale(0.95) !important;
+  pointer-events: none;
+}
+
+:global(.swiper-slide-active) {
+  @include transition($duration: 0.3s);
+  opacity: 1;
+  transform: scale(1);
 }
 
 :global(.progress) {
@@ -142,22 +189,22 @@
   }
 }
 
-@media (max-width: $mobile-breakpoint) {
+@media (max-width: $tablet-breakpoint) {
   .customNav {
     left: 0;
     right: 0;
     .prev,
     .next {
+      width: 20px;
+      height: 20px;
       svg {
-        width: 20px;
-        height: 20px;
+        width: 15px;
+        height: 15px;
       }
     }
   }
 
-
   :global(.swiper-pagination) {
     gap: 5px;
-    padding: 10px 0;
   }
 }

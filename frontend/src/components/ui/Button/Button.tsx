@@ -9,7 +9,7 @@ interface ButtonProps {
   link?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
-  variant?: "filled" | "outlined";
+  variant?: "filled" | "outlined" | "outlined-dark";
 }
 
 const Button = ({
@@ -27,7 +27,7 @@ const Button = ({
   ) : (
     <button
       onClick={onClick}
-      className={`${s.btn} ${variant === "filled" ? s.filled : ""} ${loading ? s.loading : ""}`}
+      className={`${s.btn} ${variant ? s[variant] : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
       <Trans i18nKey={text} />

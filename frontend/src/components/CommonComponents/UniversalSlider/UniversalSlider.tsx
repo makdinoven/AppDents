@@ -11,9 +11,14 @@ type UniversalSliderProps = {
   autoplay?: boolean;
   loop?: boolean;
   pagination?: boolean;
+  navigation?: boolean;
   effect?: "slide" | "fade" | "cube" | "coverflow" | "flip";
+  paginationType?: "story" | "dots";
+  slidesPerView?: number | "auto";
   delay?: number;
   className?: string;
+  isFullWidth?: boolean;
+  navigationPosition?: "center" | "bottom";
 };
 
 const UniversalSlider: FC<UniversalSliderProps> = ({
@@ -21,16 +26,28 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
   autoplay = false,
   loop = true,
   pagination = true,
+  navigation,
+  paginationType = "story",
+  slidesPerView = 1,
   effect = "slide",
+  navigationPosition = "center",
   delay = 5000,
   className = "",
+  isFullWidth = false,
 }) => {
   const prevRef = useRef(null);
   const nextRef = useRef(null);
 
   return (
-    <div className={s.slider}>
+    <div
+      style={{
+        width: isFullWidth ? `100vw` : "100%",
+        left: isFullWidth ? `-20px` : "",
+      }}
+      className={s.slider}
+    >
       <Swiper
+        autoHeight={false}
         className={className}
         modules={[Autoplay, Pagination, Navigation, EffectFade]}
         loop={loop}
@@ -38,6 +55,8 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
           prevEl: prevRef.current,
           nextEl: nextRef.current,
         }}
+        slidesPerView={slidesPerView}
+        centeredSlides
         onBeforeInit={(swiper) => {
           if (
             swiper.params.navigation &&
@@ -51,8 +70,13 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
           pagination
             ? {
                 clickable: true,
-                renderBullet: (_, className) =>
-                  `<span class="${className}"><span class="progress"></span></span>`,
+                renderBullet: (_, className) => {
+                  const isStory = paginationType === "story";
+                  const innerSpan = isStory
+                    ? `<span class="${autoplay ? "progress" : "filled"}"></span>`
+                    : "";
+                  return `<span class="${className} ${paginationType}">${innerSpan}</span>`;
+                },
               }
             : false
         }
@@ -65,14 +89,16 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
           </SwiperSlide>
         ))}
       </Swiper>
-      <div className={s.customNav}>
-        <button ref={prevRef} className={s.prev}>
-          <BackArrow />
-        </button>
-        <button ref={nextRef} className={s.next}>
-          <BackArrow />
-        </button>
-      </div>
+      {navigation && (
+        <div className={`${s.customNav} ${s[navigationPosition]}`}>
+          <button ref={prevRef} className={s.prev}>
+            <BackArrow />
+          </button>
+          <button ref={nextRef} className={s.next}>
+            <BackArrow />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
