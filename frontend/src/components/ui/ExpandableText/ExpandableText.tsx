@@ -35,7 +35,7 @@ const ExpandableText = ({
       const fullHeight = textRef.current.scrollHeight;
 
       setMaxHeight(expanded ? fullHeight : collapsedHeight);
-      setIsTruncated(fullHeight > collapsedHeight); // показываем кнопку только если текст обрезан
+      setIsTruncated(fullHeight > collapsedHeight);
     }
   }, [expanded, lines, text]);
 

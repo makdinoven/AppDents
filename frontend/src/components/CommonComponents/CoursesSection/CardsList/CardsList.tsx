@@ -5,7 +5,7 @@ import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Path } from "../../../../routes/routes.ts";
-import { useLocation } from "react-router-dom";
+// import { useLocation } from "react-router-dom";
 
 type Course = {
   id: number;
@@ -46,19 +46,19 @@ const CardsList: React.FC<CardsListProps> = ({
   showEndOfList = true,
 }) => {
   const filterName = t(filter);
-  const location = useLocation();
-  const currentSlug = location.pathname.split("/").filter(Boolean).pop();
-  const filteredCards = currentSlug
-    ? cards?.filter((course) => course.slug !== currentSlug)
-    : cards;
+  // const location = useLocation();
+  // const currentSlug = location.pathname.split("/").filter(Boolean).pop();
+  // const filteredCards = currentSlug
+  //   ? cards?.filter((course) => course.slug !== currentSlug)
+  //   : cards;
 
   return (
     <div className={s.list_wrapper}>
       {loading && <LoaderOverlay />}
-      {filteredCards && filteredCards.length > 0 ? (
+      {cards && cards.length > 0 ? (
         <>
           <ul className={s.list}>
-            {filteredCards.map((course, index) => (
+            {cards.map((course, index) => (
               <CourseCard
                 isFree={isFree}
                 isOffer={isOffer}
