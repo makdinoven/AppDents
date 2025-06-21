@@ -164,12 +164,22 @@
     }
 
     .checkbox_container {
-      flex-direction: column-reverse;
+      width: fit-content;
+      gap: 5px;
+      align-items: center;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      font-size: 12px;
     }
 
     .balance_container {
+      flex-direction: row;
       width: 100%;
       justify-content: space-between;
+    }
+
+    .total_container {
+      flex-direction: column;
     }
 
     form {

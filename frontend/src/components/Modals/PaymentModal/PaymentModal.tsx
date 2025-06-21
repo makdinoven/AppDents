@@ -58,7 +58,12 @@ export type PaymentDataType = {
   region: string;
   success_url: string;
   cancel_url: string;
-  courses: { name: string; new_price: number; old_price: number }[];
+  courses: {
+    name: string;
+    new_price: number;
+    old_price: number;
+    lessons_count: string;
+  }[];
 };
 
 const PaymentModal = ({
@@ -72,6 +77,7 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
+  console.log(paymentData);
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
@@ -192,7 +198,10 @@ const PaymentModal = ({
       <div className={s.courses}>
         {paymentData.courses.map((course, index: number) => (
           <div key={index} className={s.course}>
-            <p>{course.name}</p>
+            <p>
+              {course.name} -{" "}
+              <span className={"highlight"}>{course.lessons_count}</span>
+            </p>
             {!isFree ? (
               <div className={s.course_prices}>
                 <span className={"highlight"}>${course.new_price}</span>

@@ -37,7 +37,9 @@ const CoursePage = () => {
     try {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
-      setIsPartial(res.data.access_level === "partial");
+      setIsPartial(
+        ["partial", "special_offer"].includes(res.data.access_level),
+      );
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -75,6 +77,7 @@ const CoursePage = () => {
         name: landing?.landing_name,
         new_price: landing?.new_price,
         old_price: landing?.old_price,
+        lessons_count: landing?.lessons_count,
       },
     ],
   };

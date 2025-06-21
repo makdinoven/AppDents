@@ -91,6 +91,7 @@ const CourseCard = ({
             name: res.data?.landing_name,
             new_price: res.data?.new_price,
             old_price: res.data?.old_price,
+            lessons_count: res.data?.lessons_count,
           },
         ],
       });

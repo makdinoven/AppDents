@@ -257,6 +257,7 @@ const Landing = () => {
         name: landing?.landing_name,
         new_price: landing?.new_price,
         old_price: landing?.old_price,
+        lessons_count: landing?.lessons_count,
       },
     ],
   };

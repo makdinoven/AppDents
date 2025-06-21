@@ -57,6 +57,7 @@ const userSlice = createSlice({
       state.error = null;
       state.isLogged = false;
       state.balance = null;
+      state.courses = [];
     },
     setLanguage: (state, action: PayloadAction<string>) => {
       const newLanguage = action.payload;
