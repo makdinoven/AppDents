@@ -63,31 +63,34 @@ def get_course_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    import json, logging, inspect
-    logger = logging.getLogger(__name__)
-    logger.warning("⇢ handler %s", inspect.getfile(inspect.currentframe()))
 
     course = get_course_detail(db, course_id)
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    is_admin   = getattr(current_user, "role", None) == "admin"
-    has_full   = is_admin or any(c.id == course_id for c in current_user.courses)
-    has_special = course_id in getattr(current_user, "active_special_offer_ids", [])
+    # — 1. Определяем уровни доступа —
+    is_admin    = getattr(current_user, "role", None) == "admin"
+    has_full    = is_admin or any(c.id == course_id for c in current_user.courses)
+    # partial всегда важнее special_offer
     has_part    = (not is_admin) and course_id in getattr(current_user, "partial_course_ids", [])
+    has_special = (not has_part) and course_id in getattr(current_user, "active_special_offer_ids", [])
 
-    # ---------- sections (стерильная копия) ----------
+    # — 2. Готовим секции (очищенная копия) и вставляем preview —
     sections_raw  = course.sections or {}
-    sections_data = json.loads(json.dumps(sections_raw))          # полностью отрываем от ORM
-    sections = [{k: v} for k, v in sections_data.items()] if isinstance(sections_data, dict) else sections_data
+    sections_data = json.loads(json.dumps(sections_raw))
+    sections = (
+        [{k: v} for k, v in sections_data.items()]
+        if isinstance(sections_data, dict)
+        else sections_data
+    )
 
-    # ---------- вставляем превью ----------
     for sec in sections:
         _, data = next(iter(sec.items()))
         for lesson in data["lessons"]:
             lesson["preview"] = get_or_schedule_preview(db, lesson["video_link"])
 
-    # ---------- скрываем видео после первого ----------
+    # — 3. Если у пользователя нет полного доступа, но есть partial или special —
+    #      показываем только первый урок
     if not has_full and (has_part or has_special):
         unlocked = False
         for sec in sections:
@@ -98,19 +101,22 @@ def get_course_by_id(
                 else:
                     unlocked = True
 
-    # ---------- лендинг ----------
+    # — 4. Самый дешевый лендинг для upsell (если нет full) —
     cheapest_landing = None
     if not has_full:
         landing = get_cheapest_landing_for_course(db, course_id)
         if landing:
             cheapest_landing = {"id": landing.id}
 
-    access_level = (
-        "full"          if has_full   else
-        "special_offer" if has_special else
-        "partial"       if has_part    else
-        "none"
-    )
+    # — 5. Финальный уровень доступа —
+    if has_full:
+        access_level = "full"
+    elif has_part:
+        access_level = "partial"
+    elif has_special:
+        access_level = "special_offer"
+    else:
+        access_level = "none"
 
     result = {
         "id": course.id,
@@ -121,8 +127,10 @@ def get_course_by_id(
         "cheapest_landing": cheapest_landing,
     }
 
-    db.rollback()          # читающий эндпойнт → ничего не пишем в БД
+    # GET-запрос — откатываем любые изменения в сессии
+    db.rollback()
     return result
+
 
 
 @router.put("/{course_id}", response_model=CourseDetailResponsePutRequest)

@@ -47,23 +47,24 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
 
 def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
     """
-    1. Если есть покупки:
-         • собираем теги с дешёвых лендингов;
-         • выбираем самый «весомый» тег;
-         • находим популярный лендинг с этим тегом.
-    2. Если покупок нет:
-         • берём simply top-selling лендинг.
-    В обоих случаях курс не должен быть куплен / в оффере / в partial.
+    1. Если есть покупки: … (ваша логика по тегам) …
+    2. Если покупок нет: просто топ-продающий лендинг.
+    При этом курс не должен быть:
+      • куплен,
+      • в active special offer,
+      • в истории последних офферов,
+      • или уже открыт как partial.
     """
-    # ----- набор курсов, которые нельзя предлагать -----
-    purchased = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids = {
+    # исключаем курсы, которые нельзя предлагать
+    purchased         = {p.course_id for p in user.purchases if p.course_id}
+    recent_offer_ids  = {
         so.course_id
-        for so in sorted(user.special_offers,
-                         key=lambda so: so.created_at,
-                         reverse=True)[:_HISTORY_LIMIT]
+        for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
+        [:_HISTORY_LIMIT]
     }
-    denied: set[int] = purchased | set(user.active_special_offer_ids) | recent_offer_ids
+    partial_ids       = set(user.partial_course_ids)  # <— добавили!
+    denied: set[int] = purchased | set(user.active_special_offer_ids) | recent_offer_ids | partial_ids
+
 
     # ───────── 1. пробуем «по тегу» ─────────
     cheapest = _cheapest_landings_for_purchased(db, user)
