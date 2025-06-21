@@ -1,0 +1,14 @@
+.suggestion_container {
+  @include flex-column;
+  @include custom-scrollbar;
+  padding-right: 15px;
+  gap: 10px;
+  //width: 300px;
+  flex-shrink: 0;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .suggestion_container {
+    display: none;
+  }
+}

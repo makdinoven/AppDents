@@ -168,6 +168,8 @@
     "courseProgram": "Programa do curso",
     "fullCourseProgram": "O programa completo do curso",
     "buyFor": "Comprar por <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyLessonsFor_one": "Compre {{count}} aula por <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_other": "Compre {{count}} aulas por <2>{{new_price}}$</2> <1>{{old_price}}$</1>",
     "buyForFull": "Comprar curso por <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "youCanBuyEntireCourse": "Você pode comprar o <1>curso completo</1> agora pelo novo preço <2>${{new_price}}</2>, em vez do antigo - ${{old_price}}",
     "fiveMinuteFragment": "Aqui você pode assistir a um <1>fragmento de cinco minutos</1>",
@@ -176,6 +178,10 @@
     "videoIsNotSupported": "Seu navegador não suporta vídeo",
     "specialOffer": "Oferta especial",
     "accessFull": "O acesso ao curso é ilimitado no tempo!",
+    "video": {
+      "modalTitle": "Desbloqueie o curso completo",
+      "buyCourseToWatch": "Compre o curso completo para continuar assistindo."
+    },
     "faq": {
       "faq": "Perguntas Frequentes",
       "1_question": "Como acesso meu curso após a compra?",

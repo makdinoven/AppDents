@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import s from "./TimerBanner.module.scss";
-import CountdownTimer from "../CountdownTimer/CountdownTimer.tsx";
 import { Trans } from "react-i18next";
-import Clock from "../../../assets/Icons/Clock.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { openModal } from "../../../store/slices/landingSlice.ts";
+import Timer from "./Timer/Timer.tsx";
 
 const TimerBanner = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -56,10 +55,7 @@ const TimerBanner = () => {
       className={`${s.banner} ${isSticky ? s.sticky : ""} ${isHiding ? s.hiding : ""}`}
     >
       <div className={s.banner_container}>
-        <div className={s.timer}>
-          <Clock />
-          <CountdownTimer />
-        </div>
+        <Timer />
         <h4>
           <Trans
             i18nKey={"banner.title"}

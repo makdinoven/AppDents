@@ -151,6 +151,19 @@
   }
 }
 
+.video_content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0 15px;
+  //max-height: 75px;
+
+  button {
+    height: fit-content;
+  }
+}
+
 @media (max-width: $middle-breakpoint) {
   .nav {
     gap: 15px;
@@ -189,7 +202,7 @@
     right: 0;
   }
 
-  .buy_btn {
+  .buy_btn:not(.video) {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
@@ -205,6 +218,20 @@
 @media (max-width: $mobile-breakpoint) {
   .header {
     margin-bottom: 20px;
+  }
+
+  .video_content {
+    padding: 0;
+
+    button {
+      font-size: 14px;
+    }
+  }
+
+  .content {
+    &.video {
+      padding: 10px 5px;
+    }
   }
 
   .buy_btn {

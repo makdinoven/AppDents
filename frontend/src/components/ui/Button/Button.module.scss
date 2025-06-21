@@ -23,6 +23,11 @@
     }
   }
 
+  &.outlined-dark {
+    outline: unset;
+    border: 1.5px solid $accent;
+  }
+
   &.loading {
     pointer-events: none;
   }
@@ -37,15 +42,25 @@
         outline: 2px solid $primary;
         color: $text-color;
       }
+
+      &.outlined-dark {
+        background-color: $primary;
+        color: $text-color;
+        border-color: $primary;
+      }
     }
   }
 
-  @media (hover: none) {
     &:active {
       color: $primary;
       background-color: $background-color;
+
+      &.outlined-dark {
+        background-color: $background-color;
+        color: $primary;
+      }
     }
-  }
+
 
   @media (max-width: $mobile-breakpoint) {
     outline: 1px solid $background-color;

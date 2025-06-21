@@ -28,6 +28,7 @@ type props = {
   ref?: React.RefObject<any>;
   isOffer?: boolean;
   isFree?: boolean;
+  isVideo?: boolean;
 };
 
 const CoursesSection = ({
@@ -35,6 +36,7 @@ const CoursesSection = ({
   sectionTitle,
   pageSize,
   isClient = true,
+  isVideo = false,
   isFree = false,
   tags,
   showFilters = false,
@@ -160,6 +162,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isVideo={isVideo}
         isFree={isFree}
         isOffer={isOffer}
         isClient={isClient}

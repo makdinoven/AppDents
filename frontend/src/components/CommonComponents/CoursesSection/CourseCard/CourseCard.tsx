@@ -5,7 +5,6 @@ import { Trans } from "react-i18next";
 import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
-import FormattedAuthorsDesc from "../../../../common/helpers/FormattedAuthorsDesc.tsx";
 import { useState } from "react";
 import ModalWrapper from "../../../Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal, {
@@ -15,6 +14,7 @@ import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
+import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
 
 interface CourseCardProps {
   isClient?: boolean;
@@ -31,6 +31,7 @@ interface CourseCardProps {
   isOffer?: boolean;
   course_ids: number[];
   isFree?: boolean;
+  slug: string;
 }
 
 const CourseCard = ({
@@ -47,6 +48,7 @@ const CourseCard = ({
   authors,
   lessons_count,
   course_ids,
+  slug,
   isFree = false,
 }: CourseCardProps) => {
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
@@ -54,14 +56,14 @@ const CourseCard = ({
   const currentUrl = window.location.origin + location.pathname;
   const [isModalOpen, setModalOpen] = useState(false);
   const screenWidth = useScreenWidth();
-  const visibleAuthors = authors?.slice(0, 3).filter((author) => author.photo);
-  const cleanLink = link.replace(/^\/(client\/)?course(\/free)?/, "");
 
-  const setCardColor = () => {
+  const setCardColor = (whatIsReturned: "className" | "color") => {
+    const returnValue = whatIsReturned === "className" ? s.blue : "blue";
+
     if (screenWidth < 577) {
-      return index % 2 === 0 ? s.blue : "";
+      return index % 2 === 0 ? returnValue : "";
     } else {
-      return index % 4 === 0 || index % 4 === 3 ? "" : s.blue;
+      return index % 4 === 0 || index % 4 === 3 ? "" : returnValue;
     }
   };
 
@@ -74,7 +76,7 @@ const CourseCard = ({
 
   const fetchLandingDataAndOpenModal = async () => {
     try {
-      const res = await mainApi.getLanding(cleanLink);
+      const res = await mainApi.getLanding(slug);
       setPaymentData({
         landing_ids: [res.data?.id],
         course_ids: res.data?.course_ids,
@@ -106,7 +108,7 @@ const CourseCard = ({
 
   return (
     <>
-      <li className={`${s.card} ${setCardColor()}`}>
+      <li className={`${s.card} ${setCardColor("className")}`}>
         <div className={s.card_header}>
           <Link to={link} className={s.card_header_background}>
             <Trans i18nKey={tag} />
@@ -122,22 +124,7 @@ const CourseCard = ({
           </div>
           <div className={s.card_content_body}>
             <h4>{name}</h4>
-            <div className={s.course_authors}>
-              {visibleAuthors?.length > 0 && (
-                <ul className={s.authors_photos_list}>
-                  {visibleAuthors?.map((author) => (
-                    <li
-                      key={author.id}
-                      style={{ backgroundImage: `url("${author.photo}")` }}
-                      className={s.author_photo}
-                    ></li>
-                  ))}
-                </ul>
-              )}
-              <p>
-                <FormattedAuthorsDesc authors={authors} />
-              </p>
-            </div>
+            <AuthorsDesc authors={authors} color={setCardColor("color")} />
             <div className={s.content_bottom}>
               <ViewLink
                 className={`${s.link_btn} ${isFree ? s.free : ""}`}
@@ -172,7 +159,7 @@ const CourseCard = ({
                         id: id,
                         landing_name: name,
                         authors: authors,
-                        page_name: cleanLink,
+                        page_name: slug,
                         old_price: old_price,
                         new_price: new_price,
                         preview_photo: photo,
