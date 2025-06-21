@@ -16,7 +16,7 @@ import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx"
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";
 import { Path } from "../../routes/routes.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
-import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
+import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
 
 const ProfessorPage = () => {
   const { professorId } = useParams();
@@ -26,7 +26,6 @@ const ProfessorPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
   const screenWidth = useScreenWidth();
-  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     fetchProfessorData();
@@ -123,16 +122,13 @@ const ProfessorPage = () => {
               {screenWidth > 577 && (
                 <h1 className={s.professor_name}>{professor.name}</h1>
               )}
-              <p
-                className={`${s.professor_description} ${showFullDescription ? s.expanded : ""}`}
-              >
-                {professor.description}
-              </p>
-              <PrettyButton
-                onClick={() => setShowFullDescription((prev) => !prev)}
-                variant={"primary"}
-                text={showFullDescription ? "showLess" : "readMore"}
+              <ExpandableText
+                lines={screenWidth > 577 ? 10 : 3}
+                textClassName={s.professor_description}
+                text={professor.description}
+                color={"primary"}
               />
+              {/*<p className={s.professor_description}>{professor.description}</p>*/}
             </div>
             {professor.photo && (
               <div className={s.card_wrapper}>
