@@ -504,25 +504,43 @@ def get_recommended_landing_cards(
     language: str | None = None,
 ) -> dict:
     """
-    1) Строим rec_q — выборку course_id и score для похожих пользователей.
-    2) total_rec = rec_q.count()
-    3) Проходим rec_q, собираем уникальные лендинги, применяем skip/limit.
-    4) Фолбэк на популярные лендинги, если недобрали до limit.
-    5) Возвращаем {'total': total_rec, 'cards': cards}.
+    Коллаб-фильтр рекомендаций лендингов:
+    • Если есть покупки — алгоритм CF.
+    • Если покупок НЕТ — fallback → все популярные лендинги.
+    В любом случае:
+      total = общее число найденных лендингов,
+      cards = страница размером limit с учётом skip.
     """
     from sqlalchemy import cast, func
     from sqlalchemy.types import Float
 
-    # 0) уже купленные
+
+    # 0) что юзер уже взял
     b_courses  = _user_course_ids(db, user_id)
     b_landings = _user_landing_ids(db, user_id)
 
-    # 1) если ни одного курса — просто фолбэк
+    # --- FALLBACK: нет покупок → все популярные ---
     if not b_courses:
-        fallback = _fallback_landing_cards(db, user_id, skip, limit, language)
-        return {"total": fallback["total"], "cards": fallback["cards"]}
 
-    # 2) ищем похожих users → rec_q
+
+        # базовый запрос: невидимые скрыты, фильтр по языку
+        query = _apply_common_filters(_base_landing_query(db), language=language)
+
+        # сортировка «popular» и исключение купленных (но их нет)
+        query = _apply_sort(query, "popular")
+
+        # настоящий total популярных
+        total = query.count()
+
+
+        # пейджинг
+        results = query.offset(skip).limit(limit).all()
+        cards = [_landing_to_card(l) for l in results]
+
+        return {"total": total, "cards": cards}
+
+    # --- COLLAB FILTERING: есть покупки ---
+    # 1) ищем похожих пользователей
     similar_users = (
         db.query(users_courses.c.user_id)
           .filter(
@@ -546,10 +564,11 @@ def get_recommended_landing_cards(
           .order_by(score.desc())
     )
 
-    # 3) полный размер рекомендаций
+    # 2) полный размер CF-рекомендаций
     total_rec = rec_q.count()
 
-    # 4) собираем страницу из уникальных landing-ов
+
+    # 3) собираем уникальные лендинги по рейтингу
     unique_ids = set()
     cards = []
     passed = 0
@@ -565,6 +584,7 @@ def get_recommended_landing_cards(
 
         unique_ids.add(landing.id)
 
+        # фаза skip
         if passed < skip:
             passed += 1
             continue
@@ -573,13 +593,13 @@ def get_recommended_landing_cards(
         if len(cards) >= limit:
             break
 
-    # 5) если недобрали — фолбэк
+    # 4) добираем фолбэк, если не набрали
     if len(cards) < limit:
         extra = _fallback_landing_cards(db, user_id, 0, limit - len(cards), language)["cards"]
         cards.extend(extra)
 
-    # 6) возвращаем именно количество CF-рекомендаций, без всех остальных лендингов:
     return {"total": total_rec, "cards": cards}
+
 
 
 
