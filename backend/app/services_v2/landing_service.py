@@ -503,19 +503,32 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    # --- 0.  что пользователь уже купил -----------------------------------
-    b_courses  = _user_course_ids(db, user_id)    # список course_id
-    b_landings = _user_landing_ids(db, user_id)   # set   landing_id
+    """
+    1) Строим rec_q — выборку course_id и score для похожих пользователей.
+    2) total_rec = rec_q.count()
+    3) Проходим rec_q, собираем уникальные лендинги, применяем skip/limit.
+    4) Фолбэк на популярные лендинги, если недобрали до limit.
+    5) Возвращаем {'total': total_rec, 'cards': cards}.
+    """
+    from sqlalchemy import cast, func
+    from sqlalchemy.types import Float
 
-    # если нет ни одного купленного курса — отдаём fallback
+    # 0) уже купленные
+    b_courses  = _user_course_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)
+
+    # 1) если ни одного курса — просто фолбэк
     if not b_courses:
-        return _fallback_landing_cards(db, user_id, skip, limit, language)
+        fallback = _fallback_landing_cards(db, user_id, skip, limit, language)
+        return {"total": fallback["total"], "cards": fallback["cards"]}
 
-    # --- 1.  ищем похожих пользователей, считаем score --------------------
+    # 2) ищем похожих users → rec_q
     similar_users = (
         db.query(users_courses.c.user_id)
-          .filter(users_courses.c.course_id.in_(b_courses),
-                  users_courses.c.user_id != user_id)
+          .filter(
+              users_courses.c.course_id.in_(b_courses),
+              users_courses.c.user_id != user_id
+          )
           .distinct()
           .subquery()
     )
@@ -525,47 +538,48 @@ def get_recommended_landing_cards(
 
     rec_q = (
         db.query(users_courses.c.course_id.label("cid"), score)
-          .filter(users_courses.c.user_id.in_(select(similar_users)),
-                  ~users_courses.c.course_id.in_(b_courses))
+          .filter(
+              users_courses.c.user_id.in_(select(similar_users)),
+              ~users_courses.c.course_id.in_(b_courses)
+          )
           .group_by(users_courses.c.course_id)
           .order_by(score.desc())
     )
 
-    # --- 2.  отбираем уникальные лендинги с учётом skip/limit -------------
-    unique_ids: set[int] = set()
-    cards: list[dict] = []
-    passed = 0          # сколько уникальных лендингов «пропустили» для skip
+    # 3) полный размер рекомендаций
+    total_rec = rec_q.count()
+
+    # 4) собираем страницу из уникальных landing-ов
+    unique_ids = set()
+    cards = []
+    passed = 0
 
     for row in rec_q.yield_per(200):
         landing = get_cheapest_landing_for_course(db, row.cid)
-        if not landing or (language and landing.language != language.upper()):
+        if not landing:
+            continue
+        if language and landing.language != language.upper():
             continue
         if landing.id in unique_ids:
             continue
+
         unique_ids.add(landing.id)
 
-        if passed < skip:          # фаза пропуска
+        if passed < skip:
             passed += 1
             continue
 
         cards.append(_landing_to_card(landing))
-        if len(cards) == limit:
+        if len(cards) >= limit:
             break
 
-    # --- 3.  добираем fallback, если нужно --------------------------------
+    # 5) если недобрали — фолбэк
     if len(cards) < limit:
-        extra = _fallback_landing_cards(
-            db, user_id, skip=0, limit=limit - len(cards), language=language
-        )["cards"]
+        extra = _fallback_landing_cards(db, user_id, 0, limit - len(cards), language)["cards"]
         cards.extend(extra)
 
-    # --- 4.  total: все НЕкупленные лендинги ------------------------------
-    total_q = _exclude_bought(_base_landing_query(db), b_courses, b_landings)
-    if language:
-        total_q = total_q.filter(Landing.language == language.upper())
-    total = total_q.count()
-
-    return {"total": total, "cards": cards}
+    # 6) возвращаем именно количество CF-рекомендаций, без всех остальных лендингов:
+    return {"total": total_rec, "cards": cards}
 
 
 
