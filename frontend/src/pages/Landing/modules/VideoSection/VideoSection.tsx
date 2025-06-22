@@ -99,6 +99,9 @@ const VideoSection = ({
         <div ref={lessonContainerRef} className={s.current_lesson_container}>
           <div className={s.player}>
             <video
+              playsInline
+              webkit-playsinline
+              disablePictureInPicture
               onClick={togglePlay}
               ref={videoRef}
               poster={currentLesson.preview}
