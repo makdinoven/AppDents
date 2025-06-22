@@ -250,7 +250,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": int(total_new_price * 0.8),
+        "total_new_price": round(total_new_price * 0.8, 2),
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
         "tags": sorted({t.name for l in kept_landings for t in l.tags}),
