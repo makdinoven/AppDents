@@ -48,6 +48,8 @@ class PurchaseSource(str, PyEnum):
     COURSES_PAGE              = "COURSES_PAGE"      # 9
     COURSES_PAGE_OFFER        = "COURSES_OFFER"     # 10
     CABINET_FREE = "CABINET_FREE"
+    SPECIAL_OFFER = "SPECIAL_OFFER"
+    VIDEO_LANDING = "VIDEO_LANDING"
     OTHER                     = "OTHER"
 
 class FreeCourseSource(str, PyEnum):
