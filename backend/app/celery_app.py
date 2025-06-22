@@ -14,8 +14,8 @@ celery = Celery(
 
 #    ↓↓↓  вместо include используем autodiscover
 celery.autodiscover_tasks(
-    ["app"],          # ←  это ВАШ корневой пакет
-    related_name="tasks",  # default, можно не писать
+    ["app"],
+    related_name="tasks",
 )
 
 celery.conf.update(
@@ -26,6 +26,8 @@ celery.conf.update(
     enable_utc=True,
     task_annotations={
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
+        "app.tasks.process_faststart_video": {"rate_limit": "15/m"},
+        "app.tasks.ensure_faststart":    {"rate_limit": "15/m"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -35,6 +37,12 @@ celery.conf.update(
         },
         "replace-storage-links-every-3-hours": {
                     "task": "app.tasks.special_offers.replace_storage_links",
+                    "schedule": 10800,              # 3 ч * 3600 с
+                    # crontab(minute=0, hour='*/3')  # <- альтернативный вариант
+                    "options": {"queue": "special"},
+                },
+        "ensure_faststart": {
+                    "task": "app.tasks.ensure_faststart",
                     "schedule": 10800,              # 3 ч * 3600 с
                     # crontab(minute=0, hour='*/3')  # <- альтернативный вариант
                     "options": {"queue": "special"},
@@ -51,4 +59,6 @@ celery.conf.task_routes = {
     "app.tasks.preview_tasks.*": {"queue": "default"},
     "app.tasks.special_offers.process_special_offers": {"queue": "special"},
     "app.tasks.storage_links.replace_storage_links": {"queue": "special"},
+    "app.tasks.process_faststart_video": {"queue": "special"},
+    "app.tasks.ensure_faststart": {"queue": "special"},
 }
