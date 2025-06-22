@@ -47,67 +47,71 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
 
 def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
     """
-    1. Если есть покупки: … (ваша логика по тегам) …
-    2. Если покупок нет: просто топ-продающий лендинг.
-    При этом курс не должен быть:
-      • куплен,
-      • в active special offer,
-      • в истории последних офферов,
-      • или уже открыт как partial.
+    1. Если есть покупки → подбираем по тегам из дешёвых лендингов.
+    2. Иначе → ротационный фолбэк по топ-продающим лендингам.
+    Курсы-«denied» (купленные, partial, активные офферы, в истории) никогда не попадают.
     """
-    # исключаем курсы, которые нельзя предлагать
-    purchased         = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids  = {
+    # --- 0) подготавливаем список запрещённых курсов ---
+    purchased        = {p.course_id for p in user.purchases if p.course_id}
+    recent_offer_ids = {
         so.course_id
         for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
         [:_HISTORY_LIMIT]
     }
-    partial_ids       = set(user.partial_course_ids)  # <— добавили!
-    denied: set[int] = purchased | set(user.active_special_offer_ids) | recent_offer_ids | partial_ids
+    partial_ids      = set(user.partial_course_ids)
+    active_ids       = set(user.active_special_offer_ids)
+    denied: set[int] = purchased | recent_offer_ids | partial_ids | active_ids
 
-
-    # ───────── 1. пробуем «по тегу» ─────────
+    # --- 1) основной путь: есть покупки и теги? ---
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
+        # собираем веса по тегам
         tag_weights: Counter[int] = Counter()
         for l in cheapest:
-            for i, t in enumerate(l.tags or []):
-                tag_weights[t.id] += 3 if i == 0 else 1
+            for idx, t in enumerate(l.tags or []):
+                tag_weights[t.id] += 3 if idx == 0 else 1
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
-            candidate = (
+            # берём топ-10 лендингов по продажам с этим тегом
+            candidates = (
                 db.query(Landing)
-                .join(Landing.tags)
-                .filter(
-                    Tag.id == best_tag_id,
-                    Landing.is_hidden.is_(False),
-                )
-                .options(selectinload(Landing.courses))
-                .order_by(Landing.sales_count.desc())
-                .first()
+                  .join(Landing.tags)
+                  .filter(Tag.id == best_tag_id, Landing.is_hidden.is_(False))
+                  .options(selectinload(Landing.courses))
+                  .order_by(Landing.sales_count.desc())
+                  .limit(10)
+                  .all()
             )
-            if candidate:
-                for c in candidate.courses:
-                    if c.id not in denied:
-                        return candidate, c
+            if candidates:
+                # ротация по user.id
+                chosen = candidates[user.id % len(candidates)]
+                logger.debug("User %s: picked landing %s by tag %s", user.id, chosen.id, best_tag_id)
+                for course in chosen.courses:
+                    if course.id not in denied:
+                        logger.debug("User %s: offer course %s", user.id, course.id)
+                        return chosen, course
 
-    # ───────── 2. fallback: топ-продаваемый лендинг ─────────
-    candidate = (
+    # --- 2) fallback: ни покупок, ни релевантных тегов или не нашли свободный курс ---
+    #    берём топ-20 по продажам без разбора тегов
+    top = (
         db.query(Landing)
-        .filter(Landing.is_hidden.is_(False))
-        .options(selectinload(Landing.courses))
-        .order_by(Landing.sales_count.desc())
-        .first()
+          .filter(Landing.is_hidden.is_(False))
+          .options(selectinload(Landing.courses))
+          .order_by(Landing.sales_count.desc())
+          .limit(20)
+          .all()
     )
-    if not candidate:
-        return None
-
-    for c in candidate.courses:
-        if c.id not in denied:
-            return candidate, c
+    if top:
+        chosen = top[user.id % len(top)]
+        logger.debug("User %s: fallback landing %s", user.id, chosen.id)
+        for course in chosen.courses:
+            if course.id not in denied:
+                logger.debug("User %s: fallback offer course %s", user.id, course.id)
+                return chosen, course
 
     return None
+
 
 def _need_new_offer(user: User) -> bool:
     """
