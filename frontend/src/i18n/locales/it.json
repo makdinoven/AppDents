@@ -222,8 +222,10 @@
       "step_2": "2. Invia il link a un amico tramite WhatsApp, Telegram, email o come preferisci.",
       "step_3": "3. Il tuo amico acquista qualsiasi corso — ad esempio uno da <1>$19</1>.",
       "step_4": "4. Ricevi il <1>50%</1> del pagamento (es. <1>$9,50</1>) come credito nel tuo portafoglio."
-    }
-
+    },   
+    "main": "Principale",
+    "myReferrals": "I miei riferimenti",
+    "myTransactions": "Le mie transazioni"
   },
 
   "professor": {

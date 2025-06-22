@@ -7,8 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import AnalyticsPurchases from "./content/AnalyticsPurchases.tsx";
 import AnalyticsUserGrowth from "./content/AnalyticsUserGrowth.tsx";
 import AnalyticsFreeCourses from "./content/AnalyticsFreeCourses.tsx";
-
-const QUERY_KEY = "content";
+import { QUERY_KEY } from "../../../../common/helpers/commonConstants.ts";
 
 const Analytics = () => {
   const [searchParams] = useSearchParams();

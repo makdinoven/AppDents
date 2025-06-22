@@ -7,6 +7,11 @@
   border-radius: 10px;
   margin-bottom: 40px;
   overflow-y: auto;
+  @include custom-scrollbar;
+
+  &.profile_main {
+    width: fit-content;
+  }
 
   @media (max-width: $mobile-breakpoint) {
     & {

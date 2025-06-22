@@ -1,0 +1,86 @@
+.profile_page {
+  @include flex-column;
+  gap: 140px;
+  justify-content: space-between;
+}
+
+.page_header {
+  @include flex-column;
+  gap: 40px;
+}
+
+.user_info {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 20px;
+}
+
+.left {
+  @include clamped-p3;
+  display: flex;
+  gap: 40px;
+
+  span {
+    @include clamped-h3;
+    text-transform: uppercase;
+  }
+
+  .mail_link {
+    vertical-align: center;
+    text-decoration: underline;
+    color: $secondary-lighter;
+  }
+}
+
+.user_items {
+  @include flex-column;
+  gap: 10px;
+}
+
+.buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tabs_wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 60px;
+  gap: 20px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .profile_page {
+    gap: 80px;
+  }
+
+  .user_info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .left {
+    gap: 20px;
+    svg {
+      width: 60px;
+      height: 60px;
+    }
+  }
+
+  .tabs_wrapper{
+    margin-bottom: 40px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profile_page {
+    gap: 50px;
+  }
+
+    .tabs_wrapper{
+    margin-bottom: 30px;
+  }
+}

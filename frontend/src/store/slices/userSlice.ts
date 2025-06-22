@@ -4,14 +4,49 @@ import {
   getMe,
   login,
   logoutAsync,
+  getMyReferrals,
+  getMyTransactions,
 } from "../actions/userActions.ts";
 import i18n from "i18next";
 import {
   LS_LANGUAGE_KEY,
   LS_TOKEN_KEY,
 } from "../../common/helpers/commonConstants.ts";
+import { AxiosResponse } from "axios";
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
+
+export type Referral = {
+  userId: number;
+  email: string;
+  totalPaid: number;
+  totalCashback: number;
+};
+
+type Transaction = {
+  id: number;
+  amount: number;
+  type: string;
+  meta:
+    | {
+        percent: 50;
+        fromUser: string;
+        purchaseId: number;
+      }
+    | {
+        reason: string;
+        courses: string[];
+      };
+  date: string;
+};
+
+interface ErrorResponse {
+  detail?: {
+    error?: {
+      translation_key?: string;
+    };
+  };
+}
 
 interface UserState {
   email: string | null;
@@ -23,6 +58,8 @@ interface UserState {
   language: string;
   balance: number | null;
   courses: [];
+  referrals: Referral[];
+  transactions: Transaction[];
 }
 
 interface ErrorResponse {
@@ -43,6 +80,8 @@ const initialState: UserState = {
   balance: null,
   language: savedLanguage,
   courses: [],
+  referrals: [],
+  transactions: [],
 };
 
 const userSlice = createSlice({
@@ -90,9 +129,9 @@ const userSlice = createSlice({
           state.isLogged = true;
           localStorage.setItem(
             LS_TOKEN_KEY,
-            action.payload.res.data.access_token,
+            action.payload.res.data.access_token
           );
-        },
+        }
       )
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -112,7 +151,7 @@ const userSlice = createSlice({
           state.email = action.payload.res.data.email;
           state.role = action.payload.res.data.role;
           state.id = action.payload.res.data.id;
-        },
+        }
       )
       .addCase(getMe.rejected, (state, action) => {
         state.error = action.payload as ErrorResponse;
@@ -126,8 +165,40 @@ const userSlice = createSlice({
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.courses = action.payload.res.data;
-        },
-      );
+        }
+      )
+      .addCase(getMyReferrals.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(
+        getMyReferrals.fulfilled,
+        (state, action: PayloadAction<{ res: AxiosResponse<Referral[]> }>) => {
+          state.loading = false;
+          state.referrals = action.payload.res.data;
+        }
+      )
+      .addCase(getMyReferrals.rejected, (state, action) => {
+        state.error = action.payload as ErrorResponse;
+        state.loading = false;
+      })
+      .addCase(getMyTransactions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getMyTransactions.fulfilled,
+        (
+          state,
+          action: PayloadAction<{ res: AxiosResponse<Transaction[]> }>
+        ) => {
+          state.loading = false;
+          state.transactions = action.payload.res.data;
+        }
+      )
+      .addCase(getMyTransactions.rejected, (state, action) => {
+        state.error = action.payload as ErrorResponse;
+        state.loading = false;
+      });
   },
 });
 
