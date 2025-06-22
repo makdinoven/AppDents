@@ -77,7 +77,6 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
-  console.log(paymentData);
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
@@ -244,7 +243,7 @@ const PaymentModal = ({
           </div>
         )}
       </div>
-      {isFree && (
+      {isFree && !isLogged && (
         <h3>
           <Trans i18nKey={"freeCourse.registerToWatch"} />
         </h3>
