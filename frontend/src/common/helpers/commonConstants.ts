@@ -131,6 +131,8 @@ export const PAYMENT_SOURCES = [
   { name: "CABINET_FREE", path: `${Path.profile}/${Path.myCourse}` },
   { name: "LANDING_OFFER", path: Path.landing },
   { name: "LANDING_OFFER", path: `/${Path.landingClient}` },
+  { name: "VIDEO_LANDING", path: `/${Path.videoLanding}` },
+  // {name: "SPECIAL_OFFER", path: `/${Path.profile}` },
   { name: "COURSES_PAGE", path: Path.courses },
   { name: "COURSES_OFFER", path: Path.courses },
 ];
