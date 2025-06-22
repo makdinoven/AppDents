@@ -2,6 +2,11 @@
   overflow-x: auto;
   border-radius: 10px;
   border: 1px solid $hover-color;
+  border-top: none;
+}
+
+.custom_table_wrapper {
+  overflow-x: auto;
 }
 
 .table_title {
@@ -42,9 +47,27 @@
   }
 }
 
+.custom_table {
+  width: 100%;
+  border-collapse: collapse;
+  @include clamped-p3;
+}
+
+.table_header {
+  position: absolute;
+  background-color: $primary;
+  padding: 5px;
+  border-radius: 40px;
+  border: 2px solid $background-color;
+  border-right: none;
+
+  &:nth-child(odd) {
+    background-color: $secondary-lighter;
+  }
+}
 .empty {
   height: 100%;
   padding: 16px;
   text-align: center;
-  color: #999;
+  color: $hover-color-darken;
 }

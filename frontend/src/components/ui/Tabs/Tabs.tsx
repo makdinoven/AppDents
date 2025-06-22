@@ -7,10 +7,12 @@ const Tabs = ({
   queryKey,
   mainTab,
   tabs,
+  profileMain,
 }: {
   queryKey: string;
   mainTab: string;
   tabs: any[];
+  profileMain?: boolean;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromParams = searchParams.get(queryKey);
@@ -32,7 +34,7 @@ const Tabs = ({
   };
 
   return (
-    <div className={s.btns_container}>
+    <div className={`${s.btns_container}${` ${s.profile_main}` || ""}`}>
       {tabs.map((tab, i) => (
         <TabButton
           key={i}

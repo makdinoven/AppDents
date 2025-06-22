@@ -75,6 +75,7 @@ const AnalyticsReferrals = () => {
               balance: "Balance",
               total_credited: "Spend",
             }}
+            customTable
           />
           <Table
             title={"Referral users"}
