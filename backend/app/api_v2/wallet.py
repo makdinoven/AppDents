@@ -40,7 +40,7 @@ def wallet_balance(current_user: m.User = Depends(get_current_user)):
     return WalletResponse(balance=ws.get_wallet_balance(current_user))
 
 
-@router.get("/wallet/transactions", response_model=List[WalletTransactionItem])
+@router.get("/transactions", response_model=List[WalletTransactionItem])
 def wallet_transactions(
     db: Session = Depends(get_db),
     current_user: m.User = Depends(get_current_user),
@@ -58,7 +58,7 @@ def wallet_transactions(
     ]
 
 @router.post(
-    "/wallet/admin/adjust",
+    "/admin/adjust",
     response_model=WalletResponse,
     summary="Админская корректировка баланса"
 )
