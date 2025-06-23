@@ -23,6 +23,10 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 10px;
+
+    button {
+      width: fit-content;
+    }
   }
 }
 
