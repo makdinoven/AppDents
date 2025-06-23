@@ -64,6 +64,7 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "freeCourse": {
+    "freePreview": "Free lesson",
     "registerToWatch": "Register to watch",
     "tryFirstLesson": "Try first lesson for free",
     "fullAccess": "Get full course",
