@@ -19,6 +19,10 @@ class ReferralReportItem(BaseModel):
 class WalletResponse(BaseModel):
     balance: float            # текущий баланс пользователя
 
+class AdminAdjustRequest(BaseModel):
+    user_id: int
+    amount: float
+    meta: Optional[dict] = None
 
 class WalletTransactionItem(BaseModel):
     id: int
