@@ -52,4 +52,5 @@ export interface UserType {
   password: string;
   purchases: any[];
   courses: any[];
+  balance: number;
 }
