@@ -85,6 +85,7 @@ const UserDetail = () => {
     try {
       await adminApi.changeUserBalance(data);
       setBalance(Number(balance) + amount);
+      setAmountToAdd(0);
       alert(`Successfully updated user balance`);
     } catch {
       alert(`Error updating user`);
