@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
 import { getTags } from "../../store/actions/mainActions.ts";
-import { scrollToElement } from "../../common/helpers/helpers.ts";
+import { scrollToElement } from "../../common/helpers/helpers.tsx";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const PAGE_SIZE = 14;

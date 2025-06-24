@@ -7,7 +7,7 @@ import {
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
-} from "../../common/helpers/helpers.ts";
+} from "../../common/helpers/helpers.tsx";
 import Loader from "../../components/ui/Loader/Loader.tsx";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";

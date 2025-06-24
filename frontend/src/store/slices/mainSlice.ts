@@ -4,7 +4,7 @@ import {
   getCoursesRecommend,
   getTags,
 } from "../actions/mainActions.ts";
-import { transformTags } from "../../common/helpers/helpers.ts";
+import { transformTags } from "../../common/helpers/helpers.tsx";
 
 type TagType = {
   id: number;

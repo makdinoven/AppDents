@@ -35,6 +35,8 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
+import { getAlert } from "../../../common/helpers/helpers.tsx";
+import CheckMark from "../../../assets/Icons/CheckMark.tsx";
 
 const logos = [
   VisaLogo,
@@ -82,10 +84,10 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    isLogged && balance ? balance > 0 : false,
+    isLogged && balance ? balance > 0 : false
   );
   const {
     register,
@@ -163,7 +165,10 @@ const PaymentModal = ({
         }
 
         if (balanceLeft) {
-          alert(t("successPaymentWithBalance", { balance: balanceLeft }));
+          getAlert(
+            t("successPaymentWithBalance", { balance: balanceLeft }),
+            <CheckMark />
+          );
           navigate(Path.profile);
         }
       } catch (error) {

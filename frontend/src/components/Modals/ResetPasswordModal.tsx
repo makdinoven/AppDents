@@ -12,6 +12,8 @@ import Input from "./modules/Input/Input.tsx";
 import { ResetPasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
+import { getAlert } from "../../common/helpers/helpers.tsx";
+import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);
@@ -29,7 +31,7 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
     if (id) {
       try {
         await userApi.resetPassword(newPassword, id);
-        alert(t("passwordChanged"));
+        getAlert(t("passwordChanged"), <CheckMark />);
         handleClose();
       } catch (error) {
         setError(error);

@@ -8,7 +8,7 @@ import {
   ProfessorsIcon,
   QuestionMark,
 } from "../../../assets/logos/index";
-import { scrollToElementById } from "../../../common/helpers/helpers.ts";
+import { scrollToElementById } from "../../../common/helpers/helpers.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 

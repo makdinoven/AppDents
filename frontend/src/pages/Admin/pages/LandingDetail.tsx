@@ -13,8 +13,10 @@ import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import {
   denormalizeLessons,
+  getAlert,
   normalizeLessons,
-} from "../../../common/helpers/helpers.ts";
+} from "../../../common/helpers/helpers.tsx";
+import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
 
 const LandingDetail = () => {
   const { landingId } = useParams();
@@ -49,7 +51,10 @@ const LandingDetail = () => {
       setCourses(coursesRes.data.items);
       setAuthors(authorsRes.data.items);
     } catch (error: any) {
-      alert(`Error fetching landing data, error message: ${error.message}`);
+      getAlert(
+        `Error fetching landing data, error message: ${error.message}`,
+        <ErrorIcon />
+      );
     } finally {
       setLoading(false);
     }
@@ -83,7 +88,7 @@ const LandingDetail = () => {
 
   const handleDeleteItem = (
     itemType: "landing" | "lesson",
-    lessonId?: number,
+    lessonId?: number
   ) => {
     if (!confirm(`Are you sure you want to delete this ${itemType}?`)) return;
 
