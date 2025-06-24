@@ -13,6 +13,8 @@ $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
 $background-color: rgb(237, 248, 255);
+$background-color-06: rgba(237, 248, 255, 0.6);
+$background-color-08: rgba(237, 248, 255, 0.8);
 $cart-background: #edf8ff66;
 $background-color-05: rgba(237, 248, 255, 0.5);
 $background-color-08: rgba(237, 248, 255, 0.8);
@@ -36,6 +38,9 @@ $quaternary: #5b6968;
 $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #fe0502;
+$green: #90e895;
+$green-06: rgba(144, 232, 149, 0.6);
+$green-08: rgba(144, 232, 149, 0.8);
 $error-color-lighten: #ffbebf;
 $hover-color: rgba(100, 116, 139, 0.1);
 $blur: blur(10px);
