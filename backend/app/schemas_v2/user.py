@@ -141,6 +141,7 @@ class UserDetailedResponse(BaseModel):
     role: str
     courses: List[int]
     purchases: List[PurchaseResponse]
+    balance : str
 
     @validator("courses", pre=True)
     def convert_courses_to_ids(cls, value):

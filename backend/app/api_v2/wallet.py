@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..dependencies.auth import get_current_user
@@ -10,7 +10,7 @@ from ..schemas_v2.wallet import (
     ReferralLinkResponse,
     WalletResponse,
     WalletTransactionItem,
-    ReferralReportItem,
+    ReferralReportItem, AdminAdjustRequest,
 )
 from ..services_v2 import wallet_service as ws
 
@@ -40,7 +40,7 @@ def wallet_balance(current_user: m.User = Depends(get_current_user)):
     return WalletResponse(balance=ws.get_wallet_balance(current_user))
 
 
-@router.get("/wallet/transactions", response_model=List[WalletTransactionItem])
+@router.get("/transactions", response_model=List[WalletTransactionItem])
 def wallet_transactions(
     db: Session = Depends(get_db),
     current_user: m.User = Depends(get_current_user),
@@ -56,3 +56,27 @@ def wallet_transactions(
         )
         for tx in txs
     ]
+
+@router.post(
+    "/admin/adjust",
+    response_model=WalletResponse,
+    summary="Админская корректировка баланса"
+)
+def admin_adjust_balance(
+    req: AdminAdjustRequest,
+    db: Session = Depends(get_db),
+    current_user: m.User = Depends(get_current_user),
+):
+    # простая проверка на роль; подставьте ту логику, что есть у вас
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Нет прав")
+
+    try:
+        ws.admin_adjust_balance(db, req.user_id, req.amount, req.meta)
+    except ValueError as e:
+        # не хватает средств или пользователь не найден
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # возвращаем актуальный баланс пользователя
+    user = db.query(m.User).get(req.user_id)
+    return WalletResponse(balance=user.balance)

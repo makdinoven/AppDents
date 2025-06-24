@@ -6,11 +6,13 @@ import io
 import uuid
 from typing import Annotated, Iterable
 
+import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
+from starlette.responses import StreamingResponse
 
 from ..db.database import get_db
-from ..models.models_v2 import User, AbandonedCheckout
+from ..models.models_v2 import User, AbandonedCheckout, Landing
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -119,3 +121,41 @@ async def import_failed_payments(
         "skipped": skipped,
         "total_in_file": len(emails),
     }
+@router.get("/export-landings")
+def export_landings(db: Session = Depends(get_db)):
+    # Получаем все лендинги
+    landings = db.query(Landing).all()
+
+    # Собираем данные
+    rows = []
+    for l in landings:
+        tags = ", ".join([t.name for t in l.tags])
+        rows.append({
+            "landing_name":    l.landing_name,
+            "course_program":  l.course_program,
+            "language":        l.language,
+            "duration":        l.duration,
+            "lessons_count":   l.lessons_count,
+            "tags":            tags,
+            "sales_count":     l.sales_count,
+        })
+
+    # Создаем Excel в памяти с openpyxl
+    df = pd.DataFrame(rows)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Landings")
+    output.seek(0)
+
+    # Отдаем файл для скачивания
+    headers = {
+        "Content-Disposition": "attachment; filename=landings_export.xlsx"
+    }
+    return StreamingResponse(
+        output,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+        headers=headers
+    )

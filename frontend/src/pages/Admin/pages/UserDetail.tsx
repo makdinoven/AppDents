@@ -11,10 +11,14 @@ import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
 import Table from "../../../components/ui/Table/Table.tsx";
+import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
+import { Trans } from "react-i18next";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserType | null>(null);
+  const [amountToAdd, setAmountToAdd] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(0);
   const navigate = useNavigate();
   const [courses, setCourses] = useState<any>(null);
   const { userId } = useParams();
@@ -34,6 +38,7 @@ const UserDetail = () => {
       ]);
       setUser(userRes.data);
       setCourses(coursesRes.data.items);
+      setBalance(Number(userRes.data.balance));
       setLoading(false);
     } catch (error: any) {
       alert(`Error fetching user data, error message: ${error.message}`);
@@ -63,7 +68,27 @@ const UserDetail = () => {
       await adminApi.updateUser(userId, user);
       navigate(-1);
     } catch (error) {
-      console.error("Error updating author:", error);
+      console.error("Error updating user:", error);
+    }
+  };
+
+  const handleChangeBalance = async () => {
+    const amount = Number(amountToAdd);
+    if (isNaN(amount) || amount === 0) return;
+
+    const data = {
+      user_id: Number(userId),
+      amount,
+      meta: { reason: "bonus" },
+    };
+
+    try {
+      await adminApi.changeUserBalance(data);
+      setBalance(Number(balance) + amount);
+      setAmountToAdd(0);
+      alert(`Successfully updated user balance`);
+    } catch {
+      alert(`Error updating user`);
     }
   };
 
@@ -89,6 +114,13 @@ const UserDetail = () => {
               />
             )}
 
+            <p>
+              <Trans
+                i18nKey={"admin.users.balance"}
+                values={{ balance: balance }}
+              />
+            </p>
+
             <div className={s.two_items}>
               <AdminField
                 type="input"
@@ -106,6 +138,21 @@ const UserDetail = () => {
                 value={user?.password ? user?.password : ""}
                 onChange={handleChange}
               />
+              <div className={s.input_button_wrapper}>
+                <AdminField
+                  inputType="number"
+                  type="input"
+                  id="balance"
+                  placeholder={t("admin.users.balance.placeholder")}
+                  label={t("admin.users.balance.add")}
+                  value={amountToAdd}
+                  onChange={(e: any) => setAmountToAdd(e.value)}
+                />
+                <PrettyButton
+                  onClick={handleChangeBalance}
+                  text={"admin.users.changeBalance"}
+                />
+              </div>
             </div>
 
             <MultiSelect
