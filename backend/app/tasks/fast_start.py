@@ -75,17 +75,36 @@ def ensure_faststart():
 
 @shared_task(name="app.tasks.process_faststart_video")
 def process_faststart_video(key: str):
-    url = s3.generate_presigned_url("get_object", Params={"Bucket": S3_BUCKET, "Key": key}, ExpiresIn=3600)
-    cmd = [
-        "ffmpeg", "-y", "-i", url,
-        "-c", "copy",
-        "-movflags", "+empty_moov+default_base_moof+frag_keyframe",
-        "-f", "mp4", "pipe:1"
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    s3.upload_fileobj(proc.stdout, S3_BUCKET, key,
-                      ExtraArgs={"ACL": "public-read", "ContentType": "video/mp4", "Metadata": {"faststart": "true"}})
-    err = proc.stderr.read()
-    if proc.wait() != 0:
-        raise RuntimeError(f"ffmpeg frag failed for {key}: {err}")
-    logger.info("Faststart applied (frag): %s", key)
+    def process_faststart_video_disk(key: str):
+        """
+        Надёжный вариант: скачиваем файл, добавляем +faststart на диске, заливаем обратно.
+        Требует свободного пространства ≥ размера видео.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            in_mp4 = os.path.join(tmp, "in.mp4")
+            out_mp4 = os.path.join(tmp, "out.mp4")
+
+            # 1) Скачать
+            s3.download_file(S3_BUCKET, key, in_mp4)
+
+            # 2) Remux с faststart
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", in_mp4,
+                "-c", "copy",
+                "-movflags", "+faststart",
+                out_mp4
+            ]
+            subprocess.run(cmd, check=True)
+
+            # 3) Загрузить обратно
+            s3.upload_file(
+                out_mp4, S3_BUCKET, key,
+                ExtraArgs={
+                    "ACL": "public-read",
+                    "ContentType": "video/mp4",
+                    "Metadata": {"faststart": "true"}
+                }
+            )
+
+        logger.info("Faststart applied (disk) → %s", key)
