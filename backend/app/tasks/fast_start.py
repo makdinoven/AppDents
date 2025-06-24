@@ -17,7 +17,7 @@ S3_BUCKET       = os.getenv("S3_BUCKET",       "cdn.dent-s.com")
 S3_PUBLIC_HOST  = os.getenv("S3_PUBLIC_HOST",  "https://cdn.dent-s.com")
 S3_REGION       = os.getenv("S3_REGION",       "ru-1")
 REDIS_URL       = os.getenv("REDIS_URL",       "redis://redis:6379/0")
-NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 10))
+NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 15))
 FFMPEG_RETRIES  = int(os.getenv("FFMPEG_RETRIES", 3))
 PRESIGN_EXPIRY  = 3600  # seconds
 
