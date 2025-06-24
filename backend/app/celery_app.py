@@ -26,8 +26,8 @@ celery.conf.update(
     enable_utc=True,
     task_annotations={
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
-        "app.tasks.process_faststart_video": {"rate_limit": "15/m"},
-        "app.tasks.ensure_faststart":    {"rate_limit": "15/m"},
+        "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
+        "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
     },
     beat_schedule={
         "special-offers-every-hour": {
