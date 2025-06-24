@@ -26,7 +26,8 @@ import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
 import MyReferrals from "../MyReferrals/MyReferrals.tsx";
 import MyTransactions from "../MyTransactions/MyTransactions.tsx";
 import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
-import { QUERY_KEY } from "../../../../../../common/helpers/commonConstants.ts";
+
+const QUERY_KEY = "content";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -35,17 +36,12 @@ const ProfileMain = () => {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   // const [showConfirmModal, setShowConfirmModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
-  const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged
-  );
   const [searchParams] = useSearchParams();
   const tabFromParams = searchParams.get(QUERY_KEY);
 
   useEffect(() => {
-    if (isLogged) {
-      dispatch(getCourses());
-    }
-  }, [dispatch]);
+    dispatch(getCourses());
+  }, []);
 
   const handleLogout = () => {
     dispatch(logoutAsync());
@@ -65,7 +61,6 @@ const ProfileMain = () => {
       value: "profile_main",
       component: (
         <>
-          {" "}
           <div className={s.page_header}>
             <div className={s.user_info}>
               <div className={s.left}>
@@ -97,7 +92,6 @@ const ProfileMain = () => {
               </div>
               <ReferralSection />
             </div>
-
             <LineWrapper>
               <ArrowButton text={t("logout")} onClick={handleLogout} />
             </LineWrapper>
@@ -107,12 +101,12 @@ const ProfileMain = () => {
       ),
     },
     {
-      name: "profile.myReferrals",
+      name: "profile.myReferrals.tabName",
       value: "my_referrals",
       component: <MyReferrals />,
     },
     {
-      name: "profile.myTransactions",
+      name: "profile.myTransactions.tabName",
       value: "my_transactions",
       component: <MyTransactions />,
     },

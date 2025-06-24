@@ -79,10 +79,7 @@
     "title": "<1>اليوم</1> فقط – <1>{{discount}}٪ خصم!</1>"
   },
 
-
-
-
-"nav": {
+  "nav": {
     "home": "الرئيسية",
     "courses": "الدورات",
     "books": "الكتب",
@@ -95,7 +92,6 @@
       "program": "برنامج الدورة"
     }
   },
-
 
   "search": {
     "searchCourses": "بحث عن الدورات",
@@ -233,8 +229,29 @@
       "step_4": "٤. تتلقى <1>50٪</1> من المبلغ المدفوع (مثلاً <1>9.50$</1>) كرصيد في محفظتك."
     },
     "main": "رئيسي",
-    "myReferrals": "إحالاتي",
-    "myTransactions": "معاملاتي"
+    "myReferrals": {
+      "tabName": "إحالاتي",
+      "totalPaid": "المدفوع",
+      "totalCashback": "الكاش باك",
+      "email": "البريد الإلكتروني"
+    },
+    "myTransactions": {
+      "tabName": "معاملاتي",
+      "type": "النوع",
+      "amount": "المبلغ",
+      "date": "التاريخ",
+      "reason": "السبب",
+      "courses": "الدورات",
+      "fromUser": "من المستخدم",
+      "adminAdjust": "تعديل الأدمن",
+      "referralCashback": "كاش باك الإحالة",
+      "internalPurchase": "شراء داخلي",
+      "bonus": "مكافأة",
+      "fullPurchase": "شراء كامل",
+      "test": "اختبار"
+    },
+    "invited": "مدعو",
+    "payments": "المدفوعات"
   },
 
   "professor": {
@@ -254,12 +271,10 @@
     "coursesCount_few": "{{count}} دورات",
     "coursesCount_many": "{{count}} دورة",
     "coursesCount_other": "{{count}} دورة"
-
   },
   "other": {
     "otherCourses": "دورات أخرى"
   },
-
 
   "error": {
     "email.empty": "لا يجب أن يكون البريد الإلكتروني فارغًا",

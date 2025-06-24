@@ -1,22 +1,26 @@
+import { useEffect } from "react";
 import s from "./Table.module.scss";
 import { Path } from "../../../routes/routes.ts";
 import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.ts";
+import Loader from "../Loader/Loader.tsx";
 
 interface TableProps<T extends Record<string, any>> {
   title?: string;
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
-  titleIcons?: boolean;
-  customTable?: boolean;
+  loading?: boolean;
 }
 
 const Table = <T extends Record<string, any>>({
   title,
   data,
   columnLabels = {},
-  titleIcons,
-  customTable,
+  loading,
 }: TableProps<T>) => {
+  useEffect(() => {
+    loading && <Loader />;
+  }, [loading]);
+
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
   const excludedKeys = [
@@ -84,64 +88,31 @@ const Table = <T extends Record<string, any>>({
   };
 
   return (
-    <>
+    <div className={s.table_component}>
       {title && <h4 className={s.table_title}>{title}</h4>}
-      <div className={customTable ? s.custom_table_wrapper : s.table_wrapper}>
-        <table className={customTable ? s.custom_table : s.table}>
-          {customTable ? (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${headers.length}, 1fr)`,
-                width: "100%",
-              }}
-            >
-              {Array.from({ length: headers.length }, (_, index) => index).map(
-                (value, index) => (
-                  <div
-                    key={value}
-                    className={s.table_header}
-                    style={{
-                      width: `calc(100%/${headers.length}*(${headers.length - index}))`,
-                      zIndex: index,
-                      left: `calc(100%/${headers.length}*(${index}))`,
-                    }}
-                  >
-                    bbb
-                  </div>
-                )
-              )}
-            </div>
-          ) : (
-            <thead>
-              <tr>
+      <div className={s.table_wrapper}>
+        <table className={s.table}>
+          <thead>
+            <tr>
+              <th>#</th>
+              {headers.map((key) => (
+                <th key={key}>{columnLabels[key as keyof T] || key}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, rowIdx) => (
+              <tr key={rowIdx}>
+                <td>{rowIdx + 1}</td>
                 {headers.map((key) => (
-                  <th key={key}>{columnLabels[key as keyof T] || key}</th>
+                  <td key={key}>{renderCell(key, row[key], row)}</td>
                 ))}
               </tr>
-            </thead>
-          )}
-          <tbody>
-            {customTable
-              ? data.map((row, rowIdx) => (
-                  <tr key={rowIdx}>
-                    {headers.map((key) => (
-                      <td key={key}>{renderCell(key, row[key], row)}</td>
-                    ))}
-                  </tr>
-                ))
-              : data.map((row, rowIdx) => (
-                  <tr key={rowIdx}>
-                    <td>{rowIdx + 1}</td>
-                    {headers.map((key) => (
-                      <td key={key}>{renderCell(key, row[key], row)}</td>
-                    ))}
-                  </tr>
-                ))}
+            ))}
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 

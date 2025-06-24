@@ -24,7 +24,7 @@
   "yourOrder": "Ваш заказ",
   "seeMore": "Показать ещё",
   "endOfList": "Пока что это все курсы. В будущем появятся новые!",
-  "endOfListFilter" : "Курсы по фильтру «{{filter}}». Пока что это все. В будущем будет больше!",
+  "endOfListFilter": "Курсы по фильтру «{{filter}}». Пока что это все. В будущем будет больше!",
   "password": "Пароль...",
   "open": "открыть",
   "view": "Смотреть",
@@ -78,9 +78,7 @@
     "title": "Скидка <1>{{discount}}%</1> только <1>сегодня!</1> "
   },
 
-
-
-"nav": {
+  "nav": {
     "home": "Главная",
     "courses": "Курсы",
     "books": "Книги",
@@ -94,7 +92,6 @@
     }
   },
 
-
   "search": {
     "searchCourses": "Поиск курсов",
     "searchPlaceholder": "Введите название курса или имя автора...",
@@ -105,8 +102,8 @@
     "result_zero": "Курсов не найдено"
   },
 
-"main": {
-    "title" : "Онлайн-курсы по <1>стоматологии</1>",
+  "main": {
+    "title": "Онлайн-курсы по <1>стоматологии</1>",
     "hero.description": "Онлайн-курсы для стоматологов",
     "hero.widestRange": "Самый <1>широкий</1> ассортимент курсов ",
     "hero.chooseCourse": "Выберите курс",
@@ -114,8 +111,8 @@
     "ourCurses": "Наши курсы",
     "viewCourse": "Смотреть",
     "noCourses": "Курсы не найдены",
-  "noCoursesFilter": "По фильтру «{{filter}}» курсов не найдено"
-},
+    "noCoursesFilter": "По фильтру «{{filter}}» курсов не найдено"
+  },
 
   "footer": {
     "contacts.title": "Контакты",
@@ -224,9 +221,31 @@
       "step_3": "3. Ваш друг покупает любой курс — например, за <1>19 $</1>.",
       "step_4": "4. Вы получаете <1>50%</1> от его оплаты (например, <1>9.50 $</1>) в качестве бонуса на кошелек."
     },
+
     "main": "Главная",
-    "myReferrals": "Мои рефералы",
-    "myTransactions": "Мои транзакции"
+    "myReferrals": {
+      "tabName": "Мои рефералы",
+      "totalPaid": "Всего заплачено",
+      "totalCashback": "Кешбек",
+      "email": "Почта"
+    },
+    "myTransactions": {
+      "tabName": "Мои транзакции",
+      "type": "Тип",
+      "amount": "Количество",
+      "date": "Дата",
+      "reason": "Причина",
+      "courses": "Курсы",
+      "fromUser": "От пользователя",
+      "adminAdjust": "Админ-правка",
+      "referralCashback": "Реферальный кешбек",
+      "internalPurchase": "Глобальная покупка",
+      "bonus": "Бонус",
+      "fullPurchase": "Полная покупка",
+      "test": "Тест"
+    },
+    "invited": "Приглашенные",
+    "payments": "Оплаты"
   },
 
   "professor": {
@@ -244,12 +263,10 @@
     "coursesCount_few": "{{count}} курса",
     "coursesCount_many": "{{count}} курсов",
     "coursesCount_other": "{{count}} курса"
-
   },
   "other": {
     "otherCourses": "Другие курсы"
   },
-
 
   "error": {
     "email.empty": "Введите Email",
@@ -258,7 +275,7 @@
     "password.empty": "Введите пароль",
     "password.minLength": "Пароль должен содержать не менее 6 символов",
     "password.required": "Пароль обязателен",
-    "error.invalid_credentials" : "Неправильный Email или пароль",
+    "error.invalid_credentials": "Неправильный Email или пароль",
     "errorChangingPassword": "Ошибка. Пароль не был изменён."
   },
 

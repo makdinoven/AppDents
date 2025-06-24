@@ -1,6 +1,6 @@
 .profile_page {
   @include flex-column;
-  gap: 140px;
+  gap: 80px;
   justify-content: space-between;
 }
 
@@ -48,13 +48,13 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
   gap: 20px;
 }
 
 @media (max-width: $tablet-breakpoint) {
   .profile_page {
-    gap: 80px;
+    gap: 60px;
   }
 
   .user_info {
@@ -71,16 +71,16 @@
   }
 
   .tabs_wrapper{
-    margin-bottom: 40px;
+    margin-bottom: 30px;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .profile_page {
-    gap: 50px;
+    gap: 30px;
   }
 
     .tabs_wrapper{
-    margin-bottom: 30px;
+    margin-bottom: 15px;
   }
 }

@@ -75,7 +75,7 @@ export const userApi = {
   },
 
   getMyTransactions() {
-    return instance.get("wallet/wallet/transactions", {
+    return instance.get("wallet/transactions", {
       headers: getAuthHeaders(),
     });
   },
