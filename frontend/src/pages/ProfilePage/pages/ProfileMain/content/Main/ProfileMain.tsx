@@ -124,7 +124,6 @@ const ProfileMain = () => {
           queryKey={QUERY_KEY}
           mainTab={"profile_main"}
           tabs={profilePageContent}
-          profileMain
         />
       </div>
       <div className={s.profile_page}>{activeTab?.component}</div>

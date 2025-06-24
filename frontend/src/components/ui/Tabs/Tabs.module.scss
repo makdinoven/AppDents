@@ -1,6 +1,6 @@
 .btns_container {
   display: flex;
-  width: 100%;
+  width: fit-content;
   gap: 20px;
   padding: 10px 20px;
   border: 1px solid $hover-color;
@@ -8,10 +8,6 @@
   margin-bottom: 40px;
   overflow-y: auto;
   @include custom-scrollbar;
-
-  &.profile_main {
-    width: fit-content;
-  }
 
   @media (max-width: $mobile-breakpoint) {
     & {
