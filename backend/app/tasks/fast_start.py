@@ -75,59 +75,17 @@ def ensure_faststart():
 
 @shared_task(name="app.tasks.process_faststart_video")
 def process_faststart_video(key: str):
-    """
-    Stream-process an S3 .mp4 by adding faststart without writing to disk.
-    """
-    # retrieve original metadata
-    head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-    orig_meta = head.get('Metadata', {})
-
-    # generate presigned URL for streaming
-    url = s3.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': S3_BUCKET, 'Key': key},
-        ExpiresIn=PRESIGN_EXPIRY
-    )
-
-    # ffmpeg: input HTTP stream, output to stdout
+    url = s3.generate_presigned_url("get_object", Params={"Bucket": S3_BUCKET, "Key": key}, ExpiresIn=3600)
     cmd = [
-        'ffmpeg', '-y',
-        '-i', url,
-        '-c', 'copy',
-        '-movflags', '+faststart',
-        '-f', 'mp4',
-        'pipe:1'
+        "ffmpeg", "-y", "-i", url,
+        "-c", "copy",
+        "-movflags", "+empty_moov+default_base_moof+frag_keyframe",
+        "-f", "mp4", "pipe:1"
     ]
-
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-
-    # upload back to same key
-    new_meta = {**orig_meta, 'faststart': 'true'}
-    try:
-        s3.upload_fileobj(
-            Fileobj=proc.stdout,
-            Bucket=S3_BUCKET,
-            Key=key,
-            ExtraArgs={
-                'ACL': 'public-read',
-                'ContentType': 'video/mp4',
-                'Metadata': new_meta
-            }
-        )
-    except Exception as e:
-        proc.kill()
-        logger.error("Upload failed for %s: %s", key, e)
-        raise
-
-    # check for ffmpeg errors
-    stderr = proc.stderr.read().decode('utf-8', 'ignore')
-    ret = proc.wait()
-    if ret != 0:
-        logger.error("ffmpeg exit %d for %s: %s", ret, key, stderr)
-        raise RuntimeError(f"ffmpeg failed for {key}")
-
-    logger.info("Faststart applied: %s", key)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    s3.upload_fileobj(proc.stdout, S3_BUCKET, key,
+                      ExtraArgs={"ACL": "public-read", "ContentType": "video/mp4", "Metadata": {"faststart": "true"}})
+    err = proc.stderr.read()
+    if proc.wait() != 0:
+        raise RuntimeError(f"ffmpeg frag failed for {key}: {err}")
+    logger.info("Faststart applied (frag): %s", key)
