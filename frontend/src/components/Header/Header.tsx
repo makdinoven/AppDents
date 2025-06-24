@@ -9,7 +9,7 @@ import VideoHeaderContent from "./content/VideoHeaderContent.tsx";
 import {
   isPromotionLanding,
   isVideoLanding,
-} from "../../common/helpers/helpers.ts";
+} from "../../common/helpers/helpers.tsx";
 import TimerBanner from "../ui/TimerBanner/TimerBanner.tsx";
 
 const Header = () => {

@@ -15,13 +15,15 @@ import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
+import { getAlert } from "../../common/helpers/helpers.tsx";
+import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const ForgotPasswordModal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
+    (state: AppRootStateType) => state.user.language
   );
   const {
     register,
@@ -36,7 +38,7 @@ const ForgotPasswordModal = () => {
     setLoading(true);
     try {
       await userApi.forgotPassword(email, language);
-      alert(t("forgotPasswordSuccess"));
+      getAlert(t("forgotPasswordSuccess"), <CheckMark />);
       navigate("/login");
     } catch (error: any) {
       setError(error.response.data.detail.error.translation_key);

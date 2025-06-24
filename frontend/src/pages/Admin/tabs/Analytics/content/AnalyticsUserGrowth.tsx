@@ -1,7 +1,7 @@
 // import s from "../Analytics.module.scss"
 
 import { useEffect, useState } from "react";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
+import { getFormattedDate } from "../../../../../common/helpers/helpers.tsx";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";

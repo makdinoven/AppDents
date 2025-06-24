@@ -11,6 +11,8 @@ import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
 import Table from "../../../components/ui/Table/Table.tsx";
+import { getAlert } from "../../../common/helpers/helpers.tsx";
+import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
 
 const UserDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,10 @@ const UserDetail = () => {
       setCourses(coursesRes.data.items);
       setLoading(false);
     } catch (error: any) {
-      alert(`Error fetching user data, error message: ${error.message}`);
+      getAlert(
+        `Error fetching user data, error message: ${error.message}`,
+        <ErrorIcon />
+      );
     }
   };
 

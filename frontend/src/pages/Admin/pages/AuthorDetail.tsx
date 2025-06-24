@@ -11,6 +11,8 @@ import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import PhotoUploader from "../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
 import { AuthorType } from "../types.ts";
 import Loader from "../../../components/ui/Loader/Loader.tsx";
+import { getAlert } from "../../../common/helpers/helpers.tsx";
+import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
 
 const AuthorDetail = () => {
   const [loading, setLoading] = useState(true);
@@ -30,7 +32,10 @@ const AuthorDetail = () => {
       setAuthor(res.data);
       setLoading(false);
     } catch (error: any) {
-      alert(`Error fetching author data, error message: ${error.message}`);
+      getAlert(
+        `Error fetching author data, error message: ${error.message}`,
+        <ErrorIcon />
+      );
     }
   };
 
