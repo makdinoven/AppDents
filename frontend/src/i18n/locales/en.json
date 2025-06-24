@@ -64,6 +64,7 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "freeCourse": {
+    "freePreview": "Free lesson",
     "registerToWatch": "Register to watch",
     "tryFirstLesson": "Try first lesson for free",
     "fullAccess": "Get full course",
@@ -403,7 +404,11 @@
       "password": "Password",
       "password.placeholder": "Enter new password...",
       "courses": "User courses",
-      "found": "Users found: {{count}}"
+      "found": "Users found: {{count}}",
+      "balance": "User balance: ${{balance}}",
+      "balance.add": "Add to user balance",
+      "balance.placeholder": "Enter amount to add...",
+      "changeBalance": "Add to balance"
     },
     "authors": {
       "authors": "authors",

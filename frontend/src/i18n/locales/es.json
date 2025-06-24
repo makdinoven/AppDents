@@ -62,6 +62,7 @@
   "firstFreeLesson": "Primera clase gratis",
   "or": "o",
   "freeCourse": {
+    "freePreview": "Clase demo",
     "registerToWatch": "Regístrate para ver",
     "tryFirstLesson": "Prueba la primera clase",
     "fullAccess": "Curso completo",

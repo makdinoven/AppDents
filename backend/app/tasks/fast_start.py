@@ -17,7 +17,7 @@ S3_BUCKET       = os.getenv("S3_BUCKET",       "cdn.dent-s.com")
 S3_PUBLIC_HOST  = os.getenv("S3_PUBLIC_HOST",  "https://cdn.dent-s.com")
 S3_REGION       = os.getenv("S3_REGION",       "ru-1")
 REDIS_URL       = os.getenv("REDIS_URL",       "redis://redis:6379/0")
-NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 10))
+NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 15))
 FFMPEG_RETRIES  = int(os.getenv("FFMPEG_RETRIES", 3))
 PRESIGN_EXPIRY  = 3600  # seconds
 
@@ -75,59 +75,36 @@ def ensure_faststart():
 
 @shared_task(name="app.tasks.process_faststart_video")
 def process_faststart_video(key: str):
-    """
-    Stream-process an S3 .mp4 by adding faststart without writing to disk.
-    """
-    # retrieve original metadata
-    head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-    orig_meta = head.get('Metadata', {})
+    def process_faststart_video_disk(key: str):
+        """
+        Надёжный вариант: скачиваем файл, добавляем +faststart на диске, заливаем обратно.
+        Требует свободного пространства ≥ размера видео.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            in_mp4 = os.path.join(tmp, "in.mp4")
+            out_mp4 = os.path.join(tmp, "out.mp4")
 
-    # generate presigned URL for streaming
-    url = s3.generate_presigned_url(
-        'get_object',
-        Params={'Bucket': S3_BUCKET, 'Key': key},
-        ExpiresIn=PRESIGN_EXPIRY
-    )
+            # 1) Скачать
+            s3.download_file(S3_BUCKET, key, in_mp4)
 
-    # ffmpeg: input HTTP stream, output to stdout
-    cmd = [
-        'ffmpeg', '-y',
-        '-i', url,
-        '-c', 'copy',
-        '-movflags', '+faststart',
-        '-f', 'mp4',
-        'pipe:1'
-    ]
+            # 2) Remux с faststart
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", in_mp4,
+                "-c", "copy",
+                "-movflags", "+faststart",
+                out_mp4
+            ]
+            subprocess.run(cmd, check=True)
 
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+            # 3) Загрузить обратно
+            s3.upload_file(
+                out_mp4, S3_BUCKET, key,
+                ExtraArgs={
+                    "ACL": "public-read",
+                    "ContentType": "video/mp4",
+                    "Metadata": {"faststart": "true"}
+                }
+            )
 
-    # upload back to same key
-    new_meta = {**orig_meta, 'faststart': 'true'}
-    try:
-        s3.upload_fileobj(
-            Fileobj=proc.stdout,
-            Bucket=S3_BUCKET,
-            Key=key,
-            ExtraArgs={
-                'ACL': 'public-read',
-                'ContentType': 'video/mp4',
-                'Metadata': new_meta
-            }
-        )
-    except Exception as e:
-        proc.kill()
-        logger.error("Upload failed for %s: %s", key, e)
-        raise
-
-    # check for ffmpeg errors
-    stderr = proc.stderr.read().decode('utf-8', 'ignore')
-    ret = proc.wait()
-    if ret != 0:
-        logger.error("ffmpeg exit %d for %s: %s", ret, key, stderr)
-        raise RuntimeError(f"ffmpeg failed for {key}")
-
-    logger.info("Faststart applied: %s", key)
+        logger.info("Faststart applied (disk) → %s", key)

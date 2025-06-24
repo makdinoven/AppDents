@@ -62,6 +62,7 @@
   "firstFreeLesson": "أول درس مجاني",
   "or": "أو",
   "freeCourse": {
+    "freePreview": "درس تجريبي",
     "registerToWatch": "سجّل للمشاهدة",
     "tryFirstLesson": "جرّب أول درس",
     "fullAccess": "شراء الدورة",

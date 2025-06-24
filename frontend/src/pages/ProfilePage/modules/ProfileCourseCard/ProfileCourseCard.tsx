@@ -40,11 +40,19 @@ const ProfileCourseCard = ({
   };
 
   return (
-    <Link to={link} className={`${s.card} ${setCardColor()}`}>
+    <Link
+      to={link}
+      className={`${s.card} ${setCardColor()} ${isOffer ? s.offer : ""}`}
+    >
       {isOffer && (
         <div className={s.timer}>
           <Clock />
           <CountdownTimer endsAt={expires_at} />
+        </div>
+      )}
+      {isOffer && (
+        <div className={s.free}>
+          <Trans i18nKey={"freeCourse.freePreview"} />
         </div>
       )}
       <div className={s.card_content}>

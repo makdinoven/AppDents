@@ -35,6 +35,33 @@ def get_wallet_transactions(db: Session, user_id: int) -> List[m.WalletTransacti
         .all()
     )
 
+def admin_adjust_balance(
+    db: Session,
+    user_id: int,
+    amount: float,
+    meta: dict | None = None
+) -> None:
+    """
+    Админская корректировка баланса:
+    положительный amount — зачисление, отрицательный — списание.
+    """
+    user = db.query(User).get(user_id)
+    if user is None:
+        raise ValueError(f"User {user_id} not found")
+
+    # если списываем, проверяем достаточность средств
+    if amount < 0 and user.balance < -amount - 1e-6:
+        raise ValueError("Not enough balance to deduct")
+
+    user.balance += amount
+    tx = WalletTransaction(
+        user_id=user_id,
+        amount=amount,
+        type=WalletTxTypes.ADMIN_ADJUST,
+        meta=meta or {}
+    )
+    db.add(tx)
+    db.commit()
 
 def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
     """

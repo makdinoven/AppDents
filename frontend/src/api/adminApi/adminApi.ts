@@ -131,6 +131,15 @@ export const adminApi = {
   deleteUser(id: any) {
     return instance.delete(`users/admin/${id}`, { headers: getAuthHeaders() });
   },
+  changeUserBalance(data: {
+    user_id: number;
+    amount: number;
+    meta: { reason: string };
+  }) {
+    return instance.post(`wallet/admin/adjust`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
 
   uploadPhoto(file: any) {
     return instance.post("photo/photo", file);
