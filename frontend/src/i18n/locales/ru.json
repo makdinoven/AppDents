@@ -62,6 +62,7 @@
   "firstFreeLesson": "Первый урок бесплатно",
   "or": "или",
   "freeCourse": {
+    "freePreview": "демо-урок",
     "registerToWatch": "Зарегистрируйтесь для просмотра",
     "tryFirstLesson": "Попробовать первый урок",
     "fullAccess": "Купить курс",

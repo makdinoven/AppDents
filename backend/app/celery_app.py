@@ -10,6 +10,12 @@ celery = Celery(
     "dent_backend",
     broker=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
     backend=os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1"),
+    include=[
+            "app.tasks.fast_start",
+            "app.tasks.preview_tasks",
+            "app.tasks.special_offers",
+            "app.tasks.storage_links",
+        ],
 )
 
 #    ↓↓↓  вместо include используем autodiscover
@@ -26,8 +32,8 @@ celery.conf.update(
     enable_utc=True,
     task_annotations={
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
-        "app.tasks.process_faststart_video": {"rate_limit": "15/m"},
-        "app.tasks.ensure_faststart":    {"rate_limit": "15/m"},
+        "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
+        "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
     },
     beat_schedule={
         "special-offers-every-hour": {

@@ -17,6 +17,17 @@
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
+
+  .input_button_wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 10px;
+
+    button {
+      width: fit-content;
+    }
+  }
 }
 
 .inner_list {
