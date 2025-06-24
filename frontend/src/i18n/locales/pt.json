@@ -79,9 +79,6 @@
     "title": "Só <1>hoje</1> – <1>{{discount}}% off!</1>"
   },
 
-
-
-
   "nav": {
     "home": "Início",
     "courses": "Cursos",
@@ -95,7 +92,6 @@
       "program": "Programa do curso"
     }
   },
-
 
   "search": {
     "searchCourses": "Buscar cursos",
@@ -203,7 +199,6 @@
       "9_question": "Como redefinir minha senha?",
       "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha."
     }
-
   },
 
   "profile": {
@@ -224,10 +219,32 @@
       "step_2": "2. Envie para um amigo via WhatsApp, Telegram, e-mail ou como preferir.",
       "step_3": "3. O seu amigo compra qualquer curso — por exemplo, um que custa <1>$19</1>.",
       "step_4": "4. Você recebe <1>50%</1> do valor pago (ex: <1>$9,50</1>) como crédito na sua carteira."
-    },   
+    },
+
     "main": "Principal",
-    "myReferrals": "Minhas referências",
-    "myTransactions": "Minhas transações"
+    "myReferrals": {
+      "tabName": "Minhas indicações",
+      "totalPaid": "Pago",
+      "totalCashback": "Cashback",
+      "email": "E-mail"
+    },
+    "myTransactions": {
+      "tabName": "Minhas transações",
+      "type": "Tipo",
+      "amount": "Valor",
+      "date": "Data",
+      "reason": "Motivo",
+      "courses": "Cursos",
+      "fromUser": "Do usuário",
+      "adminAdjust": "Ajuste do admin",
+      "referralCashback": "Cashback de indicação",
+      "internalPurchase": "Compra interna",
+      "bonus": "Bônus",
+      "fullPurchase": "Compra completa",
+      "test": "Teste"
+    },
+    "invited": "Convidado",
+    "payments": "Pagamentos"
   },
 
   "professor": {
@@ -243,12 +260,10 @@
     "specialization": "Especialização:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Outros cursos"
   },
-
 
   "error": {
     "email.empty": "O e-mail não deve estar vazio",
@@ -306,5 +321,4 @@
     "search": "Pesquisar cursos...",
     "found": "Cursos encontrados: {{count}}"
   }
-
 }

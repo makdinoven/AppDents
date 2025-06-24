@@ -6,8 +6,6 @@ import {
   ProfessorsIcon,
 } from "../../assets/logos/index";
 
-export const QUERY_KEY = "content";
-
 export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },

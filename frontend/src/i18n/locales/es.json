@@ -79,8 +79,6 @@
     "title": "Sólo <1>hoy</1> <1>– {{discount}}% de descuento!</1>"
   },
 
-
-
   "nav": {
     "home": "Inicio",
     "courses": "Cursos",
@@ -95,7 +93,6 @@
     }
   },
 
-
   "search": {
     "searchCourses": "Buscar cursos",
     "searchPlaceholder": "Ingrese el nombre del curso o el nombre del autor...",
@@ -107,7 +104,7 @@
   },
 
   "main": {
-    "title" : "Escuela <1>dental</1> en línea",
+    "title": "Escuela <1>dental</1> en línea",
     "hero.widestRange": "La <1>más amplia</1> gama de productos",
     "hero.bestPrices": "Mejores <1>precios</1>",
     "hero.description": "Cursos en línea para dentistas",
@@ -223,10 +220,32 @@
       "step_2": "2. Envíalo a un amigo por WhatsApp, Telegram, correo electrónico o como prefieras.",
       "step_3": "3. Tu amigo compra cualquier curso — por ejemplo, uno que cuesta <1>$19</1>.",
       "step_4": "4. Recibes el <1>50%</1> del pago (por ejemplo, <1>$9.50</1>) como crédito en tu billetera."
-    },   
+    },
+
     "main": "Principal",
-    "myReferrals": "Mis referencias",
-    "myTransactions": "Mis transacciones"
+    "myReferrals": {
+      "tabName": "Mis referidos",
+      "totalPaid": "Pagado",
+      "totalCashback": "Cashback",
+      "email": "Correo electrónico"
+    },
+    "myTransactions": {
+      "tabName": "Mis transacciones",
+      "type": "Tipo",
+      "amount": "Monto",
+      "date": "Fecha",
+      "reason": "Motivo",
+      "courses": "Cursos",
+      "fromUser": "Del usuario",
+      "adminAdjust": "Ajuste del admin",
+      "referralCashback": "Cashback por referido",
+      "internalPurchase": "Compra interna",
+      "bonus": "Bono",
+      "fullPurchase": "Compra completa",
+      "test": "Prueba"
+    },
+    "invited": "Invitado",
+    "payments": "Pagos"
   },
 
   "professor": {
@@ -242,12 +261,10 @@
     "specialization": "Especialización:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Otros cursos"
   },
-
 
   "error": {
     "email.empty": "El correo electrónico no debe estar vacío",
@@ -257,7 +274,7 @@
     "password.minLength": "La contraseña debe tener al menos 6 caracteres",
     "password.digitUppercaseLetter": "La contraseña debe contener al menos un dígito y una letra mayúscula",
     "password.required": "La contraseña es obligatoria",
-    "error.invalid_credentials" : "Correo electrónico o contraseña incorrectos",
+    "error.invalid_credentials": "Correo electrónico o contraseña incorrectos",
     "errorChangingPassword": "Error. La contraseña no se cambió."
   },
 

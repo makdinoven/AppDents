@@ -1,8 +1,18 @@
+.table_component {
+  display: flex;
+  flex-direction: column;
+  justify-items: center;
+  align-items: flex-start;
+  gap: 30px;
+  width: 100%;
+}
+
 .table_wrapper {
   overflow-x: auto;
   border-radius: 10px;
   border: 1px solid $hover-color;
   border-top: none;
+  width: 100%;
 }
 
 .custom_table_wrapper {
@@ -51,6 +61,13 @@
   width: 100%;
   border-collapse: collapse;
   @include clamped-p3;
+  height: fit-content;
+}
+
+.table_grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
 }
 
 .table_header {
@@ -60,6 +77,8 @@
   border-radius: 40px;
   border: 2px solid $background-color;
   border-right: none;
+  height: fit-content;
+  height: 100%;
 
   &:nth-child(odd) {
     background-color: $secondary-lighter;
