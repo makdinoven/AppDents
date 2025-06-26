@@ -1,37 +1,23 @@
-import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../../../store/store";
 import { useEffect } from "react";
-import { getMyTransactions } from "../../../../../../store/actions/userActions";
-import { useDispatch } from "react-redux";
 import Table from "../../../../../../components/ui/Table/Table";
 import { TransactionType } from "../../../../../../common/types/commonTypes";
 
 const MyTransactions: React.FC = () => {
-  const dispatch = useDispatch<AppDispatchType>();
-  const transactions = useSelector(
-    (state: AppRootStateType) => state.user.transactions
-  );
-
   const { t } = useTranslation();
 
-  useEffect(() => {
-    dispatch(getMyTransactions());
-  }, []);
+  useEffect(() => {}, []);
 
   const transactionsAdminAdjust = transactions.filter(
-    (transaction) => transaction.type === "adminAdjust"
+    (transaction) => transaction.type === "adminAdjust",
   );
 
   const transactionsReferralCashback = transactions.filter(
-    (transaction) => transaction.type === "referralCashback"
+    (transaction) => transaction.type === "referralCashback",
   );
 
   const transactionsInternalPurchase = transactions.filter(
-    (transaction) => transaction.type === "internalPurchase"
+    (transaction) => transaction.type === "internalPurchase",
   );
 
   const handleTableDataTranslate = (tableData: TransactionType[]): any => {
@@ -50,7 +36,7 @@ const MyTransactions: React.FC = () => {
                 : value,
             ];
           }
-        })
+        }),
       );
     });
   };
@@ -60,6 +46,7 @@ const MyTransactions: React.FC = () => {
       <Table
         title={t("profile.payments")}
         data={handleTableDataTranslate(transactionsAdminAdjust)}
+        showNumberCol={false}
         columnLabels={{
           amount: t("profile.myTransactions.amount"),
           type: t("profile.myTransactions.type"),
@@ -69,6 +56,7 @@ const MyTransactions: React.FC = () => {
       />
       <Table
         data={handleTableDataTranslate(transactionsReferralCashback)}
+        showNumberCol={false}
         columnLabels={{
           amount: t("profile.myTransactions.amount"),
           type: t("profile.myTransactions.type"),
@@ -78,6 +66,7 @@ const MyTransactions: React.FC = () => {
       />
       <Table
         data={handleTableDataTranslate(transactionsInternalPurchase)}
+        showNumberCol={false}
         columnLabels={{
           amount: t("profile.myTransactions.amount"),
           type: t("profile.myTransactions.type"),

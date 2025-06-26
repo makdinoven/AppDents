@@ -60,37 +60,3 @@ export const logoutAsync = createAppAsyncThunk(
     return;
   },
 );
-
-
-export const getMyReferrals = createAppAsyncThunk(
-  "wallet/getMyReferrals",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await userApi.getMyReferrals();
-      if (res.data.error) {
-        return rejectWithValue(res.data.error);
-      }
-
-      return { res };
-    } catch (e: any) {
-      return rejectWithValue(e.response.data);
-    }
-  }
-);
-
-export const getMyTransactions = createAppAsyncThunk(
-  "wallet/getMyTransactions",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await userApi.getMyTransactions();
-
-      if (res.data.error) {
-        return rejectWithValue(res.data.error);
-      }
-
-      return { res };
-    } catch (e: any) {
-      return rejectWithValue(e.response.data);
-    }
-  }
-);

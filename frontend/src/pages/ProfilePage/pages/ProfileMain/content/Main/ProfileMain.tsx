@@ -57,7 +57,7 @@ const ProfileMain = () => {
 
   const profilePageContent = [
     {
-      name: "profile.main",
+      name: "nav.profile",
       value: "profile_main",
       component: (
         <>
@@ -113,7 +113,7 @@ const ProfileMain = () => {
   ];
 
   const activeTab = profilePageContent.find(
-    (tab) => tab.value === tabFromParams
+    (tab) => tab.value === tabFromParams,
   );
 
   return (

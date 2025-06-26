@@ -1,33 +1,22 @@
-import { useSelector } from "react-redux";
 import { useTranslation } from "react-i18next";
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../../../store/store";
 import { useEffect } from "react";
-import { getMyReferrals } from "../../../../../../store/actions/userActions";
-import { useDispatch } from "react-redux";
 import Table from "../../../../../../components/ui/Table/Table";
+import Loader from "../../../../../../components/ui/Loader/Loader.tsx";
 
 const MyReferrals: React.FC = () => {
-  const dispatch = useDispatch<AppDispatchType>();
-  const referrals = useSelector(
-    (state: AppRootStateType) => state.user.referrals
-  );
-
   const { t } = useTranslation();
 
-  useEffect(() => {
-    dispatch(getMyReferrals());
-  }, []);
+  useEffect(() => {}, []);
 
-  return (
+  return loading ? (
+    <Loader />
+  ) : (
     <Table
       title={t("profile.invited")}
+      showNumberCol={false}
       data={referrals}
       columnLabels={{
         email: t("profile.myReferrals.email"),
-        total_paid: t("profile.myReferrals.totalPaid"),
         total_cashback: t("profile.myReferrals.totalCashback"),
       }}
     />

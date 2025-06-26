@@ -81,6 +81,9 @@
   }
 
     .tabs_wrapper{
-    margin-bottom: 15px;
+      margin-bottom: 15px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
   }
 }
