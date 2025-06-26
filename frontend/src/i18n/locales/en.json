@@ -157,6 +157,17 @@
     "common.rec": "For you"
   },
 
+  "bookLanding": {
+    "onlineBook": "Online book",
+    "annotation": "Annotation",
+    "aboutAuthor": "About the author",
+    "pages": {
+      "title": "Pages",
+      "readFirstPages": "Read the first pages of the book!",
+      "fullBook": "The full book will be available after payment."
+    }
+  },
+
   "landing": {
     "by": "By",
     "about": "About this course",

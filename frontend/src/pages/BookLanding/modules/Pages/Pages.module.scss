@@ -1,0 +1,52 @@
+.pages {
+  @include flex-column;
+  gap: 40px;
+
+  h3 {
+    @include clamped-h2;
+    text-transform: uppercase;
+  }
+
+  p {
+    @include clamped-p1;
+  }
+}
+
+.pages_container {
+  @include flex-column;
+}
+
+.pages_header {
+  position: relative;
+  background-color: $primary;
+  max-width: 70%;
+  border-radius: 30px 30px 0 0;
+  padding: 67px 30px 0 30px;
+
+  @include circle-angle(
+          $bottom: 0,
+          $right: calc(var(--border-radius) * (-2)),
+          $size: calc(var(--border-radius) * 2),
+          $offset-x: -20px,
+          $offset-y: 20px,
+          $shadow-color: $primary,
+          $border-bottom-left-radius: var(--border-radius)
+  );
+}
+
+.pages_body {
+  background-color: $primary;
+  width: 100%;
+  min-height: 500px;
+  border-radius: 0 30px 30px 30px;
+
+  .page {
+    @include flex-center;
+    padding: 40px 150px;
+    img {
+      max-width: 400px;
+      aspect-ratio: 10/13;
+      border-radius: 20px;
+    }
+  }
+}

@@ -43,6 +43,8 @@ export const LANDING_ROUTES = [
   Path.videoLanding,
 ];
 
+export const BOOK_LANDING_ROUTES = [Path.bookLanding, Path.bookLandingClient];
+
 export const LANDING_AD_ROUTES = [
   Path.landing,
   Path.freeLanding,

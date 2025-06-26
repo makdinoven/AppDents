@@ -5,21 +5,39 @@ import initialPhoto from "../../../../assets/no-pictures.png";
 import CircleArrow from "../../../../assets/Icons/CircleArrow.tsx";
 
 const LandingHero = ({
+  type = "video",
   data: { photo, landing_name, authors, renderBuyButton },
 }: {
+  type?: "book" | "video";
   data: any;
 }) => {
-  return (
-    <section className={s.hero}>
-      <div className={s.hero_top}>
+  const isBook = type === "book";
+
+  const renderLandingTitle = () => {
+    if (isBook) {
+      return (
+        <Title>
+          <Trans i18nKey={"bookLanding.onlineBook"} />
+        </Title>
+      );
+    } else {
+      return (
         <Title>
           <Trans i18nKey={"onlineCourse"} />
         </Title>
-        <div className={s.card_header}></div>
+      );
+    }
+  };
+
+  return (
+    <section className={s.hero}>
+      <div className={s.hero_top}>
+        {renderLandingTitle()}
+        <div className={`${s.card_header} ${isBook ? s.book : ""}`}></div>
       </div>
 
       <div className={s.hero_content_wrapper}>
-        <div className={s.card}>
+        <div className={`${s.card} ${isBook ? s.book : ""}`}>
           <div className={s.card_body}>
             <div className={s.photo}>
               {photo ? (

@@ -35,7 +35,7 @@ const ExpandableText = ({
       const fullHeight = textRef.current.scrollHeight;
 
       setMaxHeight(expanded ? fullHeight : collapsedHeight);
-      setIsTruncated(fullHeight > collapsedHeight);
+      setIsTruncated(fullHeight > collapsedHeight + 30);
     }
   }, [expanded, lines, text]);
 

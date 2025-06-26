@@ -13,7 +13,7 @@
   font-size: 16px;
 
   p {
-    padding-bottom: 20px;
+    padding-bottom: 30px;
   }
 }
 
@@ -23,8 +23,11 @@
   bottom: 0;
   font-size: inherit;
   cursor: pointer;
+  //max-height: 20px;
+  min-height: unset;
+  max-height: unset;
+  //line-height: 0.4;
   z-index: 1;
-  padding: 0;
   text-transform: lowercase;
   @include transition();
 

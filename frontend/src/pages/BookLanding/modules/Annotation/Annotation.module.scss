@@ -1,0 +1,9 @@
+.annotation {
+  @include flex-column;
+  gap: 30px;
+
+  .annotation_text {
+    hyphens: auto;
+    @include clamped-p2;
+  }
+}

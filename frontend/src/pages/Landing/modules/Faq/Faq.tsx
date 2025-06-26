@@ -4,11 +4,12 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import { Trans } from "react-i18next";
 import BackArrow from "../../../../assets/Icons/BackArrow.tsx";
 
-const Faq = () => {
+const Faq = ({ type = "video" }: { type?: "video" | "book" }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const answerRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const isVideo = type === "video";
 
-  const faqItems = [
+  const faqItemsVideo = [
     { question: "1_question", answer: { text: "1_answer", links: [""] } },
     { question: "2_question", answer: { text: "2_answer", links: [""] } },
     { question: "3_question", answer: { text: "3_answer", links: [""] } },
@@ -32,6 +33,13 @@ const Faq = () => {
     },
   ];
 
+  const faqItemsBook = [
+    { question: "1_question", answer: { text: "1_answer", links: [""] } },
+    { question: "2_question", answer: { text: "2_answer", links: [""] } },
+  ];
+
+  const items = isVideo ? faqItemsVideo : faqItemsBook;
+
   const toggleItem = (index: number) => {
     setOpenIndex((prevIndex) => (prevIndex === index ? null : index));
   };
@@ -41,7 +49,7 @@ const Faq = () => {
       <SectionHeader name="landing.faq.faq" />
 
       <ul className={s.faq_list}>
-        {faqItems.map((item, index) => (
+        {items.map((item, index) => (
           <li
             key={index}
             className={`${s.faq_item} ${openIndex === index ? s.opened : ""}`}

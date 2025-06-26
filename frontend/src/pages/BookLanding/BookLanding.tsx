@@ -1,0 +1,77 @@
+import s from "../Landing/Landing.module.scss";
+import { useEffect, useState } from "react";
+import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import LandingHero from "../Landing/modules/LandingHero/LandingHero.tsx";
+import BookImg from "../../assets/BOOK_IMG.png";
+import Annotation from "./modules/Annotation/Annotation.tsx";
+import Pages from "./modules/Pages/Pages.tsx";
+import Authors from "./modules/Authors/Authors.tsx";
+import Loader from "../../components/ui/Loader/Loader.tsx";
+import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
+import { Trans } from "react-i18next";
+import Faq from "../Landing/modules/Faq/Faq.tsx";
+
+const BookLanding = () => {
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    console.log(isModalOpen);
+  };
+
+  const renderBuyButton = () => {
+    return (
+      <ArrowButton onClick={() => handleOpenModal()}>
+        <Trans
+          i18nKey={"landing.buyFor"}
+          values={{
+            old_price: 19,
+            new_price: 8,
+          }}
+          components={{
+            1: <span className="crossed-15" />,
+            2: <span className="highlight" />,
+          }}
+        />
+      </ArrowButton>
+    );
+  };
+
+  const heroData = {
+    landing_name: "Damon 2.0 How to treat all common malocclusions",
+    authors: "By Bill Dischinger, Alfredo Rizzo, Trevor Nichols et. al.",
+    photo: BookImg,
+    renderBuyButton: renderBuyButton(),
+  };
+
+  const annotation =
+    "This book provides a comprehensive and evidence-based overview of current advances and challenges in modern medicine. Combining clinical experience with the latest scientific research, it offers valuable insights into diagnosis, treatment, and prevention strategies across a wide range of medical fields.\n" +
+    "Designed for medical professionals, researchers, and students, the book covers key topics such as patient-centered care, innovations in medical technology, public health issues, and ethical considerations in clinical practice. Each chapter is authored by leading experts and includes real-world case studies, updated guidelines, and critical reflections on future developments in healthcare.\n" +
+    "Whether used as a textbook, a reference guide, or a source for professional development, this publication is an essential resource for anyone involved in the rapidly evolving landscape of global medicine.";
+
+  return (
+    <>
+      <div className={s.landing_top}>
+        <BackButton />
+      </div>
+      {loading ? (
+        <Loader />
+      ) : (
+        <div className={s.landing}>
+          <LandingHero type={"book"} data={heroData} />
+          <Annotation text={annotation} />
+          <Pages />
+          <Authors />
+          <Faq type={"book"} />
+        </div>
+      )}
+    </>
+  );
+};
+
+export default BookLanding;

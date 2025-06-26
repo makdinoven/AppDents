@@ -39,6 +39,10 @@ $arrow-w: 66px;
       border-top-left-radius: var(--border-radius);
       border-top-right-radius: var(--border-radius);
 
+      &.book {
+        max-width: 250px;
+      }
+
       @include circle-angle(
         $bottom: 0,
         $right: calc(var(--border-radius) * (-2)),
@@ -101,6 +105,23 @@ $arrow-w: 66px;
         background-repeat: no-repeat;
         background-position: center center;
         background-size: contain;
+      }
+    }
+
+
+    &.book {
+      .card_body {
+        position: unset;
+      }
+
+      .photo {
+        margin: unset;
+        top: 20px;
+        left: 5%;
+        max-width: 400px;
+        max-height: 520px;
+        height: 90%;
+        aspect-ratio: 10/13;
       }
     }
 
@@ -177,6 +198,30 @@ $arrow-w: 66px;
       @include flex-column;
     }
 
+    .book_card {
+      max-width: unset;
+      position: relative;
+      margin-left: unset;
+      border-top-left-radius: unset;
+    }
+
+    .card {
+      position: relative;
+      &.book {
+        .photo {
+          left: 50%;
+          transform: translateX(-50%);
+        }
+      }
+    }
+
+
+    .book_photo {
+      left: 30px;
+      max-width: 200px;
+      max-height: 250px;
+    }
+
     .hero_content {
       p {
         margin: 0 0 20px 0;
@@ -186,7 +231,7 @@ $arrow-w: 66px;
 
   @media (max-width: 940px) {
     .hero_top {
-      gap: 0;
+      gap: 10px;
 
       h1 {
         max-width: 60%;
@@ -195,6 +240,18 @@ $arrow-w: 66px;
   }
 
   @media (max-width: $mobile-breakpoint) {
+    .card {
+      &.book {
+        .photo {
+          top: 10px;
+          left: 20px;
+          transform: unset;
+          border-radius: 20px;
+        }
+      }
+    }
+
+
     .hero_content {
       .arrow {
         display: none;
