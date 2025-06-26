@@ -10,9 +10,7 @@ class ReferralLinkResponse(BaseModel):
 
 class ReferralReportItem(BaseModel):
     # Информация по каждому приглашённому
-    user_id: int
     email: str
-    total_paid: float         # сколько потратил приглашённый
     total_cashback: float     # сколько вы получили кэшбэка от него
 
 
