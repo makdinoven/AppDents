@@ -14,6 +14,7 @@ import {
 } from "../../common/helpers/commonConstants.ts";
 import { TransactionType } from "../../common/types/commonTypes.ts";
 import { AxiosResponse } from "axios";
+import { capitalizeText } from "../../common/helpers/helpers.ts";
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
 
@@ -78,9 +79,7 @@ interface ErrorResponse {
 
 const getCamelCaseString = (string: string): string => {
   return string.split("_").reduce((result, value, index) => {
-    return index === 0
-      ? result + value
-      : result + value[0].toUpperCase() + value.slice(1);
+    return index === 0 ? result + value : result + capitalizeText(value);
   }, "");
 };
 const initialState: UserState = {
