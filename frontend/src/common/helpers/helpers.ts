@@ -39,7 +39,7 @@ export const getFacebookData = () => {
 };
 
 export const transformTags = (
-  tags: { id: number; name: string }[],
+  tags: { id: number; name: string }[]
 ): { id: number; name: string; value: string }[] => {
   const transformed = tags.map((tag) => ({
     ...tag,
@@ -103,7 +103,7 @@ export const normalizeCourse = (course: any) => {
             lesson_name: lesson.lesson_name,
             video_link: lesson.video_link,
             preview: lesson.preview,
-          }),
+          })
         ),
       };
     }),
