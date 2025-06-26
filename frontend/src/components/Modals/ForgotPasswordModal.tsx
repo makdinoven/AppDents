@@ -15,7 +15,7 @@ import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
-import { getAlert } from "../../common/helpers/helpers.tsx";
+import { Alert } from "../ui/Alert/Alert.tsx";
 import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const ForgotPasswordModal = () => {
@@ -38,7 +38,7 @@ const ForgotPasswordModal = () => {
     setLoading(true);
     try {
       await userApi.forgotPassword(email, language);
-      getAlert(t("forgotPasswordSuccess"), <CheckMark />);
+      Alert(t("forgotPasswordSuccess"), <CheckMark />);
       navigate("/login");
     } catch (error: any) {
       setError(error.response.data.detail.error.translation_key);

@@ -22,7 +22,7 @@ import {
 import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
-import { getAlert } from "../../common/helpers/helpers.tsx";
+import { Alert } from "../../components/ui/Alert/Alert.tsx";
 import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const Cart = () => {
@@ -135,7 +135,7 @@ const Cart = () => {
       }
 
       if (balanceLeft) {
-        getAlert(
+        Alert(
           t("successPaymentWithBalance", { balance: balanceLeft }),
           <CheckMark />
         );

@@ -13,10 +13,10 @@ import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import {
   denormalizeLessons,
-  getAlert,
   normalizeLessons,
-} from "../../../common/helpers/helpers.tsx";
+} from "../../../common/helpers/helpers.ts";
 import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
+import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const LandingDetail = () => {
   const { landingId } = useParams();
@@ -51,7 +51,7 @@ const LandingDetail = () => {
       setCourses(coursesRes.data.items);
       setAuthors(authorsRes.data.items);
     } catch (error: any) {
-      getAlert(
+      Alert(
         `Error fetching landing data, error message: ${error.message}`,
         <ErrorIcon />
       );

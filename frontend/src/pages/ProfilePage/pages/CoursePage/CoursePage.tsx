@@ -2,7 +2,7 @@ import s from "./CoursePage.module.scss";
 import { Outlet, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { normalizeCourse } from "../../../../common/helpers/helpers.tsx";
+import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";

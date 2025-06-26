@@ -3,7 +3,7 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.tsx";
+import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 
 const AnalyticsLanguages = () => {

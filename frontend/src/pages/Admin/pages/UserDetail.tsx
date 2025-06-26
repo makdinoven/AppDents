@@ -11,7 +11,7 @@ import { UserType } from "../types.ts";
 import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
 import Table from "../../../components/ui/Table/Table.tsx";
-import { getAlert } from "../../../common/helpers/helpers.tsx";
+import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
 import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
@@ -43,7 +43,7 @@ const UserDetail = () => {
       setBalance(Number(userRes.data.balance));
       setLoading(false);
     } catch (error: any) {
-      getAlert(
+      Alert(
         `Error fetching user data, error message: ${error.message}`,
         <ErrorIcon />
       );

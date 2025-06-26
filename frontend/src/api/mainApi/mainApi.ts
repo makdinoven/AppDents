@@ -2,7 +2,7 @@ import { instance } from "../api-instance.ts";
 import {
   getAuthHeaders,
   getFacebookData,
-} from "../../common/helpers/helpers.tsx";
+} from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 
