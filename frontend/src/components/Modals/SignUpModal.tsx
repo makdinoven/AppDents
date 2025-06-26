@@ -16,13 +16,15 @@ import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
+import { Alert } from "../ui/Alert/Alert.tsx";
+import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const SignUpModal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
+    (state: AppRootStateType) => state.user.language
   );
   const {
     register,
@@ -37,7 +39,7 @@ const SignUpModal = () => {
     setLoading(true);
     try {
       await userApi.signUp(email, language);
-      alert(t("registrationSuccess"));
+      Alert(t("registrationSuccess"), <CheckMark />);
       navigate(Path.login);
       localStorage.removeItem(REF_CODE_LS_KEY);
     } catch (error) {
