@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
-import { getAlert } from "../../common/helpers/helpers.tsx";
+import { Alert } from "../ui/Alert/Alert.tsx";
 import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const SignUpModal = () => {
@@ -39,7 +39,7 @@ const SignUpModal = () => {
     setLoading(true);
     try {
       await userApi.signUp(email, language);
-      getAlert(t("registrationSuccess"), <CheckMark />);
+      Alert(t("registrationSuccess"), <CheckMark />);
       navigate(Path.login);
       localStorage.removeItem(REF_CODE_LS_KEY);
     } catch (error) {

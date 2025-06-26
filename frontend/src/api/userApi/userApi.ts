@@ -1,6 +1,6 @@
 import { instance } from "../api-instance.ts";
 import { ChangePasswordType, SignUpType } from "./types.ts";
-import { getAuthHeaders } from "../../common/helpers/helpers.tsx";
+import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { cartStorage } from "../cartApi/cartStorage.ts";
 

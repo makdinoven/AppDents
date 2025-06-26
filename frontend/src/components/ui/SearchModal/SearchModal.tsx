@@ -11,7 +11,7 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import ModalCloseButton from "../ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
-import { formatAuthorsDesc } from "../../../common/helpers/helpers.tsx";
+import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 import AddToCartButton from "../AddToCartButton/AddToCartButton.tsx";
 

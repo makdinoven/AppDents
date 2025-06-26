@@ -35,7 +35,7 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
-import { getAlert } from "../../../common/helpers/helpers.tsx";
+import { Alert } from "../../ui/Alert/Alert.tsx";
 import CheckMark from "../../../assets/Icons/CheckMark.tsx";
 
 const logos = [
@@ -165,7 +165,7 @@ const PaymentModal = ({
         }
 
         if (balanceLeft) {
-          getAlert(
+          Alert(
             t("successPaymentWithBalance", { balance: balanceLeft }),
             <CheckMark />
           );

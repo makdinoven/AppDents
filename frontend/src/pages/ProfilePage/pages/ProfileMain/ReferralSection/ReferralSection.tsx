@@ -4,7 +4,7 @@ import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../../../store/store.ts";
-import { scrollToElementById } from "../../../../../common/helpers/helpers.tsx";
+import { scrollToElementById } from "../../../../../common/helpers/helpers.ts";
 import {
   BASE_URL,
   LS_REF_LINK_KEY,

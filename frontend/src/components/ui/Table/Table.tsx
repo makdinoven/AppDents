@@ -1,6 +1,6 @@
 import s from "./Table.module.scss";
 import { Path } from "../../../routes/routes.ts";
-import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.tsx";
+import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.ts";
 
 interface TableProps<T extends Record<string, any>> {
   title?: string;

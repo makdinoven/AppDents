@@ -1,5 +1,5 @@
 import { instance } from "../api-instance.ts";
-import { getAuthHeaders } from "../../common/helpers/helpers.tsx";
+import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "./types.ts";
 
 export const adminApi = {

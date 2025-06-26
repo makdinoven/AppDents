@@ -12,7 +12,7 @@ import {
   FILTER_PARAM_KEYS,
   FilterKeys,
 } from "../../../../../common/helpers/commonConstants.ts";
-import { getAlert } from "../../../../../common/helpers/helpers.tsx";
+import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
 import ErrorIcon from "../../../../../assets/Icons/ErrorIcon.tsx";
 
 interface AdminListProps<T> {
@@ -57,7 +57,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
         size: SIZE,
       });
     } catch (err: any) {
-      getAlert(
+      Alert(
         `Error creating ${tab?.slice(0, -1)}, error message: ${err.message}`,
         <ErrorIcon />
       );

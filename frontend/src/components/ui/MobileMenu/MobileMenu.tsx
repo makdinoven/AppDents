@@ -10,7 +10,7 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { isPromotionLanding } from "../../../common/helpers/helpers.tsx";
+import { isPromotionLanding } from "../../../common/helpers/helpers.ts";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 
 const MobileMenu = () => {

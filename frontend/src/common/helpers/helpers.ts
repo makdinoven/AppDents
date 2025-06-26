@@ -1,10 +1,7 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
 import { LS_TOKEN_KEY } from "./commonConstants.ts";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import "../../styles/swal.scss";
-import { ReactElement } from "react";
+
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
 
@@ -183,21 +180,4 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
 
 export const getFormattedDate = (date: Date) => {
   return date.toISOString().split("T")[0];
-};
-
-export const getAlert = (title: string, icon?: ReactElement) => {
-  withReactContent(Swal).fire({
-    title: (
-      <div className="custom_swal_title_container">
-        {icon && icon}
-        {title}
-      </div>
-    ),
-    customClass: {
-      container: "custom_swal_container",
-      popup: "custom_swal_popup",
-      title: "custom_swal_title",
-      confirmButton: "custom_swal_button",
-    },
-  });
 };

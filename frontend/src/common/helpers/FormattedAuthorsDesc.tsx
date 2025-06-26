@@ -1,4 +1,4 @@
-import { capitalizeText } from "./helpers.tsx";
+import { capitalizeText } from "./helpers.ts";
 import { t } from "i18next";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";

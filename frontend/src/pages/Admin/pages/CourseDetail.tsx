@@ -13,10 +13,10 @@ import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import {
   denormalizeCourse,
-  getAlert,
   normalizeCourse,
-} from "../../../common/helpers/helpers.tsx";
+} from "../../../common/helpers/helpers.ts";
 import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
+import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const CourseDetail = () => {
   const { courseId } = useParams();
@@ -34,7 +34,7 @@ const CourseDetail = () => {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
     } catch (error: any) {
-      getAlert(
+      Alert(
         `Error fetching course data, error message: ${error.message}`,
         <ErrorIcon />
       );
@@ -134,7 +134,7 @@ const CourseDetail = () => {
       await adminApi.updateCourse(courseId, denormalizeCourse(course));
       navigate(-1);
     } catch (error) {
-      getAlert(`Error updating course data`, <ErrorIcon />);
+      Alert(`Error updating course data`, <ErrorIcon />);
     }
   };
 
