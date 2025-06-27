@@ -100,9 +100,7 @@ def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
 
         report.append(
             ReferralReportItem(
-                user_id=u.id,
                 email=u.email,
-                total_paid=total_paid,
                 total_cashback=total_cashback
             )
         )
