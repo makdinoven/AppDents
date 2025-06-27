@@ -23,9 +23,8 @@ import {
 } from "../../../../../../store/actions/userActions.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
 import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
-import MyReferrals from "../MyReferrals/MyReferrals.tsx";
-import MyTransactions from "../MyTransactions/MyTransactions.tsx";
 import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
+import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
 
 const QUERY_KEY = "content";
 
@@ -101,14 +100,9 @@ const ProfileMain = () => {
       ),
     },
     {
-      name: "profile.myReferrals.tabName",
-      value: "my_referrals",
-      component: <MyReferrals />,
-    },
-    {
-      name: "profile.myTransactions.tabName",
-      value: "my_transactions",
-      component: <MyTransactions />,
+      name: "profile.purchaseHistory.tabName",
+      value: "purchase_history",
+      component: <PurchaseHistory />,
     },
   ];
 

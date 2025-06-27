@@ -4,47 +4,15 @@ import {
   getMe,
   login,
   logoutAsync,
-  getMyReferrals,
-  getMyTransactions,
 } from "../actions/userActions.ts";
 import i18n from "i18next";
 import {
   LS_LANGUAGE_KEY,
   LS_TOKEN_KEY,
 } from "../../common/helpers/commonConstants.ts";
-import { TransactionType } from "../../common/types/commonTypes.ts";
-import { AxiosResponse } from "axios";
 import { capitalizeText } from "../../common/helpers/helpers.ts";
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
-
-export type Referral = {
-  user_id: number;
-  email: string;
-  total_paid: number;
-  total_cashback: number;
-  created_at?: string;
-};
-
-type TransactionResponse = {
-  id: number;
-  amount: number;
-  type: "REFERRAL_CASHBACK" | "INTERNAL_PURCHASE" | "ADMIN_ADJUST";
-  meta:
-    | {
-        percent: 50;
-        from_user: number;
-        purchase_id: number;
-      }
-    | {
-        reason: string;
-        courses: number[];
-      }
-    | {
-        reason: string;
-      };
-  created_at: string;
-};
 
 interface ErrorResponse {
   detail?: {
@@ -64,9 +32,6 @@ interface UserState {
   language: string;
   balance: number | null;
   courses: [];
-  referrals: Referral[];
-  transactions: TransactionType[];
-  loadingStats: boolean;
 }
 
 interface ErrorResponse {
@@ -77,11 +42,6 @@ interface ErrorResponse {
   };
 }
 
-const getCamelCaseString = (string: string): string => {
-  return string.split("_").reduce((result, value, index) => {
-    return index === 0 ? result + value : result + capitalizeText(value);
-  }, "");
-};
 const initialState: UserState = {
   id: null,
   email: null,
@@ -92,9 +52,6 @@ const initialState: UserState = {
   balance: null,
   language: savedLanguage,
   courses: [],
-  referrals: [],
-  transactions: [],
-  loadingStats: false,
 };
 
 const userSlice = createSlice({
@@ -179,84 +136,7 @@ const userSlice = createSlice({
         (state, action: PayloadAction<{ res: any }>) => {
           state.courses = action.payload.res.data;
         }
-      )
-      .addCase(
-        getMyReferrals.fulfilled,
-        (state, action: PayloadAction<{ res: AxiosResponse<Referral[]> }>) => {
-          state.loadingStats = false;
-          state.referrals = action.payload.res.data;
-        }
-      )
-      .addCase(getMyReferrals.pending, (state) => {
-        state.loadingStats = true;
-        state.error = null;
-      })
-      .addCase(getMyReferrals.rejected, (state, action) => {
-        state.error = action.payload as ErrorResponse;
-        state.loadingStats = false;
-      })
-      .addCase(getMyTransactions.pending, (state) => {
-        state.loadingStats = true;
-        state.error = null;
-      })
-      .addCase(
-        getMyTransactions.fulfilled,
-        (
-          state,
-          action: PayloadAction<{
-            res: AxiosResponse<TransactionResponse[]>;
-          }>
-        ) => {
-          state.loadingStats = false;
-          state.transactions = action.payload.res.data.map((transaction) => {
-            const baseFields = {
-              amount: transaction.amount,
-              type: transaction.type,
-              created_at: transaction.created_at,
-            };
-
-            switch (transaction.type) {
-              case "REFERRAL_CASHBACK":
-                return {
-                  ...baseFields,
-                  type: "referralCashback",
-                  from_user:
-                    "from_user" in transaction.meta
-                      ? transaction.meta.from_user
-                      : null,
-                } as const;
-
-              case "INTERNAL_PURCHASE":
-                return {
-                  ...baseFields,
-                  type: "internalPurchase",
-                  reason:
-                    "reason" in transaction.meta
-                      ? getCamelCaseString(transaction.meta.reason)
-                      : null,
-                  courses:
-                    "courses" in transaction.meta
-                      ? transaction.meta.courses
-                      : [],
-                } as const;
-
-              case "ADMIN_ADJUST":
-                return {
-                  ...baseFields,
-                  type: "adminAdjust",
-                  reason:
-                    "reason" in transaction.meta
-                      ? transaction.meta.reason
-                      : null,
-                } as const;
-            }
-          });
-        }
-      )
-      .addCase(getMyTransactions.rejected, (state, action) => {
-        state.error = action.payload as ErrorResponse;
-        state.loadingStats = false;
-      });
+      );
   },
 });
 
