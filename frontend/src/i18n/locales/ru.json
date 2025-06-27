@@ -224,29 +224,23 @@
     },
 
     "main": "Главная",
-    "myReferrals": {
-      "tabName": "Мои рефералы",
-      "totalPaid": "Всего заплачено",
+    "referrals": {
       "totalCashback": "Кешбек",
       "email": "Почта"
     },
-    "myTransactions": {
-      "tabName": "Мои транзакции",
-      "type": "Тип",
-      "amount": "Количество",
-      "date": "Дата",
-      "reason": "Причина",
-      "courses": "Курсы",
-      "fromUser": "От пользователя",
-      "adminAdjust": "Админ-правка",
-      "referralCashback": "Реферальный кешбек",
-      "internalPurchase": "Глобальная покупка",
-      "bonus": "Бонус",
-      "fullPurchase": "Полная покупка",
-      "test": "Тест"
-    },
-    "invited": "Приглашенные",
-    "payments": "Оплаты"
+    "purchaseHistory": {
+      "tabName": "История покупок",
+      "user": "Пользователь:",
+      "purchaseSum": "Сумма покупки:",
+      "adminAdjust": "Пополение админа",
+      "referralCashback": "Кэшбек",
+      "internalPurchase": "Оплата балансом",
+      "fullPurchase": "Оплата",
+      "transactionType": "Тип транзакции",
+      "adjunction": "пополнение",
+      "fromBalance": "с баланса",
+      "withdrawal": "снятие"
+    }
   },
 
   "professor": {
