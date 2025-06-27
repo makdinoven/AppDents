@@ -22,6 +22,8 @@ import {
 import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
+import { Alert } from "../../components/ui/Alert/Alert.tsx";
+import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const Cart = () => {
   const location = useLocation();
@@ -32,7 +34,7 @@ const Cart = () => {
   const [cartPreviewLoading, setCartPreviewLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email, language } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const [loading, setLoading] = useState(false);
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
@@ -47,7 +49,7 @@ const Cart = () => {
     total_old_amount,
   } = useSelector((state: AppRootStateType) => state.cart);
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    balance ? balance > 0 : false,
+    balance ? balance > 0 : false
   );
   const isCartEmpty = quantity === 0;
 
@@ -133,7 +135,10 @@ const Cart = () => {
       }
 
       if (balanceLeft) {
-        alert(t("successPaymentWithBalance", { balance: balanceLeft }));
+        Alert(
+          t("successPaymentWithBalance", { balance: balanceLeft }),
+          <CheckMark />
+        );
         navigate(Path.profile);
       }
 

@@ -1,0 +1,41 @@
+.custom_swal_container {
+  &.swal2-backdrop-show {
+    background: none;
+    @include lightBlurBackground;
+  }
+}
+
+.custom_swal_popup {
+  background-color: $accent-glass;
+  border-radius: 20px;
+  padding: 40px 20px;
+}
+
+.custom_swal_title_container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+}
+
+.custom_swal_title {
+  padding: 0;
+  @include clamped-p3;
+  font-weight: 400;
+  color: $text-color;
+}
+
+.custom_swal_button {
+  background-color: $background-color;
+  color: $text-color-accent;
+  border-radius: 20px;
+  padding: 5px 30px;
+  @include clamped-p3;
+  font-weight: 400;
+
+  &:hover {
+    background-color: $primary;
+    color: $text-color;
+  }
+}
