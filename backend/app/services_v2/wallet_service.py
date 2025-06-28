@@ -190,6 +190,7 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
             "meta": {"source": p.source.value},
             "created_at": p.created_at,
             "slug": p.landing.page_name if p.landing else None,
+            "landing_name": p.landing.landing_name if p.landing else None,
         }
         for p in purchase_rows
     ]
