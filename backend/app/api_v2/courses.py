@@ -118,11 +118,13 @@ def get_course_by_id(
             Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         landing_info = LandingOfferInfo(
+            id=landing.id,
             slug=landing.page_name,
             landing_name=landing.landing_name,
             old_price=f"{old_price:.2f}",
             new_price=f"{discounted:.2f}",
             duration=landing.duration,
+            region=landing.language,
         )
 
     # — 5. Финальный уровень доступа —
