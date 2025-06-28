@@ -1,5 +1,5 @@
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Optional, List, Any
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
@@ -26,8 +26,9 @@ class WalletTransactionItem(BaseModel):
     id: int
     amount: float
     type: str
-    meta: dict
+    meta: dict[str, Any] | None = Field(default_factory=dict)
     created_at: datetime
+    slug: Optional[str] = None
 
 
 class ReferralRuleIn(BaseModel):
