@@ -112,14 +112,15 @@ def get_course_by_id(
     landing_info: LandingOfferInfo | None = None
     if cheapest_landing:
         # берём тот же объект landing, который нашли выше
-        original = Decimal(str(landing.old_price))
+        old_price = Decimal(str(landing.old_price))
+        original = Decimal(str(landing.new_price))
         discounted = (original * Decimal("0.85")).quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         landing_info = LandingOfferInfo(
             slug=landing.page_name,
             landing_name=landing.landing_name,
-            old_price=f"{original:.2f}",
+            old_price=f"{old_price:.2f}",
             new_price=f"{discounted:.2f}",
             duration=landing.duration,
         )
