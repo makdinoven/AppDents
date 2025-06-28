@@ -1,6 +1,7 @@
 import datetime as _dt
 import logging
 from collections import Counter
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func, case, Float, cast
 from sqlalchemy.orm import Session, selectinload
@@ -45,27 +46,55 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     return list(cheapest_by_course.values())
 
 
-def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
+def _pick_offer_landing(
+    db: Session,
+    user: User,
+) -> Optional[Tuple[Landing, Course]]:
     """
-    1. Если есть покупки → подбираем по тегам из дешёвых лендингов.
-    2. Иначе → ротационный фолбэк по топ-продающим лендингам.
-    Курсы-«denied» (купленные, partial, активные офферы, в истории) никогда не попадают.
-    """
-    # --- 0) подготавливаем список запрещённых курсов ---
-    purchased        = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids = {
-        so.course_id
-        for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
-        [:_HISTORY_LIMIT]
-    }
-    partial_ids      = set(user.partial_course_ids)
-    active_ids       = set(user.active_special_offer_ids)
-    denied: set[int] = purchased | recent_offer_ids | partial_ids | active_ids
+    Возвращает (landing, course) для спец-предложения или None.
 
-    # --- 1) основной путь: есть покупки и теги? ---
+    Алгоритм
+    --------
+    1.  Если у пользователя уже есть покупки — собираем «дешёвые» лендинги
+        по этим курсам и считаем веса тегов (`+3` за первый тег, `+1` за остальные).
+        Берём до 20 самых продаваемых лендингов по самому популярному тегу
+        и выбираем из них курс, который **не** входит в `denied`.
+
+    2.  Если подходящего лендинга/курса по тегу нет или покупок вовсе нет —
+        берём топ-50 лендингов по продажам и пытаемся выбрать курс из них.
+
+    3.  Ротация.
+        Чтобы спец-офферы не «залипали» на одном курсе, смещаем выбор
+        на `shift = len(user.special_offers) % len(landings)`.
+        Так каждый новый оффер проходит список лендингов по кругу.
+
+    4.  Курс не должен быть в `denied` = куплен ∨ partial ∨ активный offer ∨ 5 последних offer-ов.
+    """
+    # ────────────────────── denied ──────────────────────
+    purchased   = {p.course_id for p in user.purchases if p.course_id}
+    partial_ids = set(user.partial_course_ids)
+    active_ids  = set(user.active_special_offer_ids)
+    recent_ids  = {
+        so.course_id
+        for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)[:_HISTORY_LIMIT]
+    }
+    denied: set[int] = purchased | partial_ids | active_ids | recent_ids
+
+    # ───────── helper ─────────
+    def _choose_from(landings: List[Landing]) -> Optional[Tuple[Landing, Course]]:
+        if not landings:
+            return None
+        shift = len(user.special_offers) % len(landings)   # «смещение» для ротации
+        for i in range(len(landings)):
+            landing = landings[(i + shift) % len(landings)]
+            for c in landing.courses:
+                if c.id not in denied:
+                    return landing, c
+        return None
+
+    # ───────── 1. поиск по тегам ─────────
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
-        # собираем веса по тегам
         tag_weights: Counter[int] = Counter()
         for l in cheapest:
             for idx, t in enumerate(l.tags or []):
@@ -73,44 +102,35 @@ def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | Non
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
-            # берём топ-10 лендингов по продажам с этим тегом
-            candidates = (
+            tag_landings = (
                 db.query(Landing)
                   .join(Landing.tags)
                   .filter(Tag.id == best_tag_id, Landing.is_hidden.is_(False))
                   .options(selectinload(Landing.courses))
                   .order_by(Landing.sales_count.desc())
-                  .limit(10)
+                  .limit(20)
                   .all()
             )
-            if candidates:
-                # ротация по user.id
-                chosen = candidates[user.id % len(candidates)]
-                logger.debug("User %s: picked landing %s by tag %s", user.id, chosen.id, best_tag_id)
-                for course in chosen.courses:
-                    if course.id not in denied:
-                        logger.debug("User %s: offer course %s", user.id, course.id)
-                        return chosen, course
+            picked = _choose_from(tag_landings)
+            if picked:
+                logger.debug("User %s → tag %s landing %s course %s",
+                             user.id, best_tag_id, picked[0].id, picked[1].id)
+                return picked
 
-    # --- 2) fallback: ни покупок, ни релевантных тегов или не нашли свободный курс ---
-    #    берём топ-20 по продажам без разбора тегов
-    top = (
+    # ───────── 2. fallback ─────────
+    top_landings = (
         db.query(Landing)
           .filter(Landing.is_hidden.is_(False))
           .options(selectinload(Landing.courses))
           .order_by(Landing.sales_count.desc())
-          .limit(20)
+          .limit(50)
           .all()
     )
-    if top:
-        chosen = top[user.id % len(top)]
-        logger.debug("User %s: fallback landing %s", user.id, chosen.id)
-        for course in chosen.courses:
-            if course.id not in denied:
-                logger.debug("User %s: fallback offer course %s", user.id, course.id)
-                return chosen, course
-
-    return None
+    picked = _choose_from(top_landings)
+    if picked:
+        logger.debug("User %s → fallback landing %s course %s",
+                     user.id, picked[0].id, picked[1].id)
+    return picked
 
 
 def _need_new_offer(user: User) -> bool:
