@@ -29,7 +29,7 @@ class WalletTransactionItem(BaseModel):
     meta: dict[str, Any] | None = Field(default_factory=dict)
     created_at: datetime
     slug: Optional[str] = None
-
+    landing_name: Optional[str] = None
 
 class ReferralRuleIn(BaseModel):
     min_purchase_no: int
