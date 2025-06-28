@@ -195,7 +195,7 @@ def generate_offers_for_all_users(db: Session) -> None:
         offset += BATCH
 
 
-# --- добавить куда-нибудь после cleanup_expired_offers ---
+
 def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
     """
     Сохраняет не более `limit` последних записей SpecialOffer.
