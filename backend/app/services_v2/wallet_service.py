@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Dict, Any
 
 from sqlalchemy import func, or_, Integer, cast
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..core.config import settings
 from ..models import models_v2 as m
@@ -154,5 +154,49 @@ def get_cashback_percent(db: Session, invitee_id: int) -> float:
           .first()
     )
     return rule.percent if rule else 0.0
+
+
+def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
+    # 1. Транзакции кошелька
+    tx_rows = (
+        db.query(m.WalletTransaction)
+          .filter(m.WalletTransaction.user_id == user_id)
+          .all()
+    )
+    tx_items = [
+        {
+            "id": tx.id,
+            "amount": tx.amount,
+            "type": tx.type.value,
+            "meta": tx.meta,
+            "created_at": tx.created_at,
+            "slug": None,
+        }
+        for tx in tx_rows
+    ]
+
+    # 2. Покупки за деньги
+    purchase_rows = (
+        db.query(m.Purchase)
+          .options(selectinload(m.Purchase.landing))
+          .filter(m.Purchase.user_id == user_id)
+          .all()
+    )
+    purchase_items = [
+        {
+            "id": p.id,
+            "amount": -abs(p.amount),                 # выводим как списание
+            "type": "PURCHASE",
+            "meta": {"source": p.source.value},
+            "created_at": p.created_at,
+            "slug": p.landing.page_name if p.landing else None,
+        }
+        for p in purchase_rows
+    ]
+
+    # 3. Склеиваем и сортируем по дате ↓
+    return sorted(tx_items + purchase_items,
+                  key=lambda x: x["created_at"],
+                  reverse=True)
 
 
