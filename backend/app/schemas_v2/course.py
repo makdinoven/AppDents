@@ -6,6 +6,7 @@ from ..utils.relink import convert_storage_url
 
 class LandingOfferInfo(BaseModel):
     id: Optional[int] = Field(None, title="Landing Offer ID")
+    lessons_count: Optional[str] = Field(None, title="Landing Offer Lessons Count")
     slug:         str
     landing_name: str
     old_price:    str

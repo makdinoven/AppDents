@@ -119,6 +119,7 @@ def get_course_by_id(
         )
         landing_info = LandingOfferInfo(
             id=landing.id,
+            lessons_count=landing.lessons_count,
             slug=landing.page_name,
             landing_name=landing.landing_name,
             old_price=f"{old_price:.2f}",
