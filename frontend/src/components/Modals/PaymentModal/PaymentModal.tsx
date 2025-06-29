@@ -60,6 +60,7 @@ export type PaymentDataType = {
   region: string;
   success_url: string;
   cancel_url: string;
+  source?: string;
   courses: {
     name: string;
     new_price: number;
@@ -136,7 +137,7 @@ const PaymentModal = ({
         user_email: isLogged ? email : form.email,
         transfer_cart: !isLogged && cartLandingIds.length > 0,
         cart_landing_ids: cartLandingIds,
-        source: getPaymentSource(),
+        source: !paymentData.source ? getPaymentSource() : paymentData.source,
         cancel_url:
           !isLogged && rcCode
             ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
