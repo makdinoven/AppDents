@@ -233,7 +233,8 @@
     "user": "User:",
     "referrals": {
       "email": "Mail",
-      "invitation": "Invitation"
+      "invited": "Invited",
+      "totalCashback": "Total cashback"
     },
     "purchaseHistory": {
       "tabName": "Purchase history",

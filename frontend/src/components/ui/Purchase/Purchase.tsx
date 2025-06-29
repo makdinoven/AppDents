@@ -91,7 +91,7 @@ const Purchase = ({ content }: { content: any }) => {
         )}
         {isReferral && (
           <span>
-            {t("profile.purchaseHistory.referralCashback").toLowerCase()}
+            {t("profile.referrals.totalCashback").toLowerCase()}
           </span>
         )}
       </div>
@@ -121,7 +121,7 @@ const Purchase = ({ content }: { content: any }) => {
           <p className={s.purchase_type}>
             {t(
               isReferral
-                ? "profile.referrals.invitation"
+                ? "profile.referrals.invited"
                 : `profile.purchaseHistory.${content.type}`
             )}
           </p>

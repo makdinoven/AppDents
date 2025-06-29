@@ -227,7 +227,8 @@
     "user": "Usuario:",
     "referrals": {
       "email": "Correo electrónico",
-      "invitation": "Invitación"
+      "invited": "Invitado",
+      "totalCashback": "Reembolso total"
     },
     "purchaseHistory": {
       "tabName": "Historial de compras",
