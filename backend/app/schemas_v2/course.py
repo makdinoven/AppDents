@@ -4,7 +4,14 @@ from enum import Enum as PyEnum
 
 from ..utils.relink import convert_storage_url
 
-
+class LandingOfferInfo(BaseModel):
+    id: Optional[int] = Field(None, title="Landing Offer ID")
+    slug:         str
+    landing_name: str
+    old_price:    str
+    new_price:    str   # ← цена со скидкой 15 %
+    duration:     str | None
+    region: str | None
 # Схема для элемента урока
 class Lesson(BaseModel):
     video_link: str = ""
@@ -39,6 +46,7 @@ class CourseDetailResponse(BaseModel):
     sections: List[Dict[str, Section]]
     access_level: CourseAccessLevel
     cheapest_landing: LandingSnippet | None = None
+    landing: LandingOfferInfo | None
 
     class Config:
         orm_mode = True
