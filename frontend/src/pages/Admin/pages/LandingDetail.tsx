@@ -15,7 +15,7 @@ import {
   denormalizeLessons,
   normalizeLessons,
 } from "../../../common/helpers/helpers.ts";
-import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
+import ErrorIcon from "../../../assets/icons/ErrorIcon.tsx";
 import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const LandingDetail = () => {

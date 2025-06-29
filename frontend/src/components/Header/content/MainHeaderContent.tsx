@@ -11,7 +11,7 @@ import { SearchIcon } from "../../../assets/logos/index";
 import LanguageChanger from "../../ui/LanguageChanger/LanguageChanger.tsx";
 import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Trans } from "react-i18next";
-import UserIcon from "../../../assets/Icons/UserIcon.tsx";
+import UserIcon from "../../../assets/icons/UserIcon.tsx";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -24,12 +24,12 @@ const MainHeaderContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
+    (state: AppRootStateType) => state.user.isLogged
   );
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const screenWidth = useScreenWidth();
   const quantity = useSelector(
-    (state: AppRootStateType) => state.cart.quantity,
+    (state: AppRootStateType) => state.cart.quantity
   );
   const { setTriggerRef } = useTriggerRef();
   const localTriggerRef = useRef<HTMLButtonElement | null>(null);

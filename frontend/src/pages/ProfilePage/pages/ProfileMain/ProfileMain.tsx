@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
-import User from "../../../../assets/Icons/User.tsx";
+import User from "../../../../assets/icons/User.tsx";
 import { Trans } from "react-i18next";
 import MyCourses from "../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
@@ -30,7 +30,7 @@ const ProfileMain = () => {
   // const [showConfirmModal, setShowConfirmModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
+    (state: AppRootStateType) => state.user.isLogged
   );
 
   const handleLogout = () => {

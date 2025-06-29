@@ -1,5 +1,5 @@
 import s from "./Timer.module.scss";
-import Clock from "../../../../assets/Icons/Clock.tsx";
+import Clock from "../../../../assets/icons/Clock.tsx";
 import CountdownTimer from "../../CountdownTimer/CountdownTimer.tsx";
 
 const Timer = ({ appearance }: { appearance?: "dark" | "primary" }) => {
