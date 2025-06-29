@@ -231,11 +231,10 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
 
     course_land_map = {}
     if course_ids:
-        course_land_map = dict(
-            db.query(m.Course.id, m.Landing.landing_name)
-              .join(m.Landing, m.Course.landing_id == m.Landing.id, isouter=True)
-              .filter(m.Course.id.in_(course_ids))
-        )
+                course_land_map = dict(
+                        db.query(m.Landing.id, m.Landing.landing_name)
+            .filter(m.Landing.id.in_(course_ids))
+                                           )
 
     # ----------------------------------------------------------------------
     # 6. ГИДРАТАЦИЯ элементов
