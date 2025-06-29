@@ -9,7 +9,7 @@
   gap: 20px;
   position: relative;
 
-  &::after {
+  &:not(:last-child)::after {
     content: "";
     position: absolute;
     right: 0;
@@ -69,11 +69,13 @@
 }
 
 .purchase_sum {
-  &.adjunction {
+  &.adjunction,
+  .cashback {
     color: $green;
   }
 
-  &.withdrawal {
+  &.withdrawal,
+  .nocashback {
     color: $error-color;
   }
 }

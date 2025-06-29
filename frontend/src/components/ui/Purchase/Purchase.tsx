@@ -25,18 +25,41 @@ const Purchase = ({ content }: { content: any }) => {
   const renderTransactionInfo = () => {
     const { type, amount, meta, slug, landing_name: landingName } = content;
 
-    if (type === "purchase" || type === "internalPurchase") {
-      if (slug && landingName) {
-        return slug === "CART" ? (
-          <p>{t("profile.purchaseHistory.fromCart").toUpperCase()}</p>
-        ) : (
-          <Link
-            to={`/${Path.landingClient}/${slug}`}
-            className={s.landing_name}
-          >
-            {landingName.toUpperCase()}
-          </Link>
-        );
+    if (type === "internalPurchase") {
+      if (landingName) {
+        if (slug) {
+          return (
+            <Link
+              to={`/${Path.landingClient}/${slug}`}
+              className={s.landing_name}
+            >
+              {landingName.toUpperCase()}
+            </Link>
+          );
+        } else {
+          return <p>{landingName.toUpperCase()}</p>;
+        }
+      }
+    }
+
+    if (type === "purchase") {
+      if (landingName) {
+        if (meta.source === "CART") {
+          return <p>{t("profile.purchaseHistory.fromCart").toUpperCase()}</p>;
+        } else {
+          if (slug) {
+            return (
+              <Link
+                to={`/${Path.landingClient}/${slug}`}
+                className={s.landing_name}
+              >
+                {landingName.toUpperCase()}
+              </Link>
+            );
+          } else {
+            return <p>{landingName.toUpperCase()}</p>;
+          }
+        }
       }
     }
 
@@ -69,30 +92,29 @@ const Purchase = ({ content }: { content: any }) => {
 
   const renderPurchaseSum = () => {
     const { amount, type, total_cashback: totalCashback } = content;
-    const isPositive = amount > 0;
+    const isPositiveAmount = amount > 0;
+    const isPositiveCashback = totalCashback > 0;
 
     return (
       <div
         className={`${s.purchase_details_container} ${s.purchase_sum_details}`}
       >
         <span
-          className={`${s.purchase_sum} ${
-            isPositive || isReferral ? s.adjunction : s.withdrawal
-          }`}
+          className={`${s.purchase_sum} ${isReferral ? (isPositiveCashback ? s.adjunction : s.withdrawal) : isPositiveAmount ? s.adjunction : s.withdrawal}`}
         >
           {isReferral
-            ? `+${totalCashback}$`
-            : isPositive
+            ? totalCashback
+              ? `+${totalCashback}$`
+              : "0$"
+            : isPositiveAmount
               ? `+${amount}$`
               : `${amount}$`}
         </span>
-        {!isPositive && type === "internalPurchase" && (
+        {!isPositiveAmount && type === "internalPurchase" && (
           <span>{t("profile.purchaseHistory.fromBalance")}</span>
         )}
         {isReferral && (
-          <span>
-            {t("profile.referrals.totalCashback").toLowerCase()}
-          </span>
+          <span>{t("profile.referrals.totalCashback").toLowerCase()}</span>
         )}
       </div>
     );
