@@ -61,47 +61,44 @@ def _preferred_lang(user: User) -> str | None:
     return langs.most_common(1)[0][0] if langs else None
 
 
-# ─── core ───────────────────────────────────────────────────────────────────
-def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
+def _pick_offer_landing(db: Session, user: User) -> Optional[Tuple[Landing, Course]]:
     """
-    1.  Если у пользователя есть покупки – ищем лендинг по тегам
-        («cheap-by-tag» путь). Берём случайный лендинг из TOP-10,
-        который ещё не предлагался.
-    2.  Если подходящих тегов нет – берём случайный лендинг из TOP-20
+    1.  Если есть покупки → подбираем лендинг по самым «весомым» тегам
+        (cheapest-by-tag) и языку пользователя. Берём случайный лендинг
+        из TOP-10 по продажам.
+    2.  Если подходящих тегов нет → берём случайный лендинг из TOP-20
         по продажам.
-    3.  В обоих случаях отбрасываем курсы из `denied`
-        (куплены, partial, active-offer, recent-offer≤5).
+    3.  Курс «отбрасывается», если уже:
+        • куплен            • в partial-доступе
+        • активный оффер    • когда-либо предлагался ранее
     """
 
-    # ---------- denied ----------
-    purchased        = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids = {
-        so.course_id
-        for so in sorted(
-            user.special_offers, key=lambda so: so.created_at, reverse=True
-        )[:_HISTORY_LIMIT]
-    }
-    partial_ids = set(user.partial_course_ids)
-    active_ids  = set(user.active_special_offer_ids)
-    denied: set[int] = purchased | recent_offer_ids | partial_ids | active_ids
+    # ---------- 1.  «запрещённые» курсы ----------
+    purchased     = {p.course_id for p in user.purchases if p.course_id}
+    partial_ids   = set(user.partial_course_ids or [])
+    active_ids    = set(user.active_special_offer_ids or [])
+    # теперь учитываем *всю* историю спец-офферов
+    offered_ids   = {so.course_id for so in user.special_offers}
+    denied: set[int] = purchased | partial_ids | active_ids | offered_ids
 
-    # ---------- основной язык ----------
-    pref_lang = _preferred_lang(user)          # может быть None
+    # ---------- 2.  язык, который пользователь покупал чаще всего ----------
+    pref_lang = _preferred_lang(user)          # 'RU' / 'EN' / …  или None
 
-    # --- helper: взять первый курс, который не в denied -------------------
+    # вспомогательная функция: вернуть первый «не-denied» курс
     def _first_allowed(landing: Landing) -> Optional[Course]:
         for c in landing.courses:
             if c.id not in denied:
                 return c
         return None
 
-    # ---------- 1) путь «по тегам» ----------
+    # ---------- 3.  путь «по тегам» ----------
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
+        # собираем веса тегов
         tag_weights: Counter[int] = Counter()
         for l in cheapest:
-            for i, t in enumerate(l.tags or []):
-                tag_weights[t.id] += 3 if i == 0 else 1
+            for idx, t in enumerate(l.tags or []):
+                tag_weights[t.id] += 3 if idx == 0 else 1
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
@@ -120,14 +117,14 @@ def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | Non
             if pref_lang:
                 q = q.filter(Landing.language == pref_lang)
 
-            cand = q.all()
-            random.shuffle(cand)                    # ← ключевая разница
-            for landing in cand:
+            candidates = q.all()
+            random.shuffle(candidates)          # случайный выбор из TOP-10
+            for landing in candidates:
                 course = _first_allowed(landing)
                 if course:
                     return landing, course
 
-    # ---------- 2) общий fallback ----------
+    # ---------- 4.  общий «популярный» фолбэк ----------
     q = (
         db.query(Landing)
           .filter(Landing.is_hidden.is_(False))
@@ -139,12 +136,13 @@ def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | Non
         q = q.filter(Landing.language == pref_lang)
 
     top = q.all()
-    random.shuffle(top)
+    random.shuffle(top)                         # случайный выбор из TOP-20
     for landing in top:
         course = _first_allowed(landing)
         if course:
             return landing, course
 
+    # ничего не нашли
     return None
 
 
@@ -193,7 +191,6 @@ def generate_offer_for_user(db: Session, user: User) -> bool:
 
     db.commit()
     logger.info("Special offer → user=%s course=%s until %s", user.id, course.id, expires_at)
-    _trim_offer_history(db, user)
     return True
 
 
@@ -230,17 +227,3 @@ def generate_offers_for_all_users(db: Session) -> None:
 
         offset += BATCH
 
-
-
-def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
-    """
-    Сохраняет не более `limit` последних записей SpecialOffer.
-    Старые записи удаляются, чтобы позже могли повторно попасть в оффер.
-    """
-    offers_sorted = sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
-    excess = offers_sorted[limit:]
-    for so in excess:
-        db.delete(so)
-    if excess:
-        logger.debug("Trimmed %s old offers for user %s", len(excess), user.id)
-        db.commit()
