@@ -64,13 +64,14 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "freeCourse": {
-    "freePreview": "Free lesson",
+    "freePreview": "Special offer",
     "registerToWatch": "Register to watch",
     "tryFirstLesson": "Try first lesson for free",
     "fullAccess": "Get full course",
-    "get": "Get Full course only for ${{count}}",
     "title": "Full course required",
-    "desc": "This lesson is part of a full course. Get full access by purchasing the course.",
+    "get": "Get all lessons only for ${{count}}",
+    "desc": "This lesson is part of a complete course. Get full access to all lessons by purchasing the course.",
+    "discount": "Discount {{discount}}%",
     "access": {
       "full": "Full access",
       "partial": "Partial access",
