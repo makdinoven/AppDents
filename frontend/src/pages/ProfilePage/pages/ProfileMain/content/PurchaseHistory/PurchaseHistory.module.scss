@@ -16,10 +16,8 @@
   width: 100%;
   height: fit-content;
   border: 2px solid $hover-color;
-  border-bottom: 0;
-  border-radius: 40px 40px 0 0;
+  border-radius: 40px;
 }
-
 
 @media (max-width: $tablet-breakpoint) {
   .purchase_history {
@@ -30,6 +28,6 @@
 @media (max-width: $mobile-breakpoint) {
   .purchase_history_container {
     border: 1px solid $hover-color;
-    border-radius: 20px 20px 0 0;
+    border-radius: 20px;
   }
 }
