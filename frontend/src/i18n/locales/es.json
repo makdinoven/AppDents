@@ -224,29 +224,24 @@
     },
 
     "main": "Principal",
-    "myReferrals": {
-      "tabName": "Mis referidos",
-      "totalPaid": "Pagado",
-      "totalCashback": "Cashback",
-      "email": "Correo electrónico"
+    "user": "Usuario:",
+    "referrals": {
+      "email": "Correo electrónico",
+      "invitation": "Invitación"
     },
-    "myTransactions": {
-      "tabName": "Mis transacciones",
-      "type": "Tipo",
-      "amount": "Monto",
-      "date": "Fecha",
-      "reason": "Motivo",
-      "courses": "Cursos",
-      "fromUser": "Del usuario",
-      "adminAdjust": "Ajuste del admin",
-      "referralCashback": "Cashback por referido",
-      "internalPurchase": "Compra interna",
-      "bonus": "Bono",
-      "fullPurchase": "Compra completa",
-      "test": "Prueba"
-    },
-    "invited": "Invitado",
-    "payments": "Pagos"
+    "purchaseHistory": {
+      "tabName": "Historial de compras",
+      "purchaseSum": "Importe de la compra:",
+      "adminAdjust": "Recarga del administrador",
+      "internalPurchase": "Pago desde saldo",
+      "purchase": "Pago",
+      "transactionType": "Tipo de transacción:",
+      "referralCashback": "Reembolso",
+      "adjunction": "recarga",
+      "fromBalance": "desde el saldo",
+      "withdrawal": "retiro",
+      "fromCart": "Desde el carrito"
+    }
   },
 
   "professor": {

@@ -1,0 +1,140 @@
+.purchase {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-content: center;
+  width: 100%;
+  height: fit-content;
+  padding: 30px;
+  gap: 20px;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: calc(100% - 90px);
+    height: 2px;
+    background-color: $hover-color;
+  }
+}
+
+.purchase_content {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  @include clamped-p3;
+  text-transform: none;
+  overflow-y: hidden;
+}
+
+.purchase_type {
+  color: $primary;
+  text-transform: none;
+}
+
+.purchase_info_container {
+  @include flex-column;
+  justify-content: start;
+  align-items: start;
+  gap: 10px;
+}
+
+.purchase_info {
+  @include flex-column;
+  width: fit-content;
+  text-overflow: ellipsis;
+  padding-right: 30px;
+}
+
+.purchase_info_field {
+  color: $hover-color-dark;
+  white-space: nowrap;
+}
+
+.purchase_details_container {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 10px;
+  color: $hover-color-dark;
+  white-space: nowrap;
+
+  &.purchase_sum_details {
+    gap: 6px;
+  }
+}
+
+.purchase_sum {
+  &.adjunction {
+    color: $green;
+  }
+
+  &.withdrawal {
+    color: $error-color;
+  }
+}
+
+.purchase_icon {
+  align-self: center;
+  margin-top: 30px;
+
+  path {
+    color: $hover-color-darken-analogue;
+    stroke: currentColor;
+    stroke-width: 2px;
+  }
+}
+
+.landing_name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+
+  &:hover {
+    color: $primary;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .purchase {
+    padding: 15px;
+    gap: 7px;
+
+    &::after {
+      width: calc(100% - 40px);
+      height: 1px;
+    }
+  }
+
+  .purchase_info_container {
+    gap: 2px;
+  }
+
+  .purchase_info {
+    text-wrap: wrap;
+    padding-right: 15px;
+  }
+
+  .purchase_details_container {
+    gap: 2px;
+
+    &.purchase_sum_details {
+      gap: 0;
+    }
+  }
+
+  .purchase_icon {
+    width: 30px;
+    height: 30px;
+    margin-top: 15px;
+    path {
+      stroke-width: 1px;
+    }
+  }
+}

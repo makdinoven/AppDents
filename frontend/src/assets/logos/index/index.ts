@@ -24,3 +24,8 @@ export { default as QuestionMark } from "../../Icons/question-mark.svg?react";
 export { default as TrashCan } from "../../Icons/trash-can-icon.svg?react";
 export { default as Lock } from "../../Icons/lock.svg?react";
 export { default as PlayIcon } from "../../Icons/play-icon.svg?react";
+export { default as UserPlusIcon } from "../../Icons/user-plus.svg?react";
+export { default as TouchCoinIcon } from "../../Icons/touch-coin.svg?react";
+export { default as CoinIcon } from "../../Icons/coin.svg?react";
+export { default as CashbackIcon } from "../../Icons/cashback.svg?react";
+export { default as AlertCirceIcon } from "../../Icons/alert-circle.svg?react";

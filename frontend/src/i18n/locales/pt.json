@@ -222,32 +222,26 @@
       "step_4": "4. Você recebe <1>50%</1> do valor pago (ex: <1>$9,50</1>) como crédito na sua carteira."
     },
 
-    "main": "Principal",
-    "myReferrals": {
-      "tabName": "Minhas indicações",
-      "totalPaid": "Pago",
-      "totalCashback": "Cashback",
-      "email": "E-mail"
+    "main": "Página inicial",
+    "user": "Usuário:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Convite"
     },
-    "myTransactions": {
-      "tabName": "Minhas transações",
-      "type": "Tipo",
-      "amount": "Valor",
-      "date": "Data",
-      "reason": "Motivo",
-      "courses": "Cursos",
-      "fromUser": "Do usuário",
-      "adminAdjust": "Ajuste do admin",
-      "referralCashback": "Cashback de indicação",
-      "internalPurchase": "Compra interna",
-      "bonus": "Bônus",
-      "fullPurchase": "Compra completa",
-      "test": "Teste"
-    },
-    "invited": "Convidado",
-    "payments": "Pagamentos"
+    "purchaseHistory": {
+      "tabName": "Histórico de compras",
+      "purchaseSum": "Valor da compra:",
+      "adminAdjust": "Recarga do administrador",
+      "internalPurchase": "Pagamento com saldo",
+      "purchase": "Pagamento",
+      "transactionType": "Tipo de transação:",
+      "referralCashback": "Cashback",
+      "adjunction": "recarga",
+      "fromBalance": "do saldo",
+      "withdrawal": "retirada",
+      "fromCart": "Do carrinho"
+    }
   },
-
   "professor": {
     "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
     "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",

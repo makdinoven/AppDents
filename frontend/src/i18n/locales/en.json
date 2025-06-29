@@ -230,29 +230,24 @@
       "step_4": "4. You receive <1>50%</1> of their payment (e.g. <1>$9.50</1>) as credit in your wallet."
     },
     "main": "Main",
-    "myReferrals": {
-      "tabName": "My referrals",
-      "totalPaid": "Paid",
-      "totalCashback": "Cashback",
-      "email": "E-mail"
+    "user": "User:",
+    "referrals": {
+      "email": "Mail",
+      "invitation": "Invitation"
     },
-    "myTransactions": {
-      "tabName": "My transactions",
-      "type": "Type",
-      "amount": "Amount",
-      "date": "Date",
-      "reason": "Reason",
-      "courses": "Courses",
-      "fromUser": "From user",
+    "purchaseHistory": {
+      "tabName": "Purchase history",
+      "purchaseSum": "Purchase sum:",
       "adminAdjust": "Admin adjust",
-      "referralCashback": "Referral cashback",
-      "internalPurchase": "Internal purchase",
-      "bonus": "Bonus",
-      "fullPurchase": "Full purchase",
-      "test": "Test"
-    },
-    "invited": "Invited",
-    "payments": "Payments"
+      "internalPurchase": "Balance purchase",
+      "purchase": "Purchase",
+      "transactionType": "Transaction type:",
+      "referralCashback": "Cashback",
+      "adjunction": "adjunction",
+      "fromBalance": "from balance",
+      "withdrawal": "withdrawal",
+      "fromCart": "From cart"
+    }
   },
 
   "professor": {

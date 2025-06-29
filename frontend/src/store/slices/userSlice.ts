@@ -10,7 +10,6 @@ import {
   LS_LANGUAGE_KEY,
   LS_TOKEN_KEY,
 } from "../../common/helpers/commonConstants.ts";
-import { capitalizeText } from "../../common/helpers/helpers.ts";
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
 
