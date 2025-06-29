@@ -10,7 +10,7 @@ import { ChangePasswordType } from "../../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { emailSchema } from "../../../common/schemas/emailSchema.ts";
 import Form from "../../../components/Modals/modules/Form/Form.tsx";
-import Percent from "../../../assets/Icons/Percent.tsx";
+import Percent from "../../../assets/icons/Percent.tsx";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 type props = {

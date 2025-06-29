@@ -23,7 +23,7 @@ import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
 import { Alert } from "../../components/ui/Alert/Alert.tsx";
-import CheckMark from "../../assets/Icons/CheckMark.tsx";
+import CheckMark from "../../assets/icons/CheckMark.tsx";
 
 const Cart = () => {
   const location = useLocation();

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import s from "./Faq.module.scss";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { Trans } from "react-i18next";
-import BackArrow from "../../../../assets/Icons/BackArrow.tsx";
+import BackArrow from "../../../../assets/icons/BackArrow.tsx";
 
 const Faq = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);

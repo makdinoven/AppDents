@@ -3,7 +3,7 @@ import AdminField from "../AdminField/AdminField.tsx";
 import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
-import BackArrow from "../../../../../assets/Icons/BackArrow.tsx";
+import BackArrow from "../../../../../assets/icons/BackArrow.tsx";
 
 const CollapsibleSection = ({
   title,
@@ -92,7 +92,7 @@ const CollapsibleSection = ({
                 value={data[id]}
                 onChange={onChange}
               />
-            ),
+            )
           )}
 
           {children}

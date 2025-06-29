@@ -12,7 +12,7 @@ import PhotoUploader from "../../../components/CommonComponents/PhotoUploader/Ph
 import { AuthorType } from "../types.ts";
 import Loader from "../../../components/ui/Loader/Loader.tsx";
 import { Alert } from "../../../components/ui/Alert/Alert.tsx";
-import ErrorIcon from "../../../assets/Icons/ErrorIcon.tsx";
+import ErrorIcon from "../../../assets/icons/ErrorIcon.tsx";
 
 const AuthorDetail = () => {
   const [loading, setLoading] = useState(true);
