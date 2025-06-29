@@ -222,30 +222,25 @@
       "step_4": "4. Ricevi il <1>50%</1> del pagamento (es. <1>$9,50</1>) come credito nel tuo portafoglio."
     },
 
-    "main": "Principale",
-    "myReferrals": {
-      "tabName": "I miei referral",
-      "totalPaid": "Pagato",
-      "totalCashback": "Cashback",
-      "email": "Email"
+    "main": "Home",
+    "user": "Utente:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Invito"
     },
-    "myTransactions": {
-      "tabName": "Le mie transazioni",
-      "type": "Tipo",
-      "amount": "Importo",
-      "date": "Data",
-      "reason": "Motivo",
-      "courses": "Corsi",
-      "fromUser": "Dall'utente",
-      "adminAdjust": "Regolazione admin",
-      "referralCashback": "Cashback referral",
-      "internalPurchase": "Acquisto interno",
-      "bonus": "Bonus",
-      "fullPurchase": "Acquisto completo",
-      "test": "Test"
-    },
-    "invited": "Invitato",
-    "payments": "Pagamenti"
+    "purchaseHistory": {
+      "tabName": "Cronologia acquisti",
+      "purchaseSum": "Importo dell'acquisto:",
+      "adminAdjust": "Ricarica dell'amministratore",
+      "internalPurchase": "Pagamento dal saldo",
+      "purchase": "Pagamento",
+      "transactionType": "Tipo di transazione:",
+      "referralCashback": "Cashback",
+      "adjunction": "ricarica",
+      "fromBalance": "dal saldo",
+      "withdrawal": "prelievo",
+      "fromCart": "Dal carrello"
+    }
   },
 
   "professor": {

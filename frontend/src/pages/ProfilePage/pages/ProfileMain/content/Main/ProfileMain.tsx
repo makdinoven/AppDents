@@ -120,7 +120,7 @@ const ProfileMain = () => {
           tabs={profilePageContent}
         />
       </div>
-      <div className={s.profile_page}>{activeTab?.component}</div>
+      <div className={s.profile_page_content}>{activeTab?.component}</div>
       {showResetPasswordModal && (
         <ModalWrapper
           title={"resetPassword"}

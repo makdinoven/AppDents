@@ -6,7 +6,7 @@
   border: 1px solid $hover-color;
   border-radius: 10px;
   margin-bottom: 40px;
-  overflow-y: auto;
+  overflow-y: auto; 
   @include custom-scrollbar;
 
   @media (max-width: $mobile-breakpoint) {

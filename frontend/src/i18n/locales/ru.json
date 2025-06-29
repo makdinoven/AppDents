@@ -224,22 +224,23 @@
     },
 
     "main": "Главная",
+    "user": "Пользователь:",
     "referrals": {
-      "totalCashback": "Кешбек",
-      "email": "Почта"
+      "email": "Почта",
+      "invitation": "Приглашение"
     },
     "purchaseHistory": {
       "tabName": "История покупок",
-      "user": "Пользователь:",
       "purchaseSum": "Сумма покупки:",
       "adminAdjust": "Пополение админа",
-      "referralCashback": "Кэшбек",
       "internalPurchase": "Оплата балансом",
-      "fullPurchase": "Оплата",
-      "transactionType": "Тип транзакции",
+      "purchase": "Оплата",
+      "transactionType": "Тип транзакции:",
+      "referralCashback": "Кэшбек",
       "adjunction": "пополнение",
       "fromBalance": "с баланса",
-      "withdrawal": "снятие"
+      "withdrawal": "снятие",
+      "fromCart": "Из корзины"
     }
   },
 

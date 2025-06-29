@@ -1,4 +1,4 @@
-.profile_page {
+.profile_page_content {
   @include flex-column;
   gap: 80px;
   justify-content: space-between;
@@ -48,7 +48,6 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
   gap: 20px;
 }
 
@@ -69,18 +68,10 @@
       height: 60px;
     }
   }
-
-  .tabs_wrapper{
-    margin-bottom: 30px;
-  }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .profile_page {
     gap: 30px;
-  }
-
-    .tabs_wrapper{
-    margin-bottom: 15px;
   }
 }

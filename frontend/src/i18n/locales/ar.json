@@ -229,30 +229,25 @@
       "step_3": "٣. يشتري صديقك أي دورة — على سبيل المثال، واحدة تكلف <1>19$</1>.",
       "step_4": "٤. تتلقى <1>50٪</1> من المبلغ المدفوع (مثلاً <1>9.50$</1>) كرصيد في محفظتك."
     },
-    "main": "رئيسي",
-    "myReferrals": {
-      "tabName": "إحالاتي",
-      "totalPaid": "المدفوع",
-      "totalCashback": "الكاش باك",
-      "email": "البريد الإلكتروني"
+    "main": "الرئيسية",
+    "user": "المستخدم:",
+    "referrals": {
+      "email": "البريد الإلكتروني",
+      "invitation": "دعوة"
     },
-    "myTransactions": {
-      "tabName": "معاملاتي",
-      "type": "النوع",
-      "amount": "المبلغ",
-      "date": "التاريخ",
-      "reason": "السبب",
-      "courses": "الدورات",
-      "fromUser": "من المستخدم",
-      "adminAdjust": "تعديل الأدمن",
-      "referralCashback": "كاش باك الإحالة",
-      "internalPurchase": "شراء داخلي",
-      "bonus": "مكافأة",
-      "fullPurchase": "شراء كامل",
-      "test": "اختبار"
-    },
-    "invited": "مدعو",
-    "payments": "المدفوعات"
+    "purchaseHistory": {
+      "tabName": "سجل المشتريات",
+      "purchaseSum": "قيمة الشراء:",
+      "adminAdjust": "إضافة من المسؤول",
+      "internalPurchase": "دفع من الرصيد",
+      "purchase": "دفع",
+      "transactionType": "نوع العملية:",
+      "referralCashback": "استرداد نقدي",
+      "adjunction": "إيداع",
+      "fromBalance": "من الرصيد",
+      "withdrawal": "سحب",
+      "fromCart": "من السلة"
+    }
   },
 
   "professor": {
