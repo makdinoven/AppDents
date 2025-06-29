@@ -1,6 +1,7 @@
 import copy
 import inspect
 import json
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ from ..models.models_v2 import Course, User
 from ..services_v2.course_service import create_course, delete_course, search_courses_paginated, list_courses_paginated
 from ..services_v2.course_service import get_course_detail, update_course
 from ..schemas_v2.course import CourseListResponse, CourseDetailResponse, CourseUpdate, CourseCreate, \
-    CourseListPageResponse, CourseDetailResponsePutRequest
+    CourseListPageResponse, CourseDetailResponsePutRequest, LandingOfferInfo
 from ..services_v2.landing_service import get_cheapest_landing_for_course
 from ..services_v2.preview_service import get_or_schedule_preview
 
@@ -108,6 +109,24 @@ def get_course_by_id(
         if landing:
             cheapest_landing = {"id": landing.id}
 
+    landing_info: LandingOfferInfo | None = None
+    if cheapest_landing:
+        # берём тот же объект landing, который нашли выше
+        old_price = Decimal(str(landing.old_price))
+        original = Decimal(str(landing.new_price))
+        discounted = (original * Decimal("0.85")).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        landing_info = LandingOfferInfo(
+            id=landing.id,
+            slug=landing.page_name,
+            landing_name=landing.landing_name,
+            old_price=f"{old_price:.2f}",
+            new_price=f"{discounted:.2f}",
+            duration=landing.duration,
+            region=landing.language,
+        )
+
     # — 5. Финальный уровень доступа —
     if has_full:
         access_level = "full"
@@ -125,6 +144,7 @@ def get_course_by_id(
         "sections": sections,
         "access_level": access_level,
         "cheapest_landing": cheapest_landing,
+        "landing": landing_info,
     }
 
     # GET-запрос — откатываем любые изменения в сессии

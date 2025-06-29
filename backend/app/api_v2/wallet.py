@@ -40,22 +40,13 @@ def wallet_balance(current_user: m.User = Depends(get_current_user)):
     return WalletResponse(balance=ws.get_wallet_balance(current_user))
 
 
-@router.get("/transactions", response_model=List[WalletTransactionItem])
+@router.get("/transactions", response_model=list[WalletTransactionItem])
 def wallet_transactions(
     db: Session = Depends(get_db),
     current_user: m.User = Depends(get_current_user),
 ):
-    txs = ws.get_wallet_transactions(db, current_user.id)
-    return [
-        WalletTransactionItem(
-            id=tx.id,
-            amount=tx.amount,
-            type=tx.type.value,
-            meta=tx.meta,
-            created_at=tx.created_at,
-        )
-        for tx in txs
-    ]
+    feed = ws.get_wallet_feed(db, current_user.id)
+    return [WalletTransactionItem(**row) for row in feed]
 
 @router.post(
     "/admin/adjust",
