@@ -233,7 +233,8 @@
     "user": "المستخدم:",
     "referrals": {
       "email": "البريد الإلكتروني",
-      "invitation": "دعوة"
+      "invited": "تمت دعوته",
+      "totalCashback": "إجمالي الاسترداد النقدي"
     },
     "purchaseHistory": {
       "tabName": "سجل المشتريات",

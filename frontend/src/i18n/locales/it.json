@@ -226,7 +226,8 @@
     "user": "Utente:",
     "referrals": {
       "email": "Email",
-      "invitation": "Invito"
+      "invited": "Invitato",
+      "totalCashback": "Cashback totale"
     },
     "purchaseHistory": {
       "tabName": "Cronologia acquisti",
