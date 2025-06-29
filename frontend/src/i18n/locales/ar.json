@@ -81,10 +81,7 @@
     "title": "<1>اليوم</1> فقط – <1>{{discount}}٪ خصم!</1>"
   },
 
-
-
-
-"nav": {
+  "nav": {
     "home": "الرئيسية",
     "courses": "الدورات",
     "books": "الكتب",
@@ -97,7 +94,6 @@
       "program": "برنامج الدورة"
     }
   },
-
 
   "search": {
     "searchCourses": "بحث عن الدورات",
@@ -233,8 +229,27 @@
       "step_2": "2. أرسله إلى صديق عبر WhatsApp أو Telegram أو البريد الإلكتروني — أي وسيلة تفضلها.",
       "step_3": "٣. يشتري صديقك أي دورة — على سبيل المثال، واحدة تكلف <1>19$</1>.",
       "step_4": "٤. تتلقى <1>50٪</1> من المبلغ المدفوع (مثلاً <1>9.50$</1>) كرصيد في محفظتك."
+    },
+    "main": "الرئيسية",
+    "user": "المستخدم:",
+    "referrals": {
+      "email": "البريد الإلكتروني",
+      "invited": "تمت دعوته",
+      "totalCashback": "إجمالي الاسترداد النقدي"
+    },
+    "purchaseHistory": {
+      "tabName": "سجل المشتريات",
+      "purchaseSum": "قيمة الشراء:",
+      "adminAdjust": "إضافة من المسؤول",
+      "internalPurchase": "دفع من الرصيد",
+      "purchase": "دفع",
+      "transactionType": "نوع العملية:",
+      "referralCashback": "استرداد نقدي",
+      "adjunction": "إيداع",
+      "fromBalance": "من الرصيد",
+      "withdrawal": "سحب",
+      "fromCart": "من السلة"
     }
-
   },
 
   "professor": {
@@ -254,12 +269,10 @@
     "coursesCount_few": "{{count}} دورات",
     "coursesCount_many": "{{count}} دورة",
     "coursesCount_other": "{{count}} دورة"
-
   },
   "other": {
     "otherCourses": "دورات أخرى"
   },
-
 
   "error": {
     "email.empty": "لا يجب أن يكون البريد الإلكتروني فارغًا",

@@ -81,8 +81,6 @@
     "title": "Sólo <1>hoy</1> <1>– {{discount}}% de descuento!</1>"
   },
 
-
-
   "nav": {
     "home": "Inicio",
     "courses": "Cursos",
@@ -97,7 +95,6 @@
     }
   },
 
-
   "search": {
     "searchCourses": "Buscar cursos",
     "searchPlaceholder": "Ingrese el nombre del curso o el nombre del autor...",
@@ -109,7 +106,7 @@
   },
 
   "main": {
-    "title" : "Escuela <1>dental</1> en línea",
+    "title": "Escuela <1>dental</1> en línea",
     "hero.widestRange": "La <1>más amplia</1> gama de productos",
     "hero.bestPrices": "Mejores <1>precios</1>",
     "hero.description": "Cursos en línea para dentistas",
@@ -225,8 +222,28 @@
       "step_2": "2. Envíalo a un amigo por WhatsApp, Telegram, correo electrónico o como prefieras.",
       "step_3": "3. Tu amigo compra cualquier curso — por ejemplo, uno que cuesta <1>$19</1>.",
       "step_4": "4. Recibes el <1>50%</1> del pago (por ejemplo, <1>$9.50</1>) como crédito en tu billetera."
-    }
+    },
 
+    "main": "Principal",
+    "user": "Usuario:",
+    "referrals": {
+      "email": "Correo electrónico",
+      "invited": "Invitado",
+      "totalCashback": "Reembolso total"
+    },
+    "purchaseHistory": {
+      "tabName": "Historial de compras",
+      "purchaseSum": "Importe de la compra:",
+      "adminAdjust": "Recarga del administrador",
+      "internalPurchase": "Pago desde saldo",
+      "purchase": "Pago",
+      "transactionType": "Tipo de transacción:",
+      "referralCashback": "Reembolso",
+      "adjunction": "recarga",
+      "fromBalance": "desde el saldo",
+      "withdrawal": "retiro",
+      "fromCart": "Desde el carrito"
+    }
   },
 
   "professor": {
@@ -242,12 +259,10 @@
     "specialization": "Especialización:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Otros cursos"
   },
-
 
   "error": {
     "email.empty": "El correo electrónico no debe estar vacío",
@@ -257,7 +272,7 @@
     "password.minLength": "La contraseña debe tener al menos 6 caracteres",
     "password.digitUppercaseLetter": "La contraseña debe contener al menos un dígito y una letra mayúscula",
     "password.required": "La contraseña es obligatoria",
-    "error.invalid_credentials" : "Correo electrónico o contraseña incorrectos",
+    "error.invalid_credentials": "Correo electrónico o contraseña incorrectos",
     "errorChangingPassword": "Error. La contraseña no se cambió."
   },
 
