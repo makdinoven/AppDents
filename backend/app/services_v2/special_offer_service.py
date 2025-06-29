@@ -1,5 +1,6 @@
 import datetime as _dt
 import logging
+import random
 from collections import Counter
 from typing import List, Optional, Tuple
 
@@ -61,75 +62,88 @@ def _preferred_lang(user: User) -> str | None:
 
 
 # ─── core ───────────────────────────────────────────────────────────────────
-def _pick_offer_landing(db: Session, user: User) -> Optional[Tuple[Landing, Course]]:
-    """См. doc-string в вопросе"""
+def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
+    """
+    1.  Если у пользователя есть покупки – ищем лендинг по тегам
+        («cheap-by-tag» путь). Берём случайный лендинг из TOP-10,
+        который ещё не предлагался.
+    2.  Если подходящих тегов нет – берём случайный лендинг из TOP-20
+        по продажам.
+    3.  В обоих случаях отбрасываем курсы из `denied`
+        (куплены, partial, active-offer, recent-offer≤5).
+    """
 
-    # ---------- denied -------------------------------------------------------
-    purchased_ids   = {p.course_id for p in user.purchases if p.course_id}
+    # ---------- denied ----------
+    purchased        = {p.course_id for p in user.purchases if p.course_id}
     recent_offer_ids = {
         so.course_id
-        for so in sorted(user.special_offers,
-                         key=lambda so: so.created_at,
-                         reverse=True)[:_HISTORY_LIMIT]
-        if so.course_id
+        for so in sorted(
+            user.special_offers, key=lambda so: so.created_at, reverse=True
+        )[:_HISTORY_LIMIT]
     }
-    partial_ids = set(user.partial_course_ids or [])
-    active_ids  = set(user.active_special_offer_ids or [])
+    partial_ids = set(user.partial_course_ids)
+    active_ids  = set(user.active_special_offer_ids)
+    denied: set[int] = purchased | recent_offer_ids | partial_ids | active_ids
 
-    denied: set[int] = purchased_ids | recent_offer_ids | partial_ids | active_ids
+    # ---------- основной язык ----------
+    pref_lang = _preferred_lang(user)          # может быть None
 
-    # ---------- язык ---------------------------------------------------------
-    pref_lang = _preferred_lang(user)          # RU / EN / … / None
-    languages_to_try: List[Optional[str]] = ([pref_lang] if pref_lang else []) + [None]
+    # --- helper: взять первый курс, который не в denied -------------------
+    def _first_allowed(landing: Landing) -> Optional[Course]:
+        for c in landing.courses:
+            if c.id not in denied:
+                return c
+        return None
 
-    # ---------- 1) подбор «по тегу» ------------------------------------------
+    # ---------- 1) путь «по тегам» ----------
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
         tag_weights: Counter[int] = Counter()
         for l in cheapest:
-            for idx, t in enumerate(l.tags or []):
-                tag_weights[t.id] += 3 if idx == 0 else 1
+            for i, t in enumerate(l.tags or []):
+                tag_weights[t.id] += 3 if i == 0 else 1
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
 
-            def _tag_candidates(lang: Optional[str]):
-                q = (db.query(Landing)
-                       .join(Landing.tags)
-                       .filter(Tag.id == best_tag_id,
-                               Landing.is_hidden.is_(False))
-                       .options(selectinload(Landing.courses))
-                       .order_by(Landing.sales_count.desc())
-                       .limit(10))
-                return q.filter(Landing.language == lang) if lang else q
+            q = (
+                db.query(Landing)
+                  .join(Landing.tags)
+                  .filter(
+                      Tag.id == best_tag_id,
+                      Landing.is_hidden.is_(False),
+                  )
+                  .options(selectinload(Landing.courses))
+                  .order_by(Landing.sales_count.desc())
+                  .limit(10)
+            )
+            if pref_lang:
+                q = q.filter(Landing.language == pref_lang)
 
-            for lang_try in languages_to_try:
-                cand = _tag_candidates(lang_try).all()
-                if not cand:
-                    continue
-                chosen = cand[user.id % len(cand)]
-                for course in chosen.courses:
-                    if course.id not in denied:
-                        return chosen, course
-                # все курсы в denied — пробуем другую ветку
+            cand = q.all()
+            random.shuffle(cand)                    # ← ключевая разница
+            for landing in cand:
+                course = _first_allowed(landing)
+                if course:
+                    return landing, course
 
-    # ---------- 2) популярный fallback ---------------------------------------
-    def _top_popular(lang: Optional[str]):
-        q = (db.query(Landing)
-               .filter(Landing.is_hidden.is_(False))
-               .options(selectinload(Landing.courses))
-               .order_by(Landing.sales_count.desc())
-               .limit(20))
-        return q.filter(Landing.language == lang) if lang else q
+    # ---------- 2) общий fallback ----------
+    q = (
+        db.query(Landing)
+          .filter(Landing.is_hidden.is_(False))
+          .options(selectinload(Landing.courses))
+          .order_by(Landing.sales_count.desc())
+          .limit(20)
+    )
+    if pref_lang:
+        q = q.filter(Landing.language == pref_lang)
 
-    for lang_try in languages_to_try:
-        tops = _top_popular(lang_try).all()
-        if not tops:
-            continue
-        chosen = tops[user.id % len(tops)]
-        for course in chosen.courses:
-            if course.id not in denied:
-                return chosen, course
+    top = q.all()
+    random.shuffle(top)
+    for landing in top:
+        course = _first_allowed(landing)
+        if course:
+            return landing, course
 
     return None
 
