@@ -58,6 +58,10 @@ const CoursePage = () => {
     region: course?.landing?.region,
     success_url: `${BASE_URL}${Path.successPayment}`,
     cancel_url: currentUrl,
+    source:
+      course?.access_level === "special_offer"
+        ? "SPECIAL_OFFER"
+        : "CABINET_FREE",
     courses: [
       {
         name: course?.landing?.landing_name,
