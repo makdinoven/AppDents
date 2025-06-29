@@ -84,10 +84,10 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    isLogged && balance ? balance > 0 : false
+    isLogged && balance ? balance > 0 : false,
   );
   const {
     register,
@@ -121,7 +121,8 @@ const PaymentModal = ({
   };
 
   const balancePrice = isBalanceUsed
-    ? Math.max(paymentData.total_new_price - balance!, 0)
+    ? Math.round(Math.max(paymentData.total_new_price - balance!, 0) * 100) /
+      100
     : paymentData.total_new_price;
 
   const handlePayment = async (form: any) => {
@@ -167,7 +168,7 @@ const PaymentModal = ({
         if (balanceLeft) {
           Alert(
             t("successPaymentWithBalance", { balance: balanceLeft }),
-            <CheckMark />
+            <CheckMark />,
           );
           navigate(Path.profile);
         }

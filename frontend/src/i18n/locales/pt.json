@@ -62,13 +62,14 @@
   "firstFreeLesson": "Primeira aula grátis",
   "or": "ou",
   "freeCourse": {
-    "freePreview": "Aula demo",
+    "freePreview": "Oferta especial",
+    "discount": "Desconto de {{discount}}%",
     "registerToWatch": "Cadastre-se para ver",
     "tryFirstLesson": "Teste a primeira aula",
     "fullAccess": "Curso completo",
-    "get": "Curso por apenas ${{count}}",
     "title": "Curso completo necessário",
-    "desc": "Esta aula é parte de um curso. Compre o acesso completo.",
+    "get": "Tenha todas as aulas por apenas ${{count}}",
+    "desc": "Esta aula faz parte de um curso completo. Tenha acesso total a todas as aulas comprando o curso.",
     "access": {
       "full": "Acesso completo",
       "partial": "Acesso parcial",

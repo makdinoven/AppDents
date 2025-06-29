@@ -62,13 +62,14 @@
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
   "freeCourse": {
-    "freePreview": "Lezione demo",
+    "freePreview": "Offerta speciale",
+    "discount": "Sconto del {{discount}}%",
     "registerToWatch": "Registrati per vedere",
     "tryFirstLesson": "Prova la prima lezione",
     "fullAccess": "Corso completo",
-    "get": "Ottieni il corso a ${{count}}",
     "title": "Serve il corso completo",
-    "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo.",
+    "get": "Ottieni tutte le lezioni per solo ${{count}}",
+    "desc": "Questa lezione fa parte di un corso completo. Ottieni l'accesso completo a tutte le lezioni acquistando il corso.",
     "access": {
       "full": "Accesso completo",
       "partial": "Accesso parziale",
