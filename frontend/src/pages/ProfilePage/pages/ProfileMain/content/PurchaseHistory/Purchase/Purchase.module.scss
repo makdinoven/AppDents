@@ -1,3 +1,26 @@
+.purchase_item {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+  height: fit-content;
+}
+
+.purchase_item_header {
+  margin-left: 30px;
+}
+
+.purchases_container {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: fit-content;
+  border: 2px solid $hover-color;
+  border-radius: 40px;
+}
+
 .purchase {
   display: flex;
   flex-direction: row;
@@ -47,12 +70,13 @@
   @include flex-column;
   width: fit-content;
   text-overflow: ellipsis;
-  padding-right: 30px;
+  padding-right: 10px;
 }
 
 .purchase_info_field {
   color: $hover-color-dark;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .purchase_details_container {
@@ -61,22 +85,31 @@
   align-items: flex-end;
   gap: 10px;
   color: $hover-color-dark;
-  white-space: nowrap;
+  text-align: end;
 
   &.purchase_sum_details {
     gap: 6px;
+    text-align: end;
   }
 }
 
 .purchase_sum {
-  &.adjunction,
-  .cashback {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: flex-end;
+  text-wrap: nowrap;
+  color: $hover-color-darken;
+
+  &.adjunction {
     color: $green;
   }
 
-  &.withdrawal,
-  .nocashback {
+  &.withdrawal {
     color: $error-color;
+  }
+
+  &.no_cashback {
+    color: $text-color;
   }
 }
 
@@ -106,11 +139,24 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .purchase_item {
+    gap: 10px;
+  }
+
+  .purchase_item_header {
+    margin-left: 15px;
+  }
+
+  .purchases_container {
+    border: 1px solid $hover-color;
+    border-radius: 20px;
+  }
+
   .purchase {
     padding: 15px;
     gap: 7px;
 
-    &::after {
+    &:not(:last-child)::after {
       width: calc(100% - 40px);
       height: 1px;
     }
@@ -122,11 +168,11 @@
 
   .purchase_info {
     text-wrap: wrap;
-    padding-right: 15px;
   }
 
   .purchase_details_container {
     gap: 2px;
+    text-wrap: wrap;
 
     &.purchase_sum_details {
       gap: 0;
@@ -141,4 +187,14 @@
       stroke-width: 1.6px;
     }
   }
+}
+
+.from_balance {
+  color: $hover-color-darken;
+}
+
+.balance {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
 }

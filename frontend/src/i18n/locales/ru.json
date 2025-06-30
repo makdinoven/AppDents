@@ -228,13 +228,14 @@
     "referrals": {
       "email": "Почта",
       "invited": "Приглашен",
-      "totalCashback": "Суммарный кэшбэк"
+      "totalCashback": "cуммарный кэшбэк"
     },
     "purchaseHistory": {
-      "tabName": "История покупок",
+      "invitedUsers": "Приглашенные пользователи",
+      "purchases": "История покупок",
       "purchaseSum": "Сумма покупки:",
-      "adminAdjust": "Пополение админа",
-      "internalPurchase": "Оплата балансом",
+      "adminAdjust": "Бонус",
+      "internalPurchase": "Оплата",
       "purchase": "Оплата",
       "transactionType": "Тип транзакции:",
       "referralCashback": "Кэшбек",

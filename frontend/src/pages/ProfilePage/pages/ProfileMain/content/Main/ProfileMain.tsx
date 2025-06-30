@@ -100,7 +100,7 @@ const ProfileMain = () => {
       ),
     },
     {
-      name: "profile.purchaseHistory.tabName",
+      name: "profile.purchaseHistory.purchases",
       value: "purchase_history",
       component: <PurchaseHistory />,
     },
