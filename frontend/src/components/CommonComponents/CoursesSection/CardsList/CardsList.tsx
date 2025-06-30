@@ -1,5 +1,5 @@
 import s from "./CardsList.module.scss";
-import CourseCard from "../CourseCard/CourseCard.tsx";
+import CourseCard from "../CourseCard/ProductCard.tsx";
 import { Trans } from "react-i18next";
 import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
@@ -31,6 +31,7 @@ interface CardsListProps {
   isOffer?: boolean;
   isFree?: boolean;
   isVideo?: boolean;
+  isBook?: boolean;
 }
 
 const CardsList: React.FC<CardsListProps> = ({
@@ -38,6 +39,7 @@ const CardsList: React.FC<CardsListProps> = ({
   isClient = false,
   isFree = false,
   isVideo = false,
+  isBook = false,
   loading,
   cards,
   filter = "all",
@@ -60,6 +62,7 @@ const CardsList: React.FC<CardsListProps> = ({
           <ul className={s.list}>
             {cards.map((course, index) => (
               <CourseCard
+                isBook={isBook}
                 isFree={isFree}
                 isOffer={isOffer}
                 isClient={isClient}

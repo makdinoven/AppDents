@@ -1,4 +1,4 @@
-import s from "./CourseCard.module.scss";
+import s from "./ProductCard.module.scss";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
@@ -16,7 +16,7 @@ import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
 import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
 
-interface CourseCardProps {
+interface ProductCardProps {
   isClient?: boolean;
   id: number;
   name: string;
@@ -32,9 +32,10 @@ interface CourseCardProps {
   course_ids: number[];
   isFree?: boolean;
   slug: string;
+  isBook?: boolean;
 }
 
-const CourseCard = ({
+const ProductCard = ({
   isClient,
   isOffer = false,
   id,
@@ -49,8 +50,9 @@ const CourseCard = ({
   lessons_count,
   course_ids,
   slug,
+  isBook = false,
   isFree = false,
-}: CourseCardProps) => {
+}: ProductCardProps) => {
   const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
   const [paymentDataLoading, setPaymentDataLoading] = useState(false);
   const currentUrl = window.location.origin + location.pathname;
@@ -107,6 +109,19 @@ const CourseCard = ({
     setModalOpen(false);
   };
 
+  const renderTitleAndAuthors = () => {
+    return (
+      <div className={s.name_authors_container}>
+        <h4>{name}</h4>
+        <AuthorsDesc
+          flexWrap={isBook}
+          authors={authors}
+          color={setCardColor("color")}
+        />
+      </div>
+    );
+  };
+
   return (
     <>
       <li className={`${s.card} ${setCardColor("className")}`}>
@@ -124,19 +139,29 @@ const CourseCard = ({
             <p className={s.lessons_count}>{lessons_count}</p>
           </div>
           <div className={s.card_content_body}>
-            <h4>{name}</h4>
-            <AuthorsDesc authors={authors} color={setCardColor("color")} />
-            <div className={s.content_bottom}>
-              <ViewLink
-                className={`${s.link_btn} ${isFree ? s.free : ""}`}
-                text={"viewCourse"}
-              />
+            {!isBook && renderTitleAndAuthors()}
+            <div className={`${s.content_bottom} ${isBook ? s.book : ""}`}>
+              {isBook ? (
+                <div className={s.content_bottom_inner}>
+                  {renderTitleAndAuthors()}
+                  <ViewLink
+                    className={`${s.link_btn} ${isFree ? s.free : ""}`}
+                    text={"viewCourse"}
+                  />
+                </div>
+              ) : (
+                <ViewLink
+                  className={`${s.link_btn} ${isFree ? s.free : ""}`}
+                  text={"viewCourse"}
+                />
+              )}
+
               {photo ? (
-                <div className={s.photo}>
+                <div className={`${s.photo} ${isBook ? s.book : ""}`}>
                   <img src={photo} alt="Course image" />
                 </div>
               ) : (
-                <div className={s.photo}>
+                <div className={`${s.photo} ${isBook ? s.book : ""}`}>
                   <div
                     style={{ backgroundImage: `url(${initialPhoto})` }}
                     className={s.no_photo}
@@ -201,4 +226,4 @@ const CourseCard = ({
   );
 };
 
-export default CourseCard;
+export default ProductCard;

@@ -10,7 +10,7 @@
     //height: 100%;
     //min-height: 520px;
     //color: $text-color;
-    cursor: pointer;
+    //cursor: pointer;
   }
 }
 
@@ -129,6 +129,18 @@
   height: 8px;
 }
 
+:global(.swiper-pagination-bullet.dots.white) {
+  background-color: $background-color;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+}
+
+:global(.swiper-pagination-bullet-active.dots.white) {
+  width: 20px;
+  height: 20px;
+}
+
 :global(.swiper-pagination-bullet.story) {
   background-color: $background-color;
   width: 100%;
@@ -206,5 +218,15 @@
 
   :global(.swiper-pagination) {
     gap: 5px;
+  }
+
+  :global(.swiper-pagination-bullet.dots.white) {
+    width: 10px;
+    height: 10px;
+  }
+
+  :global(.swiper-pagination-bullet-active.dots.white) {
+    width: 15px;
+    height: 15px;
   }
 }

@@ -14,11 +14,13 @@ type UniversalSliderProps = {
   navigation?: boolean;
   effect?: "slide" | "fade" | "cube" | "coverflow" | "flip";
   paginationType?: "story" | "dots";
+  paginationColor?: "white" | "primary";
   slidesPerView?: number | "auto";
   delay?: number;
   className?: string;
   isFullWidth?: boolean;
   navigationPosition?: "center" | "bottom";
+  navigationClassname?: string;
 };
 
 const UniversalSlider: FC<UniversalSliderProps> = ({
@@ -31,9 +33,11 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
   slidesPerView = 1,
   effect = "slide",
   navigationPosition = "center",
+  paginationColor = "primary",
   delay = 5000,
   className = "",
   isFullWidth = false,
+  navigationClassname,
 }) => {
   const prevRef = useRef(null);
   const nextRef = useRef(null);
@@ -75,7 +79,7 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
                   const innerSpan = isStory
                     ? `<span class="${autoplay ? "progress" : "filled"}"></span>`
                     : "";
-                  return `<span class="${className} ${paginationType}">${innerSpan}</span>`;
+                  return `<span class="${className} ${paginationType} ${paginationColor}">${innerSpan}</span>`;
                 },
               }
             : false
@@ -90,12 +94,16 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
         ))}
       </Swiper>
       {navigation && (
-        <div className={`${s.customNav} ${s[navigationPosition]}`}>
+        <div
+          className={[s.customNav, s[navigationPosition], navigationClassname]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <button ref={prevRef} className={s.prev}>
-            <BackArrow />
+            <BackArrow strokeWidth={1} />
           </button>
           <button ref={nextRef} className={s.next}>
-            <BackArrow />
+            <BackArrow strokeWidth={1} />
           </button>
         </div>
       )}

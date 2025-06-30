@@ -11,6 +11,7 @@ const TimerBanner = () => {
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
   const bannerRef = useRef<HTMLDivElement | null>(null);
+  //TODO ВЫВОДИТЬ СКИДКУ ДЛЯ КНИГИ
 
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.landing.oldPrice,

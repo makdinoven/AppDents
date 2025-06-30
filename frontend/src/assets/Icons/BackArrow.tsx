@@ -1,4 +1,4 @@
-const BackArrow = () => {
+const BackArrow = ({ strokeWidth = 2 }: { strokeWidth?: number }) => {
   return (
     <svg
       width="20"
@@ -10,7 +10,7 @@ const BackArrow = () => {
       <path
         d="M19 36L1 18.5L19 1"
         stroke="0"
-        strokeWidth="2"
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

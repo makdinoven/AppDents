@@ -34,8 +34,31 @@ const Faq = ({ type = "video" }: { type?: "video" | "book" }) => {
   ];
 
   const faqItemsBook = [
-    { question: "1_question", answer: { text: "1_answer", links: [""] } },
-    { question: "2_question", answer: { text: "2_answer", links: [""] } },
+    {
+      question: "1_question_book",
+      answer: { text: "1_answer_book", links: [""] },
+    },
+    {
+      question: "2_question_book",
+      answer: { text: "2_answer_book", links: [""] },
+    },
+    { question: "3_question", answer: { text: "3_answer", links: [""] } },
+    { question: "4_question", answer: { text: "4_answer", links: [""] } },
+    { question: "6_question", answer: { text: "6_answer", links: [""] } },
+    {
+      question: "8_question",
+      answer: { text: "8_answer", links: ["https://dent-s.com/"] },
+    },
+    {
+      question: "9_question",
+      answer: {
+        text: "9_answer",
+        links: [
+          "https://dent-s.com/password-reset",
+          "https://dent-s.com/login",
+        ],
+      },
+    },
   ];
 
   const items = isVideo ? faqItemsVideo : faqItemsBook;

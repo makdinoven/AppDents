@@ -3,7 +3,7 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 
 const Authors = () => {
   return (
-    <section className={s.authors}>
+    <section id={"book-authors"} className={s.authors}>
       <SectionHeader name={"bookLanding.aboutAuthor"} />
     </section>
   );

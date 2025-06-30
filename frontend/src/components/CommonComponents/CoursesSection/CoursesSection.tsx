@@ -29,6 +29,7 @@ type props = {
   isOffer?: boolean;
   isFree?: boolean;
   isVideo?: boolean;
+  isBook?: boolean;
 };
 
 const CoursesSection = ({
@@ -46,6 +47,7 @@ const CoursesSection = ({
   handleSetActiveFilter,
   handleSetActiveSort,
   isOffer = false,
+  isBook = false,
 }: props) => {
   const dispatch = useDispatch<AppDispatchType>();
   const cards = useSelector((state: AppRootStateType) => state.main.courses);
@@ -136,7 +138,7 @@ const CoursesSection = ({
   };
 
   return (
-    <section ref={ref} className={s.courses}>
+    <section lang={language.toLowerCase()} ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         {sectionTitle && <SectionHeader name={sectionTitle} />}
         {showFilters && tags && tags.length > 0 && (
@@ -162,6 +164,7 @@ const CoursesSection = ({
         )}
       </div>
       <CardsList
+        isBook={isBook}
         isVideo={isVideo}
         isFree={isFree}
         isOffer={isOffer}

@@ -10,10 +10,15 @@ import Loader from "../../components/ui/Loader/Loader.tsx";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { Trans } from "react-i18next";
 import Faq from "../Landing/modules/Faq/Faq.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
+import { useLocation } from "react-router-dom";
+import { Path } from "../../routes/routes.ts";
 
 const BookLanding = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const location = useLocation();
+  const isClient = location.pathname.includes(Path.bookLandingClient);
 
   useEffect(() => {
     setLoading(false);
@@ -49,6 +54,12 @@ const BookLanding = () => {
     renderBuyButton: renderBuyButton(),
   };
 
+  const pagesData = {
+    renderBuyButton: renderBuyButton(),
+    new_price: 10,
+    old_price: 10,
+  };
+
   const annotation =
     "This book provides a comprehensive and evidence-based overview of current advances and challenges in modern medicine. Combining clinical experience with the latest scientific research, it offers valuable insights into diagnosis, treatment, and prevention strategies across a wide range of medical fields.\n" +
     "Designed for medical professionals, researchers, and students, the book covers key topics such as patient-centered care, innovations in medical technology, public health issues, and ethical considerations in clinical practice. Each chapter is authored by leading experts and includes real-world case studies, updated guidelines, and critical reflections on future developments in healthcare.\n" +
@@ -65,9 +76,17 @@ const BookLanding = () => {
         <div className={s.landing}>
           <LandingHero type={"book"} data={heroData} />
           <Annotation text={annotation} />
-          <Pages />
+          <Pages data={pagesData} />
           <Authors />
           <Faq type={"book"} />
+          <CoursesSection
+            isOffer={true}
+            isClient={isClient}
+            isBook={true}
+            showSort={true}
+            sectionTitle={"similarBooks"}
+            pageSize={4}
+          />
         </div>
       )}
     </>
