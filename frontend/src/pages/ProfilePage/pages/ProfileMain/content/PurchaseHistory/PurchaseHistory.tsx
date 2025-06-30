@@ -1,9 +1,9 @@
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { userApi } from "../../../../../../api/userApi/userApi";
 import { Alert } from "../../../../../../components/ui/Alert/Alert";
 import s from "./PurchaseHistory.module.scss";
-import Purchase from "../../../../../../components/ui/Purchase/Purchase";
+import Purchase from "./Purchase/Purchase";
 import { capitalizeText } from "../../../../../../common/helpers/helpers";
 import Loader from "../../../../../../components/ui/Loader/Loader";
 import { AlertCirceIcon } from "../../../../../../assets/logos/index";
@@ -40,7 +40,7 @@ const PurchaseHistory: React.FC = () => {
           return {
             ...transaction,
             type: getCamelCaseString(transaction.type),
-            meta: structuredClone(transaction.meta),
+            meta: transaction.meta,
           };
         }),
       ]);
@@ -51,19 +51,59 @@ const PurchaseHistory: React.FC = () => {
     }
   };
 
+  const mergeTransactions = (transactions: any[]): any[] => {
+    const idMap = new Map<number, any>();
+    const merged: any[] = [];
+    const registered = new Set<number>();
+
+    for (const trans of transactions) {
+      idMap.set(Number(trans.id), trans);
+    }
+
+    for (const trans of transactions) {
+      const purchaseId =
+        trans.meta.purchase_id && Number(trans.meta.purchase_id);
+
+      if (
+        trans.type === "internalPurchase" &&
+        purchaseId &&
+        idMap.has(purchaseId)
+      ) {
+        const purchase = idMap.get(purchaseId);
+
+        const mergedTrans = {
+          ...trans,
+          fromBalanceAmount: trans.amount,
+          ...purchase,
+          amount: purchase.amount,
+        };
+
+        merged.push(mergedTrans);
+        registered.add(trans.id);
+        registered.add(purchase.id);
+      } else if (!registered.has(trans.id)) {
+        merged.push(trans);
+      }
+    }
+
+    console.log("merged", merged);
+
+    return merged;
+  };
+
   return loading ? (
     <Loader />
   ) : (
     <div className={s.purchase_history}>
-      <h3>{t("profile.purchaseHistory.tabName")}</h3>
-      <ul className={s.purchase_history_container}>
-        {referrals.map((referral) => (
-          <Purchase key={referral.email} content={referral} />
-        ))}
-        {transactions.map((transaction) => (
-          <Purchase key={transaction.id} content={transaction} />
-        ))}
-      </ul>
+      <Purchase
+        content={referrals}
+        title={t("profile.purchaseHistory.invitedUsers")}
+        isReferral
+      />
+      <Purchase
+        content={mergeTransactions(transactions)}
+        title={t("profile.purchaseHistory.purchases")}
+      />
     </div>
   );
 };
