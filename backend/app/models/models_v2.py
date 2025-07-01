@@ -50,6 +50,7 @@ class PurchaseSource(str, PyEnum):
     CABINET_FREE = "CABINET_FREE"
     SPECIAL_OFFER = "SPECIAL_OFFER"
     VIDEO_LANDING = "VIDEO_LANDING"
+    LANDING_WEBINAR = "LANDING_WEBINAR"
     OTHER                     = "OTHER"
 
 class FreeCourseSource(str, PyEnum):
