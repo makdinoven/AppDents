@@ -274,7 +274,7 @@ const Landing = () => {
     source: isWebinar ? "LANDING_WEBINAR" : undefined,
     courses: [
       {
-        name: landing?.landing_name,
+        name: !isWebinar ? landing?.landing_name : firstLesson?.name,
         new_price: !isWebinar ? landing?.new_price : 1,
         old_price: !isWebinar ? landing?.old_price : 49,
         lessons_count: landing?.lessons_count,
