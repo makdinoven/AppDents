@@ -356,6 +356,8 @@ class SpecialOffer(Base):
     landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
     expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default="1",
+                       comment="True – оффер ещё действует; False – истёк или куплен")
 
     user    = relationship("User", back_populates="special_offers")
     course  = relationship("Course")
