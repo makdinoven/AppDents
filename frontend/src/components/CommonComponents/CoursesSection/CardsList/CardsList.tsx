@@ -78,9 +78,11 @@ const CardsList: React.FC<CardsListProps> = ({
                 link={
                   isFree
                     ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${course.slug}`
-                    : isVideo
-                      ? `/${Path.videoLanding}/${course.slug}`
-                      : `/${isClient ? Path.landingClient : Path.landing.slice(1)}/${course.slug}`
+                    : isBook
+                      ? `${isClient ? Path.bookLandingClient : Path.bookLanding}/${course.slug}`
+                      : isVideo
+                        ? `/${Path.videoLanding}/${course.slug}`
+                        : `/${isClient ? Path.landingClient : Path.landing.slice(1)}/${course.slug}`
                 }
                 photo={course.main_image}
                 lessons_count={course.lessons_count}

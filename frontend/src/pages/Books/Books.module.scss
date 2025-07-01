@@ -1,0 +1,14 @@
+.courses {
+  @include flex-column;
+  gap: 40px;
+
+  h1 {
+    text-transform: uppercase;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      gap: 25px;
+    }
+  }
+}

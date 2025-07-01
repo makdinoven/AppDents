@@ -42,6 +42,7 @@
   "watchHere": "here.",
   "total": "Total:",
   "similarCourses": "Similar courses",
+  "similarBooks": "Similar books",
   "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
   "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
   "resetPassword": "Reset password",
@@ -163,6 +164,7 @@
     "onlineBook": "Online book",
     "annotation": "Annotation",
     "aboutAuthor": "Authors",
+    "about": "About book",
     "pages": {
       "title": "Pages",
       "readFirstPages": "Read the first pages of the book!",
@@ -265,7 +267,8 @@
   },
 
   "other": {
-    "otherCourses": "Other courses"
+    "otherCourses": "Other courses",
+    "otherBooks": "Other books"
   },
 
   "error": {
@@ -325,6 +328,12 @@
     "title": "all courses",
     "search": "Search courses...",
     "found": "Courses found: {{count}}"
+  },
+
+  "books": {
+    "title": "all books",
+    "search": "Search books...",
+    "found": "Books found: {{count}}"
   },
 
   "admin": {

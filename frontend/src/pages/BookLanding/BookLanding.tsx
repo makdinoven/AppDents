@@ -13,6 +13,9 @@ import Faq from "../Landing/modules/Faq/Faq.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { useLocation } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
+import About from "../Landing/modules/About/About.tsx";
+import { t } from "i18next";
+import { calculateDiscount } from "../../common/helpers/helpers.ts";
 
 const BookLanding = () => {
   const [loading, setLoading] = useState(true);
@@ -54,6 +57,16 @@ const BookLanding = () => {
     renderBuyButton: renderBuyButton(),
   };
 
+  const aboutData = {
+    lessonsCount: `20 ${t("landing.lessons", { count: 2 })}`,
+    professorsCount: `10 ${t("landing.professors", { count: 2 })}`,
+    discount: t("landing.discount", {
+      count: calculateDiscount(20, 10),
+    }),
+    savings: `$${20 - 10} ${t("landing.savings")}`,
+    access: t("landing.access"),
+  };
+
   const pagesData = {
     renderBuyButton: renderBuyButton(),
     new_price: 10,
@@ -76,6 +89,7 @@ const BookLanding = () => {
         <div className={s.landing}>
           <LandingHero type={"book"} data={heroData} />
           <Annotation text={annotation} />
+          <About type={"book"} data={aboutData} />
           <Pages data={pagesData} />
           <Authors />
           <Faq type={"book"} />

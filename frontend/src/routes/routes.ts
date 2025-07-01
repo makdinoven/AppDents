@@ -13,7 +13,7 @@ export const Path = {
   freeLanding: "course/free",
   freeLandingClient: "client/course/free",
   bookLanding: "/book",
-  bookLandingClient: "client/book",
+  bookLandingClient: "/client/book",
   books: "/books",
   profile: "/profile",
   myCourse: "course",

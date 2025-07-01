@@ -171,7 +171,8 @@ export const isBookLanding = (pathname: string): boolean => {
 export const isBookLandingPromotion = (pathname: string): boolean => {
   return (
     pathname.includes(Path.bookLanding) &&
-    !pathname.includes(Path.bookLandingClient)
+    !pathname.includes(Path.bookLandingClient) &&
+    !pathname.includes(Path.books)
   );
 };
 

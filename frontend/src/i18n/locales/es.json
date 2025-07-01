@@ -8,6 +8,7 @@
   "nothingFound": "No se encontró nada",
   "searchCourses": "Buscar cursos por título o autor...",
   "similarCourses": "Cursos similares",
+  "similarBooks": "Libros similares",
   "back": "Atrás",
   "backToLogin": "Volver a iniciar sesión",
   "login": "Entrar",
@@ -158,6 +159,7 @@
     "onlineBook": "Libro en línea",
     "annotation": "Anotación",
     "aboutAuthor": "Autores",
+    "about": "Sobre el libro",
     "pages": {
       "title": "Páginas",
       "readFirstPages": "¡Lee las primeras páginas del libro!",
@@ -262,7 +264,8 @@
 
   },
   "other": {
-    "otherCourses": "Otros cursos"
+    "otherCourses": "Otros cursos",
+    "otherBooks": "Otros libros"
   },
 
 
@@ -322,5 +325,11 @@
     "title": "todos los cursos",
     "search": "Buscar cursos...",
     "found": "Cursos encontrados: {{count}}"
+  },
+
+  "books": {
+    "title": "todos los libros",
+    "search": "Buscar libros...",
+    "found": "Libros encontrados: {{count}}"
   }
 }

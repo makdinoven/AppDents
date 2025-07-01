@@ -30,6 +30,7 @@ import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
 import BookLanding from "../pages/BookLanding/BookLanding.tsx";
+import Books from "../pages/Books/Books.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -45,6 +46,7 @@ export const AppRoutes: FC = () => {
           ))}
           <Route path={Path.cart} element={<MainPage />} />
           <Route path={Path.courses} element={<Courses isFree={false} />} />
+          <Route path={Path.books} element={<Books />} />
           <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
           <Route index element={<MainPage />} />
 

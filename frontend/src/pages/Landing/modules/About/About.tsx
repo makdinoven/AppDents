@@ -9,21 +9,23 @@ import Calendar from "../../../../assets/Icons/Calendar.tsx";
 
 const About = ({
   data: { lessonsCount, discount, access, professorsCount, savings, duration },
+  type,
 }: {
   data: any;
+  type?: "book" | "landing";
 }) => {
   const aboutItems = [
-    { Icon: Glasses, text: professorsCount },
-    { Icon: Book, text: lessonsCount },
-    { Icon: Clock, text: duration },
-    { Icon: Calendar, text: access },
-    { Icon: Percent, text: discount },
-    { Icon: Dollar, text: savings },
-  ];
+    professorsCount && { Icon: Glasses, text: professorsCount },
+    lessonsCount && { Icon: Book, text: lessonsCount },
+    duration && { Icon: Clock, text: duration },
+    access && { Icon: Calendar, text: access },
+    discount && { Icon: Percent, text: discount },
+    savings && { Icon: Dollar, text: savings },
+  ].filter(Boolean);
 
   return (
     <section className={s.about}>
-      <SectionHeader name={"landing.about"} />
+      <SectionHeader name={type ? "bookLanding.about" : "landing.about"} />
       <ul>
         {aboutItems.map((item, index) => (
           <li key={index} className={s.about_item}>

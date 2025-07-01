@@ -10,6 +10,7 @@
   "back": "Назад",
   "backToLogin": "Вернуться ко входу",
   "similarCourses": "Похожие курсы",
+  "similarBooks": "Похожие книги",
   "login": "Войти",
   "signup": "Регистрация",
   "firstTimeHere": "Впервые здесь?",
@@ -157,6 +158,7 @@
     "onlineBook": "Онлайн-книга",
     "annotation": "Аннотация",
     "aboutAuthor": "Авторы",
+    "about": "О книге",
     "pages": {
       "title": "Страницы",
       "readFirstPages": "Прочтите первые страницы книги!",
@@ -263,7 +265,8 @@
 
   },
   "other": {
-    "otherCourses": "Другие курсы"
+    "otherCourses": "Другие курсы",
+    "otherBooks": "Другие книги"
   },
 
 
@@ -323,5 +326,11 @@
     "title": "все курсы",
     "search": "Поиск курсов...",
     "found": "Найдено курсов: {{count}}"
+  },
+
+  "books": {
+    "title": "все книги",
+    "search": "Поиск книг...",
+    "found": "Найдено книг: {{count}}"
   }
 }
