@@ -12,7 +12,7 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course, PurchaseSource
+from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import send_successful_purchase_email
@@ -103,8 +103,17 @@ def stripe_checkout(
                 amount=total_price_usd,
                 meta={"reason": "full_purchase", "courses": unique_course_ids},
             )
-            for c in courses:
-                add_course_to_user(db, current_user.id, c.id)
+            if data.source == PurchaseSource.LANDING_WEBINAR:
+                for c in courses:
+                        db.add(FreeCourseAccess(
+                                user_id = current_user.id,
+                                course_id = c.id,
+                                source = FreeCourseSource.LANDING
+                                            ))
+            else:
+                for c in courses:
+                    add_course_to_user(db, current_user.id, c.id)
+            db.commit()
 
             # ---- 2. синхронизируем корзину --------------------------------
             from ..services_v2 import cart_service as cs
