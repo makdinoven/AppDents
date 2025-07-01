@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
 from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource, \
-    AbandonedCheckout
+    AbandonedCheckout, FreeCourseAccess, FreeCourseSource
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -380,17 +380,31 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # 11. Курсы → пользователю
     courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
-    already_owned, new_courses = [], []
+    already_owned, new_full, new_partial = [], [], []
+    raw_source = metadata.get("source", PurchaseSource.OTHER.value)
+    try:
+        purchase_source = PurchaseSource(raw_source)
+    except ValueError:
+        purchase_source = PurchaseSource.OTHER
+
     for course_obj in courses_db:
         if course_obj in user.courses:
             already_owned.append(course_obj)
-            logging.info("Пользователь %s уже имеет курс %s (ID=%s)",
-                         user.id, course_obj.name, course_obj.id)
         else:
-            add_course_to_user(db, user.id, course_obj.id)
-            from ..services_v2.user_service import promote_course_to_full
-            promote_course_to_full(db, user.id, course_obj.id)
-            new_courses.append(course_obj)
+            if purchase_source == PurchaseSource.LANDING_WEBINAR:
+                # выдаём частичный доступ
+                db.add(FreeCourseAccess(
+                    user_id=user.id,
+                    course_id=course_obj.id,
+                    source=FreeCourseSource.LANDING
+                ))
+                new_partial.append(course_obj)
+            else:
+                # полная выдача
+                add_course_to_user(db, user.id, course_obj.id)
+                from ..services_v2.user_service import promote_course_to_full
+                promote_course_to_full(db, user.id, course_obj.id)
+                new_full.append(course_obj)
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)
 
@@ -410,7 +424,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             ln.sales_count = (ln.sales_count or 0) + 1
             logging.info("sales_count++ для лендинга ID=%s → %s", ln.id, ln.sales_count)
     purchase = None
-    if new_courses:
+    all_new_courses = new_full + new_partial
+    if all_new_courses:
         # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
         amount_total = session_obj["amount_total"] / 100.0
         raw_source = metadata.get("source", PurchaseSource.OTHER.value)
@@ -499,10 +514,10 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             region=region,
         )
 
-    if new_courses:
+    if all_new_courses:
         send_successful_purchase_email(
             recipient_email=email,
-            course_names=[c.name for c in new_courses],
+            course_names=[c.name for c in all_new_courses],
             new_account=new_user_created,
             password=random_pass if new_user_created else None,
             region=region,
