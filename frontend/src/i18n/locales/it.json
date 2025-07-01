@@ -33,6 +33,7 @@
   "watch": "Guarda",
   "watchLesson": "Guarda lezione",
   "onlineCourse": "Corso online",
+  "onlineWebinar": "Webinar online",
   "professors": "Professori",
   "logout": "Disconnetti",
   "mail": "email",
@@ -92,6 +93,8 @@
     "search": "Cerca",
     "profile": "Profilo",
     "promote": {
+      "webinarProgram": "Programma del webinar",
+      "webinarProfessors": "Docenti del webinar",
       "professors": "Docenti del corso",
       "program": "Programma del corso"
     }
@@ -179,6 +182,8 @@
     "videoIsNotSupported": "Il tuo browser non supporta il video",
     "specialOffer": "Offerta speciale",
     "accessFull": "L'accesso al corso è illimitato nel tempo!",
+    "fullWebinarProgram": "Programma completo del webinar",
+    "accessFullWebinar": "L'accesso al webinar è illimitato nel tempo!",
     "video": {
       "modalTitle": "Sblocca il corso completo",
       "buyCourseToWatch": "Acquista il corso completo per continuare a guardare."

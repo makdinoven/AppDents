@@ -3,13 +3,17 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import Lesson from "./modules/Lesson/Lesson.tsx";
 
 const LessonsProgram = ({
-  data: { lessons, old_price, new_price, renderBuyButton },
+  data: { lessons, old_price, new_price, renderBuyButton, isWebinar },
 }: {
   data: any;
 }) => {
   return (
-    <div className={s.lessons_container}>
-      <SectionHeader name={"landing.fullCourseProgram"} />
+    <div id={"webinar-program"} className={s.lessons_container}>
+      <SectionHeader
+        name={
+          isWebinar ? "landing.fullWebinarProgram" : "landing.fullCourseProgram"
+        }
+      />
       <ul className={s.lessons}>
         {lessons.map((lesson: any, index: number) => (
           <Lesson
