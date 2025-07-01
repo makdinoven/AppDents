@@ -33,6 +33,7 @@
   "watchLesson": "Смотреть",
   "viewCourse": "Подробнее",
   "onlineCourse": "Онлайн-курс",
+  "onlineWebinar": "Онлайн-вебинар",
   "professors": "Преподаватели",
   "logout": "Выйти",
   "mail": "почта",
@@ -91,6 +92,8 @@
     "search": "Поиск",
     "profile": "Профиль",
     "promote": {
+      "webinarProgram": "Программа вебинара",
+      "webinarProfessors": "Преподаватели вебинара",
       "professors": "Преподаватели курса",
       "program": "Программа курса"
     }
@@ -167,6 +170,7 @@
     "savings": "экономия",
     "courseProgram": "Программа курса",
     "fullCourseProgram": "Полная программа курса",
+    "fullWebinarProgram": "Полная программа вебинара",
     "buyFor": "Купить за <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "buyLessonsFor_one": "Купить {{count}} урок:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
     "buyLessonsFor_few": "Купить {{count}} урока:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
@@ -180,6 +184,7 @@
     "videoIsNotSupported": "Ваш браузер не поддерживает видео",
     "specialOffer": "Специальное предложение",
     "accessFull": "Доступ к курсу не ограничен во времени!",
+    "accessFullWebinar": "Доступ к вебинару неограничен по времени!",
     "video": {
       "modalTitle": "Откройте полный доступ к курсу",
       "buyCourseToWatch": "Купите полный курс, чтобы продолжить просмотр."

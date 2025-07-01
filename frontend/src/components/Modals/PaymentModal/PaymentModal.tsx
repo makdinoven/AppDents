@@ -71,10 +71,12 @@ export type PaymentDataType = {
 
 const PaymentModal = ({
   isOffer = false,
+  isWebinar = false,
   isFree = false,
   paymentData,
   handleCloseModal,
 }: {
+  isWebinar?: boolean;
   isFree?: boolean;
   isOffer?: boolean;
   paymentData: PaymentDataType;
@@ -205,8 +207,12 @@ const PaymentModal = ({
         {paymentData.courses.map((course, index: number) => (
           <div key={index} className={s.course}>
             <p>
-              {course.name} -{" "}
-              <span className={"highlight"}>{course.lessons_count}</span>
+              {course.name}{" "}
+              {!isWebinar && (
+                <>
+                  - <span className={"highlight"}>{course.lessons_count}</span>
+                </>
+              )}
             </p>
             {!isFree ? (
               <div className={s.course_prices}>

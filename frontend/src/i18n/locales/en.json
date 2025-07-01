@@ -33,6 +33,7 @@
   "viewBook": "View book",
   "watchLesson": "Watch lesson",
   "onlineCourse": "Online course",
+  "onlineWebinar": "Online webinar",
   "professors": "Professors",
   "logout": "Log out",
   "mail": "mail",
@@ -93,6 +94,8 @@
     "promote": {
       "professors": "Course professors",
       "program": "Course program",
+      "webinarProgram": "Webinar program",
+      "webinarProfessors": "Webinar professors",
       "faq": "FAQ"
     }
   },
@@ -173,6 +176,7 @@
     "savings": "savings",
     "courseProgram": "Course program",
     "fullCourseProgram": "The full course program",
+    "fullWebinarProgram": "The full webinar program",
     "buyFor": "Buy for <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "buyLessonsFor_one": "Buy {{count}} lesson for <2>${{new_price}}</2> <1>${{old_price}}</1>",
     "buyLessonsFor_other": "Buy {{count}} lessons for <2>${{new_price}}</2> <1>${{old_price}}</1>",
@@ -184,6 +188,7 @@
     "videoIsNotSupported": "Your browser is not supporting video",
     "specialOffer": "Special offer",
     "accessFull": "Access to the course is unlimited in time!",
+    "accessFullWebinar": "Access to the webinar is unlimited in time!",
     "video": {
       "modalTitle": "Unlock the full course",
       "buyCourseToWatch": "Buy full course to continue watching."
