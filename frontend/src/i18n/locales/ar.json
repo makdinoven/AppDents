@@ -32,6 +32,7 @@
   "watch": "مشاهدة",
   "watchLesson": "مشاهدة الدرس",
   "onlineCourse": "دورة عبر الإنترنت",
+  "onlineWebinar": "ويبينار عبر الإنترنت",
   "professors": "الأساتذة",
   "logout": "تسجيل الخروج",
   "mail": "البريد",
@@ -94,7 +95,9 @@
     "profile": "حسابي",
     "promote": {
       "professors": "أساتذة الدورة",
-      "program": "برنامج الدورة"
+      "program": "برنامج الدورة",
+      "webinarProgram": "برنامج الويبينار",
+      "webinarProfessors": "أساتذة الويبينار"
     }
   },
 
@@ -188,6 +191,8 @@
     "videoIsNotSupported": "المتصفح لا يدعم الفيديو",
     "specialOffer": "عرض خاص",
     "accessFull": "الوصول إلى الدورة غير محدود بالزمن!",
+    "fullWebinarProgram": "البرنامج الكامل للويبينار",
+    "accessFullWebinar": "الوصول إلى الويبينار غير محدود بالوقت!",
     "video": {
       "modalTitle": "افتح الدورة الكاملة",
       "buyCourseToWatch": "اشترِ الدورة الكاملة لمتابعة المشاهدة."

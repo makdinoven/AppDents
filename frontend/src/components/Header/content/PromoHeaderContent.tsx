@@ -8,9 +8,13 @@ import {
   ProfessorsIcon,
   QuestionMark,
 } from "../../../assets/logos/index";
-import { scrollToElementById } from "../../../common/helpers/helpers.ts";
+import {
+  getBasePath,
+  scrollToElementById,
+} from "../../../common/helpers/helpers.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { Path } from "../../../routes/routes.ts";
 
 const PromoHeaderContent = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -20,16 +24,18 @@ const PromoHeaderContent = () => {
   const newPrice = useSelector(
     (state: AppRootStateType) => state.landing.newPrice,
   );
+  const basePath = getBasePath(location.pathname);
+  const isWebinar = basePath === Path.webinarLanding;
 
   const NAV_BUTTONS_PROMOTE = [
     {
       icon: BooksIcon,
-      text: "nav.promote.program",
-      targetId: "course-program",
+      text: `${isWebinar ? "nav.promote.webinarProgram" : "nav.promote.program"}`,
+      targetId: `${isWebinar ? "webinar-program" : "course-program"}`,
     },
     {
       icon: ProfessorsIcon,
-      text: "nav.promote.professors",
+      text: `${isWebinar ? "nav.promote.webinarProfessors" : "nav.promote.professors"}`,
       targetId: "course-professors",
     },
     { icon: QuestionMark, text: "nav.promote.faq", targetId: "course-faq" },
