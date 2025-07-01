@@ -76,9 +76,14 @@ def _pick_offer_landing(
     """
 
     # ---------------- denied ----------------
+    now = _dt.datetime.utcnow()
     purchased   = {p.course_id for p in user.purchases if p.course_id}
     partial_ids = set(user.partial_course_ids or [])
-    active_ids  = set(user.active_special_offer_ids or [])
+    active_ids = {
+        so.course_id
+        for so in user.special_offers
+        if so.is_active and so.expires_at > now
+    }
     offered_ids = {so.course_id for so in user.special_offers}
 
     denied: set[int] = purchased | partial_ids | active_ids | offered_ids
@@ -191,16 +196,21 @@ def generate_offer_for_user(db: Session, user: User) -> bool:
     return True
 
 
-def cleanup_expired_offers(db: Session) -> int:
-    """Удаляет протухшие записи, возвращает кол-во."""
+def deactivate_expired_offers(db: Session) -> int:
+    """
+    Помечает протухшие офферы как не-активные.
+    Возвращает количество изменённых строк.
+    """
     now = _dt.datetime.utcnow()
-    q = db.query(SpecialOffer).filter(SpecialOffer.expires_at <= now)
-    count = q.count()
-    if count:
-        logger.debug("Cleaning %s expired special offers", count)
-        q.delete(synchronize_session=False)
+    updated = (
+        db.query(SpecialOffer)
+          .filter(SpecialOffer.expires_at <= now, SpecialOffer.is_active.is_(True))
+          .update({SpecialOffer.is_active: False},
+                  synchronize_session=False)
+    )
+    if updated:
         db.commit()
-    return count
+    return updated
 
 
 def generate_offers_for_all_users(db: Session) -> None:
