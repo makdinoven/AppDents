@@ -4,7 +4,7 @@ import logging
 import time
 
 import stripe
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -97,20 +97,48 @@ def stripe_checkout(
 
         if balance_avail >= total_price_usd - 1e-6:
             # ---- 1. списываем деньги и открываем курсы --------------------
+            partial_mode = (data.source == PurchaseSource.LANDING_WEBINAR)
+
+            if partial_mode:
+                # Проверяем, нет ли уже partial-доступа к каждому курсу
+                for c in courses:
+                    duplicate = (
+                        db.query(FreeCourseAccess)
+                        .filter_by(user_id=current_user.id, course_id=c.id)
+                        .first()
+                    )
+                    if duplicate:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail={
+                                "error": {
+                                    "code": "COURSE_ALREADY_PARTIAL",
+                                    "message": (
+                                        f"Пользователь уже имеет частичный доступ к курсу id={c.id}"
+                                    ),
+                                    "translation_key": "error.course_already_partial",
+                                    "params": {"course_id": c.id},
+                                }
+                            },
+                        )
             debit_balance(
                 db,
                 user_id=current_user.id,
                 amount=total_price_usd,
                 meta={"reason": "full_purchase", "courses": unique_course_ids},
             )
-            if data.source == PurchaseSource.LANDING_WEBINAR:
+            if partial_mode:
+                # выдаём частичный доступ
                 for c in courses:
-                        db.add(FreeCourseAccess(
-                                user_id = current_user.id,
-                                course_id = c.id,
-                                source = FreeCourseSource.LANDING
-                                            ))
+                    db.add(
+                        FreeCourseAccess(
+                            user_id=current_user.id,
+                            course_id=c.id,
+                            source=FreeCourseSource.LANDING,  # или LANDING_WEBINAR
+                        )
+                    )
             else:
+                # выдаём полный доступ
                 for c in courses:
                     add_course_to_user(db, current_user.id, c.id)
             db.commit()
