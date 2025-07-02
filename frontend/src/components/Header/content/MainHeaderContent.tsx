@@ -7,7 +7,7 @@ import {
 } from "../../../common/helpers/commonConstants.ts";
 import NavButton from "../modules/NavButton/NavButton.tsx";
 import { Path } from "../../../routes/routes.ts";
-import { SearchIcon } from "../../../assets/logos/index";
+import { SearchIcon } from "../../../assets/icons";
 import LanguageChanger from "../../ui/LanguageChanger/LanguageChanger.tsx";
 import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Trans } from "react-i18next";

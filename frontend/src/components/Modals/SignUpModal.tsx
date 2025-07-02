@@ -17,7 +17,7 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { Alert } from "../ui/Alert/Alert.tsx";
-import CheckMark from "../../assets/icons/CheckMark.tsx";
+import { CheckMark } from "../../assets/icons";
 
 const SignUpModal = () => {
   const [loading, setLoading] = useState(false);

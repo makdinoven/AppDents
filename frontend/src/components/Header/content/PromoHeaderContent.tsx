@@ -3,11 +3,7 @@ import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
 import { openModal } from "../../../store/slices/landingSlice.ts";
 import { Trans } from "react-i18next";
-import {
-  BooksIcon,
-  ProfessorsIcon,
-  QuestionMark,
-} from "../../../assets/logos/index";
+import { BooksIcon, ProfessorsIcon, QuestionMark } from "../../../assets/icons";
 import { scrollToElementById } from "../../../common/helpers/helpers.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
@@ -15,10 +11,10 @@ import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 const PromoHeaderContent = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
+    (state: AppRootStateType) => state.landing.oldPrice
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
+    (state: AppRootStateType) => state.landing.newPrice
   );
 
   const NAV_BUTTONS_PROMOTE = [

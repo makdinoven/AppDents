@@ -1,13 +1,13 @@
 import s from "./VideoSection.module.scss";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Glasses from "../../../../assets/icons/Glasses.tsx";
-import Book from "../../../../assets/icons/Book.tsx";
+import { Glasses } from "../../../../assets/icons";
+import { Book } from "../../../../assets/icons";
 import Clock from "../../../../assets/icons/Clock.tsx";
-import Calendar from "../../../../assets/icons/Calendar.tsx";
-import Percent from "../../../../assets/icons/Percent.tsx";
+import { Calendar } from "../../../../assets/icons";
+import { Percent } from "../../../../assets/icons";
 import Dollar from "../../../../assets/icons/Dollar.tsx";
 import { Trans } from "react-i18next";
-import { PlayIcon } from "../../../../assets/logos/index";
+import { PlayIcon } from "../../../../assets/icons";
 import AuthorsDesc from "../../../../components/ui/AuthorsDesc/AuthorsDesc.tsx";
 import Button from "../../../../components/ui/Button/Button.tsx";
 import { useDispatch } from "react-redux";

@@ -9,7 +9,7 @@ import CartItem from "./CartItem/CartItem.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getCart, removeCartItem } from "../../store/actions/cartActions.ts";
-import { CartIcon } from "../../assets/logos/index";
+import { CartIcon } from "../../assets/icons";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import CartFooter from "./CartFooter/CartFooter.tsx";
 import { cartStorage } from "../../api/cartApi/cartStorage.ts";
@@ -23,7 +23,7 @@ import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
 import { Alert } from "../../components/ui/Alert/Alert.tsx";
-import CheckMark from "../../assets/icons/CheckMark.tsx";
+import { CheckMark } from "../../assets/icons";
 
 const Cart = () => {
   const location = useLocation();

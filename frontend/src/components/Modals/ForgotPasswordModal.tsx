@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { Alert } from "../ui/Alert/Alert.tsx";
-import CheckMark from "../../assets/icons/CheckMark.tsx";
+import { CheckMark } from "../../assets/icons";
 
 const ForgotPasswordModal = () => {
   const [loading, setLoading] = useState(false);
