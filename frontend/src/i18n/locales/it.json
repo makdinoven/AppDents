@@ -226,14 +226,15 @@
     "user": "Utente:",
     "referrals": {
       "email": "Email",
-      "invited": "Invitato",
-      "totalCashback": "Cashback totale"
+      "invitation": "Invito",
+      "totalCashback": "cashback totale"
     },
     "purchaseHistory": {
-      "tabName": "Cronologia acquisti",
+      "invitedUsers": "Utenti invitati",
+      "purchases": "Storico acquisti",
       "purchaseSum": "Importo dell'acquisto:",
-      "adminAdjust": "Ricarica dell'amministratore",
-      "internalPurchase": "Pagamento dal saldo",
+      "adminAdjust": "Bonus",
+      "internalPurchase": "Pagamento",
       "purchase": "Pagamento",
       "transactionType": "Tipo di transazione:",
       "referralCashback": "Cashback",

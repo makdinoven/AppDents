@@ -227,7 +227,7 @@
     "user": "Пользователь:",
     "referrals": {
       "email": "Почта",
-      "invited": "Приглашен",
+      "invitation": "Приглашение",
       "totalCashback": "cуммарный кэшбэк"
     },
     "purchaseHistory": {

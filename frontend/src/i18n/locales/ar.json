@@ -233,17 +233,18 @@
     "user": "المستخدم:",
     "referrals": {
       "email": "البريد الإلكتروني",
-      "invited": "تمت دعوته",
-      "totalCashback": "إجمالي الاسترداد النقدي"
+      "invitation": "دعوة",
+      "totalCashback": "إجمالي الكاش باك"
     },
     "purchaseHistory": {
-      "tabName": "سجل المشتريات",
+      "invitedUsers": "المستخدمون المدعوون",
+      "purchases": "سجل المشتريات",
       "purchaseSum": "قيمة الشراء:",
-      "adminAdjust": "إضافة من المسؤول",
-      "internalPurchase": "دفع من الرصيد",
+      "adminAdjust": "مكافأة",
+      "internalPurchase": "دفع داخلي",
       "purchase": "دفع",
-      "transactionType": "نوع العملية:",
-      "referralCashback": "استرداد نقدي",
+      "transactionType": "نوع المعاملة:",
+      "referralCashback": "كاش باك",
       "adjunction": "إيداع",
       "fromBalance": "من الرصيد",
       "withdrawal": "سحب",

@@ -1,4 +1,4 @@
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { userApi } from "../../../../../../api/userApi/userApi";
 import { Alert } from "../../../../../../components/ui/Alert/Alert";

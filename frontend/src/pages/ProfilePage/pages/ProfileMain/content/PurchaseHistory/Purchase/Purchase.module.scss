@@ -51,7 +51,7 @@
   align-items: flex-start;
   @include clamped-p3;
   text-transform: none;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .purchase_type {
@@ -64,32 +64,72 @@
   justify-content: start;
   align-items: start;
   gap: 10px;
+  overflow: hidden;
+  width: 100%;
 }
 
 .purchase_info {
   @include flex-column;
   width: fit-content;
-  text-overflow: ellipsis;
   padding-right: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
+  @include clamped-p3;
 }
 
 .purchase_info_field {
   color: $hover-color-dark;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .purchase_details_container {
   @include flex-column;
   justify-content: flex-start;
   align-items: flex-end;
+  width: fit-content;
   gap: 10px;
   color: $hover-color-dark;
-  text-align: end;
+  text-align: left;
 
   &.purchase_sum_details {
+    width: fit-content;
     gap: 6px;
     text-align: end;
+
+    div {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+.no_data_message {
+  text-align: left;
+  @include clamped-p3;
+  text-transform: none;
+
+  &.link {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    @include transition;
+    color: $primary;
+
+    &:hover {
+      color: $accent;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .purchase_details_container .purchase_sum_details div {
+    @include flex-column;
+    justify-content: start;
+    align-items: flex-end;
+    gap: 0;
   }
 }
 
@@ -97,8 +137,6 @@
   @include flex-column;
   justify-content: flex-start;
   align-items: flex-end;
-  text-wrap: nowrap;
-  color: $hover-color-darken;
 
   &.adjunction {
     color: $green;
@@ -126,15 +164,44 @@
   }
 }
 
-.landing_name {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
+.purchase_date {
+  display: flex;
+  flex-direction: row;
+  color: $hover-color-dark;
+  justify-content: end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
 
+  > :last-child {
+    gap: 0;
+  }
+}
+
+.from_balance {
+  color: $hover-color-dark;
+  text-wrap: nowrap;
+}
+
+.balance {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.landing_name {
   &:hover {
     color: $primary;
+  }
+}
+.expandable_text_button {
+  @include clamped-p3;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &.landing_name {
+    text-transform: uppercase;
   }
 }
 
@@ -171,8 +238,7 @@
   }
 
   .purchase_details_container {
-    gap: 2px;
-    text-wrap: wrap;
+    gap: 4px;
 
     &.purchase_sum_details {
       gap: 0;
@@ -187,14 +253,17 @@
       stroke-width: 1.6px;
     }
   }
-}
 
-.from_balance {
-  color: $hover-color-darken;
-}
+  .purchase_date {
+    @include flex-column;
+    align-items: end;
+    gap: 0;
+  }
 
-.balance {
-  display: flex;
-  flex-direction: row;
-  gap: 5px;
+  .balance {
+    @include flex-column;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0;
+  }
 }

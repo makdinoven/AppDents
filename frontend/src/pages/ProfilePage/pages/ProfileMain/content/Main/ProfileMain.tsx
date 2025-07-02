@@ -112,14 +112,12 @@ const ProfileMain = () => {
 
   return (
     <>
-      <div className={s.tabs_wrapper}>
-        <BackButton />
-        <Tabs
-          queryKey={QUERY_KEY}
-          mainTab={"profile_main"}
-          tabs={profilePageContent}
-        />
-      </div>
+      <BackButton />
+      <Tabs
+        queryKey={QUERY_KEY}
+        mainTab={"profile_main"}
+        tabs={profilePageContent}
+      />
       <div className={s.profile_page_content}>{activeTab?.component}</div>
       {showResetPasswordModal && (
         <ModalWrapper
