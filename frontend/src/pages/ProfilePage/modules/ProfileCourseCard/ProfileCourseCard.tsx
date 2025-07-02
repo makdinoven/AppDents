@@ -3,9 +3,9 @@ import initialPhoto from "../../../../assets/no-pictures.png";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
-import Arrow from "../../../../assets/icons/Arrow.tsx";
+import { Arrow } from "../../../../assets/icons";
 import CountdownTimer from "../../../../components/ui/CountdownTimer/CountdownTimer.tsx";
-import { CheckMarkIcon } from "../../../../assets/logos/index";
+import { CheckMarkIcon } from "../../../../assets/icons";
 import Clock from "../../../../assets/icons/Clock.tsx";
 import Dollar from "../../../../assets/icons/Dollar.tsx";
 

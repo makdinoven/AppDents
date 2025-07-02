@@ -1,5 +1,5 @@
 import s from "./CartItem.module.scss";
-import { TrashCan } from "../../../assets/logos/index";
+import { TrashCan } from "../../../assets/icons";
 import ViewLink from "../../../components/ui/ViewLink/ViewLink.tsx";
 import { Path } from "../../../routes/routes.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";

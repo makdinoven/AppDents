@@ -1,5 +1,6 @@
 import s from "./ScrollToTopButton.module.scss";
-import Arrow from "../../../assets/icons/Arrow.tsx";
+import { Arrow } from "../../../assets/icons";
+
 import { useScroll } from "../../../common/hooks/useScroll.ts";
 
 const ScrollToTopButton = () => {

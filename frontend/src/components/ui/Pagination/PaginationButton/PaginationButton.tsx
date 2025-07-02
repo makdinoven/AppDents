@@ -1,5 +1,5 @@
 import s from "./PaginationButton.module.scss";
-import BackArrow from "../../../../assets/icons/BackArrow.tsx";
+import { BackArrow } from "../../../../assets/icons";
 
 const PaginationButton = ({
   disabled,

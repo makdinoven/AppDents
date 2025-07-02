@@ -2,7 +2,7 @@ import s from "./LanguageChanger.module.scss";
 import LanguageIcon from "../../../assets/icons/LanguageIcon.tsx";
 import ModalWrapper from "../../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useRef, useState } from "react";
-import CheckMark from "../../../assets/icons/CheckMark.tsx";
+import { CheckMark } from "../../../assets/icons";
 import { LANGUAGES } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../../store/store.ts";

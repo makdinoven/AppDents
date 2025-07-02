@@ -36,7 +36,7 @@ import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
-import CheckMark from "../../../assets/icons/CheckMark.tsx";
+import { CheckMark } from "../../../assets/icons";
 
 const logos = [
   VisaLogo,
