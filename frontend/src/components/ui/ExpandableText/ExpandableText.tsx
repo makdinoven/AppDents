@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import s from "./ExpandableText.module.scss";
 import { t } from "i18next";
 
 type Props = {
   ref?: any;
-  text: string;
+  text: string | ReactNode;
   textClassName?: string;
   lines?: number;
   color: "primary" | "light" | "dark";
   showButton?: boolean;
+  buttonClassName?: string;
 };
 
 const ExpandableText = ({
@@ -17,6 +18,7 @@ const ExpandableText = ({
   color,
   textClassName,
   showButton = true,
+  buttonClassName,
   ref,
 }: Props) => {
   const [expanded, setExpanded] = useState(false);
@@ -29,7 +31,7 @@ const ExpandableText = ({
   useEffect(() => {
     if (contentRef.current && textRef.current) {
       const lineHeight = parseFloat(
-        getComputedStyle(contentRef.current).lineHeight || "20",
+        getComputedStyle(contentRef.current).lineHeight || "20"
       );
       const collapsedHeight = lineHeight * lines;
       const fullHeight = textRef.current.scrollHeight;
@@ -54,7 +56,7 @@ const ExpandableText = ({
 
         {showButton && isTruncated && (
           <button
-            className={`${s.button} ${color ? s[color] : ""}`}
+            className={`${s.button} ${color ? s[color] : ""}${` ${buttonClassName}`}`}
             onClick={toggleExpanded}
           >
             {expanded ? t("showLess") : `... ${t("seeMore")}`}

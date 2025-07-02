@@ -227,21 +227,22 @@
     "user": "Usuario:",
     "referrals": {
       "email": "Correo electrónico",
-      "invited": "Invitado",
-      "totalCashback": "Reembolso total"
+      "invitation": "Invitación",
+      "totalCashback": "cashback total"
     },
     "purchaseHistory": {
-      "tabName": "Historial de compras",
+      "invitedUsers": "Usuarios invitados",
+      "purchases": "Historial de compras",
       "purchaseSum": "Importe de la compra:",
-      "adminAdjust": "Recarga del administrador",
-      "internalPurchase": "Pago desde saldo",
+      "adminAdjust": "Bono",
+      "internalPurchase": "Pago",
       "purchase": "Pago",
       "transactionType": "Tipo de transacción:",
-      "referralCashback": "Reembolso",
+      "referralCashback": "Cashback",
       "adjunction": "recarga",
-      "fromBalance": "desde el saldo",
+      "fromBalance": "del saldo",
       "withdrawal": "retiro",
-      "fromCart": "Desde el carrito"
+      "fromCart": "Del carrito"
     }
   },
 

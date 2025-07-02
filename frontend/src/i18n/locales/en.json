@@ -232,22 +232,22 @@
     "main": "Main",
     "user": "User:",
     "referrals": {
-      "email": "Mail",
-      "invited": "Invited",
-      "totalCashback": "Total cashback"
+      "email": "email",
+      "invitation": "Invitation",
+      "totalCashback": "total cashback"
     },
     "purchaseHistory": {
-      "tabName": "Purchase history",
+      "invitedUsers": "Invited users",
+      "purchases": "Purchases",
       "purchaseSum": "Purchase sum:",
-      "adminAdjust": "Admin adjust",
-      "internalPurchase": "Internal purchase",
+      "adminAdjust": "Bonus",
+      "internalPurchase": "Purchase",
       "purchase": "Purchase",
-      "transactionType": "Transaction type:",
       "referralCashback": "Cashback",
-      "adjunction": "adjunction",
       "fromBalance": "from balance",
-      "withdrawal": "withdrawal",
-      "fromCart": "From cart"
+      "fromCart": "from cart",
+      "noReferralsData": "You haven't invited your friends yet! You can use this link to start referral program:",
+      "noPurchasesData": "You haven't make any purchases yet! You can buy any course "
     }
   },
 

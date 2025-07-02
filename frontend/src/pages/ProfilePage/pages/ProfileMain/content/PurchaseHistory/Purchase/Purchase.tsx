@@ -9,6 +9,9 @@ import s from "./Purchase.module.scss";
 import { useTranslation, Trans } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Path } from "../../../../../../../routes/routes";
+import ExpandableText from "../../../../../../../components/ui/ExpandableText/ExpandableText";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../../../../../store/store";
 
 const Purchase = ({
   content,
@@ -21,11 +24,13 @@ const Purchase = ({
 }) => {
   const { t } = useTranslation();
 
+  const { language } = useSelector((state: AppRootStateType) => state.user);
+
   const renderReferralInfo = (contentUnit: any) => (
-    <p>
-      <span className={s.purchase_info_field}>{t("profile.user")}</span>{" "}
+    <>
+      <span className={s.purchase_info_field}>{t("profile.user")}</span>
       {contentUnit.email}
-    </p>
+    </>
   );
 
   const renderTransactionInfo = (contentUnit: any) => {
@@ -38,16 +43,28 @@ const Purchase = ({
         } else {
           if (slug) {
             return (
-              <Link
-                to={`/${Path.landingClient}/${slug}`}
-                className={s.landing_name}
-              >
-                {landingName.toUpperCase()}
-              </Link>
+              <ExpandableText
+                text={
+                  <Link
+                    to={`/${Path.landingClient}/${slug}`}
+                    className={s.landing_name}
+                  >
+                    {landingName.toUpperCase()}
+                  </Link>
+                }
+                lines={2}
+                color="primary"
+                buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
+              />
             );
           } else {
             return (
-              <p className={s.landing_name}>{landingName.toUpperCase()}</p>
+              <ExpandableText
+                text={landingName.toUpperCase()}
+                lines={2}
+                color="primary"
+                buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
+              />
             );
           }
         }
@@ -58,15 +75,29 @@ const Purchase = ({
       if (landingName) {
         if (slug) {
           return (
-            <Link
-              to={`/${Path.landingClient}/${slug}`}
-              className={s.landing_name}
-            >
-              {landingName.toUpperCase()}
-            </Link>
+            <ExpandableText
+              text={
+                <Link
+                  to={`/${Path.landingClient}/${slug}`}
+                  className={s.landing_name}
+                >
+                  {landingName.toUpperCase()}
+                </Link>
+              }
+              lines={2}
+              color="primary"
+              buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
+            />
           );
         } else {
-          return <p className={s.landing_name}>{landingName.toUpperCase()}</p>;
+          return (
+            <ExpandableText
+              text={landingName.toUpperCase()}
+              lines={2}
+              color="primary"
+              buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
+            />
+          );
         }
       }
     }
@@ -102,7 +133,13 @@ const Purchase = ({
             >
               {totalCashback ? `${totalCashback}$` : "0$"}
             </span>
-            <span>{t("profile.referrals.totalCashback")}</span>
+            <div>
+              {t("profile.referrals.totalCashback")
+                .split(" ")
+                .map((value, index) => {
+                  return <p key={index}>{value}</p>;
+                })}
+            </div>
           </>
         ) : (
           <span
@@ -111,7 +148,7 @@ const Purchase = ({
             {fromBalanceAmount ? (
               <>
                 <p className={s.balance}>
-                  <span className={s.purchase_sum}>
+                  <span className={s.from_balance}>
                     {t("profile.purchaseHistory.fromBalance")}
                   </span>
                   {fromBalanceAmount}$
@@ -121,7 +158,7 @@ const Purchase = ({
             ) : (
               <p className={s.balance}>
                 {type === "internalPurchase" && (
-                  <span className={s.purchase_sum}>
+                  <span className={s.from_balance}>
                     {t("profile.purchaseHistory.fromBalance")}
                   </span>
                 )}
@@ -152,9 +189,9 @@ const Purchase = ({
   return (
     <div className={s.purchase_item}>
       <h3 className={s.purchase_item_header}>{title}</h3>
-      <div className={s.purchases_container}>
-        {content.length > 0 ? (
-          content.map((contentUnit: any, index) => {
+      {content.length > 0 ? (
+        <div className={s.purchases_container}>
+          {content.map((contentUnit: any, index) => {
             return (
               <li key={index} className={s.purchase}>
                 {renderOperationIcon(contentUnit)}
@@ -163,11 +200,14 @@ const Purchase = ({
                     <p className={s.purchase_type}>
                       {t(
                         isReferral
-                          ? "profile.referrals.invited"
+                          ? "profile.referrals.invitation"
                           : `profile.purchaseHistory.${contentUnit.type}`
                       )}
                     </p>
-                    <div className={s.purchase_info}>
+                    <div
+                      className={s.purchase_info}
+                      lang={language.toLowerCase()}
+                    >
                       {isReferral
                         ? renderReferralInfo(contentUnit)
                         : renderTransactionInfo(contentUnit)}
@@ -175,17 +215,38 @@ const Purchase = ({
                   </div>
                   <div className={s.purchase_details_container}>
                     {renderPurchaseSum(contentUnit)}
-                    {contentUnit.created_at &&
-                      formatIsoToLocalDatetime(contentUnit.created_at)}
+                    {contentUnit.created_at && (
+                      <div className={s.purchase_date}>
+                        {formatIsoToLocalDatetime(contentUnit.created_at)
+                          .split(" ")
+                          .map((value, index) => {
+                            return <span key={index}>{value}</span>;
+                          })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </li>
             );
-          })
-        ) : (
-          <Trans />
-        )}
-      </div>
+          })}
+        </div>
+      ) : (
+        <p className={s.no_data_message}>
+          {isReferral ? (
+            t(`profile.purchaseHistory.noReferralsData`)
+          ) : (
+            <>
+              {t(`profile.purchaseHistory.noPurchasesData`)}
+              <Link
+                to={Path.courses}
+                className={`${s.no_data_message} ${s.link}`}
+              >
+                here.
+              </Link>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 };
