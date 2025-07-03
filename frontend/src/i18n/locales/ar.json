@@ -32,6 +32,7 @@
   "watch": "مشاهدة",
   "watchLesson": "مشاهدة الدرس",
   "onlineCourse": "دورة عبر الإنترنت",
+  "onlineWebinar": "ويبينار عبر الإنترنت",
   "professors": "الأساتذة",
   "logout": "تسجيل الخروج",
   "mail": "البريد",
@@ -63,13 +64,14 @@
   "or": "أو",
   "here": "هنا",
   "freeCourse": {
-    "freePreview": "درس تجريبي",
+    "freePreview": "عرض خاص",
+    "discount": "خصم {{discount}}٪",
     "registerToWatch": "سجّل للمشاهدة",
     "tryFirstLesson": "جرّب أول درس",
     "fullAccess": "شراء الدورة",
-    "get": "احصل على الدورة بـ ${{count}}",
     "title": "الدورة الكاملة مطلوبة",
-    "desc": "هذا الدرس جزء من دورة كاملة. اشترِها للوصول الكامل.",
+    "get": "احصل على جميع الدروس فقط مقابل ${{count}}",
+    "desc": "هذا الدرس جزء من دورة كاملة. احصل على وصول كامل إلى جميع الدروس بشراء الدورة.",
     "access": {
       "full": "وصول كامل",
       "partial": "وصول جزئي",
@@ -91,7 +93,9 @@
     "profile": "حسابي",
     "promote": {
       "professors": "أساتذة الدورة",
-      "program": "برنامج الدورة"
+      "program": "برنامج الدورة",
+      "webinarProgram": "برنامج الويبينار",
+      "webinarProfessors": "أساتذة الويبينار"
     }
   },
 
@@ -184,6 +188,8 @@
     "videoIsNotSupported": "المتصفح لا يدعم الفيديو",
     "specialOffer": "عرض خاص",
     "accessFull": "الوصول إلى الدورة غير محدود بالزمن!",
+    "fullWebinarProgram": "البرنامج الكامل للويبينار",
+    "accessFullWebinar": "الوصول إلى الويبينار غير محدود بالوقت!",
     "video": {
       "modalTitle": "افتح الدورة الكاملة",
       "buyCourseToWatch": "اشترِ الدورة الكاملة لمتابعة المشاهدة."

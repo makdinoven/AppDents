@@ -1,5 +1,5 @@
 import s from "./CoursePage.module.scss";
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
@@ -16,22 +16,16 @@ const CoursePage = () => {
   const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const [isPartial, setIsPartial] = useState<boolean>(false);
-  const [landing, setLanding] = useState<any>(undefined);
   const [isModalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const currentUrl = window.location.origin + location.pathname;
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (courseId) {
       fetchCourseData();
     }
   }, [courseId]);
-
-  useEffect(() => {
-    if (isPartial) {
-      fetchLandingData();
-    }
-  }, [isPartial]);
 
   const fetchCourseData = async () => {
     try {
@@ -40,16 +34,8 @@ const CoursePage = () => {
       setIsPartial(
         ["partial", "special_offer"].includes(res.data.access_level),
       );
+      if (res.data.access_level === "none") navigate(Path.profile);
       setLoading(false);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchLandingData = async () => {
-    try {
-      const res = await adminApi.getLanding(course.cheapest_landing.id);
-      setLanding(res.data);
     } catch (error) {
       console.error(error);
     }
@@ -64,20 +50,24 @@ const CoursePage = () => {
   };
 
   const paymentData = {
-    landing_ids: [landing?.id],
-    course_ids: landing?.course_ids,
-    price_cents: landing?.new_price * 100,
-    total_new_price: landing?.new_price,
-    total_old_price: landing?.old_price,
-    region: landing?.language,
+    landing_ids: [course?.landing?.id],
+    course_ids: [course?.id],
+    price_cents: Math.ceil(course?.landing?.new_price * 100),
+    total_new_price: course?.landing?.new_price,
+    total_old_price: course?.landing?.old_price,
+    region: course?.landing?.region,
     success_url: `${BASE_URL}${Path.successPayment}`,
     cancel_url: currentUrl,
+    source:
+      course?.access_level === "special_offer"
+        ? "SPECIAL_OFFER"
+        : "CABINET_FREE",
     courses: [
       {
-        name: landing?.landing_name,
-        new_price: landing?.new_price,
-        old_price: landing?.old_price,
-        lessons_count: landing?.lessons_count,
+        name: course?.landing?.landing_name,
+        new_price: course?.landing?.new_price,
+        old_price: course?.landing?.old_price,
+        lessons_count: course?.landing?.lessons_count,
       },
     ],
   };
@@ -129,7 +119,7 @@ const CoursePage = () => {
                     {section.lessons.map((lesson: any, index: number) => (
                       <LessonCard
                         type="lesson"
-                        price={landing?.new_price}
+                        price={course?.landing?.new_price}
                         isPartial={isPartial && !lesson.video_link}
                         index={index}
                         key={lesson.id}
@@ -147,7 +137,7 @@ const CoursePage = () => {
           </>
         )}
       </div>
-      {renderModal()}
+      {isPartial && renderModal()}
     </>
   );
 };
