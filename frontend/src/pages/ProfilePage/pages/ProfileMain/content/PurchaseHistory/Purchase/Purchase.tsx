@@ -233,17 +233,21 @@ const Purchase = ({
       ) : (
         <p className={s.no_data_message}>
           {isReferral ? (
-            t(`profile.purchaseHistory.noReferralsData`)
+            <Trans i18nKey="profile.purchaseHistory.noReferralsData" />
           ) : (
-            <>
-              {t(`profile.purchaseHistory.noPurchasesData`)}
-              <Link
-                to={Path.courses}
-                className={`${s.no_data_message} ${s.link}`}
-              >
-                here.
-              </Link>
-            </>
+            <Trans
+              i18nKey="profile.purchaseHistory.noPurchasesData"
+              components={{
+                link: (
+                  <Link
+                    to={Path.courses}
+                    className={`${s.no_data_message} ${s.link}`}
+                  >
+                    {t("here")}
+                  </Link>
+                ),
+              }}
+            />
           )}
         </p>
       )}
