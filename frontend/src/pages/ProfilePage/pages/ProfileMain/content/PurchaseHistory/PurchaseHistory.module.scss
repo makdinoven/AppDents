@@ -1,0 +1,16 @@
+.purchase_history {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: fit-content;
+  text-transform: uppercase;
+  @include clamped-h3;
+  gap: 40px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .purchase_history {
+    gap: 20px;
+  }
+}

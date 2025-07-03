@@ -1,7 +1,7 @@
 import MainPage from "../pages/MainPage/MainPage.tsx";
 import Layout from "../components/Layout/Layout.tsx";
 import Landing from "../pages/Landing/Landing.tsx";
-import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/ProfileMain.tsx";
+import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/content/Main/ProfileMain.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
