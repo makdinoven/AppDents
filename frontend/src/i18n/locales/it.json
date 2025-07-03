@@ -61,6 +61,7 @@
   "freePaymentWarn": "Verrai automaticamente connesso al tuo account personale, dove potrai guardare la prima lezione gratuita del corso. Se non si apre, accedi manualmente con email e password.",
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
+  "here": "qui.",
   "freeCourse": {
     "freePreview": "Lezione demo",
     "registerToWatch": "Registrati per vedere",
@@ -236,12 +237,11 @@
       "adminAdjust": "Bonus",
       "internalPurchase": "Pagamento",
       "purchase": "Pagamento",
-      "transactionType": "Tipo di transazione:",
       "referralCashback": "Cashback",
-      "adjunction": "ricarica",
       "fromBalance": "dal saldo",
-      "withdrawal": "prelievo",
-      "fromCart": "Dal carrello"
+      "fromCart": "Dal carrello",
+      "noReferralsData": "Non hai ancora invitato amici? Scopri di più sul nostro programma di referral nella scheda principale del profilo — condividi la conoscenza e ottieni bonus!",
+      "noPurchasesData": "Non hai ancora acquistato nulla. Inizia a studiare oggi — puoi scegliere il corso giusto da <link />"
     }
   },
 

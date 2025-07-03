@@ -63,6 +63,7 @@
   "freePaymentWarn": "You’ll be automatically logged into your personal account, where you can watch the first free lesson of the course. If it doesn’t open right away, try logging in manually using the email and password you provided.",
   "firstFreeLesson": "First lesson for free",
   "or": "or",
+  "here": "here.",
   "freeCourse": {
     "freePreview": "Free lesson",
     "registerToWatch": "Register to watch",
@@ -246,8 +247,8 @@
       "referralCashback": "Cashback",
       "fromBalance": "from balance",
       "fromCart": "from cart",
-      "noReferralsData": "You haven't invited your friends yet! You can use this link to start referral program:",
-      "noPurchasesData": "You haven't make any purchases yet! You can buy any course "
+      "noReferralsData": "Haven’t invited your friends yet? Learn more about our referral program on the main profile tab — share knowledge and earn bonuses!",
+      "noPurchasesData": "You haven’t purchased anything yet. Start learning today — you can choose the right course <link />"
     }
   },
 
