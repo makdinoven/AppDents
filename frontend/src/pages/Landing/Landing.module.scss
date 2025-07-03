@@ -30,6 +30,11 @@
 .admin_btns {
   display: flex;
   gap: 10px;
+  flex-direction: column;
+  width: fit-content;
+  button {
+    width: 100%;
+  }
 }
 
 .landing {

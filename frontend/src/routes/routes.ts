@@ -10,6 +10,7 @@ export const Path = {
   signUp: "/sign-up",
   landing: "/course",
   videoLanding: "course/video",
+  webinarLanding: "course/webinar",
   landingClient: "client/course",
   freeLanding: "course/free",
   freeLandingClient: "client/course/free",

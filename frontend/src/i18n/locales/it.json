@@ -33,6 +33,7 @@
   "watch": "Guarda",
   "watchLesson": "Guarda lezione",
   "onlineCourse": "Corso online",
+  "onlineWebinar": "Webinar online",
   "professors": "Professori",
   "logout": "Disconnetti",
   "mail": "email",
@@ -63,13 +64,14 @@
   "or": "o",
   "here": "qui.",
   "freeCourse": {
-    "freePreview": "Lezione demo",
+    "freePreview": "Offerta speciale",
+    "discount": "Sconto del {{discount}}%",
     "registerToWatch": "Registrati per vedere",
     "tryFirstLesson": "Prova la prima lezione",
     "fullAccess": "Corso completo",
-    "get": "Ottieni il corso a ${{count}}",
     "title": "Serve il corso completo",
-    "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo.",
+    "get": "Ottieni tutte le lezioni per solo ${{count}}",
+    "desc": "Questa lezione fa parte di un corso completo. Ottieni l'accesso completo a tutte le lezioni acquistando il corso.",
     "access": {
       "full": "Accesso completo",
       "partial": "Accesso parziale",
@@ -90,6 +92,8 @@
     "search": "Cerca",
     "profile": "Profilo",
     "promote": {
+      "webinarProgram": "Programma del webinar",
+      "webinarProfessors": "Docenti del webinar",
       "professors": "Docenti del corso",
       "program": "Programma del corso"
     }
@@ -176,6 +180,8 @@
     "videoIsNotSupported": "Il tuo browser non supporta il video",
     "specialOffer": "Offerta speciale",
     "accessFull": "L'accesso al corso è illimitato nel tempo!",
+    "fullWebinarProgram": "Programma completo del webinar",
+    "accessFullWebinar": "L'accesso al webinar è illimitato nel tempo!",
     "video": {
       "modalTitle": "Sblocca il corso completo",
       "buyCourseToWatch": "Acquista il corso completo per continuare a guardare."

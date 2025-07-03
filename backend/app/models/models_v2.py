@@ -50,6 +50,7 @@ class PurchaseSource(str, PyEnum):
     CABINET_FREE = "CABINET_FREE"
     SPECIAL_OFFER = "SPECIAL_OFFER"
     VIDEO_LANDING = "VIDEO_LANDING"
+    LANDING_WEBINAR = "LANDING_WEBINAR"
     OTHER                     = "OTHER"
 
 class FreeCourseSource(str, PyEnum):
@@ -355,6 +356,8 @@ class SpecialOffer(Base):
     landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
     expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default="1",
+                       comment="True – оффер ещё действует; False – истёк или куплен")
 
     user    = relationship("User", back_populates="special_offers")
     course  = relationship("Course")

@@ -14,7 +14,12 @@ import { Trans } from "react-i18next";
 import UserIcon from "../../../assets/Icons/UserIcon.tsx";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import { useEffect, useRef } from "react";
 import { useTriggerRef } from "../../../common/context/TriggerRefContext.tsx";
@@ -66,12 +71,12 @@ const MainHeaderContent = () => {
         );
       }
       return (
-        <UnstyledButton
-          onClick={() => navigate(Path.profile)}
+        <Link
+          to={Path.profile}
           className={`${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
         >
           <UserIcon />
-        </UnstyledButton>
+        </Link>
       );
     }
   };
