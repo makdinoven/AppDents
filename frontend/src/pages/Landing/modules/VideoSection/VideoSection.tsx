@@ -100,7 +100,7 @@ const VideoSection = ({
           <div className={s.player}>
             <video
               playsInline
-              webkit-playsinline
+              webkit-playsinline={"true"}
               disablePictureInPicture
               onClick={togglePlay}
               ref={videoRef}

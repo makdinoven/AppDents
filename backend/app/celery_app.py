@@ -34,6 +34,8 @@ celery.conf.update(
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
         "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
+        "app.tasks.process_hls_video": {"rate_limit": "6/m"},
+        "app.tasks.ensure_hls":        {"rate_limit": "2/m"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -44,13 +46,16 @@ celery.conf.update(
         "replace-storage-links-every-3-hours": {
                     "task": "app.tasks.special_offers.replace_storage_links",
                     "schedule": 10800,              # 3 ч * 3600 с
-                    # crontab(minute=0, hour='*/3')  # <- альтернативный вариант
                     "options": {"queue": "special"},
                 },
         "ensure_faststart": {
                     "task": "app.tasks.ensure_faststart",
                     "schedule": 10800,              # 3 ч * 3600 с
-                    # crontab(minute=0, hour='*/3')  # <- альтернативный вариант
+                    "options": {"queue": "special"},
+                },
+        "ensure_hls": {
+                    "task": "app.tasks.ensure_hls",
+                    "schedule": 10800,              # 3 ч * 3600 с
                     "options": {"queue": "special"},
                 },
     },

@@ -1,5 +1,6 @@
 import datetime as _dt
 import logging
+import random
 from collections import Counter
 from typing import List, Optional, Tuple
 
@@ -61,28 +62,42 @@ def _preferred_lang(user: User) -> str | None:
 
 
 # ─── core ───────────────────────────────────────────────────────────────────
-def _pick_offer_landing(db: Session, user: User) -> Optional[Tuple[Landing, Course]]:
-    """См. doc-string в вопросе"""
+def _pick_offer_landing(
+    db: Session,
+    user: User
+) -> Optional[Tuple[Landing, Course]]:
+    """
+    • Сначала пытаемся «cheap-by-tag» (вес тегов, язык).
+    • Далее – случайный лендинг из TOP-20 по продажам.
+    • Курс не вернётся, если он:
+        – куплен / partial
+        – активный special-offer
+        – когда-либо предлагался ранее
+    """
 
-    # ---------- denied -------------------------------------------------------
-    purchased_ids   = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids = {
-        so.course_id
-        for so in sorted(user.special_offers,
-                         key=lambda so: so.created_at,
-                         reverse=True)[:_HISTORY_LIMIT]
-        if so.course_id
-    }
+    # ---------------- denied ----------------
+    now = _dt.datetime.utcnow()
+    purchased   = {p.course_id for p in user.purchases if p.course_id}
     partial_ids = set(user.partial_course_ids or [])
-    active_ids  = set(user.active_special_offer_ids or [])
+    active_ids = {
+        so.course_id
+        for so in user.special_offers
+        if so.is_active and so.expires_at > now
+    }
+    offered_ids = {so.course_id for so in user.special_offers}
 
-    denied: set[int] = purchased_ids | recent_offer_ids | partial_ids | active_ids
+    denied: set[int] = purchased | partial_ids | active_ids | offered_ids
 
-    # ---------- язык ---------------------------------------------------------
-    pref_lang = _preferred_lang(user)          # RU / EN / … / None
-    languages_to_try: List[Optional[str]] = ([pref_lang] if pref_lang else []) + [None]
+    # ---------------- язык ------------------
+    pref_lang = _preferred_lang(user)  # RU / EN / …  или None
 
-    # ---------- 1) подбор «по тегу» ------------------------------------------
+    def _first_allowed(landing: Landing) -> Optional[Course]:
+        for c in landing.courses:
+            if c.id not in denied:
+                return c
+        return None
+
+    # ---------------- cheap-by-tag ----------
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
         tag_weights: Counter[int] = Counter()
@@ -92,45 +107,44 @@ def _pick_offer_landing(db: Session, user: User) -> Optional[Tuple[Landing, Cour
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
+            q = (
+                db.query(Landing)
+                  .join(Landing.tags)
+                  .filter(Tag.id == best_tag_id,
+                          Landing.is_hidden.is_(False))
+                  .options(selectinload(Landing.courses))
+                  .order_by(Landing.sales_count.desc())
+                  .limit(10)
+            )
+            if pref_lang:
+                q = q.filter(Landing.language == pref_lang)
 
-            def _tag_candidates(lang: Optional[str]):
-                q = (db.query(Landing)
-                       .join(Landing.tags)
-                       .filter(Tag.id == best_tag_id,
-                               Landing.is_hidden.is_(False))
-                       .options(selectinload(Landing.courses))
-                       .order_by(Landing.sales_count.desc())
-                       .limit(10))
-                return q.filter(Landing.language == lang) if lang else q
+            cand = q.all()
+            random.shuffle(cand)
+            for land in cand:
+                course = _first_allowed(land)
+                if course:
+                    return land, course
 
-            for lang_try in languages_to_try:
-                cand = _tag_candidates(lang_try).all()
-                if not cand:
-                    continue
-                chosen = cand[user.id % len(cand)]
-                for course in chosen.courses:
-                    if course.id not in denied:
-                        return chosen, course
-                # все курсы в denied — пробуем другую ветку
+    # ---------------- popular fallback ------
+    q = (
+        db.query(Landing)
+          .filter(Landing.is_hidden.is_(False))
+          .options(selectinload(Landing.courses))
+          .order_by(Landing.sales_count.desc())
+          .limit(20)
+    )
+    if pref_lang:
+        q = q.filter(Landing.language == pref_lang)
 
-    # ---------- 2) популярный fallback ---------------------------------------
-    def _top_popular(lang: Optional[str]):
-        q = (db.query(Landing)
-               .filter(Landing.is_hidden.is_(False))
-               .options(selectinload(Landing.courses))
-               .order_by(Landing.sales_count.desc())
-               .limit(20))
-        return q.filter(Landing.language == lang) if lang else q
+    top = q.all()
+    random.shuffle(top)
+    for land in top:
+        course = _first_allowed(land)
+        if course:
+            return land, course
 
-    for lang_try in languages_to_try:
-        tops = _top_popular(lang_try).all()
-        if not tops:
-            continue
-        chosen = tops[user.id % len(tops)]
-        for course in chosen.courses:
-            if course.id not in denied:
-                return chosen, course
-
+    # ничего не нашли
     return None
 
 
@@ -179,20 +193,24 @@ def generate_offer_for_user(db: Session, user: User) -> bool:
 
     db.commit()
     logger.info("Special offer → user=%s course=%s until %s", user.id, course.id, expires_at)
-    _trim_offer_history(db, user)
     return True
 
 
-def cleanup_expired_offers(db: Session) -> int:
-    """Удаляет протухшие записи, возвращает кол-во."""
+def deactivate_expired_offers(db: Session) -> int:
+    """
+    Помечает протухшие офферы как не-активные.
+    Возвращает количество изменённых строк.
+    """
     now = _dt.datetime.utcnow()
-    q = db.query(SpecialOffer).filter(SpecialOffer.expires_at <= now)
-    count = q.count()
-    if count:
-        logger.debug("Cleaning %s expired special offers", count)
-        q.delete(synchronize_session=False)
+    updated = (
+        db.query(SpecialOffer)
+          .filter(SpecialOffer.expires_at <= now, SpecialOffer.is_active.is_(True))
+          .update({SpecialOffer.is_active: False},
+                  synchronize_session=False)
+    )
+    if updated:
         db.commit()
-    return count
+    return updated
 
 
 def generate_offers_for_all_users(db: Session) -> None:
@@ -217,16 +235,3 @@ def generate_offers_for_all_users(db: Session) -> None:
         offset += BATCH
 
 
-
-def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
-    """
-    Сохраняет не более `limit` последних записей SpecialOffer.
-    Старые записи удаляются, чтобы позже могли повторно попасть в оффер.
-    """
-    offers_sorted = sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
-    excess = offers_sorted[limit:]
-    for so in excess:
-        db.delete(so)
-    if excess:
-        logger.debug("Trimmed %s old offers for user %s", len(excess), user.id)
-        db.commit()

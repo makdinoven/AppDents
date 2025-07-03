@@ -41,6 +41,7 @@ export const LANDING_ROUTES = [
   Path.freeLanding,
   Path.freeLandingClient,
   Path.videoLanding,
+  Path.webinarLanding,
 ];
 
 export const LANDING_AD_ROUTES = [
@@ -124,6 +125,7 @@ export const PAYMENT_SOURCES = [
   { name: "LANDING", path: `/${Path.landingClient}` },
   { name: "LANDING", path: Path.landing },
   { name: "LANDING_VIDEO", path: Path.videoLanding },
+  { name: "LANDING_WEBINAR", path: Path.webinarLanding },
   { name: "PROFESSOR_PAGE", path: Path.professor },
   { name: "PROFESSOR_OFFER", path: Path.professor },
   { name: "PROF_LIST_OFFER", path: Path.professors },

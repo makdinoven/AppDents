@@ -2,7 +2,7 @@ import logging
 from celery import shared_task
 from ..db.database import SessionLocal
 from ..services_v2.special_offer_service import (
-    generate_offers_for_all_users, cleanup_expired_offers
+    generate_offers_for_all_users, deactivate_expired_offers,
 )
 
 logger = logging.getLogger(__name__)
@@ -18,6 +18,6 @@ def process_special_offers():
 
     try:
         generate_offers_for_all_users(db)
-        cleanup_expired_offers(db)
+        deactivate_expired_offers(db)
     finally:
         db.close()

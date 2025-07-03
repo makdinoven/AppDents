@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
+  getBasePath,
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
@@ -41,6 +42,7 @@ import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
+  const [firstLesson, setFirstLesson] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { landingPath } = useParams();
   const formattedAuthorsDesc = (
@@ -67,17 +69,14 @@ const Landing = () => {
   }, [location.search]);
   const isAdmin = role === "admin";
 
-  const basePath = location.pathname
-    .replace(/^\/|\/$/g, "")
-    .split("/")
-    .slice(0, -1)
-    .join("/");
+  const basePath = getBasePath(location.pathname);
 
   const isVideo = basePath === Path.videoLanding;
   const isClient =
     basePath === Path.landingClient || basePath === Path.freeLandingClient;
   const isFree =
     basePath === Path.freeLanding || basePath === Path.freeLandingClient;
+  const isWebinar = basePath === Path.webinarLanding;
 
   useEffect(() => {
     if (isLogged && isFree && !isAdmin) {
@@ -125,8 +124,8 @@ const Landing = () => {
       dispatch(setLanguage(res.data.language));
       dispatch(
         setPrices({
-          newPrice: res.data.new_price,
-          oldPrice: res.data.old_price,
+          newPrice: !isWebinar ? res.data.new_price : 1,
+          oldPrice: !isWebinar ? res.data.old_price : 49,
         }),
       );
       dispatch(setLessonsCount({ lessonsCount: res.data.lessons_count }));
@@ -150,7 +149,7 @@ const Landing = () => {
               variant === "default" ? "landing.buyFor" : "landing.buyForFull"
             }
             values={{
-              ...getPricesData(landing),
+              ...getPricesData(landing, isWebinar),
             }}
             components={{
               1: <span className="crossed-15" />,
@@ -168,7 +167,7 @@ const Landing = () => {
                 variant === "default" ? "landing.buyFor" : "landing.buyForFull"
               }
               values={{
-                ...getPricesData(landing),
+                ...getPricesData(landing, isWebinar),
               }}
               components={{
                 1: <span className="crossed-15" />,
@@ -190,11 +189,19 @@ const Landing = () => {
     }
   };
 
+  useEffect(() => {
+    if (landing) {
+      setFirstLesson(landing?.lessons_info[0]);
+      console.log(landing?.lessons_info[0]);
+    }
+  }, [landing]);
+
   const heroData = {
-    landing_name: landing?.landing_name,
+    landing_name: !isWebinar ? landing?.landing_name : firstLesson?.name,
     authors: formattedAuthorsDesc,
-    photo: landing?.preview_photo || null,
+    photo: !isWebinar ? landing?.preview_photo || null : firstLesson?.preview,
     renderBuyButton: renderBuyButton("default"),
+    isWebinar: isWebinar,
   };
 
   const aboutData = {
@@ -210,6 +217,14 @@ const Landing = () => {
     duration: `${t("landing.duration")} ${landing?.duration ? landing?.duration : "0"}`,
   };
 
+  const aboutDataWebinar = {
+    discount: t("landing.discount", {
+      count: calculateDiscount(49, 1),
+    }),
+    access: t("landing.access"),
+    duration: `${t("landing.duration")} ${firstLesson?.duration ? firstLesson?.duration : "0"}`,
+  };
+
   const courseProgramData = {
     name: landing?.landing_name,
     lessonsCount: landing?.lessons_count
@@ -218,18 +233,22 @@ const Landing = () => {
     program: landing?.course_program,
     lessons_names: landing?.lessons_info.map((lesson: any) => lesson.name),
     renderBuyButton: renderBuyButton("default"),
-    ...getPricesData(landing),
+    ...getPricesData(landing, isWebinar),
   };
 
   const lessonsProgramData = {
-    lessons: landing?.lessons_info,
-    renderBuyButton: renderBuyButton("full"),
+    lessons: !isWebinar
+      ? landing?.lessons_info
+      : landing?.lessons_info.slice(0, 1),
+    renderBuyButton: renderBuyButton(isWebinar ? "default" : "full"),
+    isWebinar: isWebinar,
   };
 
   const offerData = {
-    landing_name: landing?.landing_name,
+    landing_name: !isWebinar ? landing?.landing_name : firstLesson?.name,
     authors: formattedAuthorsDesc,
     renderBuyButton: renderBuyButton("default"),
+    isWebinar: isWebinar,
   };
 
   const videoSectionData = {
@@ -239,24 +258,25 @@ const Landing = () => {
     course_program: landing?.course_program,
     landing_name: landing?.landing_name,
     authors: landing?.authors,
-    ...getPricesData(landing),
+    ...getPricesData(landing, isWebinar),
   };
 
   const paymentData = {
     from_ad: isPromotionLanding,
     landing_ids: [landing?.id],
     course_ids: landing?.course_ids,
-    price_cents: landing?.new_price * 100,
-    total_new_price: landing?.new_price,
-    total_old_price: landing?.old_price,
+    price_cents: !isWebinar ? landing?.new_price * 100 : 100,
+    total_new_price: !isWebinar ? landing?.new_price : 1,
+    total_old_price: !isWebinar ? landing?.old_price : 49,
     region: landing?.language,
     success_url: `${BASE_URL}${Path.successPayment}`,
     cancel_url: currentUrl,
+    source: isWebinar ? "LANDING_WEBINAR" : undefined,
     courses: [
       {
-        name: landing?.landing_name,
-        new_price: landing?.new_price,
-        old_price: landing?.old_price,
+        name: !isWebinar ? landing?.landing_name : firstLesson?.name,
+        new_price: !isWebinar ? landing?.new_price : 1,
+        old_price: !isWebinar ? landing?.old_price : 49,
         lessons_count: landing?.lessons_count,
       },
     ],
@@ -268,6 +288,11 @@ const Landing = () => {
         {isClient && <BackButton />}
         {isAdmin && isClient && (
           <div className={s.admin_btns}>
+            <PrettyButton
+              variant="primary"
+              text={"admin.landings.edit"}
+              onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
+            />
             <a
               href={`${BASE_URL}${Path.landing}/${landingPath}`}
               target="_blank"
@@ -289,24 +314,25 @@ const Landing = () => {
             >
               <PrettyButton variant="default" text={"promo free link"} />
             </a>
-
-            <PrettyButton
-              variant="primary"
-              text={"admin.landings.edit"}
-              onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
-            />
+            <a
+              href={`${BASE_URL}/${Path.webinarLanding}/${landingPath}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <PrettyButton variant="default" text={"webinar link"} />
+            </a>
           </div>
         )}
       </div>
       {loading ? (
         <Loader />
       ) : (
-        <div className={s.landing}>
+        <div lang={landing?.language.toLowerCase()} className={s.landing}>
           {!isVideo ? (
             <>
               <LandingHero data={heroData} />
-              <About data={aboutData} />
-              <CourseProgram data={courseProgramData} />
+              <About data={isWebinar ? aboutDataWebinar : aboutData} />
+              {!isWebinar && <CourseProgram data={courseProgramData} />}
               <LessonsProgram data={lessonsProgramData} />
               <Professors data={landing?.authors} />
               <Offer data={offerData} />
@@ -339,6 +365,7 @@ const Landing = () => {
           onClose={handleCloseModal}
         >
           <PaymentModal
+            isWebinar={isWebinar}
             isFree={isModalFree}
             paymentData={paymentData}
             handleCloseModal={handleCloseModal}
