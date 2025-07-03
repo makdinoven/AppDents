@@ -1,5 +1,5 @@
 import s from "./LanguageChanger.module.scss";
-import LanguageIcon from "../../../assets/icons/LanguageIcon.tsx";
+import { LanguageIcon } from "../../../assets/icons";
 import ModalWrapper from "../../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useRef, useState } from "react";
 import { CheckMark } from "../../../assets/icons";

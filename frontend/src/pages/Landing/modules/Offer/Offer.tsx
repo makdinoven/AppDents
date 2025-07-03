@@ -1,7 +1,7 @@
 import s from "./Offer.module.scss";
-import CircleArrow from "../../../../assets/icons/CircleArrow.tsx";
+import { CircleArrow } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
-import Clock from "../../../../assets/icons/Clock.tsx";
+import { Clock } from "../../../../assets/icons";
 
 const Offer = ({
   data: { landing_name, authors, renderBuyButton },

@@ -3,8 +3,8 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import { Book } from "../../../../assets/icons";
 import { Glasses } from "../../../../assets/icons";
 import { Percent } from "../../../../assets/icons";
-import Dollar from "../../../../assets/icons/Dollar.tsx";
-import Clock from "../../../../assets/icons/Clock.tsx";
+import { Dollar } from "../../../../assets/icons";
+import { Clock } from "../../../../assets/icons";
 import { Calendar } from "../../../../assets/icons";
 
 const About = ({
