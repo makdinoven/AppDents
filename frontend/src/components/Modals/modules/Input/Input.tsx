@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
-import ErrorIcon from "../../../../assets/icons/ErrorIcon.tsx";
+import { ErrorIcon } from "../../../../assets/icons";
 import { EyeClosed, EyeOpened } from "../../../../assets/icons";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {

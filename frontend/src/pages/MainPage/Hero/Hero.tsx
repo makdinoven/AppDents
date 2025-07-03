@@ -5,7 +5,7 @@ import { Trans } from "react-i18next";
 import ArrowButton from "../../../components/ui/ArrowButton/ArrowButton.tsx";
 import LineWrapper from "../../../components/ui/LineWrapper/LineWrapper.tsx";
 // import UniversalSlider from "../../../components/CommonComponents/UniversalSlider/UniversalSlider.tsx";
-import CircleArrow from "../../../assets/icons/CircleArrow.tsx";
+import { CircleArrow } from "../../../assets/icons";
 import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
 import HeroBackground from "/src/assets/hero-background.webp";
 

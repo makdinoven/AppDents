@@ -6,8 +6,8 @@ import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import { Arrow } from "../../../../assets/icons";
 import CountdownTimer from "../../../../components/ui/CountdownTimer/CountdownTimer.tsx";
 import { CheckMarkIcon } from "../../../../assets/icons";
-import Clock from "../../../../assets/icons/Clock.tsx";
-import Dollar from "../../../../assets/icons/Dollar.tsx";
+import { Clock } from "../../../../assets/icons";
+import { Dollar } from "../../../../assets/icons";
 
 const ProfileCourseCard = ({
   isPartial = false,

@@ -13,7 +13,7 @@ import {
   FilterKeys,
 } from "../../../../../common/helpers/commonConstants.ts";
 import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
-import ErrorIcon from "../../../../../assets/icons/ErrorIcon.tsx";
+import { ErrorIcon } from "../../../../../assets/icons";
 
 interface AdminListProps<T> {
   data: any;

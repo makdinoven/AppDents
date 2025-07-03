@@ -15,7 +15,7 @@ import {
   denormalizeCourse,
   normalizeCourse,
 } from "../../../common/helpers/helpers.ts";
-import ErrorIcon from "../../../assets/icons/ErrorIcon.tsx";
+import { ErrorIcon } from "../../../assets/icons";
 import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const CourseDetail = () => {

@@ -10,7 +10,7 @@ import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import Clock from "../../assets/icons/Clock.tsx";
+import { Clock } from "../../assets/icons";
 import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
 import { BASE_URL } from "../../common/helpers/commonConstants.ts";

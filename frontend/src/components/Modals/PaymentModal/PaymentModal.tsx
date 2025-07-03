@@ -18,7 +18,7 @@ import {
   PaypalLogo,
   UnionPayLogo,
   VisaLogo,
-} from "../../../assets/logos/index";
+} from "../../../assets/logos";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
