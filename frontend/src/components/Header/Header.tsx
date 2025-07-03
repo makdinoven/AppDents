@@ -1,7 +1,7 @@
 import s from "./Header.module.scss";
 import { Link, useLocation } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
-import { DentsLogo } from "../../assets/logos/index";
+import { DentsLogo } from "../../assets/logos";
 import { useScroll } from "../../common/hooks/useScroll.ts";
 import PromoHeaderContent from "./content/PromoHeaderContent.tsx";
 import MainHeaderContent from "./content/MainHeaderContent.tsx";

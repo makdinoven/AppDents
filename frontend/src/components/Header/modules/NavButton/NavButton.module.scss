@@ -11,7 +11,6 @@ $hoverColor: $primary;
 
   &.vertical {
     flex-direction: column;
-    gap: 5px;
     font-size: 12px;
 
     .icon {
@@ -40,11 +39,16 @@ $hoverColor: $primary;
   }
 
   .icon {
-    width: 27px;
-    height: 34px;
+    height: 32px;
+    width: auto;
 
-    path {
-      @include transition;
+    svg {
+      height: 100%;
+      width: auto;
+
+      path {
+        @include transition;
+      }
     }
   }
 

@@ -1,4 +1,3 @@
-const CircleArrow = () => (
   <svg
     width="92"
     height="93"
@@ -14,6 +13,3 @@ const CircleArrow = () => (
       fill="#EDF8FF"
     />
   </svg>
-);
-
-export default CircleArrow;

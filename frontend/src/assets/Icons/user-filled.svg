@@ -1,5 +1,4 @@
-const UserIcon = () => (
-  <svg
+<svg
     width="58"
     height="58"
     viewBox="0 0 58 58"
@@ -21,6 +20,3 @@ const UserIcon = () => (
       fill="#EDF8FF"
     />
   </svg>
-);
-
-export default UserIcon;

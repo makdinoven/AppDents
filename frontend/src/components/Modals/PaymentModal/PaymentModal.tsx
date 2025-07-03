@@ -18,7 +18,7 @@ import {
   PaypalLogo,
   UnionPayLogo,
   VisaLogo,
-} from "../../../assets/logos/index";
+} from "../../../assets/logos";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
@@ -36,7 +36,7 @@ import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
-import CheckMark from "../../../assets/Icons/CheckMark.tsx";
+import { CheckMark } from "../../../assets/icons/index.ts";
 
 const logos = [
   VisaLogo,

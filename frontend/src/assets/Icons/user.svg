@@ -1,5 +1,4 @@
-const User = () => (
-  <svg
+ <svg
     width="114"
     height="114"
     viewBox="0 0 114 114"
@@ -14,6 +13,3 @@ const User = () => (
       fill="#01433D"
     />
   </svg>
-);
-
-export default User;

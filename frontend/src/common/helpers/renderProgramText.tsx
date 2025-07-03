@@ -1,4 +1,4 @@
-import CircleArrow from "../../assets/Icons/CircleArrow.tsx";
+import { CircleArrow } from "../../assets/icons";
 
 const processProgramText = (text: string) => {
   const lines = text.split("\n").map((line) => line.trim());
@@ -44,7 +44,7 @@ export const renderProgramText = (
   programData: any,
   textClassName: string,
   listClassName: string,
-  listItemClassName: string,
+  listItemClassName: string
 ) => {
   const content = processProgramText(programData);
 
@@ -75,7 +75,7 @@ export const renderProgramText = (
                 </div>
               </li>
             ))}
-          </ul>,
+          </ul>
         );
         bulletList = [];
       }
@@ -83,7 +83,7 @@ export const renderProgramText = (
       renderContent.push(
         <p key={`text-${i}`} className={textClassName}>
           {item.text}
-        </p>,
+        </p>
       );
     } else if (item.type === "bullets") {
       bulletList.push(item);
@@ -110,7 +110,7 @@ export const renderProgramText = (
             </div>
           </li>
         ))}
-      </ul>,
+      </ul>
     );
   }
 

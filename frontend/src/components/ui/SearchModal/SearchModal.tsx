@@ -5,7 +5,7 @@ import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
 import { Link, useSearchParams } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { Trans } from "react-i18next";
-import { SearchIcon } from "../../../assets/logos/index";
+import { SearchIcon } from "../../../assets/icons/index.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
@@ -25,7 +25,7 @@ const SearchModal = ({ openKey }: { openKey: string }) => {
   const [totalResults, setTotalResults] = useState<number>(0);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
+    (state: AppRootStateType) => state.user.language
   );
   useOutsideClick(wrapperRef, () => {
     handleDropdownClose();

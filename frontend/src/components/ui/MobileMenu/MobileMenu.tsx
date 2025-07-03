@@ -4,7 +4,7 @@ import {
   NAV_BUTTONS,
 } from "../../../common/helpers/commonConstants.ts";
 import NavButton from "../../Header/modules/NavButton/NavButton.tsx";
-import { ProfileIcon } from "../../../assets/logos/index";
+import { ProfileIcon } from "../../../assets/icons/index.ts";
 import { Path } from "../../../routes/routes.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
@@ -18,10 +18,10 @@ const MobileMenu = () => {
   const navigate = useNavigate();
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
+    (state: AppRootStateType) => state.user.isLogged
   );
   const quantity = useSelector(
-    (state: AppRootStateType) => state.cart.quantity,
+    (state: AppRootStateType) => state.cart.quantity
   );
   const screenWidth = useScreenWidth();
 

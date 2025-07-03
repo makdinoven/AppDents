@@ -1,5 +1,5 @@
 import s from "./ModalCloseButton.module.scss";
-import ModalClose from "../../../assets/Icons/ModalClose.tsx";
+import { ModalClose } from "../../../assets/icons";
 
 const ModalCloseButton = ({
   className,

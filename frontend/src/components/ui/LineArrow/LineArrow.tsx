@@ -1,5 +1,5 @@
 import s from "./LineArrow.module.scss";
-import CircleArrow from "../../../assets/Icons/CircleArrow.tsx";
+import { CircleArrow } from "../../../assets/icons";
 
 const LineArrow = () => {
   return (

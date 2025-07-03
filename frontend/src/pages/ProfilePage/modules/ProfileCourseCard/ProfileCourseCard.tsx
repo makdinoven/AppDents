@@ -3,12 +3,12 @@ import initialPhoto from "../../../../assets/no-pictures.png";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
-import Arrow from "../../../../assets/Icons/Arrow.tsx";
+import { Arrow } from "../../../../assets/icons/index.ts";
 import CountdownTimer from "../../../../components/ui/CountdownTimer/CountdownTimer.tsx";
-import { CheckMarkIcon } from "../../../../assets/logos/index";
-import Clock from "../../../../assets/Icons/Clock.tsx";
-import Dollar from "../../../../assets/Icons/Dollar.tsx";
-import Percent from "../../../../assets/Icons/Percent.tsx";
+import { CheckMarkIcon } from "../../../../assets/icons/index.ts";
+import { Clock } from "../../../../assets/icons/index.ts";
+import { Dollar } from "../../../../assets/icons/index.ts";
+import { Percent } from "../../../../assets/icons/index.ts";
 
 const ProfileCourseCard = ({
   isPartial = false,

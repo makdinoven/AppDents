@@ -1,13 +1,13 @@
 import s from "./VideoSection.module.scss";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import Glasses from "../../../../assets/Icons/Glasses.tsx";
-import Book from "../../../../assets/Icons/Book.tsx";
-import Clock from "../../../../assets/Icons/Clock.tsx";
-import Calendar from "../../../../assets/Icons/Calendar.tsx";
-import Percent from "../../../../assets/Icons/Percent.tsx";
-import Dollar from "../../../../assets/Icons/Dollar.tsx";
+import { Glasses } from "../../../../assets/icons/index.ts";
+import { Book } from "../../../../assets/icons/index.ts";
+import { Clock } from "../../../../assets/icons/index.ts";
+import { Calendar } from "../../../../assets/icons/index.ts";
+import { Percent } from "../../../../assets/icons/index.ts";
+import { Dollar } from "../../../../assets/icons/index.ts";
 import { Trans } from "react-i18next";
-import { PlayIcon } from "../../../../assets/logos/index";
+import { PlayIcon } from "../../../../assets/icons/index.ts";
 import AuthorsDesc from "../../../../components/ui/AuthorsDesc/AuthorsDesc.tsx";
 import Button from "../../../../components/ui/Button/Button.tsx";
 import { useDispatch } from "react-redux";
@@ -30,7 +30,7 @@ const VideoSection = ({
   const lessonDescRef = useRef<HTMLDivElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [lessonHeight, setLessonHeight] = useState<number | undefined>(
-    undefined,
+    undefined
   );
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState<boolean>();
   const screenWidth = useScreenWidth();

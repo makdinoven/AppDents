@@ -1,9 +1,9 @@
 import s from "./Search.module.scss";
 import UnstyledInput from "../../CommonComponents/UnstyledInput.tsx";
 import { t } from "i18next";
-import { SearchIcon } from "../../../assets/logos/index";
+import { SearchIcon } from "../../../assets/icons/index.ts";
 import { useSearchParams } from "react-router-dom";
-import ArrowX from "../../../assets/Icons/ArrowX.tsx";
+import { ArrowX } from "../../../assets/icons/index.ts";
 
 const Search = ({
   placeholder,
