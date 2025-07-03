@@ -200,10 +200,12 @@ def deactivate_expired_offers(db: Session) -> int:
     Помечает протухшие офферы как не-активные.
     Возвращает количество изменённых строк.
     """
-    now = _dt.datetime.utcnow()
     updated = (
         db.query(SpecialOffer)
-          .filter(SpecialOffer.expires_at <= now, SpecialOffer.is_active.is_(True))
+          .filter(
+              SpecialOffer.is_active.is_(True),
+              SpecialOffer.expires_at <= func.utc_timestamp()  # ← сравнение в БД
+          )
           .update({SpecialOffer.is_active: False},
                   synchronize_session=False)
     )
