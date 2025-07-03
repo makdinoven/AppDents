@@ -8,6 +8,7 @@ import CountdownTimer from "../../../../components/ui/CountdownTimer/CountdownTi
 import { CheckMarkIcon } from "../../../../assets/icons/index.ts";
 import { Clock } from "../../../../assets/icons/index.ts";
 import { Dollar } from "../../../../assets/icons/index.ts";
+import { Percent } from "../../../../assets/icons/index.ts";
 
 const ProfileCourseCard = ({
   isPartial = false,
@@ -45,14 +46,14 @@ const ProfileCourseCard = ({
       className={`${s.card} ${setCardColor()} ${isOffer ? s.offer : ""}`}
     >
       {isOffer && (
-        <div className={s.timer}>
-          <Clock />
-          <CountdownTimer endsAt={expires_at} />
-        </div>
-      )}
-      {isOffer && (
-        <div className={s.free}>
-          <Trans i18nKey={"freeCourse.freePreview"} />
+        <div className={s.offer_items}>
+          <div className={s.timer}>
+            <Clock />
+            <CountdownTimer endsAt={expires_at} />
+          </div>
+          <div className={s.free}>
+            <Trans i18nKey={"freeCourse.freePreview"} />
+          </div>
         </div>
       )}
       <div className={s.card_content}>
@@ -73,13 +74,14 @@ const ProfileCourseCard = ({
         >
           {isPartial && <Dollar />}
           {!isPartial && !isOffer && <CheckMarkIcon />}
-          {isOffer && <Clock />}
+          {isOffer && <Percent />}
           <Trans
+            values={{ discount: 15 }}
             i18nKey={
               isPartial
                 ? "freeCourse.access.partial"
                 : isOffer
-                  ? "freeCourse.access.offer"
+                  ? "freeCourse.discount"
                   : "freeCourse.access.full"
             }
           />

@@ -60,6 +60,7 @@ export type PaymentDataType = {
   region: string;
   success_url: string;
   cancel_url: string;
+  source?: string;
   courses: {
     name: string;
     new_price: number;
@@ -70,10 +71,12 @@ export type PaymentDataType = {
 
 const PaymentModal = ({
   isOffer = false,
+  isWebinar = false,
   isFree = false,
   paymentData,
   handleCloseModal,
 }: {
+  isWebinar?: boolean;
   isFree?: boolean;
   isOffer?: boolean;
   paymentData: PaymentDataType;
@@ -84,10 +87,10 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    isLogged && balance ? balance > 0 : false
+    isLogged && balance ? balance > 0 : false,
   );
   const {
     register,
@@ -121,7 +124,8 @@ const PaymentModal = ({
   };
 
   const balancePrice = isBalanceUsed
-    ? Math.max(paymentData.total_new_price - balance!, 0)
+    ? Math.round(Math.max(paymentData.total_new_price - balance!, 0) * 100) /
+      100
     : paymentData.total_new_price;
 
   const handlePayment = async (form: any) => {
@@ -135,7 +139,7 @@ const PaymentModal = ({
         user_email: isLogged ? email : form.email,
         transfer_cart: !isLogged && cartLandingIds.length > 0,
         cart_landing_ids: cartLandingIds,
-        source: getPaymentSource(),
+        source: !paymentData.source ? getPaymentSource() : paymentData.source,
         cancel_url:
           !isLogged && rcCode
             ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
@@ -167,7 +171,7 @@ const PaymentModal = ({
         if (balanceLeft) {
           Alert(
             t("successPaymentWithBalance", { balance: balanceLeft }),
-            <CheckMark />
+            <CheckMark />,
           );
           navigate(Path.profile);
         }
@@ -203,8 +207,12 @@ const PaymentModal = ({
         {paymentData.courses.map((course, index: number) => (
           <div key={index} className={s.course}>
             <p>
-              {course.name} -{" "}
-              <span className={"highlight"}>{course.lessons_count}</span>
+              {course.name}{" "}
+              {!isWebinar && (
+                <>
+                  - <span className={"highlight"}>{course.lessons_count}</span>
+                </>
+              )}
             </p>
             {!isFree ? (
               <div className={s.course_prices}>

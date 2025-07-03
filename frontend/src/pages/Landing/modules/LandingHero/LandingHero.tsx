@@ -5,7 +5,7 @@ import initialPhoto from "../../../../assets/no-pictures.png";
 import { CircleArrow } from "../../../../assets/icons/index.ts";
 
 const LandingHero = ({
-  data: { photo, landing_name, authors, renderBuyButton },
+  data: { photo, landing_name, authors, renderBuyButton, isWebinar },
 }: {
   data: any;
 }) => {
@@ -13,7 +13,7 @@ const LandingHero = ({
     <section className={s.hero}>
       <div className={s.hero_top}>
         <Title>
-          <Trans i18nKey={"onlineCourse"} />
+          <Trans i18nKey={isWebinar ? "onlineWebinar" : "onlineCourse"} />
         </Title>
         <div className={s.card_header}></div>
       </div>
