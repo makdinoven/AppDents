@@ -15,6 +15,7 @@ celery = Celery(
             "app.tasks.preview_tasks",
             "app.tasks.special_offers",
             "app.tasks.storage_links",
+            "app.tasks.ensure_hls",
         ],
 )
 
