@@ -5,7 +5,7 @@ import { Trans } from "react-i18next";
 import { t } from "i18next";
 import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
-import { Arrow } from "../../../../assets/icons";
+import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 
 type OutletContextType = {

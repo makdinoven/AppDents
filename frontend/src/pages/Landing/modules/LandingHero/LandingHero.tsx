@@ -2,7 +2,7 @@ import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
 import initialPhoto from "../../../../assets/no-pictures.png";
-import { CircleArrow } from "../../../../assets/icons";
+import { CircleArrow } from "../../../../assets/icons/index.ts";
 
 const LandingHero = ({
   data: { photo, landing_name, authors, renderBuyButton },

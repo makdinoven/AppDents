@@ -1,7 +1,7 @@
 import s from "./ArrowButton.module.scss";
 import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Link } from "react-router-dom";
-import { CircleArrowSmall } from "../../../assets/icons";
+import { CircleArrowSmall } from "../../../assets/icons/index.ts";
 import { Trans } from "react-i18next";
 
 const ArrowButton = ({

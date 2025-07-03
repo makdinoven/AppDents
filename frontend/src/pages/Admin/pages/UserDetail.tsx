@@ -12,7 +12,7 @@ import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiS
 import { ROLES } from "../../../common/helpers/commonConstants.ts";
 import Table from "../../../components/ui/Table/Table.tsx";
 import { Alert } from "../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../assets/icons";
+import { ErrorIcon } from "../../../assets/icons/index.ts";
 import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
 

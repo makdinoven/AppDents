@@ -3,7 +3,11 @@ import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
 import { openModal } from "../../../store/slices/landingSlice.ts";
 import { Trans } from "react-i18next";
-import { BooksIcon, ProfessorsIcon, QuestionMark } from "../../../assets/icons";
+import {
+  BooksIcon,
+  ProfessorsIcon,
+  QuestionMark,
+} from "../../../assets/icons/index.ts";
 import { scrollToElementById } from "../../../common/helpers/helpers.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";

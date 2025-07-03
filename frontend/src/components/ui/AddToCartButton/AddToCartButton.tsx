@@ -1,5 +1,5 @@
 import s from "./AddToCartButton.module.scss";
-import { CartIcon, CheckMarkIcon } from "../../../assets/icons";
+import { CartIcon, CheckMarkIcon } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 import { Trans } from "react-i18next";
 import {

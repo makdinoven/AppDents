@@ -6,11 +6,11 @@
   @include transition();
 
   svg {
-    width: 30px;
-    height: 30px;
+    height: 32px;
+    width: 32px;
+    overflow: visible;
+
     path {
-      width: 30px;
-      height: 30px;
       @include transition();
       fill: $accent;
     }
