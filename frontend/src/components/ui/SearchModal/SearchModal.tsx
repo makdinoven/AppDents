@@ -5,7 +5,7 @@ import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
 import { Link, useSearchParams } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import { Trans } from "react-i18next";
-import { SearchIcon } from "../../../assets/icons";
+import { SearchIcon } from "../../../assets/icons/index.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";

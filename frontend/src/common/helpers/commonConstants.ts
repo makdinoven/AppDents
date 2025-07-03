@@ -4,7 +4,7 @@ import {
   CoursesIcon,
   HomeIcon,
   ProfessorsIcon,
-} from "../../assets/icons";
+} from "../../assets/icons/index.ts";
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },

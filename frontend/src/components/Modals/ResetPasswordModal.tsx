@@ -13,7 +13,7 @@ import { ResetPasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { Alert } from "../ui/Alert/Alert.tsx";
-import { CheckMark } from "../../assets/icons";
+import { CheckMark } from "../../assets/icons/index.ts";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);

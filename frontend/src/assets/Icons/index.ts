@@ -26,3 +26,6 @@ export { default as Clock } from "./clock.svg?react";
 export { default as Dollar } from "./dollar.svg?react";
 export { default as ErrorIcon } from "./error-icon.svg?react";
 export { default as LanguageIcon } from "./language-icon.svg?react";
+export { default as ModalClose } from "./modal-close.svg?react";
+export { default as User } from "./user.svg?react";
+export { default as UserFilled } from "./user-filled.svg?react";

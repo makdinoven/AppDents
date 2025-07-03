@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
-import User from "../../../../assets/icons/User.tsx";
+import { User } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
 import MyCourses from "../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";

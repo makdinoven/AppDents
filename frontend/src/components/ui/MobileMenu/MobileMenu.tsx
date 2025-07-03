@@ -4,7 +4,7 @@ import {
   NAV_BUTTONS,
 } from "../../../common/helpers/commonConstants.ts";
 import NavButton from "../../Header/modules/NavButton/NavButton.tsx";
-import { ProfileIcon } from "../../../assets/icons";
+import { ProfileIcon } from "../../../assets/icons/index.ts";
 import { Path } from "../../../routes/routes.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";

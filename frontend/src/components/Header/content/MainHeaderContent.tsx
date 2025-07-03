@@ -7,11 +7,11 @@ import {
 } from "../../../common/helpers/commonConstants.ts";
 import NavButton from "../modules/NavButton/NavButton.tsx";
 import { Path } from "../../../routes/routes.ts";
-import { SearchIcon } from "../../../assets/icons";
+import { SearchIcon } from "../../../assets/icons/index.ts";
 import LanguageChanger from "../../ui/LanguageChanger/LanguageChanger.tsx";
 import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Trans } from "react-i18next";
-import UserIcon from "../../../assets/icons/UserIcon.tsx";
+import { UserFilled } from "../../../assets/icons";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
@@ -70,7 +70,7 @@ const MainHeaderContent = () => {
           onClick={() => navigate(Path.profile)}
           className={`${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
         >
-          <UserIcon />
+          <UserFilled />
         </UnstyledButton>
       );
     }
