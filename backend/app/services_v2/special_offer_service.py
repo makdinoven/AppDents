@@ -67,37 +67,36 @@ def _pick_offer_landing(
     user: User
 ) -> Optional[Tuple[Landing, Course]]:
     """
-    • Сначала пытаемся «cheap-by-tag» (вес тегов, язык).
-    • Далее – случайный лендинг из TOP-20 по продажам.
-    • Курс не вернётся, если он:
-        – куплен / partial
-        – активный special-offer
-        – когда-либо предлагался ранее
+    1.  Если есть покупки → ищем лендинг по тегу (cheap-by-tag) с учётом языка;
+        случайный из TOP-10.
+    2.  Иначе → случайный лендинг из TOP-20 по продажам.
+    3.  Курс никогда не возвращается, если он в denied-наборе
+        (куплен, partial, active-offer, был когда-либо в offers).
     """
 
-    # ---------------- denied ----------------
+    # ---------- denied ----------
     now = _dt.datetime.utcnow()
     purchased   = {p.course_id for p in user.purchases if p.course_id}
     partial_ids = set(user.partial_course_ids or [])
-    active_ids = {
-        so.course_id
-        for so in user.special_offers
+    active_ids  = {
+        so.course_id for so in user.special_offers
         if so.is_active and so.expires_at > now
     }
     offered_ids = {so.course_id for so in user.special_offers}
 
     denied: set[int] = purchased | partial_ids | active_ids | offered_ids
 
-    # ---------------- язык ------------------
-    pref_lang = _preferred_lang(user)  # RU / EN / …  или None
+    # ---------- язык ----------
+    pref_lang = _preferred_lang(user)        # 'RU', 'EN', …  или None
 
+    # helper: первый курс, который не в denied
     def _first_allowed(landing: Landing) -> Optional[Course]:
         for c in landing.courses:
             if c.id not in denied:
                 return c
         return None
 
-    # ---------------- cheap-by-tag ----------
+    # ---------- 1) cheap-by-tag ----------
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
         tag_weights: Counter[int] = Counter()
@@ -107,44 +106,44 @@ def _pick_offer_landing(
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
-            q = (
+
+            base_q = (
                 db.query(Landing)
                   .join(Landing.tags)
-                  .filter(Tag.id == best_tag_id,
-                          Landing.is_hidden.is_(False))
+                  .filter(
+                      Tag.id == best_tag_id,
+                      Landing.is_hidden.is_(False),
+                  )
                   .options(selectinload(Landing.courses))
                   .order_by(Landing.sales_count.desc())
-                  .limit(10)
             )
             if pref_lang:
-                q = q.filter(Landing.language == pref_lang)
+                base_q = base_q.filter(Landing.language == pref_lang)
 
-            cand = q.limit(10).all()
+            cand = base_q.limit(10).all()          # limit → САМЫЙ ПОСЛЕДНИЙ
             random.shuffle(cand)
             for land in cand:
                 course = _first_allowed(land)
                 if course:
                     return land, course
 
-    # ---------------- popular fallback ------
-    q = (
+    # ---------- 2) popular fallback ----------
+    base_q = (
         db.query(Landing)
           .filter(Landing.is_hidden.is_(False))
           .options(selectinload(Landing.courses))
           .order_by(Landing.sales_count.desc())
-          .limit(20)
     )
     if pref_lang:
-        q = q.filter(Landing.language == pref_lang)
+        base_q = base_q.filter(Landing.language == pref_lang)
 
-    top = q.limit(20).all()
-    random.shuffle(top)
-    for land in top:
+    tops = base_q.limit(20).all()            # limit тоже в конце
+    random.shuffle(tops)
+    for land in tops:
         course = _first_allowed(land)
         if course:
             return land, course
 
-    # ничего не нашли
     return None
 
 
