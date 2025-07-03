@@ -119,7 +119,7 @@ def _pick_offer_landing(
             if pref_lang:
                 q = q.filter(Landing.language == pref_lang)
 
-            cand = q.all()
+            cand = q.limit(10).all()
             random.shuffle(cand)
             for land in cand:
                 course = _first_allowed(land)
@@ -137,7 +137,7 @@ def _pick_offer_landing(
     if pref_lang:
         q = q.filter(Landing.language == pref_lang)
 
-    top = q.all()
+    top = q.limit(20).all()
     random.shuffle(top)
     for land in top:
         course = _first_allowed(land)
