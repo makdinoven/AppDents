@@ -9,6 +9,15 @@
   gap: 40px;
 }
 
+.back_btn_tabs_container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  button {
+    margin-bottom: 0;
+  }
+}
+
 .user_info {
   display: grid;
   grid-template-columns: 1fr 1.25fr;
@@ -73,5 +82,9 @@
 @media (max-width: $mobile-breakpoint) {
   .profile_page {
     gap: 30px;
+  }
+
+  .back_btn_tabs_container {
+    margin-bottom: 20px;
   }
 }

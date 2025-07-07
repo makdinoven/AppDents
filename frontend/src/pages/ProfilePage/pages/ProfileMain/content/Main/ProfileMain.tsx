@@ -25,6 +25,7 @@ import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
 import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
 import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
 import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
+import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 
 const QUERY_KEY = "content";
 
@@ -33,10 +34,10 @@ const ProfileMain = () => {
   const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
-  // const [showConfirmModal, setShowConfirmModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
   const [searchParams] = useSearchParams();
   const tabFromParams = searchParams.get(QUERY_KEY);
+  const screenWidth = useScreenWidth();
 
   useEffect(() => {
     dispatch(getCourses());
@@ -107,17 +108,20 @@ const ProfileMain = () => {
   ];
 
   const activeTab = profilePageContent.find(
-    (tab) => tab.value === tabFromParams
+    (tab) => tab.value === tabFromParams,
   );
 
   return (
     <>
-      <BackButton />
-      <Tabs
-        queryKey={QUERY_KEY}
-        mainTab={"profile_main"}
-        tabs={profilePageContent}
-      />
+      <div className={s.back_btn_tabs_container}>
+        <BackButton showText={screenWidth > 400} />
+        <Tabs
+          queryKey={QUERY_KEY}
+          mainTab={"profile_main"}
+          tabs={profilePageContent}
+        />
+      </div>
+
       <div className={s.profile_page_content}>{activeTab?.component}</div>
       {showResetPasswordModal && (
         <ModalWrapper
