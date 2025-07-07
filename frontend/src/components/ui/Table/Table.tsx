@@ -80,7 +80,7 @@ const Table = <T extends Record<string, any>>({
   };
 
   return (
-    <>
+    <div className={s.table_component}>
       {title && <h4 className={s.table_title}>{title}</h4>}
       <div className={s.table_wrapper}>
         <table className={s.table}>
@@ -104,7 +104,7 @@ const Table = <T extends Record<string, any>>({
           </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 

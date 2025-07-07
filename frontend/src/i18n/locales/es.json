@@ -62,6 +62,7 @@
   "freePaymentWarn": "Se iniciará sesión automáticamente en tu cuenta, donde podrás ver la primera lección gratis del curso. Si no se abre, inicia sesión manualmente con tu correo y contraseña.",
   "firstFreeLesson": "Primera clase gratis",
   "or": "o",
+  "here": "aquí.",
   "freeCourse": {
     "freePreview": "Oferta especial",
     "discount": "Descuento {{discount}}%",
@@ -82,8 +83,6 @@
     "title": "Sólo <1>hoy</1> <1>– {{discount}}% de descuento!</1>"
   },
 
-
-
   "nav": {
     "home": "Inicio",
     "courses": "Cursos",
@@ -100,7 +99,6 @@
     }
   },
 
-
   "search": {
     "searchCourses": "Buscar cursos",
     "searchPlaceholder": "Ingrese el nombre del curso o el nombre del autor...",
@@ -112,7 +110,7 @@
   },
 
   "main": {
-    "title" : "Escuela <1>dental</1> en línea",
+    "title": "Escuela <1>dental</1> en línea",
     "hero.widestRange": "La <1>más amplia</1> gama de productos",
     "hero.bestPrices": "Mejores <1>precios</1>",
     "hero.description": "Cursos en línea para dentistas",
@@ -229,8 +227,28 @@
       "step_2": "2. Envíalo a un amigo por WhatsApp, Telegram, correo electrónico o como prefieras.",
       "step_3": "3. Tu amigo compra cualquier curso — por ejemplo, uno que cuesta <1>$19</1>.",
       "step_4": "4. Recibes el <1>50%</1> del pago (por ejemplo, <1>$9.50</1>) como crédito en tu billetera."
-    }
+    },
 
+    "main": "Principal",
+    "user": "Usuario:",
+    "referrals": {
+      "email": "Correo electrónico",
+      "invitation": "Invitación",
+      "totalCashback": "cashback total"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Usuarios invitados",
+      "purchases": "Historial de compras",
+      "purchaseSum": "Importe de la compra:",
+      "adminAdjust": "Bono",
+      "internalPurchase": "Pago",
+      "purchase": "Pago",
+      "referralCashback": "Cashback",
+      "fromBalance": "del saldo",
+      "fromCart": "Del carrito",
+      "noReferralsData": "¿Aún no has invitado a tus amigos? Descubre más sobre nuestro programa de referidos en la pestaña principal del perfil: ¡comparte conocimiento y gana bonos!",
+      "noPurchasesData": "Aún no has realizado ninguna compra. Comienza a aprender hoy mismo: puedes elegir el curso adecuado <1>aquí</1>."
+    }
   },
 
   "professor": {
@@ -246,12 +264,10 @@
     "specialization": "Especialización:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Otros cursos"
   },
-
 
   "error": {
     "email.empty": "El correo electrónico no debe estar vacío",
@@ -261,7 +277,7 @@
     "password.minLength": "La contraseña debe tener al menos 6 caracteres",
     "password.digitUppercaseLetter": "La contraseña debe contener al menos un dígito y una letra mayúscula",
     "password.required": "La contraseña es obligatoria",
-    "error.invalid_credentials" : "Correo electrónico o contraseña incorrectos",
+    "error.invalid_credentials": "Correo electrónico o contraseña incorrectos",
     "errorChangingPassword": "Error. La contraseña no se cambió."
   },
 
