@@ -151,6 +151,11 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .item {
+    padding: 10px;
+    border-radius: 15px;
+  }
+
   .delete_btn {
     width: 30px;
     height: 30px;
