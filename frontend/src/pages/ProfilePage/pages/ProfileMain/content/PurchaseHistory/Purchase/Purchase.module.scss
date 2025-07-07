@@ -1,0 +1,283 @@
+.purchase_item {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+  height: fit-content;
+}
+
+.purchase_item_header {
+  margin-left: 30px;
+}
+
+.purchases_container {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  height: fit-content;
+  border: 2px solid $hover-color;
+  border-radius: 40px;
+}
+
+.purchase {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-content: center;
+  width: 100%;
+  height: fit-content;
+  padding: 30px;
+  gap: 20px;
+  position: relative;
+
+  &:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: calc(100% - 90px);
+    height: 2px;
+    background-color: $hover-color;
+  }
+}
+
+.purchase_content {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  @include clamped-p3;
+  text-transform: none;
+  overflow: hidden;
+}
+
+.purchase_type {
+  color: $primary;
+  text-transform: none;
+}
+
+.purchase_info_container {
+  @include flex-column;
+  justify-content: start;
+  align-items: start;
+  gap: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.purchase_info {
+  display: flex;
+  gap: 5px;
+  //@include flex-column;
+  padding-right: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
+  @include clamped-p3;
+}
+
+.exp_text {
+  @include clamped-p3;
+}
+
+.purchase_info_field {
+  color: $hover-color-dark;
+}
+
+.purchase_details_container {
+  @include flex-column;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: fit-content;
+  height: 100%;
+  gap: 10px;
+  color: $hover-color-dark;
+  text-align: left;
+
+  &.purchase_sum_details {
+    width: fit-content;
+    gap: 6px;
+    text-align: end;
+
+    div {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+.no_data_message {
+  text-align: left;
+  @include clamped-p3;
+  text-transform: none;
+
+  &.link {
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    @include transition;
+    color: $primary;
+
+    &:hover {
+      color: $accent;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .purchase_details_container .purchase_sum_details div {
+    @include flex-column;
+    justify-content: start;
+    align-items: flex-end;
+    gap: 0;
+  }
+}
+
+.purchase_sum {
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: flex-end;
+
+  &.adjunction {
+    color: $green;
+  }
+
+  &.withdrawal {
+    color: $error-color;
+  }
+
+  &.no_cashback {
+    color: $text-color;
+  }
+}
+
+.purchase_icon {
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+
+  path {
+    color: $hover-color-darken-analogue;
+    stroke: currentColor;
+    stroke-width: 2px;
+  }
+}
+
+.purchase_date {
+  @include clamped-p4;
+  display: flex;
+  flex-direction: row;
+  color: $hover-color-dark;
+  justify-content: end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+
+  > :last-child {
+    gap: 0;
+  }
+}
+
+.from_balance {
+  color: $hover-color-dark;
+  text-wrap: nowrap;
+}
+
+.balance {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.landing_name {
+  @include transition;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: $hover-color-dark;
+
+  &:hover {
+    color: $primary;
+    text-decoration-color: $primary;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .landing_name {
+    text-decoration-thickness: 1px;
+  }
+
+  .purchase_item {
+    gap: 10px;
+  }
+
+  .purchase_item_header {
+    margin-left: 15px;
+  }
+
+  .purchases_container {
+    border: 1px solid $hover-color;
+    border-radius: 20px;
+  }
+
+  .purchase {
+    padding: 15px;
+    gap: 7px;
+
+    &:not(:last-child)::after {
+      width: calc(100% - 40px);
+      height: 1px;
+    }
+  }
+
+  .purchase_info_container {
+    gap: 2px;
+  }
+
+  .purchase_info {
+    @include clamped-p4;
+    flex-wrap: wrap;
+    text-wrap: wrap;
+  }
+
+  .exp_text {
+    @include clamped-p4;
+  }
+
+  .purchase_details_container {
+    gap: 4px;
+
+    &.purchase_sum_details {
+      gap: 0;
+    }
+  }
+
+  .purchase_icon {
+    width: 20px;
+    height: 20px;
+    path {
+      stroke-width: 1.6px;
+    }
+  }
+
+  .purchase_date {
+    @include flex-column;
+    align-items: end;
+    gap: 0;
+  }
+
+  .balance {
+    @include flex-column;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0;
+  }
+}

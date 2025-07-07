@@ -132,7 +132,7 @@ def normalize_for_key(s: str) -> str:
 # ----- Основной роут -----
 
 @router.post("/remove_dr_and_prof_and_merge")
-def remove_dr_and_prof_and_merge(db: Session = Depends(get_db)):
+def remove_dr_and_prof_and_merge(db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     """
     1. Считываем всех авторов.
     2. Для каждого считаем «ключ нормализации» (normalize_for_key).

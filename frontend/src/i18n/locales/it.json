@@ -62,6 +62,7 @@
   "freePaymentWarn": "Verrai automaticamente connesso al tuo account personale, dove potrai guardare la prima lezione gratuita del corso. Se non si apre, accedi manualmente con email e password.",
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
+  "here": "qui.",
   "freeCourse": {
     "freePreview": "Offerta speciale",
     "discount": "Sconto del {{discount}}%",
@@ -82,8 +83,6 @@
     "title": "Solo <1>oggi</1> – <1>{{discount}}% sconto!</1>"
   },
 
-
-
   "nav": {
     "home": "Home",
     "courses": "Corsi",
@@ -100,7 +99,6 @@
     }
   },
 
-
   "search": {
     "searchCourses": "Cerca corsi",
     "searchPlaceholder": "Inserisci il nome del corso o il nome dell'autore...",
@@ -112,7 +110,7 @@
   },
 
   "main": {
-    "title" : "Scuola <1>dentale</1> online",
+    "title": "Scuola <1>dentale</1> online",
     "hero.widestRange": "La <1>più ampia</1> gamma di prodotti",
     "hero.bestPrices": "I <1>migliori</1> prezzi",
     "hero.description": "Corsi online per dentisti",
@@ -229,8 +227,28 @@
       "step_2": "2. Invia il link a un amico tramite WhatsApp, Telegram, email o come preferisci.",
       "step_3": "3. Il tuo amico acquista qualsiasi corso — ad esempio uno da <1>$19</1>.",
       "step_4": "4. Ricevi il <1>50%</1> del pagamento (es. <1>$9,50</1>) come credito nel tuo portafoglio."
-    }
+    },
 
+    "main": "Home",
+    "user": "Utente:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Invito",
+      "totalCashback": "cashback totale"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Utenti invitati",
+      "purchases": "Storico acquisti",
+      "purchaseSum": "Importo dell'acquisto:",
+      "adminAdjust": "Bonus",
+      "internalPurchase": "Pagamento",
+      "purchase": "Pagamento",
+      "referralCashback": "Cashback",
+      "fromBalance": "dal saldo",
+      "fromCart": "Dal carrello",
+      "noReferralsData": "Non hai ancora invitato amici? Scopri di più sul nostro programma di referral nella scheda principale del profilo — condividi la conoscenza e ottieni bonus!",
+      "noPurchasesData": "Non hai ancora effettuato alcun acquisto. Inizia a studiare oggi stesso: puoi scegliere il corso giusto <1>qui</1>."
+    }
   },
 
   "professor": {
@@ -251,7 +269,6 @@
     "otherCourses": "Altri corsi"
   },
 
-
   "error": {
     "email.empty": "L'email non può essere vuota",
     "email.valid": "Inserisci un'email valida",
@@ -260,7 +277,7 @@
     "password.minLength": "La password deve contenere almeno 6 caratteri",
     "password.digitUppercaseLetter": "La password deve contenere almeno una cifra e una lettera maiuscola",
     "password.required": "La password è obbligatoria",
-    "error.invalid_credentials" : "Email o password errati",
+    "error.invalid_credentials": "Email o password errati",
     "errorChangingPassword": "Errore. La password non è stata cambiata."
   },
 
@@ -308,5 +325,4 @@
     "search": "Cerca corsi...",
     "found": "Corsi trovati: {{count}}"
   }
-
 }
