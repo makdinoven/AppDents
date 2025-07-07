@@ -247,7 +247,7 @@
       "fromBalance": "del saldo",
       "fromCart": "Del carrito",
       "noReferralsData": "¿Aún no has invitado a tus amigos? Descubre más sobre nuestro programa de referidos en la pestaña principal del perfil: ¡comparte conocimiento y gana bonos!",
-      "noPurchasesData": "Aún no has comprado nada. Comienza a aprender hoy: puedes elegir el curso adecuado desde <link />"
+      "noPurchasesData": "Aún no has realizado ninguna compra. Comienza a aprender hoy mismo: puedes elegir el curso adecuado <1>aquí</1>."
     }
   },
 

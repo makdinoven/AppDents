@@ -1,13 +1,13 @@
 import {
-  UserPlusIcon,
-  CoinIcon,
   CashbackIcon,
+  CoinIcon,
   TouchCoinIcon,
+  UserPlusIcon,
 } from "../../../../../../../assets/logos/index/index";
 import { formatIsoToLocalDatetime } from "../../../../../../../common/helpers/helpers";
 import s from "./Purchase.module.scss";
-import { useTranslation, Trans } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 import { Path } from "../../../../../../../routes/routes";
 import ExpandableText from "../../../../../../../components/ui/ExpandableText/ExpandableText";
 import { useSelector } from "react-redux";
@@ -23,7 +23,7 @@ const Purchase = ({
   title: string;
 }) => {
   const { t } = useTranslation();
-
+  const navigate = useNavigate();
   const { language } = useSelector((state: AppRootStateType) => state.user);
 
   const renderReferralInfo = (contentUnit: any) => (
@@ -52,18 +52,18 @@ const Purchase = ({
                     {landingName.toUpperCase()}
                   </Link>
                 }
-                lines={2}
+                textClassName={s.exp_text}
+                lines={3}
                 color="primary"
-                buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
               />
             );
           } else {
             return (
               <ExpandableText
                 text={landingName.toUpperCase()}
-                lines={2}
+                lines={3}
+                textClassName={s.exp_text}
                 color="primary"
-                buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
               />
             );
           }
@@ -84,18 +84,18 @@ const Purchase = ({
                   {landingName.toUpperCase()}
                 </Link>
               }
-              lines={2}
+              lines={3}
+              textClassName={s.exp_text}
               color="primary"
-              buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
             />
           );
         } else {
           return (
             <ExpandableText
               text={landingName.toUpperCase()}
-              lines={2}
+              lines={3}
+              textClassName={s.exp_text}
               color="primary"
-              buttonClassName={`${s.expandable_text_button} ${s.landing_name}`}
             />
           );
         }
@@ -104,10 +104,10 @@ const Purchase = ({
 
     if (type === "referralCashback") {
       return (
-        <p>
+        <>
           <span className={s.purchase_info_field}>{t("profile.user")}</span>{" "}
           {email}
-        </p>
+        </>
       );
     }
   };
@@ -201,7 +201,7 @@ const Purchase = ({
                       {t(
                         isReferral
                           ? "profile.referrals.invitation"
-                          : `profile.purchaseHistory.${contentUnit.type}`
+                          : `profile.purchaseHistory.${contentUnit.type}`,
                       )}
                     </p>
                     <div
@@ -238,13 +238,11 @@ const Purchase = ({
             <Trans
               i18nKey="profile.purchaseHistory.noPurchasesData"
               components={{
-                link: (
-                  <Link
-                    to={Path.courses}
+                1: (
+                  <span
+                    onClick={() => navigate(Path.courses)}
                     className={`${s.no_data_message} ${s.link}`}
-                  >
-                    {t("here")}
-                  </Link>
+                  />
                 ),
               }}
             />

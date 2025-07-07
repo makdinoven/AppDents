@@ -86,8 +86,6 @@ const PurchaseHistory: React.FC = () => {
       }
     }
 
-    console.log("merged", merged);
-
     return merged;
   };
 

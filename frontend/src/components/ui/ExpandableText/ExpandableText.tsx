@@ -24,6 +24,7 @@ const ExpandableText = ({
   const [expanded, setExpanded] = useState(false);
   const [maxHeight, setMaxHeight] = useState<number>(0);
   const [isTruncated, setIsTruncated] = useState(false);
+  const paddingOffset = 20;
 
   const contentRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -31,13 +32,13 @@ const ExpandableText = ({
   useEffect(() => {
     if (contentRef.current && textRef.current) {
       const lineHeight = parseFloat(
-        getComputedStyle(contentRef.current).lineHeight || "20"
+        getComputedStyle(contentRef.current).lineHeight || "20",
       );
       const collapsedHeight = lineHeight * lines;
       const fullHeight = textRef.current.scrollHeight;
 
       setMaxHeight(expanded ? fullHeight : collapsedHeight);
-      setIsTruncated(fullHeight > collapsedHeight);
+      setIsTruncated(fullHeight > collapsedHeight + paddingOffset);
     }
   }, [expanded, lines, text]);
 
@@ -49,14 +50,14 @@ const ExpandableText = ({
     <div ref={ref} className={s.wrapper}>
       <div
         ref={contentRef}
-        className={`${textClassName} ${s.text} ${expanded ? s.expanded : ""}`}
+        className={`${textClassName ? textClassName : ""} ${s.text}`}
         style={{ maxHeight }}
       >
         <p ref={textRef}>{text}</p>
 
         {showButton && isTruncated && (
           <button
-            className={`${s.button} ${color ? s[color] : ""}${` ${buttonClassName}`}`}
+            className={`${s.button} ${color ? s[color] : ""} ${buttonClassName}`}
             onClick={toggleExpanded}
           >
             {expanded ? t("showLess") : `... ${t("seeMore")}`}

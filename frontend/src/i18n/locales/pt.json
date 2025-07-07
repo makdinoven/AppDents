@@ -247,7 +247,7 @@
       "fromBalance": "do saldo",
       "fromCart": "Do carrinho",
       "noReferralsData": "Ainda não convidou seus amigos? Saiba mais sobre nosso programa de indicações na aba principal do perfil — compartilhe conhecimento e receba bônus!",
-      "noPurchasesData": "Você ainda não comprou nada. Comece a aprender hoje — escolha o curso certo a partir de <link />"
+      "noPurchasesData": "Você ainda não fez nenhuma compra. Comece a aprender hoje mesmo — escolha o curso certo <1>aqui</1>."
     }
   },
   "professor": {

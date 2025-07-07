@@ -1,26 +1,18 @@
-import { useEffect } from "react";
 import s from "./Table.module.scss";
 import { Path } from "../../../routes/routes.ts";
 import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.ts";
-import Loader from "../Loader/Loader.tsx";
 
 interface TableProps<T extends Record<string, any>> {
   title?: string;
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
-  loading?: boolean;
 }
 
 const Table = <T extends Record<string, any>>({
   title,
   data,
   columnLabels = {},
-  loading,
 }: TableProps<T>) => {
-  useEffect(() => {
-    loading && <Loader />;
-  }, [loading]);
-
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
   const excludedKeys = [
@@ -32,7 +24,7 @@ const Table = <T extends Record<string, any>>({
     "user_id",
   ];
   const headers = Object.keys(data[0]).filter(
-    (key) => !excludedKeys.includes(key)
+    (key) => !excludedKeys.includes(key),
   );
 
   const renderCell = (key: string, value: any, row: T) => {
