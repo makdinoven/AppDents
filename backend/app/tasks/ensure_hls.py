@@ -17,11 +17,14 @@ from celery import shared_task
 # Environment / constants
 # ---------------------------------------------------------------------------
 
-S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "")
-S3_BUCKET: str = os.getenv("S3_BUCKET", "")
-S3_REGION: str = os.getenv("S3_REGION", "")
-S3_PUBLIC_HOST: str = os.getenv("S3_PUBLIC_HOST", "")
+S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET: str = os.getenv("S3_BUCKET", "cdn.dent-s.com")
+S3_REGION: str = os.getenv("S3_REGION", "ru-1")
+S3_PUBLIC_HOST: str = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
+CF_ZONE_ID: str | None = os.getenv("CF_ZONE_ID")              # ← Cloudflare
+CF_AUTH_EMAIL: str | None = os.getenv("CF_AUTH_EMAIL")        # credentials
+CF_AUTH_KEY: str | None = os.getenv("CF_AUTH_KEY")
 
 NEW_TASKS_LIMIT: int = int(os.getenv("NEW_TASKS_LIMIT", 10))  # per scanner run
 PRESIGN_EXPIRY: int = 3600                                     # seconds
@@ -41,6 +44,24 @@ s3 = boto3.client(
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _each_mp4_objects():
+    """ generator(key) по bucket, совместим с timeweb S3 """
+    s3v4 = boto3.client(
+        "s3",
+        endpoint_url=S3_ENDPOINT,
+        region_name=S3_REGION,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        config=Config(signature_version="s3v4"),      # ВАЖНО!
+    )
+
+    paginator = s3v4.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.lower().endswith(".mp4"):
+                yield key
+
 def slug(name: str) -> str:
     """ASCII‑safe slug for directory names (max 60 chars)."""
     stem = Path(name).stem
@@ -53,35 +74,37 @@ def hls_prefix_for(key: str) -> str:
     base, fname = os.path.split(key)
     return f"{base}/.hls/{slug(fname)}/".lstrip("/")
 
+# ---------------------------------------------------------------------------
+# Celery tasks
+# ---------------------------------------------------------------------------
+
 @shared_task(name="app.tasks.ensure_hls")
 def ensure_hls() -> None:
-    """Scan the entire bucket for `.mp4` objects without `hls=true` metadata
-    and queue conversion jobs (up to NEW_TASKS_LIMIT per invocation)."""
-    paginator = s3.get_paginator("list_objects_v2")
+    """Scan S3 for .mp4 objects without `hls=true` and enqueue up to
+    `NEW_TASKS_LIMIT` conversion jobs.  
+    **Uses a temporary S3 client with V4‑signature _только_ для операции
+    `ListObjectsV2`, чтобы обойти ограничения Timeweb‑S3.**"""
+
     queued = 0
 
-    for page in paginator.paginate(Bucket=S3_BUCKET):
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-            if not key.lower().endswith(".mp4"):
-                continue
-            # skip files already inside .hls sub‑folders
-            if "/.hls/" in key or key.endswith("_hls/"):
-                continue
-            try:
-                head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-                if head.get("Metadata", {}).get("hls") == "true":
-                    continue
-            except ClientError as e:  # pragma: no cover — log and skip
-                logger.warning("Head failed for %s: %s", key, e)
-                continue
+    for key in _each_mp4_objects():  # V4‑подпись, безопасна для листинга
+        # пропускаем сервисные каталоги
+        if "/.hls/" in key or key.endswith("_hls/"):
+            continue
+        try:
+            head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+            if head.get("Metadata", {}).get("hls") == "true":
+                continue  # уже обработано
+        except ClientError as e:
+            logger.warning("HeadObject failed for %s: %s", key, e)
+            continue
 
-            process_hls_video.apply_async((key,), queue="special")
-            queued += 1
-            logger.info("[HLS] queued %s", key)
-            if queued >= NEW_TASKS_LIMIT:
-                logger.info("[HLS] limit %d reached", NEW_TASKS_LIMIT)
-                return
+        process_hls_video.apply_async((key,), queue="special")
+        queued += 1
+        logger.info("[HLS] queued %s", key)
+        if queued >= NEW_TASKS_LIMIT:
+            logger.info("[HLS] limit %d reached", NEW_TASKS_LIMIT)
+            break
 
     logger.info("[HLS] scan done, queued %d", queued)
 
@@ -135,5 +158,4 @@ def process_hls_video(key: str) -> None:
                    CopySource={"Bucket": S3_BUCKET, "Key": key},
                    Metadata=meta, MetadataDirective="REPLACE",
                    ContentType=head["ContentType"], ACL="public-read")
-
     logger.info("[HLS] ready → %s", playlist_url)
