@@ -201,7 +201,7 @@ const Purchase = ({
                       {t(
                         isReferral
                           ? "profile.referrals.invitation"
-                          : `profile.purchaseHistory.${contentUnit.type}`
+                          : `profile.purchaseHistory.${contentUnit.type}`,
                       )}
                     </p>
                     <div

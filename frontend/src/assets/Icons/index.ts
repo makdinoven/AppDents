@@ -29,3 +29,8 @@ export { default as LanguageIcon } from "./language-icon.svg?react";
 export { default as ModalClose } from "./modal-close.svg?react";
 export { default as User } from "./user.svg?react";
 export { default as UserFilled } from "./user-filled.svg?react";
+export { default as UserPlusIcon } from "./user-plus.svg?react";
+export { default as CashbackIcon } from "./cashback.svg?react";
+export { default as TouchCoinIcon } from "./touch-coin.svg?react";
+export { default as TrashCanIcon } from "./trash-can-icon.svg?react";
+export { default as CoinIcon } from "./coin-icon.svg?react";
