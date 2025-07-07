@@ -504,6 +504,7 @@ def language_stats(
             description="Дата конца (YYYY-MM-DD, включительно)."
         ),
         db: Session = Depends(get_db),
+        current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Возвращает статистику покупок по языкам за указанный период.
@@ -552,6 +553,7 @@ def most_popular_landings(
         None, description="Конец периода (YYYY-MM-DD, включительно)"
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     • Если нет дат — используется агрегированное поле sales_count.

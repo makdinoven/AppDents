@@ -6,13 +6,12 @@
   @include transition();
 
   svg {
-    height: 32px;
-    width: 32px;
-    overflow: visible;
+    height: 30px;
+    width: 30px;
 
     path {
       @include transition();
-      fill: $accent;
+      stroke: $accent;
     }
   }
 
@@ -20,7 +19,7 @@
     color: $primary;
     svg {
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }
@@ -31,7 +30,7 @@
 
       svg {
         path {
-          fill: $primary;
+          stroke: $primary;
         }
       }
     }
