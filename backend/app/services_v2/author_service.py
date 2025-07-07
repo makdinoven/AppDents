@@ -155,17 +155,14 @@ def delete_author(db: Session, author_id: int) -> None:
 from sqlalchemy.orm import Session, selectinload
 from typing import Dict, Tuple, Set, List
 
-def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # 1. Автор и все связи одним запросом
+def get_author_full_detail(db: Session, author_id: int) -> dict | None:
+    # 1. Грузим автора и его связи
     author = (
         db.query(Author)
           .options(
-              selectinload(Author.landings)
-                .selectinload(Landing.courses),
-              selectinload(Author.landings)
-                .selectinload(Landing.tags),
-              selectinload(Author.landings)
-                .selectinload(Landing.authors),
+              selectinload(Author.landings).selectinload(Landing.courses),
+              selectinload(Author.landings).selectinload(Landing.tags),
+              selectinload(Author.landings).selectinload(Landing.authors),
           )
           .filter(Author.id == author_id)
           .first()
@@ -173,58 +170,36 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
     if not author:
         return None
 
-    # 2. Минимальная цена по каждому курсу среди всех лендингов автора
+    # 2. Удаляем скрытые лендинги
+    author.landings = [l for l in author.landings if not l.is_hidden]
+
+    # 3. Минимальная цена по каждому курсу
     min_price_by_course: Dict[int, float] = {}
     for l in author.landings:
-        try:
-            price = float(l.new_price)
-        except Exception:
-            price = float("inf")
+        price = safe_price(l.new_price)
         for c in l.courses:
             cid = c.id
-            cur = min_price_by_course.get(cid, float("inf"))
-            if price < cur:
-                min_price_by_course[cid] = price
+            min_price_by_course[cid] = min(min_price_by_course.get(cid, float("inf")), price)
 
-    # 3. Фильтруем лендинги:
-    #    исключаем, если нашлась хотя бы одна позиция дешевле
+    # 4. Оставляем только самые дешёвые лендинги по каждому курсу
     kept_landings = []
     for l in author.landings:
-        try:
-            price = float(l.new_price)
-        except Exception:
-            price = float("inf")
-        # есть ли курс, у которого эта цена НЕ минимальна?
-        has_cheaper_alt = any(
-            price > min_price_by_course.get(c.id, price)  # строго > !!!
-            for c in l.courses
-        )
-        if not has_cheaper_alt:
+        price = safe_price(l.new_price)
+        if not any(price > min_price_by_course[c.id] for c in l.courses):
             kept_landings.append(l)
 
-    # 4. Формируем агрегаты по отфильтрованному набору
-    landings_data: List[dict] = []
-    all_course_ids: Set[int] = set()
-    total_new_price = 0.0
-    total_old_price = 0.0
+    # 5. Агрегация
+    landings_data, all_course_ids = [], set()
+    total_new_price = total_old_price = 0.0
 
     for l in kept_landings:
-        try:
-            p_new = float(l.new_price)
-            p_old = float(l.old_price)
-        except Exception:
-            p_new = p_old = 0.0
-
+        p_new = safe_price(l.new_price)
+        p_old = safe_price(l.old_price)
         total_new_price += p_new
         total_old_price += p_old
 
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
-
-        authors_info = [
-            {"id": a.id, "name": a.name, "photo": a.photo or ""}
-            for a in l.authors
-        ]
 
         landings_data.append({
             "id": l.id,
@@ -236,10 +211,12 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "first_tag": l.tags[0].name if l.tags else None,
             "lessons_count": l.lessons_count,
             "course_ids": course_ids,
-            "authors": authors_info,
+            "authors": [
+                {"id": a.id, "name": a.name, "photo": a.photo or ""}
+                for a in l.authors
+            ],
         })
 
-    # упорядочим по id для стабильности
     landings_data.sort(key=lambda x: x["id"])
 
     return {
