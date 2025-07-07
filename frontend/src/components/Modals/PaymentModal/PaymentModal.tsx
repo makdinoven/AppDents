@@ -37,6 +37,7 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import CheckMark from "../../../assets/Icons/CheckMark.tsx";
+import { PaymentDataType } from "../../../store/slices/paymentSlice.ts";
 
 const logos = [
   VisaLogo,
@@ -50,24 +51,6 @@ const logos = [
   DinnerClubLogo,
   DiscoverLogo,
 ];
-
-export type PaymentDataType = {
-  landing_ids?: number[];
-  course_ids: number[];
-  price_cents: number;
-  total_new_price: number;
-  total_old_price: number;
-  region: string;
-  success_url: string;
-  cancel_url: string;
-  source?: string;
-  courses: {
-    name: string;
-    new_price: number;
-    old_price: number;
-    lessons_count: string;
-  }[];
-};
 
 const PaymentModal = ({
   isOffer = false,
@@ -124,9 +107,8 @@ const PaymentModal = ({
   };
 
   const balancePrice = isBalanceUsed
-    ? Math.round(Math.max(paymentData.total_new_price - balance!, 0) * 100) /
-      100
-    : paymentData.total_new_price;
+    ? Math.round(Math.max(paymentData.newPrice - balance!, 0) * 100) / 100
+    : paymentData.newPrice;
 
   const handlePayment = async (form: any) => {
     setLoading(true);
@@ -142,8 +124,8 @@ const PaymentModal = ({
         source: !paymentData.source ? getPaymentSource() : paymentData.source,
         cancel_url:
           !isLogged && rcCode
-            ? paymentData.cancel_url + `?${REF_CODE_PARAM}=${rcCode}`
-            : paymentData.cancel_url,
+            ? paymentData.cancelUrl + `?${REF_CODE_PARAM}=${rcCode}`
+            : paymentData.cancelUrl,
       };
       try {
         const res = await mainApi.buyCourse(dataToSend, isLogged);
@@ -180,7 +162,7 @@ const PaymentModal = ({
       }
     } else {
       const dataToSend = {
-        id: paymentData.landing_ids![0],
+        id: paymentData.landingIds![0],
         email: isLogged ? email : form.email,
         region: paymentData.region,
       };
@@ -210,14 +192,14 @@ const PaymentModal = ({
               {course.name}{" "}
               {!isWebinar && (
                 <>
-                  - <span className={"highlight"}>{course.lessons_count}</span>
+                  - <span className={"highlight"}>{course.lessonsCount}</span>
                 </>
               )}
             </p>
             {!isFree ? (
               <div className={s.course_prices}>
-                <span className={"highlight"}>${course.new_price}</span>
-                <span className={"crossed"}>${course.old_price}</span>
+                <span className={"highlight"}>${course.newPrice}</span>
+                <span className={"crossed"}>${course.oldPrice}</span>
               </div>
             ) : (
               <p className={s.free_text}>
@@ -249,9 +231,9 @@ const PaymentModal = ({
             <Trans i18nKey="total" />
             <div>
               <span className={"highlight"}>
-                ${isBalanceUsed ? balancePrice : paymentData.total_new_price}
+                ${isBalanceUsed ? balancePrice : paymentData.newPrice}
               </span>
-              <span className={"crossed"}>${paymentData.total_old_price}</span>
+              <span className={"crossed"}>${paymentData.oldPrice}</span>
             </div>
           </div>
         )}
