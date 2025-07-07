@@ -44,9 +44,9 @@ celery.conf.update(
             "schedule": 3600,
             "options": {"queue": "special"},
         },
-        "replace-storage-links-every-3-hours": {
+        "replace-storage-links-every-1-hours": {
                     "task": "app.tasks.special_offers.replace_storage_links",
-                    "schedule": 10800,              # 3 ч * 3600 с
+                    "schedule": 3600,              # 3 ч * 3600 с
                     "options": {"queue": "special"},
                 },
         "ensure_faststart": {
