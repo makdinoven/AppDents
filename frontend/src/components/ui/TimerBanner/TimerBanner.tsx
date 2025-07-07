@@ -1,27 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import s from "./TimerBanner.module.scss";
 import { Trans } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { openModal } from "../../../store/slices/landingSlice.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 import Timer from "./Timer/Timer.tsx";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Path } from "../../../routes/routes.ts";
 
 const TimerBanner = () => {
-  const dispatch = useDispatch<AppDispatchType>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
+  const [discount, setDiscount] = useState(0);
   const bannerRef = useRef<HTMLDivElement | null>(null);
-
+  const slug = useSelector(
+    (state: AppRootStateType) => state.payment.data?.slug,
+  );
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
+    (state: AppRootStateType) => state.payment.data?.newPrice,
   );
 
-  const discount = Number(
-    (((oldPrice - newPrice) / oldPrice) * 100).toFixed(0),
-  );
+  useEffect(() => {
+    if (oldPrice && newPrice) {
+      setDiscount(
+        Number((((oldPrice - newPrice) / oldPrice) * 100).toFixed(0)),
+      );
+    }
+  }, [oldPrice, newPrice]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -45,7 +54,9 @@ const TimerBanner = () => {
   }, []);
 
   const handleClick = () => {
-    dispatch(openModal());
+    navigate(`${Path.payment}/${slug}`, {
+      state: { backgroundLocation: location },
+    });
   };
 
   const renderBanner = (isSticky = false, isHiding = false) => (
