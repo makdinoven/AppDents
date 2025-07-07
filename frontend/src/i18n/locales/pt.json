@@ -62,6 +62,7 @@
   "freePaymentWarn": "Você será conectado automaticamente à sua conta para assistir à primeira aula gratuita do curso. Se não abrir, faça login manualmente com seu e-mail e senha.",
   "firstFreeLesson": "Primeira aula grátis",
   "or": "ou",
+  "here": "aqui.",
   "freeCourse": {
     "freePreview": "Oferta especial",
     "discount": "Desconto de {{discount}}%",
@@ -82,9 +83,6 @@
     "title": "Só <1>hoje</1> – <1>{{discount}}% off!</1>"
   },
 
-
-
-
   "nav": {
     "home": "Início",
     "courses": "Cursos",
@@ -100,7 +98,6 @@
       "webinarProfessors": "Professores do webinar"
     }
   },
-
 
   "search": {
     "searchCourses": "Buscar cursos",
@@ -210,7 +207,6 @@
       "9_question": "Como redefinir minha senha?",
       "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha."
     }
-
   },
 
   "profile": {
@@ -231,10 +227,29 @@
       "step_2": "2. Envie para um amigo via WhatsApp, Telegram, e-mail ou como preferir.",
       "step_3": "3. O seu amigo compra qualquer curso — por exemplo, um que custa <1>$19</1>.",
       "step_4": "4. Você recebe <1>50%</1> do valor pago (ex: <1>$9,50</1>) como crédito na sua carteira."
+    },
+
+    "main": "Principal",
+    "user": "Usuário:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Convite",
+      "totalCashback": "cashback total"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Usuários convidados",
+      "purchases": "Histórico de compras",
+      "purchaseSum": "Valor da compra:",
+      "adminAdjust": "Bônus",
+      "internalPurchase": "Pagamento",
+      "purchase": "Pagamento",
+      "referralCashback": "Cashback",
+      "fromBalance": "do saldo",
+      "fromCart": "Do carrinho",
+      "noReferralsData": "Ainda não convidou seus amigos? Saiba mais sobre nosso programa de indicações na aba principal do perfil — compartilhe conhecimento e receba bônus!",
+      "noPurchasesData": "Você ainda não fez nenhuma compra. Comece a aprender hoje mesmo — escolha o curso certo <1>aqui</1>."
     }
-
   },
-
   "professor": {
     "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
     "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",
@@ -248,12 +263,10 @@
     "specialization": "Especialização:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Outros cursos"
   },
-
 
   "error": {
     "email.empty": "O e-mail não deve estar vazio",
@@ -311,5 +324,4 @@
     "search": "Pesquisar cursos...",
     "found": "Cursos encontrados: {{count}}"
   }
-
 }
