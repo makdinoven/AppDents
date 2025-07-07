@@ -16,7 +16,7 @@ from ..models.models_v2 import (
 logger = logging.getLogger(__name__)
 
 _OFFER_TTL_HOURS = 24
-_INTERVAL_HOURS  = 48         # каждые 3 суток
+_INTERVAL_HOURS  = 72         # каждые 3 суток
 _HISTORY_LIMIT = 5
 BATCH = 600
 
