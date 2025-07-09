@@ -7,7 +7,7 @@ import {
   BooksIcon,
   ProfessorsIcon,
   QuestionMark,
-} from "../../../assets/logos/index";
+} from "../../../assets/icons/index";
 import {
   getBasePath,
   scrollToElementById,
@@ -19,10 +19,10 @@ import { Path } from "../../../routes/routes.ts";
 const PromoHeaderContent = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
+    (state: AppRootStateType) => state.landing.oldPrice
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
+    (state: AppRootStateType) => state.landing.newPrice
   );
   const basePath = getBasePath(location.pathname);
   const isWebinar = basePath === Path.webinarLanding;

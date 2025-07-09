@@ -5,7 +5,7 @@ import { t } from "i18next";
 import initialPhoto from "../../../../../assets/no-pictures.png";
 import ViewLink from "../../../../../components/ui/ViewLink/ViewLink.tsx";
 import Button from "../../../../../components/ui/Button/Button.tsx";
-import { Lock } from "../../../../../assets/logos/index/index.ts";
+import { Lock } from "../../../../../assets/icons/index.ts";
 
 const LessonCard = ({
   isPartial = false,

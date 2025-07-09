@@ -3,7 +3,7 @@ import {
   CoinIcon,
   TouchCoinIcon,
   UserPlusIcon,
-} from "../../../../../../../assets/logos/index/index";
+} from "../../../../../../../assets/icons/index";
 import { formatIsoToLocalDatetime } from "../../../../../../../common/helpers/helpers";
 import s from "./Purchase.module.scss";
 import { Trans, useTranslation } from "react-i18next";

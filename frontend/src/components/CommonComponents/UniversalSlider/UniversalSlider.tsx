@@ -4,7 +4,7 @@ import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
 
 import s from "./UniversalSlider.module.scss";
-import BackArrow from "../../../assets/Icons/BackArrow.tsx";
+import { BackArrow } from "../../../assets/icons";
 
 type UniversalSliderProps = {
   slides: ReactNode[];
