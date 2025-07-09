@@ -2,7 +2,7 @@ import s from "./BackButton.module.scss";
 import UnstyledButton from "../../CommonComponents/UnstyledButton";
 import { Link, useNavigate } from "react-router-dom";
 import { Trans } from "react-i18next";
-import BackArrow from "../../../assets/Icons/BackArrow";
+import { BackArrow } from "../../../assets/icons";
 
 const BackButton = ({
   link,

@@ -10,7 +10,7 @@ import {
 } from "../../../../../../store/store.ts";
 import ArrowButton from "../../../../../../components/ui/ArrowButton/ArrowButton.tsx";
 import LineWrapper from "../../../../../../components/ui/LineWrapper/LineWrapper.tsx";
-import User from "../../../../../../assets/Icons/User.tsx";
+import { User } from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
 import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
@@ -108,7 +108,7 @@ const ProfileMain = () => {
   ];
 
   const activeTab = profilePageContent.find(
-    (tab) => tab.value === tabFromParams,
+    (tab) => tab.value === tabFromParams
   );
 
   return (

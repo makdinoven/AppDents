@@ -1,5 +1,4 @@
-const CircleArrowSmall = () => (
-  <svg
+ <svg
     width="35"
     height="36"
     viewBox="0 0 35 36"
@@ -14,6 +13,3 @@ const CircleArrowSmall = () => (
       fill="none"
     />
   </svg>
-);
-
-export default CircleArrowSmall;
