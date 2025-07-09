@@ -6,7 +6,7 @@ import s from "./PurchaseHistory.module.scss";
 import Purchase from "./Purchase/Purchase";
 import { capitalizeText } from "../../../../../../common/helpers/helpers";
 import Loader from "../../../../../../components/ui/Loader/Loader";
-import { AlertCirceIcon } from "../../../../../../assets/logos/index";
+import { AlertCirceIcon } from "../../../../../../assets/icons/index";
 
 const PurchaseHistory: React.FC = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
