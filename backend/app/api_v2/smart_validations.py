@@ -2,6 +2,7 @@ import asyncio
 import random
 import smtplib
 import socket
+import ssl
 import string
 from functools import lru_cache
 from difflib import get_close_matches
@@ -52,59 +53,90 @@ class EmailValidationResponse(BaseModel):
 
 # ───────────────────────────── Helper functions ─────────────────────────── #
 @lru_cache(maxsize=1024)
-def domain_has_mx(domain: str, timeout: float = 1.5) -> bool:
-    """True ⇢ домен публикует MX, иначе False."""
+def domain_has_mx(domain: str, timeout: float = 2.0) -> bool:
     try:
         return bool(dns.resolver.resolve(domain, "MX", lifetime=timeout))
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.Timeout):
         return False
 
 
+def _contains_non_ascii(s: str) -> bool:
+    return any(ord(ch) > 127 for ch in s)
+
+
+# ––––––––––––––––––––––––– SMTP probe –––––––––––––––––––––––––––– #
+
 def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[bool, str]:
-    """Sync SMTP `RCPT TO` check. Returns (exists?, message)."""
+    """Low‑level SMTP `RCPT TO` validation.
+
+    Returns:
+        exists (bool) — e‑mail точно существует (True) / точно не существует (False)
+        message (str) — подробное пояснение
+    """
+
+    if _contains_non_ascii(email):
+        return False, "SMTPUTF8 (non‑ASCII) not supported by probe"
+
     local, _, domain = email.partition("@")
     try:
         mx_records = dns.resolver.resolve(domain, "MX", lifetime=timeout)
-        mx_host = str(sorted(mx_records, key=lambda r: r.preference)[0].exchange).rstrip(".")
-    except Exception as exc:  # pragma: no cover
-        return False, f"MX resolve failed: {exc}"  # Shouldn't happen — checked earlier
+        mx_host = str(min(mx_records, key=lambda r: r.preference).exchange).rstrip(".")
+    except Exception as exc:
+        return False, f"MX resolve failed: {exc}"
 
-    from_addr = f"probe-{random.randint(0, 1_000_000)}@example.com"
+    # Use probe@<domain> to avoid ‘Sender address rejected’
+    from_addr = f"probe@{domain}"
 
     try:
         server = smtplib.SMTP(mx_host, timeout=timeout)
-        server.helo("example.com")
+        server.ehlo("validator")
+        if server.has_extn("STARTTLS"):
+            context = ssl.create_default_context()
+            server.starttls(context=context)
+            server.ehlo("validator")
+
         server.mail(from_addr)
         code, resp = server.rcpt(email)
 
-        # Detect catch‑all: ask random address; if it also 250 → uncertain
+        # Catch‑all detection
         rand_local = "_" + "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
         code_rand, _ = server.rcpt(f"{rand_local}@{domain}")
         server.quit()
 
         if code_rand == 250:
-            return False, "Server is catch‑all; address existence uncertain"
+            return False, "Domain is catch‑all; address existence uncertain"
 
-        if code == 250:
-            return True, "SMTP 250 OK — mailbox exists"
-        else:
+        # Positive case
+        if 200 <= code < 300:
+            return True, f"SMTP {code} OK — mailbox accepts RCPT"
+
+        # Definitive negative (non‑existent)
+        if code in {550, 551, 553}:
             return False, f"SMTP {code} {resp.decode(errors='ignore')}"
 
-    except (socket.timeout, smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError) as exc:
-        return False, f"SMTP error/timeout: {exc}"  # treat as invalid to be safe
+        # Temporary / ambiguous – treat as **valid** to avoid false‑negatives
+        return True, f"SMTP {code} {resp.decode(errors='ignore')} (treated as valid)"
+
+    except (
+        socket.timeout,
+        smtplib.SMTPConnectError,
+        smtplib.SMTPServerDisconnected,
+        smtplib.SMTPHeloError,
+    ) as exc:
+        # Network or handshake problems → let’s be permissive
+        return True, f"SMTP probe error: {exc} (treated as valid)"
 
 
 async def smtp_probe(email: str) -> Tuple[bool, str]:
-    """Run sync probe in threadpool so we don't block the event loop."""
     return await asyncio.to_thread(_smtp_probe_sync, email)
 
+
+# ––––––––––––––––––––––––– Suggestion –––––––––––––––––––––––––––– #
 
 def make_suggestion(email: str) -> str | None:
     local, _, domain = email.partition("@")
     match = get_close_matches(domain, POPULAR_DOMAINS, n=1, cutoff=0.8)
-    if match and match[0] != domain:
-        return f"{local}@{match[0]}"
-    return None
+    return f"{local}@{match[0]}" if match and match[0] != domain else None
 
 
 # ───────────────────────────── Endpoint ──────────────────────────── #
@@ -116,18 +148,14 @@ async def validate_email(payload: EmailRequest):
     if not domain_has_mx(domain):
         return EmailValidationResponse(
             valid=False,
-            reason="MX record not found; domain likely invalid or mis‑typed",
+            reason="MX record not found; domain likely invalid",
             suggestion=make_suggestion(email),
         )
 
-    # SMTP probe (can take ~1 s). You might want to cache the result.
     exists, smtp_msg = await smtp_probe(email)
 
-    if not exists:
-        return EmailValidationResponse(
-            valid=False,
-            reason=smtp_msg,
-            suggestion=make_suggestion(email),
-        )
-
-    return EmailValidationResponse(valid=True)
+    return EmailValidationResponse(
+        valid=exists,
+        reason=None if exists else smtp_msg,
+        suggestion=None if exists else make_suggestion(email),
+    )
