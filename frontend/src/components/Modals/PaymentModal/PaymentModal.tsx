@@ -89,9 +89,7 @@ const PaymentModal = ({
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
-  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    isLogged && balance ? balance > 0 : false,
-  );
+  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
     register,
     handleSubmit,
