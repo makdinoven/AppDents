@@ -26,3 +26,4 @@ celery[redis]
 redis
 requests
 aiohttp
+dnspython

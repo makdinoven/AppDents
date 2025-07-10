@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
-    health_checkers
+    health_checkers, smart_validations
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
     app.include_router(wallet.router, prefix="/api/wallet", tags=["wallet"])
 
     app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
+    app.include_router(smart_validations.router, prefix="/api/validations", tags=["smart_validations"])
 
     app.include_router(boomstream_migration.router, prefix="/api/boomstream", tags=["boomstream"])
 
