@@ -47,20 +47,21 @@ class EmailValidationResponse(BaseModel):
 # ───────────────────────────── Helper functions ─────────────────────────── #
 @lru_cache(maxsize=1024)
 def domain_has_mx(domain: str, timeout: float = 1.5) -> bool:
-    """Return True if the domain has at least one MX (or A) record."""
+    """Return **True only if the domain publishes at least one MX record**.
+
+    Спецификация SMTP допускает fallback на A‑record, но большинство
+    современных MTA требуют MX. Чтобы ловить опечатки (gmai.com и т.п.)
+    надёжнее, считаем домен *непригодным*, если MX нет.
+    """
     try:
         answers = dns.resolver.resolve(domain, "MX", lifetime=timeout)
         return bool(answers)
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.Timeout):
-        try:  # Fallback: some small hosts accept mail on their A‑record
-            dns.resolver.resolve(domain, "A", lifetime=timeout)
-            return True
-        except Exception:
-            return False
+        return False
 
 
 def make_suggestion(email: str) -> str | None:
-    """If domain is a close typo of a popular domain, suggest a corrected address."""
+    """If domain is a close typo of a popular domain, suggest a corrected e‑mail."""
     local, _, domain = email.partition("@")
     match = get_close_matches(domain, POPULAR_DOMAINS, n=1, cutoff=0.8)
     if match and match[0] != domain:
