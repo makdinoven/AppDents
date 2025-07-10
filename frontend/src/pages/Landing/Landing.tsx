@@ -39,6 +39,10 @@ import {
 } from "../../store/slices/landingSlice.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
 import VideoSection from "./modules/VideoSection/VideoSection.tsx";
+import {
+  initLowPricePixel,
+  trackLowPricePageView,
+} from "../../common/helpers/facebookPixel.ts";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
@@ -192,7 +196,12 @@ const Landing = () => {
   useEffect(() => {
     if (landing) {
       setFirstLesson(landing?.lessons_info[0]);
-      console.log(landing?.lessons_info[0]);
+
+      const price = Number(landing?.new_price);
+      if (price < 2 || isWebinar) {
+        initLowPricePixel();
+        trackLowPricePageView();
+      }
     }
   }, [landing]);
 
