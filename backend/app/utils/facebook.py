@@ -169,7 +169,7 @@ def send_facebook_events(
     micro_purchase = (
         amount < 2
         and settings.FACEBOOK_PIXEL_ID_1_DOLLAR
-        and settings.FACEBOOK_ACCESS_TOKEN_1DOLLAR
+        and settings.FACEBOOK_ACCESS_TOKEN_1_DOLLAR
     )
 
     if micro_purchase:
