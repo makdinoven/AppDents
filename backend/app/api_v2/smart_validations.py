@@ -82,5 +82,6 @@ async def validate_email(payload: EmailRequest):
             suggestion=make_suggestion(email),
         )
 
+
     # Place for optional SMTP‑ping / external API call → increase confidence.
     return EmailValidationResponse(valid=True)
