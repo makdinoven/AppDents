@@ -1,5 +1,11 @@
+import asyncio
+import random
+import smtplib
+import socket
+import string
 from functools import lru_cache
 from difflib import get_close_matches
+from typing import Tuple
 
 import dns.resolver  # type: ignore
 from fastapi import APIRouter
@@ -32,7 +38,7 @@ POPULAR_DOMAINS = [
     "libero.it",
     "ymail.com",
 ]
-
+SMTP_TIMEOUT = 5
 # ──────────────────────────────── Schemas ──────────────────────────────── #
 class EmailRequest(BaseModel):
     email: EmailStr  # базовая RFC‑проверка делает Pydantic
@@ -47,21 +53,53 @@ class EmailValidationResponse(BaseModel):
 # ───────────────────────────── Helper functions ─────────────────────────── #
 @lru_cache(maxsize=1024)
 def domain_has_mx(domain: str, timeout: float = 1.5) -> bool:
-    """Return **True only if the domain publishes at least one MX record**.
-
-    Спецификация SMTP допускает fallback на A‑record, но большинство
-    современных MTA требуют MX. Чтобы ловить опечатки (gmai.com и т.п.)
-    надёжнее, считаем домен *непригодным*, если MX нет.
-    """
+    """True ⇢ домен публикует MX, иначе False."""
     try:
-        answers = dns.resolver.resolve(domain, "MX", lifetime=timeout)
-        return bool(answers)
+        return bool(dns.resolver.resolve(domain, "MX", lifetime=timeout))
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.Timeout):
         return False
 
 
+def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[bool, str]:
+    """Sync SMTP `RCPT TO` check. Returns (exists?, message)."""
+    local, _, domain = email.partition("@")
+    try:
+        mx_records = dns.resolver.resolve(domain, "MX", lifetime=timeout)
+        mx_host = str(sorted(mx_records, key=lambda r: r.preference)[0].exchange).rstrip(".")
+    except Exception as exc:  # pragma: no cover
+        return False, f"MX resolve failed: {exc}"  # Shouldn't happen — checked earlier
+
+    from_addr = f"probe-{random.randint(0, 1_000_000)}@example.com"
+
+    try:
+        server = smtplib.SMTP(mx_host, timeout=timeout)
+        server.helo("example.com")
+        server.mail(from_addr)
+        code, resp = server.rcpt(email)
+
+        # Detect catch‑all: ask random address; if it also 250 → uncertain
+        rand_local = "_" + "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
+        code_rand, _ = server.rcpt(f"{rand_local}@{domain}")
+        server.quit()
+
+        if code_rand == 250:
+            return False, "Server is catch‑all; address existence uncertain"
+
+        if code == 250:
+            return True, "SMTP 250 OK — mailbox exists"
+        else:
+            return False, f"SMTP {code} {resp.decode(errors='ignore')}"
+
+    except (socket.timeout, smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError) as exc:
+        return False, f"SMTP error/timeout: {exc}"  # treat as invalid to be safe
+
+
+async def smtp_probe(email: str) -> Tuple[bool, str]:
+    """Run sync probe in threadpool so we don't block the event loop."""
+    return await asyncio.to_thread(_smtp_probe_sync, email)
+
+
 def make_suggestion(email: str) -> str | None:
-    """If domain is a close typo of a popular domain, suggest a corrected e‑mail."""
     local, _, domain = email.partition("@")
     match = get_close_matches(domain, POPULAR_DOMAINS, n=1, cutoff=0.8)
     if match and match[0] != domain:
@@ -69,19 +107,27 @@ def make_suggestion(email: str) -> str | None:
     return None
 
 
-# ──────────────────────────────── Endpoint ──────────────────────────────── #
+# ───────────────────────────── Endpoint ──────────────────────────── #
 @router.post("/validate-email", response_model=EmailValidationResponse)
 async def validate_email(payload: EmailRequest):
     email = payload.email
-    domain = email.split("@", maxsplit=1)[1]
+    domain = email.split("@", 1)[1]
 
     if not domain_has_mx(domain):
         return EmailValidationResponse(
             valid=False,
-            reason="MX record not found (domain likely invalid)",
+            reason="MX record not found; domain likely invalid or mis‑typed",
             suggestion=make_suggestion(email),
         )
 
+    # SMTP probe (can take ~1 s). You might want to cache the result.
+    exists, smtp_msg = await smtp_probe(email)
 
-    # Place for optional SMTP‑ping / external API call → increase confidence.
+    if not exists:
+        return EmailValidationResponse(
+            valid=False,
+            reason=smtp_msg,
+            suggestion=make_suggestion(email),
+        )
+
     return EmailValidationResponse(valid=True)
