@@ -1,26 +1,21 @@
 import asyncio
-import random
+import difflib
 import smtplib
-import socket
 import ssl
-import string
-from functools import lru_cache
-from difflib import get_close_matches
-from typing import Tuple, Literal
+from typing import Optional, Tuple
 
-import dns.resolver  # type: ignore
-from fastapi import APIRouter
-from pydantic import BaseModel, EmailStr
+import dns.resolver
+from email_validator import EmailNotValidError, validate_email
+from fastapi import FastAPI, APIRouter
+from pydantic import BaseModel, Field
 
-router = APIRouter()
-
-# A small list of popular domains to catch the 90 % самых частых опечаток.
-POPULAR_DOMAINS = [
+# --------------------- Константы ---------------------
+POPULAR_DOMAINS: list[str] = [
     "gmail.com",
     "yahoo.com",
     "outlook.com",
     "hotmail.com",
-    "hotmail.co.uk"
+    "hotmail.co.uk",
     "live.com",
     "icloud.com",
     "mail.ru",
@@ -31,7 +26,6 @@ POPULAR_DOMAINS = [
     "me.com",
     "msn.com",
     "comcast.net",
-    "live.com",
     "abv.bg",
     "hotmail.it",
     "yahoo.fr",
@@ -39,92 +33,115 @@ POPULAR_DOMAINS = [
     "libero.it",
     "ymail.com",
 ]
-SMTP_TIMEOUT = 5
-# ──────────────────────────────── Schemas ──────────────────────────────── #
+
+# SMTP‑check settings
+DEFAULT_HELO_HOST = "validator.local"
+SMTP_TIMEOUT = 8  # seconds
+
+# --------------------- FastAPI ---------------------
+router=APIRouter()
+
+
 class EmailRequest(BaseModel):
-    email: EmailStr  # синтаксис + punycode/IDN проверка (ASCII‑only)
+    """Frontend sends only this field."""
+    email: str = Field(..., examples=["user@gmai.com"])
 
 
-class EmailValidationResponse(BaseModel):
-    exists: bool
-    reason: str | None = None
+class EmailResponse(BaseModel):
+    is_syntactically_valid: bool
+    suggestion: Optional[str] = None  # corrected email, if any
+    mailbox_exists: Optional[bool] = None  # null if check inconclusive
+    message: str  # human‑readable details
 
 
-# ────────────────────────── Helper functions ─────────────────────── #
-@lru_cache(maxsize=4096)
-def domain_has_mx(domain: str, timeout: float = 2.0) -> bool:
+# --------------------- Utilities ---------------------
+
+def suggest_domain(full_email: str) -> Optional[str]:
+    if "@" not in full_email:
+        return None
+    local, domain = full_email.rsplit("@", 1)
+    domain = domain.lower()
+    match = difflib.get_close_matches(domain, POPULAR_DOMAINS, n=1, cutoff=0.8)
+    return f"{local}@{match[0]}" if match and match[0] != domain else None
+
+
+def _mx_lookup(domain: str) -> list[str]:
+    """Return MX hosts sorted by priority."""
+    answers = dns.resolver.resolve(domain, "MX", lifetime=SMTP_TIMEOUT)
+    return [str(r.exchange).rstrip(".") for r in sorted(answers, key=lambda r: r.preference)]
+
+
+def _smtp_verify(
+    email: str,
+    mx_hosts: list[str],
+    helo_host: str = DEFAULT_HELO_HOST,
+    timeout: int = SMTP_TIMEOUT,
+) -> Tuple[bool, str]:
+    """RCPT TO handshake. Returns (exists?, debug)."""
+    from_addr = f"validator@{helo_host}"
+    for host in mx_hosts:
+        try:
+            with smtplib.SMTP(host, timeout=timeout) as server:
+                try:
+                    server.starttls(context=ssl.create_default_context())
+                except smtplib.SMTPException:
+                    pass  # TLS unsupported — продолжим без него
+                server.helo(helo_host)
+                server.mail(from_addr)
+                code, msg = server.rcpt(email)
+                server.quit()
+                msg_text = msg.decode() if isinstance(msg, bytes) else str(msg)
+                if code in (250, 251):
+                    return True, f"{host} → {code} {msg_text}"
+                if code in (550, 551, 553):
+                    return False, f"{host} → {code} {msg_text}"
+        except (smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, smtplib.SMTPHeloError):
+            continue
+        except Exception as exc:  # noqa: BLE001
+            return False, f"SMTP error: {exc}"
+    return False, "All MX hosts rejected or unresponsive"
+
+
+async def smtp_check(email: str) -> Tuple[Optional[bool], str]:
+    """Asynchronous wrapper for SMTP verification."""
     try:
-        return bool(dns.resolver.resolve(domain, "MX", lifetime=timeout))
-    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.Timeout):
-        return False
+        mx_hosts = _mx_lookup(email.split("@", 1)[1])
+    except Exception as exc:  # noqa: BLE001
+        return None, f"MX lookup failed: {exc}"
+
+    loop = asyncio.get_running_loop()
+    exists, debug = await loop.run_in_executor(
+        None, _smtp_verify, email, mx_hosts, DEFAULT_HELO_HOST, SMTP_TIMEOUT
+    )
+    return exists, debug
 
 
-def _contains_non_ascii(s: str) -> bool:
-    return any(ord(ch) > 127 for ch in s)
+# --------------------- API Endpoint ---------------------
 
+@router.post("/check-email", response_model=EmailResponse, summary="Validate & verify email")
+async def check_email(payload: EmailRequest):
+    email_input = payload.email.strip()
 
-# –––––––––––––––––––––––– SMTP probe –––––––––––––––––––––––––––– #
-
-def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[bool, str]:
-    """Return (exists, reason).  exists=True ⇢ сервер подтвердил ящик однозначно."""
-
-    if _contains_non_ascii(email):
-        return False, "SMTPUTF8 not supported by probe"
-
-    local, _, domain = email.partition("@")
+    # 1. Syntax validation
     try:
-        mx_records = dns.resolver.resolve(domain, "MX", lifetime=timeout)
-        mx_host = str(min(mx_records, key=lambda r: r.preference).exchange).rstrip(".")
-    except Exception as exc:
-        return False, f"MX resolve failed: {exc}"
+        validate_email(email_input, check_deliverability=False)
+        syntax_ok = True
+        message = "Адрес выглядит корректно."
+    except EmailNotValidError as exc:
+        syntax_ok = False
+        message = str(exc)
 
-    from_addr = f"probe@{domain}"
-    try:
-        server = smtplib.SMTP(mx_host, timeout=timeout)
-        server.ehlo("validator")
-        if server.has_extn("STARTTLS"):
-            server.starttls(context=ssl.create_default_context())
-            server.ehlo("validator")
+    # 2. Domain suggestion (typo‑fix)
+    suggestion = suggest_domain(email_input)
 
-        server.mail(from_addr)
-        code_target, resp_target = server.rcpt(email)
+    # 3. Mandatory SMTP mailbox existence check
+    mailbox_exists, debug_msg = await smtp_check(email_input)
+    message += f"\nSMTP: {debug_msg}"
 
-        # Проверяем случайный ящик для catch‑all
-        rand_local = "_" + "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
-        code_rand, _ = server.rcpt(f"{rand_local}@{domain}")
-        server.quit()
-
-        # Логика: подтверждаем существование, только если целевой =250 и рандом !=250
-        if 200 <= code_target < 300 and code_rand not in range(200, 300):
-            return True, "SMTP 250 OK and not catch‑all"
-
-        # целевой не 2xx или домен catch‑all ⇒ считаем несуществующим
-        if code_target in {550, 551, 553}:
-            return False, f"SMTP {code_target} {resp_target.decode(errors='ignore')}"
-        return False, "Server did not unequivocally confirm mailbox (catch‑all or ambiguous)"
-
-    except (
-        socket.timeout,
-        smtplib.SMTPConnectError,
-        smtplib.SMTPServerDisconnected,
-        smtplib.SMTPHeloError,
-        smtplib.SMTPException,
-    ) as exc:
-        return False, f"SMTP probe error: {exc}"
-
-
-async def smtp_probe(email: str) -> Tuple[bool, str]:
-    return await asyncio.to_thread(_smtp_probe_sync, email)
-
-
-# ───────────────────────────── Endpoint ──────────────────────────── #
-@router.post("/validate-email", response_model=EmailValidationResponse)
-async def validate_email(payload: EmailRequest):
-    email = payload.email
-    domain = email.split("@", 1)[1]
-
-    if not domain_has_mx(domain):
-        return EmailValidationResponse(exists=False, reason="No MX records found")
-
-    exists, msg = await smtp_probe(email)
-    return EmailValidationResponse(exists=exists, reason=None if exists else msg)
+    # 4. Response
+    return EmailResponse(
+        is_syntactically_valid=syntax_ok,
+        suggestion=suggestion,
+        mailbox_exists=mailbox_exists,
+        message=message.strip(),
+    )
