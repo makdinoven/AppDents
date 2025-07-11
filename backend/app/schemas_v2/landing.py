@@ -124,8 +124,6 @@ class LandingCardResponse(BaseModel):
     old_price: Optional[str] = None    # старая цена
     new_price: Optional[str] = None    # новая цена
     course_ids: List[int] = []
-    region: Optional[str] = None
-    duration: Optional[str] = ""
 
     class Config:
         orm_mode = True
