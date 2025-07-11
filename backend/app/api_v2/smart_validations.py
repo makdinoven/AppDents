@@ -42,18 +42,15 @@ POPULAR_DOMAINS = [
 SMTP_TIMEOUT = 5
 # ──────────────────────────────── Schemas ──────────────────────────────── #
 class EmailRequest(BaseModel):
-    email: EmailStr  # базовая RFC‑проверка делает Pydantic
-
+    email: EmailStr  # синтаксис + punycode/IDN проверка (ASCII‑only)
 
 
 class EmailValidationResponse(BaseModel):
-    status: Literal["valid", "invalid", "unknown"]
-    deliverable: bool
+    exists: bool
     reason: str | None = None
-    suggestion: str | None = None
 
 
-# ───────────────────────────── Helper functions ─────────────────────────── #
+# ────────────────────────── Helper functions ─────────────────────── #
 @lru_cache(maxsize=4096)
 def domain_has_mx(domain: str, timeout: float = 2.0) -> bool:
     try:
@@ -68,18 +65,18 @@ def _contains_non_ascii(s: str) -> bool:
 
 # –––––––––––––––––––––––– SMTP probe –––––––––––––––––––––––––––– #
 
-def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[str, str]:
-    """Return (status, msg) where status ∈ {valid, invalid, unknown}."""
+def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[bool, str]:
+    """Return (exists, reason).  exists=True ⇢ сервер подтвердил ящик однозначно."""
 
     if _contains_non_ascii(email):
-        return "unknown", "SMTPUTF8 not supported by probe"
+        return False, "SMTPUTF8 not supported by probe"
 
     local, _, domain = email.partition("@")
     try:
         mx_records = dns.resolver.resolve(domain, "MX", lifetime=timeout)
         mx_host = str(min(mx_records, key=lambda r: r.preference).exchange).rstrip(".")
     except Exception as exc:
-        return "invalid", f"MX resolve failed: {exc}"
+        return False, f"MX resolve failed: {exc}"
 
     from_addr = f"probe@{domain}"
     try:
@@ -90,67 +87,44 @@ def _smtp_probe_sync(email: str, timeout: float = SMTP_TIMEOUT) -> Tuple[str, st
             server.ehlo("validator")
 
         server.mail(from_addr)
-        code, resp = server.rcpt(email)
+        code_target, resp_target = server.rcpt(email)
 
-        # Catch‑all detection
+        # Проверяем случайный ящик для catch‑all
         rand_local = "_" + "".join(random.choices(string.ascii_lowercase + string.digits, k=24))
         code_rand, _ = server.rcpt(f"{rand_local}@{domain}")
         server.quit()
 
-        if code_rand == 250:
-            return "unknown", "Domain is catch‑all; mailbox existence not verifiable"
+        # Логика: подтверждаем существование, только если целевой =250 и рандом !=250
+        if 200 <= code_target < 300 and code_rand not in range(200, 300):
+            return True, "SMTP 250 OK and not catch‑all"
 
-        if 200 <= code < 300:
-            return "valid", f"SMTP {code} OK — mailbox accepts RCPT"
-        if code in {550, 551, 553}:
-            return "invalid", f"SMTP {code} {resp.decode(errors='ignore')}"
-        # 4xx / ambiguous → unknown
-        return "unknown", f"SMTP {code} {resp.decode(errors='ignore')}"
+        # целевой не 2xx или домен catch‑all ⇒ считаем несуществующим
+        if code_target in {550, 551, 553}:
+            return False, f"SMTP {code_target} {resp_target.decode(errors='ignore')}"
+        return False, "Server did not unequivocally confirm mailbox (catch‑all or ambiguous)"
 
     except (
         socket.timeout,
         smtplib.SMTPConnectError,
         smtplib.SMTPServerDisconnected,
         smtplib.SMTPHeloError,
+        smtplib.SMTPException,
     ) as exc:
-        return "unknown", f"SMTP probe error: {exc}"
+        return False, f"SMTP probe error: {exc}"
 
 
-async def smtp_probe(email: str) -> Tuple[str, str]:
+async def smtp_probe(email: str) -> Tuple[bool, str]:
     return await asyncio.to_thread(_smtp_probe_sync, email)
-
-
-# ––––––––––––––––––––– Suggestion –––––––––––––––––––––––––––––––– #
-
-def make_suggestion(email: str) -> str | None:
-    local, _, domain = email.partition("@")
-    match = get_close_matches(domain, POPULAR_DOMAINS, n=1, cutoff=0.8)
-    return f"{local}@{match[0]}" if match and match[0] != domain else None
 
 
 # ───────────────────────────── Endpoint ──────────────────────────── #
 @router.post("/validate-email", response_model=EmailValidationResponse)
 async def validate_email(payload: EmailRequest):
     email = payload.email
-    strict = payload.strict
     domain = email.split("@", 1)[1]
 
     if not domain_has_mx(domain):
-        return EmailValidationResponse(
-            status="invalid",
-            deliverable=False,
-            reason="MX record not found; domain likely invalid",
-            suggestion=make_suggestion(email),
-        )
+        return EmailValidationResponse(exists=False, reason="No MX records found")
 
-    status, msg = await smtp_probe(email)
-
-    if strict and status == "unknown":
-        status = "invalid"  # promote unknown → invalid under strict policy
-
-    return EmailValidationResponse(
-        status=status,
-        deliverable=status == "valid",
-        reason=None if status == "valid" else msg,
-        suggestion=None if status == "valid" else make_suggestion(email),
-    )
+    exists, msg = await smtp_probe(email)
+    return EmailValidationResponse(exists=exists, reason=None if exists else msg)
