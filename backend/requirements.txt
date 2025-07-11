@@ -27,3 +27,4 @@ redis
 requests
 aiohttp
 dnspython
+email_validator
