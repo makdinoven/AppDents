@@ -1,5 +1,4 @@
 import { useDispatch, useSelector } from "react-redux";
-import { t } from "i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
 import BackButton from "../../../../../../components/ui/BackButton/BackButton.tsx";
@@ -8,9 +7,7 @@ import {
   AppDispatchType,
   AppRootStateType,
 } from "../../../../../../store/store.ts";
-import ArrowButton from "../../../../../../components/ui/ArrowButton/ArrowButton.tsx";
-import LineWrapper from "../../../../../../components/ui/LineWrapper/LineWrapper.tsx";
-import { User } from "../../../../../../assets/icons";
+import { LogoutIcon, User } from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
 import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
@@ -64,7 +61,15 @@ const ProfileMain = () => {
           <div className={s.page_header}>
             <div className={s.user_info}>
               <div className={s.left}>
-                <User />
+                <div className={s.user_top}>
+                  <User />
+                  <PrettyButton
+                    className={s.reset_pass_btn}
+                    variant="danger"
+                    onClick={() => setShowResetPasswordModal(true)}
+                    text={"resetPassword"}
+                  />
+                </div>
                 <div className={s.user_items}>
                   <div>
                     <span>
@@ -72,11 +77,6 @@ const ProfileMain = () => {
                     </span>
                     {email}
                   </div>
-                  <PrettyButton
-                    variant="danger"
-                    onClick={() => setShowResetPasswordModal(true)}
-                    text={"resetPassword"}
-                  />
                   <div>
                     <span>
                       <Trans i18nKey="support" />:{" "}
@@ -92,9 +92,6 @@ const ProfileMain = () => {
               </div>
               <ReferralSection />
             </div>
-            <LineWrapper>
-              <ArrowButton text={t("logout")} onClick={handleLogout} />
-            </LineWrapper>
           </div>
           <MyCourses courses={courses} />
         </>
@@ -108,18 +105,23 @@ const ProfileMain = () => {
   ];
 
   const activeTab = profilePageContent.find(
-    (tab) => tab.value === tabFromParams
+    (tab) => tab.value === tabFromParams,
   );
 
   return (
     <>
       <div className={s.back_btn_tabs_container}>
-        <BackButton showText={screenWidth > 400} />
+        {screenWidth > 576 && <BackButton />}
+
         <Tabs
           queryKey={QUERY_KEY}
           mainTab={"profile_main"}
           tabs={profilePageContent}
         />
+        <button onClick={handleLogout} className={s.logout_btn}>
+          <LogoutIcon />
+          <Trans i18nKey="logout" />
+        </button>
       </div>
 
       <div className={s.profile_page_content}>{activeTab?.component}</div>

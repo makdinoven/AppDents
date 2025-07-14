@@ -35,3 +35,4 @@ export { default as TouchCoinIcon } from "./touch-coin.svg?react";
 export { default as TrashCanIcon } from "./trash-can-icon.svg?react";
 export { default as CoinIcon } from "./coin.svg?react";
 export { default as AlertCirceIcon } from "./alert-circle.svg?react";
+export { default as LogoutIcon } from "./logout-icon.svg?react";
