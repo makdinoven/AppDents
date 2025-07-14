@@ -167,11 +167,15 @@ const PaymentModal = ({
         }
 
         if (balanceLeft) {
+          dispatch(getMe());
           Alert(
             t("successPaymentWithBalance", { balance: balanceLeft }),
             <CheckMark />,
+            () => {
+              navigate(Path.profile);
+            },
           );
-          navigate(Path.profile);
+          await dispatch(getMe());
         }
       } catch (error) {
         console.log(error);

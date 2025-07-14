@@ -11,7 +11,6 @@ import { LogoutIcon, User } from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
 import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import ResetPasswordModal from "../../../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../../../routes/routes.ts";
 import {
@@ -23,6 +22,7 @@ import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
 import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
 import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
 import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
+import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 
 const QUERY_KEY = "content";
 
@@ -62,32 +62,38 @@ const ProfileMain = () => {
             <div className={s.user_info}>
               <div className={s.left}>
                 <div className={s.user_top}>
-                  <User />
+                  <User className={s.user_icon} />
+                  <div className={s.user_items}>
+                    <div>
+                      <span>
+                        <Trans i18nKey="mail" />:{" "}
+                      </span>
+                      {email}
+                    </div>
+                    <div>
+                      <span>
+                        <Trans i18nKey="support" />:{" "}
+                      </span>
+                      <a
+                        className={s.mail_link}
+                        href="mailto:info.dis.org@gmail.com"
+                      >
+                        info.dis.org@gmail.com
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div className={s.profile_buttons}>
+                  <button onClick={handleLogout} className={s.logout_btn}>
+                    <LogoutIcon />
+                    <Trans i18nKey="logout" />
+                  </button>
                   <PrettyButton
                     className={s.reset_pass_btn}
                     variant="danger"
                     onClick={() => setShowResetPasswordModal(true)}
                     text={"resetPassword"}
                   />
-                </div>
-                <div className={s.user_items}>
-                  <div>
-                    <span>
-                      <Trans i18nKey="mail" />:{" "}
-                    </span>
-                    {email}
-                  </div>
-                  <div>
-                    <span>
-                      <Trans i18nKey="support" />:{" "}
-                    </span>
-                    <a
-                      className={s.mail_link}
-                      href="mailto:info.dis.org@gmail.com"
-                    >
-                      info.dis.org@gmail.com
-                    </a>
-                  </div>
                 </div>
               </div>
               <ReferralSection />
@@ -96,6 +102,11 @@ const ProfileMain = () => {
           <MyCourses courses={courses} />
         </>
       ),
+    },
+    {
+      name: "profile.yourCourses",
+      value: "your_courses",
+      component: <MyCourses courses={courses} />,
     },
     {
       name: "profile.purchaseHistory.purchases",
@@ -118,10 +129,6 @@ const ProfileMain = () => {
           mainTab={"profile_main"}
           tabs={profilePageContent}
         />
-        <button onClick={handleLogout} className={s.logout_btn}>
-          <LogoutIcon />
-          <Trans i18nKey="logout" />
-        </button>
       </div>
 
       <div className={s.profile_page_content}>{activeTab?.component}</div>

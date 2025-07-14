@@ -239,7 +239,7 @@
     },
     "purchaseHistory": {
       "invitedUsers": "Приглашенные пользователи",
-      "purchases": "Покупки",
+      "purchases": "История покупок",
       "purchaseSum": "Сумма покупки:",
       "adminAdjust": "Бонус",
       "internalPurchase": "Оплата",
