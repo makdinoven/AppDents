@@ -10,13 +10,16 @@
 }
 
 .logout_btn {
+  svg {
+    flex-shrink: 0;
+  }
   display: flex;
   gap: 5px;
   align-items: center;
   justify-content: center;
   @include clamped-p2;
   @include transition();
-  
+
   @media (hover: hover) {
     &:hover {
       color: $error-color;
@@ -78,16 +81,11 @@
   @include clamped-p3;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 
   span {
-    @include clamped-h3;
+    @include clamped-h4;
     text-transform: uppercase;
-  }
-
-  svg {
-    width: 100px;
-    height: 100px;
   }
 
   .mail_link {
@@ -97,10 +95,15 @@
   }
 }
 
+.user_icon {
+  width: 100px;
+  height: 100px;
+}
+
 .user_top {
   display: flex;
+  gap: 10px;
   align-items: center;
-  justify-content: space-between;
 }
 
 .user_items {
@@ -122,6 +125,11 @@
   gap: 20px;
 }
 
+.profile_buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
 @media (max-width: $tablet-breakpoint) {
   .profile_page {
     gap: 60px;
@@ -134,10 +142,11 @@
 
   .left {
     gap: 20px;
-    svg {
-      width: 60px;
-      height: 60px;
-    }
+  }
+
+  .user_icon {
+    width: 60px;
+    height: 60px;
   }
 }
 
@@ -148,6 +157,7 @@
 
   .reset_pass_btn {
     min-width: unset;
+    padding: 5px 15px;
   }
 
   .profile_page_content {
@@ -155,6 +165,7 @@
   }
 
   .logout_btn {
+    gap: 0;
     svg {
       width: 20px;
       height: 20px;
@@ -163,11 +174,11 @@
 
   .left {
     gap: 10px;
-    svg {
-      flex-shrink: 0;
+  }
+
+  .user_icon {
       width: 45px;
       height: 45px;
-    }
   }
 
   .user_items {
@@ -180,7 +191,8 @@
 
   .back_btn_tabs_container {
     margin-bottom: 20px;
-    justify-items: center;
+    justify-content: center;
+    align-items: center;
     //display: grid;
     //grid-template-columns: 60px 1fr 30px ;
   }

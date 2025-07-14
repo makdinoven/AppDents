@@ -43,7 +43,7 @@
   "total": "Total:",
   "emailGrant": "Este correo electrónico se utilizará para otorgarle acceso a su curso comprado inmediatamente después del pago.",
   "paymentWarn": "Una vez confirmado su pago, sus datos de acceso se enviarán automáticamente a su correo electrónico. Si no recibe el mensaje en su bandeja de entrada, revise su carpeta de correo no deseado.",
-  "resetPassword": "Cambiar la contraseña",
+  "resetPassword": "cambiar contraseña",
   "newPassword": "Introduce una nueva contraseña...",
   "change": "Cambiar",
   "passwordChanged": "La contraseña se ha cambiado correctamente",
@@ -238,7 +238,7 @@
     },
     "purchaseHistory": {
       "invitedUsers": "Usuarios invitados",
-      "purchases": "Сompras",
+      "purchases": "Historial de compras",
       "purchaseSum": "Importe de la compra:",
       "adminAdjust": "Bono",
       "internalPurchase": "Pago",
