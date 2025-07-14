@@ -12,3 +12,9 @@
     margin-bottom: 80px;
   }
 }
+
+@media (max-width: $mobile-breakpoint) {
+  .profilePage {
+    margin-bottom: 60px;
+  }
+}

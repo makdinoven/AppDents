@@ -9,9 +9,54 @@
   gap: 40px;
 }
 
+.logout_btn {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  @include clamped-p2;
+  @include transition();
+  
+  @media (hover: hover) {
+    &:hover {
+      color: $error-color;
+
+      svg {
+        path {
+          fill: $error-color;
+        }
+      }
+    }
+  }
+
+  &:active {
+    color: $error-color;
+
+    svg {
+      path {
+        fill: $error-color;
+      }
+    }
+  }
+
+  svg {
+    width: 27px;
+    height: 27px;
+    path {
+      @include transition();
+      stroke {
+        color: $accent;
+      }
+    }
+  }
+}
+
 .back_btn_tabs_container {
   display: flex;
   justify-content: space-between;
+  //display: grid;
+  //grid-template-columns: 30px 1fr 80px ;
+  gap: 10px;
   margin-bottom: 40px;
   button {
     margin-bottom: 0;
@@ -24,14 +69,25 @@
   gap: 20px;
 }
 
+.reset_pass_btn {
+  @include clamped-p3;
+  min-width: unset;
+}
+
 .left {
   @include clamped-p3;
   display: flex;
-  gap: 40px;
+  flex-direction: column;
+  gap: 10px;
 
   span {
     @include clamped-h3;
     text-transform: uppercase;
+  }
+
+  svg {
+    width: 100px;
+    height: 100px;
   }
 
   .mail_link {
@@ -39,6 +95,12 @@
     text-decoration: underline;
     color: $secondary-lighter;
   }
+}
+
+.user_top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .user_items {
@@ -84,7 +146,42 @@
     gap: 30px;
   }
 
+  .reset_pass_btn {
+    min-width: unset;
+  }
+
+  .profile_page_content {
+    gap: 30px;
+  }
+
+  .logout_btn {
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .left {
+    gap: 10px;
+    svg {
+      flex-shrink: 0;
+      width: 45px;
+      height: 45px;
+    }
+  }
+
+  .user_items {
+    gap: 5px;
+
+    button {
+      width: fit-content;
+    }
+  }
+
   .back_btn_tabs_container {
     margin-bottom: 20px;
+    justify-items: center;
+    //display: grid;
+    //grid-template-columns: 60px 1fr 30px ;
   }
 }
