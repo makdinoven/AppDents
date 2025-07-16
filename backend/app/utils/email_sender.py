@@ -274,24 +274,18 @@ courses_block: dict[str, str | None] = {
 # --------------------------------------------------------------------------
 #  HTML-карточка конкретного курса, который уже добавлен пользователю
 # --------------------------------------------------------------------------
-def render_course_card(course: dict[str, str | int | float]) -> str:
+def render_course_card(course: dict[str, str]) -> str:
     """
-    :param course: {
-        "url": str,           # ссылка на страницу курса
-        "category": str,      # gnathology / surgery / ...
-        "price": str,         # «$19»
-        "old_price": str,     # «$883»   (может быть пустой строкой)
-        "lessons": int,       # 33
-        "title": str,         # длинный заголовок
-        "img": str,           # URL обложки
-    }
-    :return: готовый HTML-фрагмент
+    HTML-карточка курса.
+    Ожидает, что course["lessons"] — уже отформатированная строка
+    (например «7 modules: 21 lessons»).
     """
     badge_old = (
-        f"""<span style="text-decoration:line-through;color:#006d8d;">{course["old_price"]}</span>"""  # noqa: E501
+        f'<span style="text-decoration:line-through;color:#006d8d;">{course["old_price"]}</span>'
         if course.get("old_price") else ""
     )
-    return f"""\
+
+    return f"""
 <tr>
   <td style="font-size:12px;line-height:16px;font-weight:500;border-radius:20px;padding:5px;border:1px solid rgba(100,116,139,0.2);">
     <table style="width:100%;color:#01433d;" cellpadding="0" cellspacing="5px">
@@ -303,21 +297,20 @@ def render_course_card(course: dict[str, str | int | float]) -> str:
               <p style="margin:0 0 5px;" align="left">
                 <strong>{course["price"]}</strong>
                 {badge_old}
-                <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{course["lessons"]} lessons</span>
+                <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{course["lessons"]}</span>
               </p>
               <h4 style="margin:0 0 5px;" align="left">{course["title"]}</h4>
               <img src="{course["img"]}" alt="Course cover" style="max-width:100%;border-radius:10px;">
             </div>
           </a>
-          <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center">
-            <em>Этот курс уже доступен в&nbsp;вашем кабинете</em>
-          </p>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center"><em>Этот курс уже доступен в&nbsp;вашем кабинете</em></p>
         </td>
       </tr>
     </table>
   </td>
 </tr>
 """
+
 
 
 def send_password_to_user(recipient_email: str, password: str, region: str):

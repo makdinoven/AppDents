@@ -201,13 +201,15 @@ def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
         price = f"${price}"
     if old_price and not old_price.startswith("$"):
         old_price = f"${old_price}"
+    lessons_raw = str(landing.lessons_count or "").strip()
+    lessons_str = lessons_raw if lessons_raw else "lessons"
 
     return {
         "url":       f"https://dent-s.com/client/course/{landing.page_name}",
         "category":  (landing.tags[0].name.lower() if landing.tags else "course"),
         "price":     price,
         "old_price": old_price,
-        "lessons":   int(landing.lessons_count or 0),
+        "lessons":   lessons_str,
         "title":     landing.landing_name or landing.page_name,
         "img":       landing.preview_photo or "https://dent-s.com/assets/img/placeholder.png",
     }
