@@ -16,6 +16,7 @@ celery = Celery(
             "app.tasks.special_offers",
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
+            "app.tasks.abandoned_checkouts"
         ],
 )
 
@@ -37,6 +38,7 @@ celery.conf.update(
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
         "app.tasks.process_hls_video": {"rate_limit": "6/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "2/m"},
+        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "100/h"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -57,6 +59,11 @@ celery.conf.update(
         "ensure_hls": {
                     "task": "app.tasks.ensure_hls",
                     "schedule": 10800,              # 3 ч * 3600 с
+                    "options": {"queue": "special"},
+                },
+        "process-abandoned-checkouts-each-60m": {
+                    "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
+                    "schedule": 3600,           # каждый час
                     "options": {"queue": "special"},
                 },
     },
