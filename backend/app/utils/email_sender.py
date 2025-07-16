@@ -8,6 +8,71 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
+
+courses_block: dict[str, str | None] = {
+    "EN": """
+        <tr>
+          <td>
+            <h3 style="margin:0;color:#7fdfd5;font-size:26px;padding:20px 10px;font-weight:600;">
+              Similar courses:
+            </h3>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:12px;line-height:16px;font-weight:500;border-radius:20px;padding:5px;border:1px solid rgba(100,116,139,0.2);">
+            <table style="width:100%;color:#01433d;" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <a href="https://dent-s.com/client/course/occlusiontmj-2" style="text-decoration:none;color:#01433d;">
+                    <div style="border-radius:20px;background-color:#7fdfd5;padding:10px;">
+                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">gnathology</p>
+                      <p style="margin:0 0 5px 0;" align="left">
+                        <strong>$49</strong> <span style="text-decoration:line-through;color:#017f74;">$299</span>
+                      </p>
+                      <h4 style="margin:0 0 5px 0;" align="left">Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course</h4>
+                      <img src="https://dent-s.com/assets/img/preview_img/1 (1).png"
+                           alt="Course cover"
+                           style="max-width:100%;border-radius:10px;">
+                    </div>
+                  </a>
+                </td>
+                <td>
+                  <a href="https://dent-s.com/client/course/zero-bone-loss-concepts---how-to-develop-and-maintain-crestal-bone-stability" style="text-decoration:none;color:#01433d;">
+                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
+                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">surgery</p>
+                      <p style="margin:0 0 5px 0;" align="left">
+                        <strong>$35</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
+                      </p>
+                      <h4 style="margin:0 0 5px 0;" align="left">Zero Bone Loss Concepts - How to develop and maintain crestal bone stability</h4>
+                      <img src="https://images.unsplash.com/photo-1580541630534-0952df67e080?auto=format&fit=crop&w=600&q=80"
+                           alt="Course cover"
+                           style="max-width:100%;border-radius:10px;">
+                    </div>
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2" align="center" style="padding:15px 0;">
+                  <a href="https://dent-s.com/courses"
+                     style="display:inline-block;padding:12px 24px;background-color:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:500;">
+                    See all
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+    """,
+    # Для остальных локалей можно задать собственный HTML,
+    # а пока используем English как запасной вариант
+    "RU": None,
+    "IT": None,
+    "ES": None,
+    "PT": None,
+    "AR": None,
+}
+
+
 def send_password_to_user(recipient_email: str, password: str, region: str):
     smtp_server   = settings.EMAIL_HOST
     smtp_port     = settings.EMAIL_PORT
@@ -150,18 +215,21 @@ def send_password_to_user(recipient_email: str, password: str, region: str):
 
 def send_recovery_email(recipient_email: str, new_password: str, region: str = "EN"):
     """
-    Отправляет письмо с инструкциями по восстановлению пароля,
-    локализуя текст под указанный регион.
+    Отправляет письмо для восстановления пароля, используя внешний блок
+    recommended courses. SMTP‑логика не изменилась.
     """
+    # 1. SMTP‑параметры (как было)
     smtp_server   = settings.EMAIL_HOST
     smtp_port     = settings.EMAIL_PORT
     smtp_username = settings.EMAIL_USERNAME
     smtp_password = settings.EMAIL_PASSWORD
     sender_email  = settings.EMAIL_SENDER
+
+    # 2. Общие переменные
     login_url     = "https://dent-s.com/login"
     support_email = "info.dis.org@gmail.com"
 
-    # Словарь переводов
+    # 3. Переводы
     translations = {
         "EN": {
             "subject": "Password Recovery Instructions",
@@ -169,10 +237,10 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
             "greeting": "Dear User,",
             "intro": "We have received a request to reset your password.",
             "new_pass_label": "Your new password is:",
-            "caution": f"If you did not request a password reset, please contact our support team immediately at <strong>{support_email}</strong>.",
+            "caution": "If you did not request a password reset, please contact our support team immediately.",
             "click": "Please click the button below to log in:",
-            "button": "Log In",
-            "footer": "This is an automated message. Please do not reply to this email."
+            "button": "Log in",
+            "footer": "This is an automated message. Please do not reply."
         },
         "RU": {
             "subject": "Инструкции по восстановлению пароля",
@@ -180,10 +248,10 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
             "greeting": "Уважаемый пользователь,",
             "intro": "Мы получили запрос на сброс вашего пароля.",
             "new_pass_label": "Ваш новый пароль:",
-            "caution": f"Если вы не запрашивали сброс пароля, пожалуйста, свяжитесь с нашей поддержкой по адресу <strong>{support_email}</strong>.",
+            "caution": "Если вы не запрашивали сброс пароля, немедленно свяжитесь с поддержкой.",
             "click": "Пожалуйста, нажмите кнопку ниже, чтобы войти:",
             "button": "Войти",
-            "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте на него."
+            "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте."
         },
         "IT": {
             "subject": "Istruzioni per il ripristino della password",
@@ -191,10 +259,10 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
             "greeting": "Caro utente,",
             "intro": "Abbiamo ricevuto una richiesta per reimpostare la tua password.",
             "new_pass_label": "La tua nuova password è:",
-            "caution": f"Se non hai richiesto il ripristino della password, contatta immediatamente il nostro supporto all'indirizzo <strong>{support_email}</strong>.",
-            "click": "Per favore, clicca sul pulsante qui sotto per accedere:",
+            "caution": "Se non hai richiesto il reset, contatta subito il supporto.",
+            "click": "Clicca sul pulsante qui sotto per accedere:",
             "button": "Accedi",
-            "footer": "Questo è un messaggio automatico. Per favore, non rispondere a questa email."
+            "footer": "Messaggio automatico – non rispondere."
         },
         "ES": {
             "subject": "Instrucciones para la recuperación de contraseña",
@@ -202,10 +270,10 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
             "greeting": "Estimado usuario,",
             "intro": "Hemos recibido una solicitud para restablecer tu contraseña.",
             "new_pass_label": "Tu nueva contraseña es:",
-            "caution": f"Si no solicitaste este restablecimiento, contacta de inmediato a soporte en <strong>{support_email}</strong>.",
+            "caution": "Si no solicitaste esto, contacta de inmediato a soporte.",
             "click": "Haz clic en el botón de abajo para iniciar sesión:",
             "button": "Iniciar sesión",
-            "footer": "Este es un mensaje automático. Por favor, no respondas a este correo."
+            "footer": "Mensaje automático – no responder."
         },
         "PT": {
             "subject": "Instruções para recuperação de senha",
@@ -213,99 +281,109 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
             "greeting": "Prezado usuário,",
             "intro": "Recebemos um pedido para redefinir sua senha.",
             "new_pass_label": "Sua nova senha é:",
-            "caution": f"Se você não solicitou redefinição de senha, entre em contato imediatamente com nosso suporte em <strong>{support_email}</strong>.",
-            "click": "Por favor, clique no botão abaixo para fazer login:",
+            "caution": "Se não foi você quem solicitou isto, fale com o suporte imediatamente.",
+            "click": "Clique no botão abaixo para entrar:",
             "button": "Entrar",
-            "footer": "Esta é uma mensagem automática. Por favor, não responda a este email."
+            "footer": "Mensagem automática – não responda."
         },
         "AR": {
             "subject": "تعليمات استعادة كلمة المرور",
             "heading": "طلب استعادة كلمة المرور",
             "greeting": "عزيزي المستخدم،",
             "intro": "لقد استلمنا طلبًا لإعادة تعيين كلمة المرور الخاصة بك.",
-            "new_pass_label": "كلمة المرور الجديدة الخاصة بك هي:",
-            "caution": f"إذا لم تطلب إعادة تعيين كلمة المرور، يرجى الاتصال بالدعم فورًا على <strong>{support_email}</strong>.",
+            "new_pass_label": "كلمة المرور الجديدة الخاصة بك:",
+            "caution": "إذا لم تطلب استعادة كلمة المرور، يرجى التواصل مع الدعم فورًا.",
             "click": "يرجى النقر على الزر أدناه لتسجيل الدخول:",
             "button": "تسجيل الدخول",
-            "footer": "هذه رسالة آلية. الرجاء عدم الرد على هذا البريد."
+            "footer": "هذه رسالة آلية، يرجى عدم الرد."
         },
     }
-
-    # Выбираем перевод, по умолчанию — английский
     locale = translations.get(region.upper(), translations["EN"])
 
-    # Собираем HTML-содержимое
-    body_html = f"""
-    <!DOCTYPE html>
-    <html{" dir=\"rtl\"" if region.upper()=="AR" else ""}>
-      <head>
-        <meta charset="utf-8">
-        <title>{locale["subject"]}</title>
-        <style>
-          body {{
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
-            padding: 20px;
-          }}
-          .email-container {{
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: auto;
-          }}
-          h2 {{ color: #333; }}
-          p {{
-            font-size: 16px;
-            line-height: 1.5;
-            color: #555;
-          }}
-          .password {{
-            font-size: 18px;
-            font-weight: bold;
-            color: #d9534f;
-          }}
-          .btn {{
-            display: inline-block;
-            padding: 10px 20px;
-            margin-top: 20px;
-            background-color: #28a745;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 5px;
-          }}
-          .footer {{
-            font-size: 12px;
-            color: #888;
-            text-align: center;
-            margin-top: 20px;
-          }}
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <h2>{locale["heading"]}</h2>
-          <p>{locale["greeting"]}</p>
-          <p>{locale["intro"]}</p>
-          <p>{locale["new_pass_label"]}</p>
-          <p class="password">{new_password}</p>
-          <p>{locale["caution"]}</p>
-          <p>{locale["click"]}</p>
-          <a href="{login_url}" class="btn">{locale["button"]}</a>
-        </div>
-        <div class="footer">
-          <p>{locale["footer"]}</p>
-        </div>
-      </body>
-    </html>
-    """
+    # 4. HTML‑фрагмент с курсами
+    region_courses_html = courses_block.get(region.upper()) or courses_block["EN"]
 
+    # 5. Полный HTML шаблон
+    body_html = f"""\
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en"{" dir=\"rtl\"" if region.upper()=="AR" else ""}>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{locale["subject"]}</title>
+  </head>
+  <body style="margin:0;padding:20px;background-color:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="transparent">
+      <tr align="center">
+        <td>
+          <a href="https://dent-s.com/">
+            <img src="https://dent-s.com/static/email/logo.png"
+                 alt="Logo" width="150"
+                 style="width:100%;max-width:150px;">
+          </a>
+        </td>
+      </tr>
+
+      <tr>
+        <td align="center">
+          <!--[if (gte mso 9)|(IE)]>
+          <table width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td>
+          <![endif]-->
+
+          <table align="center" border="0" cellpadding="0" cellspacing="0"
+                 style="max-width:600px;width:100%;background-color:#edf8ff;
+                        padding:20px 10px 10px;border-radius:20px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.1);text-align:center;">
+
+            <tr>
+              <td>
+                <h2 style="margin:0;color:#7fdfd5;font-size:32px;padding:0 10px 20px;font-weight:600;">
+                  {locale["heading"]}
+                </h2>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="font-size:18px;line-height:26px;font-weight:500;border-radius:20px;padding:20px 10px;border:1px solid rgba(100,116,139,0.2);">
+                <p style="margin:0 0 12px 0;">{locale["greeting"]}</p>
+                <p style="margin:0 0 12px 0;">{locale["intro"]}</p>
+                <p style="margin:0 0 12px 0;">
+                  {locale["new_pass_label"]}<br>
+                  <span style="color:#7fdfd5;"><strong>{new_password}</strong></span>
+                </p>
+                <p style="margin:0 0 18px 0;">
+                  {locale["caution"]} <strong style="color:#7fdfd5;">{support_email}</strong>
+                </p>
+                <p style="margin:0 0 18px 0;">{locale["click"]}</p>
+                <p style="margin:0 0 18px 0;">
+                  <a href="{login_url}"
+                     style="display:inline-block;padding:12px 24px;background-color:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:500;">
+                    {locale["button"]}
+                  </a>
+                </p>
+                <p style="margin:0;line-height:24px;">{locale["footer"]}</p>
+              </td>
+            </tr>
+
+            {region_courses_html}
+
+          </table>
+
+          <!--[if (gte mso 9)|(IE)]></td></tr></table><![endif]-->
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    # 6. Отправка (как было)
     msg = MIMEMultipart()
     msg["From"]    = sender_email
     msg["To"]      = recipient_email
     msg["Subject"] = locale["subject"]
-    msg.attach(MIMEText(body_html, "html"))
+    msg.attach(MIMEText(body_html, "html", "utf-8"))
 
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
