@@ -33,52 +33,73 @@ MAIL_BONUS = 5.0        # $5 – фиксированный бонус
 @celery.task(
     bind=True,
     name="app.tasks.abandoned_checkouts.process_abandoned_checkouts",
-    rate_limit="100/h",
+    rate_limit="100/h",          # ограничим SMTP-нагрузку
 )
-def process_abandoned_checkouts(self, batch_size: int = 30, target_email: str | None = None,) -> None:
+def process_abandoned_checkouts(
+    self,
+    batch_size: int = 30,
+    target_email: str | None = None,
+) -> None:
     """
-    1) берём лиды старше 3 ч и без письма;
-    2) создаём аккаунт, +5$, partial-курс;
-    3) шлём маркетинговый e-mail (HTML-шаблон с карточкой курса);
-    4) message_sent=True.
+    • Автоматический режим  (target_email=None)  –
+      забираем до batch_size лидов, добавленных > 3 часов назад.
+
+    • Ручная проверка (target_email="mail@host") –
+      обрабатываем ровно одну запись независимо от времени добавления.
+
+    Каждый лид:
+      1. Если учётка уже существует → просто проставляем message_sent=1.
+      2. Регистрируем пользователя, выдаём $5, partial-курс.
+      3. Шлём маркетинговое письмо с карточкой курса.
+      4. Обновляем флаг message_sent.
     """
     db: Session = SessionLocal()
     cutoff = datetime.utcnow() - timedelta(hours=3)
 
     try:
-        query = (
-            db.query(AbandonedCheckout)
-            .filter(
-                AbandonedCheckout.created_at < cutoff,
-                AbandonedCheckout.message_sent.is_(False),
-            )
+        # ───────────────────────── формируем запрос ─────────────────────────
+        base_query = db.query(AbandonedCheckout).filter(
+            AbandonedCheckout.message_sent.is_(False)
         )
+
         if target_email:
-            query = query.filter(AbandonedCheckout.email == target_email)
+            base_query = base_query.filter(AbandonedCheckout.email == target_email)
+        else:
+            base_query = base_query.filter(AbandonedCheckout.created_at < cutoff)
 
-        leads = query.limit(batch_size).all()
+        leads = base_query.limit(batch_size).all()
+        if not leads:
+            logger.info("No abandoned-checkout leads to process.")
+            return
 
+        # ─────────────────────── основной цикл обработки ────────────────────
         for lead in leads:
-            # -------------------- сохраняем поля заранее --------------------
-            lead_id = lead.id
-            raw_courses = (lead.course_ids or "").split(",")
-            region = lead.region or "EN"
-            target_email = lead.email
+            lead_id       = lead.id
+            current_email = lead.email                    # не переходим на target_email
+            raw_courses   = (lead.course_ids or "").split(",")
+            region        = lead.region or "EN"
 
-            # если пользователь уже есть – просто помечаем сообщение и далее
-            if get_user_by_email(db, target_email):
-                db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
+            # 1. Учётка уже есть? ------------------------------------------------
+            if get_user_by_email(db, current_email):
+                db.query(AbandonedCheckout).filter_by(id=lead_id).update(
+                    {"message_sent": True}
+                )
+                logger.info("User %s already exists – flag set, skipping.", current_email)
                 continue
 
-            # -------------------- регистрация + пароль ----------------------
+            # 2. Регистрация + пароль -------------------------------------------
             password = generate_random_password()
             try:
-                user = create_user(db, target_email, password)  # внутри commit()
+                user = create_user(db, current_email, password)   # внутри commit()
             except ValueError:
-                db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
+                # параллельная регистрация
+                db.query(AbandonedCheckout).filter_by(id=lead_id).update(
+                    {"message_sent": True}
+                )
+                logger.warning("Race condition on %s – marked as sent.", current_email)
                 continue
 
-            # -------------------- бонус 5 $ ---------------------------------
+            # 3. Бонус 5 $ -------------------------------------------------------
             credit_balance(
                 db,
                 user.id,
@@ -87,10 +108,10 @@ def process_abandoned_checkouts(self, batch_size: int = 30, target_email: str | 
                 meta={"reason": "abandoned_checkout"},
             )  # внутри commit()
 
-            # -------------------- partial-курс ------------------------------
-            course_ids = [int(c) for c in raw_courses if c.strip()]
-            chosen_id = _choose_course(db, course_ids)
-            course_info = {}
+            # 4. Partial-курс + карточка -----------------------------------------
+            course_ids   = [int(c) for c in raw_courses if c.strip()]
+            chosen_id    = _choose_course(db, course_ids)
+            course_info  = {}
 
             if chosen_id:
                 try:
@@ -101,28 +122,37 @@ def process_abandoned_checkouts(self, batch_size: int = 30, target_email: str | 
                         source=FreeCourseSource.LANDING,
                     )  # внутри commit()
                     course_info = _build_course_info(db, chosen_id)
-                except ValueError as e:
-                    logger.warning("Cannot give partial %s to %s: %s", chosen_id, target_email, e)
+                except ValueError as err:
+                    logger.warning(
+                        "Cannot grant partial %s to %s: %s", chosen_id, current_email, err
+                    )
 
-            # -------------------- письмо ------------------------------------
+            # 5. Письмо ----------------------------------------------------------
             try:
                 send_abandoned_checkout_email(
-                    recipient_email=target_email,
+                    recipient_email=current_email,
                     password=password,
                     course_info=course_info,
                     region=region,
                 )
-            except Exception as e:
-                logger.error("E-mail send error to %s: %s", target_email, e)
+                logger.info("E-mail successfully sent to %s", current_email)
+            except Exception as err:
+                logger.error("SMTP error for %s: %s", current_email, err)
 
-            # -------------------- финальная отметка -------------------------
-            db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
+            # 6. Флаг message_sent ----------------------------------------------
+            db.query(AbandonedCheckout).filter_by(id=lead_id).update(
+                {"message_sent": True}
+            )
+
+        # ───────────────────────── commit одной транзакцией ────────────────────
+        db.commit()
 
     except Exception as exc:
-        logger.exception("Abandoned-checkout task failed: %s", exc)
         db.rollback()
+        logger.exception("Abandoned-checkout task failed: %s", exc)
     finally:
         db.close()
+
 
 
 # ───────────────────────── helpers ────────────────────────────
