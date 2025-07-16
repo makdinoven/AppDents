@@ -59,68 +59,64 @@ def process_abandoned_checkouts(self, batch_size: int = 30, target_email: str | 
         leads = query.limit(batch_size).all()
 
         for lead in leads:
-            # --- 1. уже есть такой пользователь? --------------------------------
-            if get_user_by_email(db, lead.email):
-                lead.message_sent = True
+            # -------------------- сохраняем поля заранее --------------------
+            lead_id = lead.id
+            raw_courses = (lead.course_ids or "").split(",")
+            region = lead.region or "EN"
+            target_email = lead.email
+
+            # если пользователь уже есть – просто помечаем сообщение и далее
+            if get_user_by_email(db, target_email):
+                db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
                 continue
 
-            # --- 2. регистрация + случайный пароль -----------------------------
+            # -------------------- регистрация + пароль ----------------------
             password = generate_random_password()
             try:
-                user = create_user(db, lead.email, password)
+                user = create_user(db, target_email, password)  # внутри commit()
             except ValueError:
-                lead.message_sent = True
+                db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
                 continue
 
-            # --- 3. подарок 5 $ -------------------------------------------------
+            # -------------------- бонус 5 $ ---------------------------------
             credit_balance(
                 db,
                 user.id,
                 MAIL_BONUS,
                 WalletTxTypes.ADMIN_ADJUST,
                 meta={"reason": "abandoned_checkout"},
-            )
+            )  # внутри commit()
 
-            # --- 4. partial-курс + информация для письма ------------------------
-            course_ids = [
-                int(c) for c in (lead.course_ids or "").split(",") if c.strip()
-            ]
-            chosen_course_id = _choose_course(db, course_ids)
-            course_info: dict | None = None
+            # -------------------- partial-курс ------------------------------
+            course_ids = [int(c) for c in raw_courses if c.strip()]
+            chosen_id = _choose_course(db, course_ids)
+            course_info = {}
 
-            if chosen_course_id:
-                # выдаём Partial
+            if chosen_id:
                 try:
                     add_partial_course_to_user(
                         db,
                         user.id,
-                        chosen_course_id,
+                        chosen_id,
                         source=FreeCourseSource.LANDING,
-                    )
+                    )  # внутри commit()
+                    course_info = _build_course_info(db, chosen_id)
                 except ValueError as e:
-                    logger.warning(
-                        "Cannot grant partial (%s) to %s: %s",
-                        chosen_course_id, lead.email, e
-                    )
+                    logger.warning("Cannot give partial %s to %s: %s", chosen_id, target_email, e)
 
-                # собираем данные карточки для письма
-                course_info = _build_course_info(db, chosen_course_id)
-
-            # --- 5. письмо ------------------------------------------------------
+            # -------------------- письмо ------------------------------------
             try:
                 send_abandoned_checkout_email(
-                    recipient_email=lead.email,
+                    recipient_email=target_email,
                     password=password,
-                    course_info=course_info or {},
-                    region=lead.region or "EN",
+                    course_info=course_info,
+                    region=region,
                 )
             except Exception as e:
-                logger.error("E-mail send error to %s: %s", lead.email, e)
+                logger.error("E-mail send error to %s: %s", target_email, e)
 
-            # --- 6. отметка «письмо отправлено» --------------------------------
-            lead.message_sent = True
-
-        db.commit()
+            # -------------------- финальная отметка -------------------------
+            db.query(AbandonedCheckout).filter_by(id=lead_id).update({"message_sent": True})
 
     except Exception as exc:
         logger.exception("Abandoned-checkout task failed: %s", exc)
