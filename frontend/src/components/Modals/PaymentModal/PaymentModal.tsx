@@ -37,6 +37,7 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
+import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 const logos = [
   VisaLogo,
@@ -82,6 +83,7 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
+  const IS_PAYMENT_DISABLED = true;
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
@@ -296,8 +298,10 @@ const PaymentModal = ({
             )}
           </>
         )}
+        {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
         <Button
-          variant={"filled"}
+          disabled={IS_PAYMENT_DISABLED}
+          variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
           loading={loading}
           text={isFree ? "tryCourseForFree" : "pay"}
           type="submit"

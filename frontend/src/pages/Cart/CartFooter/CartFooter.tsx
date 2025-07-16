@@ -12,6 +12,7 @@ import { emailSchema } from "../../../common/schemas/emailSchema.ts";
 import Form from "../../../components/Modals/modules/Form/Form.tsx";
 import { Percent } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import DisabledPaymentWarn from "../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 type props = {
   cartPreviewLoading?: boolean;
@@ -57,7 +58,9 @@ const CartFooter = ({
   });
 
   const email = watch("email");
+  const IS_PAYMENT_DISABLED = true;
   const isPayDisabled = !isLogged && (!email || !!errors.email);
+  console.log(isPayDisabled);
 
   const handleCheckboxToggle = () => {
     if (balance! > 0) {
@@ -179,10 +182,12 @@ const CartFooter = ({
           />
         )}
 
+        {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
+
         <button
           type="submit"
-          disabled={isPayDisabled}
-          className={`${s.btn} ${s.pay_btn} ${isPayDisabled ? s.disabled : ""} `}
+          disabled={IS_PAYMENT_DISABLED}
+          className={`${s.btn} ${s.pay_btn} ${IS_PAYMENT_DISABLED ? s.disabled : ""} `}
         >
           {loading && <LoaderOverlay />}
           <Trans i18nKey={"pay"} />

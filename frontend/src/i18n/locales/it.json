@@ -83,6 +83,13 @@
     "title": "Solo <1>oggi</1> – <1>{{discount}}% sconto!</1>"
   },
 
+  "disabledPayment": {
+    "title": "L'acquisto dei corsi è temporaneamente non disponibile",
+    "date": "Dal 16 al 26 luglio 2025 i pagamenti saranno sospesi",
+    "boughtCourses": "Tutti i corsi acquistati in precedenza rimarranno accessibili",
+    "sorry": "Ci scusiamo per il disagio"
+  },
+
   "nav": {
     "home": "Home",
     "courses": "Corsi",
