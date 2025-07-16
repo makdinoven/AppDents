@@ -517,7 +517,7 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
       <tr align="center">
         <td>
           <a href="https://dent-s.com/">
-            <img src="https://dent-s.com/static/email/logo.png"
+            <img src="https://cdn.dent-s.com/logo-dents.png"
                  alt="Logo" width="150"
                  style="width:100%;max-width:150px;">
           </a>
