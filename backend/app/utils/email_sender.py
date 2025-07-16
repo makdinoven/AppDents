@@ -12,84 +12,255 @@ import smtplib
 courses_block: dict[str, str | None] = {
     "EN": """
         <tr>
-          <td>
-            <h3 style="margin:0;color:#7fdfd5;font-size:26px;padding:20px 10px;font-weight:600;">
-              Similar courses:
-            </h3>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:12px;line-height:16px;font-weight:500;border-radius:20px;padding:5px;border:1px solid rgba(100,116,139,0.2);">
-            <table style="width:100%;color:#01433d;" cellpadding="0" cellspacing="0">
-              <tr>
-                <td>
-                  <a href="https://dent-s.com/client/course/occlusiontmj-2" style="text-decoration:none;color:#01433d;">
-                    <div style="border-radius:20px;background-color:#7fdfd5;padding:10px;">
-                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">gnathology</p>
-                      <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$19</strong> <span style="text-decoration:line-through;color:#017f74;">$299</span>
-                      </p>
-                      <h4 style="margin:0 0 5px 0;" align="left">Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course</h4>
-                      <img src="https://dent-s.com/assets/img/preview_img/1 (1).png"
-                           alt="Course cover"
-                           style="max-width:100%;border-radius:10px;">
-                    </div>
-                  </a>
-                </td>
-                <td>
-                  <a href="https://dent-s.com/client/course/zero-bone-loss-concepts---how-to-develop-and-maintain-crestal-bone-stability" style="text-decoration:none;color:#01433d;">
-                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
-                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">surgery</p>
-                      <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$29</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
-                      </p>
-                      <h4 style="margin:0 0 5px 0;" align="left">Zero Bone Loss Concepts - How to develop and maintain crestal bone stability</h4>
-                      <img src="https://dent-s.com/assets/img/preview_img/30.png"
-                           alt="Course cover"
-                           style="max-width:100%;border-radius:10px;">
-                    </div>
-                  </a>
-                </td>
-                <td>
-                  <a href="https://dent-s.com/client/course/zero-bone-loss-concepts-immediate-implants" style="text-decoration:none;color:#01433d;">
-                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
-                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">surgery</p>
-                      <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$19</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
-                      </p>
-                      <h4 style="margin:0 0 5px 0;" align="left">Zero Bone Loss Concepts, Immediate implants</h4>
-                      <img src="https://dent-s.com/assets/img/preview_img/ЗероБон.png"
-                           alt="Course cover"
-                           style="max-width:100%;border-radius:10px;">
-                    </div>
-                  </a>
-                </td>
-                <td>
-                  <a href="https://dent-s.com/client/course/authors-course-ofarnaldocastellucci" style="text-decoration:none;color:#01433d;">
-                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
-                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">endodontics</p>
-                      <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$19</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
-                      </p>
-                      <h4 style="margin:0 0 5px 0;" align="left">Author's course of Arnaldo Castellucci</h4>
-                      <img src="https://dent-s.com/assets/img/preview_img/castellucci.png"
-                           alt="Course cover"
-                           style="max-width:100%;border-radius:10px;">
-                    </div>
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td colspan="2" align="center" style="padding:15px 0;">
-                  <a href="https://dent-s.com/courses"
-                     style="display:inline-block;padding:12px 24px;background-color:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:500;">
-                    See all
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+              <td
+                style="
+                  font-size: 12px;
+                  line-height: 16px;
+                  font-weight: 500;
+                  border-radius: 20px;
+                  padding: 5px;
+                  border: 1px solid rgba(100, 116, 139, 0.2);
+                "
+              >
+                <table
+                  style="width: 100%; color: #01433d"
+                  cellpadding="0"
+                  cellspacing="5px"
+                >
+                  <tr style="width: 100%">
+                    <td valign="top">
+                      <a
+                        href="https://dent-s.com/client/course/occlusiontmj-2"
+                        style="
+                          text-decoration: none;
+                          color: #01433d;
+                          display: block;
+                          height: 100%;
+                        "
+                      >
+                        <div
+                          style="
+                            border-radius: 20px;
+                            background-color: #7fdfd5;
+                            padding: 10px;
+                          "
+                        >
+                          <p
+                            style="text-transform: uppercase; margin: 0 0 5px 0"
+                            align="left"
+                          >
+                            gnathology
+                          </p>
+                          <p style="margin: 0 0 5px 0" align="left">
+                            <strong>$19</strong>
+                            <span
+                              style="
+                                text-decoration: line-through;
+                                color: #017f74;
+                              "
+                              >$883</span
+                            >
+                            <span
+                              style="
+                                background-color: transparent;
+                                color: #017f74;
+                                padding: 4px 4px;
+                                border-radius: 20px;
+                                border: 1px solid #017f74;
+                              "
+                              >8 lessons</span
+                            >
+                          </p>
+                          <h4 style="margin: 0 0 5px 0" align="left">
+                            Occlusion, TMJ Dysfunctions And Orofacial Pain From
+                            А To Z. The Most Comprehensive Lecture Course
+                          </h4>
+                          <img
+                            src="https://dent-s.com/assets/img/preview_img/1 (1).png"
+                            alt="Course cover"
+                            style="max-width: 100%; border-radius: 10px"
+                          />
+                        </div>
+                      </a>
+                    </td>
+                    <td valign="top">
+                      <a
+                        href="https://dent-s.com/client/course/zero-bone-loss-concepts---how-to-develop-and-maintain-crestal-bone-stability"
+                        style="
+                          text-decoration: none;
+                          color: #01433d;
+                          display: block;
+                        "
+                      >
+                        <div
+                          style="
+                            border-radius: 20px;
+                            background-color: #79cee7;
+                            padding: 10px;
+                          "
+                        >
+                          <p
+                            style="text-transform: uppercase; margin: 0 0 5px 0"
+                            align="left"
+                          >
+                            surgery
+                          </p>
+                          <p style="margin: 0 0 5px 0" align="left">
+                            <strong>$29</strong>
+                            <span style="
+                                text-decoration: line-through;
+                                color: #006d8d;
+                              "
+                              >$500</span
+                            >
+                            <span
+                              style="
+                                background-color: transparent;
+                                color: #017f74;
+                                padding: 4px 4px;
+                                border-radius: 20px;
+                                border: 1px solid #017f74;
+                              "
+                              >8 lessons</span
+                            >
+                          </p>
+                          <h4 style="margin: 0 0 5px 0" align="left">
+                            Zero Bone Loss Concepts - How to develop and
+                            maintain crestal bone stability
+                          </h4>
+                          <img
+                            src="https://dent-s.com/assets/img/preview_img/30.png"
+                            alt="Course cover"
+                            style="max-width: 100%; border-radius: 10px"
+                          />
+                        </div>
+                      </a>
+                    </td>
+                  </tr>
+                  <tr style="width: 100%">
+                    <td valign="top">
+                      <a
+                        href="https://dent-s.com/client/course/zero-bone-loss-concepts-immediate-implants"
+                        style="text-decoration: none; color: #01433d"
+                      >
+                        <div
+                          style="
+                            border-radius: 20px;
+                            background-color: #79cee7;
+                            padding: 10px;
+                          "
+                        >
+                          <p
+                            style="text-transform: uppercase; margin: 0 0 5px 0"
+                            align="left"
+                          >
+                            surgery
+                          </p>
+                          <p style="margin: 0 0 5px 0" align="left">
+                            <strong>$19</strong>
+                            <span
+                              style="
+                                text-decoration: line-through;
+                                color: #006d8d;
+                              "
+                              >$500</span
+                            >
+                            <span
+                              style="
+                                background-color: transparent;
+                                color: #017f74;
+                                padding: 4px 4px;
+                                border-radius: 20px;
+                                border: 1px solid #017f74;
+                              "
+                              >8 lessons</span
+                            >
+                          </p>
+                          <h4 style="margin: 0 0 5px 0" align="left">
+                            Zero Bone Loss Concepts, Immediate implants
+                          </h4>
+                          <img
+                            src="https://dent-s.com/assets/img/preview_img/ЗероБон.png"
+                            alt="Course cover"
+                            style="max-width: 100%; border-radius: 10px"
+                          />
+                        </div>
+                      </a>
+                    </td>
+                    <td valign="top">
+                      <a
+                        href="https://dent-s.com/client/course/authors-course-ofarnaldocastellucci"
+                        style="text-decoration: none; color: #01433d"
+                      >
+                        <div
+                          style="
+                            border-radius: 20px;
+                            background-color: #79cee7;
+                            padding: 10px;
+                          "
+                        >
+                          <p style="text-transform: uppercase; margin: 0 0 5px 0"
+                            align="left"
+                          >
+                            endodontics
+                          </p>
+                          <p style="margin: 0 0 5px 0" align="left">
+                            <strong>$19</strong>
+                            <span
+                              style="
+                                text-decoration: line-through;
+                                color: #006d8d;
+                              "
+                              >$250</span
+                            >
+                            <span
+                              style="
+                                background-color: transparent;
+                                color: #017f74;
+                                padding: 4px 4px;
+                                border-radius: 20px;
+                                border: 1px solid #017f74;
+                              "
+                              >8 lessons</span
+                            >
+                          </p>
+                          <h4 style="margin: 0 0 5px 0" align="left">
+                            Author's course of Arnaldo Castellucci
+                          </h4>
+                          <img
+                            src="https://dent-s.com/assets/img/preview_img/castellucci.png"
+                            alt="Course cover"
+                            style="max-width: 100%; border-radius: 10px"
+                          />
+                        </div>
+                      </a>
+                    </td>
+                  </tr>
+                  <tr style="width: 100%; height: auto">
+                    <td valign="top" style="height: auto"></td>
+                    <td valign="top" style="height: auto"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" align="center" style="padding: 15px 0">
+                      <a
+                        href="https://dent-s.com/courses"
+                        style="
+                          display: inline-block;
+                          padding: 12px 24px;
+                          background-color: #01433d;
+                          color: #edf8ff;
+                          text-decoration: none;
+                          border-radius: 40px;
+                          font-weight: 500;
+                        "
+                      >
+                        See all
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
     """,
     # Для остальных локалей можно задать собственный HTML,
     # а пока используем English как запасной вариант
@@ -393,9 +564,9 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
                 <p style="margin:0;line-height:24px;">{locale["footer"]}</p>
               </td>
             </tr>
-
+            
             {region_courses_html}
-
+            
           </table>
 
           <!--[if (gte mso 9)|(IE)]></td></tr></table><![endif]-->
