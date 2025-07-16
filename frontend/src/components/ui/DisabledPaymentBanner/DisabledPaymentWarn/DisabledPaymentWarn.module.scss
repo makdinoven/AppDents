@@ -1,0 +1,28 @@
+.warn {
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  gap: 5px;
+  @include clamped-p4;
+  background-color: $error-color-lighten;
+  border-radius: 10px;
+  color: $accent;
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+
+    path {
+      stroke-width: 1.2px;
+      stroke: $error-color;
+    }
+  }
+}
+
+
+.warn_title_container {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  text-transform: uppercase;
+}
