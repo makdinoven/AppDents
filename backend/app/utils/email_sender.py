@@ -27,7 +27,7 @@ courses_block: dict[str, str | None] = {
                     <div style="border-radius:20px;background-color:#7fdfd5;padding:10px;">
                       <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">gnathology</p>
                       <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$49</strong> <span style="text-decoration:line-through;color:#017f74;">$299</span>
+                        <strong>$19</strong> <span style="text-decoration:line-through;color:#017f74;">$299</span>
                       </p>
                       <h4 style="margin:0 0 5px 0;" align="left">Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course</h4>
                       <img src="https://dent-s.com/assets/img/preview_img/1 (1).png"
@@ -41,10 +41,38 @@ courses_block: dict[str, str | None] = {
                     <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
                       <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">surgery</p>
                       <p style="margin:0 0 5px 0;" align="left">
-                        <strong>$35</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
+                        <strong>$29</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
                       </p>
                       <h4 style="margin:0 0 5px 0;" align="left">Zero Bone Loss Concepts - How to develop and maintain crestal bone stability</h4>
-                      <img src="https://images.unsplash.com/photo-1580541630534-0952df67e080?auto=format&fit=crop&w=600&q=80"
+                      <img src="https://dent-s.com/assets/img/preview_img/30.png"
+                           alt="Course cover"
+                           style="max-width:100%;border-radius:10px;">
+                    </div>
+                  </a>
+                </td>
+                <td>
+                  <a href="https://dent-s.com/client/course/zero-bone-loss-concepts-immediate-implants" style="text-decoration:none;color:#01433d;">
+                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
+                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">surgery</p>
+                      <p style="margin:0 0 5px 0;" align="left">
+                        <strong>$19</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
+                      </p>
+                      <h4 style="margin:0 0 5px 0;" align="left">Zero Bone Loss Concepts, Immediate implants</h4>
+                      <img src="https://dent-s.com/assets/img/preview_img/ЗероБон.png"
+                           alt="Course cover"
+                           style="max-width:100%;border-radius:10px;">
+                    </div>
+                  </a>
+                </td>
+                <td>
+                  <a href="https://dent-s.com/client/course/authors-course-ofarnaldocastellucci" style="text-decoration:none;color:#01433d;">
+                    <div style="border-radius:20px;background-color:#79cee7;padding:10px;">
+                      <p style="text-transform:uppercase;margin:0 0 5px 0;" align="left">endodontics</p>
+                      <p style="margin:0 0 5px 0;" align="left">
+                        <strong>$19</strong> <span style="text-decoration:line-through;color:#006d8d;">$199</span>
+                      </p>
+                      <h4 style="margin:0 0 5px 0;" align="left">Author's course of Arnaldo Castellucci</h4>
+                      <img src="https://dent-s.com/assets/img/preview_img/castellucci.png"
                            alt="Course cover"
                            style="max-width:100%;border-radius:10px;">
                     </div>
