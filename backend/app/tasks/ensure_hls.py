@@ -67,11 +67,11 @@ def _each_mp4_objects():
                 yield key
 
 def slug(name: str) -> str:
-    """ASCII‑safe slug for directory names (max 60 chars)."""
     stem = Path(name).stem
-    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii", "ignore").decode()
-    ascii_name = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-").lower()
+    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii","ignore").decode()
+    ascii_name = re.sub(r"[^A-Za-z0-9]+","-", ascii_name).strip("-").lower()
     return (ascii_name or hashlib.sha1(stem.encode()).hexdigest())[:60]
+
 
 
 def hls_prefix_for(key: str) -> str:
@@ -178,21 +178,80 @@ s3v4 = boto3.client(
 @shared_task(name="app.tasks.ensure_hls.recount_hls_counters")
 def recount_hls_counters():
     """
-    Полный проход по бакету: пересчитывает total_mp4.
-    Set готовности НЕ пересобираем (дорого и нужно slug->orig),
-    но можем валидировать (опционально) — здесь опускаем.
+    Полный скан:
+      - собираем все исходные mp4 (не внутри /.hls/)
+      - собираем все playlist.m3u8
+      - восстанавливаем slug -> оригинальный mp4 через поиск
+      - наполняем Redis:
+           hls:total_mp4
+           hls:ready (union со старыми, чтобы не потерять то, что пришло параллельно)
+           hls:last_recount_ts
     """
-    total = 0
+    logger.info("[HLS][RECOUNT] start")
+    s3v4 = boto3.client(
+        "s3",
+        endpoint_url=S3_ENDPOINT,
+        region_name=S3_REGION,
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+    )
+
     paginator = s3v4.get_paginator("list_objects_v2")
+
+    mp4_keys = []
+    playlists = []  # (original_base_path, slug)
     for page in paginator.paginate(Bucket=S3_BUCKET):
         for obj in page.get("Contents", []):
             key = obj["Key"]
-            if key.lower().endswith(".mp4") and "/.hls/" not in key:
-                total += 1
+            low = key.lower()
+            if low.endswith(".mp4") and "/.hls/" not in low:
+                mp4_keys.append(key)
+            elif low.endswith("playlist.m3u8") and "/.hls/" in key:
+                # структура: <base>/.hls/<slug>/playlist.m3u8
+                # возьмём base и slug
+                parts = key.split("/")
+                try:
+                    hls_index = parts.index(".hls")
+                except ValueError:
+                    # иногда .hls может быть частью имени? пропустим
+                    continue
+                if hls_index >= 1 and hls_index + 2 < len(parts):
+                    base_parts = parts[:hls_index]  # каталог(и) исходника
+                    slug_dir = parts[hls_index + 1]
+                    playlists.append(("/".join(base_parts), slug_dir))
 
+    # Построим map: slug -> кандидаты исходных файлов (basename без расширения slug-нутый)
+    from collections import defaultdict
+    slug_candidates = defaultdict(list)
+    for key in mp4_keys:
+        basename = os.path.basename(key)
+        stem = os.path.splitext(basename)[0]
+        slugified = slug(stem)
+        slug_candidates[slugified].append(key)
+
+    recovered = set()
+    collisions = 0
+    for base, slug_dir in playlists:
+        cand_list = slug_candidates.get(slug_dir)
+        if not cand_list:
+            continue
+        if len(cand_list) == 1:
+            recovered.add(cand_list[0])
+        else:
+            # Несколько одинаковых slug — уточняем по каталогу base
+            filtered = [k for k in cand_list if os.path.dirname(k) == base]
+            if len(filtered) == 1:
+                recovered.add(filtered[0])
+            else:
+                collisions += 1  # невозможно однозначно
+    # Объединяем с уже существующим set (чтобы не потерять новые мгновенно добавленные)
     pipe = rds.pipeline()
-    pipe.set(R_TOTAL, total)
+    if recovered:
+        pipe.sadd(R_SET_READY, *recovered)
+    pipe.set(R_TOTAL, len(mp4_keys))
     pipe.set(R_LAST_RECOUNT_TS, int(time.time()))
     pipe.execute()
 
-    logger.info("[HLS][RECOUNT] total_mp4=%d ready=%d", total, rds.scard(R_SET_READY))
+    logger.info("[HLS][RECOUNT] total_mp4=%d recovered_ready=%d collisions=%d existing_ready=%d",
+                len(mp4_keys), len(recovered), collisions, rds.scard(R_SET_READY))
