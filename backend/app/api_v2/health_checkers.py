@@ -290,7 +290,7 @@ except Exception:  # pragma: no cover
 
 
 
-@router.get("/stats", response_model=StatsOut)
+@router.get("/hls_stats", response_model=StatsOut)
 async def hls_stats():
     """
     Быстрый ответ из Redis:
@@ -314,7 +314,7 @@ async def hls_stats():
         fresh=fresh,
     )
 
-@router.post("/process", response_model=ProcessOut)
+@router.post("/hls_process", response_model=ProcessOut)
 async def hls_process(data: ProcessIn):
     """
     Проверить конкретное видео и, при необходимости, поставить задачу генерации HLS.
@@ -339,7 +339,7 @@ async def hls_process(data: ProcessIn):
 # OPTIONAL: ручной запуск полного пересчёта (инициирует Celery таску)
 # ============================================================================
 
-@router.post("/recount", status_code=202)
+@router.post("/hls_recount", status_code=202)
 async def trigger_recount():
     if celery is None:
         raise HTTPException(status_code=500, detail="Celery not configured")
