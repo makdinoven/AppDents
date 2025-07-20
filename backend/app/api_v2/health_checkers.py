@@ -343,5 +343,5 @@ async def hls_process(data: ProcessIn):
 async def trigger_recount():
     if celery is None:
         raise HTTPException(status_code=500, detail="Celery not configured")
-    celery.send_task("app.tasks.recount_hls_counters", queue="special")
+    celery.send_task("app.tasks.ensure_hls.recount_hls_counters", queue="special")
     return {"status": "started"}
