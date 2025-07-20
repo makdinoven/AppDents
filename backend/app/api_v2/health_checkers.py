@@ -1,6 +1,6 @@
 # app/api_v2/health_checkers.py
 import asyncio, json, logging
-from datetime import time
+import time
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -305,7 +305,7 @@ async def hls_stats():
     # свежесть: если пересчёт был не позже 24ч
     fresh = False
     if last_ts:
-        fresh = (time() - int(last_ts)) < 86400
+        fresh = (time.time() - int(last_ts)) < 86400
     return StatsOut(
         hls_ready=ready,
         pending=pending,
