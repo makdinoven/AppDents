@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unicodedata
 from pathlib import Path
+from urllib.parse import unquote
 
 import boto3
 import requests
@@ -178,16 +179,18 @@ s3v4 = boto3.client(
 @shared_task(name="app.tasks.ensure_hls.recount_hls_counters")
 def recount_hls_counters():
     """
-    Полный скан:
-      - собираем все исходные mp4 (не внутри /.hls/)
-      - собираем все playlist.m3u8
-      - восстанавливаем slug -> оригинальный mp4 через поиск
-      - наполняем Redis:
-           hls:total_mp4
-           hls:ready (union со старыми, чтобы не потерять то, что пришло параллельно)
-           hls:last_recount_ts
+    Улучшенный пересчёт:
+      - Определяем total_mp4.
+      - Восстанавливаем готовые исходники без HeadObject.
+      - Используем несколько методов сопоставления:
+          * единственный mp4 в каталоге
+          * точный slug
+          * slug c percent-decode
+          * fuzzy очистка (только буквы/цифры)
+      - Логируем unmatched и collisions.
     """
-    logger.info("[HLS][RECOUNT] start")
+    logger.info("[HLS][RECOUNT] start (improved)")
+
     s3v4 = boto3.client(
         "s3",
         endpoint_url=S3_ENDPOINT,
@@ -199,59 +202,121 @@ def recount_hls_counters():
 
     paginator = s3v4.get_paginator("list_objects_v2")
 
-    mp4_keys = []
-    playlists = []  # (original_base_path, slug)
+    mp4_by_dir = {}          # dir -> [ {key,size,stem,slug} ]
+    playlists = []           # [{base_dir, slug_dir, full_key}]
+    total_mp4 = 0
+
+    def norm_slug(stem: str) -> str:
+        ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii","ignore").decode()
+        ascii_name = re.sub(r"[^A-Za-z0-9]+","-", ascii_name).strip("-").lower()
+        return (ascii_name or hashlib.sha1(stem.encode()).hexdigest())[:60]
+
     for page in paginator.paginate(Bucket=S3_BUCKET):
         for obj in page.get("Contents", []):
             key = obj["Key"]
             low = key.lower()
-            if low.endswith(".mp4") and "/.hls/" not in low:
-                mp4_keys.append(key)
-            elif low.endswith("playlist.m3u8") and "/.hls/" in key:
-                # структура: <base>/.hls/<slug>/playlist.m3u8
-                # возьмём base и slug
-                parts = key.split("/")
-                try:
-                    hls_index = parts.index(".hls")
-                except ValueError:
-                    # иногда .hls может быть частью имени? пропустим
-                    continue
-                if hls_index >= 1 and hls_index + 2 < len(parts):
-                    base_parts = parts[:hls_index]  # каталог(и) исходника
-                    slug_dir = parts[hls_index + 1]
-                    playlists.append(("/".join(base_parts), slug_dir))
+            if "/.hls/" in key:
+                # возможный playlist?
+                if low.endswith("playlist.m3u8"):
+                    parts = key.split("/")
+                    try:
+                        hls_index = parts.index(".hls")
+                    except ValueError:
+                        continue
+                    if hls_index >= 1 and hls_index + 2 < len(parts):
+                        base_dir = "/".join(parts[:hls_index])  # может быть "", если в корне
+                        slug_dir = parts[hls_index + 1]
+                        playlists.append({
+                            "base_dir": base_dir,
+                            "slug_dir": slug_dir,
+                            "playlist_key": key,
+                        })
+                continue
 
-    # Построим map: slug -> кандидаты исходных файлов (basename без расширения slug-нутый)
-    from collections import defaultdict
-    slug_candidates = defaultdict(list)
-    for key in mp4_keys:
-        basename = os.path.basename(key)
-        stem = os.path.splitext(basename)[0]
-        slugified = slug(stem)
-        slug_candidates[slugified].append(key)
+            if low.endswith(".mp4"):
+                total_mp4 += 1
+                base_dir = os.path.dirname(key)
+                stem = os.path.splitext(os.path.basename(key))[0]
+                entry = {
+                    "key": key,
+                    "size": obj.get("Size", 0),
+                    "stem": stem,
+                    "slug": norm_slug(stem),
+                }
+                mp4_by_dir.setdefault(base_dir, []).append(entry)
 
     recovered = set()
     collisions = 0
-    for base, slug_dir in playlists:
-        cand_list = slug_candidates.get(slug_dir)
-        if not cand_list:
+    unmatched = 0
+
+    def fuzzy(s: str) -> str:
+        return re.sub(r"[^a-z0-9]+", "", s.lower())
+
+    for pl in playlists:
+        base_dir = pl["base_dir"]
+        slug_dir = pl["slug_dir"]
+
+        candidates = mp4_by_dir.get(base_dir, [])
+        if not candidates:
+            # нет исходников в этом каталоге
+            unmatched += 1
             continue
-        if len(cand_list) == 1:
-            recovered.add(cand_list[0])
-        else:
-            # Несколько одинаковых slug — уточняем по каталогу base
-            filtered = [k for k in cand_list if os.path.dirname(k) == base]
-            if len(filtered) == 1:
-                recovered.add(filtered[0])
-            else:
-                collisions += 1  # невозможно однозначно
-    # Объединяем с уже существующим set (чтобы не потерять новые мгновенно добавленные)
+
+        if len(candidates) == 1:
+            recovered.add(candidates[0]["key"])
+            continue
+
+        # 1) точный slug
+        exact = [c for c in candidates if c["slug"] == slug_dir]
+        if len(exact) == 1:
+            recovered.add(exact[0]["key"])
+            continue
+        elif len(exact) > 1:
+            # slug коллизия -> возьмём самый большой размером (или логируем)
+            exact_sorted = sorted(exact, key=lambda x: x["size"], reverse=True)
+            recovered.add(exact_sorted[0]["key"])
+            collisions += 1
+            continue
+
+        # 2) percent-decode stem (если в stem есть '%')
+        decoded_matches = []
+        for c in candidates:
+            if "%" in c["stem"]:
+                dec = unquote(c["stem"])
+                if norm_slug(dec) == slug_dir:
+                    decoded_matches.append(c)
+        if len(decoded_matches) == 1:
+            recovered.add(decoded_matches[0]["key"])
+            continue
+        elif len(decoded_matches) > 1:
+            decoded_matches.sort(key=lambda x: x["size"], reverse=True)
+            recovered.add(decoded_matches[0]["key"])
+            collisions += 1
+            continue
+
+        # 3) fuzzy
+        fuzzy_matches = [c for c in candidates if fuzzy(c["stem"]) == fuzzy(slug_dir)]
+        if len(fuzzy_matches) == 1:
+            recovered.add(fuzzy_matches[0]["key"])
+            continue
+        elif len(fuzzy_matches) > 1:
+            fuzzy_matches.sort(key=lambda x: x["size"], reverse=True)
+            recovered.add(fuzzy_matches[0]["key"])
+            collisions += 1
+            continue
+
+        # не нашли
+        unmatched += 1
+
+    # Обновляем Redis (объединяем, чтобы не потерять добавленные параллельно)
     pipe = rds.pipeline()
     if recovered:
         pipe.sadd(R_SET_READY, *recovered)
-    pipe.set(R_TOTAL, len(mp4_keys))
+    pipe.set(R_TOTAL, total_mp4)
     pipe.set(R_LAST_RECOUNT_TS, int(time.time()))
     pipe.execute()
 
-    logger.info("[HLS][RECOUNT] total_mp4=%d recovered_ready=%d collisions=%d existing_ready=%d",
-                len(mp4_keys), len(recovered), collisions, rds.scard(R_SET_READY))
+    logger.info(
+        "[HLS][RECOUNT] total_mp4=%d playlists=%d recovered=%d collisions=%d unmatched_playlists=%d ready_now=%d",
+        total_mp4, len(playlists), len(recovered), collisions, unmatched, rds.scard(R_SET_READY)
+    )
