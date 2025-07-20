@@ -16,7 +16,8 @@ celery = Celery(
             "app.tasks.special_offers",
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
-            "app.tasks.abandoned_checkouts"
+            "app.tasks.abandoned_checkouts",
+            "app.tasks.ensure_hls.recount_hls_counters"
         ],
 )
 
@@ -61,6 +62,11 @@ celery.conf.update(
                     "schedule": 10800,              # 3 ч * 3600 с
                     "options": {"queue": "special"},
                 },
+        "recount-hls-daily": {
+                "task": "app.tasks.ensure_hls.recount_hls_counters",
+                "schedule": 86400,      # 1 раз в сутки
+                "options": {"queue": "special"},
+            },
         # "process-abandoned-checkouts-each-60m": {
         #             "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
         #             "schedule": 3600,           # каждый час
@@ -80,4 +86,5 @@ celery.conf.task_routes = {
     "app.tasks.storage_links.replace_storage_links": {"queue": "special"},
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
+    "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
 }

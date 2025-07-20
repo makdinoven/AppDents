@@ -12,11 +12,16 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task
+import os, time, logging, boto3, redis
+from celery import shared_task
+from botocore.config import Config
 
-# ---------------------------------------------------------------------------
-# Environment / constants
-# ---------------------------------------------------------------------------
-
+logger = logging.getLogger(__name__)
+REDIS_URL   = os.getenv("REDIS_URL", "redis://redis:6379/0")
+R_SET_READY = "hls:ready"
+R_TOTAL     = "hls:total_mp4"
+R_LAST_RECOUNT_TS = "hls:last_recount_ts"
+rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_BUCKET: str = os.getenv("S3_BUCKET", "cdn.dent-s.com")
 S3_REGION: str = os.getenv("S3_REGION", "ru-1")
@@ -29,7 +34,6 @@ CF_AUTH_KEY: str | None = os.getenv("CF_AUTH_KEY")
 NEW_TASKS_LIMIT: int = int(os.getenv("NEW_TASKS_LIMIT", 10))  # per scanner run
 PRESIGN_EXPIRY: int = 3600                                     # seconds
 
-logger = logging.getLogger(__name__)
 
 s3 = boto3.client(
     "s3",
@@ -159,3 +163,36 @@ def process_hls_video(key: str) -> None:
                    Metadata=meta, MetadataDirective="REPLACE",
                    ContentType=head["ContentType"], ACL="public-read")
     logger.info("[HLS] ready → %s", playlist_url)
+    rds.sadd("hls:ready", key)
+
+# Клиент только для листинга — V4
+s3v4 = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+)
+
+@shared_task(name="app.tasks.ensure_hls.recount_hls_counters")
+def recount_hls_counters():
+    """
+    Полный проход по бакету: пересчитывает total_mp4.
+    Set готовности НЕ пересобираем (дорого и нужно slug->orig),
+    но можем валидировать (опционально) — здесь опускаем.
+    """
+    total = 0
+    paginator = s3v4.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.lower().endswith(".mp4") and "/.hls/" not in key:
+                total += 1
+
+    pipe = rds.pipeline()
+    pipe.set(R_TOTAL, total)
+    pipe.set(R_LAST_RECOUNT_TS, int(time.time()))
+    pipe.execute()
+
+    logger.info("[HLS][RECOUNT] total_mp4=%d ready=%d", total, rds.scard(R_SET_READY))

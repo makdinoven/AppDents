@@ -1,18 +1,17 @@
 # app/api_v2/health_checkers.py
 import asyncio, json, logging
-from typing import Any, Dict, List
+from datetime import time
+from typing import Any, Dict, List, Optional
 
 import aiohttp
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import status
 import os
-import re
-import unicodedata
-import hashlib
-from pathlib import Path
+import redis
 from urllib.parse import urlparse, unquote
 
 import boto3
@@ -24,13 +23,20 @@ from ..db.database import get_async_db                   # ваша обёртк
 from ..models.models_v2 import Course, Landing        # ваши модели
 from ..celery_app import celery
 
-router = APIRouter(prefix="/videos", tags=["videos"])
+router = APIRouter()
 
 # --------------------------------------------------------------------------- #
 #                                У т и л и т ы                                #
 # --------------------------------------------------------------------------- #
 
 OK_STATUSES = {*range(200, 400)}        # 2xx и 3xx считаем «живыми»
+REDIS_URL     = os.getenv("REDIS_URL", "redis://redis:6379/0")
+rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+
+# Ключи в Redis
+R_SET_READY   = "hls:ready"          # Set of original mp4 keys
+R_TOTAL       = "hls:total_mp4"      # Int count of all original mp4
+R_LAST_RECOUNT_TS = "hls:last_recount_ts"
 
 async def probe_url(session: aiohttp.ClientSession, url: str, timeout: int = 10) -> bool:
     """
@@ -206,29 +212,43 @@ s3_list = boto3.client(
     config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
 )
 
-router = APIRouter(prefix="/admin/hls", tags=["hls-admin"])
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def slug(name: str) -> str:
-    stem = Path(name).stem
-    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii", "ignore").decode()
-    ascii_name = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-").lower()
-    return (ascii_name or hashlib.sha1(stem.encode()).hexdigest())[:60]
+ALLOWED_ORIGIN_SUFFIXES = (
+    ".s3.twcstorage.ru",
+    ".s3.timeweb.com",          # на случай других endpoint'ов
+)
 
-def hls_prefix_for(key: str) -> str:
-    base, fname = os.path.split(key)
-    return f"{base}/.hls/{slug(fname)}/".lstrip("/")
+CDN_HOSTS = (
+    "cdn.dent-s.com",
+)
 
-def key_from_url(url: str) -> str:
-    parsed = urlparse(url)
-    # Если передана уже только часть пути без протокола, тоже обработаем
-    if not parsed.scheme:
-        # считаем что это уже ключ (мог быть percent-encoded)
-        return unquote(url.lstrip('/'))
-    return unquote(parsed.path.lstrip('/'))
+def key_from_url(url_or_key: str) -> str:
+    """
+    Принимает:
+      * полный CDN URL (https://cdn.dent-s.com/Path/Video.mp4)
+      * origin URL (https://<bucket>.s3.twcstorage.ru/Каталог/Видео.mp4)
+      * просто ключ / путь (percent-encoded или сырой)
+    Возвращает unicode object key без ведущего '/'.
+    """
+    if "://" not in url_or_key:          # уже ключ
+        return unquote(url_or_key.lstrip("/"))
+
+    p = urlparse(url_or_key)
+    host = p.netloc.lower()
+    raw_path = unquote(p.path.lstrip("/"))
+
+    if host in CDN_HOSTS:
+        return raw_path
+
+    if any(host.endswith(suf) for suf in ALLOWED_ORIGIN_SUFFIXES):
+        # bucket находится в host; path — ключ
+        return raw_path
+
+    # Неизвестный домен — всё равно возвращаем path (можно усилить: raise 400)
+    return raw_path
 
 def mp4_exists(key: str) -> bool:
     try:
@@ -237,65 +257,91 @@ def mp4_exists(key: str) -> bool:
     except ClientError:
         return False
 
-def hls_ready(key: str) -> bool:
-    # 1) По метаданным исходника
-    try:
-        head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-        if head.get("Metadata", {}).get("hls") == "true":
-            return True
-    except ClientError:
-        return False  # исходник отсутствует
-    # 2) По наличию плейлиста
-    prefix = hls_prefix_for(key)
-    try:
-        s3.head_object(Bucket=S3_BUCKET, Key=f"{prefix}playlist.m3u8")
-        return True
-    except ClientError:
-        return False
+# ============================================================================
+# Pydantic Models
+# ============================================================================
 
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
-
-@router.get("/hls_stats")
-async def hls_stats():
-    """Return counts of MP4 objects that have / do not have HLS yet.
-    O(N) list. Cache outside if needed."""
-    paginator = s3_list.get_paginator("list_objects_v2")
-    total = 0
-    ready = 0
-    for page in paginator.paginate(Bucket=S3_BUCKET):
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-            if not key.lower().endswith(".mp4"):
-                continue
-            if "/.hls/" in key:
-                continue
-            total += 1
-            if hls_ready(key):
-                ready += 1
-    return {"hls_ready": ready, "pending": total - ready, "total_mp4": total}
-
-
-class ProcessRequest(BaseException):  # placeholder removed later
-    pass
-
-from pydantic import BaseModel
-
-class HLSProcessIn(BaseModel):
+class ProcessIn(BaseModel):
     url: str
 
-@router.post("/hls_process")
-async def hls_process(data: HLSProcessIn):
+class ProcessOut(BaseModel):
+    status: str           # queued | already_ready | source_not_found
+    key: str
+
+class StatsOut(BaseModel):
+    hls_ready: int
+    pending: int
+    total_mp4: int
+    last_recount_ts: Optional[int] = None
+    fresh: bool
+
+# ============================================================================
+# Celery (отложенный импорт чтобы не мешать тестам)
+# ============================================================================
+
+try:
+    from app.celery_app import celery  # noqa
+except Exception:  # pragma: no cover
+    celery = None
+
+# ============================================================================
+# Router
+# ============================================================================
+
+
+
+@router.get("/stats", response_model=StatsOut)
+async def hls_stats():
+    """
+    Быстрый ответ из Redis:
+      - hls_ready = |set|
+      - total_mp4 = integer counter
+      - pending = total - ready
+    """
+    ready = rds.scard(R_SET_READY)
+    total = int(rds.get(R_TOTAL) or 0)
+    pending = max(total - ready, 0)
+    last_ts = rds.get(R_LAST_RECOUNT_TS)
+    # свежесть: если пересчёт был не позже 24ч
+    fresh = False
+    if last_ts:
+        fresh = (time() - int(last_ts)) < 86400
+    return StatsOut(
+        hls_ready=ready,
+        pending=pending,
+        total_mp4=total,
+        last_recount_ts=int(last_ts) if last_ts else None,
+        fresh=fresh,
+    )
+
+@router.post("/process", response_model=ProcessOut)
+async def hls_process(data: ProcessIn):
+    """
+    Проверить конкретное видео и, при необходимости, поставить задачу генерации HLS.
+    """
+    if celery is None:
+        raise HTTPException(status_code=500, detail="Celery not configured")
+
     key = key_from_url(data.url)
-    if not key.lower().endswith('.mp4'):
-        raise HTTPException(status_code=400, detail="Provided URL is not an .mp4")
+    if not key.lower().endswith(".mp4"):
+        raise HTTPException(status_code=400, detail="Provided object is not an .mp4 file")
 
     if not mp4_exists(key):
-        return {"status": "source_not_found", "key": key}
+        return ProcessOut(status="source_not_found", key=key)
 
-    if hls_ready(key):
-        return {"status": "already_ready", "key": key}
+    if rds.sismember(R_SET_READY, key):
+        return ProcessOut(status="already_ready", key=key)
 
     celery.send_task("app.tasks.process_hls_video", args=[key], queue="special")
-    return {"status": "queued", "key": key}
+    return ProcessOut(status="queued", key=key)
+
+# ============================================================================
+# OPTIONAL: ручной запуск полного пересчёта (инициирует Celery таску)
+# ============================================================================
+
+@router.post("/recount", status_code=202)
+async def trigger_recount():
+    if celery is None:
+        raise HTTPException(status_code=500, detail="Celery not configured")
+    celery.send_task("app.tasks.recount_hls_counters", queue="special")
+    return {"status": "started"}
