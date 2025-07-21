@@ -36,8 +36,8 @@ S3_REGION           = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
 # сканер
-SPACING             = int(os.getenv("HLS_TASK_SPACING", 240))   # сек. между ETA
-BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 30))     # задач за один проход
+SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
+BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 20))     # задач за один проход
 RATE_LIMIT_HLS      = "6/m"                                     # Celery annotation
 
 # основной S3‑клиент (V2 signature)
@@ -91,6 +91,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> None:
     """
     copy_cmd = [
         "ffmpeg", "-v", "error", "-y",
+        "-threads", "1",
         "-i", in_mp4,
         "-c", "copy",
         "-bsf:v", "h264_mp4toannexb",
@@ -108,6 +109,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> None:
 
     encode_cmd = [
         "ffmpeg", "-v", "error", "-y",
+        "-threads", "1",
         "-i", in_mp4,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k",
