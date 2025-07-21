@@ -170,6 +170,16 @@ def ensure_hls() -> None:
         except ClientError:
             continue
 
+        hls_prefix = hls_prefix_for(key)
+        playlist_key = f"{hls_prefix}playlist.m3u8"
+        try:
+            # если плейлист  уже в  бакете, считаем файл готовым
+            s3.head_object(Bucket=S3_BUCKET, Key=playlist_key)
+            _mark_hls_ready(key)  # проставит meta hls=true
+            continue  # heavy‑таску НЕ ставим
+        except ClientError:
+            pass  # плейлиста нет → идём дальше
+
         eta = start_ts + queued_now * SPACING
         process_hls_video.apply_async(
             (key,),
