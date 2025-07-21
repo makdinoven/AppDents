@@ -36,3 +36,6 @@ export { default as TrashCanIcon } from "./trash-can-icon.svg?react";
 export { default as CoinIcon } from "./coin.svg?react";
 export { default as AlertCirceIcon } from "./alert-circle.svg?react";
 export { default as LogoutIcon } from "./logout-icon.svg?react";
+export { default as ProcessEmail } from "./process-email.svg?react";
+export { default as WarningEmail } from "./warning-email.svg?react";
+export { default as ConfirmedEmail } from "./confirmed-email.svg?react";
