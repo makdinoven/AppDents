@@ -59,7 +59,6 @@ const CartFooter = ({
 
   const email = watch("email");
   const isPayDisabled = !isLogged && (!email || !!errors.email);
-  console.log(isPayDisabled);
 
   const handleCheckboxToggle = () => {
     if (balance! > 0) {
