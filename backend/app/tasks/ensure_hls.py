@@ -32,7 +32,7 @@ CF_ZONE_ID: str | None = os.getenv("CF_ZONE_ID")              # ← Cloudflare
 CF_AUTH_EMAIL: str | None = os.getenv("CF_AUTH_EMAIL")        # credentials
 CF_AUTH_KEY: str | None = os.getenv("CF_AUTH_KEY")
 
-NEW_TASKS_LIMIT: int = int(os.getenv("NEW_TASKS_LIMIT", 150))  # per scanner run
+NEW_TASKS_LIMIT: int = int(os.getenv("NEW_TASKS_LIMIT", 20))  # per scanner run
 PRESIGN_EXPIRY: int = 3600                                     # seconds
 
 
