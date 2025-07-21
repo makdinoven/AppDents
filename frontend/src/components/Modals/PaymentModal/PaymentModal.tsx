@@ -22,7 +22,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
   LS_TOKEN_KEY,
@@ -37,6 +37,9 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
+import useDebounce from "../../../common/hooks/useDebounce.ts";
+import { userApi } from "../../../api/userApi/userApi.ts";
+import { useEmailValidation } from "../EmailValidationWrapper/hooks/useEmailValidation.tsx";
 
 const logos = [
   VisaLogo,
@@ -87,17 +90,22 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
     register,
+    watch,
     handleSubmit,
     formState: { errors },
   } = useForm<PaymentType>({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
+
+  const emailValue = watch("email");
+
+  const { currentIndicator } = useEmailValidation(emailValue);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -173,7 +181,7 @@ const PaymentModal = ({
             <CheckMark />,
             () => {
               navigate(Path.profile);
-            },
+            }
           );
           await dispatch(getMe());
         }
@@ -278,6 +286,7 @@ const PaymentModal = ({
                 placeholder={t("email")}
                 error={errors.email?.message}
                 {...register("email")}
+                {...{ currentIndicator }}
               />
               {!isFree && (
                 <p className={s.modal_text}>

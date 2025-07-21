@@ -1,14 +1,15 @@
-import React, { useState } from "react";
+import React, { ReactNode, useState } from "react";
 import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
-import { ErrorIcon } from "../../../../assets/icons";
-import { EyeClosed, EyeOpened } from "../../../../assets/icons";
+import { EyeClosed, EyeOpened, ErrorIcon } from "../../../../assets/icons";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
+  currentIndicator?: ReactNode | null;
 }
 
 const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
+  const { currentIndicator, ...rest } = props;
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
 
@@ -20,6 +21,15 @@ const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
       className={`${s.input_wrapper} ${error ? s.error : ""}`}
     >
       <input {...props} type={inputType} />
+
+      {currentIndicator && (
+        <div className={s.error_icon_wrapper}>
+          {currentIndicator}
+          <div className={s.tooltip}>
+            <Trans i18nKey={error} />
+          </div>
+        </div>
+      )}
 
       {isPassword && (
         <button
