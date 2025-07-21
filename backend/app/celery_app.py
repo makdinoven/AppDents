@@ -58,7 +58,7 @@ celery.conf.update(
                 },
         "ensure_hls": {
                     "task": "app.tasks.ensure_hls",
-                    "schedule": 3600,              # 3 ч * 3600 с
+                    "schedule": 1800,
                     "options": {"queue": "special"},
                 },
         "recount-hls-daily": {
@@ -76,7 +76,8 @@ celery.conf.update(
 
 celery.conf.task_queues = (
     Queue("default"),         # превью, e-mails и т.д.
-    Queue("special"),         # спец-предложения
+    Queue("special"),
+    Queue("special_hls"),
 )
 
 celery.conf.task_routes = {

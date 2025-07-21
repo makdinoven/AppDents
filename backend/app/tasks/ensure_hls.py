@@ -1,3 +1,4 @@
+
 import hashlib
 import logging
 import os
@@ -5,6 +6,7 @@ import re
 import subprocess
 import tempfile
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -34,7 +36,8 @@ CF_AUTH_KEY: str | None = os.getenv("CF_AUTH_KEY")
 
 NEW_TASKS_LIMIT: int = int(os.getenv("NEW_TASKS_LIMIT", 15))  # per scanner run
 PRESIGN_EXPIRY: int = 3600                                     # seconds
-
+SPACING       = int(os.getenv("HLS_TASK_SPACING", 240))   # 4 мин
+BATCH_LIMIT   = int(os.getenv("HLS_BATCH_LIMIT", 30))     # задач за скан
 
 s3 = boto3.client(
     "s3",
@@ -85,30 +88,32 @@ def hls_prefix_for(key: str) -> str:
 
 @shared_task(name="app.tasks.ensure_hls")
 def ensure_hls() -> None:
-    """Scan S3 for .mp4 objects without `hls=true` and enqueue up to
-    `NEW_TASKS_LIMIT` conversion jobs.  
-    **Uses a temporary S3 client with V4‑signature _только_ для операции
-    `ListObjectsV2`, чтобы обойти ограничения Timeweb‑S3.**"""
-
+    """Сканирует bucket и ставит heavy‑задачи равномерно."""
+    start_ts = time.time()
     queued = 0
 
-    for key in _each_mp4_objects():  # V4‑подпись, безопасна для листинга
-        # пропускаем сервисные каталоги
+    for key in _each_mp4_objects():
         if "/.hls/" in key or key.endswith("_hls/"):
             continue
         try:
             head = s3.head_object(Bucket=S3_BUCKET, Key=key)
             if head.get("Metadata", {}).get("hls") == "true":
-                continue  # уже обработано
-        except ClientError as e:
-            logger.warning("HeadObject failed for %s: %s", key, e)
+                continue
+        except ClientError:
             continue
 
-        process_hls_video.apply_async((key,), queue="special")
+        # равномерный ETA: 0с, 240с, 480с, …
+        eta = start_ts + queued * SPACING
+        process_hls_video.apply_async(
+            (key,),
+            queue="special_hls",
+            eta=datetime.utcfromtimestamp(eta),
+        )
+        logger.info("[HLS] queued #%02d  %s  eta=%s",
+                    queued + 1, key,
+                    datetime.utcfromtimestamp(eta).isoformat(timespec="seconds"))
         queued += 1
-        logger.info("[HLS] queued %s", key)
-        if queued >= NEW_TASKS_LIMIT:
-            logger.info("[HLS] limit %d reached", NEW_TASKS_LIMIT)
+        if queued >= BATCH_LIMIT:
             break
 
     logger.info("[HLS] scan done, queued %d", queued)
