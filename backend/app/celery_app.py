@@ -58,7 +58,7 @@ celery.conf.update(
                 },
         "ensure_hls": {
                     "task": "app.tasks.ensure_hls",
-                    "schedule": 1800,              # 3 ч * 3600 с
+                    "schedule": 3600,              # 3 ч * 3600 с
                     "options": {"queue": "special"},
                 },
         "recount-hls-daily": {
