@@ -58,7 +58,7 @@ const CartFooter = ({
   });
 
   const email = watch("email");
-  const IS_PAYMENT_DISABLED = true;
+  const IS_PAYMENT_DISABLED = false;
   const isPayDisabled = !isLogged && (!email || !!errors.email);
   console.log(isPayDisabled);
 
