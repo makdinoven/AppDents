@@ -83,7 +83,7 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   handleCloseModal: () => void;
 }) => {
-  const IS_PAYMENT_DISABLED = true;
+  const IS_PAYMENT_DISABLED = false;
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
