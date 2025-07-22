@@ -38,8 +38,6 @@ class CheckoutRequest(BaseModel):
 
 
 @router.post("/checkout")
-
-
 def stripe_checkout(
         data: CheckoutRequest,
         request: Request,
