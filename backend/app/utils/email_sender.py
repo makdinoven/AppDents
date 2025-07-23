@@ -1050,7 +1050,7 @@ def render_course_card(course: dict[str, str]) -> str:
                 <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{course["lessons"]}</span>
               </p>
               <h4 style="margin:0 0 5px;" align="left">{course["title"]}</h4>
-              <img src="{course["preview_photo"]}" alt="Course cover" style="max-width:100%;border-radius:10px;">
+              <img src="{course["img"]}" alt="Course cover" style="max-width:100%;border-radius:10px;">
             </div>
           </a>
           <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center"><em>Этот курс уже доступен в&nbsp;вашем кабинете</em></p>
