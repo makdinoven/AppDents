@@ -7,16 +7,19 @@ from ..db.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
+# (scheme)://(uuid).(selstorage|s3.twcstorage).ru/
 PATTERN = (
+    r'https?://'
     r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-    r'\.(selstorage\.ru|s3\.twcstorage\.ru)'
+    r'\.(selstorage\.ru|s3\.twcstorage\.ru)/'
 )
-REGEXP_TIME_LIMIT_MS = 5000  # желаемое значение
-USE_HINT = True              # попробуем хинтом, если ваша версия MySQL поддерживает
+REPLACEMENT = 'https://cdn.dent-s.com/'         # со слэшем на конце
+
+REGEXP_TIME_LIMIT_MS = 5000
+USE_HINT = True  # если MySQL >= 8.0.21 — оставь True, иначе False
 
 
 def _update_table(db, table, column):
-    """Один UPDATE с REGEXP_REPLACE. Хинт добавляем при необходимости."""
     hint = f"/*+ SET_VAR(regexp_time_limit={REGEXP_TIME_LIMIT_MS}) */ " if USE_HINT else ""
     sql = f"""
         UPDATE {table}
@@ -25,7 +28,7 @@ def _update_table(db, table, column):
                 REGEXP_REPLACE(
                     CAST({column} AS CHAR CHARACTER SET utf8mb4),
                     '{PATTERN}',
-                    'cdn.dent-s.com',
+                    '{REPLACEMENT}',
                     1, 0, 'c'
                 ) AS JSON
             )
@@ -35,7 +38,7 @@ def _update_table(db, table, column):
 
 
 @shared_task(
-    name="app.tasks.storage_links.replace_storage_links",
+    name="app.tasks.special_offers.replace_storage_links",
     queue="special",
     bind=True,
     autoretry_for=(sqlalchemy.exc.OperationalError,),
@@ -44,26 +47,30 @@ def _update_table(db, table, column):
 )
 def replace_storage_links(self):
     """
-    Обновляет JSON-поля landings.lessons_info и courses.sections,
-    заменяя <uuid>.selstorage.ru / <uuid>.s3.twcstorage.ru на cdn.dent-s.com.
+    Заменяет ссылки вида:
+        https://<uuid>.selstorage.ru/...
+        https://<uuid>.s3.twcstorage.ru/...
+    на:
+        https://cdn.dent-s.com/...
+    в landings.lessons_info и courses.sections
     """
     db = SessionLocal()
     try:
         with db.begin():
-            # Пытаемся поставить SESSION-переменную (если вдруг станет доступна).
+            # Попытка поставить SESSION-переменную — вдруг разрешили позже.
             try:
                 db.execute(text(f"SET SESSION regexp_time_limit = {REGEXP_TIME_LIMIT_MS}"))
             except sqlalchemy.exc.OperationalError as e:
-                # код 1229 — только GLOBAL, игнорируем.
                 if "1229" not in str(e.orig):
                     raise
 
             _update_table(db, "landings", "lessons_info")
             _update_table(db, "courses", "sections")
 
-        logger.info("replace_storage_links: done")
+        logger.info("replace_storage_links: success")
+
     except Exception as exc:
-        logger.exception("replace_storage_links: error")
+        logger.exception("replace_storage_links: failure")
         raise self.retry(exc=exc)
     finally:
         db.close()
