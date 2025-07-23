@@ -180,10 +180,6 @@ def _choose_course(db: Session, course_ids: list[int] | None) -> int | None:
 
 
 def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
-    """
-    Собирает данные для карточки курса в письме.
-    Берём самый продаваемый лендинг выбранного курса.
-    """
     landing: Landing | None = (
         db.query(Landing)
           .join(Landing.courses)
@@ -194,22 +190,30 @@ def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
     if not landing:
         return {}
 
-    # нормализуем цены
-    price     = landing.new_price or ""
-    old_price = landing.old_price or ""
+    # цены
+    price = landing.new_price or ""
+    old   = landing.old_price or ""
     if price and not price.startswith("$"):
         price = f"${price}"
-    if old_price and not old_price.startswith("$"):
-        old_price = f"${old_price}"
-    lessons_raw = str(landing.lessons_count or "").strip()
-    lessons_str = lessons_raw if lessons_raw else "lessons"
+    if old and not old.startswith("$"):
+        old = f"${old}"
+
+    # уроки как готовая строка
+    lessons_str = landing.lessons_count or ""
+
+    # картинка — пытаемся несколько полей подряд
+    img_url = (
+        getattr(landing, "preview_photo", None)
+        or getattr(landing, "preview_img", None)
+        or getattr(landing, "preview_image", None)
+        or "https://dent-s.com/assets/img/placeholder.png"
+    )
 
     return {
         "url":       f"https://dent-s.com/client/course/{landing.page_name}",
-        "category":  (landing.tags[0].name.lower() if landing.tags else "course"),
         "price":     price,
-        "old_price": old_price,
+        "old_price": old,
         "lessons":   lessons_str,
         "title":     landing.landing_name or landing.page_name,
-        "img":       landing.preview_photo or "https://dent-s.com/assets/img/placeholder.png",
+        "img":       img_url,
     }
