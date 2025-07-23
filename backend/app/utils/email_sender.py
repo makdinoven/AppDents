@@ -1025,15 +1025,25 @@ TADs Diretti: L’Ancoraggio Scheletrico per Ogni Approccio
 # --------------------------------------------------------------------------
 #  HTML-карточка конкретного курса, который уже добавлен пользователю
 # --------------------------------------------------------------------------
-def render_course_card(course: dict[str, str]) -> str:
+def render_course_card(course: dict[str, str] | None) -> str:
     """
-    HTML-карточка курса.
-    Ожидает, что course["lessons"] — уже отформатированная строка
-    (например «7 modules: 21 lessons»).
+    Рисует HTML-карточку курса.
+    Любое отсутствующее поле заменяется на безопасное значение,
+    поэтому KeyError больше не вылетает.
     """
+    if not course:
+        return ""                       # нет данных → карточку не выводим
+
+    price       = course.get("price", "")
+    old_price   = course.get("old_price", "")
+    lessons     = course.get("lessons", "")
+    title       = course.get("title", "")
+    img         = course.get("img", "https://dent-s.com/assets/img/placeholder.png")
+    url         = course.get("url", "#")
+
     badge_old = (
-        f'<span style="text-decoration:line-through;color:#006d8d;">{course["old_price"]}</span>'
-        if course.get("old_price") else ""
+        f'<span style="text-decoration:line-through;color:#006d8d;">{old_price}</span>'
+        if old_price else ""
     )
 
     return f"""
@@ -1042,25 +1052,26 @@ def render_course_card(course: dict[str, str]) -> str:
     <table style="width:100%;color:#01433d;" cellpadding="0" cellspacing="5px">
       <tr>
         <td valign="top">
-          <a href="{course["url"]}" style="text-decoration:none;color:#01433d;display:block;">
+          <a href="{url}" style="text-decoration:none;color:#01433d;display:block;">
             <div style="border-radius:20px;background-color:#7fdfd5;padding:10px;">
               <p style="margin:0 0 5px;" align="left">
-                <strong>{course["price"]}</strong>
+                <strong>{price}</strong>
                 {badge_old}
-                <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{course["lessons"]}</span>
+                <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{lessons}</span>
               </p>
-              <h4 style="margin:0 0 5px;" align="left">{course["title"]}</h4>
-              <img src="{course["img"]}" alt="Course cover" style="max-width:100%;border-radius:10px;">
+              <h4 style="margin:0 0 5px;" align="left">{title}</h4>
+              <img src="{img}" alt="Course cover" style="max-width:100%;border-radius:10px;">
             </div>
           </a>
-          <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center"><em>Этот курс уже доступен в&nbsp;вашем кабинете</em></p>
+          <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center">
+            <em>Этот курс уже доступен в&nbsp;вашем кабинете</em>
+          </p>
         </td>
       </tr>
     </table>
   </td>
 </tr>
 """
-
 
 
 def send_password_to_user(recipient_email: str, password: str, region: str):
