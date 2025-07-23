@@ -85,6 +85,8 @@ export const INITIAL_USER = {
 
 export const OPEN_SEARCH_KEY = "GS";
 
+export const PAYMENT_PAGE_KEY = "BUY";
+
 export const BASE_URL = "https://dent-s.com";
 
 export const SORT_FILTERS = [
@@ -119,24 +121,42 @@ export const PAGE_SIZES = [
   { name: "100", value: "100" },
 ];
 
+export const PAGE_SOURCES = {
+  main: "HOMEPAGE",
+  cart: "CART",
+  landing: "LANDING",
+  landingOffer: "LANDING_OFFER",
+  videoLanding: "LANDING_VIDEO",
+  webinarLanding: "LANDING_WEBINAR",
+  professor: "PROFESSOR_PAGE",
+  professorOffer: "PROFESSOR_OFFER",
+  professorListOffer: "PROF_LIST_OFFER",
+  cabinetOffer: "CABINET_OFFER",
+  cabinetFree: "CABINET_FREE",
+  courses: "COURSES_PAGE",
+  coursesOffer: "COURSES_OFFER",
+  specialOffer: "SPECIAL_OFFER",
+  other: "OTHER",
+} as const;
+
 export const PAYMENT_SOURCES = [
-  { name: "HOMEPAGE", path: Path.main },
-  { name: "CART", path: Path.cart },
-  { name: "LANDING", path: `/${Path.landingClient}` },
-  { name: "LANDING", path: Path.landing },
-  { name: "LANDING_VIDEO", path: Path.videoLanding },
-  { name: "LANDING_WEBINAR", path: Path.webinarLanding },
-  { name: "PROFESSOR_PAGE", path: Path.professor },
-  { name: "PROFESSOR_OFFER", path: Path.professor },
-  { name: "PROF_LIST_OFFER", path: Path.professors },
-  { name: "CABINET_OFFER", path: Path.profile },
-  { name: "CABINET_FREE", path: `${Path.profile}/${Path.myCourse}` },
-  { name: "LANDING_OFFER", path: Path.landing },
-  { name: "LANDING_OFFER", path: `/${Path.landingClient}` },
-  { name: "VIDEO_LANDING", path: `/${Path.videoLanding}` },
+  { name: PAGE_SOURCES.main, path: Path.main },
+  { name: PAGE_SOURCES.cart, path: Path.cart },
+  { name: PAGE_SOURCES.landing, path: `/${Path.landingClient}` },
+  { name: PAGE_SOURCES.landing, path: Path.landing },
+  { name: PAGE_SOURCES.videoLanding, path: Path.videoLanding },
+  { name: PAGE_SOURCES.webinarLanding, path: Path.webinarLanding },
+  { name: PAGE_SOURCES.professor, path: Path.professor },
+  { name: PAGE_SOURCES.professorOffer, path: Path.professor },
+  { name: PAGE_SOURCES.professorListOffer, path: Path.professors },
+  { name: PAGE_SOURCES.cabinetOffer, path: Path.profile },
+  { name: PAGE_SOURCES.cabinetFree, path: `${Path.profile}/${Path.myCourse}` },
+  { name: PAGE_SOURCES.landingOffer, path: Path.landing },
+  { name: PAGE_SOURCES.landingOffer, path: `/${Path.landingClient}` },
+  // { name: "VIDEO_LANDING", path: `/${Path.videoLanding}` },
   // {name: "SPECIAL_OFFER", path: `/${Path.profile}` },
-  { name: "COURSES_PAGE", path: Path.courses },
-  { name: "COURSES_OFFER", path: Path.courses },
+  { name: PAGE_SOURCES.courses, path: Path.courses },
+  { name: PAGE_SOURCES.coursesOffer, path: Path.courses },
 ];
 
 export const REF_CODE_PARAM = "rc";

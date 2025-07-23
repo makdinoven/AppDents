@@ -25,8 +25,8 @@ import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
+  BASE_URL,
   LS_TOKEN_KEY,
-  PAYMENT_SOURCES,
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
 } from "../../../common/helpers/commonConstants.ts";
@@ -38,6 +38,7 @@ import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import CheckMark from "../../../assets/Icons/CheckMark.tsx";
 import { PaymentDataType } from "../../../store/slices/paymentSlice.ts";
+import { getPaymentSource } from "../../../common/helpers/helpers.ts";
 
 const logos = [
   VisaLogo,
@@ -57,14 +58,17 @@ const PaymentModal = ({
   isWebinar = false,
   isFree = false,
   paymentData,
-  handleCloseModal,
 }: {
   isWebinar?: boolean;
   isFree?: boolean;
   isOffer?: boolean;
   paymentData: PaymentDataType;
-  handleCloseModal: () => void;
 }) => {
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
+  const currentUrl =
+    window.location.origin + location.pathname + location.search;
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
@@ -90,22 +94,6 @@ const PaymentModal = ({
     }
   };
 
-  const getPaymentSource = () => {
-    const pathname = location.pathname.startsWith("/")
-      ? location.pathname
-      : "/" + location.pathname;
-
-    const sources = PAYMENT_SOURCES.filter((s) => {
-      const isCorrectType = isOffer
-        ? s.name.endsWith("_OFFER")
-        : !s.name.endsWith("_OFFER");
-      return isCorrectType && s.path && pathname.startsWith(s.path);
-    });
-
-    const sorted = sources.sort((a, b) => b.path.length - a.path.length);
-    return sorted[0]?.name || "OTHER";
-  };
-
   const balancePrice = isBalanceUsed
     ? Math.round(Math.max(paymentData.newPrice - balance!, 0) * 100) / 100
     : paymentData.newPrice;
@@ -116,17 +104,24 @@ const PaymentModal = ({
       const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
       const cartLandingIds = cartStorage.getLandingIds();
       const dataToSend = {
-        ...paymentData,
+        price_cents: paymentData.priceCents,
+        region: paymentData.region ? paymentData.region : language,
+        landing_ids: paymentData.landingIds,
+        course_ids: paymentData.courseIds,
         use_balance: isBalanceUsed,
         user_email: isLogged ? email : form.email,
         transfer_cart: !isLogged && cartLandingIds.length > 0,
         cart_landing_ids: cartLandingIds,
-        source: !paymentData.source ? getPaymentSource() : paymentData.source,
+        source: !paymentData.source
+          ? getPaymentSource(isOffer)
+          : paymentData.source,
+        successUrl: `${BASE_URL}${Path.successPayment}`,
         cancel_url:
           !isLogged && rcCode
-            ? paymentData.cancelUrl + `?${REF_CODE_PARAM}=${rcCode}`
-            : paymentData.cancelUrl,
+            ? currentUrl + `?${REF_CODE_PARAM}=${rcCode}`
+            : currentUrl,
       };
+
       try {
         const res = await mainApi.buyCourse(dataToSend, isLogged);
         const checkoutUrl = res.data.checkout_url;
@@ -143,8 +138,6 @@ const PaymentModal = ({
             typeof newTab.closed === "undefined"
           ) {
             window.location.href = checkoutUrl;
-          } else {
-            handleCloseModal();
           }
         } else {
           console.error("Checkout URL is missing");
@@ -164,7 +157,7 @@ const PaymentModal = ({
       const dataToSend = {
         id: paymentData.landingIds![0],
         email: isLogged ? email : form.email,
-        region: paymentData.region,
+        region: paymentData.region ? paymentData.region : language,
       };
 
       try {
@@ -182,6 +175,10 @@ const PaymentModal = ({
       }
     }
   };
+
+  console.log(
+    !paymentData.source ? getPaymentSource(isOffer) : paymentData.source,
+  );
 
   return (
     <div className={s.modal}>

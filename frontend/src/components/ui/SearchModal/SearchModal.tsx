@@ -14,8 +14,10 @@ import useDebounce from "../../../common/hooks/useDebounce.ts";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 import AddToCartButton from "../AddToCartButton/AddToCartButton.tsx";
+import { OPEN_SEARCH_KEY } from "../../../common/helpers/commonConstants.ts";
 
-const SearchModal = ({ openKey }: { openKey: string }) => {
+const SearchModal = () => {
+  const openKey = OPEN_SEARCH_KEY;
   const SEARCH_KEY = "global_courses_search";
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();

@@ -1,6 +1,10 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
-import { LS_TOKEN_KEY } from "./commonConstants.ts";
+import {
+  LS_TOKEN_KEY,
+  PAGE_SOURCES,
+  PAYMENT_SOURCES,
+} from "./commonConstants.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
@@ -185,9 +189,27 @@ export const getFormattedDate = (date: Date) => {
 };
 
 export const getBasePath = (pathname: string) => {
-  return pathname
-    .replace(/^\/|\/$/g, "")
-    .split("/")
-    .slice(0, -1)
-    .join("/");
+  const segments = pathname.replace(/^\/|\/$/g, "").split("/");
+
+  if (segments.length === 1) {
+    return segments[0];
+  }
+
+  return segments.slice(0, -1).join("/");
+};
+
+export const getPaymentSource = (isOffer: boolean) => {
+  const pathname = location.pathname.startsWith("/")
+    ? location.pathname
+    : "/" + location.pathname;
+
+  const sources = PAYMENT_SOURCES.filter((s) => {
+    const isCorrectType = isOffer
+      ? s.name.endsWith("_OFFER")
+      : !s.name.endsWith("_OFFER");
+    return isCorrectType && s.path && pathname.startsWith(s.path);
+  });
+
+  const sorted = sources.sort((a, b) => b.path.length - a.path.length);
+  return sorted[0]?.name || PAGE_SOURCES.other;
 };

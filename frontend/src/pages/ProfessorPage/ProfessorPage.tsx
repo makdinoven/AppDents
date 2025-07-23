@@ -1,7 +1,7 @@
 import s from "./ProfessorPage.module.scss";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import Loader from "../../components/ui/Loader/Loader.tsx";
@@ -11,25 +11,56 @@ import CoursesSection from "../../components/CommonComponents/CoursesSection/Cou
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import Clock from "../../assets/Icons/Clock.tsx";
-import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
-import { BASE_URL } from "../../common/helpers/commonConstants.ts";
-import { Path } from "../../routes/routes.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
+import {
+  openPaymentModal,
+  setPaymentData,
+} from "../../store/slices/paymentSlice.ts";
+import { AppDispatchType } from "../../store/store.ts";
+import { PAGE_SOURCES } from "../../common/helpers/commonConstants.ts";
 
 const ProfessorPage = () => {
+  const dispatch = useDispatch<AppDispatchType>();
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const language = useSelector((state: any) => state.user.language);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const currentUrl = window.location.origin + location.pathname;
   const screenWidth = useScreenWidth();
 
   useEffect(() => {
     fetchProfessorData();
   }, [professorId]);
+
+  useEffect(() => {
+    if (professor) {
+      const paymentData = {
+        landingIds: professor?.landings.map(
+          (landing: { id: number }) => landing.id,
+        ),
+        courseIds: professor?.course_ids,
+        priceCents: professor?.total_new_price * 100,
+        newPrice: professor?.total_new_price,
+        oldPrice: professor?.total_old_price,
+        source: PAGE_SOURCES.professor,
+        fromAd: false,
+        courses: professor?.landings.map(
+          (item: {
+            landing_name: string;
+            new_price: number;
+            old_price: number;
+            lessons_count: string;
+          }) => ({
+            name: item.landing_name,
+            newPrice: item.new_price,
+            oldPrice: item.old_price,
+            lessonsCount: item.lessons_count,
+          }),
+        ),
+      };
+
+      dispatch(setPaymentData(paymentData));
+    }
+  }, [professor]);
 
   const fetchProfessorData = async () => {
     setLoading(true);
@@ -40,34 +71,6 @@ const ProfessorPage = () => {
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const paymentData = {
-    landing_ids: professor?.landings.map(
-      (landing: { id: number }) => landing.id,
-    ),
-    course_ids: professor?.course_ids,
-    price_cents: professor?.total_new_price * 100,
-    total_new_price: professor?.total_new_price,
-    total_old_price: professor?.total_old_price,
-    region: language,
-    success_url: `${BASE_URL}${Path.successPayment}`,
-    cancel_url: currentUrl,
-    courses: professor?.landings.map(
-      (item: {
-        landing_name: string;
-        new_price: number;
-        old_price: number;
-      }) => ({
-        name: item.landing_name,
-        new_price: item.new_price,
-        old_price: item.old_price,
-      }),
-    ),
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
   };
 
   const renderBuySection = () => {
@@ -92,7 +95,7 @@ const ProfessorPage = () => {
             }}
           />
         </p>
-        <ArrowButton onClick={() => setIsModalOpen(true)}>
+        <ArrowButton onClick={() => dispatch(openPaymentModal())}>
           <Trans
             i18nKey={"professor.getAllCourses"}
             values={{
@@ -164,20 +167,6 @@ const ProfessorPage = () => {
             pageSize={6}
           />
         </div>
-      )}
-      {isModalOpen && (
-        <ModalWrapper
-          variant="dark"
-          title={"yourOrder"}
-          cutoutPosition="none"
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        >
-          <PaymentModal
-            paymentData={paymentData}
-            handleCloseModal={handleCloseModal}
-          />
-        </ModalWrapper>
       )}
     </>
   );

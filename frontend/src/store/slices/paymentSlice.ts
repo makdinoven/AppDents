@@ -1,19 +1,19 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PAGE_SOURCES } from "../../common/helpers/commonConstants.ts";
 
 export interface PaymentDataType {
-  isFree: boolean; // TODO УДАЛИТЬ
-  isWebinar: boolean; // TODO УДАЛИТЬ
+  isFree?: boolean; // TODO УДАЛИТЬ
+  isWebinar?: boolean; // TODO УДАЛИТЬ
+  isOffer?: boolean; // TODO УДАЛИТЬ
+  region?: string;
+  landingIds?: number[];
+  slug?: string;
   fromAd: boolean;
   priceCents: number;
   newPrice: number;
   oldPrice: number;
-  landingIds?: number[];
-  slug: string;
   courseIds: number[];
-  region: string;
-  successUrl: string;
-  cancelUrl: string;
-  source: string;
+  source?: (typeof PAGE_SOURCES)[keyof typeof PAGE_SOURCES];
   courses: {
     name: string;
     newPrice: number;
@@ -24,37 +24,37 @@ export interface PaymentDataType {
 
 interface State {
   data: PaymentDataType | null;
-  backgroundUrl: string | null;
+  isPaymentModalOpen: boolean;
 }
 
 const initialState: State = {
   data: null,
-  backgroundUrl: null,
+  isPaymentModalOpen: false,
 };
 
 const paymentSlice = createSlice({
   name: "payment",
   initialState,
   reducers: {
-    setPaymentData(
-      state,
-      action: PayloadAction<{ data: PaymentDataType; backgroundUrl?: string }>,
-    ) {
-      state.data = action.payload.data;
-      if (action.payload.backgroundUrl) {
-        state.backgroundUrl = action.payload.backgroundUrl;
-      }
+    setPaymentData(state, action: PayloadAction<PaymentDataType>) {
+      state.data = action.payload;
     },
-    setBackgroundUrl(state, action: PayloadAction<{ url: string }>) {
-      state.backgroundUrl = action.payload.url;
+    openPaymentModal(state) {
+      state.isPaymentModalOpen = true;
+    },
+    closePaymentModal(state) {
+      state.isPaymentModalOpen = false;
     },
     clearPaymentData(state) {
       state.data = null;
-      state.backgroundUrl = null;
     },
   },
 });
 
-export const { setPaymentData, setBackgroundUrl, clearPaymentData } =
-  paymentSlice.actions;
+export const {
+  setPaymentData,
+  openPaymentModal,
+  closePaymentModal,
+  clearPaymentData,
+} = paymentSlice.actions;
 export const paymentReducer = paymentSlice.reducer;

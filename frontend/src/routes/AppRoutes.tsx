@@ -28,7 +28,6 @@ import ProtectedRoute from "./protected/ProtectedRoute.tsx";
 import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
-import PaymentPage from "../pages/PaymentPage/PaymentPage.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -114,12 +113,6 @@ export const AppRoutes: FC = () => {
 
       {(backgroundLocation || isModalRoute) && <AuthModalManager />}
       {location.pathname === Path.cart && <Cart />}
-
-      {location.pathname.startsWith(Path.payment) && (
-        <Routes>
-          <Route path={`${Path.payment}/:slug`} element={<PaymentPage />} />
-        </Routes>
-      )}
     </>
   );
 };

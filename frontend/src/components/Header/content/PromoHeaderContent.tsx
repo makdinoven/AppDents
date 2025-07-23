@@ -14,8 +14,11 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { Path } from "../../../routes/routes.ts";
+import { useLocation } from "react-router-dom";
+import { openPaymentModal } from "../../../store/slices/paymentSlice.ts";
 
 const PromoHeaderContent = () => {
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatchType>();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
@@ -58,11 +61,7 @@ const PromoHeaderContent = () => {
       <BurgerMenu buttons={NAV_BUTTONS_PROMOTE} />
       {!!oldPrice && !!newPrice && (
         <button
-          onClick={() =>
-            navigate(`${Path.payment}/${slug}`, {
-              state: { backgroundLocation: location },
-            })
-          }
+          onClick={() => dispatch(openPaymentModal())}
           className={s.buy_btn}
         >
           <Trans
