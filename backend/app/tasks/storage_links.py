@@ -16,7 +16,7 @@ REGEXP_TIME_LIMIT_MS = 5000  # можно 0 (без лимита), но 3-5 се
 
 
 @shared_task(
-    name="app.tasks.special_offers.replace_storage_links",
+    name="app.tasks.storage_links.replace_storage_links",
     queue="special",
     bind=True,
     # автоматический ретрай на OperationalError (таймаут, сетевые глюки и т.д.)
