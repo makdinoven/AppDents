@@ -22,7 +22,10 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { Path } from "../../routes/routes.ts";
-import { BASE_URL } from "../../common/helpers/commonConstants.ts";
+import {
+  BASE_URL,
+  PAGE_SOURCES,
+} from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
@@ -31,7 +34,10 @@ import BackButton from "../../components/ui/BackButton/BackButton.tsx";
 import Faq from "./modules/Faq/Faq.tsx";
 import { getCourses } from "../../store/actions/userActions.ts";
 import VideoSection from "./modules/VideoSection/VideoSection.tsx";
-import { setPaymentData } from "../../store/slices/paymentSlice.ts";
+import {
+  openPaymentModal,
+  setPaymentData,
+} from "../../store/slices/paymentSlice.ts";
 
 const Landing = () => {
   const [landing, setLanding] = useState<any | null>(null);
@@ -43,7 +49,6 @@ const Landing = () => {
   );
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role, isLogged, courses } = useSelector(
     (state: AppRootStateType) => state.user,
@@ -57,7 +62,6 @@ const Landing = () => {
     return searchParams.has("fbclid") || isPromotionLanding;
   }, [location.search]);
   const isAdmin = role === "admin";
-
   const basePath = getBasePath(location.pathname);
 
   const isVideo = basePath === Path.videoLanding;
@@ -110,16 +114,15 @@ const Landing = () => {
     mainApi.trackFacebookAd(landingPath!);
   };
 
-  const navigateToPayment = () => {
-    navigate(`${Path.payment}/${landingPath}`, {
-      state: { backgroundLocation: location },
-    });
+  const handleNavigateToPayment = () => {
+    dispatch(setPaymentData(paymentData));
+    dispatch(openPaymentModal());
   };
 
   const renderBuyButton = (variant: "full" | "default") => {
     if (!isFree) {
       return (
-        <ArrowButton onClick={() => navigateToPayment()}>
+        <ArrowButton onClick={handleNavigateToPayment}>
           <Trans
             i18nKey={
               variant === "default" ? "landing.buyFor" : "landing.buyForFull"
@@ -137,7 +140,7 @@ const Landing = () => {
     } else {
       return (
         <div className={s.buy_and_free_btns}>
-          <ArrowButton onClick={() => navigateToPayment()}>
+          <ArrowButton onClick={handleNavigateToPayment}>
             <Trans
               i18nKey={
                 variant === "default" ? "landing.buyFor" : "landing.buyForFull"
@@ -157,7 +160,7 @@ const Landing = () => {
           <PrettyButton
             className={s.free_btn}
             variant={"primary"}
-            onClick={() => navigateToPayment()}
+            onClick={handleNavigateToPayment}
             text={"freeCourse.tryFirstLesson"}
           />
         </div>
@@ -168,9 +171,6 @@ const Landing = () => {
   useEffect(() => {
     if (landing) {
       setFirstLesson(landing?.lessons_info[0]);
-      dispatch(
-        setPaymentData({ data: paymentData, backgroundUrl: currentUrl }),
-      );
     }
   }, [landing]);
 
@@ -178,17 +178,15 @@ const Landing = () => {
   const paymentData = {
     isWebinar: isWebinar,
     isFree: isFree,
-    slug: landing?.page_name,
     fromAd: isPromotionLanding,
+    slug: landing?.page_name,
     landingIds: [landing?.id],
     courseIds: landing?.course_ids,
     priceCents: !isWebinar ? landing?.new_price * 100 : 100,
     newPrice: !isWebinar ? landing?.new_price : 1,
     oldPrice: !isWebinar ? landing?.old_price : 49,
     region: landing?.language,
-    successUrl: `${BASE_URL}${Path.successPayment}`,
-    cancelUrl: currentUrl,
-    source: isWebinar ? "LANDING_WEBINAR" : "",
+    source: isWebinar ? PAGE_SOURCES.webinarLanding : undefined,
     courses: [
       {
         name: !isWebinar ? landing?.landing_name : firstLesson?.name,
@@ -337,23 +335,6 @@ const Landing = () => {
           />
         </div>
       )}
-
-      {/*{isModalOpen && (*/}
-      {/*  <ModalWrapper*/}
-      {/*    variant="dark"*/}
-      {/*    title={"yourOrder"}*/}
-      {/*    cutoutPosition="none"*/}
-      {/*    isOpen={isModalOpen}*/}
-      {/*    onClose={handleCloseModal}*/}
-      {/*  >*/}
-      {/*    <PaymentModal*/}
-      {/*      isWebinar={isWebinar}*/}
-      {/*      isFree={isModalFree}*/}
-      {/*      paymentData={paymentData}*/}
-      {/*      handleCloseModal={handleCloseModal}*/}
-      {/*    />*/}
-      {/*  </ModalWrapper>*/}
-      {/*)}*/}
     </>
   );
 };

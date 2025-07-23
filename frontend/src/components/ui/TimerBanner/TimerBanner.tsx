@@ -1,22 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import s from "./TimerBanner.module.scss";
 import { Trans } from "react-i18next";
-import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../store/store.ts";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import Timer from "./Timer/Timer.tsx";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Path } from "../../../routes/routes.ts";
+import { openPaymentModal } from "../../../store/slices/paymentSlice.ts";
 
 const TimerBanner = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
   const [discount, setDiscount] = useState(0);
   const bannerRef = useRef<HTMLDivElement | null>(null);
-  const slug = useSelector(
-    (state: AppRootStateType) => state.payment.data?.slug,
-  );
+  const dispatch = useDispatch<AppDispatchType>();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
@@ -53,16 +48,10 @@ const TimerBanner = () => {
     };
   }, []);
 
-  const handleClick = () => {
-    navigate(`${Path.payment}/${slug}`, {
-      state: { backgroundLocation: location },
-    });
-  };
-
   const renderBanner = (isSticky = false, isHiding = false) => (
     <div
       ref={!isSticky ? bannerRef : null}
-      onClick={handleClick}
+      onClick={() => dispatch(openPaymentModal())}
       className={`${s.banner} ${isSticky ? s.sticky : ""} ${isHiding ? s.hiding : ""}`}
     >
       <div className={s.banner_container}>

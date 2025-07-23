@@ -7,6 +7,9 @@ import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import Arrow from "../../../../assets/Icons/Arrow.tsx";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
+import { openPaymentModal } from "../../../../store/slices/paymentSlice.ts";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../../store/store.ts";
 
 type OutletContextType = {
   course: any;
@@ -15,8 +18,8 @@ type OutletContextType = {
 };
 
 const LessonPage = () => {
-  const { course, handleOpenModal, isPartial } =
-    useOutletContext<OutletContextType>();
+  const { course, isPartial } = useOutletContext<OutletContextType>();
+  const dispatch = useDispatch<AppDispatchType>();
   const { sectionId, lessonId } = useParams();
   const [lesson, setLesson] = useState<any | null>(null);
   const [prevLesson, setPrevLesson] = useState<any | null>(null);
@@ -129,7 +132,7 @@ const LessonPage = () => {
             {nextLesson &&
               (isPartial ? (
                 <button
-                  onClick={handleOpenModal}
+                  onClick={() => dispatch(openPaymentModal())}
                   className={`${s.next_link} ${s.disabled}`}
                 >
                   <Trans i18nKey={"profile.nextLesson"} />
