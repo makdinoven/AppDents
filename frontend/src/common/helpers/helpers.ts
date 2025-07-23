@@ -181,7 +181,7 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
 
-  return `${hours}:${minutes} ${day}.${month}.${year} `;
+  return `${hours}:${minutes} ${day}.${month}.${year}`;
 };
 
 export const getFormattedDate = (date: Date) => {

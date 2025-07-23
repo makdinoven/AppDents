@@ -1,8 +1,10 @@
 import os
 import uuid
 import shutil
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
 
+from ..dependencies.role_checker import require_roles
+from ..models.models_v2 import User
 
 router = APIRouter()
 
@@ -17,7 +19,7 @@ def get_absolute_url(filename: str) -> str:
 
 
 @router.post("/photo", status_code=status.HTTP_201_CREATED)
-async def upload_photo(file: UploadFile = File(...)):
+async def upload_photo(file: UploadFile = File(...), current_admin: User = Depends(require_roles("admin"))):
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid file type")

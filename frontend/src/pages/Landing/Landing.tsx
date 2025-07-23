@@ -35,6 +35,10 @@ import Faq from "./modules/Faq/Faq.tsx";
 import { getCourses } from "../../store/actions/userActions.ts";
 import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 import {
+  initLowPricePixel,
+  trackLowPricePageView,
+} from "../../common/helpers/facebookPixel.ts";
+import {
   openPaymentModal,
   setPaymentData,
 } from "../../store/slices/paymentSlice.ts";
@@ -171,6 +175,12 @@ const Landing = () => {
   useEffect(() => {
     if (landing) {
       setFirstLesson(landing?.lessons_info[0]);
+
+      const price = Number(landing?.new_price);
+      if (price < 2 || isWebinar) {
+        initLowPricePixel();
+        trackLowPricePageView();
+      }
     }
   }, [landing]);
 

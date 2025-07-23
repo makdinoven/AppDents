@@ -10,7 +10,7 @@ import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import Clock from "../../assets/Icons/Clock.tsx";
+import Clock from "../../assets/icons/Clock.tsx";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
 import {

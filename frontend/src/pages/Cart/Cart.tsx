@@ -9,7 +9,7 @@ import CartItem from "./CartItem/CartItem.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { getCart, removeCartItem } from "../../store/actions/cartActions.ts";
-import { CartIcon } from "../../assets/logos/index";
+import { CartIcon, CheckMark } from "../../assets/icons/index.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import CartFooter from "./CartFooter/CartFooter.tsx";
 import { cartStorage } from "../../api/cartApi/cartStorage.ts";
@@ -23,7 +23,6 @@ import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
 import { Alert } from "../../components/ui/Alert/Alert.tsx";
-import CheckMark from "../../assets/Icons/CheckMark.tsx";
 
 const Cart = () => {
   const location = useLocation();
@@ -34,7 +33,7 @@ const Cart = () => {
   const [cartPreviewLoading, setCartPreviewLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email, language } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const [loading, setLoading] = useState(false);
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
@@ -48,9 +47,7 @@ const Cart = () => {
     total_new_amount,
     total_old_amount,
   } = useSelector((state: AppRootStateType) => state.cart);
-  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    balance ? balance > 0 : false
-  );
+  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const isCartEmpty = quantity === 0;
 
   useEffect(() => {
@@ -60,7 +57,7 @@ const Cart = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!isLogged) {
+    if (!isLogged && quantity > 0) {
       previewCart();
     }
   }, [isLogged, quantity]);
@@ -137,7 +134,7 @@ const Cart = () => {
       if (balanceLeft) {
         Alert(
           t("successPaymentWithBalance", { balance: balanceLeft }),
-          <CheckMark />
+          <CheckMark />,
         );
         navigate(Path.profile);
       }

@@ -1,12 +1,13 @@
 import s from "../Header.module.scss";
 import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
+import { openModal } from "../../../store/slices/landingSlice.ts";
 import { Trans } from "react-i18next";
 import {
   BooksIcon,
   ProfessorsIcon,
   QuestionMark,
-} from "../../../assets/logos/index";
+} from "../../../assets/icons/index";
 import {
   getBasePath,
   scrollToElementById,

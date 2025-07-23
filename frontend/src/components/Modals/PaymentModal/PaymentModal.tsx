@@ -18,7 +18,7 @@ import {
   PaypalLogo,
   UnionPayLogo,
   VisaLogo,
-} from "../../../assets/logos/index";
+} from "../../../assets/logos";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
@@ -36,7 +36,8 @@ import { Path } from "../../../routes/routes.ts";
 import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
-import CheckMark from "../../../assets/Icons/CheckMark.tsx";
+import { CheckMark } from "../../../assets/icons/index.ts";
+import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 import { PaymentDataType } from "../../../store/slices/paymentSlice.ts";
 import { getPaymentSource } from "../../../common/helpers/helpers.ts";
 
@@ -69,6 +70,7 @@ const PaymentModal = ({
   );
   const currentUrl =
     window.location.origin + location.pathname + location.search;
+  const IS_PAYMENT_DISABLED = false;
   const navigate = useNavigate();
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const [loading, setLoading] = useState(false);
@@ -76,9 +78,7 @@ const PaymentModal = ({
   const { isLogged, email } = useSelector(
     (state: AppRootStateType) => state.user,
   );
-  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(
-    isLogged && balance ? balance > 0 : false,
-  );
+  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
     register,
     handleSubmit,
@@ -144,11 +144,15 @@ const PaymentModal = ({
         }
 
         if (balanceLeft) {
+          dispatch(getMe());
           Alert(
             t("successPaymentWithBalance", { balance: balanceLeft }),
             <CheckMark />,
+            () => {
+              navigate(Path.profile);
+            },
           );
-          navigate(Path.profile);
+          await dispatch(getMe());
         }
       } catch (error) {
         console.log(error);
@@ -187,7 +191,7 @@ const PaymentModal = ({
           <div key={index} className={s.course}>
             <p>
               {course.name}{" "}
-              {!isWebinar && (
+              {!isWebinar && course.lessonsCount && (
                 <>
                   - <span className={"highlight"}>{course.lessonsCount}</span>
                 </>
@@ -273,8 +277,10 @@ const PaymentModal = ({
             )}
           </>
         )}
+        {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
         <Button
-          variant={"filled"}
+          disabled={IS_PAYMENT_DISABLED}
+          variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
           loading={loading}
           text={isFree ? "tryCourseForFree" : "pay"}
           type="submit"

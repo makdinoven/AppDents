@@ -1,0 +1,199 @@
+.profile_page_content {
+  @include flex-column;
+  gap: 80px;
+  justify-content: space-between;
+}
+
+.page_header {
+  @include flex-column;
+  gap: 40px;
+}
+
+.logout_btn {
+  svg {
+    flex-shrink: 0;
+  }
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  @include clamped-p2;
+  @include transition();
+
+  @media (hover: hover) {
+    &:hover {
+      color: $error-color;
+
+      svg {
+        path {
+          fill: $error-color;
+        }
+      }
+    }
+  }
+
+  &:active {
+    color: $error-color;
+
+    svg {
+      path {
+        fill: $error-color;
+      }
+    }
+  }
+
+  svg {
+    width: 27px;
+    height: 27px;
+    path {
+      @include transition();
+      stroke {
+        color: $accent;
+      }
+    }
+  }
+}
+
+.back_btn_tabs_container {
+  display: flex;
+  justify-content: space-between;
+  //display: grid;
+  //grid-template-columns: 30px 1fr 80px ;
+  gap: 10px;
+  margin-bottom: 40px;
+  button {
+    margin-bottom: 0;
+  }
+}
+
+.user_info {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 20px;
+}
+
+.reset_pass_btn {
+  @include clamped-p3;
+  min-width: unset;
+}
+
+.left {
+  @include clamped-p3;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  span {
+    @include clamped-h4;
+    text-transform: uppercase;
+  }
+
+  .mail_link {
+    vertical-align: center;
+    text-decoration: underline;
+    color: $secondary-lighter;
+  }
+}
+
+.user_icon {
+  width: 100px;
+  height: 100px;
+}
+
+.user_top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.user_items {
+  @include flex-column;
+  gap: 10px;
+}
+
+.buttons {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tabs_wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile_buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .profile_page {
+    gap: 60px;
+  }
+
+  .user_info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .left {
+    gap: 20px;
+  }
+
+  .user_icon {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profile_page {
+    gap: 30px;
+  }
+
+  .reset_pass_btn {
+    min-width: unset;
+    padding: 5px 15px;
+  }
+
+  .profile_page_content {
+    gap: 30px;
+  }
+
+  .logout_btn {
+    gap: 0;
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .left {
+    gap: 10px;
+  }
+
+  .user_icon {
+      width: 45px;
+      height: 45px;
+  }
+
+  .user_items {
+    gap: 5px;
+
+    button {
+      width: fit-content;
+    }
+  }
+
+  .back_btn_tabs_container {
+    margin-bottom: 20px;
+    justify-content: center;
+    align-items: center;
+    //display: grid;
+    //grid-template-columns: 60px 1fr 30px ;
+  }
+}

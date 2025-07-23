@@ -16,15 +16,15 @@ const ProfilePage = () => {
 
   return (
     <>
-      <div className={s.admin_wrapper}>
-        {role === "admin" && (
+      {role === "admin" && (
+        <div className={s.admin_wrapper}>
           <PrettyButton
             variant="primary"
             text={"Admin panel"}
             onClick={() => navigate(Path.admin)}
           />
-        )}
-      </div>
+        </div>
+      )}
       <div className={s.profilePage}>
         <Outlet />
       </div>

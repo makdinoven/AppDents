@@ -31,6 +31,10 @@
   padding: 10px 20px;
 }
 
+.section_middle {
+  flex: 1;
+}
+
 .section_header {
   position: relative;
   display: flex;
@@ -173,6 +177,8 @@
 @media (max-width: $mobile-breakpoint) {
   .section {
     gap: 5px;
+    margin-left: -10px;
+    width: calc(100% + 20px);
   }
 
   .section_header {
