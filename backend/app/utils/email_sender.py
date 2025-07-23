@@ -1060,7 +1060,7 @@ def render_course_card(course: dict[str, str] | None) -> str:
                 <span style="background-color:transparent;color:#017f74;padding:4px 4px;border-radius:20px;border:1px solid #017f74;">{lessons}</span>
               </p>
               <h4 style="margin:0 0 5px;" align="left">{title}</h4>
-              <img src="{img}" alt="Course cover" style="max-width:100%;border-radius:10px;">
+              <img src="{img}" alt="Course cover" style="max-width:100%;width:100%; object-fit:cover; max-height:300px;border-radius:15px;">
             </div>
           </a>
           <p style="margin:6px 0 0;font-size:14px;color:#475569;" align="center">
