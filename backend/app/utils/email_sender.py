@@ -426,7 +426,7 @@ courses_block: dict[str, str | None] = {
                                 border-radius: 20px;
                                 border: 1px solid #017f74;
                               "
-                              >8 lessons</span
+                              >17 лекций</span
                             >
                           </p>
                           <h4 style="margin: 0 0 5px 0" align="left">
@@ -507,7 +507,7 @@ courses_block: dict[str, str | None] = {
                           font-weight: 500;
                         "
                       >
-                        See all
+                        Смотреть все
                       </a>
                     </td>
                   </tr>
@@ -2077,14 +2077,16 @@ def send_abandoned_checkout_email(
 
         {region_courses_html}
 
-        <tr><td style="font-size:14px;line-height:20px;text-align:center;color:#475569;padding-top:20px;">
-          {loc["footer"]}<br><br>{support_email}
+        <tr><td style="font-size:14px;line-height:20px;text-align:center;color:#475569;padding-top:20px">
+          {loc["footer"]}<br><br><span style="text-decoration:none;color:#79cee7;">{support_email}</span>
         </td></tr>
       </table>
     </td></tr>
   </table>
 </body>
 </html>
+
+
 """
 
     # ------------------------------------------------------------------
