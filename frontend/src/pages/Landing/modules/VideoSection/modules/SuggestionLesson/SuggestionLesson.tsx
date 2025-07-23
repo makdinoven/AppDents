@@ -1,5 +1,5 @@
 import s from "./SuggestionLesson.module.scss";
-import { PlayIcon } from "../../../../../../assets/logos/index";
+import { PlayIcon } from "../../../../../../assets/icons";
 
 const SuggestionLesson = ({
   onClick,

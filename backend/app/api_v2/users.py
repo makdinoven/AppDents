@@ -209,11 +209,6 @@ def me(
         balance=current_user.balance,
     )
 
-@router.get("/search", response_model=List[UserRead], summary="Поиск  пользователей по email")
-def search_users(email: str = Query(..., description="Часть email для поиска"), db: Session = Depends(get_db)):
-    users = search_users_by_email(db, email)
-    return users
-
 @router.put("/{user_id}/role", response_model=UserRead, summary="Изменить роль пользователя")
 def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     user = update_user_role(db, user_id, role_data.role)
@@ -384,7 +379,7 @@ def forgot_password(
         )
     new_password = generate_random_password()
     update_user_password(db, user.id, new_password, region)
-    return {"message": "New password send successfully", "new_password": new_password}
+    return {"message": "New password send successfully"}
 
 @router.post("/admin/users", response_model=UserRead, summary="Создать нового пользователя (Админ)")
 def create_user_admin(
@@ -543,6 +538,7 @@ def referral_stats(
     start_date: dt.date | None = Query(None, description="Дата начала (YYYY-MM-DD)."),
     end_date:   dt.date | None = Query(None, description="Дата конца (YYYY-MM-DD, включительно)."),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     now = dt.datetime.utcnow()                      # naive-UTC
 
@@ -575,6 +571,7 @@ def user_growth(
         None, description="Дата конца (YYYY-MM-DD, включительно)."
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Динамика пользователей:
@@ -621,6 +618,7 @@ def purchase_stats(
         description="Показывать только покупки с данным source (например LANDING, CART, HOMEPAGE).",
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Список покупок за период.
@@ -672,6 +670,7 @@ def free_course_stats(
         description="Сколько курсов вернуть (по умолчанию – все)"
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Аналитика free-курсов.

@@ -141,13 +141,13 @@
 
 @media (max-width: $mobile-breakpoint) {
   .cart_overlay {
-    padding: 40px 10px 90px;
+    padding: 10px 10px 90px;
     justify-content: center;
   }
 
   .cart_header {
-    padding: 25px 25px 0 18px;
-    margin-bottom: 20px;
+    padding: 10px 25px 0 18px;
+    margin-bottom: 10px;
   }
 
   .cart {
@@ -170,8 +170,8 @@
   }
 
   .cart_icon_wrapper {
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
 
     .circle {
       width: 18px;

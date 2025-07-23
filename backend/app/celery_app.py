@@ -16,6 +16,7 @@ celery = Celery(
             "app.tasks.special_offers",
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
+            "app.tasks.abandoned_checkouts",
         ],
 )
 
@@ -35,8 +36,9 @@ celery.conf.update(
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
         "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
-        "app.tasks.process_hls_video": {"rate_limit": "6/m"},
+        "app.tasks.process_hls_video": {"rate_limit": "7/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "2/m"},
+        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "50/h"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -45,7 +47,7 @@ celery.conf.update(
             "options": {"queue": "special"},
         },
         "replace-storage-links-every-1-hours": {
-                    "task": "app.tasks.special_offers.replace_storage_links",
+                    "task": "app.tasks.storage_links.replace_storage_links",
                     "schedule": 3600,              # 3 ч * 3600 с
                     "options": {"queue": "special"},
                 },
@@ -56,7 +58,17 @@ celery.conf.update(
                 },
         "ensure_hls": {
                     "task": "app.tasks.ensure_hls",
-                    "schedule": 10800,              # 3 ч * 3600 с
+                    "schedule": 1800,
+                    "options": {"queue": "special"},
+                },
+        "recount-hls-daily": {
+                "task": "app.tasks.ensure_hls.recount_hls_counters",
+                "schedule": 86400,      # 1 раз в сутки
+                "options": {"queue": "special"},
+            },
+        "process-abandoned-checkouts-each-60m": {
+                    "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
+                    "schedule": 3600,           # каждый час
                     "options": {"queue": "special"},
                 },
     },
@@ -64,7 +76,8 @@ celery.conf.update(
 
 celery.conf.task_queues = (
     Queue("default"),         # превью, e-mails и т.д.
-    Queue("special"),         # спец-предложения
+    Queue("special"),
+    Queue("special_hls"),
 )
 
 celery.conf.task_routes = {
@@ -73,4 +86,5 @@ celery.conf.task_routes = {
     "app.tasks.storage_links.replace_storage_links": {"queue": "special"},
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
+    "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
 }

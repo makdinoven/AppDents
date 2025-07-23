@@ -19,10 +19,11 @@ from ..utils.email_sender import send_successful_purchase_email
 
 router = APIRouter()
 
+
 class CheckoutRequest(BaseModel):
-    course_ids: list[int]         # Список ID курсов для покупки
-    price_cents: int              # Итоговая цена в центах (одна сумма для всех курсов)
-    region: str                   # "RU", "EN", "ES"
+    course_ids: list[int]  # Список ID курсов для покупки
+    price_cents: int  # Итоговая цена в центах (одна сумма для всех курсов)
+    region: str  # "RU", "EN", "ES"
     user_email: str | None = None  # Если пользователь не авторизован, email обязателен
     success_url: str = "https://example.com/payment-success"
     cancel_url: str = "https://example.com/payment-cancel"
@@ -35,12 +36,13 @@ class CheckoutRequest(BaseModel):
     source: PurchaseSource | None = None
     from_ad: bool | None = None
 
+
 @router.post("/checkout")
 def stripe_checkout(
-    data: CheckoutRequest,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+        data: CheckoutRequest,
+        request: Request,
+        db: Session = Depends(get_db),
+        current_user=Depends(get_current_user_optional)
 ):
     """
     Создаём Stripe Checkout session.
@@ -69,7 +71,7 @@ def stripe_checkout(
     unique_course_ids = list(dict.fromkeys(data.course_ids))
     logging.info("Уникальные course_ids → %s", unique_course_ids)
 
-    # 2. Проверяем курсы в БД
+    #      2. Проверяем курсы в БД
     courses = db.query(Course).filter(Course.id.in_(unique_course_ids)).all()
     found_ids = [c.id for c in courses]
     logging.info("Найдено в БД: %s", found_ids)
@@ -83,7 +85,7 @@ def stripe_checkout(
 
     logging.info("Найдены курсы: %s", found_ids)
 
-    # 3. Формируем название продукта
+    #      3. Формируем название продукта
     course_names = [course.name for course in courses]
     product_name = "Purchase: " + ", ".join(course_names)
     logging.info("Сформировано название продукта: %s", product_name)
@@ -217,11 +219,12 @@ def stripe_checkout(
 
     return {"checkout_url": checkout_url}
 
+
 @router.post("/webhook/{region}")
 async def stripe_webhook(
-    region: str,
-    request: Request,
-    db: Session = Depends(get_db)
+        region: str,
+        request: Request,
+        db: Session = Depends(get_db)
 ):
     payload = await request.body()
     sig_header = request.headers.get("Stripe-Signature")
@@ -240,6 +243,7 @@ async def stripe_webhook(
 class CompletePurchaseRequest(BaseModel):
     session_id: str
     region: str
+
 
 @router.post("/complete-purchase")
 def complete_purchase(

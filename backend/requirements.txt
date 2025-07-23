@@ -26,3 +26,5 @@ celery[redis]
 redis
 requests
 aiohttp
+dnspython
+email_validator

@@ -10,13 +10,16 @@ $svg-height: 35px;
   align-items: center;
   padding-left: $svg-width + 20px;
   min-height: $svg-height;
-  margin-bottom: 36px;
+  margin-bottom: 40px;
 
   &:hover {
     color: $primary;
     svg {
-      stroke: $primary;
       transform: translate(-5px, -50%);
+
+      path {
+        stroke: $primary;
+      }
     }
   }
 
