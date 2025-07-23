@@ -3,7 +3,7 @@ import sqlalchemy
 from sqlalchemy import text
 from celery import shared_task
 
-from ...db.database import SessionLocal
+from ..db.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
