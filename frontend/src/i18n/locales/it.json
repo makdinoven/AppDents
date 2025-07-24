@@ -63,6 +63,8 @@
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
   "here": "qui.",
+  "suggestionTooltip": "Forse intendevi {{suggestedEmail}}?",
+  "warningTooltip": "Per favore, assicurati che l'email sia corretta",
   "freeCourse": {
     "freePreview": "Offerta speciale",
     "discount": "Sconto del {{discount}}%",

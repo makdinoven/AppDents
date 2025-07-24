@@ -22,7 +22,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
 import { mainApi } from "../../../api/mainApi/mainApi.ts";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
   LS_TOKEN_KEY,
@@ -37,9 +37,7 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
-import useDebounce from "../../../common/hooks/useDebounce.ts";
-import { userApi } from "../../../api/userApi/userApi.ts";
-import { useEmailValidation } from "../EmailValidationWrapper/hooks/useEmailValidation.tsx";
+import { useEmailValidation } from "./useEmailValidation.tsx";
 
 const logos = [
   VisaLogo,
@@ -97,6 +95,7 @@ const PaymentModal = ({
     register,
     watch,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<PaymentType>({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
@@ -105,7 +104,7 @@ const PaymentModal = ({
 
   const emailValue = watch("email");
 
-  const { currentIndicator } = useEmailValidation(emailValue);
+  const result = useEmailValidation(emailValue);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -211,6 +210,13 @@ const PaymentModal = ({
     }
   };
 
+  const handleSetSuggestion = (suggestion: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("ggg");
+    setValue("email", suggestion);
+  };
+
   return (
     <div className={s.modal}>
       <div className={s.courses}>
@@ -285,8 +291,11 @@ const PaymentModal = ({
                 id="email"
                 placeholder={t("email")}
                 error={errors.email?.message}
+                state={result}
+                onSuggestionTooltipClick={(suggestion, e) =>
+                  handleSetSuggestion(suggestion, e)
+                }
                 {...register("email")}
-                {...{ currentIndicator }}
               />
               {!isFree && (
                 <p className={s.modal_text}>

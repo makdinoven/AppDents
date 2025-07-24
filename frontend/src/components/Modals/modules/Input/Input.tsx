@@ -5,31 +5,38 @@ import { EyeClosed, EyeOpened, ErrorIcon } from "../../../../assets/icons";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
-  currentIndicator?: ReactNode | null;
+  state?: {
+    state: "idle" | "success" | "validating" | "suggestion" | "warning";
+    currentIndicator: ReactNode | null;
+    suggestedEmail: string;
+  };
+  onSuggestionTooltipClick?: (value: string, e: React.MouseEvent) => void;
 }
 
-const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
-  const { currentIndicator, ...rest } = props;
+const Input: React.FC<InputProps> = ({
+  error,
+  type,
+  state = {
+    state: "idle",
+    currentIndicator: null,
+    suggestedEmail: "",
+  },
+  onSuggestionTooltipClick,
+  ...props
+}) => {
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
 
   const inputType = isPassword ? (visible ? "text" : "password") : type;
 
+  const suggestedEmail = state.suggestedEmail;
+
   return (
     <div
       style={{ paddingRight: `${isPassword && error ? "65px" : ""}` }}
-      className={`${s.input_wrapper} ${error ? s.error : ""}`}
+      className={`${s.input_wrapper} ${error && !state.currentIndicator ? s.error : ""}`}
     >
       <input {...props} type={inputType} />
-
-      {currentIndicator && (
-        <div className={s.error_icon_wrapper}>
-          {currentIndicator}
-          <div className={s.tooltip}>
-            <Trans i18nKey={error} />
-          </div>
-        </div>
-      )}
 
       {isPassword && (
         <button
@@ -43,12 +50,36 @@ const Input: React.FC<InputProps> = ({ error, type, ...props }) => {
         </button>
       )}
 
-      {error && (
-        <div className={s.error_icon_wrapper}>
+      {error && !state.currentIndicator && (
+        <div className={s.icon_wrapper}>
           <ErrorIcon />
-          <div className={s.tooltip}>
+          <div className={`${s.tooltip} ${s.error_tooltip}`}>
             <Trans i18nKey={error} />
           </div>
+        </div>
+      )}
+
+      {state.currentIndicator && (
+        <div className={s.icon_wrapper}>
+          {state.currentIndicator}
+          {state.state === "suggestion" && (
+            <button
+              className={`${s.tooltip} ${s.state_tooltip} ${s.suggestion}`}
+              onClick={(e) => {
+                onSuggestionTooltipClick?.(suggestedEmail, e);
+              }}
+            >
+              <Trans
+                i18nKey={"suggestionTooltip"}
+                values={{ suggestedEmail }}
+              />
+            </button>
+          )}
+          {state.state === "warning" && (
+            <div className={`${s.tooltip} ${s.state_tooltip}`}>
+              <Trans i18nKey={"warningTooltip"} />
+            </div>
+          )}
         </div>
       )}
     </div>
