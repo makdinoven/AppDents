@@ -37,6 +37,7 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
+import { useEmailValidation } from "./useEmailValidation.tsx";
 import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 const logos = [
@@ -89,17 +90,23 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
     register,
+    watch,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<PaymentType>({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
+
+  const emailValue = watch("email");
+
+  const result = useEmailValidation(emailValue);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -175,7 +182,7 @@ const PaymentModal = ({
             <CheckMark />,
             () => {
               navigate(Path.profile);
-            },
+            }
           );
           await dispatch(getMe());
         }
@@ -203,6 +210,13 @@ const PaymentModal = ({
         console.log(error);
       }
     }
+  };
+
+  const handleSetSuggestion = (suggestion: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("ggg");
+    setValue("email", suggestion);
   };
 
   return (
@@ -279,6 +293,10 @@ const PaymentModal = ({
                 id="email"
                 placeholder={t("email")}
                 error={errors.email?.message}
+                state={result}
+                onSuggestionTooltipClick={(suggestion, e) =>
+                  handleSetSuggestion(suggestion, e)
+                }
                 {...register("email")}
               />
               {!isFree && (

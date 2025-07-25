@@ -70,7 +70,7 @@ export const userApi = {
     });
   },
 
-   getMyReferrals() {
+  getMyReferrals() {
     return instance.get("wallet/referrals", { headers: getAuthHeaders() });
   },
 
@@ -78,5 +78,9 @@ export const userApi = {
     return instance.get("wallet/transactions", {
       headers: getAuthHeaders(),
     });
+  },
+
+  checkEmail(params: { email: string }) {
+    return instance.post("validations/check-email", params);
   },
 };

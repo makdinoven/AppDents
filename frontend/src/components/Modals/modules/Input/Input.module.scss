@@ -16,48 +16,54 @@
 
   &.error {
     border-color: $error-color;
+  }
 
-    .error_icon_wrapper {
-      position: absolute;
-      right: 0;
-      width: 30px;
-      height: 30px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
+  .icon_wrapper {
+    position: absolute;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    pointer-events: none;
+    @include transition($property: opacity, $duration: 0.3s);
+    opacity: 0;
 
-      svg {
-        circle {
-          stroke: $error-color;
-        }
-        path {
-          stroke: $error-color;
-        }
+    &.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .tooltip {
+    position: absolute;
+    bottom: 115%;
+    right: 0;
+    color: $text-color;
+    padding: 5px 10px;
+    border-radius: 5px;
+    white-space: nowrap;
+    font-size: 12px;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+    @include transition($property: opacity, $duration: 0.3s);
+
+    &.error_tooltip {
+      background-color: $error-color;
+    }
+
+    &.state_tooltip {
+      background-color: $yellow;
+      color: $accent;
+
+      &.suggestion {
+        cursor: pointer;
       }
     }
 
-    .error_icon {
-      user-select: none;
-    }
-
-    .tooltip {
-      @include transition($property: opacity);
-      position: absolute;
-      bottom: 115%;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: $error-color;
-      color: $text-color;
-      padding: 5px 10px;
-      border-radius: 5px;
-      white-space: nowrap;
-      font-size: 12px;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 1000;
-    }
-
-    .error_icon_wrapper:hover .tooltip {
+    &.visible {
       opacity: 1;
       pointer-events: auto;
     }
