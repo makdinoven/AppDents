@@ -6,6 +6,7 @@ import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
 import ScrollToTopButton from "../ui/ScrollToTopButton/ScrollToTopButton.tsx";
 import SearchModal from "../ui/SearchModal/SearchModal.tsx";
 import { OPEN_SEARCH_KEY } from "../../common/helpers/commonConstants.ts";
+//import DisabledPaymentBanner from "../ui/DisabledPaymentBanner/DisabledPaymentBanner.tsx";
 
 const Layout = () => {
   const location = useLocation();
@@ -13,6 +14,7 @@ const Layout = () => {
 
   return (
     <div className={s.main_wrapper}>
+      {/*<DisabledPaymentBanner />*/}
       <Header />
       <main className={s.content}>
         <Outlet />

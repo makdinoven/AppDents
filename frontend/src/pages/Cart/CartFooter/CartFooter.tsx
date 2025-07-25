@@ -12,6 +12,7 @@ import { emailSchema } from "../../../common/schemas/emailSchema.ts";
 import Form from "../../../components/Modals/modules/Form/Form.tsx";
 import { Percent } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+//import DisabledPaymentWarn from "../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 type props = {
   cartPreviewLoading?: boolean;
@@ -178,6 +179,8 @@ const CartFooter = ({
             {...register("email")}
           />
         )}
+
+        {/*isPayDisabled && <DisabledPaymentWarn />*/}
 
         <button
           type="submit"

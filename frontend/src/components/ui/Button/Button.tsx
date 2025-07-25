@@ -4,15 +4,17 @@ import { Trans } from "react-i18next";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
 interface ButtonProps {
+  disabled?: any;
   loading?: boolean;
   text: string;
   link?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
-  variant?: "filled" | "outlined" | "outlined-dark";
+  variant?: "filled" | "outlined" | "outlined-dark" | "disabled";
 }
 
 const Button = ({
+  disabled,
   loading,
   onClick,
   text,
@@ -26,6 +28,7 @@ const Button = ({
     </Link>
   ) : (
     <button
+      disabled={disabled}
       onClick={onClick}
       className={`${s.btn} ${variant ? s[variant] : ""} ${loading ? s.loading : ""}`}
       type={type}
