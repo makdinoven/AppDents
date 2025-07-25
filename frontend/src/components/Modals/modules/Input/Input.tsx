@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useLayoutEffect } from "react";
+import React, { ReactNode, useState } from "react";
 import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
 import { EyeClosed, EyeOpened, ErrorIcon } from "../../../../assets/icons";
@@ -29,18 +29,10 @@ const Input: React.FC<InputProps> = ({
 
   const inputType = isPassword ? (visible ? "text" : "password") : type;
 
-  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
-  const [isIndicatorVisible, setIsIndicatorVisible] = useState(false);
-
-  useLayoutEffect(() => {
-    setIsTooltipVisible(
-      state.state === "suggestion" || state.state === "warning" || !!error
-    );
-  }, [state.state]);
-
-  useLayoutEffect(() => {
-    setIsIndicatorVisible(!!state.currentIndicator || !!error);
-  }, [state.currentIndicator]);
+  const isErrorVisible = error && !state.currentIndicator;
+  const isIndicatorVisible = state.currentIndicator;
+  const isTooltipVisible =
+    state.state === "suggestion" || state.state === "warning";
 
   return (
     <div
@@ -62,11 +54,11 @@ const Input: React.FC<InputProps> = ({
       )}
 
       <div
-        className={`${s.icon_wrapper}${isIndicatorVisible ? ` ${s.visible}` : ""}`}
+        className={`${s.icon_wrapper}${isErrorVisible ? ` ${s.visible}` : ""}`}
       >
-        {error && !state.currentIndicator && <ErrorIcon />}
+        {isErrorVisible && <ErrorIcon />}
         <div
-          className={`${s.tooltip} ${s.error_tooltip}${isTooltipVisible && error ? ` ${s.visible}` : ""}`}
+          className={`${s.tooltip} ${s.error_tooltip}${isErrorVisible ? ` ${s.visible}` : ""}`}
         >
           <Trans i18nKey={error && error} />
         </div>
@@ -78,7 +70,7 @@ const Input: React.FC<InputProps> = ({
         {state.currentIndicator && state.currentIndicator}
 
         <button
-          className={`${s.tooltip} ${s.state_tooltip} ${s.suggestion}${isTooltipVisible && state.state === "suggestion" && state.suggestedEmail ? ` ${s.visible}` : ""}`}
+          className={`${s.tooltip} ${s.state_tooltip} ${s.suggestion}${isTooltipVisible && state.state === "suggestion" ? ` ${s.visible}` : ""}`}
           onClick={(e) => {
             onSuggestionTooltipClick?.(state.suggestedEmail, e);
           }}
