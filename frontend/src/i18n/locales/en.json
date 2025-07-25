@@ -86,6 +86,13 @@
     "title": "<1>Today</1> only: <1> -{{discount}}% off!</1>"
   },
 
+  "disabledPayment": {
+    "title": "Course purchases are temporarily suspended",
+    "date": "Payments will be unavailable from July 16 to July 26, 2025",
+    "boughtCourses": "Access to previously purchased courses remains active",
+    "sorry": "We apologize for any inconvenience caused"
+  },
+
   "nav": {
     "home": "Home",
     "courses": "Courses",

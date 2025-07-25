@@ -57,6 +57,7 @@ class FreeCourseSource(str, PyEnum):
     """Источник, откуда пользователь получил бесплатный доступ."""
     LANDING        = "landing"         # рекламный лендинг
     SPECIAL_OFFER  = "special_offer"   # спец-предложение
+    EMAIL = "email"
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -329,6 +330,12 @@ class AbandonedCheckout(Base):
     course_ids = Column(String(255))                 # "12,34,56"
     region     = Column(String(10))
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+    message_sent = Column(
+        Boolean,
+        nullable=False,
+        server_default="0",
+        comment="TRUE – e-mail по лидy уже отправлен"
+    )
 
 class LessonPreview(Base):
     """
