@@ -46,6 +46,7 @@ export const useEmailValidation = (
 
   useLayoutEffect(() => {
     if (!debouncedEmail) {
+      console.log("idle");
       setResult((prev) => ({
         ...prev,
         state: State.idle,
@@ -60,6 +61,7 @@ export const useEmailValidation = (
 
   const handleEmailCheck = async (email: string) => {
     try {
+      console.log("validating");
       setResult((prev) => ({
         ...prev,
         state: State.validating,

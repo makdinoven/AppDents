@@ -27,6 +27,13 @@
     transform: translateY(-50%);
     cursor: pointer;
     pointer-events: none;
+    @include transition($property: opacity, $duration: 0.3s);
+    opacity: 0;
+
+    &.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 
   .tooltip {
@@ -39,21 +46,26 @@
     white-space: nowrap;
     font-size: 12px;
     z-index: 1000;
-    pointer-events: auto;
+    pointer-events: none;
+    opacity: 0;
+    @include transition($property: opacity, $duration: 0.3s);
 
     &.error_tooltip {
       background-color: $error-color;
-      opacity: 1;
     }
 
     &.state_tooltip {
       background-color: $yellow;
       color: $accent;
-      opacity: 1;
 
       &.suggestion {
         cursor: pointer;
       }
+    }
+
+    &.visible {
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 

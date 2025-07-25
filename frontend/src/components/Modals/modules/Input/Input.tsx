@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useLayoutEffect } from "react";
 import s from "./Input.module.scss";
 import { Trans } from "react-i18next";
 import { EyeClosed, EyeOpened, ErrorIcon } from "../../../../assets/icons";
@@ -29,7 +29,18 @@ const Input: React.FC<InputProps> = ({
 
   const inputType = isPassword ? (visible ? "text" : "password") : type;
 
-  const suggestedEmail = state.suggestedEmail;
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [isIndicatorVisible, setIsIndicatorVisible] = useState(false);
+
+  useLayoutEffect(() => {
+    setIsTooltipVisible(
+      state.state === "suggestion" || state.state === "warning" || !!error
+    );
+  }, [state.state]);
+
+  useLayoutEffect(() => {
+    setIsIndicatorVisible(!!state.currentIndicator || !!error);
+  }, [state.currentIndicator]);
 
   return (
     <div
@@ -50,38 +61,39 @@ const Input: React.FC<InputProps> = ({
         </button>
       )}
 
-      {error && !state.currentIndicator && (
-        <div className={s.icon_wrapper}>
-          <ErrorIcon />
-          <div className={`${s.tooltip} ${s.error_tooltip}`}>
-            <Trans i18nKey={error} />
-          </div>
+      <div
+        className={`${s.icon_wrapper}${isIndicatorVisible ? ` ${s.visible}` : ""}`}
+      >
+        {error && !state.currentIndicator && <ErrorIcon />}
+        <div
+          className={`${s.tooltip} ${s.error_tooltip}${isTooltipVisible && error ? ` ${s.visible}` : ""}`}
+        >
+          <Trans i18nKey={error && error} />
         </div>
-      )}
+      </div>
 
-      {state.currentIndicator && (
-        <div className={s.icon_wrapper}>
-          {state.currentIndicator}
-          {state.state === "suggestion" && (
-            <button
-              className={`${s.tooltip} ${s.state_tooltip} ${s.suggestion}`}
-              onClick={(e) => {
-                onSuggestionTooltipClick?.(suggestedEmail, e);
-              }}
-            >
-              <Trans
-                i18nKey={"suggestionTooltip"}
-                values={{ suggestedEmail }}
-              />
-            </button>
-          )}
-          {state.state === "warning" && (
-            <div className={`${s.tooltip} ${s.state_tooltip}`}>
-              <Trans i18nKey={"warningTooltip"} />
-            </div>
-          )}
+      <div
+        className={`${s.icon_wrapper}${isIndicatorVisible ? ` ${s.visible}` : ""}`}
+      >
+        {state.currentIndicator && state.currentIndicator}
+
+        <button
+          className={`${s.tooltip} ${s.state_tooltip} ${s.suggestion}${isTooltipVisible && state.state === "suggestion" && state.suggestedEmail ? ` ${s.visible}` : ""}`}
+          onClick={(e) => {
+            onSuggestionTooltipClick?.(state.suggestedEmail, e);
+          }}
+        >
+          <Trans
+            i18nKey={"suggestionTooltip"}
+            values={{ suggestedEmail: state.suggestedEmail }}
+          />
+        </button>
+        <div
+          className={`${s.tooltip} ${s.state_tooltip}${isTooltipVisible && state.state === "warning" ? ` ${s.visible}` : ""}`}
+        >
+          <Trans i18nKey={"warningTooltip"} />
         </div>
-      )}
+      </div>
     </div>
   );
 };
