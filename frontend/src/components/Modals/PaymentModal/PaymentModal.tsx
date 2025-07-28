@@ -37,8 +37,8 @@ import { PaymentType } from "../../../api/userApi/types.ts";
 import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
-import { useEmailValidation } from "./useEmailValidation.tsx";
 import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import EmailInputWrapper from "./EmailInputWrapper.tsx";
 
 const logos = [
   VisaLogo,
@@ -103,10 +103,6 @@ const PaymentModal = ({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
-
-  const emailValue = watch("email");
-
-  const result = useEmailValidation(emailValue);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -212,13 +208,6 @@ const PaymentModal = ({
     }
   };
 
-  const handleSetSuggestion = (suggestion: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("ggg");
-    setValue("email", suggestion);
-  };
-
   return (
     <div className={s.modal}>
       <div className={s.courses}>
@@ -289,15 +278,13 @@ const PaymentModal = ({
               {...register("name")}
             />
             <div>
-              <Input
-                id="email"
-                placeholder={t("email")}
+              <EmailInputWrapper
+                name="email"
+                register={register}
+                watch={watch}
+                setValue={setValue}
                 error={errors.email?.message}
-                state={result}
-                onSuggestionTooltipClick={(suggestion, e) =>
-                  handleSetSuggestion(suggestion, e)
-                }
-                {...register("email")}
+                placeholder={t("email")}
               />
               {!isFree && (
                 <p className={s.modal_text}>
