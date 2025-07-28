@@ -54,7 +54,11 @@ const Professors = () => {
         total={total}
         totalPages={totalPages}
       >
-        <ProfessorsList professors={professors} loading={loading} />
+        <ProfessorsList
+          source={"page"}
+          professors={professors}
+          loading={loading}
+        />
       </ListController>
       {!isFirstLoad && (
         <CoursesSection
