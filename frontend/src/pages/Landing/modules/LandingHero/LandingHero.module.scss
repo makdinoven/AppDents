@@ -197,13 +197,12 @@ $arrow-w: 66px;
   @media (max-width: $mobile-breakpoint) {
     .card {
       position: relative;
-      margin-top: calc((100% - 55px) * 56 / 265 - 10px);
 
       .folder {
-        position: absolute;
-        transform: translateY(-100%);
-        top: clamp(10px, 3vw, 20px);
-        right: 15px;
+        position: relative;
+        margin-left: auto;
+        margin-right: 15px;
+        top: 10px;
         width: calc(100% - 55px);
         aspect-ratio: 265 / 56;
         background-image: url("../../../../assets/folder.svg");
@@ -219,10 +218,10 @@ $arrow-w: 66px;
           font-size: clamp($font-sz-h4-mob, 5vw, $font-sz-h2-mob);
           color: $background-color;
           width: fit-content;
-          margin-right: clamp(10px, 5vw, 30px);
+          margin-right: 20px;
 
           @media (max-width: 476px) {
-            margin-right: clamp(10px, 3vw, 20px);
+            margin-right: 7px;
           }
         }
       }
@@ -236,6 +235,8 @@ $arrow-w: 66px;
           margin: 0;
           border: 2px solid $primary;
           top: 0;
+          aspect-ratio: 16/9;
+          height: unset;
 
           div {
             width: 100%;
