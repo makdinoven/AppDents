@@ -492,9 +492,6 @@ def _fallback_landing_cards(
     return {"total": len(landings), "cards": [_landing_to_card(l) for l in landings]}
 
 
-# ---------------------------  COLLAB‑FILTER  --------------------------------
-
-# ---------------------------  COLLAB-FILTER  --------------------------------
 def get_recommended_landing_cards(
     db: Session,
     *,
@@ -504,16 +501,17 @@ def get_recommended_landing_cards(
     language: str | None = None,
 ) -> dict:
     b_courses  = _user_course_ids(db, user_id)
-    b_landings = _user_landing_ids(db, user_id)  # если нужно исключать уже купленные лендинги
+    b_landings = _user_landing_ids(db, user_id)
 
-    # --- FALLBACK, если покупок нет ---
+    # --- FALLBACK, если покупок нет: только popular, total = реальное кол-во ---
     if not b_courses:
         query = _apply_common_filters(_base_landing_query(db), language=language)
+        query = _exclude_bought(query, b_courses, b_landings)
         query = _apply_sort(query, "popular")
+
         total = query.count()
-        results = query.offset(skip).limit(limit).all()
-        cards = [_landing_to_card(l) for l in results]
-        return {"total": total, "cards": cards}
+        landings = query.offset(skip).limit(limit).all()
+        return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
 
     # --- COLLAB FILTERING ---
     similar_users = (
@@ -539,11 +537,9 @@ def get_recommended_landing_cards(
           .order_by(score.desc())
     )
 
-    # Счётчики/множества объявляем заранее, чтобы не ловить UnboundLocalError
-    eligible_ids: set[int] = set()   # все уникальные лендинги CF после фильтров → для total
-    paged_seen: set[int]   = set()   # чтобы не дублировать при пагинации
-    cards: list = []
-    idx = 0  # позиция среди eligible (для skip)
+    # 1) собираем CF-лендинги (уникальные, с учётом language и исключая купленные лендинги)
+    cf_ids: list[int] = []
+    seen_cf: set[int] = set()
 
     for row in rec_q.yield_per(200):
         landing = get_cheapest_landing_for_course(db, row.cid)
@@ -551,46 +547,52 @@ def get_recommended_landing_cards(
             continue
         if language and landing.language != language.upper():
             continue
-        if landing.id in eligible_ids:
-            # уже считали в total (и, возможно, в пагинации)
+        if landing.id in seen_cf:
             continue
-
-        # считаем в total
-        eligible_ids.add(landing.id)
-
-        # при желании исключить уже купленные лендинги
         if landing.id in b_landings:
             continue
 
-        # пагинация по порядку CF
-        if landing.id in paged_seen:
-            continue
-        if idx >= skip and len(cards) < limit:
-            cards.append(_landing_to_card(landing))
-        paged_seen.add(landing.id)
-        idx += 1
+        seen_cf.add(landing.id)
+        cf_ids.append(landing.id)
 
-        # цикл НЕ прерываем — нам нужно корректное total по eligible_ids
+    # 2) фолбэк‑запрос popular по языку, исключая купленные и уже найденные CF
+    query_fb = _apply_common_filters(_base_landing_query(db), language=language)
+    query_fb = _exclude_bought(query_fb, b_courses, b_landings)
+    query_fb = query_fb.filter(~Landing.id.in_(cf_ids))   # <-- импортируйте вашу модель Landing
+    query_fb = _apply_sort(query_fb, "popular")
 
-    total = len(eligible_ids)
+    # сколько популярок останется после исключения CF
+    fallback_total = query_fb.count()
 
-    # Добор фолбэком, если карточек не хватило
-    if len(cards) < limit:
-        extra = _fallback_landing_cards(
-            db, user_id, 0, limit - len(cards), language
-        )["cards"]
-        cards.extend(extra)
-        # total оставляем равным числу CF-результатов с учётом language.
-        # Если нужно, чтобы total включал и фолбэк, сделайте:
-        # total = total + len({c.id for c in extra})
+    # общий total = CF + fallback (без дублей)
+    total = len(cf_ids) + fallback_total
+
+    # 3) пагинация по объединённому списку
+
+    cards: list = []
+
+    # сначала срез по CF
+    if skip < len(cf_ids):
+        cf_slice = cf_ids[skip : skip + limit]
+        if cf_slice:
+            # достаём объекты лендингов по cf_slice в исходном порядке
+            # (если нет удобного батч‑запроса с сохранением порядка — грузим поштучно)
+            for lid in cf_slice:
+                l = db.query(Landing).get(lid)
+                if l:
+                    cards.append(_landing_to_card(l))
+
+    # если места ещё есть — добираем fallback
+    remaining = limit - len(cards)
+    if remaining > 0:
+        # сколько нужно пропустить во фолбэке
+        fb_skip = max(0, skip - len(cf_ids))
+        fb_landings = query_fb.offset(fb_skip).limit(remaining).all()
+        cards.extend(_landing_to_card(l) for l in fb_landings)
 
     return {"total": total, "cards": cards}
 
 
-
-
-
-# -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
 
 def get_personalized_landing_cards(
     db: Session,
