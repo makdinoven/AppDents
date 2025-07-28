@@ -22,7 +22,7 @@ from ..models.models_v2 import (
     AdVisit,
     users_courses,
 )
-from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
+from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum, LandingCardResponse
 
 
 # 1. Все курсы, которые уже принадлежат пользователю
@@ -582,23 +582,41 @@ def get_recommended_landing_cards(
         if landing.id in unique_ids:
             continue
 
-        unique_ids.add(landing.id)
+        total_ids: set[int] = set()
+        unique_ids: set[int] = set()  # чтобы не дублировать карточки
+        cards: list[LandingCardResponse] = []
+        passed = 0
 
-        # фаза skip
-        if passed < skip:
-            passed += 1
+        # исключаем уже купленные лендинги (если это применимо)
+        if landing.id in b_landings:
             continue
 
-        cards.append(_landing_to_card(landing))
-        if len(cards) >= limit:
-            break
+        # пейджинг
+        if landing.id in unique_ids:
+            continue
+        if passed < skip:
+            passed += 1
+            unique_ids.add(landing.id)
+            continue
 
-    # 4) добираем фолбэк, если не набрали
+        if len(cards) < limit:
+            unique_ids.add(landing.id)
+            cards.append(_landing_to_card(landing))
+        # не прерываем цикл — нам нужно корректно посчитать total_ids
+
+    total = len(total_ids)
+
+    # фолбэк, если не набрали страницу
     if len(cards) < limit:
-        extra = _fallback_landing_cards(db, user_id, 0, limit - len(cards), language)["cards"]
+        extra = _fallback_landing_cards(
+            db, user_id, 0, limit - len(cards), language
+        )["cards"]
         cards.extend(extra)
+        # total не увеличиваем: он про CF-находки, как и ожидалось по задаче.
+        # Если требуется учитывать и фолбэк, замените строкой ниже:
+        # total = total + len({c.id for c in extra})
 
-    return {"total": total_rec, "cards": cards}
+    return {"total": total, "cards": cards}
 
 
 
