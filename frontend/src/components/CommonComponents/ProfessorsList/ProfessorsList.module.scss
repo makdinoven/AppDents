@@ -23,6 +23,13 @@
   }
 }
 
+
+@media (max-width: $tablet-breakpoint) {
+  .landing {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .list {
     display: flex;
