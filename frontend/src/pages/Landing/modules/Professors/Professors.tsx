@@ -6,7 +6,7 @@ const Professors = ({ data }: { data: any }) => {
   return (
     <div id={"course-professors"} className={s.professors_container}>
       <SectionHeader name={"professors"} />
-      <ProfessorsList professors={data} />
+      <ProfessorsList source={"landing"} professors={data} />
     </div>
   );
 };
