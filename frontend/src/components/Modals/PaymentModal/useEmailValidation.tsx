@@ -46,7 +46,6 @@ export const useEmailValidation = (
 
   useLayoutEffect(() => {
     if (!debouncedEmail) {
-      console.log("idle");
       setResult((prev) => ({
         ...prev,
         state: State.idle,
@@ -61,7 +60,6 @@ export const useEmailValidation = (
 
   const handleEmailCheck = async (email: string) => {
     try {
-      console.log("validating");
       setResult((prev) => ({
         ...prev,
         state: State.validating,
@@ -69,10 +67,7 @@ export const useEmailValidation = (
         suggestedEmail: "",
       }));
 
-      const start = performance.now();
-
       const res = await userApi.checkEmail({ email });
-      console.log("Email check took", performance.now() - start, "ms");
 
       const {
         is_syntactically_valid: isSyntacticallyValid,
@@ -81,7 +76,6 @@ export const useEmailValidation = (
       } = res.data;
 
       if (mailboxExists) {
-        console.log("success");
         setResult((prev) => ({
           ...prev,
           state: State.success,
@@ -92,7 +86,6 @@ export const useEmailValidation = (
         (isSyntacticallyValid && !suggestion && !mailboxExists) ||
         (!isSyntacticallyValid && debouncedEmail.includes("@"))
       ) {
-        console.log("warning");
         setResult((prev) => ({
           ...prev,
           state: State.warning,
@@ -100,7 +93,6 @@ export const useEmailValidation = (
           suggestedEmail: "",
         }));
       } else if (isSyntacticallyValid && suggestion && !mailboxExists) {
-        console.log("suggestion");
         suggestion !== null &&
           setResult((prev) => ({
             ...prev,
