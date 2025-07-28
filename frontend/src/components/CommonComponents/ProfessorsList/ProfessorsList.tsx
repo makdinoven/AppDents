@@ -15,10 +15,11 @@ type Professor = {
 
 type props = {
   professors: Professor[];
+  source: "page" | "landing";
   loading?: boolean;
 };
 
-const ProfessorsList = ({ professors, loading }: props) => {
+const ProfessorsList = ({ professors, loading, source }: props) => {
   const getGridTemplateColumns = (count: number) => {
     if (count === 3) return "repeat(3, 1fr)";
     if (count === 2) return "repeat(2, 1fr)";
@@ -34,12 +35,12 @@ const ProfessorsList = ({ professors, loading }: props) => {
           style={{
             gridTemplateColumns: `${getGridTemplateColumns(professors.length)}`,
           }}
-          className={s.list}
+          className={`${s.list} ${s[source]}`}
         >
           {professors.map((professor) => (
             <li key={professor.id}>
               <ProfessorCard
-                variant={professors.length <= 2 ? "horizontal" : "vertical"}
+                variant={professors.length < 2 ? "horizontal" : "vertical"}
                 name={professor.name}
                 photo={professor.photo}
                 description={professor.description}
