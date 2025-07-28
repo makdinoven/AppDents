@@ -101,8 +101,6 @@ export const useEmailValidation = (
             suggestedEmail: suggestion,
           }));
       }
-
-      console.log({ isSyntacticallyValid, suggestion, mailboxExists, email });
     } catch (error) {}
   };
 
