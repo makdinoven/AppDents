@@ -503,49 +503,24 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    """
-    Коллаб-фильтр рекомендаций лендингов:
-    • Если есть покупки — алгоритм CF.
-    • Если покупок НЕТ — fallback → все популярные лендинги.
-    В любом случае:
-      total = общее число найденных лендингов,
-      cards = страница размером limit с учётом skip.
-    """
-    from sqlalchemy import cast, func
-    from sqlalchemy.types import Float
-
-
-    # 0) что юзер уже взял
     b_courses  = _user_course_ids(db, user_id)
-    b_landings = _user_landing_ids(db, user_id)
+    b_landings = _user_landing_ids(db, user_id)  # если нужно исключать уже купленные лендинги
 
-    # --- FALLBACK: нет покупок → все популярные ---
+    # --- FALLBACK, если покупок нет ---
     if not b_courses:
-
-
-        # базовый запрос: невидимые скрыты, фильтр по языку
         query = _apply_common_filters(_base_landing_query(db), language=language)
-
-        # сортировка «popular» и исключение купленных (но их нет)
         query = _apply_sort(query, "popular")
-
-        # настоящий total популярных
         total = query.count()
-
-
-        # пейджинг
         results = query.offset(skip).limit(limit).all()
         cards = [_landing_to_card(l) for l in results]
-
         return {"total": total, "cards": cards}
 
-    # --- COLLAB FILTERING: есть покупки ---
-    # 1) ищем похожих пользователей
+    # --- COLLAB FILTERING ---
     similar_users = (
         db.query(users_courses.c.user_id)
           .filter(
               users_courses.c.course_id.in_(b_courses),
-              users_courses.c.user_id != user_id
+              users_courses.c.user_id != user_id,
           )
           .distinct()
           .subquery()
@@ -558,20 +533,17 @@ def get_recommended_landing_cards(
         db.query(users_courses.c.course_id.label("cid"), score)
           .filter(
               users_courses.c.user_id.in_(select(similar_users)),
-              ~users_courses.c.course_id.in_(b_courses)
+              ~users_courses.c.course_id.in_(b_courses),
           )
           .group_by(users_courses.c.course_id)
           .order_by(score.desc())
     )
 
-    # 2) полный размер CF-рекомендаций
-    total_rec = rec_q.count()
-
-
-    # 3) собираем уникальные лендинги по рейтингу
-    unique_ids = set()
-    cards = []
-    passed = 0
+    # Счётчики/множества объявляем заранее, чтобы не ловить UnboundLocalError
+    eligible_ids: set[int] = set()   # все уникальные лендинги CF после фильтров → для total
+    paged_seen: set[int]   = set()   # чтобы не дублировать при пагинации
+    cards: list = []
+    idx = 0  # позиция среди eligible (для skip)
 
     for row in rec_q.yield_per(200):
         landing = get_cheapest_landing_for_course(db, row.cid)
@@ -579,41 +551,37 @@ def get_recommended_landing_cards(
             continue
         if language and landing.language != language.upper():
             continue
-        if landing.id in unique_ids:
+        if landing.id in eligible_ids:
+            # уже считали в total (и, возможно, в пагинации)
             continue
 
-        total_ids: set[int] = set()
-        unique_ids: set[int] = set()  # чтобы не дублировать карточки
-        cards: list[LandingCardResponse] = []
-        passed = 0
+        # считаем в total
+        eligible_ids.add(landing.id)
 
-        # исключаем уже купленные лендинги (если это применимо)
+        # при желании исключить уже купленные лендинги
         if landing.id in b_landings:
             continue
 
-        # пейджинг
-        if landing.id in unique_ids:
+        # пагинация по порядку CF
+        if landing.id in paged_seen:
             continue
-        if passed < skip:
-            passed += 1
-            unique_ids.add(landing.id)
-            continue
-
-        if len(cards) < limit:
-            unique_ids.add(landing.id)
+        if idx >= skip and len(cards) < limit:
             cards.append(_landing_to_card(landing))
-        # не прерываем цикл — нам нужно корректно посчитать total_ids
+        paged_seen.add(landing.id)
+        idx += 1
 
-    total = len(total_ids)
+        # цикл НЕ прерываем — нам нужно корректное total по eligible_ids
 
-    # фолбэк, если не набрали страницу
+    total = len(eligible_ids)
+
+    # Добор фолбэком, если карточек не хватило
     if len(cards) < limit:
         extra = _fallback_landing_cards(
             db, user_id, 0, limit - len(cards), language
         )["cards"]
         cards.extend(extra)
-        # total не увеличиваем: он про CF-находки, как и ожидалось по задаче.
-        # Если требуется учитывать и фолбэк, замените строкой ниже:
+        # total оставляем равным числу CF-результатов с учётом language.
+        # Если нужно, чтобы total включал и фолбэк, сделайте:
         # total = total + len({c.id for c in extra})
 
     return {"total": total, "cards": cards}
