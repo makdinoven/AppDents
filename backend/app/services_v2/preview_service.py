@@ -42,7 +42,7 @@ def get_or_schedule_preview(db: Session, video_link: str) -> str:
                 "[preview] повторная попытка (%s) → enqueue generate_preview",
                 video_link,
             )
-            generate_preview.delay(video_link)        # дублировать не страшно
+            generate_preview.apply_async((video_link,), queue="default")       # дублировать не страшно
         return PLACEHOLDER_URL
 
     # --- URL есть. Проверяем редко (раз в CHECK_TTL) ---
