@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from datetime import datetime, timedelta, date
 from math import ceil
 import time
@@ -381,10 +382,16 @@ def get_purchases_by_language_per_day(
       },
       ...
     ]
+
+    Период полуоткрытый: [start_dt, end_dt)
     """
-    # --- ядро запроса -------------------------------------------------------
-    day_col = func.date(Purchase.created_at)      # PostgreSQL
-    # day_col = cast(Purchase.created_at, Date)                  # универсально
+
+    # ------------------------------------------------------------------ #
+    # 1. Выражение даты: DATE(created_at) работает и в MySQL, и в PG.
+    #    Если нужен универсальный ANSI‑вариант, раскомментируйте cast().
+    # ------------------------------------------------------------------ #
+    day_col = func.date(Purchase.created_at)          # DATE(created_at)
+    # day_col = cast(Purchase.created_at, Date)       # CAST(created_at AS DATE)
 
     rows = (
         db.query(
@@ -398,27 +405,37 @@ def get_purchases_by_language_per_day(
             Purchase.created_at >= start_dt,
             Purchase.created_at < end_dt,
         )
-        .group_by(day_col, Landing.language)  # ⚠️ используйте то же выражение, что и в SELECT
+        .group_by(day_col, Landing.language)          # то же выражение, что и в SELECT
         .order_by(day_col)
         .all()
     )
 
-    # --- маппинг результатов ------------------------------------------------
-    from collections import defaultdict
-    stats = defaultdict(lambda: defaultdict(lambda: {"count": 0, "total_amount": "0.00 $"}))
+    # ------------------------------------------------------------------ #
+    # 2. Сводим результат в dict[date][language] -> {count, total_amount}
+    # ------------------------------------------------------------------ #
+    stats: dict[date, dict[str, dict[str, str | int]]] = defaultdict(
+        lambda: defaultdict(lambda: {"count": 0, "total_amount": "0.00 $"})
+    )
 
     for r in rows:
-        stats[r.day.date()][r.language] = {
+        stats[r.day][r.language] = {
             "count": r.purchase_count,
             "total_amount": f"{r.total_amount:.2f} $",
         }
 
-    # --- заполняем дни без покупок ------------------------------------------
+    # ------------------------------------------------------------------ #
+    # 3. Формируем полный диапазон дат, заполняя «дыры» нулями
+    # ------------------------------------------------------------------ #
     data = []
-    cur = start_dt.date()
-    while cur < end_dt.date():
-        langs = list(stats[cur].values())  # пустой список, если покупок не было
-        data.append({"date": cur.isoformat(), "languages": langs})
+    cur = start_dt.date()          # inclusive
+    last = end_dt.date()           # exclusive (как и в запросе)
+
+    while cur < last:
+        day_stats = list(stats[cur].values())  # [] если покупок не было
+        data.append({
+            "date": cur.isoformat(),
+            "languages": day_stats,
+        })
         cur += timedelta(days=1)
 
     return data
