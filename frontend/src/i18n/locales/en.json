@@ -474,6 +474,15 @@
       "purchases": "Purchases",
       "userGrowth": "User growth",
       "freeCourses": "Freewebs"
+    },
+    "tools": {
+      "tools": "tools",
+      "clip": {
+        "placeholder": "Enter an URL",
+        "label": "Enter src video url",
+        "getClip": "Get clip",
+        "yourClipUrl": "Your clip url:"
+      }
     }
   }
 }
