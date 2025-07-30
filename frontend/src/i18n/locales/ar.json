@@ -63,8 +63,12 @@
   "firstFreeLesson": "أول درس مجاني",
   "or": "أو",
   "here": "هنا",
-  "suggestionTooltip": "هل كنت تقصد {{suggestedEmail}}؟",
-  "warningTooltip": "يرجى التأكد من أن البريد الإلكتروني صحيح",
+
+  "emailValidationTooltip": {
+    "suggestion": "هل كنت تقصد {{suggestedEmail}}؟",
+    "warning": "يرجى التأكد من أن البريد الإلكتروني صحيح"
+  },
+
   "freeCourse": {
     "freePreview": "عرض خاص",
     "discount": "خصم {{discount}}٪",
