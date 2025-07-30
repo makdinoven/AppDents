@@ -382,16 +382,12 @@ def get_purchases_by_language_per_day(
       },
       ...
     ]
-
     Период полуоткрытый: [start_dt, end_dt)
     """
 
-    # ------------------------------------------------------------------ #
-    # 1. Выражение даты: DATE(created_at) работает и в MySQL, и в PG.
-    #    Если нужен универсальный ANSI‑вариант, раскомментируйте cast().
-    # ------------------------------------------------------------------ #
-    day_col = func.date(Purchase.created_at)          # DATE(created_at)
-    # day_col = cast(Purchase.created_at, Date)       # CAST(created_at AS DATE)
+    # 1. Получаем дату транзакции без времени
+    day_col = func.date(Purchase.created_at)          # DATE(created_at) — MySQL/PG
+    # day_col = cast(Purchase.created_at, Date)       # Cross‑DB ANSI‑вариант
 
     rows = (
         db.query(
@@ -403,35 +399,31 @@ def get_purchases_by_language_per_day(
         .join(Purchase, Purchase.landing_id == Landing.id)
         .filter(
             Purchase.created_at >= start_dt,
-            Purchase.created_at < end_dt,
+            Purchase.created_at <  end_dt,
         )
-        .group_by(day_col, Landing.language)          # то же выражение, что и в SELECT
+        .group_by(day_col, Landing.language)
         .order_by(day_col)
         .all()
     )
 
-    # ------------------------------------------------------------------ #
-    # 2. Сводим результат в dict[date][language] -> {count, total_amount}
-    # ------------------------------------------------------------------ #
-    stats: dict[date, dict[str, dict[str, str | int]]] = defaultdict(
-        lambda: defaultdict(lambda: {"count": 0, "total_amount": "0.00 $"})
-    )
+    # 2. Сводим в stats[date][language] -> {...}
+    stats: dict[date, dict[str, dict[str, str | int]]] = defaultdict(dict)
 
     for r in rows:
         stats[r.day][r.language] = {
-            "count": r.purchase_count,
+            "language": r.language,                       # ➜ добавили
+            "count":    r.purchase_count,
             "total_amount": f"{r.total_amount:.2f} $",
         }
 
-    # ------------------------------------------------------------------ #
-    # 3. Формируем полный диапазон дат, заполняя «дыры» нулями
-    # ------------------------------------------------------------------ #
+    # 3. Заполняем диапазон дней, чтобы не было «дыр»
     data = []
-    cur = start_dt.date()          # inclusive
-    last = end_dt.date()           # exclusive (как и в запросе)
+    cur  = start_dt.date()       # inclusive
+    last = end_dt.date()         # exclusive
 
     while cur < last:
-        day_stats = list(stats[cur].values())  # [] если покупок не было
+        # если покупок не было, вернём пустой список
+        day_stats = list(stats[cur].values())
         data.append({
             "date": cur.isoformat(),
             "languages": day_stats,
