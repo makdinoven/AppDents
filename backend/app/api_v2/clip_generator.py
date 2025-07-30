@@ -77,7 +77,7 @@ def _run_ffmpeg(src_path: str, dst_path: str) -> None:
         raise RuntimeError(completed.stderr.decode("utf-8"))
 
 
-@app.post("/clip")
+@router.post("/clip")
 async def create_clip(data: ClipIn):
     original_key = _key_from_url(data.url)
 
