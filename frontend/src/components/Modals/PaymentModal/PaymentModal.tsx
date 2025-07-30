@@ -4,7 +4,7 @@ import { t } from "i18next";
 import { Trans } from "react-i18next";
 import s from "./PaymentModal.module.scss";
 import Form from "../modules/Form/Form";
-import Input from "../modules/Input/Input";
+import Input from "../../ui/Inputs/Input/Input";
 import Button from "../../ui/Button/Button";
 import { paymentSchema } from "../../../common/schemas/paymentSchema";
 import {
@@ -38,7 +38,8 @@ import { getMe } from "../../../store/actions/userActions.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../../assets/icons/index.ts";
 import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
-import EmailInputWrapper from "./EmailInputWrapper.tsx";
+import EmailInput from "../../ui/Inputs/EmailInput/EmailInput.tsx";
+import PasswordInput from "../../ui/Inputs/PasswordInput/PasswordInput.tsx";
 
 const logos = [
   VisaLogo,
@@ -90,7 +91,7 @@ const PaymentModal = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
@@ -103,6 +104,9 @@ const PaymentModal = ({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
+
+  const emailInputName = "email";
+  const emailValue = watch(emailInputName);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -178,7 +182,7 @@ const PaymentModal = ({
             <CheckMark />,
             () => {
               navigate(Path.profile);
-            }
+            },
           );
           await dispatch(getMe());
         }
@@ -274,17 +278,17 @@ const PaymentModal = ({
             <Input
               id="name"
               placeholder={t("yourName")}
-              error={errors.name?.message}
               {...register("name")}
             />
             <div>
-              <EmailInputWrapper
-                name="email"
-                register={register}
-                watch={watch}
+              <EmailInput
+                isValidationUsed
+                id="email"
+                value={emailValue}
                 setValue={setValue}
                 error={errors.email?.message}
                 placeholder={t("email")}
+                {...register(emailInputName)}
               />
               {!isFree && (
                 <p className={s.modal_text}>
@@ -293,8 +297,7 @@ const PaymentModal = ({
               )}
             </div>
             {isFree && (
-              <Input
-                type={"password"}
+              <PasswordInput
                 id="password"
                 placeholder={t("password")}
                 error={errors.password?.message}
