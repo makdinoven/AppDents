@@ -1,0 +1,23 @@
+<svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1.5625 12.5C1.5625 15.4008 2.71484 18.1828 4.76602 20.234C6.8172 22.2852 9.5992 23.4375 12.5 23.4375C15.4008 23.4375 18.1828 22.2852 20.234 20.234C22.2852 18.1828 23.4375 15.4008 23.4375 12.5C23.4375 9.5992 22.2852 6.8172 20.234 4.76602C18.1828 2.71484 15.4008 1.5625 12.5 1.5625C9.5992 1.5625 6.8172 2.71484 4.76602 4.76602C2.71484 6.8172 1.5625 9.5992 1.5625 12.5Z" stroke="#A0BBBE" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12.5 12.5V8.59375" stroke="#A0BBBE" stroke-linecap="round" stroke-linejoin="round"/>
+    <path
+            id="rotating-hand"
+            d="M12.5 12.5L17.3823 17.3833"
+            stroke="#A0BBBE"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="transform-origin: 12.5px 12.5px; animation: rotateHand 1.5s linear infinite;"
+    />
+
+    <style>
+        @keyframes rotateHand {
+        from {
+        transform: rotate(0deg);
+        }
+        to {
+        transform: rotate(360deg);
+        }
+        }
+    </style>
+</svg>
