@@ -363,6 +363,67 @@ def get_purchases_by_language(
         for row in results
     ]
 
+def get_purchases_by_language_per_day(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+):
+    """
+    Возвращает список вида
+    [
+      {
+        "date": "2025-07-24",
+        "languages": [
+            {"language": "EN", "count": 12, "total_amount": "45.00 $"},
+            {"language": "ES", "count":  5, "total_amount": "23.00 $"},
+            ...
+        ]
+      },
+      ...
+    ]
+    """
+    # --- ядро запроса -------------------------------------------------------
+    day_col = func.date_trunc('day', Purchase.created_at)        # PostgreSQL
+    # day_col = cast(Purchase.created_at, Date)                  # универсально
+
+    rows = (
+        db.query(
+            day_col.label("day"),
+            Landing.language.label("language"),
+            func.count(Purchase.id).label("purchase_count"),
+            func.coalesce(func.sum(Purchase.amount), 0).label("total_amount"),
+        )
+        .join(Purchase, Purchase.landing_id == Landing.id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+        )
+        .group_by("day", Landing.language)
+        .order_by("day")
+        .all()
+    )
+
+    # --- маппинг результатов ------------------------------------------------
+    from collections import defaultdict
+    stats = defaultdict(lambda: defaultdict(lambda: {"count": 0, "total_amount": "0.00 $"}))
+
+    for r in rows:
+        stats[r.day.date()][r.language] = {
+            "count": r.purchase_count,
+            "total_amount": f"{r.total_amount:.2f} $",
+        }
+
+    # --- заполняем дни без покупок ------------------------------------------
+    data = []
+    cur = start_dt.date()
+    while cur < end_dt.date():
+        langs = list(stats[cur].values())  # пустой список, если покупок не было
+        data.append({"date": cur.isoformat(), "languages": langs})
+        cur += timedelta(days=1)
+
+    return data
+
+
 def check_and_reset_ad_flag(landing: Landing, db: Session):
     """
     Если у лендинга in_advertising=True, но ad_flag_expires_at < now,

@@ -504,6 +504,7 @@ def language_stats(
             description="Дата конца (YYYY-MM-DD, включительно)."
         ),
         db: Session = Depends(get_db),
+        detailed:   bool  = Query(True, description="Нужна ли разбивка по дням"),
         current_admin: User = Depends(require_roles("admin"))
 ):
     """
@@ -539,8 +540,14 @@ def language_stats(
             detail="Если указываете end_date,  нужно обязательно передать start_date."
         )
 
-    data = get_purchases_by_language(db, start_dt, end_dt)
-    return {"data": data}
+    total = get_purchases_by_language(db, start_dt, end_dt)
+
+    daily = []
+    if detailed:
+        daily = get_purchases_by_language_per_day(db, start_dt, end_dt)
+
+
+    return {"total": total, "daily": daily}
 
 @router.get("/most-popular")
 def most_popular_landings(
