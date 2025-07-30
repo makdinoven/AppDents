@@ -181,4 +181,9 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getClip(url: string) {
+    return instance.post("/clip_generator/clip", {
+      url: url,
+    });
+  },
 };

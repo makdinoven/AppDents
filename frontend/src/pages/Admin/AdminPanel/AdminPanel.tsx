@@ -8,6 +8,7 @@ import SelectableList from "../../../components/CommonComponents/SelectableList/
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
 import { FILTER_PARAM_KEYS } from "../../../common/helpers/commonConstants.ts";
+import AdminTools from "../tabs/AdminTools/AdminTools.tsx";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +58,11 @@ const AdminPanel = () => {
       name: "admin.analytics.analytics",
       value: "analytics",
       component: <Analytics />,
+    },
+    {
+      name: "admin.tools.tools",
+      value: "tools",
+      component: <AdminTools />,
     },
   ];
 
