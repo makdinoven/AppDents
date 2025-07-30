@@ -383,7 +383,7 @@ def get_purchases_by_language_per_day(
     ]
     """
     # --- ядро запроса -------------------------------------------------------
-    day_col = func.date_trunc('day', Purchase.created_at)        # PostgreSQL
+    day_col = func.date(Purchase.created_at)      # PostgreSQL
     # day_col = cast(Purchase.created_at, Date)                  # универсально
 
     rows = (
@@ -396,10 +396,10 @@ def get_purchases_by_language_per_day(
         .join(Purchase, Purchase.landing_id == Landing.id)
         .filter(
             Purchase.created_at >= start_dt,
-            Purchase.created_at <  end_dt,
+            Purchase.created_at < end_dt,
         )
-        .group_by("day", Landing.language)
-        .order_by("day")
+        .group_by(day_col, Landing.language)  # ⚠️ используйте то же выражение, что и в SELECT
+        .order_by(day_col)
         .all()
     )
 
