@@ -83,8 +83,9 @@ async def create_clip(data: ClipIn):
 
     # Скачаем исходник во временный файл
     with tempfile.TemporaryDirectory() as tmpdir:
-        src_path = os.path.join(tmpdir, "src")
-        dst_path = os.path.join(tmpdir, "clip")
+        ext = Path(original_key).suffix or ".mp4"  # .mp4 по‑умолчанию, если вдруг нет
+        src_path = os.path.join(tmpdir, f"src{ext}")
+        dst_path = os.path.join(tmpdir, f"clip{ext}")
 
         try:
             s3.download_file(S3_BUCKET, original_key, src_path)
