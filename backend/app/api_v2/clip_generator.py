@@ -13,14 +13,18 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel
 
 # -------------------------------------------------
-# S3 / CDN CONFIG
+# ENV / CONSTS
 # -------------------------------------------------
+# 👉 Укажите фактическое имя бакета (обычно UUID‑подобная строка)
+S3_BUCKET = os.getenv("S3_BUCKET", "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")
 S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")          # имя бакета (без https://)
 S3_REGION = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")  # что отдаем клиенту
 
-s3 = boto3.client(
+# 👉 Домен вашего CDN — тот, что возвращаем клиенту
+S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+
+session = boto3.session.Session()
+s3 = session.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
     region_name=S3_REGION,
@@ -30,7 +34,7 @@ s3 = boto3.client(
 )
 
 # -------------------------------------------------
-# FastAPI
+# FASTAPI
 # -------------------------------------------------
 router = APIRouter(prefix="/api/clip_generator")
 app = FastAPI(title="Dent‑S Clip Generator")
@@ -45,19 +49,13 @@ class ClipIn(BaseModel):
 # helpers
 # -------------------------------------------------
 def _key_from_url(url: str) -> str:
-    """
-    https://604b5d90...s3.twcstorage.ru/Folder/1.mp4  ->
-        Folder/1.mp4
-    https://cdn.dent-s.com/Folder/1.mp4 ->
-        Folder/1.mp4
-    """
-    parsed = urlparse(url)
-    return unquote(parsed.path.lstrip("/"))  # снимаем %xx чтобы корректно работать с S3
+    """Возвращает ключ внутри бакета (раскодированный)."""
+    return unquote(urlparse(url).path.lstrip("/"))
 
 
 def _unique_clip_name(original_key: str) -> str:
     """
-    Folder/1.mp4  ->  Folder/narezki/1_clip_<uuid>.mp4
+    Folder/1.mp4 → Folder/narezki/1_clip_<uuid>.mp4
     """
     parent = Path(original_key).parent
     stem = Path(original_key).stem
@@ -66,6 +64,7 @@ def _unique_clip_name(original_key: str) -> str:
 
 
 def _run_ffmpeg(src_path: str, dst_path: str) -> None:
+    """Обрезает первые 5 мин аудио/видео без перекодирования."""
     cmd = [
         "ffmpeg",
         "-loglevel",
@@ -74,7 +73,7 @@ def _run_ffmpeg(src_path: str, dst_path: str) -> None:
         "-i",
         src_path,
         "-t",
-        "300",  # 5 минут
+        "300",
         "-c",
         "copy",
         dst_path,
@@ -84,45 +83,38 @@ def _run_ffmpeg(src_path: str, dst_path: str) -> None:
         raise RuntimeError(completed.stderr.decode("utf-8"))
 
 
-def _encode_key_for_url(key: str) -> str:
-    """
-    Превращает 'Folder/file name.mp4' -> 'Folder/file%20name.mp4'
-    (оставляя '/' нетронутым)
-    """
+def _encode_for_url(key: str) -> str:
+    """Обратно кодирует пробелы и не‑ASCII (оставляя '/' нетронутым)."""
     return quote(key, safe="/")
 
 
 # -------------------------------------------------
-# route
+# ROUTE
 # -------------------------------------------------
 @router.post("/clip")
 async def create_clip(data: ClipIn):
-    original_key = _key_from_url(data.url)
+    src_key = _key_from_url(data.url)           # путь к оригиналу
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        ext = Path(original_key).suffix or ".mp4"
+        ext = Path(src_key).suffix or ".mp4"
         src_path = os.path.join(tmpdir, f"src{ext}")
         dst_path = os.path.join(tmpdir, f"clip{ext}")
 
-        # 1. скачиваем исходник
+        # 1) скачиваем из *одного и того же* бакета
         try:
-            s3.download_file(S3_BUCKET, original_key, src_path)
+            s3.download_file(S3_BUCKET, src_key, src_path)
         except Exception as e:
             raise HTTPException(400, f"S3 download error: {e}")
 
-        # 2. обрезаем ffmpeg‑ом
+        # 2) обрезаем
         try:
             _run_ffmpeg(src_path, dst_path)
         except Exception as e:
             raise HTTPException(500, f"ffmpeg error: {e}")
 
-        # 3. формируем ключ и MIME
-        clip_key = _unique_clip_name(original_key)
-        mime, _ = mimetypes.guess_type(clip_key)
-        if not mime:
-            mime = "video/mp4"
-
-        # 4. загружаем с правильными заголовками
+        # 3) загружаем обратно
+        clip_key = _unique_clip_name(src_key)
+        mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
         try:
             s3.upload_file(
                 dst_path,
@@ -137,11 +129,11 @@ async def create_clip(data: ClipIn):
         except Exception as e:
             raise HTTPException(500, f"S3 upload error: {e}")
 
-    # 5. собираем ссылку с сохранёнными %‑кодами
-    clip_url = f"{S3_PUBLIC_HOST}/{_encode_key_for_url(clip_key)}"
+    # 4) формируем ссылку через CDN
+    clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
 
     return {
-        "source_url": data.url,  # здесь оставляем как есть
-        "clip_url": clip_url,    # всё %xx осталось нетронутым
+        "source_url": data.url,  # без изменений
+        "clip_url": clip_url,    # все %‑последовательности сохранены
         "length_sec": 300,
     }
