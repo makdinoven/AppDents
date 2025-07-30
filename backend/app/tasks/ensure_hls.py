@@ -35,7 +35,6 @@ S3_BUCKET           = os.getenv("S3_BUCKET", "cdn.dent-s.com")
 S3_REGION           = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# сканер
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
 BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 20))     # задач за один проход
 RATE_LIMIT_HLS      = "6/m"                                     # Celery annotation
