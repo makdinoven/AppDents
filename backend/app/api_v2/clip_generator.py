@@ -36,10 +36,7 @@ s3 = session.client(
 # -------------------------------------------------
 # FASTAPI
 # -------------------------------------------------
-router = APIRouter(prefix="/api/clip_generator")
-app = FastAPI(title="Dent‑S Clip Generator")
-app.include_router(router)
-
+router = APIRouter()
 
 class ClipIn(BaseModel):
     url: str
