@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import uuid
 from pathlib import Path
-from urllib.parse import quote, unquote, urlparse
+from urllib.parse import urlparse
 
 import boto3
 from botocore.config import Config
@@ -15,10 +15,13 @@ from pydantic import BaseModel
 # -------------------------------------------------
 # ENV / CONSTS
 # -------------------------------------------------
-S3_BUCKET = os.getenv("S3_BUCKET", "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")  # origin‑bucket
+S3_BUCKET = os.getenv(
+    "S3_BUCKET",
+    "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254"  # ваш один‑единственный бакет
+)
 S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_REGION = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")  # CDN‑домен
+S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
 session = boto3.session.Session()
 s3 = session.client(
@@ -38,27 +41,26 @@ router = APIRouter()
 class ClipIn(BaseModel):
     url: str
 
-
 # -------------------------------------------------
 # helpers
 # -------------------------------------------------
 def _bucket_from_url(url: str) -> str:
-    """
-    Если хост заканчивается на .s3.twcstorage.ru → берём поддомен как bucket.
-    Иначе используем S3_BUCKET из окружения.
-    """
+    """Бакет берём из поддомена *.s3.twcstorage.ru, иначе используем S3_BUCKET."""
     host = urlparse(url).hostname or ""
-    if host.endswith(".s3.twcstorage.ru"):
-        return host.split(".")[0]  # то, что до первой точки
-    return S3_BUCKET
+    return host.split(".")[0] if host.endswith(".s3.twcstorage.ru") else S3_BUCKET
 
 
 def _key_from_url(url: str) -> str:
-    """Возвращает ключ объекта в S3, декодируя %‑последовательности."""
-    return unquote(urlparse(url).path.lstrip("/"))
+    """
+    ВАЖНО: не декодируем %xx!
+    '.../My%20Video.mp4' останется именно таким,
+    потому что объект в S3 записан с символами '%' в имени.
+    """
+    return urlparse(url).path.lstrip("/")
 
 
 def _unique_clip_name(original_key: str) -> str:
+    """folder/1.mp4 → folder/narezki/1_clip_<uuid>.mp4  (без декодирования)"""
     parent = Path(original_key).parent
     stem = Path(original_key).stem
     ext = Path(original_key).suffix or ".mp4"
@@ -84,57 +86,53 @@ def _run_ffmpeg(src_path: str, dst_path: str) -> None:
         raise RuntimeError(completed.stderr.decode("utf-8"))
 
 
-def _encode_for_url(key: str) -> str:
-    """URL‑кодирует пробелы/не‑ASCII, оставляя '/' нетронутым."""
-    return quote(key, safe="/")
-
-
 # -------------------------------------------------
 # ROUTE
 # -------------------------------------------------
 @router.post("/clip")
 async def create_clip(data: ClipIn):
     src_bucket = _bucket_from_url(data.url)
-    src_key = _key_from_url(data.url)
+    src_key = _key_from_url(data.url)          # оставляем %20 и т.д.
 
     with tempfile.TemporaryDirectory() as tmpdir:
         ext = Path(src_key).suffix or ".mp4"
         src_path = os.path.join(tmpdir, f"src{ext}")
         dst_path = os.path.join(tmpdir, f"clip{ext}")
 
-        # 1) скачиваем из определённого бакета
+        # 1) download
         try:
             s3.download_file(src_bucket, src_key, src_path)
         except Exception as e:
             raise HTTPException(400, f"S3 download error: {e}")
 
-        # 2) обрезаем
+        # 2) ffmpeg trim
         try:
             _run_ffmpeg(src_path, dst_path)
         except Exception as e:
             raise HTTPException(500, f"ffmpeg error: {e}")
 
-        # 3) загружаем клип обратно в origin‑bucket (S3_BUCKET)
+        # 3) upload back to the SAME bucket (origin)
         clip_key = _unique_clip_name(src_key)
         mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
         try:
             s3.upload_file(
                 dst_path,
-                S3_BUCKET,             # кладём в CDN‑origin
+                S3_BUCKET,
                 clip_key,
                 ExtraArgs={
                     "ContentType": mime,
                     "ContentDisposition": "inline",
-                    # "ACL": "public-read",  # при необходимости
+                    # "ACL": "public-read",  # если нужно
                 },
             )
         except Exception as e:
             raise HTTPException(500, f"S3 upload error: {e}")
 
-    clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
+    # 4) CDN‑URL: ключ уже содержит %‑кодировку → просто конкатенируем
+    clip_url = f"{S3_PUBLIC_HOST}/{clip_key}"
 
     return {
-        "source_url": data.url,  # без изменений
-        "clip_url": clip_url,    # %‑кодировка сохранена
+        "source_url": data.url,
+        "clip_url": clip_url,
         "length_sec": 300,
     }
