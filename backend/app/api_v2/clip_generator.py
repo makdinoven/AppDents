@@ -16,12 +16,11 @@ from pydantic import BaseModel
 # ENV / CONSTS
 # -------------------------------------------------
 # 👉 Укажите фактическое имя бакета (обычно UUID‑подобная строка)
-S3_BUCKET = os.getenv("S3_BUCKET", "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_REGION = os.getenv("S3_REGION", "ru-1")
+S3_ENDPOINT         = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET           = os.getenv("S3_BUCKET", "cdn.dent-s.com")
+S3_REGION           = os.getenv("S3_REGION", "ru-1")
+S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# 👉 Домен вашего CDN — тот, что возвращаем клиенту
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
 session = boto3.session.Session()
 s3 = session.client(
