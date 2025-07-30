@@ -1,22 +1,24 @@
 # main.py
+import mimetypes
 import os
-import shutil
 import subprocess
 import tempfile
 import uuid
 from pathlib import Path
-from urllib.parse import urlparse, unquote
+from urllib.parse import quote, unquote, urlparse
 
 import boto3
 from botocore.config import Config
-from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel
 
-# ---------------- S3 / CDN CONFIG ----------------
-S3_ENDPOINT       = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET         = os.getenv("S3_BUCKET", "cdn.dent-s.com")         # bucket‑name, без https://
-S3_REGION         = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST    = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")  # для ответа
+# -------------------------------------------------
+# S3 / CDN CONFIG
+# -------------------------------------------------
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")          # имя бакета (без https://)
+S3_REGION = os.getenv("S3_REGION", "ru-1")
+S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")  # что отдаем клиенту
 
 s3 = boto3.client(
     "s3",
@@ -27,49 +29,54 @@ s3 = boto3.client(
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
 
-# ---------------- FASTAPI APP ----------------
-router = APIRouter()
+# -------------------------------------------------
+# FastAPI
+# -------------------------------------------------
+router = APIRouter(prefix="/api/clip_generator")
+app = FastAPI(title="Dent‑S Clip Generator")
+app.include_router(router)
+
 
 class ClipIn(BaseModel):
     url: str
 
 
+# -------------------------------------------------
+# helpers
+# -------------------------------------------------
 def _key_from_url(url: str) -> str:
     """
-    Принимает:
-        https://604b5d90‑....s3.twcstorage.ru/Style/1.mp4
-        https://cdn.dent-s.com/Style/1.mp4
-    Возвращает ключ внутри бакета:  Style/1.mp4
+    https://604b5d90...s3.twcstorage.ru/Folder/1.mp4  ->
+        Folder/1.mp4
+    https://cdn.dent-s.com/Folder/1.mp4 ->
+        Folder/1.mp4
     """
     parsed = urlparse(url)
-    # путь может содержать %20 – раскодируем
-    return unquote(parsed.path.lstrip("/"))
+    return unquote(parsed.path.lstrip("/"))  # снимаем %xx чтобы корректно работать с S3
 
 
 def _unique_clip_name(original_key: str) -> str:
     """
-    Style/1.mp4 -> Style/narezki/1_clip_<uuid>.mp4
+    Folder/1.mp4  ->  Folder/narezki/1_clip_<uuid>.mp4
     """
     parent = Path(original_key).parent
-    stem   = Path(original_key).stem
-    ext    = Path(original_key).suffix
-    clip_fname = f"{stem}_clip_{uuid.uuid4().hex}{ext}"
-    return str(parent / "narezki" / clip_fname)
+    stem = Path(original_key).stem
+    ext = Path(original_key).suffix
+    return str(parent / "narezki" / f"{stem}_clip_{uuid.uuid4().hex}{ext}")
 
 
 def _run_ffmpeg(src_path: str, dst_path: str) -> None:
-    """
-    Берём первые 300 секунд (5 мин).
-    Сохраняем аудио/видео без перекодирования если возможно (-c copy),
-    иначе вы можете заменить на перекодирование (‑c:v libx264 ...).
-    """
     cmd = [
         "ffmpeg",
-        "-loglevel", "error",
-        "-y",                       # overwrite
-        "-i", src_path,
-        "-t", "300",                # 5 минут
-        "-c", "copy",               # без перекодирования
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        src_path,
+        "-t",
+        "300",  # 5 минут
+        "-c",
+        "copy",
         dst_path,
     ]
     completed = subprocess.run(cmd, capture_output=True)
@@ -77,41 +84,64 @@ def _run_ffmpeg(src_path: str, dst_path: str) -> None:
         raise RuntimeError(completed.stderr.decode("utf-8"))
 
 
+def _encode_key_for_url(key: str) -> str:
+    """
+    Превращает 'Folder/file name.mp4' -> 'Folder/file%20name.mp4'
+    (оставляя '/' нетронутым)
+    """
+    return quote(key, safe="/")
+
+
+# -------------------------------------------------
+# route
+# -------------------------------------------------
 @router.post("/clip")
 async def create_clip(data: ClipIn):
     original_key = _key_from_url(data.url)
 
-    # Скачаем исходник во временный файл
     with tempfile.TemporaryDirectory() as tmpdir:
-        ext = Path(original_key).suffix or ".mp4"  # .mp4 по‑умолчанию, если вдруг нет
+        ext = Path(original_key).suffix or ".mp4"
         src_path = os.path.join(tmpdir, f"src{ext}")
         dst_path = os.path.join(tmpdir, f"clip{ext}")
 
+        # 1. скачиваем исходник
         try:
             s3.download_file(S3_BUCKET, original_key, src_path)
         except Exception as e:
             raise HTTPException(400, f"S3 download error: {e}")
 
-        # делаем обрезку
+        # 2. обрезаем ffmpeg‑ом
         try:
             _run_ffmpeg(src_path, dst_path)
         except Exception as e:
             raise HTTPException(500, f"ffmpeg error: {e}")
 
-        # уникальное имя + каталог narezki
+        # 3. формируем ключ и MIME
         clip_key = _unique_clip_name(original_key)
+        mime, _ = mimetypes.guess_type(clip_key)
+        if not mime:
+            mime = "video/mp4"
 
-        # убедимся, что каталога narezki ещё нет/есть
+        # 4. загружаем с правильными заголовками
         try:
-            s3.upload_file(dst_path, S3_BUCKET, clip_key)
+            s3.upload_file(
+                dst_path,
+                S3_BUCKET,
+                clip_key,
+                ExtraArgs={
+                    "ContentType": mime,
+                    "ContentDisposition": "inline",
+                    # "ACL": "public-read",  # раскомментируйте при необходимости
+                },
+            )
         except Exception as e:
             raise HTTPException(500, f"S3 upload error: {e}")
 
-    # CDN‑ссылка
-    clip_url = f"{S3_PUBLIC_HOST}/{clip_key}"
+    # 5. собираем ссылку с сохранёнными %‑кодами
+    clip_url = f"{S3_PUBLIC_HOST}/{_encode_key_for_url(clip_key)}"
 
     return {
-        "source_url": data.url,
-        "clip_url": clip_url,
+        "source_url": data.url,  # здесь оставляем как есть
+        "clip_url": clip_url,    # всё %xx осталось нетронутым
         "length_sec": 300,
     }
