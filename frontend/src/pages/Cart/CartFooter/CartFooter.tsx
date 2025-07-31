@@ -1,6 +1,5 @@
 import s from "./CartFooter.module.scss";
 import CartProgressBar from "../CartProgressBar/CartProgressBar.tsx";
-import Input from "../../../components/Modals/modules/Input/Input.tsx";
 import { t } from "i18next";
 import { Fragment } from "react";
 import { Trans } from "react-i18next";
@@ -12,6 +11,7 @@ import { emailSchema } from "../../../common/schemas/emailSchema.ts";
 import Form from "../../../components/Modals/modules/Form/Form.tsx";
 import { Percent } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import EmailInput from "../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
 //import DisabledPaymentWarn from "../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 type props = {
@@ -51,6 +51,7 @@ const CartFooter = ({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ChangePasswordType>({
     resolver: isLogged ? undefined : joiResolver(emailSchema),
@@ -172,10 +173,13 @@ const CartFooter = ({
 
       <Form handleSubmit={handleSubmit(handlePay)}>
         {!isLogged && (
-          <Input
+          <EmailInput
+            isValidationUsed
             id="email"
-            placeholder={t("email")}
+            value={email}
+            setValue={setValue}
             error={errors.email?.message}
+            placeholder={t("email")}
             {...register("email")}
           />
         )}

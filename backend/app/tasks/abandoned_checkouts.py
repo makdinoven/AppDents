@@ -30,10 +30,12 @@ logger = get_task_logger(__name__)
 MAIL_BONUS = 5.0        # $5 – фиксированный бонус
 
 
+from sqlalchemy.orm import exc as orm_exc
+
 @celery.task(
     bind=True,
     name="app.tasks.abandoned_checkouts.process_abandoned_checkouts",
-    rate_limit="100/h",          # ограничим SMTP-нагрузку
+    rate_limit="100/h",
 )
 def process_abandoned_checkouts(
     self,
@@ -41,110 +43,107 @@ def process_abandoned_checkouts(
     target_email: str | None = None,
 ) -> None:
     """
-    • Автоматический режим  (target_email=None)  –
-      забираем до batch_size лидов, добавленных > 3 часов назад.
+    • auto-режим → берём batch_size лидов старше 3 ч;
+    • ручной режим → обрабатываем ровно один e-mail независимо от времени.
 
-    • Ручная проверка (target_email="mail@host") –
-      обрабатываем ровно одну запись независимо от времени добавления.
-
-    Каждый лид:
-      1. Если учётка уже существует → просто проставляем message_sent=1.
-      2. Регистрируем пользователя, выдаём $5, partial-курс.
-      3. Шлём маркетинговое письмо с карточкой курса.
-      4. Обновляем флаг message_sent.
+    Каждая строка обрабатывается только одним воркером,
+    благодаря FOR UPDATE ... SKIP LOCKED.
     """
     db: Session = SessionLocal()
     cutoff = datetime.utcnow() - timedelta(hours=3)
 
     try:
-        # ───────────────────────── формируем запрос ─────────────────────────
-        base_query = db.query(AbandonedCheckout).filter(
+        # ─── формируем и блокируем выборку ───────────────────────────────
+        q = db.query(AbandonedCheckout).filter(
             AbandonedCheckout.message_sent.is_(False)
         )
 
         if target_email:
-            base_query = base_query.filter(AbandonedCheckout.email == target_email)
+            q = q.filter(AbandonedCheckout.email == target_email)
         else:
-            base_query = base_query.filter(AbandonedCheckout.created_at < cutoff)
+            q = q.filter(AbandonedCheckout.created_at < cutoff)
 
-        leads = base_query.limit(batch_size).all()
+        leads = (
+            q.order_by(AbandonedCheckout.id)
+             .limit(batch_size)
+             .with_for_update(skip_locked=True)     # ← блокировка
+             .all()
+        )
+
         if not leads:
             logger.info("No abandoned-checkout leads to process.")
+            db.commit()
             return
 
-        # ─────────────────────── основной цикл обработки ────────────────────
+        # ─── обработка ----------------------------------------------------
         for lead in leads:
-            lead_id       = lead.id
-            current_email = lead.email                    # не переходим на target_email
-            raw_courses   = (lead.course_ids or "").split(",")
-            region        = lead.region or "EN"
+            try:
+                # сохраняем поля пока объект «жив»
+                lead_id     = lead.id
+                email       = lead.email
+                region      = lead.region or "EN"
+                raw_courses = (lead.course_ids or "").split(",")
 
-            # 1. Учётка уже есть? ------------------------------------------------
-            if get_user_by_email(db, current_email):
+            except orm_exc.ObjectDeletedError:
+                logger.warning("Lead row vanished before processing — skipping.")
+                continue
+
+            # 1. пользователь уже существует
+            if get_user_by_email(db, email):
                 db.query(AbandonedCheckout).filter_by(id=lead_id).update(
                     {"message_sent": True}
                 )
-                logger.info("User %s already exists – flag set, skipping.", current_email)
+                logger.info("User %s exists — flag set, skipped.", email)
                 continue
 
-            # 2. Регистрация + пароль -------------------------------------------
+            # 2. регистрация
             password = generate_random_password()
             try:
-                user = create_user(db, current_email, password)   # внутри commit()
+                user = create_user(db, email, password)        # делает commit()
             except ValueError:
-                # параллельная регистрация
                 db.query(AbandonedCheckout).filter_by(id=lead_id).update(
                     {"message_sent": True}
                 )
-                logger.warning("Race condition on %s – marked as sent.", current_email)
+                logger.warning("Race condition on %s — marked as sent.", email)
                 continue
 
-            # 3. Бонус 5 $ -------------------------------------------------------
+            # 3. бонус 5 $
             credit_balance(
-                db,
-                user.id,
-                MAIL_BONUS,
-                WalletTxTypes.ADMIN_ADJUST,
+                db, user.id, MAIL_BONUS, WalletTxTypes.ADMIN_ADJUST,
                 meta={"reason": "abandoned_checkout"},
-            )  # внутри commit()
+            )  # commit() внутри
 
-            # 4. Partial-курс + карточка -----------------------------------------
-            course_ids   = [int(c) for c in raw_courses if c.strip()]
-            chosen_id    = _choose_course(db, course_ids)
-            course_info  = {}
+            # 4. partial-курс
+            course_ids  = [int(c) for c in raw_courses if c.strip().isdigit()]
+            chosen_id   = _choose_course(db, course_ids)
+            course_info = {}
 
             if chosen_id:
                 try:
                     add_partial_course_to_user(
-                        db,
-                        user.id,
-                        chosen_id,
-                        source=FreeCourseSource.LANDING,
-                    )  # внутри commit()
+                        db, user.id, chosen_id, source=FreeCourseSource.LANDING
+                    )  # commit() внутри
                     course_info = _build_course_info(db, chosen_id)
                 except ValueError as err:
-                    logger.warning(
-                        "Cannot grant partial %s to %s: %s", chosen_id, current_email, err
-                    )
+                    logger.warning("Partial %s → %s: %s", chosen_id, email, err)
 
-            # 5. Письмо ----------------------------------------------------------
+            # 5. письмо
             try:
                 send_abandoned_checkout_email(
-                    recipient_email=current_email,
+                    recipient_email=email,
                     password=password,
                     course_info=course_info,
                     region=region,
                 )
-                logger.info("E-mail successfully sent to %s", current_email)
+                logger.info("Mail sent to %s", email)
             except Exception as err:
-                logger.error("SMTP error for %s: %s", current_email, err)
+                logger.error("SMTP error for %s: %s", email, err)
 
-            # 6. Флаг message_sent ----------------------------------------------
+            # 6. отметка message_sent
             db.query(AbandonedCheckout).filter_by(id=lead_id).update(
                 {"message_sent": True}
             )
 
-        # ───────────────────────── commit одной транзакцией ────────────────────
         db.commit()
 
     except Exception as exc:
@@ -152,6 +151,7 @@ def process_abandoned_checkouts(
         logger.exception("Abandoned-checkout task failed: %s", exc)
     finally:
         db.close()
+
 
 
 

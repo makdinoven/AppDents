@@ -3,7 +3,6 @@ import { Trans } from "react-i18next";
 import { t } from "i18next";
 import { loginSchema } from "../../common/schemas/loginSchema.ts";
 import Form from "./modules/Form/Form.tsx";
-import Input from "./modules/Input/Input.tsx";
 import Button from "../ui/Button/Button.tsx";
 import ModalLink from "./modules/ModalLink/ModalLink.tsx";
 import { Path } from "../../routes/routes.ts";
@@ -14,6 +13,8 @@ import { LoginType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import PasswordInput from "../ui/Inputs/PasswordInput/PasswordInput.tsx";
+import EmailInput from "../ui/Inputs/EmailInput/EmailInput.tsx";
 
 const LoginModal = () => {
   const [loading, setLoading] = useState(false);
@@ -46,16 +47,14 @@ const LoginModal = () => {
     <div className={s.modal}>
       <Form handleSubmit={handleSubmit(handleLogIn)}>
         <>
-          <Input
-            type="email"
+          <EmailInput
+            isValidationUsed={false}
             id="email"
+            error={errors.email?.message}
             placeholder={t("email")}
             {...register("email")}
-            error={errors.email?.message}
           />
-
-          <Input
-            type="password"
+          <PasswordInput
             id="password"
             placeholder={t("password")}
             {...register("password")}

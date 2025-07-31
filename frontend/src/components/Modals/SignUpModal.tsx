@@ -1,7 +1,6 @@
 import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
 import ModalLink from "./modules/ModalLink/ModalLink.tsx";
-import Input from "./modules/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import Form from "./modules/Form/Form.tsx";
@@ -18,22 +17,27 @@ import { AppRootStateType } from "../../store/store.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { Alert } from "../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../assets/icons/index.ts";
+import EmailInput from "../ui/Inputs/EmailInput/EmailInput.tsx";
 
 const SignUpModal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language
+    (state: AppRootStateType) => state.user.language,
   );
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ChangePasswordType>({
     resolver: joiResolver(emailSchema),
     mode: "onTouched",
   });
+
+  const email = watch("email");
 
   const handleSignUp = async (email: any) => {
     setLoading(true);
@@ -53,11 +57,14 @@ const SignUpModal = () => {
     <div className={s.modal}>
       <Form handleSubmit={handleSubmit(handleSignUp)}>
         <>
-          <Input
-            id="emailSignUp"
+          <EmailInput
+            isValidationUsed
+            id="email"
+            value={email}
+            setValue={setValue}
+            error={errors.email?.message}
             placeholder={t("email")}
             {...register("email")}
-            error={errors.email?.message}
           />
           <Button loading={loading} text={t("signup")} type="submit" />
         </>

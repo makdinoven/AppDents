@@ -35,10 +35,11 @@ S3_BUCKET           = os.getenv("S3_BUCKET", "cdn.dent-s.com")
 S3_REGION           = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# сканер
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
 BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 20))     # задач за один проход
 RATE_LIMIT_HLS      = "6/m"                                     # Celery annotation
+
+R_SET_BAD = "hls:bad"
 
 # основной S3‑клиент (V2 signature)
 s3 = boto3.client(
@@ -84,14 +85,10 @@ def hls_prefix_for(key: str) -> str:
 
 # ─────────────────────── ffmpeg (copy→fallback) ──────────────────────────────
 
-def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> None:
-    """
-    ① пробуем fast remux (‑c copy + bsf);
-    ② если ffmpeg вернёт ошибку — перекодируем в libx264.
-    """
+def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
+    """True  → HLS готов; False → ffmpeg окончательно упал."""
     copy_cmd = [
-        "ffmpeg", "-v", "error", "-y",
-        "-threads", "1",
+        "ffmpeg", "-v", "error", "-y", "-threads", "1",
         "-i", in_mp4,
         "-c", "copy",
         "-bsf:v", "h264_mp4toannexb",
@@ -103,13 +100,13 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> None:
     ]
     try:
         subprocess.run(copy_cmd, check=True)
-        return
+        return True                      # ← успешный fast‑remux
     except subprocess.CalledProcessError as e:
         logger.warning("[HLS] copy‑mux failed (%s) — fallback to re‑encode", e)
 
+    # fallback: re‑encode
     encode_cmd = [
-        "ffmpeg", "-v", "error", "-y",
-        "-threads", "1",
+        "ffmpeg", "-v", "error", "-y", "-threads", "1",
         "-i", in_mp4,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
         "-c:a", "aac", "-b:a", "192k",
@@ -120,7 +117,12 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> None:
         "-hls_segment_filename", seg_pat,
         playlist,
     ]
-    subprocess.run(encode_cmd, check=True, timeout=3600)
+    try:
+        subprocess.run(encode_cmd, check=True, timeout=3600)
+        return True                      # ← перекодирование прошло
+    except subprocess.CalledProcessError as e:
+        logger.error("[HLS] re‑encode failed: %s", e)
+        return False
 
 # ───────────────────────────── METADATA FIX ──────────────────────────────────
 
@@ -143,25 +145,38 @@ def _mark_hls_ready(key: str) -> None:
     rds.sadd(R_SET_READY, key)
     logger.info("[HLS] meta fixed → %s", key)
 
+def _mark_hls_error(key: str, note: str) -> None:
+    """фиксируем, что mp4 не конвертируется"""
+    head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+    meta = head.get("Metadata", {})
+    meta["hls"] = "error"
+    meta["hls_note"] = note[:60]
+    s3.copy_object(
+        Bucket=S3_BUCKET, Key=key,
+        CopySource={"Bucket": S3_BUCKET, "Key": key},
+        Metadata=meta, MetadataDirective="REPLACE",
+        ContentType=head["ContentType"], ACL="public-read",
+    )
+    rds.sadd(R_SET_BAD, key)
+
 # ────────────────────────────── TASKS ────────────────────────────────────────
 
 @shared_task(name="app.tasks.ensure_hls")
 def ensure_hls() -> None:
-    """
-    Сканируем bucket, равномерно ставим задачи (ETA шаг = SPACING секунд),
-    пропуская:
-        • уже готовые (Redis ready или meta hls=true)
-        • уже поставленные (Redis queued).
-    """
-    start_ts = time.time()
+    start_ts   = time.time()
     queued_now = 0
 
     for key in _each_mp4_objects():
         if "/.hls/" in key or key.endswith("_hls/"):
             continue
-        if rds.sismember(R_SET_READY, key) or rds.sismember(R_SET_QUEUED, key):
+
+        # ===  пропускаем, если файл уже готов / плохой / в очереди  ===
+        if (rds.sismember(R_SET_READY,  key) or       # готов
+            rds.sismember(R_SET_BAD,    key) or       # повреждён
+            rds.sismember(R_SET_QUEUED, key)):        # уже стоит в ETA
             continue
 
+        # meta hls=true → считаем готовым
         try:
             head = s3.head_object(Bucket=S3_BUCKET, Key=key)
             if head.get("Metadata", {}).get("hls") == "true":
@@ -170,20 +185,19 @@ def ensure_hls() -> None:
         except ClientError:
             continue
 
-        hls_prefix = hls_prefix_for(key)
-        playlist_key = f"{hls_prefix}playlist.m3u8"
+        # если плейлист уже лежит в бакете — тоже считаем готовым
+        playlist_key = f"{hls_prefix_for(key)}playlist.m3u8"
         try:
-            # если плейлист  уже в  бакете, считаем файл готовым
             s3.head_object(Bucket=S3_BUCKET, Key=playlist_key)
-            _mark_hls_ready(key)  # проставит meta hls=true
-            continue  # heavy‑таску НЕ ставим
+            _mark_hls_ready(key)
+            continue
         except ClientError:
-            pass  # плейлиста нет → идём дальше
+            pass
 
+        # ставим heavy‑таску c равномерным ETA
         eta = start_ts + queued_now * SPACING
         process_hls_video.apply_async(
-            (key,),
-            queue="special_hls",
+            (key,), queue="special_hls",
             eta=datetime.utcfromtimestamp(eta),
         )
         rds.sadd(R_SET_QUEUED, key)
@@ -225,7 +239,10 @@ def process_hls_video(key: str) -> None:
             seg_pat  = os.path.join(tmp, "segment_%03d.ts")
             playlist = os.path.join(tmp, "playlist.m3u8")
 
-            _make_hls(in_mp4, playlist, seg_pat)
+            ok = _make_hls(in_mp4, playlist, seg_pat)
+            if not ok:
+                _mark_hls_error(key, "ffmpeg_failed")
+                return
 
             # upload playlist + segments
             for fname in os.listdir(tmp):
