@@ -534,24 +534,7 @@ def get_user_growth_stats(
     start_dt: datetime,
     end_dt: datetime,
 ) -> dict:
-    """
-    Возвращает:
-      {
-        "data": [
-          {"date": "2025-06-01", "new_users": 35, "total_users": 10235},
-          …
-        ],
-        "total_new_users": 120,
-        "start_total_users": 10115,
-        "end_total_users":   10235
-      }
-    • new_users   — количество регистраций за сутки;
-    • total_users — общее число пользователей *на конец дня*.
-    Гарантирует непрерывную шкалу дат (если в какой-то день нет
-    регистраций, new_users = 0).
-    """
-
-    # 1) пользователи по дням внутри периода ------------------------------
+    # 1) пользователи по дням внутри периода (исключаем balance == 5)
     rows = (
         db.query(
             cast(User.created_at, Date).label("day"),
@@ -560,27 +543,30 @@ def get_user_growth_stats(
         .filter(
             User.created_at >= start_dt,
             User.created_at <  end_dt,
+            User.balance != 5,          # ← исключаем
         )
         .group_by("day")
         .order_by("day")
         .all()
     )
-    # rows: [(2025-06-01, 35), (2025-06-02, 85), …]
 
-    # 2) приводим к словарю day → new_users
+    # 2) day → new_users
     per_day = {r.day: r.cnt for r in rows}
 
-    # 3) формируем полный диапазон дат (чтобы не было «дыр»)
+    # 3) полный диапазон дат
     days = []
     cur = start_dt.date()
     while cur < end_dt.date():
         days.append(cur)
         cur += timedelta(days=1)
 
-    # 4) стартовое общее число пользователей до периода
+    # 4) стартовое общее число пользователей до периода (также исключаем balance == 5)
     start_total_users: int = (
         db.query(func.count(User.id))
-        .filter(User.created_at < start_dt)
+        .filter(
+            User.created_at < start_dt,
+            User.balance != 5,          # ← исключаем
+        )
         .scalar()
     )
 
@@ -604,6 +590,7 @@ def get_user_growth_stats(
         "start_total_users": start_total_users,
         "end_total_users":   running_total,
     }
+
 
 def get_purchase_analytics(
     db: Session,

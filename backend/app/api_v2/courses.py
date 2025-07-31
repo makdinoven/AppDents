@@ -208,19 +208,20 @@ def update_course_full(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
-    updated_course = update_course(db, course_id, update_data)
-    sections = updated_course.sections
-    if isinstance(sections, dict):
-        sections_list = [{k: v} for k, v in sections.items()]
-    elif isinstance(sections, list):
-        sections_list = sections
-    else:
-        sections_list = []
+    updated = update_course(db, course_id, update_data)
+
+    sections_obj = updated.sections or {}
+    # Сортируем по числовому значению ключа и приводим к требуемому формату списка
+    sections_list = [{k: v} for k, v in sorted(
+        sections_obj.items(),
+        key=lambda kv: int(kv[0]) if str(kv[0]).isdigit() else float('inf')
+    )]
+
     return {
-        "id": updated_course.id,
-        "name": updated_course.name,
-        "description": updated_course.description,
-        "sections": sections_list
+        "id": updated.id,
+        "name": updated.name,
+        "description": updated.description,
+        "sections": sections_list,
     }
 
 

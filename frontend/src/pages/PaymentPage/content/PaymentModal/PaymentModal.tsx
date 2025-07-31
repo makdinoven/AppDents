@@ -58,12 +58,17 @@ const PaymentModal = ({
   const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
     register,
+    watch,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<PaymentType>({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
+
+  const emailInputName = "email";
+  const emailValue = watch(emailInputName);
 
   const handleCheckboxToggle = () => {
     if (balance! !== 0) {
@@ -104,7 +109,6 @@ const PaymentModal = ({
             ? currentUrl + `?${REF_CODE_PARAM}=${rcCode}`
             : currentUrl,
       };
-
       try {
         const res = await mainApi.buyCourse(dataToSend, isLogged);
         const checkoutUrl = res.data.checkout_url;
@@ -163,10 +167,6 @@ const PaymentModal = ({
     }
   };
 
-  // console.log(
-  //   !paymentData.source ? getPaymentSource(isOffer) : paymentData.source,
-  // );
-
   return (
     <div className={s.modal}>
       <div className={s.courses}>
@@ -219,15 +219,17 @@ const PaymentModal = ({
             <Input
               id="name"
               placeholder={t("yourName")}
-              error={errors.name?.message}
               {...register("name")}
             />
             <div>
-              <Input
+              <EmailInput
+                isValidationUsed
                 id="email"
-                placeholder={t("email")}
+                value={emailValue}
+                setValue={setValue}
                 error={errors.email?.message}
-                {...register("email")}
+                placeholder={t("email")}
+                {...register(emailInputName)}
               />
               {!isFree && (
                 <p className={s.modal_text}>
@@ -236,8 +238,7 @@ const PaymentModal = ({
               )}
             </div>
             {isFree && (
-              <Input
-                type={"password"}
+              <PasswordInput
                 id="password"
                 placeholder={t("password")}
                 error={errors.password?.message}

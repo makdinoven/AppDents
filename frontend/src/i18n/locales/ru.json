@@ -63,6 +63,12 @@
   "firstFreeLesson": "Первый урок бесплатно",
   "or": "или",
   "here": "здесь.",
+
+  "emailValidationTooltip": {
+    "suggestion": "Возможно,Вы имели ввиду {{suggestedEmail}}?",
+    "warning": "Пожалуйста, убедитесь, что Email правильный"
+  },
+
   "freeCourse": {
     "freePreview": "спецпредложение",
     "discount": "Скидка {{discount}}%",

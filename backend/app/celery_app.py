@@ -2,7 +2,7 @@ from celery import Celery
 from dotenv import load_dotenv
 import os
 
-from kombu import Queue
+from kombu import Queue, Exchange
 
 load_dotenv()
 
@@ -19,6 +19,14 @@ celery = Celery(
             "app.tasks.abandoned_checkouts",
         ],
 )
+
+celery.conf.update(
+    task_default_queue="default",
+    task_default_exchange="celery",
+    task_default_exchange_type="direct",
+    task_default_routing_key="celery",
+)
+
 
 #    ↓↓↓  вместо include используем autodiscover
 celery.autodiscover_tasks(
@@ -74,10 +82,12 @@ celery.conf.update(
     },
 )
 
+default_exc = Exchange("celery", type="direct")
+
 celery.conf.task_queues = (
-    Queue("default"),         # превью, e-mails и т.д.
-    Queue("special"),
-    Queue("special_hls"),
+    Queue("default",      default_exc, routing_key="celery"),
+    Queue("special",      default_exc, routing_key="special"),
+    Queue("special_hls",  default_exc, routing_key="special_hls"),
 )
 
 celery.conf.task_routes = {

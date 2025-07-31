@@ -74,17 +74,21 @@ def update_course(db: Session, course_id: int, update_data: CourseUpdate) -> Cou
     course = db.query(Course).filter(Course.id == course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
+
     course.name = update_data.name
     course.description = update_data.description
-    if update_data.sections:
-        # Преобразуем список словарей в один словарь
-        new_sections = {}
-        for section_item in update_data.sections:
-            for key, value in section_item.items():
-                new_sections[key] = value.dict()
-        course.sections = new_sections
-    else:
-        course.sections = {}
+
+    # Перенумеровываем по порядку прихода: 1,2,3,...
+    new_sections: dict[str, dict] = {}
+    for idx, item in enumerate(update_data.sections, start=1):
+        if not isinstance(item, dict) or len(item) != 1:
+            raise HTTPException(status_code=422, detail="Each section item must contain exactly one key")
+        (_old_key, section_val) = next(iter(item.items()))
+        # section_val — Pydantic Section
+        new_sections[str(idx)] = section_val.dict()
+
+    course.sections = new_sections
+
     db.commit()
     db.refresh(course)
     return course

@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from datetime import datetime, timedelta, date
 from math import ceil
 import time
@@ -22,7 +23,7 @@ from ..models.models_v2 import (
     AdVisit,
     users_courses,
 )
-from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum
+from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum, LandingCardResponse
 
 
 # 1. Все курсы, которые уже принадлежат пользователю
@@ -363,6 +364,75 @@ def get_purchases_by_language(
         for row in results
     ]
 
+def get_purchases_by_language_per_day(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+):
+    """
+    Возвращает список вида
+    [
+      {
+        "date": "2025-07-24",
+        "languages": [
+            {"language": "EN", "count": 12, "total_amount": "45.00 $"},
+            {"language": "ES", "count":  5, "total_amount": "23.00 $"},
+            ...
+        ]
+      },
+      ...
+    ]
+    Период полуоткрытый: [start_dt, end_dt)
+    """
+
+    # 1. Получаем дату транзакции без времени
+    day_col = func.date(Purchase.created_at)          # DATE(created_at) — MySQL/PG
+    # day_col = cast(Purchase.created_at, Date)       # Cross‑DB ANSI‑вариант
+
+    rows = (
+        db.query(
+            day_col.label("day"),
+            Landing.language.label("language"),
+            func.count(Purchase.id).label("purchase_count"),
+            func.coalesce(func.sum(Purchase.amount), 0).label("total_amount"),
+        )
+        .join(Purchase, Purchase.landing_id == Landing.id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+        )
+        .group_by(day_col, Landing.language)
+        .order_by(day_col)
+        .all()
+    )
+
+    # 2. Сводим в stats[date][language] -> {...}
+    stats: dict[date, dict[str, dict[str, str | int]]] = defaultdict(dict)
+
+    for r in rows:
+        stats[r.day][r.language] = {
+            "language": r.language,                       # ➜ добавили
+            "count":    r.purchase_count,
+            "total_amount": f"{r.total_amount:.2f} $",
+        }
+
+    # 3. Заполняем диапазон дней, чтобы не было «дыр»
+    data = []
+    cur  = start_dt.date()       # inclusive
+    last = end_dt.date()         # exclusive
+
+    while cur < last:
+        # если покупок не было, вернём пустой список
+        day_stats = list(stats[cur].values())
+        data.append({
+            "date": cur.isoformat(),
+            "languages": day_stats,
+        })
+        cur += timedelta(days=1)
+
+    return data
+
+
 def check_and_reset_ad_flag(landing: Landing, db: Session):
     """
     Если у лендинга in_advertising=True, но ad_flag_expires_at < now,
@@ -492,9 +562,6 @@ def _fallback_landing_cards(
     return {"total": len(landings), "cards": [_landing_to_card(l) for l in landings]}
 
 
-# ---------------------------  COLLAB‑FILTER  --------------------------------
-
-# ---------------------------  COLLAB-FILTER  --------------------------------
 def get_recommended_landing_cards(
     db: Session,
     *,
@@ -503,49 +570,25 @@ def get_recommended_landing_cards(
     limit: int = 20,
     language: str | None = None,
 ) -> dict:
-    """
-    Коллаб-фильтр рекомендаций лендингов:
-    • Если есть покупки — алгоритм CF.
-    • Если покупок НЕТ — fallback → все популярные лендинги.
-    В любом случае:
-      total = общее число найденных лендингов,
-      cards = страница размером limit с учётом skip.
-    """
-    from sqlalchemy import cast, func
-    from sqlalchemy.types import Float
-
-
-    # 0) что юзер уже взял
     b_courses  = _user_course_ids(db, user_id)
     b_landings = _user_landing_ids(db, user_id)
 
-    # --- FALLBACK: нет покупок → все популярные ---
+    # --- FALLBACK, если покупок нет: только popular, total = реальное кол-во ---
     if not b_courses:
-
-
-        # базовый запрос: невидимые скрыты, фильтр по языку
         query = _apply_common_filters(_base_landing_query(db), language=language)
-
-        # сортировка «popular» и исключение купленных (но их нет)
+        query = _exclude_bought(query, b_courses, b_landings)
         query = _apply_sort(query, "popular")
 
-        # настоящий total популярных
         total = query.count()
+        landings = query.offset(skip).limit(limit).all()
+        return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
 
-
-        # пейджинг
-        results = query.offset(skip).limit(limit).all()
-        cards = [_landing_to_card(l) for l in results]
-
-        return {"total": total, "cards": cards}
-
-    # --- COLLAB FILTERING: есть покупки ---
-    # 1) ищем похожих пользователей
+    # --- COLLAB FILTERING ---
     similar_users = (
         db.query(users_courses.c.user_id)
           .filter(
               users_courses.c.course_id.in_(b_courses),
-              users_courses.c.user_id != user_id
+              users_courses.c.user_id != user_id,
           )
           .distinct()
           .subquery()
@@ -558,20 +601,15 @@ def get_recommended_landing_cards(
         db.query(users_courses.c.course_id.label("cid"), score)
           .filter(
               users_courses.c.user_id.in_(select(similar_users)),
-              ~users_courses.c.course_id.in_(b_courses)
+              ~users_courses.c.course_id.in_(b_courses),
           )
           .group_by(users_courses.c.course_id)
           .order_by(score.desc())
     )
 
-    # 2) полный размер CF-рекомендаций
-    total_rec = rec_q.count()
-
-
-    # 3) собираем уникальные лендинги по рейтингу
-    unique_ids = set()
-    cards = []
-    passed = 0
+    # 1) собираем CF-лендинги (уникальные, с учётом language и исключая купленные лендинги)
+    cf_ids: list[int] = []
+    seen_cf: set[int] = set()
 
     for row in rec_q.yield_per(200):
         landing = get_cheapest_landing_for_course(db, row.cid)
@@ -579,32 +617,52 @@ def get_recommended_landing_cards(
             continue
         if language and landing.language != language.upper():
             continue
-        if landing.id in unique_ids:
+        if landing.id in seen_cf:
+            continue
+        if landing.id in b_landings:
             continue
 
-        unique_ids.add(landing.id)
+        seen_cf.add(landing.id)
+        cf_ids.append(landing.id)
 
-        # фаза skip
-        if passed < skip:
-            passed += 1
-            continue
+    # 2) фолбэк‑запрос popular по языку, исключая купленные и уже найденные CF
+    query_fb = _apply_common_filters(_base_landing_query(db), language=language)
+    query_fb = _exclude_bought(query_fb, b_courses, b_landings)
+    query_fb = query_fb.filter(~Landing.id.in_(cf_ids))   # <-- импортируйте вашу модель Landing
+    query_fb = _apply_sort(query_fb, "popular")
 
-        cards.append(_landing_to_card(landing))
-        if len(cards) >= limit:
-            break
+    # сколько популярок останется после исключения CF
+    fallback_total = query_fb.count()
 
-    # 4) добираем фолбэк, если не набрали
-    if len(cards) < limit:
-        extra = _fallback_landing_cards(db, user_id, 0, limit - len(cards), language)["cards"]
-        cards.extend(extra)
+    # общий total = CF + fallback (без дублей)
+    total = len(cf_ids) + fallback_total
 
-    return {"total": total_rec, "cards": cards}
+    # 3) пагинация по объединённому списку
+
+    cards: list = []
+
+    # сначала срез по CF
+    if skip < len(cf_ids):
+        cf_slice = cf_ids[skip : skip + limit]
+        if cf_slice:
+            # достаём объекты лендингов по cf_slice в исходном порядке
+            # (если нет удобного батч‑запроса с сохранением порядка — грузим поштучно)
+            for lid in cf_slice:
+                l = db.query(Landing).get(lid)
+                if l:
+                    cards.append(_landing_to_card(l))
+
+    # если места ещё есть — добираем fallback
+    remaining = limit - len(cards)
+    if remaining > 0:
+        # сколько нужно пропустить во фолбэке
+        fb_skip = max(0, skip - len(cf_ids))
+        fb_landings = query_fb.offset(fb_skip).limit(remaining).all()
+        cards.extend(_landing_to_card(l) for l in fb_landings)
+
+    return {"total": total, "cards": cards}
 
 
-
-
-
-# -------------------------  ОБЩИЙ ЭНД‑ПОИНТ  --------------------------------
 
 def get_personalized_landing_cards(
     db: Session,

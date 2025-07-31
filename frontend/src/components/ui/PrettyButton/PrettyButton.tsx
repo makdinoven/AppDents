@@ -20,7 +20,8 @@ const PrettyButton = ({
       onClick={onClick}
       className={`${s.btn} ${className ? className : ""} ${s[variant] || ""}`}
     >
-      {loading ? <LoaderOverlay /> : <Trans i18nKey={text} />}
+      {loading && <LoaderOverlay />}
+      <Trans i18nKey={text} />
     </button>
   );
 };
