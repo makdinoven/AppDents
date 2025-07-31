@@ -4,7 +4,6 @@ import { t } from "i18next";
 import { Trans } from "react-i18next";
 import s from "./PaymentModal.module.scss";
 import Form from "../../../../components/Modals/modules/Form/Form.tsx";
-import Input from "../../../../components/Modals/modules/Input/Input.tsx";
 import Button from "../../../../components/ui/Button/Button.tsx";
 import { paymentSchema } from "../../../../common/schemas/paymentSchema.ts";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,6 +29,9 @@ import { PaymentDataType } from "../../../../store/slices/paymentSlice.ts";
 import { getPaymentSource } from "../../../../common/helpers/helpers.ts";
 import LogoList from "./LogoList/LogoList.tsx";
 import PaymentCourseCard from "./PaymentCourseCard/PaymentCourseCard.tsx";
+import Input from "../../../../components/ui/Inputs/Input/Input.tsx";
+import EmailInput from "../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
+import PasswordInput from "../../../../components/ui/Inputs/PasswordInput/PasswordInput.tsx";
 
 const PaymentModal = ({
   isOffer = false,
