@@ -1,0 +1,61 @@
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    z-index: 1000;
+    opacity: 0;
+    @include fadeIn();
+    @include lightBlurBackground();
+
+    &.open {
+      opacity: 1;
+    }
+
+    &.closing {
+      @include fadeOut();
+    }
+
+    &.top {
+        align-items: flex-start;
+        justify-content: center;
+        padding: 90px 15px 15px 15px;
+
+        .content {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    &.center {
+        padding: 15px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &.right {
+        padding-bottom: 15px;
+        justify-content: flex-end;
+    }
+}
+
+.content {
+    @include fadeInMoveFromTop();
+
+    &.closing {
+        @include fadeOutMoveToTop();
+    }
+}
+
+@media (max-width: $mobile-breakpoint) {
+    .overlay {
+        &.top {
+            padding: 60px 10px 90px;
+        }
+
+        padding: 10px 10px 90px;
+        justify-content: center;
+    }
+}

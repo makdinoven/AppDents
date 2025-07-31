@@ -21,9 +21,9 @@ const Layout = () => {
       </main>
       <SearchModal />
       <PaymentPage />
-      <MobileMenu />
-      <ScrollToTopButton />
       {!isAdminRoute && <Footer />}
+      <ScrollToTopButton />
+      <MobileMenu />
     </div>
   );
 };

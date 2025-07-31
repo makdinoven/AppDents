@@ -19,6 +19,7 @@ export interface PaymentDataType {
     newPrice: number;
     oldPrice: number;
     lessonsCount: string;
+    img: string;
   }[];
 }
 

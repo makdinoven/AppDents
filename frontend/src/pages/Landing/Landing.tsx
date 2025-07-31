@@ -107,6 +107,31 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
+
+      const paymentData = {
+        isWebinar: isWebinar,
+        isFree: isFree,
+        fromAd: isPromotionLanding,
+        slug: res.data.page_name,
+        landingIds: [res.data.id],
+        courseIds: res.data.course_ids,
+        priceCents: !isWebinar ? res.data.new_price * 100 : 100,
+        newPrice: !isWebinar ? res.data.new_price : 1,
+        oldPrice: !isWebinar ? res.data.old_price : 49,
+        region: res.data.language,
+        source: isWebinar ? PAGE_SOURCES.webinarLanding : undefined,
+        courses: [
+          {
+            name: !isWebinar ? res.data.landing_name : firstLesson?.name,
+            newPrice: !isWebinar ? res.data.new_price : 1,
+            oldPrice: !isWebinar ? res.data.old_price : 49,
+            lessonsCount: res.data.lessons_count,
+          },
+        ],
+      };
+
+      dispatch(setPaymentData(paymentData));
+
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -119,7 +144,6 @@ const Landing = () => {
   };
 
   const handleNavigateToPayment = () => {
-    dispatch(setPaymentData(paymentData));
     dispatch(openPaymentModal());
   };
 
@@ -184,29 +208,6 @@ const Landing = () => {
     }
   }, [landing]);
 
-  // TODO РАЗОБРАТЬСЯ С БЕЗОБРАЗИЕМ ЦЕН И isWebinar, возможно перенести в страницу оплаты
-  const paymentData = {
-    isWebinar: isWebinar,
-    isFree: isFree,
-    fromAd: isPromotionLanding,
-    slug: landing?.page_name,
-    landingIds: [landing?.id],
-    courseIds: landing?.course_ids,
-    priceCents: !isWebinar ? landing?.new_price * 100 : 100,
-    newPrice: !isWebinar ? landing?.new_price : 1,
-    oldPrice: !isWebinar ? landing?.old_price : 49,
-    region: landing?.language,
-    source: isWebinar ? PAGE_SOURCES.webinarLanding : undefined,
-    courses: [
-      {
-        name: !isWebinar ? landing?.landing_name : firstLesson?.name,
-        newPrice: !isWebinar ? landing?.new_price : 1,
-        oldPrice: !isWebinar ? landing?.old_price : 49,
-        lessonsCount: landing?.lessons_count,
-      },
-    ],
-  };
-
   const heroData = {
     landing_name: !isWebinar ? landing?.landing_name : firstLesson?.name,
     authors: formattedAuthorsDesc,
@@ -269,6 +270,7 @@ const Landing = () => {
     course_program: landing?.course_program,
     landing_name: landing?.landing_name,
     authors: landing?.authors,
+    handleNavigateToPayment: handleNavigateToPayment,
     ...getPricesData(landing, isWebinar),
   };
 

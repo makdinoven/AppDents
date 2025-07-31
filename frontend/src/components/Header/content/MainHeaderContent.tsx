@@ -9,7 +9,6 @@ import NavButton from "../modules/NavButton/NavButton.tsx";
 import { Path } from "../../../routes/routes.ts";
 import { SearchIcon } from "../../../assets/icons/index.ts";
 import LanguageChanger from "../../ui/LanguageChanger/LanguageChanger.tsx";
-import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Trans } from "react-i18next";
 import { UserFilled } from "../../../assets/icons";
 import { useSelector } from "react-redux";
@@ -29,12 +28,12 @@ const MainHeaderContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged
+    (state: AppRootStateType) => state.user.isLogged,
   );
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const screenWidth = useScreenWidth();
   const quantity = useSelector(
-    (state: AppRootStateType) => state.cart.quantity
+    (state: AppRootStateType) => state.cart.quantity,
   );
   const { setTriggerRef } = useTriggerRef();
   const localTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -55,7 +54,7 @@ const MainHeaderContent = () => {
     if (screenWidth > 768) {
       if (!isLogged && !accessToken) {
         return (
-          <UnstyledButton
+          <button
             ref={localTriggerRef}
             onClick={() =>
               navigate(Path.login, {
@@ -67,7 +66,7 @@ const MainHeaderContent = () => {
             className={`${s.login_btn} ${AUTH_MODAL_ROUTES.includes(location.pathname) ? s.active : ""}`}
           >
             <Trans i18nKey="login" />
-          </UnstyledButton>
+          </button>
         );
       }
       return (

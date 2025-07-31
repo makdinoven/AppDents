@@ -3,56 +3,33 @@ import { joiResolver } from "@hookform/resolvers/joi";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
 import s from "./PaymentModal.module.scss";
-import Form from "../modules/Form/Form";
-import Input from "../modules/Input/Input";
-import Button from "../../ui/Button/Button";
-import { paymentSchema } from "../../../common/schemas/paymentSchema";
-import {
-  AmexLogo,
-  ApplePayLogo,
-  DinnerClubLogo,
-  DiscoverLogo,
-  GooglePayLogo,
-  JcbLogo,
-  MastercardLogo,
-  PaypalLogo,
-  UnionPayLogo,
-  VisaLogo,
-} from "../../../assets/logos";
+import Form from "../../../../components/Modals/modules/Form/Form.tsx";
+import Input from "../../../../components/Modals/modules/Input/Input.tsx";
+import Button from "../../../../components/ui/Button/Button.tsx";
+import { paymentSchema } from "../../../../common/schemas/paymentSchema.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { mainApi } from "../../../api/mainApi/mainApi.ts";
+import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import { useState } from "react";
-import ToggleCheckbox from "../../ui/ToggleCheckbox/ToggleCheckbox.tsx";
+import ToggleCheckbox from "../../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import {
   BASE_URL,
   LS_TOKEN_KEY,
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
-} from "../../../common/helpers/commonConstants.ts";
-import { cartStorage } from "../../../api/cartApi/cartStorage.ts";
+} from "../../../../common/helpers/commonConstants.ts";
+import { cartStorage } from "../../../../api/cartApi/cartStorage.ts";
 import { useNavigate } from "react-router-dom";
-import { Path } from "../../../routes/routes.ts";
-import { PaymentType } from "../../../api/userApi/types.ts";
-import { getMe } from "../../../store/actions/userActions.ts";
-import { Alert } from "../../ui/Alert/Alert.tsx";
-import { CheckMark } from "../../../assets/icons/index.ts";
-import DisabledPaymentWarn from "../../ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
-import { PaymentDataType } from "../../../store/slices/paymentSlice.ts";
-import { getPaymentSource } from "../../../common/helpers/helpers.ts";
-
-const logos = [
-  VisaLogo,
-  MastercardLogo,
-  ApplePayLogo,
-  GooglePayLogo,
-  PaypalLogo,
-  AmexLogo,
-  JcbLogo,
-  UnionPayLogo,
-  DinnerClubLogo,
-  DiscoverLogo,
-];
+import { Path } from "../../../../routes/routes.ts";
+import { PaymentType } from "../../../../api/userApi/types.ts";
+import { getMe } from "../../../../store/actions/userActions.ts";
+import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
+import { CheckMark } from "../../../../assets/icons";
+import DisabledPaymentWarn from "../../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import { PaymentDataType } from "../../../../store/slices/paymentSlice.ts";
+import { getPaymentSource } from "../../../../common/helpers/helpers.ts";
+import LogoList from "./LogoList/LogoList.tsx";
+import PaymentCourseCard from "./PaymentCourseCard/PaymentCourseCard.tsx";
 
 const PaymentModal = ({
   isOffer = false,
@@ -98,12 +75,17 @@ const PaymentModal = ({
     ? Math.round(Math.max(paymentData.newPrice - balance!, 0) * 100) / 100
     : paymentData.newPrice;
 
+  //TODO ВЫНЕСТИ И ОСТАВИТЬ В ЭТОМ КОМПОНЕНТЕ ТОЛЬКО ЛОГИКУ КАСАЮЩУЮСЯ ОТОБРАЖЕНИЯ
+
   const handlePayment = async (form: any) => {
     setLoading(true);
     if (!isFree) {
       const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
       const cartLandingIds = cartStorage.getLandingIds();
       const dataToSend = {
+        total_old_price: paymentData.oldPrice,
+        total_new_price: paymentData.newPrice,
+        from_ad: paymentData.fromAd,
         price_cents: paymentData.priceCents,
         region: paymentData.region ? paymentData.region : language,
         landing_ids: paymentData.landingIds,
@@ -115,7 +97,8 @@ const PaymentModal = ({
         source: !paymentData.source
           ? getPaymentSource(isOffer)
           : paymentData.source,
-        successUrl: `${BASE_URL}${Path.successPayment}`,
+        success_url: `${BASE_URL}${Path.successPayment}`,
+        courses: paymentData.courses,
         cancel_url:
           !isLogged && rcCode
             ? currentUrl + `?${REF_CODE_PARAM}=${rcCode}`
@@ -180,34 +163,20 @@ const PaymentModal = ({
     }
   };
 
-  console.log(
-    !paymentData.source ? getPaymentSource(isOffer) : paymentData.source,
-  );
+  // console.log(
+  //   !paymentData.source ? getPaymentSource(isOffer) : paymentData.source,
+  // );
 
   return (
     <div className={s.modal}>
       <div className={s.courses}>
         {paymentData.courses.map((course, index: number) => (
-          <div key={index} className={s.course}>
-            <p>
-              {course.name}{" "}
-              {!isWebinar && course.lessonsCount && (
-                <>
-                  - <span className={"highlight"}>{course.lessonsCount}</span>
-                </>
-              )}
-            </p>
-            {!isFree ? (
-              <div className={s.course_prices}>
-                <span className={"highlight"}>${course.newPrice}</span>
-                <span className={"crossed"}>${course.oldPrice}</span>
-              </div>
-            ) : (
-              <p className={s.free_text}>
-                <Trans i18nKey={"firstFreeLesson"} />
-              </p>
-            )}
-          </div>
+          <PaymentCourseCard
+            key={index}
+            course={course}
+            isWebinar={isWebinar}
+            isFree={isFree}
+          />
         ))}
       </div>
       <div className={s.total_container}>
@@ -297,15 +266,7 @@ const PaymentModal = ({
             )}
           </p>
         )}
-        {!isFree && (
-          <ul className={s.logos}>
-            {logos.map((Logo, index) => (
-              <li key={index}>
-                <Logo width="100%" height="100%" />
-              </li>
-            ))}
-          </ul>
-        )}
+        {!isFree && <LogoList />}
       </>
     </div>
   );
