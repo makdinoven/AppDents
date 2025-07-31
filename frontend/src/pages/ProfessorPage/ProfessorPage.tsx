@@ -49,11 +49,13 @@ const ProfessorPage = () => {
             new_price: number;
             old_price: number;
             lessons_count: string;
+            main_image: string;
           }) => ({
             name: item.landing_name,
             newPrice: item.new_price,
             oldPrice: item.old_price,
             lessonsCount: item.lessons_count,
+            img: item.main_image,
           }),
         ),
       };

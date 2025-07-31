@@ -1,28 +1,28 @@
-.cart_overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 15px;
-  z-index: 1000;
-  opacity: 0;
-  @include fadeIn();
-  @include lightBlurBackground();
-
-  &.open {
-    opacity: 1;
-  }
-
-  &.closing {
-    @include fadeOut();
-  }
-}
+//.cart_overlay {
+//  position: fixed;
+//  top: 0;
+//  left: 0;
+//  width: 100vw;
+//  height: 100vh;
+//  display: flex;
+//  justify-content: flex-end;
+//  padding-bottom: 15px;
+//  z-index: 1000;
+//  opacity: 0;
+//  @include fadeIn();
+//  @include lightBlurBackground();
+//
+//  &.open {
+//    opacity: 1;
+//  }
+//
+//  &.closing {
+//    @include fadeOut();
+//  }
+//}
 
 .cart {
-  @include fadeInMoveFromTop();
+  //@include fadeInMoveFromTop();
   color: $text-color;
   width: 100%;
   max-width: 530px;
@@ -38,9 +38,9 @@
   position: relative;
   overflow: hidden;
 
-  &.closing {
-    @include fadeOutMoveToTop();
-  }
+  //&.closing {
+  //  @include fadeOutMoveToTop();
+  //}
 
   &.empty {
     min-height: 400px;
@@ -140,11 +140,6 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .cart_overlay {
-    padding: 10px 10px 90px;
-    justify-content: center;
-  }
-
   .cart_header {
     padding: 10px 25px 0 18px;
     margin-bottom: 10px;
