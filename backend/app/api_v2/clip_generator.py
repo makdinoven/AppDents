@@ -29,9 +29,7 @@ s3 = boto3.client(
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
 
-# -------------------------------------------------
-# FASTAPI
-# -------------------------------------------------
+
 router = APIRouter()
 
 
@@ -39,10 +37,6 @@ router = APIRouter()
 class ClipIn(BaseModel):
     url: str
 
-
-# -------------------------------------------------
-# helpers
-# -------------------------------------------------
 def _bucket_from_url(url: str) -> str:
     """Если ссылка вида *.s3.twcstorage.ru — берём поддомен, иначе используем S3_BUCKET."""
     host = urlparse(url).hostname or ""
@@ -75,7 +69,9 @@ def _reencode_for_url(key: str) -> str:
 def _run_ffmpeg(src_path: str, dst_path: str) -> None:
     cmd = [
         "ffmpeg", "-loglevel", "error", "-y",
+        "nice", "-n", "10",
         "-i", src_path,
+        "-threads", "1",
         "-t", "300",  # 5 мин
         "-c", "copy",
         dst_path,
