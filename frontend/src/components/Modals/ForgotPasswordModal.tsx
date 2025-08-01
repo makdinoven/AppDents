@@ -2,7 +2,7 @@ import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
 import ModalLink from "./modules/ModalLink/ModalLink.tsx";
 import Form from "./modules/Form/Form.tsx";
-import Input from "./modules/Input/Input.tsx";
+import Input from "../ui/Inputs/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
@@ -23,7 +23,7 @@ const ForgotPasswordModal = () => {
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language
+    (state: AppRootStateType) => state.user.language,
   );
   const {
     register,
