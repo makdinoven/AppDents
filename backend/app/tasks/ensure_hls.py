@@ -9,7 +9,7 @@ import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 
 import boto3
 import redis
@@ -51,6 +51,15 @@ s3 = boto3.client(
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
 
+_s3_copy = boto3.client(        # v4-подпись
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+)
+
 # эксклюзивно для листинга (V4 signature)
 def _s3_v4():
     return boto3.client(
@@ -63,6 +72,17 @@ def _s3_v4():
     )
 
 # ───────────────────────────── HELPERS ───────────────────────────────────────
+def _copy_with_metadata(key: str, meta: dict) -> None:
+    """Copy the object onto itself, replacing metadata (UTF-8–safe)."""
+    _s3_copy.copy_object(
+        Bucket=S3_BUCKET,
+        Key=key,
+        CopySource={"Bucket": S3_BUCKET, "Key": quote(key, safe="")},
+        Metadata=meta,
+        MetadataDirective="REPLACE",
+        ACL="public-read",
+        ContentType="video/mp4",
+    )
 
 def _each_mp4_objects():
     """yield key for every .mp4 object (V4 list)."""
@@ -127,37 +147,33 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
 # ───────────────────────────── METADATA FIX ──────────────────────────────────
 
 def _mark_hls_ready(key: str) -> None:
-    """Проставляет x‑amz‑meta‑hls=true и добавляет в Redis‑set ready."""
     head = s3.head_object(Bucket=S3_BUCKET, Key=key)
     meta = head.get("Metadata", {})
     if meta.get("hls") == "true":
         return
     meta["hls"] = "true"
-    s3.copy_object(
-        Bucket=S3_BUCKET,
-        Key=key,
-        CopySource={"Bucket": S3_BUCKET, "Key": key},
-        Metadata=meta,
-        MetadataDirective="REPLACE",
-        ContentType=head["ContentType"],
-        ACL="public-read",
-    )
+
+    try:
+        _copy_with_metadata(key, meta)
+    except ClientError as e:
+        logger.error("[HLS] copy_object failed (ready): %s", e)
+        return
+
     rds.sadd(R_SET_READY, key)
     logger.info("[HLS] meta fixed → %s", key)
 
+
 def _mark_hls_error(key: str, note: str) -> None:
-    """фиксируем, что mp4 не конвертируется"""
-    head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-    meta = head.get("Metadata", {})
-    meta["hls"] = "error"
-    meta["hls_note"] = note[:60]
-    s3.copy_object(
-        Bucket=S3_BUCKET, Key=key,
-        CopySource={"Bucket": S3_BUCKET, "Key": key},
-        Metadata=meta, MetadataDirective="REPLACE",
-        ContentType=head["ContentType"], ACL="public-read",
-    )
-    rds.sadd(R_SET_BAD, key)
+    """Фиксируем, что ролик не конвертируется."""
+    rds.sadd(R_SET_BAD, key)       # <-- отмечаем ещё до copy, чтобы больше не трогать
+    try:
+        head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+        meta = head.get("Metadata", {})
+        meta.update({"hls": "error", "hls_note": note[:60]})
+        _copy_with_metadata(key, meta)
+    except ClientError as e:
+        logger.error("[HLS] copy_object failed (error): %s", e)
+
 
 # ────────────────────────────── TASKS ────────────────────────────────────────
 
