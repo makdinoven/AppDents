@@ -36,6 +36,14 @@
     max-width: 90%;
   }
 
+  &.top-right {
+    top: 60px;
+    left: auto;
+    right: 120px;
+    justify-content: center;
+    gap: 60px;
+  }
+
   .prev,
   .next {
     @include transition();
@@ -55,9 +63,18 @@
       height: 30px;
       path {
         @include transition();
-        stroke: $accent;
       }
     }
+
+    &.hero {
+      width: 35px;
+      height: 35px;
+      svg {
+        width: 35px;
+        height: 35px;
+      }
+    }
+
     @media (hover: hover) {
       &:hover {
         svg {
@@ -77,6 +94,22 @@
     }
   }
 
+  &.default {
+    svg {
+      path {
+        stroke: $accent;
+      }
+    }
+  }
+
+  &.hero {
+    svg {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+
   .next {
     svg {
       transform: rotate(180deg);
@@ -84,9 +117,36 @@
   }
 }
 
+.zoneNav {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+
+  .prev,
+  .next {
+    cursor: pointer;
+    width: 20%;
+    height: 100%;
+    border-radius: 0 20px 20px 0;
+  }
+
+  .prev {
+    border-radius: 20px 0 0 20px;
+  }
+}
+
 :global(.swiper) {
   border-radius: 20px;
   padding-bottom: 20px;
+}
+
+.paginationTop :global(.swiper) {
+  padding: 0;
 }
 
 :global(.swiper-pagination) {
@@ -99,6 +159,30 @@
   left: 50% !important;
   transform: translateX(-50%);
   gap: 10px;
+}
+
+.paginationTop :global(.swiper-pagination) {
+  top: 20px !important;
+  bottom: auto !important;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 120px;
+  gap: 20px;
+
+  @media (max-width: $middle-breakpoint) {
+    top: 10px !important;
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    top: 10px !important;
+    padding: 0 60px;
+    gap: 8px;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    padding: 0 30px;
+    gap: 4px;
+  }
 }
 
 :global(.swiper-pagination-bullet) {
@@ -189,22 +273,26 @@
   }
 }
 
-@media (max-width: $tablet-breakpoint) {
+@media (max-width: $middle-breakpoint) {
   .customNav {
     left: 0;
     right: 0;
+
+    &.top-right {
+      top: 40px;
+      right: 120px;
+      gap: 25px;
+    }
     .prev,
     .next {
-      width: 20px;
-      height: 20px;
-      svg {
-        width: 15px;
-        height: 15px;
+      &.hero {
+        width: 25px;
+        height: 25px;
+        svg {
+          width: 25px;
+          height: 25px;
+        }
       }
     }
-  }
-
-  :global(.swiper-pagination) {
-    gap: 5px;
   }
 }
