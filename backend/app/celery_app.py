@@ -41,7 +41,7 @@ celery.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_annotations={
-        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "450/m"},
         "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
         "app.tasks.process_hls_video": {"rate_limit": "7/m"},

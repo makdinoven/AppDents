@@ -34,6 +34,7 @@ S3_ENDPOINT         = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_BUCKET           = os.getenv("S3_BUCKET", "cdn.dent-s.com")
 S3_REGION           = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+_NO_KEY = ("NoSuchKey", "404")
 
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
 BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 20))     # задач за один проход
@@ -145,9 +146,22 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
         return False
 
 # ───────────────────────────── METADATA FIX ──────────────────────────────────
+def _safe_head(key: str) -> dict | None:
+    try:
+        return s3.head_object(Bucket=S3_BUCKET, Key=key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in _NO_KEY:
+            return None
+        raise
 
 def _mark_hls_ready(key: str) -> None:
-    head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+    head = _safe_head(key)
+    if head is None:                 # файла нет → очищаем Redis и уходим
+        rds.srem(R_SET_READY, key)
+        rds.srem(R_SET_QUEUED, key)
+        logger.info("[HLS] skip, object disappeared: %s", key)
+        return
+
     meta = head.get("Metadata", {})
     if meta.get("hls") == "true":
         return
@@ -156,23 +170,29 @@ def _mark_hls_ready(key: str) -> None:
     try:
         _copy_with_metadata(key, meta)
     except ClientError as e:
-        logger.error("[HLS] copy_object failed (ready): %s", e)
-        return
-
+        if e.response["Error"]["Code"] in _NO_KEY:
+            # объект исчез между head и copy
+            rds.srem(R_SET_READY, key)
+            logger.info("[HLS] skip, object disappeared during copy: %s", key)
+            return
+        raise
     rds.sadd(R_SET_READY, key)
-    logger.info("[HLS] meta fixed → %s", key)
 
 
 def _mark_hls_error(key: str, note: str) -> None:
-    """Фиксируем, что ролик не конвертируется."""
-    rds.sadd(R_SET_BAD, key)       # <-- отмечаем ещё до copy, чтобы больше не трогать
+    rds.sadd(R_SET_BAD, key)
+    head = _safe_head(key)
+    if head is None:
+        logger.info("[HLS] cannot mark error, object gone: %s", key)
+        return
+    meta = head.get("Metadata", {})
+    meta.update({"hls": "error", "hls_note": note[:60]})
     try:
-        head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-        meta = head.get("Metadata", {})
-        meta.update({"hls": "error", "hls_note": note[:60]})
         _copy_with_metadata(key, meta)
     except ClientError as e:
-        logger.error("[HLS] copy_object failed (error): %s", e)
+        if e.response["Error"]["Code"] not in _NO_KEY:
+            raise
+
 
 
 # ────────────────────────────── TASKS ────────────────────────────────────────
