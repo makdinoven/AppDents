@@ -10,7 +10,7 @@ from ..schemas_v2.slider import (
 )
 from ..services_v2 import slider_service
 
-router = APIRouter(prefix="/slides", tags=["Slides"])
+router = APIRouter()
 
 
 @router.get("/{language}", response_model=SlidesResponse)
