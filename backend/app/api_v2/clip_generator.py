@@ -68,11 +68,12 @@ def _reencode_for_url(key: str) -> str:
 
 def _run_ffmpeg(src_path: str, dst_path: str) -> None:
     cmd = [
-        "ffmpeg", "-loglevel", "error", "-y",
-        "nice", "-n", "10",
-        "-i", src_path,
+        "ffmpeg",
+        "-loglevel", "error",
         "-threads", "1",
-        "-t", "300",  # 5 мин
+        "-y",
+        "-i", src_path,
+        "-t", "300",
         "-c", "copy",
         dst_path,
     ]
