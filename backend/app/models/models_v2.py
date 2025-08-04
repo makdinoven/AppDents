@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
+    Index
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -369,3 +370,41 @@ class SpecialOffer(Base):
     user    = relationship("User", back_populates="special_offers")
     course  = relationship("Course")
     landing = relationship("Landing")
+
+class SlideType(str, PyEnum):
+    """Тип слайда."""
+    COURSE = "COURSE"   # карточка курса (лендинг)
+    BOOK   = "BOOK"     # резерв под книги
+    FREE   = "FREE"     # произвольный promo-слайд
+
+class Slide(Base):
+    """
+    Один элемент слайдера для конкретного языка (региона).
+    Слайды выводятся в порядке `order_index`.
+    """
+    __tablename__ = "slides"
+
+    id          = Column(Integer, primary_key=True)
+    language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                              name='landing_language'), nullable=False)
+    order_index = Column(Integer, nullable=False, comment="Порядок показа")
+    type        = Column(Enum(SlideType, name="slide_type"), nullable=False)
+
+    # Привязка к лендингу курса (актуально для type=COURSE)
+    landing_id  = Column(Integer, ForeignKey("landings.id"))
+    landing     = relationship("Landing")
+
+    # Поля для type=FREE (promo-слайд)
+    bg_media_url = Column(String(700))
+    title        = Column(String(255))
+    description  = Column(Text)
+    target_url   = Column(String(700))
+
+    is_active  = Column(Boolean, nullable=False, server_default="1")
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.utc_timestamp(),
+                        onupdate=func.utc_timestamp(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_slide_lang_order", "language", "order_index"),
+    )
