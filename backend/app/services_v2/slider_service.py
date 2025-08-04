@@ -12,7 +12,7 @@ from ..models.models_v2 import Slide, SlideType, Landing
 from ..schemas_v2.slider import (
     SlideUpdatePayload, FreeSlidePayload, CourseSlidePayload,
 )
-from ..services import landing_service           # для _landing_to_card
+from ..services_v2 import landing_service           # для _landing_to_card
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ def _slide_to_dict(db: Session, slide: Slide) -> Dict:
         if not slide.landing:
             raise HTTPException(status_code=500,
                                 detail=f"Slide {slide.id}: landing not found")
-        card = landing_service._landing_to_card(slide.landing)   # noqa
+        card = landing_service.landing_to_card(slide.landing)   # noqa
         return {
             "id": slide.id,
             "type": "COURSE",
