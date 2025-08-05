@@ -93,6 +93,7 @@ def _run_ffmpeg_stream(in_url: str, out_pipe, length: int = 300):
         "-i", in_url,
         "-t", str(length),
         "-c", "copy",
+        "-movflags", "frag_keyframe+empty_moov",
         "-f", "mp4",           # обязательно указать контейнер, когда пишем в pipe
         "pipe:1",
     ]
