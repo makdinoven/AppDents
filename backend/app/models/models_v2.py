@@ -408,3 +408,136 @@ class Slide(Base):
     __table_args__ = (
         Index("ix_slide_lang_order", "language", "order_index"),
     )
+import logging
+logger = logging.getLogger(__name__)
+
+book_authors = Table(
+    "book_authors",
+    Base.metadata,
+    Column("book_id",   Integer, ForeignKey("books.id"),   primary_key=True),
+    Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
+)
+
+class BookFileFormat(str, PyEnum):
+    PDF  = "PDF"
+    EPUB = "EPUB"
+    MOBI = "MOBI"
+    AZW3 = "AZW3"
+    FB2  = "FB2"
+
+class Book(Base):
+    """
+    Основная сущность «Книга».
+
+    • Файлы разных форматов — в BookFile.
+    • Аудиоверсии (целиком либо по главам) — BookAudio.
+    • Отдельные лендинги (разные языки/цены/оферы) — BookLanding.
+    """
+    __tablename__ = "books"
+
+    id          = Column(Integer, primary_key=True)
+    title       = Column(String(255), nullable=False)
+    description = Column(Text)
+    cover_url   = Column(String(700))
+    language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                              name='book_language'), nullable=False,
+                          server_default='EN')
+    created_at  = Column(DateTime, server_default=func.utc_timestamp(),
+                         nullable=False)
+    updated_at  = Column(DateTime, server_default=func.utc_timestamp(),
+                         onupdate=func.utc_timestamp(), nullable=False)
+
+    authors      = relationship("Author",
+                                secondary=book_authors,
+                                back_populates="books")
+    files        = relationship("BookFile",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+    audio_files  = relationship("BookAudio",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+    landings     = relationship("BookLanding",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+
+class BookFile(Base):
+    """
+    Один файл книги в конкретном формате (PDF, EPUB, …).
+
+    size_bytes   — для выводов «вес файла» на фронте.
+    """
+    __tablename__ = "book_files"
+
+    id          = Column(Integer, primary_key=True)
+    book_id     = Column(Integer, ForeignKey("books.id"), nullable=False)
+    file_format = Column(Enum(BookFileFormat,
+                              name="book_file_format"), nullable=False)
+    s3_url      = Column(String(700), nullable=False)
+    size_bytes  = Column(Integer)
+
+    book = relationship("Book", back_populates="files")
+
+class BookAudio(Base):
+    """
+    Аудиоверсия книги.
+
+    Если `chapter_index` = NULL → цельный mp3/ogg.
+    Иначе — конкретная глава.
+    """
+    __tablename__ = "book_audios"
+
+    id            = Column(Integer, primary_key=True)
+    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False)
+    chapter_index = Column(Integer)
+    title         = Column(String(255))
+    duration_sec  = Column(Integer)
+    s3_url        = Column(String(700), nullable=False)
+
+    book = relationship("Book", back_populates="audio_files")
+
+class BookLanding(Base):
+    """
+    Отдельная посадочная страница книги (как Landing для курса).
+
+    page_name — URL-slug: `/books/<page_name>`.
+    """
+    __tablename__ = "book_landings"
+
+    id            = Column(Integer, primary_key=True)
+    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False)
+    language      = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                                name='landing_language'), nullable=False,
+                            server_default='EN')
+    page_name     = Column(String(255), unique=True, nullable=False)
+    landing_name  = Column(String(255))
+    old_price     = Column(String(50))
+    new_price     = Column(String(50))
+    description   = Column(Text)
+    preview_photo = Column(String(700))
+    preview_pdf   = Column(String(700),
+                           comment="S3-URL PDF-файла с первыми 10-15 стр.")
+    preview_imgs  = Column(JSON,
+                           comment="['https://…/page1.jpg', '…/page2.jpg', …]")
+    sales_count   = Column(Integer, default=0)
+    is_hidden     = Column(Boolean, nullable=False, server_default='0')
+    created_at    = Column(DateTime, server_default=func.utc_timestamp())
+    updated_at    = Column(DateTime, server_default=func.utc_timestamp(),
+                           onupdate=func.utc_timestamp())
+
+    book = relationship("Book", back_populates="landings")
+
+# ── Динамически вешаем обратную связь на Author ─────────────────────────────
+try:
+    Author  # noqa: F401  — уже объявлен выше
+    if not hasattr(Author, "books"):
+        Author.books = relationship(
+            "Book",
+            secondary=book_authors,
+            back_populates="authors",
+            lazy="selectin",
+        )
+except NameError as exc:
+    logger.error("Author class not found while binding books: %s", exc)
