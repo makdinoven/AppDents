@@ -10,7 +10,7 @@ from ..models.models_v2 import (
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
-    BookLandingCreate, BookLandingUpdate, BookDetailResponse
+    BookLandingCreate, BookLandingUpdate, BookDetailResponse, BookLandingResponse
 )
 from ..utils.s3 import generate_presigned_url
 
@@ -203,11 +203,19 @@ def delete_book_landing(db: Session, landing_id: int) -> None:
 
 def get_book_landing_by_slug(
         db: Session, slug: str, language: str | None = None
-) -> BookLanding:
-    """Возвращает первый доступный (is_hidden=False) лендинг по slug книги.
-    Если передан language – пытаемся подобрать лендинг на нужном языке,
-    иначе берём первый попавшийся."""
-    book = db.query(Book).filter(Book.slug == slug).first()
+) -> BookLandingResponse:
+    """
+    Возвращает первый НЕ скрытый лендинг книги.
+    • language – опциональный фильтр ('RU', 'EN', …).
+    • preview_* поля конвертируются в HTTPS-URL
+      (для CDN-бакета – прямой адрес, иначе – Signed URL).
+    """
+    book = (
+        db.query(Book)
+          .options(selectinload(Book.landings))
+          .filter(Book.slug == slug)
+          .first()
+    )
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
@@ -222,7 +230,25 @@ def get_book_landing_by_slug(
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    return landing
+    # ── конвертируем s3:// → https:// либо Signed URL ─────────────────────
+    def _pub(url: str | None) -> str | None:
+        return generate_presigned_url(url, expires=timedelta(hours=24)) if url else None
+
+    return BookLandingResponse(
+        id            = landing.id,
+        book_id       = landing.book_id,
+        page_name     = landing.page_name,
+        language      = landing.language,
+        landing_name  = landing.landing_name,
+        old_price     = landing.old_price,
+        new_price     = landing.new_price,
+        description   = landing.description,
+        preview_photo = _pub(landing.preview_photo),
+        preview_pdf   = _pub(landing.preview_pdf),
+        preview_imgs  = [_pub(u) for u in (landing.preview_imgs or [])] or None,
+        sales_count   = landing.sales_count,
+        is_hidden     = landing.is_hidden,
+    )
 
 def get_book_detail(
     db: Session,
