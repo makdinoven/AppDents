@@ -1,6 +1,13 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, HttpUrl, constr, validator
 from datetime import datetime
+from pydantic import AnyUrl
+
+class HttpS3Url(AnyUrl):
+    """
+    URL с разрешёнными схемами http / https / s3.
+    """
+    allowed_schemes = {'http', 'https', 's3'}
 
 # ---------- ↓ Payload’ы CRUD книги -------------------------------------------------
 class BookFilePayload(BaseModel):
@@ -59,9 +66,9 @@ class BookLandingCreate(BaseModel):
     old_price:    Optional[str]
     new_price:    Optional[str]
     description:  Optional[str]
-    preview_photo: Optional[HttpUrl]
-    preview_pdf:   Optional[HttpUrl]
-    preview_imgs:  Optional[List[HttpUrl]]
+    preview_photo: Optional[HttpS3Url]
+    preview_pdf:   Optional[HttpS3Url]
+    preview_imgs:  Optional[List[HttpS3Url]]
     is_hidden:     bool = False
 
 class BookLandingUpdate(BookLandingCreate):
@@ -76,9 +83,9 @@ class BookLandingResponse(BaseModel):
     old_price:    Optional[str]
     new_price:    Optional[str]
     description:  Optional[str]
-    preview_photo: Optional[HttpUrl]
-    preview_pdf:   Optional[HttpUrl]
-    preview_imgs:  Optional[List[HttpUrl]]
+    preview_photo: Optional[HttpS3Url]
+    preview_pdf:   Optional[HttpS3Url]
+    preview_imgs:  Optional[List[HttpS3Url]]
     sales_count:   int
     is_hidden:     bool
 
