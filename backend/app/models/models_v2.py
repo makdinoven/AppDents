@@ -437,6 +437,7 @@ class Book(Base):
 
     id          = Column(Integer, primary_key=True)
     title       = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False, unique=True)
     description = Column(Text)
     cover_url   = Column(String(700))
     language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',

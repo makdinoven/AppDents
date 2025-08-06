@@ -17,6 +17,7 @@ class BookAudioPayload(BaseModel):
 
 class BookCreate(BaseModel):
     title:       str
+    slug: constr(regex=r"^[a-zA-Z0-9\-]+$")
     description: Optional[str]
     cover_url:   HttpUrl
     language:    constr(to_upper=True,
@@ -28,6 +29,7 @@ class BookCreate(BaseModel):
 class BookUpdate(BookCreate):
     """Все поля те же, все опциональные."""
     title:       Optional[str] = None
+    slug: Optional[constr(regex=r"^[a-zA-Z0-9\-]+$")] = None
     cover_url:   Optional[HttpUrl] = None
     files:       Optional[List[BookFilePayload]]
     audio_files: Optional[List[BookAudioPayload]]
@@ -82,3 +84,21 @@ class BookLandingResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+# ─────────────────────── DOWNLOAD-модели ──────────────────────────
+class BookFileDownload(BaseModel):
+    file_format: str
+    download_url: HttpUrl
+    size_bytes: int | None = None
+
+class BookAudioDownload(BaseModel):
+    chapter_index: int | None
+    title: str | None
+    duration_sec: int | None
+    download_url: HttpUrl
+
+class BookDetailResponse(BookResponse):
+    """Расширенный ответ для админов и владельцев книги."""
+    landings: list[BookLandingResponse]
+    files_download: list[BookFileDownload]
+    audio_download: list[BookAudioDownload]
