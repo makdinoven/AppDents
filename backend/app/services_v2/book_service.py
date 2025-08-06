@@ -1,16 +1,18 @@
 import logging
+from datetime import timedelta
 from typing import List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
-    BookFileFormat, Author, BookLanding
+    BookFileFormat, Author, BookLanding, User
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
-    BookLandingCreate, BookLandingUpdate
+    BookLandingCreate, BookLandingUpdate, BookDetailResponse
 )
+from ..utils.s3 import generate_presigned_url
 
 log = logging.getLogger(__name__)
 
