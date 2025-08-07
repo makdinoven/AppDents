@@ -14,11 +14,14 @@ type UniversalSliderProps = {
   navigation?: boolean;
   effect?: "slide" | "fade" | "cube" | "coverflow" | "flip";
   paginationType?: "story" | "dots";
+  paginationPosition?: "bottom" | "top";
   slidesPerView?: number | "auto";
   delay?: number;
   className?: string;
   isFullWidth?: boolean;
-  navigationPosition?: "center" | "bottom";
+  navigationPosition?: "center" | "bottom" | "top-right";
+  zoneNavigation?: boolean;
+  theme?: "default" | "hero";
 };
 
 const UniversalSlider: FC<UniversalSliderProps> = ({
@@ -28,9 +31,12 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
   pagination = true,
   navigation,
   paginationType = "story",
+  paginationPosition = "bottom",
   slidesPerView = 1,
   effect = "slide",
   navigationPosition = "center",
+  zoneNavigation = false,
+  theme = "default",
   delay = 5000,
   className = "",
   isFullWidth = false,
@@ -44,7 +50,7 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
         width: isFullWidth ? `100vw` : "100%",
         left: isFullWidth ? `-20px` : "",
       }}
-      className={s.slider}
+      className={`${s.slider}${paginationPosition === "top" && ` ${s.paginationTop}`}`}
     >
       <Swiper
         autoHeight={false}
@@ -89,16 +95,24 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
           </SwiperSlide>
         ))}
       </Swiper>
-      {navigation && (
-        <div className={`${s.customNav} ${s[navigationPosition]}`}>
-          <button ref={prevRef} className={s.prev}>
-            <BackArrow />
-          </button>
-          <button ref={nextRef} className={s.next}>
-            <BackArrow />
-          </button>
-        </div>
-      )}
+      {navigation &&
+        (zoneNavigation ? (
+          <div className={s.zoneNav}>
+            <div ref={prevRef} className={s.prev} />
+            <div ref={nextRef} className={s.next} />
+          </div>
+        ) : (
+          <div
+            className={`${s.customNav} ${s[navigationPosition]} ${s[theme]}`}
+          >
+            <button ref={prevRef} className={`${s.prev} ${s[theme]}`}>
+              <BackArrow />
+            </button>
+            <button ref={nextRef} className={`${s.next} ${s[theme]}`}>
+              <BackArrow />
+            </button>
+          </div>
+        ))}
     </div>
   );
 };

@@ -39,3 +39,4 @@ export { default as LogoutIcon } from "./logout-icon.svg?react";
 export { default as ProcessEmail } from "./process-email.svg?react";
 export { default as WarningEmail } from "./warning-email.svg?react";
 export { default as ConfirmedEmail } from "./confirmed-email.svg?react";
+export { default as Authors } from "./authors.svg?react";
