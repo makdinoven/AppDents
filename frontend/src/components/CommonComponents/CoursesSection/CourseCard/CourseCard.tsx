@@ -88,6 +88,7 @@ const CourseCard = ({
           newPrice: new_price,
           oldPrice: old_price,
           lessonsCount: lessons_count,
+          img: photo,
         },
       ],
     };

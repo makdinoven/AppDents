@@ -50,6 +50,7 @@ const CoursePage = () => {
             newPrice: course?.landing?.new_price,
             oldPrice: course?.landing?.old_price,
             lessonsCount: course?.landing?.lessons_count,
+            img: course?.landing?.preview_photo,
           },
         ],
       };

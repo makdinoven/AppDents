@@ -49,6 +49,9 @@ const paymentSlice = createSlice({
     clearPaymentData(state) {
       state.data = null;
     },
+    setIsFree(state, action: PayloadAction<boolean>) {
+      if (state.data) state.data.isFree = action.payload;
+    },
   },
 });
 
@@ -57,5 +60,6 @@ export const {
   openPaymentModal,
   closePaymentModal,
   clearPaymentData,
+  setIsFree,
 } = paymentSlice.actions;
 export const paymentReducer = paymentSlice.reducer;

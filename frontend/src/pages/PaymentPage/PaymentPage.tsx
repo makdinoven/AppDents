@@ -10,7 +10,6 @@ import {
 } from "../../store/slices/paymentSlice.ts";
 import { PAYMENT_PAGE_KEY } from "../../common/helpers/commonConstants.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
-import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 
 //TODO
 //      УБРАТЬ ИЗ PAYMENTMODAL ВСЮ ЛОГИКУ
@@ -27,6 +26,7 @@ const PaymentPage = () => {
   );
   const hasOpenKey = searchParams.has(openKey);
   const data = useSelector((state: AppRootStateType) => state.payment.data);
+
   const dispatch = useDispatch();
 
   const handleClose = () => {
@@ -56,9 +56,9 @@ const PaymentPage = () => {
     }
   }, [isOpen, hasOpenKey]);
 
-  useEffect(() => {
-    console.log(hasOpenKey, data);
-  }, [hasOpenKey]);
+  // useEffect(() => {
+  //   console.log(hasOpenKey, data);
+  // }, [hasOpenKey]);
 
   const fetchPaymentData = async () => {
     try {
@@ -79,6 +79,7 @@ const PaymentPage = () => {
               newPrice: res.data?.new_price,
               oldPrice: res.data?.old_price,
               lessonsCount: res.data?.lessons_count,
+              img: res.data?.preview_photo,
             },
           ],
         }),
@@ -92,18 +93,14 @@ const PaymentPage = () => {
   if (!data) return;
 
   return (
-    <ModalOverlay
-      customHandleClose={handleClose}
-      isVisibleCondition={isOpen && !!data}
-      modalPosition="center"
-    >
-      <PaymentModal
-        isWebinar={data.isWebinar}
-        isFree={data.isFree}
-        isOffer={data.isOffer}
-        paymentData={data}
-      />
-    </ModalOverlay>
+    <PaymentModal
+      isWebinar={data.isWebinar}
+      isFree={data.isFree}
+      isOffer={data.isOffer}
+      handleClose={handleClose}
+      visibleCondition={isOpen && !!data}
+      paymentData={data}
+    />
   );
 };
 

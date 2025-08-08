@@ -1,202 +1,340 @@
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 15px;
-  z-index: 1000;
-  opacity: 0;
-  @include fadeIn();
-  @include lightBlurBackground();
-
-  &.open {
-    opacity: 1;
-  }
-
-  &.closing {
-    @include fadeOut();
-  }
-}
-
 .modal {
+  position: relative;
   max-width: 1040px;
   margin: 0 auto;
-  background-color: $accent;
+  background-color: $accent-glass;
+  backdrop-filter: blur(10px);
+  border-radius: 40px;
   @include flex-column;
-  align-items: center;
+  overflow: hidden;
+  min-height: 300px;
+  justify-content: space-between;
+  max-height: 100%;
 
   form {
     @include flex-column;
-    gap: 30px;
-    width: 90%;
-  }
-
-  .modal_text {
-    @include clamped-p5;
-    margin-top: 10px;
-    text-align: center;
-  }
-
-  .courses {
-    overflow-y: auto;
-    max-height: 180px;
-    width: 100%;
-    border-top: 1.5px solid $text-color;
-    border-bottom: 1.5px solid $text-color;
-    margin-bottom: 20px;
-    @include custom-scrollbar;
-    padding: 0 20px;
-  }
-
-  .course {
-    @include clamped-p3;
-    position: relative;
-    width: 100%;
-    padding: 15px 0;
-    display: flex;
-    justify-content: space-between;
     gap: 20px;
-    &:not(:last-child) {
-      @include horizontal-line(
-        $height: 1px,
-        $color: $text-color,
-        $bottom: 0,
-        $width: 70%,
-        $right: 0
-      );
-    }
-  }
-
-  .course_prices {
-    display: flex;
-    gap: 5px;
     align-items: center;
 
-    span {
-      &:last-child {
-        opacity: 0.75;
-        @include clamped-p4;
+    button {
+      max-width: 642px;
+      text-transform: unset;
+    }
+  }
+}
+
+.form_inputs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  color: $text-color;
+}
+
+.modal_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  padding: 30px 30px 35px;
+
+  h2 {
+    text-align: center;
+    text-transform: uppercase;
+    color: $text-color;
+    @include clamped-h2;
+  }
+
+  .close_button {
+    position: relative;
+    width: 52px;
+    height: 52px;
+
+    &:hover {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
       }
     }
   }
 
-  .free_text {
-    text-transform: uppercase;
-    text-align: right;
-    color: $primary;
+  .courses_icon_wrapper {
+    display: flex;
+    width: 52px;
+    height: 52px;
+    position: relative;
+    color: $text-color;
+
+    svg {
+      width: inherit;
+      height: inherit;
+      flex-shrink: 0;
+
+      path {
+        stroke: $text-color;
+      }
+    }
+
+    .circle {
+      @include flex-center;
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      width: 23px;
+      height: 23px;
+      border-radius: 50%;
+      background-color: $secondary-lighter;
+      font-size: 14px;
+    }
+  }
+}
+
+.modal_footer {
+  @include flex-column;
+  align-items: center;
+  gap: 15px;
+  position: relative;
+  background-color: $accent;
+  width: 100%;
+  padding: 20px 30px 30px;
+  color: $text-color;
+
+  &::before, &::after {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    top: -60px;
   }
 
-  .total_prices {
-    position: relative;
-    &.free {
-      width: fit-content;
-      @include horizontal-line(
-        $left: -10,
-        $right: -10,
-        $top: 50%,
-        $color: $text-color,
-        $transform: y50
-      );
+  &::before {
+    left: 0px;
+    border-bottom-left-radius: 40px;
+    box-shadow: -15px 15px 0 2px $accent;
+  }
+
+  &::after {
+    right: 0;
+    border-bottom-right-radius: 40px;
+    box-shadow: 15px 15px 0 2px $accent;
+  }
+}
+
+.privacy_text, .after_payment_text {
+  text-align: center;
+}
+
+.privacy_text {
+  font-size: 16px;
+
+  a {
+    @include transition;
+    color: $primary;
+    text-decoration: underline 1px;
+
+    @media (hover: hover) {
+      &:hover {
+        color: $secondary;
+      }
     }
+  }
+}
+
+.after_payment_text {
+  @include clamped-p3;
+}
+
+.courses {
+  @include flex-column;
+  @include custom-scrollbar;
+  gap: 10px;
+  padding: 0 15px 0 30px;
+  margin-right: 15px;
+  overflow-x: hidden;
+  border-radius: 20px;
+  min-height: 80px;
+}
+
+.total_prices {
+  position: relative;
+  &.free {
+    width: fit-content;
+    @include horizontal-line(
+            $left: -10,
+            $right: -10,
+            $top: 50%,
+            $color: $text-color,
+            $transform: y50
+    );
+  }
+}
+
+.modal_body {
+  padding: 20px 30px;
+}
+
+.total_text {
+  @include clamped-p1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  color: $text-color;
+
+  div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .old_price {
+    color: $accent;
+    @include clamped-p2;
+  }
+}
+
+.total_container {
+  width: 100%;
+  padding: 0 90px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  &.center {
+    justify-content: center;
+  }
+}
+
+.stripe_text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: $text-color;
+  font-size: 16px;
+  text-align: center;
+
+  svg {
+    width: 23px;
+    flex-shrink: 0;
+  }
+}
+
+
+@media (max-width: $mobile-breakpoint) {
+  .modal {
+    border-radius: 25px;
+    form {
+      gap: 15px;
+
+      button {
+        font-size: 16px;
+        min-height: 30px;
+      }
+    }
+  }
+
+  .modal_header {
+    padding: 15px 15px 13px;
+
+    .close_button {
+      width: 30px;
+      height: 30px;
+    }
+
+    .courses_icon_wrapper {
+      width: 30px;
+      height: 30px;
+
+      .circle {
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+      }
+    }
+  }
+
+  .modal_body {
+    padding: 10px 15px 10px;
+  }
+
+  .modal_footer {
+    padding: 10px 15px 15px;
+    gap: 10px;
+    z-index: 3;
+
+    &::before, &::after {
+      width: 40px;
+      height: 40px;
+      top: -40px;
+      //z-index: 1;
+    }
+
+    &::before {
+      border-bottom-left-radius: 20px;
+    }
+
+    &::after {
+      border-bottom-right-radius: 20px;
+    }
+  }
+
+  .total_container {
+    padding: 0;
+  }
+
+  .after_payment_text {
+    font-size: 12px;
   }
 
   .total_text {
-    @include clamped-h3;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-
-    &.center {
-      width: 100%;
-      text-align: center;
-    }
+    @include clamped-p2;
+    gap: 5px;
 
     div {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      span {
-        &:last-child {
-          opacity: 0.75;
-          @include clamped-p2;
-        }
-      }
+      gap: 5px;
+    }
+
+    .old_price {
+      font-size: 13px;
+      text-decoration-thickness: 1px;
     }
   }
 
-
-
-  .total_container {
-    margin-bottom: 20px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
+  .privacy_text {
+    font-size: 8px;
   }
 
-  .checkbox_container {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    width: 100%;
+  .stripe_text {
+    hyphens: auto;
+    font-size: 10px;
+    //padding: 0 5px;
+    gap: 5px;
+
+    svg {
+      width: 15px;
+      height: 18px;
+    }
   }
 
-  .balance_container {
+  .courses {
+    gap: 5px;
+    padding: 0 7.5px 0 15px;
+    margin-right: 7.5px;
+  }
+
+  .form_inputs {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    @include clamped-p3;
+    gap: 5px;
 
-    p {
-      text-transform: uppercase;
-
-      span {
-        font-weight: 500;
-        color: $secondary-lighter;
-      }
-    }
-  }
-
-  @media (max-width: $mobile-breakpoint) {
-    .courses {
-      max-height: 140px;
-    }
-
-    .checkbox_container {
-      width: fit-content;
-      gap: 5px;
-      align-items: center;
-      flex-direction: row-reverse;
-      justify-content: flex-end;
-      font-size: 12px;
-    }
-
-    .balance_container {
-      flex-direction: row;
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    .total_container {
-      flex-direction: column;
-    }
-
-    form {
-      gap: 15px;
-    }
-
-    .course {
-      gap: 15px;
-      padding: 10px 0;
-    }
-
-    .courses {
-      padding: 0 10px;
+    input {
+      @include clamped-p2;
     }
   }
 }

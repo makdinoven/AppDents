@@ -1,32 +1,7 @@
-//.cart_overlay {
-//  position: fixed;
-//  top: 0;
-//  left: 0;
-//  width: 100vw;
-//  height: 100vh;
-//  display: flex;
-//  justify-content: flex-end;
-//  padding-bottom: 15px;
-//  z-index: 1000;
-//  opacity: 0;
-//  @include fadeIn();
-//  @include lightBlurBackground();
-//
-//  &.open {
-//    opacity: 1;
-//  }
-//
-//  &.closing {
-//    @include fadeOut();
-//  }
-//}
-
 .cart {
-  //@include fadeInMoveFromTop();
   color: $text-color;
   width: 100%;
   max-width: 530px;
-  //min-height: 640px;
   height: 100%;
   max-height: 930px;
   border-bottom-left-radius: var(--border-radius);
@@ -34,13 +9,8 @@
   backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
-  //gap: 30px;
   position: relative;
   overflow: hidden;
-
-  //&.closing {
-  //  @include fadeOutMoveToTop();
-  //}
 
   &.empty {
     min-height: 400px;
@@ -134,8 +104,6 @@
   flex-direction: column;
   overflow-x: hidden;
   gap: 10px;
-  //padding-right: 15px;
-  //padding-bottom: 10px;
   @include custom-scrollbar;
 }
 
@@ -146,13 +114,14 @@
   }
 
   .cart {
-    border-radius: 20px;
+    border-radius: 25px;
     min-height: 300px;
   }
 
   .cart_items {
     padding: 0 10px 10px 15px;
     margin-right: 5px;
+    gap: 5px;
   }
 
   .cart_header {

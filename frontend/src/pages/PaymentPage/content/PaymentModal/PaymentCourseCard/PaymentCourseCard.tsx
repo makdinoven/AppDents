@@ -17,20 +17,20 @@ const PaymentCourseCard = ({
   isFree: boolean;
 }) => {
   return (
-    <div className={s.course}>
-      <p>
-        <img src={img} alt="" />
-        {name}{" "}
+    <div className={`${s.course} ${isFree ? s.free : ""}`}>
+      <img src={img} alt="" />
+
+      <div className={s.course_info}>
         {!isWebinar && lessonsCount && (
-          <>
-            - <span className={"highlight"}>{lessonsCount}</span>
-          </>
+          <p className={s.lessons_count}>{lessonsCount}</p>
         )}
-      </p>
+        <h4 className={s.course_name}>{name}</h4>
+      </div>
+
       {!isFree ? (
         <div className={s.course_prices}>
-          <span className={"highlight"}>${newPrice}</span>
-          <span className={"crossed"}>${oldPrice}</span>
+          <span className={s.new_price}>${newPrice}</span>
+          <span className={s.old_price}>${oldPrice}</span>
         </div>
       ) : (
         <p className={s.free_text}>

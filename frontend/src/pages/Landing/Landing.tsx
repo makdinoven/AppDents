@@ -107,10 +107,8 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
-
       const paymentData = {
         isWebinar: isWebinar,
-        isFree: isFree,
         fromAd: isPromotionLanding,
         slug: res.data.page_name,
         landingIds: [res.data.id],
@@ -122,10 +120,13 @@ const Landing = () => {
         source: isWebinar ? PAGE_SOURCES.webinarLanding : undefined,
         courses: [
           {
-            name: !isWebinar ? res.data.landing_name : firstLesson?.name,
+            name: !isWebinar
+              ? res.data.landing_name
+              : normalizeLessons(res.data.lessons_info)[0].name,
             newPrice: !isWebinar ? res.data.new_price : 1,
             oldPrice: !isWebinar ? res.data.old_price : 49,
             lessonsCount: res.data.lessons_count,
+            img: res.data.preview_photo,
           },
         ],
       };
