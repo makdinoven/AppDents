@@ -115,9 +115,9 @@ const ProfileMain = () => {
     },
   ];
 
-  const activeTab = profilePageContent.find(
-    (tab) => tab.value === tabFromParams,
-  );
+  const activeTab =
+    profilePageContent.find((tab) => tab.value === tabFromParams) ??
+    profilePageContent.find((tab) => tab.value === "profile_main");
 
   return (
     <>

@@ -9,8 +9,7 @@ import { paymentSchema } from "../../../../common/schemas/paymentSchema.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import { useState } from "react";
-import ToggleCheckbox from "../../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
+import { useRef, useState } from "react";
 import {
   BASE_URL,
   LS_TOKEN_KEY,
@@ -23,26 +22,41 @@ import { Path } from "../../../../routes/routes.ts";
 import { PaymentType } from "../../../../api/userApi/types.ts";
 import { getMe } from "../../../../store/actions/userActions.ts";
 import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark } from "../../../../assets/icons";
+import {
+  CheckMark,
+  CoursesIcon,
+  PoweredByStripeLogo,
+  Shield,
+} from "../../../../assets/icons";
 import DisabledPaymentWarn from "../../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
-import { PaymentDataType } from "../../../../store/slices/paymentSlice.ts";
+import {
+  closePaymentModal,
+  PaymentDataType,
+} from "../../../../store/slices/paymentSlice.ts";
 import { getPaymentSource } from "../../../../common/helpers/helpers.ts";
 import LogoList from "./LogoList/LogoList.tsx";
 import PaymentCourseCard from "./PaymentCourseCard/PaymentCourseCard.tsx";
 import Input from "../../../../components/ui/Inputs/Input/Input.tsx";
 import EmailInput from "../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
-import PasswordInput from "../../../../components/ui/Inputs/PasswordInput/PasswordInput.tsx";
+import useOutsideClick from "../../../../common/hooks/useOutsideClick.ts";
+import ModalOverlay from "../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import UseBalanceOption from "../../../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
 
 const PaymentModal = ({
   isOffer = false,
   isWebinar = false,
   isFree = false,
   paymentData,
+  visibleCondition,
+  handleClose,
 }: {
+  handleClose: () => void;
   isWebinar?: boolean;
   isFree?: boolean;
   isOffer?: boolean;
   paymentData: PaymentDataType;
+  visibleCondition: boolean;
 }) => {
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
@@ -68,6 +82,17 @@ const PaymentModal = ({
     resolver: isLogged ? undefined : joiResolver(paymentSchema),
     mode: "onTouched",
   });
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  useOutsideClick(modalRef, () => {
+    closeModal();
+  });
+
+  const closeModalRef = useRef<() => void>(null);
+
+  const closeModal = () => {
+    closeModalRef.current?.();
+    handleClose();
+  };
 
   const emailInputName = "email";
   const emailValue = watch(emailInputName);
@@ -158,6 +183,8 @@ const PaymentModal = ({
         if (isLogged) {
           navigate(Path.profile);
         } else {
+          dispatch(closePaymentModal());
+          closeModal();
           localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
           await dispatch(getMe());
           navigate(Path.profile);
@@ -170,108 +197,136 @@ const PaymentModal = ({
   };
 
   return (
-    <div className={s.modal}>
-      <div className={s.courses}>
-        {paymentData.courses.map((course, index: number) => (
-          <PaymentCourseCard
-            key={index}
-            course={course}
-            isWebinar={isWebinar}
-            isFree={isFree}
-          />
-        ))}
-      </div>
-      <div className={s.total_container}>
-        {isLogged && !isFree && (
-          <div className={s.balance_container}>
-            <p>
-              <Trans i18nKey="cart.balance" />:<span> ${balance}</span>
-            </p>
-            <div className={s.checkbox_container}>
-              <ToggleCheckbox
-                disabled={balance! === 0}
-                variant={"small"}
-                onChange={handleCheckboxToggle}
-                isChecked={isBalanceUsed}
-              />
-              <Trans i18nKey="cart.useBalance" />
-            </div>
+    <ModalOverlay
+      isVisibleCondition={visibleCondition}
+      modalPosition="top"
+      onInitClose={(fn) => (closeModalRef.current = fn)}
+    >
+      <div ref={modalRef} className={s.modal}>
+        <div className={s.modal_header}>
+          <ModalCloseButton className={s.close_button} onClick={closeModal} />
+          <h2>
+            <Trans i18nKey={"yourOrder"} />
+          </h2>
+          <div className={s.courses_icon_wrapper}>
+            <CoursesIcon />
+            {paymentData.courses.length > 0 && (
+              <span className={s.circle}>{paymentData.courses.length}</span>
+            )}
           </div>
-        )}
-        {!isFree && (
-          <div className={`${s.total_text} ${!isLogged ? s.center : ""}`}>
-            <Trans i18nKey="total" />
-            <div>
-              <span className={"highlight"}>
-                ${isBalanceUsed ? balancePrice : paymentData.newPrice}
-              </span>
-              <span className={"crossed"}>${paymentData.oldPrice}</span>
-            </div>
-          </div>
-        )}
-      </div>
-      {isFree && !isLogged && (
-        <h3>
-          <Trans i18nKey={"freeCourse.registerToWatch"} />
-        </h3>
-      )}
-      <Form handleSubmit={handleSubmit(handlePayment)}>
-        {!isLogged && (
-          <>
-            <Input
-              id="name"
-              placeholder={t("yourName")}
-              {...register("name")}
+        </div>
+        <div className={s.courses}>
+          {paymentData.courses.map((course, index: number) => (
+            <PaymentCourseCard
+              key={index}
+              course={course}
+              isWebinar={isWebinar}
+              isFree={isFree}
             />
-            <div>
-              <EmailInput
-                isValidationUsed
-                id="email"
-                value={emailValue}
-                setValue={setValue}
-                error={errors.email?.message}
-                placeholder={t("email")}
-                {...register(emailInputName)}
+          ))}
+        </div>
+        <div className={s.modal_body}>
+          <div className={`${s.total_container} ${!isLogged ? s.center : ""}`}>
+            {!isFree && (
+              <div className={s.total_text}>
+                <Trans i18nKey="cart.total" />:
+                <div>
+                  <span className={"highlight"}>
+                    ${isBalanceUsed ? balancePrice : paymentData.newPrice}
+                  </span>
+                  <span className={`${s.old_price} crossed`}>
+                    ${paymentData.oldPrice}
+                  </span>
+                </div>
+              </div>
+            )}
+            {isLogged && !isFree && (
+              <UseBalanceOption
+                onToggle={handleCheckboxToggle}
+                isChecked={isBalanceUsed}
+                disabled={balance === 0}
+                balance={balance ? balance : 0}
               />
+            )}
+          </div>
+
+          {isFree && !isLogged && (
+            <h3 className={s.total_text}>
+              <Trans i18nKey={"freeCourse.registerToWatch"} />
+            </h3>
+          )}
+
+          {!isLogged && (
+            <>
+              <div className={s.form_inputs}>
+                <Input
+                  id="name"
+                  placeholder={t("yourName")}
+                  {...register("name")}
+                />
+                <EmailInput
+                  isValidationUsed
+                  id="email"
+                  value={emailValue}
+                  setValue={setValue}
+                  error={errors.email?.message}
+                  placeholder={t("email")}
+                  {...register(emailInputName)}
+                />
+              </div>
+            </>
+          )}
+        </div>
+        <div className={s.modal_footer}>
+          {!isFree && (
+            <p lang={language.toLowerCase()} className={s.stripe_text}>
+              <Shield />
+              <Trans i18nKey="payment.encryptedPayment" />
+            </p>
+          )}
+
+          <Form handleSubmit={handleSubmit(handlePayment)}>
+            {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
+            <Button
+              disabled={IS_PAYMENT_DISABLED}
+              variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
+              loading={loading}
+              text={
+                isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"
+              }
+              type="submit"
+              icon={<PoweredByStripeLogo />}
+            />
+          </Form>
+          {!isLogged && (
+            <>
+              <p className={s.privacy_text}>
+                <Trans
+                  i18nKey={
+                    isFree ? "freePaymentWarn" : "payment.privacyAgreement"
+                  }
+                  components={{
+                    1: (
+                      <a
+                        href={Path.privacyPolicy}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      ></a>
+                    ),
+                  }}
+                />
+              </p>
               {!isFree && (
-                <p className={s.modal_text}>
-                  <Trans i18nKey="emailGrant" />
+                <p className={s.after_payment_text}>
+                  <Trans i18nKey="payment.afterPayment" />
                 </p>
               )}
-            </div>
-            {isFree && (
-              <PasswordInput
-                id="password"
-                placeholder={t("password")}
-                error={errors.password?.message}
-                {...register("password")}
-              />
-            )}
-          </>
-        )}
-        {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
-        <Button
-          disabled={IS_PAYMENT_DISABLED}
-          variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
-          loading={loading}
-          text={isFree ? "tryCourseForFree" : "pay"}
-          type="submit"
-        />
-      </Form>
-
-      <>
-        {!isLogged && (
-          <p className={s.modal_text}>
-            {isFree ? (
-              <Trans i18nKey="freePaymentWarn" />
-            ) : (
-              <Trans i18nKey="paymentWarn" />
-            )}
-          </p>
-        )}
-        {!isFree && <LogoList />}
-      </>
-    </div>
+            </>
+          )}
+          {!isFree && <LogoList />}
+        </div>
+      </div>
+    </ModalOverlay>
   );
 };
 

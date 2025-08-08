@@ -10,7 +10,7 @@ import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import Clock from "../../assets/icons/clock.svg";
+import { Clock } from "../../assets/icons/index.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
 import {
@@ -22,6 +22,7 @@ import { PAGE_SOURCES } from "../../common/helpers/commonConstants.ts";
 
 const ProfessorPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
+  const [localPaymentData, setLocalPaymentData] = useState<any>(null);
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -59,10 +60,15 @@ const ProfessorPage = () => {
           }),
         ),
       };
-
-      dispatch(setPaymentData(paymentData));
+      setLocalPaymentData(paymentData);
     }
   }, [professor]);
+
+  useEffect(() => {
+    if (localPaymentData) {
+      dispatch(setPaymentData(localPaymentData));
+    }
+  }, [localPaymentData]);
 
   const fetchProfessorData = async () => {
     setLoading(true);
@@ -73,6 +79,11 @@ const ProfessorPage = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleOpenModal = () => {
+    dispatch(setPaymentData(localPaymentData));
+    dispatch(openPaymentModal());
   };
 
   const renderBuySection = () => {
@@ -97,7 +108,7 @@ const ProfessorPage = () => {
             }}
           />
         </p>
-        <ArrowButton onClick={() => dispatch(openPaymentModal())}>
+        <ArrowButton onClick={handleOpenModal}>
           <Trans
             i18nKey={"professor.getAllCourses"}
             values={{

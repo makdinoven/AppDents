@@ -136,8 +136,6 @@
 }
 
 .section_bottom {
-  border-bottom-right-radius: 25px;
-  border-bottom-left-radius: 25px;
   background-color: $primary;
   position: relative;
   color: $accent;
@@ -177,8 +175,7 @@
 @media (max-width: $mobile-breakpoint) {
   .section {
     gap: 5px;
-    margin-left: -10px;
-    width: calc(100% + 20px);
+    border-radius: 20px;
   }
 
   .section_header {

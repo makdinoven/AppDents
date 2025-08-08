@@ -14,7 +14,7 @@ const ModalOverlay = ({
   children: ReactNode;
   isVisibleCondition: boolean;
   isUsedAsPage?: boolean;
-  modalPosition: "center" | "right" | "top";
+  modalPosition: "right" | "top";
   onInitClose?: (fn: () => void) => void;
   customHandleClose?: () => void;
 }) => {
