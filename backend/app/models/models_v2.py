@@ -338,17 +338,39 @@ class AbandonedCheckout(Base):
         comment="TRUE – e-mail по лидy уже отправлен"
     )
 
+class PreviewStatus(str, PyEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED  = "failed"
+
 class LessonPreview(Base):
     """
     Сохранённые превью одного кадра из видео-урока.
-    Ключ – сама ссылка на Boomstream.
+    Ключ – сама ссылка на видео (Boomstream/Vimeo/Kinescope/CDN).
     """
     __tablename__ = "lesson_previews"
 
     video_link   = Column(String(700), primary_key=True)
     preview_url  = Column(String(700), nullable=False)
-    generated_at = Column(DateTime, nullable=False, default=func.now())
-    checked_at = Column(DateTime(timezone=False), nullable=True)
+
+    # когда фактически записали (успех/плейсхолдер)
+    generated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+    # редкая проверка доступности URL
+    checked_at   = Column(DateTime, nullable=True)
+
+    # ─── NEW: оперативные статусы ───
+    status       = Column(
+        Enum(PreviewStatus, name="preview_status"),
+        nullable=False,
+        server_default=PreviewStatus.PENDING.value,
+    )
+    enqueued_at  = Column(DateTime, nullable=True)
+    updated_at   = Column(DateTime, nullable=False,
+                          server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp())
+    attempts     = Column(Integer, nullable=False, server_default="0")
+    last_error   = Column(Text, nullable=True)
 
 class SpecialOffer(Base):
     """
