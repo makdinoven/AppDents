@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
-    Index
+    Index, BigInteger
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -345,37 +345,32 @@ class PreviewStatus(str, PyEnum):
     FAILED  = "failed"
 
 class LessonPreview(Base):
-    """
-    Сохранённые превью одного кадра из видео-урока.
-    Ключ – сама ссылка на видео (Boomstream/Vimeo/Kinescope/CDN).
-    """
     __tablename__ = "lesson_previews"
 
-    video_link   = Column(String(700), primary_key=True)
+    id           = Column(BigInteger, primary_key=True, autoincrement=True)
+    video_link   = Column(Text, nullable=False)
     preview_url  = Column(String(700), nullable=False)
 
-    # когда фактически записали (успех/плейсхолдер)
     generated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
-    # редкая проверка доступности URL
-    checked_at   = Column(DateTime, nullable=True)
+    checked_at   = Column(DateTime)
 
-    # ─── NEW: оперативные статусы ───
     status = Column(
         Enum(
             PreviewStatus,
-            name="previewstatus",  # имя типа в SQLAlchemy (для MySQL не критично)
+            name="previewstatus",
             validate_strings=True,
-            values_callable=lambda e: [x.value for x in e],  # ⟵ ключевое: используем VALUE
+            values_callable=lambda e: [x.value for x in e],  # нижний регистр
         ),
         nullable=False,
         server_default=PreviewStatus.PENDING.value,
     )
-    enqueued_at  = Column(DateTime, nullable=True)
+    enqueued_at  = Column(DateTime)
     updated_at   = Column(DateTime, nullable=False,
                           server_default=func.utc_timestamp(),
                           onupdate=func.utc_timestamp())
     attempts     = Column(Integer, nullable=False, server_default="0")
-    last_error   = Column(Text, nullable=True)
+    last_error   = Column(Text)
+
 
 class SpecialOffer(Base):
     """
