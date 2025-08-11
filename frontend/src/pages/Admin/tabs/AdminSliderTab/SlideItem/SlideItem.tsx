@@ -1,4 +1,3 @@
-import { useState } from "react";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect";
 import s from "./SlideItem.module.scss";
 import { ArrowX, BackArrow } from "../../../../../assets/icons";

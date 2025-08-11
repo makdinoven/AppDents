@@ -4,6 +4,8 @@ import Slide from "./Slide/Slide";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store";
+import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay";
+import Loader from "../../ui/Loader/Loader";
 
 const MainSlider: React.FC = () => {
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -25,13 +27,9 @@ const MainSlider: React.FC = () => {
       if (language) {
         const res = await adminApi.getSlides(language);
 
-        console.log(res);
-
         const slidesList = res.data.slides
           .filter((slide: any) => slide.type !== "FREE")
           .map((slide: any) => <Slide key={slide.id} slideInfo={slide} />);
-
-        console.log(slidesList);
 
         setSlides(slidesList);
       }
@@ -56,18 +54,27 @@ const MainSlider: React.FC = () => {
     };
   }, [screenWidth]);
 
-  console.log(slides);
-
   return (
-    <UniversalSlider
-      autoplay
-      slides={slides.filter(Boolean)}
-      navigation
-      navigationPosition="top-right"
-      zoneNavigation={screenWidth < TABLET_BREAKPOINT}
-      paginationPosition="top"
-      theme="hero"
-    />
+    <>
+      {loading && (
+        <>
+          <LoaderOverlay />
+        </>
+      )}
+      {slides.length > 0 ? (
+        <UniversalSlider
+          autoplay
+          slides={slides.filter(Boolean)}
+          navigation
+          navigationPosition="top-right"
+          zoneNavigation={screenWidth < TABLET_BREAKPOINT}
+          paginationPosition="top"
+          theme="hero"
+        />
+      ) : (
+        <Loader />
+      )}
+    </>
   );
 };
 
