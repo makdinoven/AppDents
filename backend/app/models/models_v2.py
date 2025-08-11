@@ -360,8 +360,13 @@ class LessonPreview(Base):
     checked_at   = Column(DateTime, nullable=True)
 
     # ─── NEW: оперативные статусы ───
-    status       = Column(
-        Enum(PreviewStatus, name="preview_status"),
+    status = Column(
+        Enum(
+            PreviewStatus,
+            name="previewstatus",  # имя типа в SQLAlchemy (для MySQL не критично)
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],  # ⟵ ключевое: используем VALUE
+        ),
         nullable=False,
         server_default=PreviewStatus.PENDING.value,
     )
