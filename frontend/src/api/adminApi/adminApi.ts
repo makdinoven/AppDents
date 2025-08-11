@@ -74,7 +74,7 @@ export const adminApi = {
       {},
       {
         headers: getAuthHeaders(),
-      },
+      }
     );
   },
 
@@ -184,6 +184,14 @@ export const adminApi = {
   getClip(url: string) {
     return instance.post("/clip_generator/clip", {
       url: url,
+    });
+  },
+  getSlides(language: string) {
+    return instance.get(`/slider/${language}`);
+  },
+  saveSlides(language: string, data: any) {
+    return instance.put(`/slider/admin/${language}`, data, {
+      headers: getAuthHeaders(),
     });
   },
 };

@@ -483,6 +483,11 @@
         "getClip": "Get clip",
         "yourClipUrl": "Your clip url:"
       }
+    },
+    "slider": {
+      "slider": "Slider",
+      "create": "Add slide",
+      "save": "Save"
     }
   }
 }

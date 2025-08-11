@@ -120,6 +120,10 @@
         padding: 10px 170px;
         outline: 2px solid $primary;
         outline-offset: 4px;
+
+        &:hover {
+          outline: 2px solid $background-color;
+        }
       }
 
       .course_authors {
@@ -339,12 +343,13 @@
       }
 
       .course_description {
-        @include clamped-p2;
+        @include clamped-p3;
         padding: 8px;
       }
+
       .slide_footer {
         .course_authors {
-          @include clamped-p2;
+          @include clamped-p3;
           svg {
             height: 20px;
           }
@@ -402,8 +407,9 @@
       }
 
       .course_description {
-        @include clamped-p3;
+        font-size: 10px;
       }
+
       .slide_footer {
         .course_authors {
           font-size: 10px;

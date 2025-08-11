@@ -1,90 +1,46 @@
+import { adminApi } from "../../../api/adminApi/adminApi";
 import UniversalSlider from "../../ui/UniversalSlider/UniversalSlider";
 import Slide from "./Slide/Slide";
 import { useEffect, useState } from "react";
-
-// slides,
-// autoplay = false,
-// loop = true,
-// pagination = true,
-// navigation,
-// paginationType = "story",
-// slidesPerView = 1,
-// effect = "slide",
-// navigationPosition = "center",
-// delay = 5000,
-// className = "",
-// isFullWidth = false,
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store";
 
 const MainSlider: React.FC = () => {
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language
+  );
+  const [loading, setLoading] = useState(false);
+  const [slides, setSlides] = useState<any[]>([]);
   const TABLET_BREAKPOINT = 768;
-  const slidesInfo = [
-    {
-      name: "Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course",
-      type: "Online course",
-      newPrice: "15",
-      oldPrice: "500",
-      lessonsCount: "10 modules: 8 lessons + PDF materials",
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Id ut in praesent eu velit integer praesent suspendisse egestas. Enim egestas pellentesque leo.",
-      authors: ["Bill Dischinger", "Alfredo Rizzo", "Trevor Nichols"],
-      photo:
-        "https://dent-s.com/assets/img/preview_img/All About Torques In Orthodontics.png",
-      slug: "",
-    },
-    {
-      name: "Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course",
-      type: "Online course",
-      newPrice: "15",
-      oldPrice: "500",
-      lessonsCount: "10 modules: 8 lessons + PDF materials",
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Id ut in praesent eu velit integer praesent suspendisse egestas. Enim egestas pellentesque leo.",
-      authors: ["Bill Dischinger", "Alfredo Rizzo", "Trevor Nichols"],
-      photo:
-        "https://dent-s.com/assets/img/preview_img/All About Torques In Orthodontics.png",
-      slug: "",
-    },
-    {
-      name: "Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course",
-      type: "Online course",
-      newPrice: "15",
-      oldPrice: "500",
-      lessonsCount: "10 modules: 8 lessons + PDF materials",
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Id ut in praesent eu velit integer praesent suspendisse egestas. Enim egestas pellentesque leo.",
-      authors: ["Bill Dischinger", "Alfredo Rizzo", "Trevor Nichols"],
-      photo:
-        "https://dent-s.com/assets/img/preview_img/All About Torques In Orthodontics.png",
-      slug: "",
-    },
-    {
-      name: "Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course",
-      type: "Online course",
-      newPrice: "15",
-      oldPrice: "500",
-      lessonsCount: "10 modules: 8 lessons + PDF materials",
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Id ut in praesent eu velit integer praesent suspendisse egestas. Enim egestas pellentesque leo.",
-      authors: ["Bill Dischinger", "Alfredo Rizzo", "Trevor Nichols"],
-      photo:
-        "https://dent-s.com/assets/img/preview_img/All About Torques In Orthodontics.png",
-      slug: "",
-    },
-    {
-      name: "Occlusion, TMJ Dysfunctions And Orofacial Pain From А To Z. The Most Comprehensive Lecture Course",
-      type: "Online course",
-      newPrice: "15",
-      oldPrice: "500",
-      lessonsCount: "10 modules: 8 lessons + PDF materials",
-      description:
-        "Lorem ipsum dolor sit amet consectetur. Id ut in praesent eu velit integer praesent suspendisse egestas. Enim egestas pellentesque leo.",
-      authors: ["Bill Dischinger", "Alfredo Rizzo", "Trevor Nichols"],
-      photo:
-        "https://dent-s.com/assets/img/preview_img/All About Torques In Orthodontics.png",
-      slug: "",
-    },
-  ];
+
+  useEffect(() => {
+    loadSlides(language);
+  }, [language]);
+
+  const loadSlides = async (language: string) => {
+    try {
+      setLoading(true);
+
+      if (language) {
+        const res = await adminApi.getSlides(language);
+
+        console.log(res);
+
+        const slidesList = res.data.slides
+          .filter((slide: any) => slide.type !== "FREE")
+          .map((slide: any) => <Slide key={slide.id} slideInfo={slide} />);
+
+        console.log(slidesList);
+
+        setSlides(slidesList);
+      }
+    } catch (error) {
+      console.log("Slides loading error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleScreenResize = () => {
@@ -100,13 +56,12 @@ const MainSlider: React.FC = () => {
     };
   }, [screenWidth]);
 
-  const slides = slidesInfo.map((slideInfo: (typeof slidesInfo)[number]) => (
-    <Slide slideInfo={slideInfo} />
-  ));
+  console.log(slides);
+
   return (
     <UniversalSlider
       autoplay
-      slides={slides}
+      slides={slides.filter(Boolean)}
       navigation
       navigationPosition="top-right"
       zoneNavigation={screenWidth < TABLET_BREAKPOINT}

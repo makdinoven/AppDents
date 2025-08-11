@@ -52,6 +52,24 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
       }}
       className={`${s.slider}${paginationPosition === "top" && ` ${s.paginationTop}`}`}
     >
+      {navigation &&
+        (zoneNavigation ? (
+          <div className={s.zoneNav}>
+            <div ref={prevRef} className={s.prev} />
+            <div ref={nextRef} className={s.next} />
+          </div>
+        ) : (
+          <div
+            className={`${s.customNav} ${s[navigationPosition]} ${s[theme]}`}
+          >
+            <button ref={prevRef} className={`${s.prev} ${s[theme]}`}>
+              <BackArrow />
+            </button>
+            <button ref={nextRef} className={`${s.next} ${s[theme]}`}>
+              <BackArrow />
+            </button>
+          </div>
+        ))}
       <Swiper
         autoHeight={false}
         className={className}
@@ -89,30 +107,13 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
         autoplay={autoplay ? { delay, disableOnInteraction: false } : false}
         effect={effect}
       >
-        {slides.map((slide, idx) => (
-          <SwiperSlide className={s.slide} key={idx}>
-            {slide}
-          </SwiperSlide>
-        ))}
+        {slides.length > 0 &&
+          slides.map((slide, idx) => (
+            <SwiperSlide className={s.slide} key={idx}>
+              {slide}
+            </SwiperSlide>
+          ))}
       </Swiper>
-      {navigation &&
-        (zoneNavigation ? (
-          <div className={s.zoneNav}>
-            <div ref={prevRef} className={s.prev} />
-            <div ref={nextRef} className={s.next} />
-          </div>
-        ) : (
-          <div
-            className={`${s.customNav} ${s[navigationPosition]} ${s[theme]}`}
-          >
-            <button ref={prevRef} className={`${s.prev} ${s[theme]}`}>
-              <BackArrow />
-            </button>
-            <button ref={nextRef} className={`${s.next} ${s[theme]}`}>
-              <BackArrow />
-            </button>
-          </div>
-        ))}
     </div>
   );
 };
