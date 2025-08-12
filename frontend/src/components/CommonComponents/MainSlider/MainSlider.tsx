@@ -27,11 +27,13 @@ const MainSlider: React.FC = () => {
       if (language) {
         const res = await adminApi.getSlides(language);
 
-        const slidesList = res.data.slides
-          .filter((slide: any) => slide.type !== "FREE")
-          .map((slide: any) => <Slide key={slide.id} slideInfo={slide} />);
+        const slidesList = res.data.slides.map((slide: any) => (
+          <Slide key={slide.id} slideInfo={slide} />
+        ));
 
         setSlides(slidesList);
+
+        console.log(slidesList);
       }
     } catch (error) {
       console.log("Slides loading error:", error);

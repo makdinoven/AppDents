@@ -46,7 +46,13 @@ const SlideItem = ({
     valueKey: "value" as const,
     labelKey: "name" as const,
   };
-  console.log(slide.order_index);
+
+  const landingName = slide.landing?.landing_name
+    ? slide.landing?.landing_name
+    : "No landing name";
+
+  const slideTitle = slide.title ? slide.title : landingName;
+
   return (
     <li className={s.slide}>
       <div className={s.slide_content}>
@@ -66,9 +72,7 @@ const SlideItem = ({
         </div>
         <div className={s.slide_info}>
           <span>{slide.type}</span>
-          <div>
-            {slide.title || slide.landing?.landing_name || "No landing name"}
-          </div>
+          <div>{slideTitle}</div>
         </div>
         {landingOptions.length > 0 && (
           <div className={s.filters}>

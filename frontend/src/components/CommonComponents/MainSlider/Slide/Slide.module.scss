@@ -21,15 +21,31 @@
     z-index: 1;
   }
 
+  .promo_content {
+    @include flex-column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    z-index: 4;
+   
+    h2 {
+      @include clamped-h2;
+      text-transform: uppercase;
+      color: $background-color;
+      width: 100%;
+      margin-top: 4px;
+    }
+  }
+
   .slide_content {
     position: relative;
     z-index: 4;
     pointer-events: auto;
     width: 100%;
     height: 100%;
-    padding: 40px 20px 20px;
+    padding: 40px 30px 30px;
     @include flex-column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: flex-start;
     gap: 10px;
 
@@ -93,7 +109,7 @@
 
     gap: 10px;
     .course_description {
-      @include clamped-p2;
+      @include clamped-p3;
       border: 2px solid $primary;
       border-top: none;
       border-right: none;
@@ -106,18 +122,19 @@
     }
 
     .slide_footer {
-      align-self: flex-end;
-      @include flex-center;
+      display: flex;
       flex-direction: row;
-      gap: 18px;
-      max-width: calc(50% + 300px);
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 10px;
+      width: 100%;
 
       .buy_button {
         color: $accent-glass;
         text-transform: none;
         @include clamped-p1;
         border-radius: 40px;
-        padding: 10px 170px;
+        padding: 10px 150px;
         outline: 2px solid $primary;
         outline-offset: 4px;
 
@@ -127,15 +144,25 @@
       }
 
       .course_authors {
-        color: $background-color;
-        @include clamped-p3;
         @include flex-center;
         align-items: flex-start;
+        justify-content: flex-start;
+        flex-direction: row;
         gap: 10px;
+        flex-grow: 1;
+        align-self: flex-start;
+
+        p {
+          color: $background-color;
+          @include clamped-p3;
+          justify-self: flex-end;
+          max-width: 90%;
+        }
 
         svg {
           width: auto;
           height: 30px;
+          margin-right: 10px;
 
           path {
             stroke-width: 2px;
@@ -166,10 +193,16 @@
       content: "";
       position: absolute;
       inset: 0;
-      background-color: $accent-06;
+      background-color: $accent-07;
       border-radius: 20px;
       pointer-events: none;
       z-index: 3;
+    }
+
+    &.free {
+      bottom: 0;
+      top: 50%;
+      transform: translateY((-50%));
     }
   }
 }
@@ -178,7 +211,7 @@
   .slide {
     .slide_content {
       h2 {
-        @include clamped-h3;
+        @include clamped-h4;
       }
 
       .course_description {
@@ -212,6 +245,13 @@
         .buy_button {
           padding: 6px 20%;
         }
+
+        .course_authors {
+          gap: 0;
+          svg {
+            height: 25px;
+          }
+        }
       }
     }
   }
@@ -238,6 +278,14 @@
         @include clamped-p3;
         padding: 8px;
       }
+
+      .slide_footer {
+        .course_authors {
+          svg {
+            height: 20px;
+          }
+        }
+      }
     }
   }
 }
@@ -255,13 +303,14 @@
     }
 
     .slide_photo {
-      top: calc(50% - 3px);
+      top: calc(45%);
       transform: translateY(-50%);
       bottom: auto;
     }
     .slide_content {
       padding: 30px 20px 20px;
-      gap: 15px;
+      gap: 20px;
+      justify-content: center;
 
       h2 {
         @include clamped-h2;
@@ -278,11 +327,17 @@
       }
       .slide_footer {
         flex-direction: column-reverse;
-        align-self: center;
+        align-items: center;
+        justify-content: center;
         .course_authors {
-          @include clamped-p1;
-          text-align: center;
-          gap: 5px;
+          justify-content: center;
+          align-self: center;
+
+          p {
+            @include clamped-p1;
+            text-align: center;
+            justify-self: center;
+          }
           svg {
             height: 25px;
           }
@@ -333,6 +388,7 @@
   .slide {
     .slide_content {
       padding: 30px 10px 10px;
+      gap: 20px;
 
       h2 {
         @include clamped-h4;
@@ -345,11 +401,14 @@
       .course_description {
         @include clamped-p3;
         padding: 8px;
+        max-width: 80%;
       }
 
       .slide_footer {
         .course_authors {
-          @include clamped-p3;
+          p {
+            @include clamped-p3;
+          }
           svg {
             height: 20px;
           }
@@ -397,7 +456,7 @@
 @media (max-width: 456px) {
   .slide {
     .slide_content {
-      gap: 6px;
+      gap: 10px;
 
       h2 {
         @include clamped-p3;
@@ -412,7 +471,9 @@
 
       .slide_footer {
         .course_authors {
-          font-size: 10px;
+          p {
+            font-size: 10px;
+          }
           svg {
             height: 15px;
           }

@@ -65,6 +65,7 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "here": "here.",
+  "course": "course",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",

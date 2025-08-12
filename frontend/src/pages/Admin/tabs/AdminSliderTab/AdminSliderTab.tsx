@@ -156,6 +156,7 @@ const AdminSliderTab = () => {
               type: slide.type,
               order_index: slide.order_index || 0,
               bg_media_url: slide.bg_media_url || "",
+              bg_video_url: slide.bg_video_url || "",
               title: slide.title || "",
               description: slide.description || "",
               target_url: slide.target_url || "",
