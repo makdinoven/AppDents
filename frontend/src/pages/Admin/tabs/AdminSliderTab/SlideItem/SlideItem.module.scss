@@ -1,0 +1,124 @@
+.slide {
+  @include flex-column;
+  gap: 10px;
+
+  .slide_content {
+    width: 100%;
+    padding: 20px;
+    border-radius: 20px;
+    border: 2px solid $accent;
+    white-space: wrap;
+    @include flex-center;
+    justify-content: space-between;
+    @include clamped-h3;
+    gap: 10px;
+    position: relative;
+
+    .slide_arrows {
+      @include flex-column;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      margin-right: 10px;
+
+      .top_arrow,
+      .bottom_arrow {
+        width: fit-content;
+        transform: rotate(90deg);
+        svg {
+          height: 20px;
+
+          path {
+            stroke: $accent;
+            stroke-width: 2px;
+          }
+        }
+      }
+      .bottom_arrow {
+        transform: scaleX(-1) rotate(-90deg);
+      }
+    }
+
+    .filters {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+
+      .title_input {
+        border: 2px solid $hover-color;
+        border-radius: 15px;
+        padding: 5px;
+        @include clamped-p1;
+      }
+
+      div {
+        width: 100%;
+
+        input::placeholder {
+          color: $hover-color-dark;
+        }
+      }
+    }
+
+    .slide_info {
+      width: 100%;
+      max-width: calc(100% - 45px);
+
+      span {
+        color: $primary;
+      }
+
+      div {
+        overflow-wrap: break-word;
+        margin-top: 10px;
+      }
+    }
+
+    button {
+      align-self: flex-start;
+      svg {
+        height: 35px;
+        width: auto;
+
+        path {
+          stroke: $error-color;
+        }
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      padding: 10px;
+      border-radius: 15px;
+      border: 1px solid $accent;
+
+      button {
+        svg {
+          height: 25px;
+        }
+      }
+    }
+
+    @media (max-width: $mobile-breakpoint) {
+      flex-direction: column-reverse;
+      justify-content: center;
+
+      .filters {
+        @include flex-column;
+      }
+
+      .slide_info {
+        text-align: center;
+      }
+
+      span {
+        text-align: center;
+      }
+
+      button {
+        align-self: center;
+      }
+    }
+  }
+}

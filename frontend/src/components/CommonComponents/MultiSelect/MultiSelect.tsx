@@ -38,10 +38,12 @@ const MultiSelect = <T extends { [key: string]: any }>({
     placeholder: (provided: any) => ({
       ...provided,
       color: "#5B6968",
+      marginLeft: "10px",
     }),
     singleValue: (provided: any) => ({
       ...provided,
       margin: 0,
+      paddingLeft: "10px",
       color: "unset",
       // fontSize: "24px",
     }),
@@ -148,7 +150,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
 
   const selectedOption = isMultiple
     ? formattedOptions.filter((option) =>
-        (selectedValue as string[])?.includes(option.value),
+        (selectedValue as string[])?.includes(option.value)
       )
     : formattedOptions.find((option) => option.value === selectedValue) || null;
 
@@ -165,7 +167,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
         onChange={(selected) => {
           const value = isMultiple
             ? (selected as { value: string; label: string }[]).map(
-                (item) => item.value,
+                (item) => item.value
               )
             : (selected as { value: string; label: string })?.value || "";
           onChange({ name: id, value });

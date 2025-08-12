@@ -4,6 +4,7 @@ import AdminCoursesTab from "../tabs/AdminCoursesTab.tsx";
 import AdminLandingsTab from "../tabs/AdminLandingsTab.tsx";
 import AdminAuthorsTab from "../tabs/AdminAuthorsTab.tsx";
 import AdminUsersTab from "../tabs/AdminUsersTab.tsx";
+import AdminSliderTab from "../tabs/AdminSliderTab/AdminSliderTab.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
@@ -63,6 +64,11 @@ const AdminPanel = () => {
       name: "admin.tools.tools",
       value: "tools",
       component: <AdminTools />,
+    },
+    {
+      name: "admin.slider.slider",
+      value: "slider",
+      component: <AdminSliderTab />,
     },
   ];
 

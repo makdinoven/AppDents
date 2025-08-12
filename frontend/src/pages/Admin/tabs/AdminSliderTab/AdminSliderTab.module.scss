@@ -1,0 +1,30 @@
+.slider_tab {
+  @include flex-column;
+  gap: 10px;
+
+  .slider_tab_header {
+    @include flex-center;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    gap: 10px;
+    .slider_tab_select {
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    @media (max-width: $mobile-breakpoint) {
+      flex-direction: column;
+      width: 100%;
+
+      .add_slide_button {
+        width: 100%;
+      }
+    }
+  }
+
+  .slides_list {
+    flex-grow: 1;
+    @include flex-column;
+    gap: 10px;
+  }
+}

@@ -63,6 +63,7 @@
   "firstFreeLesson": "أول درس مجاني",
   "or": "أو",
   "here": "هنا",
+  "course": "دورة",
 
   "emailValidationTooltip": {
     "suggestion": "هل كنت تقصد {{suggestedEmail}}؟",
