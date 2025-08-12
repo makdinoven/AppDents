@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
+    Index, BigInteger
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -337,17 +338,39 @@ class AbandonedCheckout(Base):
         comment="TRUE – e-mail по лидy уже отправлен"
     )
 
+class PreviewStatus(str, PyEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED  = "failed"
+
 class LessonPreview(Base):
-    """
-    Сохранённые превью одного кадра из видео-урока.
-    Ключ – сама ссылка на Boomstream.
-    """
     __tablename__ = "lesson_previews"
 
-    video_link   = Column(String(700), primary_key=True)
+    id           = Column(BigInteger, primary_key=True, autoincrement=True)
+    video_link   = Column(Text, nullable=False)
     preview_url  = Column(String(700), nullable=False)
-    generated_at = Column(DateTime, nullable=False, default=func.now())
-    checked_at = Column(DateTime(timezone=False), nullable=True)
+
+    generated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+    checked_at   = Column(DateTime)
+
+    status = Column(
+        Enum(
+            PreviewStatus,
+            name="previewstatus",
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],  # нижний регистр
+        ),
+        nullable=False,
+        server_default=PreviewStatus.PENDING.value,
+    )
+    enqueued_at  = Column(DateTime)
+    updated_at   = Column(DateTime, nullable=False,
+                          server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp())
+    attempts     = Column(Integer, nullable=False, server_default="0")
+    last_error   = Column(Text)
+
 
 class SpecialOffer(Base):
     """
@@ -369,3 +392,41 @@ class SpecialOffer(Base):
     user    = relationship("User", back_populates="special_offers")
     course  = relationship("Course")
     landing = relationship("Landing")
+
+class SlideType(str, PyEnum):
+    """Тип слайда."""
+    COURSE = "COURSE"   # карточка курса (лендинг)
+    BOOK   = "BOOK"     # резерв под книги
+    FREE   = "FREE"     # произвольный promo-слайд
+
+class Slide(Base):
+    """
+    Один элемент слайдера для конкретного языка (региона).
+    Слайды выводятся в порядке `order_index`.
+    """
+    __tablename__ = "slides"
+
+    id          = Column(Integer, primary_key=True)
+    language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                              name='landing_language'), nullable=False)
+    order_index = Column(Integer, nullable=False, comment="Порядок показа")
+    type        = Column(Enum(SlideType, name="slide_type"), nullable=False)
+
+    # Привязка к лендингу курса (актуально для type=COURSE)
+    landing_id  = Column(Integer, ForeignKey("landings.id"))
+    landing     = relationship("Landing")
+
+    # Поля для type=FREE (promo-слайд)
+    bg_media_url = Column(String(700))
+    title        = Column(String(255))
+    description  = Column(Text)
+    target_url   = Column(String(700))
+
+    is_active  = Column(Boolean, nullable=False, server_default="1")
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.utc_timestamp(),
+                        onupdate=func.utc_timestamp(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_slide_lang_order", "language", "order_index"),
+    )

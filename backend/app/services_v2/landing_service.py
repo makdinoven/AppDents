@@ -39,7 +39,7 @@ def _user_course_ids(db: Session, user_id: int) -> list[int]:
     return list({row[0] for row in direct.union(via_pur).all()})
 
 # 2. Превращаем ORM‑объект Landing → ответную «карточку»
-def _landing_to_card(landing: Landing) -> dict:
+def landing_to_card(landing: Landing) -> dict:
     return {
         "id": landing.id,
         "first_tag": landing.tags[0].name if landing.tags else None,
@@ -302,7 +302,7 @@ def get_landing_cards(
     )
     total = query.count()
     landings = query.offset(skip).limit(limit).all()
-    return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
+    return {"total": total, "cards": [landing_to_card(l) for l in landings]}
 
 
 def get_landing_cards_pagination(
@@ -331,7 +331,7 @@ def get_landing_cards_pagination(
         "total_pages": ceil(total / size) if total else 0,
         "page": page,
         "size": size,
-        "cards": [_landing_to_card(l) for l in items],
+        "cards": [landing_to_card(l) for l in items],
     }
 
 def get_purchases_by_language(
@@ -559,7 +559,7 @@ def _fallback_landing_cards(
     landings = (
         query.order_by(Landing.sales_count.desc()).offset(skip).limit(limit).all()
     )
-    return {"total": len(landings), "cards": [_landing_to_card(l) for l in landings]}
+    return {"total": len(landings), "cards": [landing_to_card(l) for l in landings]}
 
 
 def get_recommended_landing_cards(
@@ -581,7 +581,7 @@ def get_recommended_landing_cards(
 
         total = query.count()
         landings = query.offset(skip).limit(limit).all()
-        return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
+        return {"total": total, "cards": [landing_to_card(l) for l in landings]}
 
     # --- COLLAB FILTERING ---
     similar_users = (
@@ -650,7 +650,7 @@ def get_recommended_landing_cards(
             for lid in cf_slice:
                 l = db.query(Landing).get(lid)
                 if l:
-                    cards.append(_landing_to_card(l))
+                    cards.append(landing_to_card(l))
 
     # если места ещё есть — добираем fallback
     remaining = limit - len(cards)
@@ -658,7 +658,7 @@ def get_recommended_landing_cards(
         # сколько нужно пропустить во фолбэке
         fb_skip = max(0, skip - len(cf_ids))
         fb_landings = query_fb.offset(fb_skip).limit(remaining).all()
-        cards.extend(_landing_to_card(l) for l in fb_landings)
+        cards.extend(landing_to_card(l) for l in fb_landings)
 
     return {"total": total, "cards": cards}
 
@@ -692,7 +692,7 @@ def get_personalized_landing_cards(
 
     total = query.count()
     landings = query.offset(skip).limit(limit).all()
-    return {"total": total, "cards": [_landing_to_card(l) for l in landings]}
+    return {"total": total, "cards": [landing_to_card(l) for l in landings]}
 
 def get_landing_detail_with_previews(db: Session, landing_id: int) -> dict:
     """
