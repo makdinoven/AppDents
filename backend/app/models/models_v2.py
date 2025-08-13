@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
-    Index
+    Index, BigInteger
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -338,17 +338,39 @@ class AbandonedCheckout(Base):
         comment="TRUE – e-mail по лидy уже отправлен"
     )
 
+class PreviewStatus(str, PyEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED  = "failed"
+
 class LessonPreview(Base):
-    """
-    Сохранённые превью одного кадра из видео-урока.
-    Ключ – сама ссылка на Boomstream.
-    """
     __tablename__ = "lesson_previews"
 
-    video_link   = Column(String(700), primary_key=True)
+    id           = Column(BigInteger, primary_key=True, autoincrement=True)
+    video_link   = Column(Text, nullable=False)
     preview_url  = Column(String(700), nullable=False)
-    generated_at = Column(DateTime, nullable=False, default=func.now())
-    checked_at = Column(DateTime(timezone=False), nullable=True)
+
+    generated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+    checked_at   = Column(DateTime)
+
+    status = Column(
+        Enum(
+            PreviewStatus,
+            name="previewstatus",
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],  # нижний регистр
+        ),
+        nullable=False,
+        server_default=PreviewStatus.PENDING.value,
+    )
+    enqueued_at  = Column(DateTime)
+    updated_at   = Column(DateTime, nullable=False,
+                          server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp())
+    attempts     = Column(Integer, nullable=False, server_default="0")
+    last_error   = Column(Text)
+
 
 class SpecialOffer(Base):
     """

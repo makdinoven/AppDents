@@ -45,7 +45,8 @@ class CourseSlideResponse(BaseModel):
     id: int
     type: Literal["COURSE"]
     order_index: int
-    landing: LandingCardResponse           # из schemas_v2.landing
+    landing: LandingCardResponse
+    main_text: str | None = None
 
 SlideResponse = Union[FreeSlideResponse, CourseSlideResponse]
 
