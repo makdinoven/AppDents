@@ -31,7 +31,7 @@ def _slide_to_dict(db: Session, slide: Slide) -> Dict:
                                 detail=f"Slide {slide.id}: landing not found")
 
         # получаем карточку (как и было)
-        card = landing_service._landing_to_card(slide.landing)   # noqa
+        card = landing_service.landing_to_card(slide.landing)   # noqa
 
         # 🆕 безопасно берём main_text из лендинга
         main_text = getattr(slide.landing, "main_text", None)
