@@ -44,8 +44,8 @@ celery.conf.update(
         "app.tasks.preview_tasks.generate_preview": {"rate_limit": "800/m"},
         "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
-        "app.tasks.process_hls_video": {"rate_limit": "7/m"},
-        "app.tasks.ensure_hls":        {"rate_limit": "2/m"},
+        "app.tasks.process_hls_video": {"rate_limit": "15/m"},
+        "app.tasks.ensure_hls":        {"rate_limit": "5/m"},
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "50/h"},
     },
     beat_schedule={
