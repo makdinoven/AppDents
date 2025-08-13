@@ -18,25 +18,33 @@ log = logging.getLogger(__name__)
 
 
 # ------------------ ПУБЛИЧНОЕ ОТОБРАЖЕНИЕ ------------------------------------
+# app/services_v2/slider_service.py
+
 def _slide_to_dict(db: Session, slide: Slide) -> Dict:
     """
-    Преобразует ORM Slide → словарь для ответа клиенту
-    (schema-response соберёт сама pydantic).
+    Преобразует ORM Slide → словарь для ответа клиенту.
     """
     if slide.type == SlideType.COURSE:
-        # карточка лендинга
         if not slide.landing:
+            # лэндинг обязателен для COURSE
             raise HTTPException(status_code=500,
                                 detail=f"Slide {slide.id}: landing not found")
+
+        # получаем карточку (как и было)
         card = landing_service.landing_to_card(slide.landing)   # noqa
+
+        # 🆕 безопасно берём main_text из лендинга
+        main_text = getattr(slide.landing, "main_text", None)
+
         return {
             "id": slide.id,
             "type": "COURSE",
             "order_index": slide.order_index,
             "landing": card,
+            "main_text": main_text,
         }
 
-    # FREE / BOOK
+    # FREE / BOOK — без изменений
     return {
         "id": slide.id,
         "type": slide.type.value,
@@ -46,6 +54,7 @@ def _slide_to_dict(db: Session, slide: Slide) -> Dict:
         "description": slide.description,
         "target_url": slide.target_url,
     }
+
 
 
 def get_slides(db: Session, language: str) -> List[Dict]:
