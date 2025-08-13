@@ -37,8 +37,8 @@ S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 _NO_KEY = ("NoSuchKey", "404")
 
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
-BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 20))     # задач за один проход
-RATE_LIMIT_HLS      = "6/m"                                     # Celery annotation
+BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 40))     # задач за один проход
+RATE_LIMIT_HLS      = "15/m"                                     # Celery annotation
 
 R_SET_BAD = "hls:bad"
 
