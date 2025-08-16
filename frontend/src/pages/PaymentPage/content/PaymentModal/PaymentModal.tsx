@@ -1,47 +1,28 @@
-import { useForm } from "react-hook-form";
-import { joiResolver } from "@hookform/resolvers/joi";
-import { t } from "i18next";
 import { Trans } from "react-i18next";
 import s from "./PaymentModal.module.scss";
-import Form from "../../../../components/Modals/modules/Form/Form.tsx";
-import Button from "../../../../components/ui/Button/Button.tsx";
-import { paymentSchema } from "../../../../common/schemas/paymentSchema.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import { useRef, useState } from "react";
-import {
-  BASE_URL,
-  LS_TOKEN_KEY,
-  REF_CODE_LS_KEY,
-  REF_CODE_PARAM,
-} from "../../../../common/helpers/commonConstants.ts";
-import { cartStorage } from "../../../../api/cartApi/cartStorage.ts";
-import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import { Path } from "../../../../routes/routes.ts";
-import { PaymentType } from "../../../../api/userApi/types.ts";
-import { getMe } from "../../../../store/actions/userActions.ts";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
 import {
-  CheckMark,
   CoursesIcon,
   PoweredByStripeLogo,
   Shield,
 } from "../../../../assets/icons";
-import DisabledPaymentWarn from "../../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 import {
-  closePaymentModal,
   PaymentDataType,
+  setIsFree,
 } from "../../../../store/slices/paymentSlice.ts";
-import { getPaymentSource } from "../../../../common/helpers/helpers.ts";
 import LogoList from "./LogoList/LogoList.tsx";
 import PaymentCourseCard from "./PaymentCourseCard/PaymentCourseCard.tsx";
-import Input from "../../../../components/ui/Inputs/Input/Input.tsx";
-import EmailInput from "../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
 import useOutsideClick from "../../../../common/hooks/useOutsideClick.ts";
 import ModalOverlay from "../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ModalCloseButton from "../../../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import UseBalanceOption from "../../../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
+import { usePaymentModal } from "../../../../common/hooks/usePaymentModal.ts";
+import PaymentForm from "./PaymentForm/PaymentForm.tsx";
+import Button from "../../../../components/ui/Button/Button.tsx";
+import DisabledPaymentWarn from "../../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 const PaymentModal = ({
   isOffer = false,
@@ -58,142 +39,34 @@ const PaymentModal = ({
   paymentData: PaymentDataType;
   visibleCondition: boolean;
 }) => {
-  const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
-  );
-  const currentUrl =
-    window.location.origin + location.pathname + location.search;
-  const IS_PAYMENT_DISABLED = false;
-  const navigate = useNavigate();
-  const balance = useSelector((state: AppRootStateType) => state.user.balance);
-  const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch<AppDispatchType>();
-  const { isLogged, email } = useSelector(
-    (state: AppRootStateType) => state.user,
-  );
-  const [isBalanceUsed, setIsBalanceUsed] = useState<boolean>(false);
   const {
-    register,
-    watch,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<PaymentType>({
-    resolver: isLogged ? undefined : joiResolver(paymentSchema),
-    mode: "onTouched",
+    loading,
+    isBalanceUsed,
+    balancePrice,
+    balance,
+    toggleBalance,
+    handlePayment,
+    setEmailValue,
+    language,
+    IS_PAYMENT_DISABLED,
+  } = usePaymentModal({
+    paymentData,
+    isFree,
+    isOffer,
   });
+  const dispatch = useDispatch<AppDispatchType>();
+  const { isLogged } = useSelector((state: AppRootStateType) => state.user);
   const modalRef = useRef<HTMLDivElement | null>(null);
   useOutsideClick(modalRef, () => {
     closeModal();
   });
-
   const closeModalRef = useRef<() => void>(null);
-
   const closeModal = () => {
     closeModalRef.current?.();
+    if (isFree) {
+      dispatch(setIsFree(false));
+    }
     handleClose();
-  };
-
-  const emailInputName = "email";
-  const emailValue = watch(emailInputName);
-
-  const handleCheckboxToggle = () => {
-    if (balance! !== 0) {
-      setIsBalanceUsed(!isBalanceUsed);
-    }
-  };
-
-  const balancePrice = isBalanceUsed
-    ? Math.round(Math.max(paymentData.newPrice - balance!, 0) * 100) / 100
-    : paymentData.newPrice;
-
-  //TODO ВЫНЕСТИ И ОСТАВИТЬ В ЭТОМ КОМПОНЕНТЕ ТОЛЬКО ЛОГИКУ КАСАЮЩУЮСЯ ОТОБРАЖЕНИЯ
-
-  const handlePayment = async (form: any) => {
-    setLoading(true);
-    if (!isFree) {
-      const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
-      const cartLandingIds = cartStorage.getLandingIds();
-      const dataToSend = {
-        total_old_price: paymentData.oldPrice,
-        total_new_price: paymentData.newPrice,
-        from_ad: paymentData.fromAd,
-        price_cents: paymentData.priceCents,
-        region: paymentData.region ? paymentData.region : language,
-        landing_ids: paymentData.landingIds,
-        course_ids: paymentData.courseIds,
-        use_balance: isBalanceUsed,
-        user_email: isLogged ? email : form.email,
-        transfer_cart: !isLogged && cartLandingIds.length > 0,
-        cart_landing_ids: cartLandingIds,
-        source: !paymentData.source
-          ? getPaymentSource(isOffer)
-          : paymentData.source,
-        success_url: `${BASE_URL}${Path.successPayment}`,
-        courses: paymentData.courses,
-        cancel_url:
-          !isLogged && rcCode
-            ? currentUrl + `?${REF_CODE_PARAM}=${rcCode}`
-            : currentUrl,
-      };
-      try {
-        const res = await mainApi.buyCourse(dataToSend, isLogged);
-        const checkoutUrl = res.data.checkout_url;
-        const balanceLeft = res.data.balance_left;
-        localStorage.removeItem(REF_CODE_LS_KEY);
-        setLoading(false);
-
-        if (checkoutUrl) {
-          const newTab = window.open(checkoutUrl, "_blank");
-
-          if (
-            !newTab ||
-            newTab.closed ||
-            typeof newTab.closed === "undefined"
-          ) {
-            window.location.href = checkoutUrl;
-          }
-        } else {
-          console.error("Checkout URL is missing");
-        }
-
-        if (balanceLeft) {
-          dispatch(getMe());
-          Alert(
-            t("successPaymentWithBalance", { balance: balanceLeft }),
-            <CheckMark />,
-            () => {
-              navigate(Path.profile);
-            },
-          );
-          await dispatch(getMe());
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    } else {
-      const dataToSend = {
-        id: paymentData.landingIds![0],
-        email: isLogged ? email : form.email,
-        region: paymentData.region ? paymentData.region : language,
-      };
-
-      try {
-        const res = await mainApi.getFreeCourse(dataToSend, isLogged);
-        if (isLogged) {
-          navigate(Path.profile);
-        } else {
-          dispatch(closePaymentModal());
-          closeModal();
-          localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
-          await dispatch(getMe());
-          navigate(Path.profile);
-        }
-        setLoading(false);
-      } catch (error) {
-        console.log(error);
-      }
-    }
   };
 
   return (
@@ -242,7 +115,7 @@ const PaymentModal = ({
             )}
             {isLogged && !isFree && (
               <UseBalanceOption
-                onToggle={handleCheckboxToggle}
+                onToggle={toggleBalance}
                 isChecked={isBalanceUsed}
                 disabled={balance === 0}
                 balance={balance ? balance : 0}
@@ -257,24 +130,7 @@ const PaymentModal = ({
           )}
 
           {!isLogged && (
-            <>
-              <div className={s.form_inputs}>
-                <Input
-                  id="name"
-                  placeholder={t("yourName")}
-                  {...register("name")}
-                />
-                <EmailInput
-                  isValidationUsed
-                  id="email"
-                  value={emailValue}
-                  setValue={setValue}
-                  error={errors.email?.message}
-                  placeholder={t("email")}
-                  {...register(emailInputName)}
-                />
-              </div>
-            </>
+            <PaymentForm setEmail={setEmailValue} isLogged={isLogged} />
           )}
         </div>
         <div className={s.modal_footer}>
@@ -284,20 +140,17 @@ const PaymentModal = ({
               <Trans i18nKey="payment.encryptedPayment" />
             </p>
           )}
-
-          <Form handleSubmit={handleSubmit(handlePayment)}>
-            {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
-            <Button
-              disabled={IS_PAYMENT_DISABLED}
-              variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
-              loading={loading}
-              text={
-                isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"
-              }
-              type="submit"
-              icon={<PoweredByStripeLogo />}
-            />
-          </Form>
+          {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
+          <Button
+            onClick={handlePayment}
+            disabled={IS_PAYMENT_DISABLED}
+            variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
+            loading={loading}
+            text={
+              isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"
+            }
+            icon={<PoweredByStripeLogo />}
+          />
           {!isLogged && (
             <>
               <p className={s.privacy_text}>
