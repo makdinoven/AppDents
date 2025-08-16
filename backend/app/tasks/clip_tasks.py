@@ -24,7 +24,7 @@ S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
 # Таймаут до «первых байт»/после старта
-START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "180"))   # сек
+START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "600"))   # сек
 NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "60"))
 
 # основной клиент для HEAD/загрузок
