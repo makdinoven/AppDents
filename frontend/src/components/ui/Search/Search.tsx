@@ -1,9 +1,9 @@
 import s from "./Search.module.scss";
 import UnstyledInput from "../../CommonComponents/UnstyledInput.tsx";
 import { t } from "i18next";
-import { SearchIcon } from "../../../assets/icons/index.ts";
+import { ArrowX, SearchIcon } from "../../../assets/icons/index.ts";
 import { useSearchParams } from "react-router-dom";
-import { ArrowX } from "../../../assets/icons/index.ts";
+import { useEffect, useState } from "react";
 
 const Search = ({
   placeholder,
@@ -17,10 +17,17 @@ const Search = ({
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const value = searchParams.get(id) || "";
+  const [localValue, setLocalValue] = useState(searchParams.get(id) || "");
+
+  useEffect(() => {
+    const currentValue = searchParams.get(id) || "";
+    setLocalValue(currentValue);
+  }, [searchParams, id]);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    setLocalValue(newValue);
+
     const newParams = new URLSearchParams(searchParams.toString());
     if (newValue) {
       newParams.set(id, newValue);
@@ -31,24 +38,25 @@ const Search = ({
   };
 
   const handleClear = () => {
+    setLocalValue("");
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete(id);
     setSearchParams(newParams, { replace: true });
   };
 
   return (
-    <div className={`${s.input_wrapper} ${value ? s.filled : ""}`}>
+    <div className={`${s.input_wrapper} ${localValue ? s.filled : ""}`}>
       <UnstyledInput
         id={id}
         type="text"
-        value={value}
+        value={localValue}
         className={s.search_input}
         onChange={onChange}
         onFocus={onFocus}
         ref={inputRef}
       />
       <div className={s.icons}>
-        {value && (
+        {localValue && (
           <span className={s.clear_icon} onClick={handleClear}>
             <ArrowX />
           </span>
