@@ -19,16 +19,17 @@ async def submit_clip(data: ClipIn):
 
 @router.get("/clip/{job_id}")
 async def clip_status(job_id: str):
-    r = AsyncResult(job_id, app=celery_app)
+    r = celery_app.AsyncResult(job_id)
     state = r.state
+    meta = r.info if isinstance(r.info, dict) else {}
+
     if state == "PENDING":
         return {"status": "queued"}
-    if state in ("STARTED", "RETRY"):
-        return {"status": "processing"}
+    if state in ("STARTED", "RETRY", "PROGRESS"):
+        # 👇 сюда попадут метаданные прогресса
+        return {"status": "processing", **meta}
     if state == "SUCCESS":
-        result = r.get()  # {"clip_url": ..., "length_sec": 300}
-        return {"status": "done", **result}
+        return {"status": "done", **(r.get() or {})}
     if state == "FAILURE":
-        # r.result — Exception, приведём к строке
         return {"status": "error", "error": str(r.result)}
-    return {"status": state.lower()}
+    return {"status": state.lower(), **meta}
