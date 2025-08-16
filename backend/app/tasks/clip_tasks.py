@@ -1,8 +1,10 @@
+# app/tasks/clip_tasks.py
 import mimetypes
 import os
 import subprocess
 import time
 import uuid
+import tempfile
 from pathlib import Path
 from urllib.parse import unquote, urlparse, quote
 from threading import Thread, Event
@@ -23,11 +25,14 @@ S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# Таймаут до «первых байт»/после старта
-START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "600"))   # сек
-NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "60"))
+# Таймаут до «первых байт»/после старта у стрима
+START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "600"))   # ждать первые байты, сек
+NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "120"))
 
-# основной клиент для HEAD/загрузок
+# Разрешить фолбэк на локальную загрузку/обрезку, если стрим не стартовал
+ALLOW_DOWNLOAD_FALLBACK = os.getenv("CLIP_ALLOW_DOWNLOAD_FALLBACK", "true").lower() == "true"
+
+# основной клиент
 s3 = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
@@ -35,6 +40,16 @@ s3 = boto3.client(
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+)
+
+# presigned V4 клиент (если всё же понадобится)
+s3_v4 = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
 )
 
 TRANSFER_CFG = TransferConfig(
@@ -48,9 +63,6 @@ TRANSFER_CFG = TransferConfig(
 def _bucket_from_url(url: str) -> str:
     host = urlparse(url).hostname or ""
     return host.split(".")[0] if host.endswith(".s3.twcstorage.ru") else S3_BUCKET
-
-def _src_host(url: str) -> str:
-    return urlparse(url).hostname or ""
 
 def _key_from_url(url: str) -> str:
     return unquote(urlparse(url).path.lstrip("/"))
@@ -74,7 +86,7 @@ def _fmt_ret(ret: int) -> str:
         return f"{ret} ({name})"
     return str(ret)
 
-def _stderr_collector(proc) -> tuple[deque, Event]:
+def _stderr_collector(proc):
     tail = deque(maxlen=200)
     stop = Event()
     def _reader():
@@ -91,36 +103,16 @@ def _stderr_collector(proc) -> tuple[deque, Event]:
     Thread(target=_reader, daemon=True).start()
     return tail, stop
 
-def _make_presigned_for_host(bucket: str, key: str, src_host: str) -> str:
-    """
-    Для ссылок *.s3.twcstorage.ru делаем V4 presign на общем эндпоинте 'https://s3.twcstorage.ru'
-    c виртуальным адресованием (итоговый URL → https://<bucket>.s3.twcstorage.ru/key?...).
-    Иначе — на S3_ENDPOINT.
-    """
-    if src_host.endswith(".s3.twcstorage.ru"):
-        ep = "https://s3.twcstorage.ru"
-    else:
-        ep = S3_ENDPOINT
-
-    client = boto3.client(
-        "s3",
-        endpoint_url=ep,
-        region_name=S3_REGION,
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
-    )
-    return client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=3600,
+def _make_presigned(bucket: str, key: str) -> str:
+    # V4 подпись
+    return s3_v4.generate_presigned_url(
+        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=3600
     )
 
 # ---- FFmpeg (HTTP input → stdout) ----
 def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
     """
-    ВАЖНО: читаем по HTTP(S) — это позволяет ffmpeg делать byte-range seek (нужно для MP4 с moov в конце).
-    НИКАких stdin-пайпов для MP4: pipe не seekable → 'moov atom not found'.
+    Вход по HTTP(S) (seekable), выход в fMP4 на stdout (pipe:1)
     """
     cmd = [
         "nice", "-n", "10",
@@ -136,7 +128,6 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
         "-reconnect_streamed", "1",
         "-reconnect_delay_max", "3",
         "-reconnect_on_network_error", "1",
-        # (опционально можно указать seekable=1 для http, но по умолчанию оно 1)
 
         "-ss", "0",
         "-i", in_url,
@@ -145,7 +136,6 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
         "-c", "copy",
         "-bsf:a", "aac_adtstoasc",
 
-        # запись в не-seekable stdout → fragmented MP4
         "-movflags", "frag_keyframe+empty_moov",
         "-muxpreload", "0",
         "-muxdelay", "0",
@@ -156,17 +146,16 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
     ]
     return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
 
-def _run_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0: float) -> tuple[int, int, str]:
+def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0: float):
     """
-    Общая обвязка: FFmpeg HTTP → stdout → S3 upload_fileobj, с прогрессом и двухфазным watchdog.
-    Возвращает: (uploaded_bytes, ffmpeg_retcode, stderr_tail)
+    FFmpeg HTTP → stdout → S3 upload_fileobj, прогресс и двухфазный watchdog.
+    Возвращает (uploaded_bytes, ffmpeg_ret, stderr_tail)
     """
     proc = _spawn_ffmpeg_http(in_url, length_sec=300)
     if not proc.stdout:
         return 0, -1, "ffmpeg stdout is not available"
 
     stderr_tail, stop_stderr = _stderr_collector(proc)
-
     uploaded = 0
     first_byte_ts = None
     last_progress = time.time()
@@ -179,7 +168,6 @@ def _run_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0:
         last_progress = now
         if first_byte_ts is None and uploaded > 0:
             first_byte_ts = now
-        # лёгкий прогресс
         if uploaded and (now - t0) >= 2:
             speed = uploaded / max(1.0, now - t0)
             self.update_state(
@@ -206,20 +194,16 @@ def _run_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0:
         except Exception as e:
             upload_err["exc"] = e
 
-    up_th = Thread(target=_uploader, daemon=True)
-    up_th.start()
+    th = Thread(target=_uploader, daemon=True)
+    th.start()
 
     try:
-        while up_th.is_alive():
+        while th.is_alive():
             time.sleep(1)
-
-            # фаза 1: ждем первых байт
             if first_byte_ts is None and (time.time() - t0) > START_TIMEOUT:
                 try: proc.terminate()
                 except Exception: pass
                 break
-
-            # фаза 2: после старта — молчание
             if first_byte_ts is not None and (time.time() - last_progress) > NOPROGRESS_TIMEOUT:
                 try: proc.terminate()
                 except Exception: pass
@@ -231,7 +215,7 @@ def _run_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0:
             except Exception: pass
         raise
     finally:
-        up_th.join(timeout=15)
+        th.join(timeout=15)
         stop_stderr.set()
         try:
             if proc.stdout: proc.stdout.close()
@@ -243,30 +227,53 @@ def _run_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0:
             ret = 0
 
     tail = "\n".join(list(stderr_tail)[-30:])
-
     if upload_err["exc"] is not None:
         raise RuntimeError(f"S3 upload failed: {upload_err['exc']}; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}")
 
     return uploaded, ret, tail
+
+# ---- локальная загрузка/обрезка (fallback) ----
+def _ffmpeg_local_clip(src_path: str, dst_path: str):
+    """
+    Обрезка 0..300 c без перекодирования, +faststart (moov в начало) — файл на диске.
+    """
+    cmd = [
+        "nice", "-n", "10",
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-loglevel", "error",
+        "-threads", "1",
+        "-i", src_path,
+        "-t", "300",
+        "-c", "copy",
+        "-movflags", "+faststart",
+        "-y",
+        dst_path,
+    ]
+    completed = subprocess.run(cmd, capture_output=True)
+    if completed.returncode != 0:
+        raise RuntimeError(f"local ffmpeg failed: {completed.stderr.decode('utf-8', 'ignore')[:2000]}")
 
 # ---------------- task ----------------
 @shared_task(
     bind=True,
     track_started=True,
     soft_time_limit=20 * 60,
-    time_limit=25 * 60,
+    time_limit=30 * 60,
 )
 def clip_video(self, src_url: str) -> dict:
     """
-    Путь данных: (A) direct HTTP из src_url → ffmpeg → S3; при неудаче (B) presigned V4 → ffmpeg → S3.
-    Никакого stdin: mp4 с moov-в-конце требует seek → только HTTP с Range.
+    Попытка A: прямой URL (HTTP) → ffmpeg → S3 (стрим).
+    Попытка B: presigned V4 → ffmpeg → S3 (стрим).
+    Фолбэк C (если разрешён): S3 → локальный файл → ffmpeg (файл) → локальный файл → S3.
     """
     t0 = time.time()
     task_id = getattr(self.request, "id", None) or getattr(self.request, "root_id", None)
     if not task_id:
         raise RuntimeError("No Celery task_id in context")
 
-    # 0) HEAD исходника (S3 API — быстро поймать 404/403)
+    # 0) HEAD исходника — быстрый 404/403/размер
     self.update_state(task_id=task_id, state="STARTED", meta={"stage": "preparing"})
     src_bucket = _bucket_from_url(src_url)
     src_key    = _key_from_url(src_url)
@@ -280,42 +287,73 @@ def clip_video(self, src_url: str) -> dict:
     clip_key = _unique_clip_name(src_key)
     mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
 
-    # ===== TRY #A: прямой URL как есть =====
-    # Работает для публичных ссылок на twcstorage/cdn.
-    try_url = src_url
-    uploaded, ret, tail = _run_pipeline(self, task_id, try_url, clip_key, mime, t0)
+    # ===== A: прямой URL как есть =====
+    uploaded, ret, tail = _run_stream_pipeline(self, task_id, src_url, clip_key, mime, t0)
     if uploaded > 0 and ret == 0:
         clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-        return {
-            "clip_url": clip_url,
-            "length_sec": 300,
-            "uploaded_bytes": uploaded,
-            "elapsed_sec": int(time.time() - t0),
-            "path": "direct",
-        }
+        return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded, "elapsed_sec": int(time.time() - t0), "path": "direct"}
 
-    # ===== TRY #B: presigned V4 под корректный хост =====
-    presigned = _make_presigned_for_host(src_bucket, src_key, _src_host(src_url))
-    uploaded2, ret2, tail2 = _run_pipeline(self, task_id, presigned, clip_key, mime, t0)
-    if uploaded2 > 0 and ret2 == 0:
+    # ===== B: presigned V4 (пробуем только если ffmpeg реально упал сообщением) =====
+    go_presigned = (ret != 0 and bool((tail or "").strip()))
+    if go_presigned:
+        presigned = _make_presigned(src_bucket, src_key)
+        uploaded2, ret2, tail2 = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
+        if uploaded2 > 0 and ret2 == 0:
+            clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
+            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded2, "elapsed_sec": int(time.time() - t0), "path": "presigned"}
+    else:
+        uploaded2, ret2, tail2 = 0, 0, ""
+
+    # ===== C: локальный фолбэк (если разрешён) =====
+    if ALLOW_DOWNLOAD_FALLBACK:
+        with tempfile.TemporaryDirectory() as tmp:
+            src_path  = os.path.join(tmp, "src.bin")
+            dst_path  = os.path.join(tmp, "clip.mp4")
+
+            # прогресс загрузки
+            downloaded = {"n": 0}
+            last_report = {"t": time.time()}
+
+            def _dl_cb(nbytes):
+                downloaded["n"] += nbytes
+                now = time.time()
+                if now - last_report["t"] >= 2:
+                    self.update_state(
+                        task_id=task_id,
+                        state="PROGRESS",
+                        meta={
+                            "stage": "downloading",
+                            "downloaded_bytes": downloaded["n"],
+                            "source_bytes": size,
+                            "elapsed_sec": int(now - t0),
+                        },
+                    )
+                    last_report["t"] = now
+
+            # скачиваем целиком (S3 → файл)
+            s3.download_file(src_bucket, src_key, src_path, Callback=_dl_cb, Config=TRANSFER_CFG)
+
+            # локальная обрезка без перекодирования + faststart в файл
+            self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "local_cut"})
+            _ffmpeg_local_clip(src_path, dst_path)
+
+            # аплоад результата
+            self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "uploading_result"})
+            s3.upload_file(
+                dst_path,
+                S3_BUCKET,
+                clip_key,
+                ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
+                Config=TRANSFER_CFG,
+            )
+
         clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-        return {
-            "clip_url": clip_url,
-            "length_sec": 300,
-            "uploaded_bytes": uploaded2,
-            "elapsed_sec": int(time.time() - t0),
-            "path": "presigned",
-        }
+        return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": os.path.getsize(dst_path) if os.path.exists(dst_path) else None, "elapsed_sec": int(time.time() - t0), "path": "download"}
 
-    # если обе попытки не дали данных — вернём осмысленную ошибку
-    if uploaded == 0 and uploaded2 == 0:
-        raise RuntimeError(
-            "no output produced: "
-            f"direct ret={_fmt_ret(ret)} tail:\n{tail}\n\n"
-            f"presigned ret={_fmt_ret(ret2)} tail:\n{tail2}"
-        )
-
+    # Если дошли сюда — стрим не пошёл, фолбэк выключен → даём подробную ошибку
     raise RuntimeError(
-        f"ffmpeg failed after producing {uploaded or uploaded2} bytes; "
-        f"direct ret={_fmt_ret(ret)} tail:\n{tail}\n\npresigned ret={_fmt_ret(ret2)} tail:\n{tail2}"
+        "no output produced:\n"
+        f"direct ret={_fmt_ret(ret)} tail:\n{tail}\n\n"
+        f"presigned ret={_fmt_ret(ret2)} tail:\n{tail2}\n\n"
+        "download fallback disabled (set CLIP_ALLOW_DOWNLOAD_FALLBACK=true to enable)."
     )
