@@ -58,7 +58,7 @@ def _run_ffmpeg_stream(in_url: str, out_pipe, length: int = 300):
     ]
     return subprocess.Popen(cmd, stdout=out_pipe)
 
-@shared_task(bind=True, autoretry_for=(), retry_backoff=False, track_started=True, name="app.tasks.clip_video")
+@shared_task(bind=True, autoretry_for=(), retry_backoff=False, track_started=True)
 def clip_video(self, src_url: str) -> dict:
     """
     Фоновая обрезка: S3 presigned (HTTPS) → ffmpeg (stdout) → S3 upload_fileobj
