@@ -17,6 +17,7 @@ celery = Celery(
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
             "app.tasks.abandoned_checkouts",
+            "app.tasks.clip_video"
         ],
 )
 
@@ -97,5 +98,5 @@ celery.conf.task_routes = {
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
-    "app.tasks.clip_tasks.*": {"queue": "special"},
+    "app.tasks.clip_tasks": {"queue": "special"},
 }
