@@ -23,14 +23,6 @@
   }
 }
 
-.form_inputs {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  color: $text-color;
-}
-
 .modal_header {
   display: flex;
   justify-content: space-between;
@@ -326,15 +318,5 @@
     gap: 5px;
     padding: 0 7.5px 0 15px;
     margin-right: 7.5px;
-  }
-
-  .form_inputs {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    input {
-      @include clamped-p2;
-    }
   }
 }

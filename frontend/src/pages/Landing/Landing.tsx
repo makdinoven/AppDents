@@ -40,6 +40,7 @@ import {
 } from "../../common/helpers/facebookPixel.ts";
 import {
   openPaymentModal,
+  setIsFree,
   setPaymentData,
 } from "../../store/slices/paymentSlice.ts";
 
@@ -132,7 +133,6 @@ const Landing = () => {
       };
 
       dispatch(setPaymentData(paymentData));
-
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -144,14 +144,17 @@ const Landing = () => {
     mainApi.trackFacebookAd(landingPath!);
   };
 
-  const handleNavigateToPayment = () => {
-    dispatch(openPaymentModal());
+  const handleNavigateToPayment = (isButtonFree: boolean) => {
+    if (landing) {
+      dispatch(setIsFree(isButtonFree));
+      dispatch(openPaymentModal());
+    }
   };
 
   const renderBuyButton = (variant: "full" | "default") => {
     if (!isFree) {
       return (
-        <ArrowButton onClick={handleNavigateToPayment}>
+        <ArrowButton onClick={() => handleNavigateToPayment(false)}>
           <Trans
             i18nKey={
               variant === "default" ? "landing.buyFor" : "landing.buyForFull"
@@ -169,7 +172,7 @@ const Landing = () => {
     } else {
       return (
         <div className={s.buy_and_free_btns}>
-          <ArrowButton onClick={handleNavigateToPayment}>
+          <ArrowButton onClick={() => handleNavigateToPayment(false)}>
             <Trans
               i18nKey={
                 variant === "default" ? "landing.buyFor" : "landing.buyForFull"
@@ -189,7 +192,7 @@ const Landing = () => {
           <PrettyButton
             className={s.free_btn}
             variant={"primary"}
-            onClick={handleNavigateToPayment}
+            onClick={() => handleNavigateToPayment(true)}
             text={"freeCourse.tryFirstLesson"}
           />
         </div>

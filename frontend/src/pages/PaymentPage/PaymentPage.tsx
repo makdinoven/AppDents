@@ -1,15 +1,14 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppRootStateType } from "../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
 import PaymentModal from "./content/PaymentModal/PaymentModal.tsx";
 import { useEffect } from "react";
 import {
   closePaymentModal,
   openPaymentModal,
-  setPaymentData,
 } from "../../store/slices/paymentSlice.ts";
 import { PAYMENT_PAGE_KEY } from "../../common/helpers/commonConstants.ts";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
+import { getLandingDataForPayment } from "../../store/actions/paymentActions.ts";
 
 //TODO
 //      УБРАТЬ ИЗ PAYMENTMODAL ВСЮ ЛОГИКУ
@@ -27,7 +26,7 @@ const PaymentPage = () => {
   const hasOpenKey = searchParams.has(openKey);
   const data = useSelector((state: AppRootStateType) => state.payment.data);
 
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatchType>();
 
   const handleClose = () => {
     const newParams = new URLSearchParams(searchParams);
@@ -40,7 +39,7 @@ const PaymentPage = () => {
     if (hasOpenKey) {
       if (!data) {
         if (slug) {
-          fetchPaymentData();
+          dispatch(getLandingDataForPayment(slug));
         }
       } else {
         dispatch(openPaymentModal());
@@ -59,36 +58,6 @@ const PaymentPage = () => {
   // useEffect(() => {
   //   console.log(hasOpenKey, data);
   // }, [hasOpenKey]);
-
-  const fetchPaymentData = async () => {
-    try {
-      const res = await mainApi.getLanding(slug);
-      dispatch(
-        setPaymentData({
-          landingIds: [res.data?.id],
-          courseIds: res.data?.course_ids,
-          priceCents: res.data?.new_price * 100,
-          newPrice: res.data?.new_price,
-          oldPrice: res.data?.old_price,
-          region: res.data?.language,
-          slug: res.data?.page_name,
-          fromAd: false,
-          courses: [
-            {
-              name: res.data?.landing_name,
-              newPrice: res.data?.new_price,
-              oldPrice: res.data?.old_price,
-              lessonsCount: res.data?.lessons_count,
-              img: res.data?.preview_photo,
-            },
-          ],
-        }),
-      );
-    } catch (e) {
-      console.error(e);
-      handleClose();
-    }
-  };
 
   if (!data) return;
 

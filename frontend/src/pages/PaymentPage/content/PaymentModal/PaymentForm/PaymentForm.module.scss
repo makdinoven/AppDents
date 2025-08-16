@@ -1,0 +1,20 @@
+
+.form_inputs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  color: $text-color;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .form_inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    input {
+      @include clamped-p2;
+    }
+  }
+}
