@@ -238,12 +238,11 @@ def _ffmpeg_local_clip(src_path: str, dst_path: str):
     Обрезка 0..300 c без перекодирования, +faststart (moov в начало) — файл на диске.
     """
     cmd = [
-        "nice", "-n", "10",
         "ffmpeg",
         "-hide_banner",
         "-nostdin",
         "-loglevel", "error",
-        "-threads", "1",
+        "-threads", "2",
         "-i", src_path,
         "-t", "300",
         "-c", "copy",
