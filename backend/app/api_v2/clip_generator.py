@@ -6,7 +6,7 @@ from celery.result import AsyncResult
 from ..celery_app import celery as celery_app            # ваш существующий Celery инстанс
 from ..tasks.clip_tasks import clip_video      # таск из шага 1
 
-router = APIRouter(prefix="/api/clip_generator")
+router = APIRouter()
 
 class ClipIn(BaseModel):
     url: str
