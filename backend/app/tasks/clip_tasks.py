@@ -80,7 +80,7 @@ def _spawn_ffmpeg(in_url: str, length_sec: int = 300) -> subprocess.Popen:
 
         "-c", "copy",
         "-bsf:a", "aac_adtstoasc",
-        "-movflags", "frag_keyframe+empty_moov+empty_mdat",
+        "-movflags", "frag_keyframe+empty_moov",
         "-muxpreload", "0",
         "-muxdelay", "0",
         "-flush_packets", "1",
