@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse, quote
 from threading import Thread, Event
 from collections import deque
+import signal
 
 import boto3
 from botocore.config import Config
@@ -23,8 +24,9 @@ S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# секунд без прогресса, после которых считаем, что всё зависло
-NOPROGRESS_TIMEOUT = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "60"))
+# Двухфазные таймауты
+START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "120"))   # ждать «первые байты», сек
+NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "60"))  # молчание после старта, сек
 
 s3 = boto3.client(
     "s3",
@@ -64,10 +66,12 @@ def _spawn_ffmpeg(in_url: str, length_sec: int = 300) -> subprocess.Popen:
     cmd = [
         "nice", "-n", "10",
         "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
         "-loglevel", "error",
         "-threads", "1",
 
-        # сетевые «страховки»
+        # сетевые «страховки» для HTTP(S)
         "-rw_timeout", "30000000",          # 30s (микросекунды)
         "-reconnect", "1",
         "-reconnect_streamed", "1",
@@ -88,27 +92,38 @@ def _spawn_ffmpeg(in_url: str, length_sec: int = 300) -> subprocess.Popen:
         "-f", "mp4",
         "pipe:1",
     ]
-    # stderr оставляем открытым — будем читать хвост в отдельном треде
     return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+
+def _fmt_ret(ret: int) -> str:
+    # человекочитаемый вывод кода/сигнала
+    if ret is None:
+        return "None"
+    if ret < 0:
+        sig = -ret
+        try:
+            name = signal.Signals(sig).name
+        except Exception:
+            name = f"SIG{sig}"
+        return f"{ret} ({name})"
+    return str(ret)
 
 # ---------------- task ----------------
 @shared_task(
     bind=True,
     track_started=True,
-    soft_time_limit=20 * 60,   # 20 мин мягкий предел
-    time_limit=25 * 60,        # 25 мин жёсткий
+    soft_time_limit=20 * 60,
+    time_limit=25 * 60,
 )
 def clip_video(self, src_url: str) -> dict:
     """
     S3 presigned → ffmpeg(stdout) → S3 upload_fileobj (streaming).
-    Возврат: {"clip_url": ..., "length_sec": 300, "uploaded_bytes": ..., "elapsed_sec": ...}
     """
     t0 = time.time()
     task_id = getattr(self.request, "id", None) or getattr(self.request, "root_id", None)
     if not task_id:
         raise RuntimeError("No Celery task_id in context")
 
-    # 0) HEAD исходника (быстро ловим 404/403/доступ)
+    # 0) HEAD исходника
     self.update_state(task_id=task_id, state="STARTED", meta={"stage": "preparing"})
     src_bucket = _bucket_from_url(src_url)
     src_key    = _key_from_url(src_url)
@@ -130,11 +145,10 @@ def clip_video(self, src_url: str) -> dict:
     clip_key = _unique_clip_name(src_key)
     mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
     proc = _spawn_ffmpeg(presigned, length_sec=300)
-
     if not proc.stdout:
         raise RuntimeError("ffmpeg stdout is not available")
 
-    # хвост stderr для диагностики
+    # хвост stderr
     stderr_tail = deque(maxlen=200)
     stop_stderr = Event()
 
@@ -144,10 +158,7 @@ def clip_video(self, src_url: str) -> dict:
                 line = proc.stderr.readline()
                 if not line:
                     break
-                try:
-                    text = line.decode("utf-8", "ignore").strip()
-                except Exception:
-                    text = str(line)
+                text = line.decode("utf-8", "ignore").strip() or None
                 if text:
                     stderr_tail.append(text)
         finally:
@@ -156,25 +167,29 @@ def clip_video(self, src_url: str) -> dict:
     th_stderr = Thread(target=_stderr_reader, daemon=True)
     th_stderr.start()
 
-    # 3) upload_fileobj в отдельном треде + watchdog «нет прогресса»
+    # загрузчик в отдельном треде
     uploaded = 0
+    first_byte_ts = None
     last_progress = time.time()
     upload_err = {"exc": None}
 
     def _cb(nbytes: int):
-        nonlocal uploaded, last_progress
+        nonlocal uploaded, last_progress, first_byte_ts
         uploaded += nbytes
-        last_progress = time.time()
-        # отдаём прогресс раз в 2 сек
-        if uploaded and (last_progress - t0) >= 2:
-            speed = uploaded / max(1.0, last_progress - t0)
+        now = time.time()
+        last_progress = now
+        if first_byte_ts is None and uploaded > 0:
+            first_byte_ts = now
+        # лёгкий репорт прогресса
+        if uploaded and (now - t0) >= 2:
+            speed = uploaded / max(1.0, now - t0)
             self.update_state(
                 task_id=task_id,
                 state="PROGRESS",
                 meta={
                     "stage": "uploading",
                     "uploaded_bytes": uploaded,
-                    "elapsed_sec": int(last_progress - t0),
+                    "elapsed_sec": int(now - t0),
                     "speed_bytes_per_sec": int(speed),
                 },
             )
@@ -196,15 +211,25 @@ def clip_video(self, src_url: str) -> dict:
     th_up.start()
 
     try:
-        # Watchdog: если долго нет прогресса — завершаем ffmpeg
         while th_up.is_alive():
             time.sleep(1)
-            if time.time() - last_progress > NOPROGRESS_TIMEOUT:
+
+            # фаза 1: ждём первых байт
+            if first_byte_ts is None and (time.time() - t0) > START_TIMEOUT:
                 try:
                     proc.terminate()
                 except Exception:
                     pass
                 break
+
+            # фаза 2: после старта — контролируем «тишину»
+            if first_byte_ts is not None and (time.time() - last_progress) > NOPROGRESS_TIMEOUT:
+                try:
+                    proc.terminate()
+                except Exception:
+                    pass
+                break
+
     except SoftTimeLimitExceeded:
         try:
             proc.terminate()
@@ -227,20 +252,30 @@ def clip_video(self, src_url: str) -> dict:
         except Exception:
             ret = 0
 
-    # если аплоад выдал исключение
+    # Обработка ошибок
+    tail = "\n".join(list(stderr_tail)[-30:])  # может быть пустым — это нормально
+
     if upload_err["exc"] is not None:
-        tail = "\n".join(list(stderr_tail)[-30:])
-        raise RuntimeError(f"S3 upload failed: {upload_err['exc']}; ffmpeg stderr tail:\n{tail}")
+        raise RuntimeError(f"S3 upload failed: {upload_err['exc']}; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}")
 
-    # если ffmpeg завершился с кодом ≠0
+    # если не пошли первые байты — сообщим явно, а не загадочным 255
+    if first_byte_ts is None:
+        raise RuntimeError(
+            f"No data from ffmpeg for {START_TIMEOUT}s (input stalled or unreachable); ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}"
+        )
+
+    # если после старта застыло
+    if (time.time() - last_progress) > NOPROGRESS_TIMEOUT:
+        raise RuntimeError(
+            f"No progress for {NOPROGRESS_TIMEOUT}s after start; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}"
+        )
+
+    # ffmpeg должен завершиться с 0
     if ret != 0:
-        tail = "\n".join(list(stderr_tail)[-30:])
-        raise RuntimeError(f"ffmpeg exited with {ret}; stderr tail:\n{tail}")
+        raise RuntimeError(f"ffmpeg exited with {_fmt_ret(ret)}; stderr tail:\n{tail}")
 
-    # если мы никого не раскачали
     if uploaded == 0:
-        tail = "\n".join(list(stderr_tail)[-30:])
-        raise RuntimeError(f"No data produced by ffmpeg for {NOPROGRESS_TIMEOUT}s; stderr tail:\n{tail}")
+        raise RuntimeError(f"No data produced by ffmpeg; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}")
 
     clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
     return {
