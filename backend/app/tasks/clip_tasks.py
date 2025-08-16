@@ -45,19 +45,18 @@ def _encode_for_url(key: str) -> str:
 TRANSFER_CFG = TransferConfig(
     multipart_threshold=8 * 1024 * 1024,
     multipart_chunksize=8 * 1024 * 1024,
-    max_concurrency=2,          # не душим сеть/ЦП
+    max_concurrency=2,
     use_threads=True,
 )
 
 def _run_ffmpeg_stream(in_url: str, out_pipe, length: int = 300):
-    # HTTP-реконнекты + таймауты чтения, безопасный вывод (fMP4) и ADTS→ASC
     cmd = [
         "nice", "-n", "10",
         "ffmpeg",
         "-loglevel", "error",
         "-threads", "1",
-        # сетевые опции (часть может быть проигнорирована старым билдом ffmpeg, но не вредит)
-        "-rw_timeout", "30000000",                 # 30s на I/O (в микросекундах)
+        # сетевые опции, чтобы не висеть молча
+        "-rw_timeout", "30000000",              # 30s (в мкс)
         "-reconnect", "1",
         "-reconnect_streamed", "1",
         "-reconnect_on_network_error", "1",
@@ -77,63 +76,66 @@ def _run_ffmpeg_stream(in_url: str, out_pipe, length: int = 300):
 @shared_task(
     bind=True,
     track_started=True,
-    # тайм-лимиты: подберите под ваши реалии
-    soft_time_limit=20 * 60,   # 20 минут — мягкий предел
-    time_limit=25 * 60,        # 25 минут — жёсткий килл от Celery
+    soft_time_limit=20 * 60,     # 20 минут мягкий тайм-лимит
+    time_limit=25 * 60,          # 25 минут жёсткий
 )
 def clip_video(self, src_url: str) -> dict:
-    start_ts = time.time()
-    self.update_state(state="STARTED", meta={"msg": "preparing"})
+    t0 = time.time()
+    self.update_state(state="STARTED", meta={"stage": "preparing"})
 
+    # 0) Проверим, что исходник существует (быстрое 404, без ffmpeg)
     src_bucket = _bucket_from_url(src_url)
     src_key    = _key_from_url(src_url)
-    clip_key   = _unique_clip_name(src_key)
+    try:
+        head = s3.head_object(Bucket=src_bucket, Key=src_key)
+    except Exception as e:
+        raise RuntimeError(f"source head failed: {e}")
 
+    size = head.get("ContentLength", 0)
+    self.update_state(state="STARTED", meta={"stage": "source_ok", "source_bytes": size})
+
+    # 1) presigned
     presigned = s3.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": src_bucket, "Key": src_key},
-        ExpiresIn=3600,
+        "get_object", Params={"Bucket": src_bucket, "Key": src_key}, ExpiresIn=3600
     )
 
-    mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
+    # 2) запускаем ffmpeg
+    mime = mimetypes.guess_type(src_key)[0] or "video/mp4"
+    clip_key = _unique_clip_name(src_key)
     proc = _run_ffmpeg_stream(presigned, subprocess.PIPE)
 
     uploaded = 0
-    last_report = start_ts
+    last_report = t0
 
-    def _cb(chunk: int):
+    def _cb(nbytes: int):
         nonlocal uploaded, last_report
-        uploaded += chunk
+        uploaded += nbytes
         now = time.time()
-        # отдаём прогресс раз в ~2 сек
-        if now - last_report >= 2:
-            speed = uploaded / max(1.0, now - start_ts)  # bytes/s
+        if now - last_report >= 2:  # раз в ~2 секунды
+            speed = uploaded / max(1.0, now - t0)
             self.update_state(
                 state="PROGRESS",
                 meta={
+                    "stage": "uploading",
                     "uploaded_bytes": uploaded,
-                    "elapsed_sec": int(now - start_ts),
+                    "elapsed_sec": int(now - t0),
                     "speed_bytes_per_sec": int(speed),
                 },
             )
             last_report = now
 
     try:
-        # потоковый аплоад из stdout ffmpeg
         s3.upload_fileobj(
             proc.stdout,
             S3_BUCKET,
             clip_key,
             ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
             Config=TRANSFER_CFG,
-            Callback=_cb,   # ← прогресс
+            Callback=_cb,
         )
     except SoftTimeLimitExceeded:
-        # мягкий тайм-аут: аккуратно прибиваем ffmpeg, чтобы не остался зомби
         try:
             proc.terminate()
-        except Exception:
-            pass
         finally:
             proc.wait(timeout=5)
         raise
@@ -142,15 +144,19 @@ def clip_video(self, src_url: str) -> dict:
             proc.stdout.close()
         except Exception:
             pass
-        # прочтём stderr — если ошибка, будет понятнее почему
         try:
             stderr = proc.stderr.read().decode("utf-8", errors="ignore")
         except Exception:
             stderr = ""
         ret = proc.wait()
         if ret != 0:
-            # положим stderr в исключение — удобно дебажить прямо из статуса
-            raise RuntimeError(f"ffmpeg exited with {ret}; stderr: {stderr[:3000]}")
+            # вернём stderr в ошибку — станет ясно, что именно сломалось
+            raise RuntimeError(f"ffmpeg exited with {ret}; stderr: {stderr[:2000]}")
 
     clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-    return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded}
+    return {
+        "clip_url": clip_url,
+        "length_sec": 300,
+        "uploaded_bytes": uploaded,
+        "elapsed_sec": int(time.time() - t0),
+    }
