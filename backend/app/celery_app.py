@@ -17,7 +17,7 @@ celery = Celery(
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
             "app.tasks.abandoned_checkouts",
-            "app.tasks.clip_video"
+            "app.tasks.clip_tasks"
         ],
 )
 
