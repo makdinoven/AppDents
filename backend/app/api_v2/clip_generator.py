@@ -26,7 +26,6 @@ async def clip_status(job_id: str):
     if state == "PENDING":
         return {"status": "queued"}
     if state in ("STARTED", "RETRY", "PROGRESS"):
-        # 👇 сюда попадут метаданные прогресса
         return {"status": "processing", **meta}
     if state == "SUCCESS":
         return {"status": "done", **(r.get() or {})}
