@@ -44,7 +44,7 @@ const ModalOverlay = ({
       }
 
       if (customHandleClose) {
-        customHandleClose();
+        customHandleClose?.();
       }
     }, 300);
   };
@@ -52,14 +52,14 @@ const ModalOverlay = ({
   useEffect(() => {
     if (!isVisible) return;
 
-    const handleEscape = (e: KeyboardEvent) =>
-      e.key === "Escape" && closeModal();
+    // const handleEscape = (e: KeyboardEvent) =>
+    //   e.key === "Escape" && closeModal();
     document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleEscape);
+    // document.addEventListener("keydown", handleEscape);
 
     return () => {
       document.body.style.overflow = "";
-      document.removeEventListener("keydown", handleEscape);
+      // document.removeEventListener("keydown", handleEscape);
     };
   }, [isVisible]);
 
@@ -67,7 +67,7 @@ const ModalOverlay = ({
     if (isVisibleCondition) {
       setIsVisible(true);
     } else {
-      // closeModal();
+      closeModal();
     }
   }, [isVisibleCondition]);
 

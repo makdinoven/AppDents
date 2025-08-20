@@ -8,10 +8,9 @@ import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
 import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import {
-  openPaymentModal,
-  setPaymentData,
-} from "../../../../store/slices/paymentSlice.ts";
+import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
+import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
+import { getPaymentType } from "../../../../common/helpers/helpers.ts";
 
 interface CourseCardProps {
   isClient?: boolean;
@@ -48,6 +47,7 @@ const CourseCard = ({
   slug,
   isFree = false,
 }: CourseCardProps) => {
+  const { openPaymentModal } = usePaymentModalHandler();
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
@@ -78,9 +78,6 @@ const CourseCard = ({
       newPrice: new_price,
       oldPrice: old_price,
       region: language,
-      isFree: isFree,
-      isOffer: isOffer,
-      slug: slug,
       fromAd: !isClient,
       courses: [
         {
@@ -92,8 +89,9 @@ const CourseCard = ({
         },
       ],
     };
+
     dispatch(setPaymentData(paymentData));
-    dispatch(openPaymentModal());
+    openPaymentModal(slug, getPaymentType(isFree, isOffer));
   };
 
   return (

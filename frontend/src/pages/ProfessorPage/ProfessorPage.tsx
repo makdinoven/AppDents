@@ -1,6 +1,6 @@
 import s from "./ProfessorPage.module.scss";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
@@ -13,16 +13,19 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { Clock } from "../../assets/icons/index.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
-import {
-  openPaymentModal,
-  setPaymentData,
-} from "../../store/slices/paymentSlice.ts";
+import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { AppDispatchType } from "../../store/store.ts";
-import { PAGE_SOURCES } from "../../common/helpers/commonConstants.ts";
+import {
+  PAGE_SOURCES,
+  PAYMENT_PAGE_KEY,
+} from "../../common/helpers/commonConstants.ts";
+import { usePaymentModalHandler } from "../../common/hooks/usePaymentModalHandler.ts";
 
 const ProfessorPage = () => {
+  const { openPaymentModal } = usePaymentModalHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const [localPaymentData, setLocalPaymentData] = useState<any>(null);
+  const [searchParams] = useSearchParams();
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -65,7 +68,7 @@ const ProfessorPage = () => {
   }, [professor]);
 
   useEffect(() => {
-    if (localPaymentData) {
+    if (localPaymentData && !searchParams.get(PAYMENT_PAGE_KEY)) {
       dispatch(setPaymentData(localPaymentData));
     }
   }, [localPaymentData]);
@@ -83,7 +86,7 @@ const ProfessorPage = () => {
 
   const handleOpenModal = () => {
     dispatch(setPaymentData(localPaymentData));
-    dispatch(openPaymentModal());
+    openPaymentModal();
   };
 
   const renderBuySection = () => {

@@ -32,7 +32,7 @@ import Courses from "../pages/Courses/Courses.tsx";
 export const AppRoutes: FC = () => {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation || null;
-  const isModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
+  const isAuthModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
 
   return (
     <>
@@ -111,7 +111,7 @@ export const AppRoutes: FC = () => {
         </Route>
       </Routes>
 
-      {(backgroundLocation || isModalRoute) && <AuthModalManager />}
+      {(backgroundLocation || isAuthModalRoute) && <AuthModalManager />}
       {location.pathname === Path.cart && <Cart />}
     </>
   );

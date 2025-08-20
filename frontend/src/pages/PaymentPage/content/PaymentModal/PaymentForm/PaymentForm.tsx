@@ -11,7 +11,9 @@ import { useEffect } from "react";
 const PaymentForm = ({
   isLogged,
   setEmail,
+  isFree,
 }: {
+  isFree?: boolean;
   isLogged: boolean;
   setEmail: (email: string) => void;
 }) => {
@@ -34,7 +36,7 @@ const PaymentForm = ({
 
   return (
     <>
-      <div className={s.form_inputs}>
+      <div className={`${s.form_inputs} ${isFree ? s.free : ""}`}>
         <Input id="name" placeholder={t("yourName")} {...register("name")} />
         <EmailInput
           isValidationUsed
@@ -45,6 +47,13 @@ const PaymentForm = ({
           placeholder={t("email")}
           {...register(emailInputName)}
         />
+        {isFree && (
+          <Input
+            id="password"
+            placeholder={t("password")}
+            {...register("password")}
+          />
+        )}
       </div>
     </>
   );

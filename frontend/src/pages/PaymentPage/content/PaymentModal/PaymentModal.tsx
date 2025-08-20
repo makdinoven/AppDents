@@ -1,7 +1,7 @@
 import { Trans } from "react-i18next";
 import s from "./PaymentModal.module.scss";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../../store/store.ts";
 import { useRef } from "react";
 import { Path } from "../../../../routes/routes.ts";
 import {
@@ -9,10 +9,7 @@ import {
   PoweredByStripeLogo,
   Shield,
 } from "../../../../assets/icons";
-import {
-  PaymentDataType,
-  setIsFree,
-} from "../../../../store/slices/paymentSlice.ts";
+import { PaymentDataType } from "../../../../store/slices/paymentSlice.ts";
 import LogoList from "./LogoList/LogoList.tsx";
 import PaymentCourseCard from "./PaymentCourseCard/PaymentCourseCard.tsx";
 import useOutsideClick from "../../../../common/hooks/useOutsideClick.ts";
@@ -23,6 +20,7 @@ import { usePaymentModal } from "../../../../common/hooks/usePaymentModal.ts";
 import PaymentForm from "./PaymentForm/PaymentForm.tsx";
 import Button from "../../../../components/ui/Button/Button.tsx";
 import DisabledPaymentWarn from "../../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
 
 const PaymentModal = ({
   isOffer = false,
@@ -30,9 +28,7 @@ const PaymentModal = ({
   isFree = false,
   paymentData,
   visibleCondition,
-  handleClose,
 }: {
-  handleClose: () => void;
   isWebinar?: boolean;
   isFree?: boolean;
   isOffer?: boolean;
@@ -54,19 +50,17 @@ const PaymentModal = ({
     isFree,
     isOffer,
   });
-  const dispatch = useDispatch<AppDispatchType>();
+  const { closePaymentModal } = usePaymentModalHandler();
+  const closeModalRef = useRef<() => void>(null);
   const { isLogged } = useSelector((state: AppRootStateType) => state.user);
   const modalRef = useRef<HTMLDivElement | null>(null);
   useOutsideClick(modalRef, () => {
     closeModal();
   });
-  const closeModalRef = useRef<() => void>(null);
+
   const closeModal = () => {
+    closePaymentModal();
     closeModalRef.current?.();
-    if (isFree) {
-      dispatch(setIsFree(false));
-    }
-    handleClose();
   };
 
   return (
@@ -121,16 +115,19 @@ const PaymentModal = ({
                 balance={balance ? balance : 0}
               />
             )}
+            {isFree && !isLogged && (
+              <h3 className={s.total_text}>
+                <Trans i18nKey={"freeCourse.registerToWatch"} />
+              </h3>
+            )}
           </div>
 
-          {isFree && !isLogged && (
-            <h3 className={s.total_text}>
-              <Trans i18nKey={"freeCourse.registerToWatch"} />
-            </h3>
-          )}
-
           {!isLogged && (
-            <PaymentForm setEmail={setEmailValue} isLogged={isLogged} />
+            <PaymentForm
+              setEmail={setEmailValue}
+              isLogged={isLogged}
+              isFree={isFree}
+            />
           )}
         </div>
         <div className={s.modal_footer}>
@@ -149,7 +146,7 @@ const PaymentModal = ({
             text={
               isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"
             }
-            icon={<PoweredByStripeLogo />}
+            icon={isFree ? undefined : <PoweredByStripeLogo />}
           />
           {!isLogged && (
             <>

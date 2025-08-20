@@ -5,6 +5,7 @@ import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
   getBasePath,
+  getPaymentType,
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
@@ -38,13 +39,11 @@ import {
   initLowPricePixel,
   trackLowPricePageView,
 } from "../../common/helpers/facebookPixel.ts";
-import {
-  openPaymentModal,
-  setIsFree,
-  setPaymentData,
-} from "../../store/slices/paymentSlice.ts";
+import { setPaymentData } from "../../store/slices/paymentSlice.ts";
+import { usePaymentModalHandler } from "../../common/hooks/usePaymentModalHandler.ts";
 
 const Landing = () => {
+  const { openPaymentModal } = usePaymentModalHandler();
   const [landing, setLanding] = useState<any | null>(null);
   const [firstLesson, setFirstLesson] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,16 +108,18 @@ const Landing = () => {
       });
       dispatch(setLanguage(res.data.language));
       const paymentData = {
-        isWebinar: isWebinar,
         fromAd: isPromotionLanding,
-        slug: res.data.page_name,
         landingIds: [res.data.id],
         courseIds: res.data.course_ids,
         priceCents: !isWebinar ? res.data.new_price * 100 : 100,
         newPrice: !isWebinar ? res.data.new_price : 1,
         oldPrice: !isWebinar ? res.data.old_price : 49,
         region: res.data.language,
-        source: isWebinar ? PAGE_SOURCES.webinarLanding : undefined,
+        source: isWebinar
+          ? PAGE_SOURCES.webinarLanding
+          : isVideo
+            ? PAGE_SOURCES.videoLanding
+            : undefined,
         courses: [
           {
             name: !isWebinar
@@ -146,8 +147,11 @@ const Landing = () => {
 
   const handleNavigateToPayment = (isButtonFree: boolean) => {
     if (landing) {
-      dispatch(setIsFree(isButtonFree));
-      dispatch(openPaymentModal());
+      console.log(isButtonFree);
+      openPaymentModal(
+        landing.page_name,
+        getPaymentType(isButtonFree, undefined, isWebinar),
+      );
     }
   };
 
@@ -274,7 +278,7 @@ const Landing = () => {
     course_program: landing?.course_program,
     landing_name: landing?.landing_name,
     authors: landing?.authors,
-    handleNavigateToPayment: handleNavigateToPayment,
+    handleNavigateToPayment: () => handleNavigateToPayment(false),
     ...getPricesData(landing, isWebinar),
   };
 

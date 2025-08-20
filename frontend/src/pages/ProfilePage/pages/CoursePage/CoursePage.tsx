@@ -10,13 +10,12 @@ import { Path } from "../../../../routes/routes.ts";
 import LessonCard from "./LessonCard/LessonCard.tsx";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../../store/store.ts";
-import {
-  openPaymentModal,
-  setPaymentData,
-} from "../../../../store/slices/paymentSlice.ts";
+import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
 import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
+import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
 
 const CoursePage = () => {
+  const { openPaymentModal } = usePaymentModalHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
@@ -107,7 +106,7 @@ const CoursePage = () => {
                         isPartial={isPartial && !lesson.video_link}
                         index={index}
                         key={lesson.id}
-                        handleClick={() => dispatch(openPaymentModal())}
+                        handleClick={() => openPaymentModal()}
                         name={lesson.lesson_name}
                         previewPhoto={lesson.preview}
                         link={`${Path.lesson}/${section.id}/${lesson.id}`}

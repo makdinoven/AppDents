@@ -3,12 +3,8 @@ import { PAGE_SOURCES } from "../../common/helpers/commonConstants.ts";
 import { getLandingDataForPayment } from "../actions/paymentActions.ts";
 
 export interface PaymentDataType {
-  isFree?: boolean; // TODO УДАЛИТЬ
-  isWebinar?: boolean; // TODO УДАЛИТЬ
-  isOffer?: boolean; // TODO УДАЛИТЬ
   region?: string;
   landingIds?: number[];
-  slug?: string;
   fromAd: boolean;
   priceCents: number;
   newPrice: number;
@@ -26,12 +22,10 @@ export interface PaymentDataType {
 
 interface State {
   data: PaymentDataType | null;
-  isPaymentModalOpen: boolean;
 }
 
 const initialState: State = {
   data: null,
-  isPaymentModalOpen: false,
 };
 
 const paymentSlice = createSlice({
@@ -40,15 +34,6 @@ const paymentSlice = createSlice({
   reducers: {
     setPaymentData(state, action: PayloadAction<PaymentDataType>) {
       state.data = action.payload;
-    },
-    openPaymentModal(state) {
-      state.isPaymentModalOpen = true;
-    },
-    closePaymentModal(state) {
-      state.isPaymentModalOpen = false;
-    },
-    setIsFree(state, action: PayloadAction<boolean>) {
-      if (state.data) state.data.isFree = action.payload;
     },
   },
 
@@ -62,7 +47,6 @@ const paymentSlice = createSlice({
           new_price,
           old_price,
           language,
-          page_name,
           landing_name,
           lessons_count,
           preview_photo,
@@ -75,7 +59,6 @@ const paymentSlice = createSlice({
           newPrice: new_price,
           oldPrice: old_price,
           region: language,
-          slug: page_name,
           fromAd: false,
           courses: [
             {
@@ -92,10 +75,5 @@ const paymentSlice = createSlice({
   },
 });
 
-export const {
-  setPaymentData,
-  openPaymentModal,
-  closePaymentModal,
-  setIsFree,
-} = paymentSlice.actions;
+export const { setPaymentData } = paymentSlice.actions;
 export const paymentReducer = paymentSlice.reducer;

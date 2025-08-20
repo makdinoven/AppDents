@@ -80,7 +80,7 @@ const VideoSection = ({
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      if (video.currentTime >= 120 && !isPlayerModalVisible) {
+      if (video.currentTime >= 1 && !isPlayerModalVisible) {
         videoRef.current!.pause();
         setIsPlayerModalVisible(true);
       }
