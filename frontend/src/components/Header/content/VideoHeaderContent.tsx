@@ -1,12 +1,12 @@
 import s from "../Header.module.scss";
 import Timer from "../../ui/TimerBanner/Timer/Timer.tsx";
 import { Trans } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { openPaymentModal } from "../../../store/slices/paymentSlice.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
 
 const VideoHeaderContent = () => {
-  const dispatch = useDispatch<AppDispatchType>();
+  const { openPaymentModal } = usePaymentModalHandler();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
@@ -37,7 +37,7 @@ const VideoHeaderContent = () => {
         <>
           <Timer appearance={"primary"} />
           <button
-            onClick={() => dispatch(openPaymentModal())}
+            onClick={() => openPaymentModal()}
             className={`${s.buy_btn} ${s.video}`}
           >
             <Trans

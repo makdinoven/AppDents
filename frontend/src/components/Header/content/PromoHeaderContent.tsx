@@ -9,17 +9,18 @@ import {
 } from "../../../assets/icons/index";
 import {
   getBasePath,
+  getPaymentType,
   scrollToElementById,
 } from "../../../common/helpers/helpers.ts";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 import { Path } from "../../../routes/routes.ts";
 import { useLocation } from "react-router-dom";
-import { openPaymentModal } from "../../../store/slices/paymentSlice.ts";
+import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
 
 const PromoHeaderContent = () => {
   const location = useLocation();
-  const dispatch = useDispatch<AppDispatchType>();
+  const { openPaymentModal } = usePaymentModalHandler();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
@@ -61,7 +62,12 @@ const PromoHeaderContent = () => {
       <BurgerMenu buttons={NAV_BUTTONS_PROMOTE} />
       {!!oldPrice && !!newPrice && (
         <button
-          onClick={() => dispatch(openPaymentModal())}
+          onClick={() =>
+            openPaymentModal(
+              undefined,
+              getPaymentType(undefined, undefined, isWebinar),
+            )
+          }
           className={s.buy_btn}
         >
           <Trans

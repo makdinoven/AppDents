@@ -13,11 +13,12 @@ import { getPaymentSource } from "../helpers/helpers.ts";
 import { Path } from "../../routes/routes.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { getMe } from "../../store/actions/userActions.ts";
-import { closePaymentModal } from "../../store/slices/paymentSlice.ts";
+import { usePaymentModalHandler } from "./usePaymentModalHandler.ts";
 
 const IS_PAYMENT_DISABLED = false;
 
 export const usePaymentModal = ({ paymentData, isFree, isOffer }: any) => {
+  const { closePaymentModal } = usePaymentModalHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const { isLogged, email, language, balance } = useSelector(
@@ -103,7 +104,7 @@ export const usePaymentModal = ({ paymentData, isFree, isOffer }: any) => {
         if (isLogged) {
           navigate(Path.profile);
         } else {
-          dispatch(closePaymentModal());
+          closePaymentModal();
           localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
           await dispatch(getMe());
           navigate(Path.profile);

@@ -24,8 +24,9 @@ const SearchModal = () => {
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [totalResults, setTotalResults] = useState<number>(0);
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const closeModalRef = useRef<() => void>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  // const closeModalRef = useRef<() => void>(null);
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );

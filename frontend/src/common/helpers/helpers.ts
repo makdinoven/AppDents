@@ -4,6 +4,7 @@ import {
   LS_TOKEN_KEY,
   PAGE_SOURCES,
   PAYMENT_SOURCES,
+  PAYMENT_TYPES,
 } from "./commonConstants.ts";
 
 export const getAuthHeaders = () => {
@@ -212,4 +213,15 @@ export const getPaymentSource = (isOffer: boolean) => {
 
   const sorted = sources.sort((a, b) => b.path.length - a.path.length);
   return sorted[0]?.name || PAGE_SOURCES.other;
+};
+
+export const getPaymentType = (
+  isFree?: boolean,
+  isOffer?: boolean,
+  isWebinar?: boolean,
+): keyof typeof PAYMENT_TYPES | undefined => {
+  if (isFree) return PAYMENT_TYPES.free;
+  if (isOffer) return PAYMENT_TYPES.offer;
+  if (isWebinar) return PAYMENT_TYPES.webinar;
+  return undefined;
 };

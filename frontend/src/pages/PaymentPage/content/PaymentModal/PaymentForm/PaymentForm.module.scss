@@ -5,6 +5,10 @@
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   color: $text-color;
+
+  &.free {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {

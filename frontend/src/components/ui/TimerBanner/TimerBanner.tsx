@@ -1,23 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import s from "./TimerBanner.module.scss";
 import { Trans } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 import Timer from "./Timer/Timer.tsx";
-import { openPaymentModal } from "../../../store/slices/paymentSlice.ts";
+import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
+import {
+  getBasePath,
+  getPaymentType,
+} from "../../../common/helpers/helpers.ts";
+import { Path } from "../../../routes/routes.ts";
 
 const TimerBanner = () => {
+  const { openPaymentModal } = usePaymentModalHandler();
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
   const [discount, setDiscount] = useState(0);
   const bannerRef = useRef<HTMLDivElement | null>(null);
-  const dispatch = useDispatch<AppDispatchType>();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
   const newPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.newPrice,
   );
+  const basePath = getBasePath(location.pathname);
+  const isWebinar = basePath === Path.webinarLanding;
 
   useEffect(() => {
     if (oldPrice && newPrice) {
@@ -51,7 +58,12 @@ const TimerBanner = () => {
   const renderBanner = (isSticky = false, isHiding = false) => (
     <div
       ref={!isSticky ? bannerRef : null}
-      onClick={() => dispatch(openPaymentModal())}
+      onClick={() =>
+        openPaymentModal(
+          undefined,
+          getPaymentType(undefined, undefined, isWebinar),
+        )
+      }
       className={`${s.banner} ${isSticky ? s.sticky : ""} ${isHiding ? s.hiding : ""}`}
     >
       <div className={s.banner_container}>

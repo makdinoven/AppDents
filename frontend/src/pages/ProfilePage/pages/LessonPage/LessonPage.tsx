@@ -7,9 +7,7 @@ import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
-import { openPaymentModal } from "../../../../store/slices/paymentSlice.ts";
-import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../../store/store.ts";
+import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
 
 type OutletContextType = {
   course: any;
@@ -19,7 +17,7 @@ type OutletContextType = {
 
 const LessonPage = () => {
   const { course, isPartial } = useOutletContext<OutletContextType>();
-  const dispatch = useDispatch<AppDispatchType>();
+  const { openPaymentModal } = usePaymentModalHandler();
   const { sectionId, lessonId } = useParams();
   const [lesson, setLesson] = useState<any | null>(null);
   const [prevLesson, setPrevLesson] = useState<any | null>(null);
@@ -41,7 +39,7 @@ const LessonPage = () => {
 
   const prepareLesson = () => {
     const sectionIndex = course.sections.findIndex(
-      (section: any) => section.id === Number(sectionId)
+      (section: any) => section.id === Number(sectionId),
     );
 
     if (sectionIndex === -1) return;
@@ -49,7 +47,7 @@ const LessonPage = () => {
     const section = course.sections[sectionIndex];
     const lessons = section.lessons;
     const lessonIndex = lessons.findIndex(
-      (lesson: any) => lesson.id === Number(lessonId)
+      (lesson: any) => lesson.id === Number(lessonId),
     );
 
     if (lessonIndex === -1) return;
@@ -132,7 +130,7 @@ const LessonPage = () => {
             {nextLesson &&
               (isPartial ? (
                 <button
-                  onClick={() => dispatch(openPaymentModal())}
+                  onClick={() => openPaymentModal()}
                   className={`${s.next_link} ${s.disabled}`}
                 >
                   <Trans i18nKey={"profile.nextLesson"} />

@@ -93,6 +93,15 @@
   position: relative;
   width: 45px;
   height: 45px;
+
+  &:hover {
+    circle {
+      stroke: $error-color;
+    }
+    path {
+      fill: $error-color;
+    }
+  }
 }
 
 .cart_items {

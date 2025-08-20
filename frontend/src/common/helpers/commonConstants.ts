@@ -87,6 +87,8 @@ export const OPEN_SEARCH_KEY = "GS";
 
 export const PAYMENT_PAGE_KEY = "BUY";
 
+export const PAYMENT_TYPE_KEY = "PT";
+
 export const BASE_URL = "https://dent-s.com";
 
 export const SORT_FILTERS = [
@@ -126,7 +128,7 @@ export const PAGE_SOURCES = {
   cart: "CART",
   landing: "LANDING",
   landingOffer: "LANDING_OFFER",
-  videoLanding: "LANDING_VIDEO",
+  videoLanding: "VIDEO_LANDING",
   webinarLanding: "LANDING_WEBINAR",
   professor: "PROFESSOR_PAGE",
   professorOffer: "PROFESSOR_OFFER",
@@ -153,11 +155,15 @@ export const PAYMENT_SOURCES = [
   { name: PAGE_SOURCES.cabinetFree, path: `${Path.profile}/${Path.myCourse}` },
   { name: PAGE_SOURCES.landingOffer, path: Path.landing },
   { name: PAGE_SOURCES.landingOffer, path: `/${Path.landingClient}` },
-  // { name: "VIDEO_LANDING", path: `/${Path.videoLanding}` },
-  // {name: "SPECIAL_OFFER", path: `/${Path.profile}` },
   { name: PAGE_SOURCES.courses, path: Path.courses },
   { name: PAGE_SOURCES.coursesOffer, path: Path.courses },
 ];
+
+export const PAYMENT_TYPES = {
+  free: "free",
+  offer: "offer",
+  webinar: "webinar",
+} as const;
 
 export const REF_CODE_PARAM = "rc";
 
