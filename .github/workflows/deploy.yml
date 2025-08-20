@@ -80,9 +80,9 @@ jobs:
 
               CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services || '' }}"
 
-              if [ "${CHANGED_SERVICES}" != "" ]; then
+              if [ -n "$CHANGED_SERVICES" ]; then
                 echo "Есть изменения в: $CHANGED_SERVICES"
-                sudo docker compose build ${CHANGED_SERVICES} nginx
+                sudo docker compose build $CHANGED_SERVICES nginx
               else
                 echo "Нет изменений в сервисах — пересобираем только nginx"
                 sudo docker compose build nginx
