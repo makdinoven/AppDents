@@ -19,7 +19,7 @@ const PrettyButton = ({
   return (
     <UnstyledButton
       onClick={onClick}
-      className={`${s.btn} ${className ? className : ""} ${s[variant] || ""}`}
+      className={`${s.btn} ${className ? className : ""} ${s[variant] || ""} ${loading ? s.loading : ""}`}
     >
       {loading && <LoaderOverlay />}
       <Trans i18nKey={text} />
