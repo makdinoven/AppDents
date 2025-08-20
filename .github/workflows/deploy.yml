@@ -4,14 +4,15 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: true
+
 jobs:
-  # 1) Определяем, какие сервисы затронуты изменениями
   check-changes:
     runs-on: ubuntu-latest
-
     outputs:
       changed_services: ${{ steps.prepare.outputs.changed_services }}
-
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -41,18 +42,19 @@ jobs:
           if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then
             SERVICES="$SERVICES nginx"
           fi
-          echo "changed_services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "changed_services=$SERVICES" >> "$GITHUB_OUTPUT"
 
-  # 2) Деплой на сервер
   deploy:
     runs-on: ubuntu-latest
     needs: [check-changes]
-
     steps:
       - uses: actions/checkout@v3
 
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          # пробрасываем список изменённых сервисов в удалённую сессию
+          CHANGED_SERVICES: ${{ needs.check-changes.outputs.changed_services }}
         with:
           host: ${{ secrets.TW_SERVER_HOST }}
           username: ${{ secrets.TW_SERVER_USER }}
@@ -60,7 +62,8 @@ jobs:
           port: 22
           script_stop: true
           debug: true
-
+          # перечисляем, какие переменные окружения передать на сервер
+          envs: CHANGED_SERVICES
           script: |
             set -Eeuo pipefail
             set -x
@@ -68,22 +71,24 @@ jobs:
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
 
-            # Отключаем локальные git-хуки
+            # отключаем локальные git-хуки, чтобы они не ломали деплой
             git config --local core.hooksPath /dev/null
 
             echo "[git] sync to origin/main (hooks disabled)"
             git fetch --prune origin main
             git reset --hard origin/main
 
-            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services || '' }}"
-
-            if [ -n "$CHANGED_SERVICES" ]; then
-              echo "Есть изменения в: $CHANGED_SERVICES"
-              sudo docker compose build $CHANGED_SERVICES nginx
-            else
-              echo "Нет изменений в сервисах — пересобираем только nginx"
-              sudo docker compose build nginx
-            fi
+            # ВАЖНО: не используем [ -n "" ], чтобы drone-ssh не рухнул на коде 1
+            case "${CHANGED_SERVICES:-}" in
+              "" )
+                echo "Нет изменений в сервисах — пересобираем только nginx"
+                sudo docker compose build nginx
+                ;;
+              * )
+                echo "Есть изменения в: ${CHANGED_SERVICES}"
+                sudo docker compose build ${CHANGED_SERVICES} nginx
+                ;;
+            esac
 
             sudo docker compose up -d
             sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
