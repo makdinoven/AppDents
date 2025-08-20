@@ -485,6 +485,7 @@
     "tools": {
       "tools": "tools",
       "clip": {
+        "title": "Clip tool",
         "placeholder": "Enter an URL",
         "label": "Enter src video url",
         "getClip": "Get clip",

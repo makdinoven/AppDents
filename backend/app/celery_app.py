@@ -17,6 +17,7 @@ celery = Celery(
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
             "app.tasks.abandoned_checkouts",
+            "app.tasks.clip_tasks"
         ],
 )
 
@@ -41,11 +42,11 @@ celery.conf.update(
     timezone="UTC",
     enable_utc=True,
     task_annotations={
-        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "350/m"},
+        "app.tasks.preview_tasks.generate_preview": {"rate_limit": "800/m"},
         "app.tasks.process_faststart_video": {"rate_limit": "20/m"},
         "app.tasks.ensure_faststart":    {"rate_limit": "20/m"},
-        "app.tasks.process_hls_video": {"rate_limit": "7/m"},
-        "app.tasks.ensure_hls":        {"rate_limit": "2/m"},
+        "app.tasks.process_hls_video": {"rate_limit": "15/m"},
+        "app.tasks.ensure_hls":        {"rate_limit": "5/m"},
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "50/h"},
     },
     beat_schedule={
@@ -97,4 +98,5 @@ celery.conf.task_routes = {
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
+    "app.tasks.clip_tasks.*": {"queue": "special"}
 }

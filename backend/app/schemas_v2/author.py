@@ -10,6 +10,15 @@ class AuthorSimpleResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class BookSimpleResponse(BaseModel):
+    id: int
+    title: str
+    slug: str
+    cover_url: str | None = ""
+
+    class Config:
+        orm_mode = True
+
 class AuthorSimpleResponseWithPhoto(BaseModel):
     id: int
     name: str
@@ -25,10 +34,12 @@ class AuthorResponse(BaseModel):
     photo: Optional[str] = ""
     language: Optional[str] = ""
     courses_count: int = 0
+    books_count: int | None = None
     tags: List[str] = []
 
     class Config:
         orm_mode = True
+        exclude_none = True
 
 class AuthorResponseForFullDetails(BaseModel):
     id: int
@@ -73,18 +84,23 @@ class LandingForAuthor(BaseModel):
     course_ids: List[int]
     authors: List[AuthorSimpleResponseWithPhoto]
 
-# Новая схема полного ответа
 class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landings: List[LandingForAuthor]
+    books: List[BookSimpleResponse] | None = None     # ← НОВОЕ
     course_ids: List[int]
-    total_new_price: float
+    books_count: int | None = None                    # ← НОВОЕ
+    total_new_price: float            # только курсы (как было)
+    total_books_price: float | None = None            # ← НОВОЕ
+    total_courses_books_price: float | None = None    # ← НОВОЕ
     total_old_price: float
     landing_count: int
-    lessons_count : Optional[str] = ""
+    lessons_count: Optional[str] = ""
     tags: List[str]
 
     class Config:
         orm_mode = True
+        exclude_none = True
+
 
 class AuthorsPage(BaseModel):
     total: int           # общее число записей
