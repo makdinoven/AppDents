@@ -59,32 +59,41 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.TW_SERVER_HOST }}
+          host: ${{ secrets.TW_SERVER_HOST }}       # без новых секретов
           username: ${{ secrets.TW_SERVER_USER }}
           key: ${{ secrets.TW_SERVER_SSH_KEY }}
+          port: 22
           skip_host_key_check: true
-
-          # 1️⃣ Остановить action при первой же ошибке на сервере
-          script_stop: true   # ⬅️ ключ от самой action :contentReference[oaicite:0]{index=0}
-
+          ssh_args: "-4 -vvv -o PreferredAuthentications=publickey -o PubkeyAuthentication=yes"
+          script_stop: true
           script: |
-            # 2️⃣ Сделать оболочку «fail-fast»
-            set -Eeuo pipefail   # -e  выход при ошибке,  -o pipefail  учитывает пайпы
-            
+            set -Eeuo pipefail
+
+            echo "[preflight] whoami: $(whoami)"
+            echo "[preflight] ip -4 addr:"
+            ip -4 addr || true
+            which git || true
+            which docker || true
+            docker --version || true
+            docker compose version || true
+
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
-            
+
             git pull --no-rebase -s recursive -X theirs origin main
-            
+
             CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
             if [ -n "$CHANGED_SERVICES" ]; then
               echo "Есть изменения в: $CHANGED_SERVICES"
-              docker compose build $CHANGED_SERVICES nginx   # nginx всё равно пересобираем
+              sudo docker compose build $CHANGED_SERVICES nginx
             else
               echo "Нет изменений в сервисах — пересобираем только nginx"
-              docker compose build nginx
+              sudo docker compose build nginx
             fi
-            
-            docker compose up -d
-            docker compose exec nginx nginx -s reload
-            docker builder prune -f
+
+            sudo docker compose up -d
+
+            # мягкая перезагрузка, если не выйдет — рестарт контейнера
+            sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
+
+            sudo docker builder prune -f
