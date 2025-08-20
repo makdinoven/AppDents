@@ -13,7 +13,7 @@ from ..services_v2 import cart_service as cs
 router = APIRouter()
 
 MAX_COURSES_FOR_DISCOUNT = 24      # точка, на которой скидка фиксируется
-_EXTRA_STEP = 0.025               # 2,5 % → 0.025 в дробном виде
+_EXTRA_STEP = 0.02             # 2,5 % → 0.025 в дробном виде
 
 
 def _calc_discount(n: int) -> float:
