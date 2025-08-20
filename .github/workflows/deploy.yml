@@ -72,20 +72,17 @@ jobs:
               cd /var/www/AppDents
               export COMPOSE_PROJECT_NAME=appdents
 
-              # Отключаем локальные git-хуки на время деплоя
               git config --local core.hooksPath /dev/null
 
               echo "[git] sync to origin/main (hooks disabled)"
               git fetch --prune origin main
               git reset --hard origin/main
 
-              # НЕ чистим .env и локальные артефакты
-              # git clean -ffd -e .env -e 'web/*uploads*' || true
-
               CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services || '' }}"
-              if [ -n "${CHANGED_SERVICES:-}" ]; then
+
+              if [ "${CHANGED_SERVICES}" != "" ]; then
                 echo "Есть изменения в: $CHANGED_SERVICES"
-                sudo docker compose build ${CHANGED_SERVICES:-} nginx
+                sudo docker compose build ${CHANGED_SERVICES} nginx
               else
                 echo "Нет изменений в сервисах — пересобираем только nginx"
                 sudo docker compose build nginx
