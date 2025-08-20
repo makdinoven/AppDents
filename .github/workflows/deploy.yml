@@ -59,39 +59,34 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.TW_SERVER_HOST }}       # без новых секретов
-          username: ${{ secrets.TW_SERVER_USER }}
-          key: ${{ secrets.TW_SERVER_SSH_KEY }}
-          port: 22
-          skip_host_key_check: true
-          ssh_args: "-4 -vvv -o PreferredAuthentications=publickey -o PubkeyAuthentication=yes"
-          script_stop: true
-          script: |
-            set -Eeuo pipefail
+            host: ${{ secrets.TW_SERVER_HOST }}
+            username: ${{ secrets.TW_SERVER_USER }}
+            key: ${{ secrets.TW_SERVER_SSH_KEY }}
+            port: 22
+            debug: true
+            script_stop: true
+            script: |
+              set -Eeuo pipefail
 
-            echo "[preflight] whoami: $(whoami)"
-            echo "[preflight] docker:"
-            docker --version || true
-            docker compose version || true
+              cd /var/www/AppDents
+              export COMPOSE_PROJECT_NAME=appdents
 
-            cd /var/www/AppDents
-            export COMPOSE_PROJECT_NAME=appdents
+              echo "[git] sync to origin/main"
+              git fetch --prune origin main
+              git reset --hard origin/main
 
-            # Вместо git pull — детерминированное обновление
-            echo "[git] sync to origin/main"
-            git fetch --prune origin main
-            git reset --hard origin/main
-            git clean -fdx  # опционально, если у вас не должно быть локальных артефактов
+              # Если всё-таки нужна чистка, исключите важные локальные файлы:
+              # git clean -ffd -e .env -e 'web/*uploads*' || true
 
-            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
-            if [ -n "$CHANGED_SERVICES" ]; then
-              echo "Есть изменения в: $CHANGED_SERVICES"
-              sudo docker compose build $CHANGED_SERVICES nginx
-            else
-              echo "Нет изменений в сервисах — пересобираем только nginx"
-              sudo docker compose build nginx
-            fi
+              CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
+              if [ -n "${CHANGED_SERVICES:-}" ]; then
+                echo "Есть изменения в: $CHANGED_SERVICES"
+                sudo docker compose build ${CHANGED_SERVICES:-} nginx
+              else
+                echo "Нет изменений в сервисах — пересобираем только nginx"
+                sudo docker compose build nginx
+              fi
 
-            sudo docker compose up -d
-            sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
-            sudo docker builder prune -f
+              sudo docker compose up -d
+              sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
+              sudo docker builder prune -f
