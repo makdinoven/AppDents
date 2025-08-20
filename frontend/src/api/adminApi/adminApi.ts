@@ -186,4 +186,7 @@ export const adminApi = {
       url: url,
     });
   },
+  getClipStatus(id: string) {
+    return instance.get(`/clip_generator/clip/${id}`);
+  },
 };

@@ -13,6 +13,10 @@
   text-transform: uppercase;
   position: relative;
 
+  &.loading {
+    pointer-events: none;
+  }
+
   @media (hover: hover) {
     &:hover {
       background-color: $background-color;
