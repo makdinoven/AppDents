@@ -9,7 +9,6 @@ jobs:
   check-changes:
     runs-on: ubuntu-latest
 
-    # Список изменённых сервисов передадим как output этого job
     outputs:
       changed_services: ${{ steps.prepare.outputs.changed_services }}
 
@@ -21,7 +20,6 @@ jobs:
         id: changes
         uses: dorny/paths-filter@v2
         with:
-          # Настраиваем фильтры, указывая пути для каждого сервиса
           filters: |
             backend:
               - 'backend/**'
@@ -43,15 +41,12 @@ jobs:
           if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then
             SERVICES="$SERVICES nginx"
           fi
-          # Записываем результат в GITHUB_OUTPUT,
-          # чтобы передать в другой job.
           echo "changed_services=$SERVICES" >> $GITHUB_OUTPUT
 
-
-  # 2) Деплой на сервер с выборочной сборкой
+  # 2) Деплой на сервер
   deploy:
     runs-on: ubuntu-latest
-    needs: [ check-changes ]
+    needs: [check-changes]
 
     steps:
       - uses: actions/checkout@v3
@@ -59,35 +54,37 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
-            host: ${{ secrets.TW_SERVER_HOST }}
-            username: ${{ secrets.TW_SERVER_USER }}
-            key: ${{ secrets.TW_SERVER_SSH_KEY }}
-            port: 22
-            debug: true
-            script_stop: true
-            script: |
-              set -Eeuo pipefail
-              set -x
+          host: ${{ secrets.TW_SERVER_HOST }}
+          username: ${{ secrets.TW_SERVER_USER }}
+          key: ${{ secrets.TW_SERVER_SSH_KEY }}
+          port: 22
+          script_stop: true
+          debug: true
 
-              cd /var/www/AppDents
-              export COMPOSE_PROJECT_NAME=appdents
+          script: |
+            set -Eeuo pipefail
+            set -x
 
-              git config --local core.hooksPath /dev/null
+            cd /var/www/AppDents
+            export COMPOSE_PROJECT_NAME=appdents
 
-              echo "[git] sync to origin/main (hooks disabled)"
-              git fetch --prune origin main
-              git reset --hard origin/main
+            # Отключаем локальные git-хуки
+            git config --local core.hooksPath /dev/null
 
-              CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services || '' }}"
+            echo "[git] sync to origin/main (hooks disabled)"
+            git fetch --prune origin main
+            git reset --hard origin/main
 
-              if [ -n "$CHANGED_SERVICES" ]; then
-                echo "Есть изменения в: $CHANGED_SERVICES"
-                sudo docker compose build $CHANGED_SERVICES nginx
-              else
-                echo "Нет изменений в сервисах — пересобираем только nginx"
-                sudo docker compose build nginx
-              fi
+            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services || '' }}"
 
-              sudo docker compose up -d
-              sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
-              sudo docker builder prune -f
+            if [ -n "$CHANGED_SERVICES" ]; then
+              echo "Есть изменения в: $CHANGED_SERVICES"
+              sudo docker compose build $CHANGED_SERVICES nginx
+            else
+              echo "Нет изменений в сервисах — пересобираем только nginx"
+              sudo docker compose build nginx
+            fi
+
+            sudo docker compose up -d
+            sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
+            sudo docker builder prune -f
