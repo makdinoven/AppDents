@@ -53,7 +53,6 @@ jobs:
       - name: SSH Deploy
         uses: appleboy/ssh-action@v1.2.0
         env:
-          # пробрасываем список изменённых сервисов в удалённую сессию
           CHANGED_SERVICES: ${{ needs.check-changes.outputs.changed_services }}
         with:
           host: ${{ secrets.TW_SERVER_HOST }}
@@ -62,7 +61,6 @@ jobs:
           port: 22
           script_stop: true
           debug: true
-          # перечисляем, какие переменные окружения передать на сервер
           envs: CHANGED_SERVICES
           script: |
             set -Eeuo pipefail
@@ -71,24 +69,22 @@ jobs:
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
 
-            # отключаем локальные git-хуки, чтобы они не ломали деплой
+            # Отключаем локальные git-хуки на время деплоя
             git config --local core.hooksPath /dev/null
 
             echo "[git] sync to origin/main (hooks disabled)"
             git fetch --prune origin main
             git reset --hard origin/main
 
-            # ВАЖНО: не используем [ -n "" ], чтобы drone-ssh не рухнул на коде 1
-            case "${CHANGED_SERVICES:-}" in
-              "" )
-                echo "Нет изменений в сервисах — пересобираем только nginx"
-                sudo docker compose build nginx
-                ;;
-              * )
-                echo "Есть изменения в: ${CHANGED_SERVICES}"
-                sudo docker compose build ${CHANGED_SERVICES} nginx
-                ;;
-            esac
+            # ВАЖНО: проверка в одном if-блоке, чтобы set -e не рвалась
+            CHANGED="${CHANGED_SERVICES:-}"
+            if [ -z "$CHANGED" ]; then
+              echo "Нет изменений в сервисах — пересобираем только nginx"
+              sudo docker compose build nginx
+            else
+              echo "Есть изменения в: $CHANGED"
+              sudo docker compose build $CHANGED nginx
+            fi
 
             sudo docker compose up -d
             sudo docker compose exec nginx nginx -s reload || sudo docker compose restart nginx
