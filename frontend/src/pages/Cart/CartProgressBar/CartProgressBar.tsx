@@ -2,8 +2,8 @@ import s from "./CartProgressBar.module.scss";
 import { Trans } from "react-i18next";
 
 const MIN_DISCOUNT = 0;
-const MAX_DISCOUNT = 70;
-const MAX_QUANTITY = 25;
+const MAX_DISCOUNT = 50;
+const MAX_QUANTITY = 24;
 
 type Props = {
   current_discount: number;

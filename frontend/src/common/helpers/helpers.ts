@@ -189,6 +189,14 @@ export const getFormattedDate = (date: Date) => {
   return date.toISOString().split("T")[0];
 };
 
+export const formatShortDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
 export const getBasePath = (pathname: string) => {
   const segments = pathname.replace(/^\/|\/$/g, "").split("/");
 

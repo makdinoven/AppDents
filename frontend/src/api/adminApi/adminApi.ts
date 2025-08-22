@@ -189,4 +189,9 @@ export const adminApi = {
   getClipStatus(id: string) {
     return instance.get(`/clip_generator/clip/${id}`);
   },
+  getPurchasesSourceChart(params: any) {
+    return instance.get("users/analytics/purchase/source", {
+      params: params,
+    });
+  },
 };
