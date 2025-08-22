@@ -165,6 +165,18 @@ export const PAYMENT_TYPES = {
   webinar: "webinar",
 } as const;
 
+export const PAYMENT_SOURCES_OPTIONS = [
+  { value: "ALL", label: "ALL" },
+  ...Array.from(
+    new Map(
+      PAYMENT_SOURCES.map((item) => [
+        item.name,
+        { value: item.name, label: item.name },
+      ]),
+    ).values(),
+  ),
+];
+
 export const REF_CODE_PARAM = "rc";
 
 export const REF_CODE_LS_KEY = "DENTS_RC";

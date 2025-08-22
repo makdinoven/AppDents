@@ -12,8 +12,8 @@ from ..services_v2 import cart_service as cs
 
 router = APIRouter()
 
-MAX_COURSES_FOR_DISCOUNT = 25      # точка, на которой скидка фиксируется
-_EXTRA_STEP = 0.025               # 2,5 % → 0.025 в дробном виде
+MAX_COURSES_FOR_DISCOUNT = 24      # точка, на которой скидка фиксируется
+_EXTRA_STEP = 0.02             # 2,5 % → 0.025 в дробном виде
 
 
 def _calc_discount(n: int) -> float:
@@ -38,10 +38,10 @@ def _calc_discount(n: int) -> float:
     n = min(n, MAX_COURSES_FOR_DISCOUNT)   # «срезаем» всё, что выше 25
 
     if n <= 5:
-        return 0.05 * (n - 1)              # шаг 5 % до 5 курсов
+        return 0.03 * (n - 1)              # шаг 5 % до 5 курсов
 
     # линейно наращиваем от 20 % (при n=5) до 70 % (при n=25)
-    return 0.20 + _EXTRA_STEP * (n - 5)
+    return 0.12 + _EXTRA_STEP * (n - 5)
 
 @router.get("", response_model=CartResponse)
 def my_cart(
