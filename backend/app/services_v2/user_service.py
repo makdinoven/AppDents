@@ -811,8 +811,8 @@ def get_free_course_stats(        # полностью заменяет стар
 
 def get_purchases_by_source_timeseries(
     db: Session,
-    start_dt: datetime,
-    end_dt: datetime,
+    start_dt: date,
+    end_dt: date,
     *,
     source: str | None = None,        # "CART", "LANDING", "HOMEPAGE", ...
     mode: str = "count",              # "count" | "amount"
