@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
 from sqlalchemy import func, Float, and_, case
 from sqlalchemy.orm import Session, joinedload, aliased
+from datetime import datetime
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
@@ -26,7 +27,7 @@ from ..services_v2.user_service import (
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
-    get_free_course_stats
+    get_free_course_stats, get_purchases_by_source_timeseries
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -693,5 +694,19 @@ def free_course_stats(
         start_date=start_date,
         end_date=end_date,
         limit=limit,
+    )
+
+@router.get("/analytics/purchase/source")
+def purchases_by_source_timeseries(
+    start: datetime = Query(..., description="UTC, isoformat"),
+    end:   datetime = Query(..., description="UTC, isoformat (полуоткрытый интервал)"),
+    source: str | None = Query(None, description="Фильтр по месту покупки: CART, LANDING, HOMEPAGE, ..."),
+    mode:   str = Query("count", regex="^(count|amount)$", description="count | amount"),
+    db: Session = Depends(get_db),
+):
+    if start >= end:
+        raise HTTPException(status_code=400, detail="start must be < end")
+    return get_purchases_by_source_timeseries(
+        db, start, end, source=source, mode=mode
     )
 

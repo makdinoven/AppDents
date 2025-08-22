@@ -1,5 +1,6 @@
 import logging
 import secrets
+from collections import defaultdict
 from datetime import datetime, timedelta, date
 from math import ceil
 from typing import Optional, Dict, Any, List
@@ -806,4 +807,113 @@ def get_free_course_stats(        # полностью заменяет стар
             "freebie_users":     freebie_users,
         },
         "courses": result_per_course,
+    }
+
+def get_purchases_by_source_timeseries(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+    *,
+    source: str | None = None,        # "CART", "LANDING", "HOMEPAGE", ...
+    mode: str = "count",              # "count" | "amount"
+) -> dict:
+    """
+    Возвращает динамику по дням. Если source=None -> по всем источникам, иначе только выбранный.
+    mode:
+      - "count"  -> число покупок
+      - "amount" -> сумма покупок
+    Формат:
+    {
+      "mode": "count",
+      "source": "ALL"|"CART"|...,
+      "data": [
+        {
+          "date": "2025-08-01",
+          "series": [
+            {"source": "CART", "value": 5},
+            {"source": "LANDING", "value": 2},
+            ...
+          ]
+        },
+        ...
+      ],
+      "total": 123,              # итого по периоду
+      "total_amount": "456.00 $" # итоговая сумма по периоду
+    }
+    """
+    # столбец "день" без времени
+    day_col = cast(Purchase.created_at, Date)  # эквивалент DATE(created_at)
+
+    base = db.query(
+        day_col.label("day"),
+        Purchase.source.label("source"),
+        func.count(Purchase.id).label("cnt"),
+        func.coalesce(func.sum(Purchase.amount), 0.0).label("amt"),
+    ).filter(
+        Purchase.created_at >= start_dt,
+        Purchase.created_at <  end_dt,
+    )
+
+    # фильтр по конкретному источнику, если он выбран
+    src_enum = None
+    if source:
+        try:
+            src_enum = PurchaseSource[source.upper()]
+        except KeyError:
+            # неизвестный source -> пустой ответ корректной формы
+            days = []
+            cur = start_dt.date()
+            while cur < end_dt.date():
+                days.append(cur.isoformat())
+                cur += timedelta(days=1)
+            return {
+                "mode": mode,
+                "source": source.upper(),
+                "data": [{"date": d, "series": []} for d in days],
+                "total": 0,
+                "total_amount": "0.00 $",
+            }
+        base = base.filter(Purchase.source == src_enum)
+
+    rows = (base.group_by(day_col, Purchase.source)
+                 .order_by(day_col)
+                 .all())
+
+    # сводим в stats[day][source] -> value
+    stats = defaultdict(dict)
+    total_cnt = 0
+    total_amt = 0.0
+
+    for r in rows:
+        val = int(r.cnt) if mode == "count" else float(r.amt or 0.0)
+        stats[r.day][r.source.value] = val
+        total_cnt += int(r.cnt)
+        total_amt += float(r.amt or 0.0)
+
+    # полный диапазон дней без дыр
+    data = []
+    cur = start_dt.date()
+    last = end_dt.date()
+    while cur < last:
+        by_src = stats.get(cur, {})
+        # если source не задан -> возвращаем все источники как серии,
+        # если задан -> только одну серию (или пусто)
+        if src_enum is None:
+            series = [{"source": s, "value": (by_src.get(s, 0) if mode == "count" else float(by_src.get(s, 0)))} for s in sorted(by_src.keys())]
+        else:
+            sname = src_enum.value
+            val = by_src.get(sname, 0)
+            series = [{"source": sname, "value": (val if mode == "count" else float(val))}]
+        data.append({
+            "date": cur.isoformat(),
+            "series": series,
+        })
+        cur += timedelta(days=1)
+
+    return {
+        "mode": "count" if mode == "count" else "amount",
+        "source": "ALL" if src_enum is None else src_enum.value,
+        "data": data,
+        "total": total_cnt,
+        "total_amount": f"{total_amt:.2f} $",
     }
