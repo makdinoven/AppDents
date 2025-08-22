@@ -698,15 +698,15 @@ def free_course_stats(
 
 @router.get("/analytics/purchase/source")
 def purchases_by_source_timeseries(
-    start_date: dt.date = Query(..., description="UTC, isoformat"),
-    end_date:   dt.date = Query(..., description="UTC, isoformat (полуоткрытый интервал)"),
+    start_date: dt.date = Query(..., description="Дата начала (включительно), YYYY-MM-DD"),
+    end_date:   dt.date = Query(..., description="Дата конца (включительно), YYYY-MM-DD"),
     source: str | None = Query(None, description="Фильтр по месту покупки: CART, LANDING, HOMEPAGE, ..."),
     mode:   str = Query("count", regex="^(count|amount)$", description="count | amount"),
     db: Session = Depends(get_db),
 ):
-    if start_date >= end_date:
-        raise HTTPException(status_code=400, detail="start must be < end")
+    # допускаем один и тот же день
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be <= end_date")
     return get_purchases_by_source_timeseries(
         db, start_date, end_date, source=source, mode=mode
     )
-
