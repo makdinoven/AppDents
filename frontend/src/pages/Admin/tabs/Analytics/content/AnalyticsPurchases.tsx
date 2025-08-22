@@ -5,10 +5,16 @@ import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRa
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import Table from "../../../../../components/ui/Table/Table.tsx";
+import PurchasesSourceChart from "../Charts/PurchasesSourceChart.tsx";
+import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import { PAYMENT_SOURCES_OPTIONS } from "../../../../../common/helpers/commonConstants.ts";
 
 const AnalyticsPurchases = () => {
   const [data, setData] = useState<any>(null);
+  const [chartData, setChartData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [chartMode, setChartMode] = useState<"count" | "amount">("count");
+  const [chartSource, setChartSource] = useState<any>(null);
   const [dateRange, setDateRange] = useState(() => ({
     startDate: getFormattedDate(new Date()),
     endDate: getFormattedDate(new Date()),
@@ -28,7 +34,6 @@ const AnalyticsPurchases = () => {
       start_date: dateRange.startDate,
       end_date: dateRange.endDate,
     };
-
     try {
       const res = await adminApi.getPurchases(params);
       setData({
@@ -42,9 +47,28 @@ const AnalyticsPurchases = () => {
     }
   };
 
+  const fetchChartData = async () => {
+    const params = {
+      start_date: dateRange.startDate,
+      end_date: dateRange.endDate,
+      mode: chartMode,
+      ...(chartSource && chartSource !== "ALL" ? { source: chartSource } : {}),
+    };
+    try {
+      const res = await adminApi.getPurchasesSourceChart(params);
+      setChartData(res.data.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [dateRange]);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [dateRange, chartMode, chartSource]);
 
   return (
     <>
@@ -72,16 +96,42 @@ const AnalyticsPurchases = () => {
       {!data && loading ? (
         <Loader />
       ) : (
-        <Table
-          data={data.items}
-          columnLabels={{
-            email: "Email",
-            amount: "Amount",
-            source: "Source",
-            from_ad: "Ad",
-            paid_at: "Payment date",
-          }}
-        />
+        <>
+          <div className={s.two_items}>
+            <MultiSelect
+              id={"src_select"}
+              options={PAYMENT_SOURCES_OPTIONS}
+              placeholder={"Select source"}
+              isMultiple={false}
+              selectedValue={chartSource}
+              onChange={({ value }) => setChartSource(value as string)}
+              valueKey={"value"}
+              labelKey={"value"}
+            />
+            <div className={s.toggle_btns_container}>
+              {["count", "amount"].map((mode) => (
+                <button
+                  key={mode}
+                  className={`${chartMode === mode ? s.active : ""}`}
+                  onClick={() => setChartMode(mode as "count" | "amount")}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+          <PurchasesSourceChart data={chartData} type={chartMode} />
+          <Table
+            data={data.items}
+            columnLabels={{
+              email: "Email",
+              amount: "Amount",
+              source: "Source",
+              from_ad: "Ad",
+              paid_at: "Payment date",
+            }}
+          />
+        </>
       )}
     </>
   );
