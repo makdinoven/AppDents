@@ -85,9 +85,6 @@ const StreamedVideoCheck = () => {
     return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    console.log(videos);
-  }, [videos]);
   return (
     <div>
       {loading && <p>Загрузка...</p>}

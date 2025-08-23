@@ -7,7 +7,7 @@ import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
-import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
 
 type OutletContextType = {
   course: any;
@@ -17,7 +17,7 @@ type OutletContextType = {
 
 const LessonPage = () => {
   const { course, isPartial } = useOutletContext<OutletContextType>();
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const { sectionId, lessonId } = useParams();
   const [lesson, setLesson] = useState<any | null>(null);
   const [prevLesson, setPrevLesson] = useState<any | null>(null);

@@ -3,10 +3,10 @@ import Timer from "../../ui/TimerBanner/Timer/Timer.tsx";
 import { Trans } from "react-i18next";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
-import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 
 const VideoHeaderContent = () => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );

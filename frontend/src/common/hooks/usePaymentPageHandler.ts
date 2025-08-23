@@ -7,10 +7,11 @@ import {
 
 type PaymentType = (typeof PAYMENT_TYPES)[keyof typeof PAYMENT_TYPES];
 
-export const usePaymentModalHandler = () => {
+export const usePaymentPageHandler = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const isPaymentModalOpen = searchParams.has(PAYMENT_PAGE_KEY);
   const paymentModalType = searchParams.get(PAYMENT_TYPE_KEY);
+  const slug = searchParams.get(PAYMENT_PAGE_KEY);
 
   const openPaymentModal = (slug?: string, type?: PaymentType) => {
     const newParams = new URLSearchParams(searchParams);
@@ -45,5 +46,6 @@ export const usePaymentModalHandler = () => {
     openPaymentModal,
     closePaymentModal,
     paymentModalType,
+    slug,
   };
 };

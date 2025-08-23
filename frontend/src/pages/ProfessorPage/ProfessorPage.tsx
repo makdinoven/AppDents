@@ -19,10 +19,10 @@ import {
   PAGE_SOURCES,
   PAYMENT_PAGE_KEY,
 } from "../../common/helpers/commonConstants.ts";
-import { usePaymentModalHandler } from "../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 
 const ProfessorPage = () => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const [localPaymentData, setLocalPaymentData] = useState<any>(null);
   const [searchParams] = useSearchParams();

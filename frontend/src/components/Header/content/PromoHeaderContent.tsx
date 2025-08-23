@@ -16,11 +16,11 @@ import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { Path } from "../../../routes/routes.ts";
 import { useLocation } from "react-router-dom";
-import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 
 const PromoHeaderContent = () => {
   const location = useLocation();
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
     (state: AppRootStateType) => state.payment.data?.oldPrice,
   );

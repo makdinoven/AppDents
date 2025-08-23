@@ -9,7 +9,7 @@ import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
-import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
 import { getPaymentType } from "../../../../common/helpers/helpers.ts";
 
 interface CourseCardProps {
@@ -47,7 +47,7 @@ const CourseCard = ({
   slug,
   isFree = false,
 }: CourseCardProps) => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
