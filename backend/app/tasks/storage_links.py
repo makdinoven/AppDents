@@ -10,13 +10,15 @@ logger = logging.getLogger(__name__)
 # паттерны
 PAT_OLD = (
     r'https?://'
-    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-    r'\.(selstorage\.ru|s3\.twcstorage\.ru)/'
+    r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
+    r'\.(selstorage\.ru|s3\.twcstorage\.ru)'
+    r'(?:/|\?|#|$)'
 )
-PAT_BAD = (  # уже сломанные: <uuid>-cdn.dent-s.com
+PAT_BAD = (
     r'https?://'
-    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
-    r'-cdn\.dent-s\.com/'
+    r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
+    r'-cdn\.dent-s\.com'
+    r'(?:/|\?|#|$)'
 )
 
 REPLACEMENT = 'https://cdn.dent-s.com/'
@@ -29,18 +31,13 @@ def _update_table(db, table: str, column: str):
     # два прохода: сначала старые домены, затем «uuid-cdn.dent-s.com»
     sql = f"""
         UPDATE {table}
-        {hint}
            SET {column} = CAST(
                    REGEXP_REPLACE(
                        REGEXP_REPLACE(
                            CAST({column} AS CHAR CHARACTER SET utf8mb4),
-                           :pat_old,
-                           :cdn,
-                           1, 0, 'c'
+                           :pat_old, :cdn, 1, 0  -- БЕЗ 'c'
                        ),
-                       :pat_bad,
-                       :cdn,
-                       1, 0, 'c'
+                       :pat_bad, :cdn, 1, 0    -- БЕЗ 'c'
                    ) AS JSON
                )
          WHERE {column} REGEXP :pat_old
