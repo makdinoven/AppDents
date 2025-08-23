@@ -12,10 +12,10 @@ import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../../store/store.ts";
 import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
 import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
-import { usePaymentModalHandler } from "../../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
 
 const CoursePage = () => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);

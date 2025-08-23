@@ -1,5 +1,5 @@
 import s from "./ModalOverlay.module.scss";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Path } from "../../../routes/routes.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -22,16 +22,12 @@ const ModalOverlay = ({
   const location = useLocation();
   const [isClosing, setIsClosing] = useState(false);
   const [isVisible, setIsVisible] = useState(isVisibleCondition);
-
-  useEffect(() => {
-    if (onInitClose) {
-      onInitClose(closeModal);
-    }
-  }, []);
+  const closeTimeoutRef = useRef<number | null>(null);
 
   const closeModal = () => {
     setIsClosing(true);
-    setTimeout(() => {
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    closeTimeoutRef.current = window.setTimeout(() => {
       setIsClosing(false);
       setIsVisible(false);
 
@@ -42,34 +38,41 @@ const ModalOverlay = ({
           navigate(Path.main);
         }
       }
-
-      if (customHandleClose) {
-        customHandleClose?.();
-      }
+      customHandleClose?.();
     }, 300);
   };
 
   useEffect(() => {
+    onInitClose?.(closeModal);
+  }, [onInitClose]);
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") closeModal();
+  }, []);
+
+  useEffect(() => {
     if (!isVisible) return;
-
-    // const handleEscape = (e: KeyboardEvent) =>
-    //   e.key === "Escape" && closeModal();
     document.body.style.overflow = "hidden";
-    // document.addEventListener("keydown", handleEscape);
-
+    document.addEventListener("keydown", handleEscape);
     return () => {
       document.body.style.overflow = "";
-      // document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isVisible]);
 
   useEffect(() => {
     if (isVisibleCondition) {
       setIsVisible(true);
-    } else {
+    } else if (isVisible && !isVisibleCondition) {
       closeModal();
     }
   }, [isVisibleCondition]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
 
   if (!isVisible) return null;
 

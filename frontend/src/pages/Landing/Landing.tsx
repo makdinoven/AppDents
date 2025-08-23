@@ -40,10 +40,10 @@ import {
   trackLowPricePageView,
 } from "../../common/helpers/facebookPixel.ts";
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
-import { usePaymentModalHandler } from "../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 
 const Landing = () => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const [landing, setLanding] = useState<any | null>(null);
   const [firstLesson, setFirstLesson] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,7 +147,6 @@ const Landing = () => {
 
   const handleNavigateToPayment = (isButtonFree: boolean) => {
     if (landing) {
-      console.log(isButtonFree);
       openPaymentModal(
         landing.page_name,
         getPaymentType(isButtonFree, undefined, isWebinar),

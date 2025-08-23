@@ -13,12 +13,12 @@ import { getPaymentSource } from "../helpers/helpers.ts";
 import { Path } from "../../routes/routes.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { getMe } from "../../store/actions/userActions.ts";
-import { usePaymentModalHandler } from "./usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "./usePaymentPageHandler.ts";
 
 const IS_PAYMENT_DISABLED = false;
 
-export const usePaymentModal = ({ paymentData, isFree, isOffer }: any) => {
-  const { closePaymentModal } = usePaymentModalHandler();
+export const usePayment = ({ paymentData, isFree, isOffer }: any) => {
+  const { closePaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const { isLogged, email, language, balance } = useSelector(
@@ -27,6 +27,20 @@ export const usePaymentModal = ({ paymentData, isFree, isOffer }: any) => {
   const [loading, setLoading] = useState(false);
   const [isBalanceUsed, setIsBalanceUsed] = useState(false);
   const [emailValue, setEmailValue] = useState("");
+
+  if (!paymentData) {
+    return {
+      loading: false,
+      isBalanceUsed: false,
+      toggleBalance: () => {},
+      balancePrice: 0,
+      handlePayment: () => {},
+      balance: 0,
+      language: language || "en",
+      setEmailValue: () => {},
+      IS_PAYMENT_DISABLED,
+    };
+  }
 
   const toggleBalance = () => {
     if (balance !== 0) setIsBalanceUsed(!isBalanceUsed);

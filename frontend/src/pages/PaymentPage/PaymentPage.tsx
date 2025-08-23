@@ -1,43 +1,184 @@
+import { Trans } from "react-i18next";
+import s from "./PaymentPage.module.scss";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
-import { useSearchParams } from "react-router-dom";
-import PaymentModal from "./content/PaymentModal/PaymentModal.tsx";
-import { useEffect } from "react";
-import { PAYMENT_PAGE_KEY } from "../../common/helpers/commonConstants.ts";
+import { useEffect, useRef } from "react";
+import { Path } from "../../routes/routes.ts";
+import { CoursesIcon, PoweredByStripeLogo, Shield } from "../../assets/icons";
+import LogoList from "./content/LogoList/LogoList.tsx";
+import PaymentCourseCard from "./content/PaymentCourseCard/PaymentCourseCard.tsx";
+import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
+import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import UseBalanceOption from "../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
+import { usePayment } from "../../common/hooks/usePayment.ts";
+import PaymentForm from "./content/PaymentForm/PaymentForm.tsx";
+import Button from "../../components/ui/Button/Button.tsx";
+import DisabledPaymentWarn from "../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 import { getLandingDataForPayment } from "../../store/actions/paymentActions.ts";
-import { usePaymentModalHandler } from "../../common/hooks/usePaymentModalHandler.ts";
-
-//TODO
-//      УБРАТЬ ИЗ PAYMENTMODAL ВСЮ ЛОГИКУ
-//      РАЗДЕЛИТЬ НА НЕСКОЛЬКО КОМПОНЕНТОВ ПО КОНТЕНТУ
-//      ПРОКИДЫВАТЬ SOURCE ИЗВНЕ
-//      УДАЛИТЬ ISWEBINAR И ISFREE
 
 const PaymentPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
-  const { isPaymentModalOpen, paymentModalType } = usePaymentModalHandler();
-  const [searchParams] = useSearchParams();
-  const slug = searchParams.get(PAYMENT_PAGE_KEY);
-  const data = useSelector((state: AppRootStateType) => state.payment.data);
+  const { isPaymentModalOpen, paymentModalType, closePaymentModal, slug } =
+    usePaymentPageHandler();
+  const paymentData = useSelector(
+    (state: AppRootStateType) => state.payment.data,
+  );
+  const closeModalRef = useRef<() => void>(null);
+  const { isLogged } = useSelector((state: AppRootStateType) => state.user);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const isWebinar = paymentModalType === "webinar";
+  const isFree = paymentModalType === "free";
+  const isOffer = paymentModalType === "offer";
+  const {
+    loading,
+    isBalanceUsed,
+    balancePrice,
+    balance,
+    toggleBalance,
+    handlePayment,
+    setEmailValue,
+    language,
+    IS_PAYMENT_DISABLED,
+  } = usePayment({
+    paymentData,
+    isFree,
+    isOffer,
+  });
+
+  useOutsideClick(modalRef, () => {
+    closeModal();
+  });
 
   useEffect(() => {
-    if (isPaymentModalOpen) {
-      if (!data && slug) {
-        dispatch(getLandingDataForPayment(slug));
-      }
+    if (!paymentData && slug && isPaymentModalOpen) {
+      dispatch(getLandingDataForPayment(slug));
     }
-  }, [searchParams, data, isPaymentModalOpen]);
+  }, [slug, paymentData, isPaymentModalOpen]);
 
-  if (!data) return;
+  const closeModal = () => {
+    closePaymentModal();
+    closeModalRef.current?.();
+  };
+
+  if (!paymentData) return null;
 
   return (
-    <PaymentModal
-      isWebinar={paymentModalType === "webinar"}
-      isFree={paymentModalType === "free"}
-      isOffer={paymentModalType === "offer"}
-      visibleCondition={isPaymentModalOpen}
-      paymentData={data}
-    />
+    <ModalOverlay
+      isVisibleCondition={isPaymentModalOpen}
+      modalPosition="top"
+      customHandleClose={closePaymentModal}
+      onInitClose={(fn) => (closeModalRef.current = fn)}
+    >
+      <div ref={modalRef} className={s.modal}>
+        <div className={s.modal_header}>
+          <ModalCloseButton className={s.close_button} onClick={closeModal} />
+          <h2>
+            <Trans i18nKey={"yourOrder"} />
+          </h2>
+          <div className={s.courses_icon_wrapper}>
+            <CoursesIcon />
+            {paymentData.courses.length > 0 && (
+              <span className={s.circle}>{paymentData.courses.length}</span>
+            )}
+          </div>
+        </div>
+        <div className={s.courses}>
+          {paymentData.courses.map((course, index: number) => (
+            <PaymentCourseCard
+              key={index}
+              course={course}
+              isWebinar={isWebinar}
+              isFree={isFree}
+            />
+          ))}
+        </div>
+        <div className={s.modal_body}>
+          <div className={`${s.total_container} ${!isLogged ? s.center : ""}`}>
+            {!isFree && (
+              <div className={s.total_text}>
+                <Trans i18nKey="cart.total" />:
+                <div>
+                  <span className={"highlight"}>
+                    ${isBalanceUsed ? balancePrice : paymentData.newPrice}
+                  </span>
+                  <span className={`${s.old_price} crossed`}>
+                    ${paymentData.oldPrice}
+                  </span>
+                </div>
+              </div>
+            )}
+            {isLogged && !isFree && (
+              <UseBalanceOption
+                onToggle={toggleBalance}
+                isChecked={isBalanceUsed}
+                disabled={balance === 0}
+                balance={balance ? balance : 0}
+              />
+            )}
+            {isFree && !isLogged && (
+              <h3 className={s.total_text}>
+                <Trans i18nKey={"freeCourse.registerToWatch"} />
+              </h3>
+            )}
+          </div>
+
+          {!isLogged && (
+            <PaymentForm
+              setEmail={setEmailValue}
+              isLogged={isLogged}
+              isFree={isFree}
+            />
+          )}
+        </div>
+        <div className={s.modal_footer}>
+          {!isFree && (
+            <p lang={language.toLowerCase()} className={s.stripe_text}>
+              <Shield />
+              <Trans i18nKey="payment.encryptedPayment" />
+            </p>
+          )}
+          {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
+          <Button
+            onClick={handlePayment}
+            disabled={IS_PAYMENT_DISABLED}
+            variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
+            loading={loading}
+            text={
+              isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"
+            }
+            icon={isFree ? undefined : <PoweredByStripeLogo />}
+          />
+          {!isLogged && (
+            <>
+              <p className={s.privacy_text}>
+                <Trans
+                  i18nKey={
+                    isFree ? "freePaymentWarn" : "payment.privacyAgreement"
+                  }
+                  components={{
+                    1: (
+                      <a
+                        href={Path.privacyPolicy}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      ></a>
+                    ),
+                  }}
+                />
+              </p>
+              {!isFree && (
+                <p className={s.after_payment_text}>
+                  <Trans i18nKey="payment.afterPayment" />
+                </p>
+              )}
+            </>
+          )}
+          {!isFree && <LogoList />}
+        </div>
+      </div>
+    </ModalOverlay>
   );
 };
 

@@ -1,11 +1,11 @@
 import s from "./PaymentForm.module.scss";
-import Input from "../../../../../components/ui/Inputs/Input/Input.tsx";
+import Input from "../../../../components/ui/Inputs/Input/Input.tsx";
 import { t } from "i18next";
-import EmailInput from "../../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
+import EmailInput from "../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
 import { useForm } from "react-hook-form";
-import { PaymentType } from "../../../../../api/userApi/types.ts";
+import { PaymentType } from "../../../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
-import { paymentSchema } from "../../../../../common/schemas/paymentSchema.ts";
+import { paymentSchema } from "../../../../common/schemas/paymentSchema.ts";
 import { useEffect } from "react";
 
 const PaymentForm = ({

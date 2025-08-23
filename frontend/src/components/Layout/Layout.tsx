@@ -6,13 +6,10 @@ import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
 import ScrollToTopButton from "../ui/ScrollToTopButton/ScrollToTopButton.tsx";
 import PaymentPage from "../../pages/PaymentPage/PaymentPage.tsx";
 import SearchModal from "../ui/SearchModal/SearchModal.tsx";
-//import DisabledPaymentBanner from "../ui/DisabledPaymentBanner/DisabledPaymentBanner.tsx";
 
 const Layout = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
-  // const [searchParams] = useSearchParams();
-  // const isSearchModalOpened = searchParams.has(OPEN_SEARCH_KEY);
 
   return (
     <div className={s.main_wrapper}>

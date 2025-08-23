@@ -3,8 +3,8 @@
   user-select: none;
   flex-shrink: 0;
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   outline: 1.5px solid $background-color;
   outline-offset: -1.5px;
   border-radius: 4px;
@@ -14,8 +14,8 @@
     width: 20.58px;
     height: 15.83px;
     position: absolute;
-    top: 2.5px;
-    left: 7.2px;
+    top: 1.7px;
+    left: 6.7px;
     opacity: 0;
     scale: 0.5;
     @include transition();

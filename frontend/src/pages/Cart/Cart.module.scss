@@ -95,11 +95,13 @@
   height: 45px;
 
   &:hover {
-    circle {
-      stroke: $error-color;
-    }
-    path {
-      fill: $error-color;
+    svg {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
+      }
     }
   }
 }

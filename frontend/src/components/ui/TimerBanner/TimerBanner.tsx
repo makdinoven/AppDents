@@ -4,7 +4,7 @@ import { Trans } from "react-i18next";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import Timer from "./Timer/Timer.tsx";
-import { usePaymentModalHandler } from "../../../common/hooks/usePaymentModalHandler.ts";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 import {
   getBasePath,
   getPaymentType,
@@ -12,7 +12,7 @@ import {
 import { Path } from "../../../routes/routes.ts";
 
 const TimerBanner = () => {
-  const { openPaymentModal } = usePaymentModalHandler();
+  const { openPaymentModal } = usePaymentPageHandler();
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
   const [discount, setDiscount] = useState(0);
