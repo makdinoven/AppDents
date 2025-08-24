@@ -24,17 +24,22 @@ import { t } from "i18next";
 import { Alert } from "../../components/ui/Alert/Alert.tsx";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 
 const Cart = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const closeModalRef = useRef<() => void>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [unloggedCartData, setUnloggedCartData] = useState<any>(null);
   const [cartPreviewLoading, setCartPreviewLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email, language } = useSelector(
     (state: AppRootStateType) => state.user,
   );
+  useOutsideClick(modalRef, () => {
+    closeCart();
+  });
   const [loading, setLoading] = useState(false);
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const {
@@ -148,7 +153,7 @@ const Cart = () => {
       modalPosition="right"
       onInitClose={(fn) => (closeModalRef.current = fn)}
     >
-      <div className={`${s.cart} ${isCartEmpty ? s.empty : ""}`}>
+      <div ref={modalRef} className={`${s.cart} ${isCartEmpty ? s.empty : ""}`}>
         <div className={s.cart_header}>
           <ModalCloseButton className={s.close_button} onClick={closeCart} />
           {!isCartEmpty && (
@@ -167,6 +172,7 @@ const Cart = () => {
             <ul className={s.cart_items}>
               {items.map((item) => (
                 <CartItem
+                  language={language}
                   key={item.landing.id}
                   item={item.landing}
                   type={"LANDING"}

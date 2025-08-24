@@ -5,6 +5,7 @@ const PaymentCourseCard = ({
   course: { newPrice, oldPrice, name, lessonsCount, img },
   isWebinar,
   isFree,
+  language,
 }: {
   course: {
     newPrice: number;
@@ -13,6 +14,7 @@ const PaymentCourseCard = ({
     lessonsCount: string;
     img: string;
   };
+  language: string;
   isWebinar: boolean;
   isFree: boolean;
 }) => {
@@ -24,7 +26,9 @@ const PaymentCourseCard = ({
         {!isWebinar && lessonsCount && (
           <p className={s.lessons_count}>{lessonsCount}</p>
         )}
-        <h4 className={s.course_name}>{name}</h4>
+        <h4 lang={language.toLowerCase()} className={s.course_name}>
+          {name}
+        </h4>
       </div>
 
       {!isFree ? (

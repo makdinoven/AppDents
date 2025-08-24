@@ -97,7 +97,7 @@
   },
 
   "payment": {
-    "encryptedPayment": "El pago se procesa a través de Stripe cumpliendo con PCI DSS Nivel 1 — los datos de tu tarjeta están encriptados y nunca se almacenan con nosotros.",
+    "encryptedPayment": "Pago seguro con Stripe (PCI DSS Nivel 1): tus datos se encriptan y nunca se almacenan.",
     "afterPayment": "Después del pago, el curso se añadirá a tu cuenta y los datos de acceso se enviarán a tu correo electrónico. Revisa la carpeta de Spam si no lo recibes.",
     "privacyAgreement": "Al hacer clic en el botón «Pagar», aceptas recibir correos electrónicos de marketing y consientes nuestra <1>Política de Privacidad.</1>"
   },

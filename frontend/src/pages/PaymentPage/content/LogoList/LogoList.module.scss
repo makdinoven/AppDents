@@ -4,7 +4,7 @@
   column-gap: 7px;
 
   li {
-    height: clamp(23px, 6vw, 43px);
+    height: clamp(23px, 6vw, 40px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -23,17 +23,16 @@
 
 @media (max-width: $mobile-breakpoint) {
   .logos {
-    column-gap: 7px;
-    row-gap: 5px;
-    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    grid-template-columns: repeat(10, 1fr);
     justify-content: center;
 
-    & li:nth-child(n + 7) {
-      grid-column: span 1;
-    }
-
-    & li:nth-child(7) {
-      grid-column-start: 2;
-    }
+    //& li:nth-child(n + 7) {
+    //  grid-column: span 1;
+    //}
+    //
+    //& li:nth-child(7) {
+    //  grid-column-start: 2;
+    //}
   }
 }

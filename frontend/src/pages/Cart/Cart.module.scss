@@ -27,7 +27,7 @@
   }
 
   h2 {
-    @include clamped-h2;
+    @include clamped-h3;
     width: 100%;
     text-transform: uppercase;
     text-align: center;
@@ -83,11 +83,6 @@
   margin-bottom: 30px;
 }
 
-.cart_title {
-  @include clamped-h2;
-  text-transform: uppercase;
-}
-
 .close_button {
   flex-shrink: 0;
   position: relative;
@@ -127,6 +122,10 @@
   .cart {
     border-radius: 25px;
     min-height: 300px;
+
+    &.empty {
+      padding: 20px;
+    }
   }
 
   .cart_items {
@@ -140,8 +139,8 @@
   }
 
   .close_button {
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
   }
 
   .cart_icon_wrapper {
