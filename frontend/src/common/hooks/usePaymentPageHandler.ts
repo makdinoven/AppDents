@@ -26,19 +26,12 @@ export const usePaymentPageHandler = () => {
   };
 
   const closePaymentModal = () => {
-    const paramsHasPaymentType = searchParams.has(PAYMENT_TYPE_KEY);
-    const newParams = new URLSearchParams(searchParams);
-
-    newParams.delete(PAYMENT_PAGE_KEY);
-    setSearchParams(newParams);
-
-    if (paramsHasPaymentType) {
-      setTimeout(() => {
-        const updatedParams = new URLSearchParams(newParams);
-        updatedParams.delete(PAYMENT_TYPE_KEY);
-        setSearchParams(updatedParams, { replace: true });
-      }, 150);
-    }
+    setTimeout(() => {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete(PAYMENT_PAGE_KEY);
+      if (paymentModalType) newParams.delete(PAYMENT_TYPE_KEY);
+      setSearchParams(newParams);
+    }, 150);
   };
 
   return {

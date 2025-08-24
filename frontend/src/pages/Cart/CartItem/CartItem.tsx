@@ -8,12 +8,19 @@ import { CartLandingType } from "../../../api/cartApi/types.ts";
 
 interface CartItemProps {
   loading?: boolean;
+  language: string;
   item: CartLandingType;
   type: string;
   onDelete: (value: number) => void;
 }
 
-const CartItem = ({ loading, item, type, onDelete }: CartItemProps) => {
+const CartItem = ({
+  loading,
+  item,
+  type,
+  onDelete,
+  language,
+}: CartItemProps) => {
   const visibleAuthors = item?.authors
     ?.slice(0, 3)
     .filter((author) => author.photo);
@@ -32,7 +39,7 @@ const CartItem = ({ loading, item, type, onDelete }: CartItemProps) => {
           )}
         </div>
         <div className={s.text_wrapper}>
-          <h4>{item.landing_name}</h4>
+          <h4 lang={language.toLowerCase()}>{item.landing_name}</h4>
           <div className={s.course_authors}>
             {visibleAuthors?.length > 0 && (
               <ul className={s.authors_photos_list}>

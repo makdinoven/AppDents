@@ -29,19 +29,19 @@
   align-items: center;
   position: relative;
   width: 100%;
-  padding: 30px 30px 35px;
+  padding: 20px 30px 20px;
 
   h2 {
     text-align: center;
     text-transform: uppercase;
     color: $text-color;
-    @include clamped-h2;
+    @include clamped-h3;
   }
 
   .close_button {
     position: relative;
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
 
     &:hover {
       circle {
@@ -55,8 +55,8 @@
 
   .courses_icon_wrapper {
     display: flex;
-    width: 52px;
-    height: 52px;
+    width: 42px;
+    height: 42px;
     position: relative;
     color: $text-color;
 
@@ -87,11 +87,11 @@
 .modal_footer {
   @include flex-column;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   position: relative;
   background-color: $accent;
   width: 100%;
-  padding: 20px 30px 30px;
+  padding: 20px 30px 20px;
   color: $text-color;
 
   &::before, &::after {
@@ -122,8 +122,6 @@
 }
 
 .privacy_text {
-  font-size: 16px;
-
   a {
     @include transition;
     color: $primary;
@@ -137,8 +135,17 @@
   }
 }
 
-.after_payment_text {
-  @include clamped-p3;
+.footer_text {
+  hyphens: auto;
+  font-size: 13px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  &.free {
+    display: flex;
+    align-items: center;
+  }
 }
 
 .courses {
@@ -167,7 +174,7 @@
 }
 
 .modal_body {
-  padding: 20px 30px;
+  padding: 15px 30px;
 }
 
 .total_text {
@@ -208,14 +215,23 @@
   justify-content: center;
   gap: 10px;
   color: $text-color;
-  font-size: 16px;
+  font-size: 14px;
   text-align: center;
 
   svg {
-    width: 23px;
+    width: 21px;
     flex-shrink: 0;
   }
 }
+
+@media (max-width: $tablet-breakpoint) {
+  .footer_text {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
 
 
 @media (max-width: $mobile-breakpoint) {
@@ -280,10 +296,6 @@
     padding: 0;
   }
 
-  .after_payment_text {
-    font-size: 12px;
-  }
-
   .total_text {
     @include clamped-p2;
     gap: 5px;
@@ -298,8 +310,9 @@
     }
   }
 
-  .privacy_text {
-    font-size: 8px;
+  .footer_text {
+    font-size: 9px;
+    gap: 3px;
   }
 
   .stripe_text {
