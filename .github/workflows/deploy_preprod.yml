@@ -56,7 +56,7 @@ jobs:
             set -Eeuo pipefail
             set -x
 
-            cd /var/www/AppDents
+            cd var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
 
             # 1) Подготовка git к non-interactive pull
