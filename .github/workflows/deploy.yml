@@ -1,0 +1,105 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: true
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed_services: ${{ steps.prepare.outputs.changed_services }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: changes
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            nginx:
+              - 'nginx/**'
+      - id: prepare
+        run: |
+          SERVICES=""
+          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then SERVICES="$SERVICES backend"; fi
+          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then SERVICES="$SERVICES frontend"; fi
+          if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then SERVICES="$SERVICES nginx"; fi
+          echo "changed_services=$SERVICES" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [check-changes]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: SSH Deploy (git pull + compose up)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          # используем уже существующие TW_* секреты
+          host:     ${{ secrets.TW_SERVER_HOST }}
+          username: ${{ secrets.TW_SERVER_USER }}
+          key:      ${{ secrets.TW_SERVER_SSH_KEY }}
+          # port:   ${{ secrets.TW_SERVER_PORT }}   # раскомментируй, если не 22
+          debug: true
+          command_timeout: 15m
+          script: |
+            set -Eeuo pipefail
+            set -x
+
+            cd /var/www/AppDents
+            export COMPOSE_PROJECT_NAME=appdents
+
+            # Git: безопасный pull без ребейза/редактора, отключаем локальные хуки
+            git config --local core.hooksPath /dev/null || true
+            git config --local pull.rebase false
+            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            git pull --no-rebase --no-edit -s recursive -X theirs origin main
+
+            # .env обязателен
+            if [ ! -f .env ]; then
+              if [ -f /etc/appdents/prod.env ]; then
+                ln -sfn /etc/appdents/prod.env .env
+              else
+                echo "[env] .env missing and /etc/appdents/prod.env not found"; exit 1
+              fi
+            fi
+
+            # Сборка изменившихся сервисов + всегда nginx
+            CHANGED="$(echo "${{ needs.check-changes.outputs.changed_services }}" | xargs || true)"
+            if [ -z "$CHANGED" ]; then
+              echo "Нет изменений в сервисах — пересобираем только nginx"
+              docker compose -f docker-compose.yaml build nginx
+            else
+              echo "Есть изменения в: $CHANGED"
+              docker compose -f docker-compose.yaml build $CHANGED nginx
+            fi
+
+            # Рестарт стека с ретраями (устраняет гонки сетей)
+            docker compose -f docker-compose.yaml down --remove-orphans || true
+            docker network prune -f || true
+
+            for i in 1 2 3; do
+              if docker compose -f docker-compose.yaml up -d; then
+                break
+              fi
+              echo "[retry] compose up failed, attempt $i"
+              docker compose -f docker-compose.yaml down --remove-orphans || true
+              docker network prune -f || true
+              sleep 3
+            done
+
+            # Reload nginx (или restart при неудаче)
+            docker compose -f docker-compose.yaml exec nginx nginx -s reload || \
+              docker compose -f docker-compose.yaml restart nginx
+
+            docker builder prune -f || true
