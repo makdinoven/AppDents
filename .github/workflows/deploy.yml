@@ -42,15 +42,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: SSH Deploy (git pull + compose up --build)
+      - name: SSH Deploy (git pull + compose up)
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.PROD_SERVER_HOST }}
-          username: ${{ secrets.PROD_SERVER_USER }}
-          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
-          port: ${{ secrets.PROD_SERVER_PORT }}
+          # используем уже существующие TW_* секреты
+          host:     ${{ secrets.TW_SERVER_HOST }}
+          username: ${{ secrets.TW_SERVER_USER }}
+          key:      ${{ secrets.TW_SERVER_SSH_KEY }}
+          # port:   ${{ secrets.TW_SERVER_PORT }}   # раскомментируй, если не 22
           debug: true
-          script_stop: true
           command_timeout: 15m
           script: |
             set -Eeuo pipefail
@@ -59,15 +59,13 @@ jobs:
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
 
-            # 1) Подготовка git к non-interactive pull
+            # Git: безопасный pull без ребейза/редактора, отключаем локальные хуки
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
-
-            # 2) Мягкая синхронизация с origin/main (БЕЗ reset)
             git pull --no-rebase --no-edit -s recursive -X theirs origin main
 
-            # 3) .env обязателен — для прода линкуем prod.env
+            # .env обязателен
             if [ ! -f .env ]; then
               if [ -f /etc/appdents/prod.env ]; then
                 ln -sfn /etc/appdents/prod.env .env
@@ -76,7 +74,7 @@ jobs:
               fi
             fi
 
-            # 4) Сборка: только изменённые сервисы + всегда nginx
+            # Сборка изменившихся сервисов + всегда nginx
             CHANGED="$(echo "${{ needs.check-changes.outputs.changed_services }}" | xargs || true)"
             if [ -z "$CHANGED" ]; then
               echo "Нет изменений в сервисах — пересобираем только nginx"
@@ -86,7 +84,7 @@ jobs:
               docker compose -f docker-compose.yaml build $CHANGED nginx
             fi
 
-            # 5) Аккуратный рестарт стека с ретраями
+            # Рестарт стека с ретраями (устраняет гонки сетей)
             docker compose -f docker-compose.yaml down --remove-orphans || true
             docker network prune -f || true
 
@@ -100,9 +98,8 @@ jobs:
               sleep 3
             done
 
-            # 6) Reload nginx (или restart при неудаче)
+            # Reload nginx (или restart при неудаче)
             docker compose -f docker-compose.yaml exec nginx nginx -s reload || \
               docker compose -f docker-compose.yaml restart nginx
 
-            # 7) Чистка билд-кэша
             docker builder prune -f || true
