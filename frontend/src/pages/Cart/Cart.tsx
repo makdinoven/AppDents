@@ -1,6 +1,6 @@
 import s from "./Cart.module.scss";
 import s_footer from "./CartFooter/CartFooter.module.scss";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { Path } from "../../routes/routes.ts";
 import { Trans } from "react-i18next";
@@ -27,7 +27,6 @@ import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseBut
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 
 const Cart = () => {
-  const location = useLocation();
   const navigate = useNavigate();
   const closeModalRef = useRef<() => void>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
@@ -134,7 +133,7 @@ const Cart = () => {
     setCartPreviewLoading(true);
 
     try {
-      const res = await cartApi.previewCart({ landing_ids: cartLandingIds });
+      const res = await cartApi.previewCart(cartLandingIds);
       setUnloggedCartData(res.data);
       setCartPreviewLoading(false);
     } catch (e: any) {
@@ -148,7 +147,7 @@ const Cart = () => {
 
   return (
     <ModalOverlay
-      isVisibleCondition={location.pathname === Path.cart}
+      isVisibleCondition={true}
       isUsedAsPage
       modalPosition="right"
       onInitClose={(fn) => (closeModalRef.current = fn)}

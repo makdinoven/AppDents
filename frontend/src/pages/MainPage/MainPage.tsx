@@ -15,10 +15,14 @@ const MainPage = () => {
   const isLogged = useSelector((state: any) => state.user.isLogged);
   const tags = useSelector((state: any) => state.main.tags);
   const [searchParams, setSearchParams] = useSearchParams();
-  const filterFromUrl = searchParams.get("filter") || "all";
+  const filterFromUrl = searchParams.get("filter");
   const sortFromUrl = searchParams.get("sort");
-  const [activeFilter, setActiveFilter] = useState<string>("");
-  const [activeSort, setActiveSort] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<string>(
+    filterFromUrl ? filterFromUrl : "all",
+  );
+  const [activeSort, setActiveSort] = useState<string>(
+    sortFromUrl ? sortFromUrl : "",
+  );
   const [skip, setSkip] = useState(0);
   const coursesRef = useRef<HTMLDivElement | null>(null);
 
@@ -29,13 +33,7 @@ const MainPage = () => {
   }, [isLogged]);
 
   useEffect(() => {
-    handleSetActiveParam("filter", filterFromUrl);
-    if (sortFromUrl) {
-      handleSetActiveParam("sort", sortFromUrl);
-    }
-    if (tags.length < 1) {
-      dispatch(getTags());
-    }
+    if (tags.length < 1) dispatch(getTags());
   }, []);
 
   const handleSetActiveParam = (param: "filter" | "sort", value: string) => {
