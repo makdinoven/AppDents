@@ -5,7 +5,6 @@ import s from "./Layout.module.scss";
 import MobileMenu from "../ui/MobileMenu/MobileMenu.tsx";
 import ScrollToTopButton from "../ui/ScrollToTopButton/ScrollToTopButton.tsx";
 import PaymentPage from "../../pages/PaymentPage/PaymentPage.tsx";
-import SearchModal from "../ui/SearchModal/SearchModal.tsx";
 
 const Layout = () => {
   const location = useLocation();
@@ -18,10 +17,13 @@ const Layout = () => {
       <main className={s.content}>
         <Outlet />
       </main>
-      <SearchModal />
       <PaymentPage />
-      {!isAdminRoute && <Footer />}
-      <ScrollToTopButton />
+      {!isAdminRoute && (
+        <>
+          <Footer />
+          <ScrollToTopButton />
+        </>
+      )}
       <MobileMenu />
     </div>
   );

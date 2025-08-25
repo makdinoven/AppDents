@@ -83,8 +83,6 @@ export const INITIAL_USER = {
   role: "user",
 };
 
-export const OPEN_SEARCH_KEY = "GS";
-
 export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";

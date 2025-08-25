@@ -1,7 +1,7 @@
 import s from "./Search.module.scss";
 import { t } from "i18next";
 import { ArrowX, SearchIcon } from "../../../assets/icons/index.ts";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const Search = ({
@@ -15,6 +15,7 @@ const Search = ({
   onFocus?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [localValue, setLocalValue] = useState(searchParams.get(id) || "");
 
@@ -33,14 +34,24 @@ const Search = ({
     } else {
       newParams.delete(id);
     }
-    setSearchParams(newParams, { replace: true });
+    setSearchParams(newParams, {
+      replace: true,
+      ...(location.state?.backgroundLocation
+        ? { state: { backgroundLocation: location.state.backgroundLocation } }
+        : {}),
+    });
   };
 
   const handleClear = () => {
     setLocalValue("");
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete(id);
-    setSearchParams(newParams, { replace: true });
+    setSearchParams(newParams, {
+      replace: true,
+      ...(location.state?.backgroundLocation
+        ? { state: { backgroundLocation: location.state.backgroundLocation } }
+        : {}),
+    });
   };
 
   return (

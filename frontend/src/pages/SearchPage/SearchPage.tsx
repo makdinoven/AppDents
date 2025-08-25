@@ -1,37 +1,35 @@
-import s from "./SearchModal.module.scss";
-import Search from "../Search/Search.tsx";
+import s from "./SearchPage.module.scss";
+import Search from "../../components/ui/Search/Search.tsx";
 import { useEffect, useRef, useState } from "react";
-import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
-import { Link, useSearchParams } from "react-router-dom";
-import { Path } from "../../../routes/routes.ts";
+import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Path } from "../../routes/routes.ts";
 import { Trans } from "react-i18next";
-import { SearchIcon } from "../../../assets/icons/index.ts";
-import { mainApi } from "../../../api/mainApi/mainApi.ts";
+import { SearchIcon } from "../../assets/icons";
+import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../store/store.ts";
-import ModalCloseButton from "../ModalCloseButton/ModalCloseButton.tsx";
-import useDebounce from "../../../common/hooks/useDebounce.ts";
-import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
-import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
-import AddToCartButton from "../AddToCartButton/AddToCartButton.tsx";
-import { OPEN_SEARCH_KEY } from "../../../common/helpers/commonConstants.ts";
-import ModalOverlay from "../../Modals/ModalOverlay/ModalOverlay.tsx";
+import { AppRootStateType } from "../../store/store.ts";
+import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import useDebounce from "../../common/hooks/useDebounce.ts";
+import { formatAuthorsDesc } from "../../common/helpers/helpers.ts";
+import LoaderOverlay from "../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import AddToCartButton from "../../components/ui/AddToCartButton/AddToCartButton.tsx";
+import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 
-const SearchModal = () => {
-  const openKey = OPEN_SEARCH_KEY;
-  const SEARCH_KEY = "global_courses_search";
-  const [searchParams, setSearchParams] = useSearchParams();
+const SearchPage = () => {
+  const SEARCH_KEY = "q";
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [totalResults, setTotalResults] = useState<number>(0);
   const closeModalRef = useRef<() => void>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
-  // const closeModalRef = useRef<() => void>(null);
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
   useOutsideClick(wrapperRef, () => {
-    handleDropdownClose();
+    handleClose();
   });
   const inputRef = useRef<HTMLInputElement | null>(null);
   const searchValue = searchParams.get(SEARCH_KEY);
@@ -46,18 +44,8 @@ const SearchModal = () => {
     }
   }, [debouncedSearchValue]);
 
-  useEffect(() => {
-    if (!searchParams.has(openKey)) {
-      handleDropdownClose();
-    }
-  }, [searchParams]);
-
-  const handleDropdownClose = () => {
+  const handleClose = () => {
     closeModalRef.current?.();
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete(openKey);
-    newParams.delete(SEARCH_KEY);
-    setSearchParams(newParams, { replace: true });
   };
 
   const handleSearch = async (q: string) => {
@@ -77,17 +65,20 @@ const SearchModal = () => {
     }
   };
 
+  const navigateToResult = (slug: string) => {
+    navigate(`/${Path.landingClient}/${slug}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <ModalOverlay
-      isVisibleCondition={searchParams.has(openKey)}
+      isVisibleCondition={true}
+      isUsedAsPage
       modalPosition={"top"}
       onInitClose={(fn) => (closeModalRef.current = fn)}
     >
       <div ref={wrapperRef} className={s.dropdown_content}>
-        <ModalCloseButton
-          className={s.close_button}
-          onClick={handleDropdownClose}
-        />
+        <ModalCloseButton className={s.close_button} onClick={handleClose} />
 
         <h3 className={s.dropdown_title}>
           <Trans i18nKey={"search.searchCourses"} />
@@ -112,9 +103,9 @@ const SearchModal = () => {
             {loading && <LoaderOverlay />}
             {searchResults?.map((item: any, index: number) => (
               <li key={index}>
-                <Link
+                <div
+                  onClick={() => navigateToResult(item.page_name)}
                   className={s.dropdown_item}
-                  to={`${Path.landingClient}/${item.page_name}`}
                 >
                   <div className={s.icon}>
                     <SearchIcon />
@@ -150,7 +141,7 @@ const SearchModal = () => {
                       variant={"primary"}
                     />
                   </div>
-                </Link>
+                </div>
               </li>
             ))}
           </ul>
@@ -160,4 +151,4 @@ const SearchModal = () => {
   );
 };
 
-export default SearchModal;
+export default SearchPage;
