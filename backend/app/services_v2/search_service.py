@@ -7,6 +7,8 @@ from ..models.models_v2 import Author, Landing, BookLanding, Book  # поля я
 # Author.language, Landing.language, BookLanding.language; Landing.authors; BookLanding.book; Book.authors
 
 # ------------------------ утилиты ------------------------
+TITLE_WEIGHT = 1.0
+SLUG_WEIGHT  = 0.35
 
 def _ilike(s: str) -> str:
     return f"%{s.strip()}%"
@@ -158,18 +160,19 @@ def search_everything(
         })
 
     for l in landings:
-        score = 0
-        score = max(
-            _text_score(l.landing_name, qn, tokens),
-            _text_score(l.page_name, qn, tokens),
-        )
-        # сигнал по авторам (если искали автора)
+        title_s = _text_score(l.landing_name, qn, tokens)
+        slug_s = _text_score(l.page_name, qn, tokens)  # slug: online-..., и т.п.
+        score = int(TITLE_WEIGHT * title_s + SLUG_WEIGHT * slug_s)
+
+        # сигнал по авторам — оставляем как было
         score += _authors_score(list(l.authors or []), qn, tokens, scale=0.8)
-        # популярность как слабый тiebreaker
+
+        # лёгкий tiebreaker по популярности (как было)
         try:
             score += int(math.log10(max(int(l.sales_count or 0), 1)))
         except Exception:
             pass
+
         scored_items.append({
             "type": "landing",
             "id": l.id,
@@ -179,20 +182,24 @@ def search_everything(
             "old_price": l.old_price,
             "new_price": l.new_price,
             "language": l.language,
-            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in (l.authors or [])],
+            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in
+                        (l.authors or [])],
             "_score": score,
             "_tie": (1, l.id),
         })
 
     for bl in book_landings:
-        score = max(
-            _text_score(bl.landing_name, qn, tokens),
-            _text_score(bl.page_name, qn, tokens),
-            _text_score(bl.book.title if bl.book else None, qn, tokens),
-        )
+        title_s = _text_score(bl.landing_name, qn, tokens)
+        book_title_s = _text_score(bl.book.title if bl.book else None, qn, tokens)
+        slug_s = _text_score(bl.page_name, qn, tokens)
+
+        # приоритет видимых названий (landing_name / book.title);
+        # slug добавляет небольшой бонус, но не доминирует.
+        score = max(title_s, book_title_s) + int(SLUG_WEIGHT * slug_s)
+
         book_authors = list((bl.book.authors if bl.book else []) or [])
         score += _authors_score(book_authors, qn, tokens, scale=0.8)
-        # лёгкий тiebreaker по id
+
         scored_items.append({
             "type": "book_landing",
             "id": bl.id,
@@ -204,7 +211,8 @@ def search_everything(
             "language": bl.language,
             "book_title": bl.book.title if bl.book else None,
             "cover_url": bl.book.cover_url if bl.book else None,
-            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in book_authors],
+            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in
+                        book_authors],
             "_score": score,
             "_tie": (2, bl.id),
         })
