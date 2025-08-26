@@ -199,34 +199,28 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     # 5. Агрегация
     landings_data, all_course_ids = [], set()
     total_new_price = total_old_price = 0.0
-    books_data, min_price_by_book, total_books_raw = [], {}, 0.0
+    # ---------- КНИГИ автора ------------------------------------------------
+    books_data, total_books_raw = [], 0.0
 
     for b in author.books:
-        # берём только НЕ скрытые BookLanding
-        visible_lnd = [l for l in b.landings if not l.is_hidden]
-        if not visible_lnd:
-            continue
-
-        # минимальная цена по книге
-        price, landing_best = min(
-            (
-                (safe_price(l.new_price), l)
-                for l in visible_lnd
-            ),
-            key=lambda t: t[0]
-        )
-        if price == float("inf"):  # цена нечисловая – пропускаем книгу
-            continue
-
-        min_price_by_book[b.id] = price
-        total_books_raw += price
-
+        # данные книги отправляем ВСЕГДА
         books_data.append({
             "id": b.id,
             "title": b.title,
             "slug": b.slug,
             "cover_url": b.cover_url,
         })
+
+        # ищем минимальную цену среди видимых лендингов
+        price_candidates = [
+            safe_price(l.new_price)
+            for l in b.landings
+            if not l.is_hidden
+        ]
+        price_candidates = [p for p in price_candidates if p != float("inf")]
+
+        if price_candidates:  # цена есть → учитываем
+            total_books_raw += min(price_candidates)
 
     books_count = len(books_data)
 
@@ -258,12 +252,17 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     landings_data.sort(key=lambda x: x["id"])
 
     courses_price_discounted = round(total_new_price * DISCOUNT_COURSES, 2)
-    books_price_discounted = (round(total_books_raw * DISCOUNT_BOOKS, 2)
-                              if books_count else None)
-    combo_price_discounted = (round(
-        (total_new_price + total_books_raw) *
-        DISCOUNT_COURSES_BOOKS, 2)
-                              if books_count else None)
+    books_price_discounted = (
+        round(total_books_raw * DISCOUNT_BOOKS, 2) if total_books_raw else None
+    )
+    combo_price_discounted = (
+        round((total_new_price + total_books_raw) * DISCOUNT_COURSES_BOOKS, 2)
+        if total_books_raw else None
+    )
+
+    tags_from_landings = {t.name for l in kept_landings for t in l.tags}
+    tags_from_books    = {t.name for b in author.books for t in b.tags}
+    all_tags = tags_from_landings | tags_from_books
 
     response = {
         "id": author.id,
@@ -280,7 +279,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         "total_courses_books_price": combo_price_discounted,  # курсы+книги
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
-        "tags": sorted({t.name for l in kept_landings for t in l.tags}),
+        "tags": sorted(all_tags),
     }
     return response
 def safe_price(v) -> float:

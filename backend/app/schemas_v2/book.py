@@ -1,5 +1,6 @@
+from decimal import Decimal
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, HttpUrl, constr, validator
+from pydantic import BaseModel, Field, HttpUrl, constr, validator, condecimal
 from datetime import datetime
 from pydantic import AnyUrl
 
@@ -27,6 +28,7 @@ class BookCreate(BaseModel):
     slug: constr(regex=r"^[a-zA-Z0-9\-]+$")
     description: Optional[str]
     cover_url:   HttpUrl
+    tag_ids: list[int] = Field(default_factory=list)
     language:    constr(to_upper=True,
                         regex="^(EN|RU|ES|PT|AR|IT)$") = "EN"
     author_ids:  List[int] = Field(default_factory=list)
@@ -40,6 +42,8 @@ class BookUpdate(BookCreate):
     cover_url:   Optional[HttpUrl] = None
     files:       Optional[List[BookFilePayload]]
     audio_files: Optional[List[BookAudioPayload]]
+    tag_ids: list[int] = Field(default_factory=list)
+
 
 class BookResponse(BaseModel):
     id:          int
@@ -63,8 +67,8 @@ class BookLandingCreate(BaseModel):
     language:     constr(to_upper=True,
                          regex="^(EN|RU|ES|PT|AR|IT)$") = "EN"
     landing_name: Optional[str]
-    old_price:    Optional[str]
-    new_price:    Optional[str]
+    old_price: condecimal(max_digits=10, decimal_places=2) | None = None
+    new_price: condecimal(max_digits=10, decimal_places=2) | None = None
     description:  Optional[str]
     preview_photo: Optional[HttpS3Url]
     preview_pdf:   Optional[HttpS3Url]
@@ -80,8 +84,8 @@ class BookLandingResponse(BaseModel):
     book_id:     int
     page_name:   str
     landing_name: Optional[str]
-    old_price:    Optional[str]
-    new_price:    Optional[str]
+    old_price: Decimal | None = None
+    new_price: Decimal | None = None
     description:  Optional[str]
     preview_photo: Optional[HttpS3Url]
     preview_pdf:   Optional[HttpS3Url]

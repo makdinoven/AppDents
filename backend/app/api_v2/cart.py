@@ -1,200 +1,256 @@
+# app/api/cart.py
+# Полная версия роутера корзины с учётом книг
+# ВНИМАНИЕ: если у вас другой путь импорта — поправьте только импорты ниже.
+import os
+import logging
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Body, HTTPException
-from sqlalchemy.orm import Session, selectinload
-from ..db.database import get_db
-from ..dependencies.auth import get_current_user
-from ..models.models_v2 import User, Cart, CartItem, Landing, CartItemType
-from ..schemas_v2.cart import CartResponse, CartItemOut, LandingInCart
-from ..services_v2.cart_service import get_or_create_cart, _safe_price
-from ..services_v2 import cart_service as cs
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
+# ↓ импортируйте ваши зависимости ровно так, как у вас в проекте
+from  ..services_v2.cart_service import (
+    get_or_create_cart,
+    add_book_landing as cs_add_book,
+    remove_book_landing as cs_remove_book,
+)
+from ..models.models_v2 import (
+    Cart,
+    CartItem,
+    CartItemType,  # Enum('LANDING','BOOK') — как договорились
+    Landing,
+    Book,
+    User, BookLanding,
+)
+from .users import get_current_user           # если у вас другой путь — поправьте
+from ..db.database import get_db                        # idem
+
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
-MAX_COURSES_FOR_DISCOUNT = 25      # точка, на которой скидка фиксируется
-_EXTRA_STEP = 0.025               # 2,5 % → 0.025 в дробном виде
 
+# ────────────────────────── ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ─────────────────────────
 
-def _calc_discount(n: int) -> float:
-    """
-    Возвращает дробную скидку для n курсов.
-
-    Правила:
-      ▸ 0–1 курс   → 0 %
-      ▸ 2 курс     → 5 %
-      ▸ 3 курс     → 10 %
-      ▸ 4 курс     → 15 %
-      ▸ 5 курс     → 20 %
-      ▸ 6–25 курсов→ 20 % + 2,5 % за каждый курс сверх пяти
-      ▸ >25        → такая же скидка, как при 25 (70 %)
-
-    При n > 25 можно заменить "срез" на ValueError, если нужно жёсткое
-    ограничение.
-    """
-    if n < 2:
+def _safe_price(v) -> float:
+    try:
+        return float(v or 0)
+    except Exception:
         return 0.0
 
-    n = min(n, MAX_COURSES_FOR_DISCOUNT)   # «срезаем» всё, что выше 25
 
-    if n <= 5:
-        return 0.05 * (n - 1)              # шаг 5 % до 5 курсов
+def _calc_discount(count_courses: int) -> float:
+    """
+    Возвращает скидку (в долях, 0..1) ТОЛЬКО по числу курсов.
+    Таблицу можно задать через ENV DISCOUNT_TABLE, например:
+      DISCOUNT_TABLE="1:0,2:0.05,3:0.10,5:0.15"
+    Если ENV нет — дефолт: 1→0; 2→5%; 3→10%; 5→15%.
+    Выбирается максимальный ключ <= count_courses.
+    """
+    ds_env = os.getenv("DISCOUNT_TABLE", "1:0,2:0.05,3:0.10,5:0.15")
+    try:
+        table = {}
+        for pair in ds_env.split(","):
+            k, v = pair.split(":")
+            table[int(k.strip())] = float(v.strip())
+        best_key = max([k for k in table.keys() if k <= count_courses], default=0)
+        return table.get(best_key, 0.0)
+    except Exception as exc:
+        logger.warning("DISCOUNT_TABLE parse error '%s': %s", ds_env, exc)
+        return 0.0
 
-    # линейно наращиваем от 20 % (при n=5) до 70 % (при n=25)
-    return 0.20 + _EXTRA_STEP * (n - 5)
 
-@router.get("", response_model=CartResponse)
-def my_cart(
-    db: Session        = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    # 1) Получаем или создаём корзину
-    cart = get_or_create_cart(db, current_user)
-
-    # 2) Жадно подгружаем все связи
-    cart = (
-        db.query(Cart)
-          .options(
-              selectinload(Cart.items)
-                .selectinload(CartItem.landing)
-                  .selectinload(Landing.authors),
-              selectinload(Cart.items)
-                .selectinload(CartItem.landing)
-                  .selectinload(Landing.courses),
-          )
-          .filter(Cart.id == cart.id)
-          .first()
-    )
-    cart.items = sorted(cart.items, key=lambda it: it.id, reverse=True)
-    # 3) Считаем суммы по новым и старым ценам
-    total_new = sum(
-        _safe_price(item.landing.new_price or 0)
-        for item in cart.items if item.landing
-                    )
-    total_old = sum(
-        _safe_price(item.landing.old_price or 0)
-        for item in cart.items if item.landing
-    )
-
-    # 4) Собираем уникальные course_ids
-    count = sum(1 for item in cart.items)
-
-    # 5) Вычисляем текущую и следующую скидку
-    disc_curr = _calc_discount(count)
-    disc_next = _calc_discount(count + 1)
-
-    # 6) Итоговая сумма с учётом скидки и баланса
-    discounted = total_new * (1 - disc_curr)
-    final_pay = max(discounted - current_user.balance, 0.0)
-    pay_with_balance = max(discounted - current_user.balance, 0.0)
-    print(f"DEBUG: discounted={discounted}, balance={current_user.balance}")
-
-    # 7) Возвращаем dict под Pydantic
+def _serialize_landing(db: Session, landing_id: int) -> Optional[dict]:
+    l = db.query(Landing).get(landing_id)
+    if not l:
+        logger.warning("[CART] landing_id=%s not found", landing_id)
+        return None
+    # Сериализуем «лёгкую» карточку лендинга (не меняйте поля, если фронт их ждёт)
     return {
-        "total_amount": round(discounted, 2),
-        "total_old_amount": total_old,
-        "total_new_amount": total_new,
-        "current_discount": round(disc_curr * 100, 2),
-        "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": round(pay_with_balance,2),
-        "updated_at": cart.updated_at,
-        "items": cart.items,
+        "id": l.id,
+        "slug": getattr(l, "slug", None),
+        "landing_name": getattr(l, "landing_name", None),
+        "main_image": getattr(l, "main_image", None),
     }
 
-@router.post("/landing/{landing_id}", response_model=CartResponse)
-def add_landing(
-    landing_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    cs.add_landing(db, current_user, landing_id)
-    return my_cart(db, current_user)
 
-@router.delete("/landing/{landing_id}", response_model=CartResponse)
-def delete_landing(
-    landing_id: int,
-    db: Session        = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    cs.remove_by_landing(db, current_user, landing_id)
-    return my_cart(db, current_user)
-
-@router.post(
-    "/preview",
-    response_model=CartResponse,
-    summary="Предпросмотр корзины (без сохранения в БД)",
-)
-def cart_preview(
-    landing_ids: List[int] = Body(..., embed=True, example=[101, 102, 103]),
-    db: Session = Depends(get_db),
-):
-    """
-    Возвращает все те же поля, что `/api/cart`, **но**:
-
-    * корзина и элементы НЕ создаются в БД;
-    * `added_at` = `datetime.utcnow()` (он фронту обычно не критичен);
-    * `user_id` не нужен — работает для гостей.
-    """
-
-    # 1. Убираем дубликаты, сохраняем порядок
-    uniq_ids = []
-    seen = set()
-    for lid in landing_ids:
-        if lid not in seen:
-            uniq_ids.append(lid)
-            seen.add(lid)
-
-    if not uniq_ids:
-        raise HTTPException(400, "landing_ids array is empty")
-
-    # 2. Тащим лендинги одним запросом + авторы + курсы
-    landings = (
-        db.query(Landing)
-          .options(
-              selectinload(Landing.authors),
-              selectinload(Landing.courses),
-          )
-          .filter(Landing.id.in_(uniq_ids))
-          .all()
-    )
-    if len(landings) != len(uniq_ids):
-        missing = set(uniq_ids) - {l.id for l in landings}
-        raise HTTPException(404, f"Landing(s) not found: {sorted(missing)}")
-
-    # 3. Отсортируем в том же порядке, что пришёл с фронта
-    landing_by_id = {l.id: l for l in landings}
-    ordered = [landing_by_id[lid] for lid in uniq_ids]
-
-    # 4. Считаем суммы
-    total_new = sum(_safe_price(l.new_price) for l in ordered)
-    total_old = sum(_safe_price(l.old_price) for l in ordered)
-
-    count = len(ordered)
-    disc_curr = _calc_discount(count)
-    disc_next = _calc_discount(count + 1)
-
-    discounted = total_new * (1 - disc_curr)
-
-    # 5. Собираем items под CartResponse
-    now = datetime.utcnow()
-    items: List[CartItemOut] = []
-    for l in ordered:
-        items.append(
-            CartItemOut(
-                id=0,                     # фиктивный
-                item_type="LANDING",
-                added_at=now,
-                landing=LandingInCart.from_orm(l),
-            )
-        )
-
+def _serialize_book(db: Session, book_id: int) -> Optional[dict]:
+    b = db.query(Book).get(book_id)
+    if not b:
+        logger.warning("[CART] book_id=%s not found", book_id)
+        return None
     return {
-        "total_amount": round(discounted, 2),
-        "total_old_amount": total_old,
-        "total_new_amount": total_new,
-        "current_discount": round(disc_curr * 100, 2),
-        "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": 0,
-        "updated_at": now,
+        "id": b.id,
+        "title": b.title,
+        "slug": b.slug,
+        "cover_url": b.cover_url,
+    }
+def _serialize_book_landing_and_book(db: Session, book_landing_id: int) -> Optional[dict]:
+    """
+    Возвращает краткую карточку КНИГИ по book_landing_id (т.е. сериализуем саму книгу,
+    которая привязана к лендингу). Сейчас у BookLanding одна книга (book_id).
+    """
+    bl = db.query(BookLanding).get(book_landing_id)
+    if not bl:
+        logger.warning("[CART] book_landing_id=%s not found", book_landing_id)
+        return None
+
+    book = db.query(Book).get(bl.book_id)
+    if not book:
+        logger.warning("[CART] Book not found for book_landing_id=%s (book_id=%s)", book_landing_id, bl.book_id)
+        return None
+
+    # фронту достаточно карточки книги; цену берём из item.price
+    return {
+        "id": book.id,
+        "title": book.title,
+        "slug": book.slug,
+        "cover_url": book.cover_url,
+        # если нужно — можно добавить поля лендинга:
+        # "landing_name": bl.landing_name,
+        # "page_name": bl.page_name,
+    }
+
+def _serialize_book_landing_and_book(db: Session, book_landing_id: int) -> Optional[dict]:
+    """
+    Возвращает краткую карточку КНИГИ по book_landing_id (т.е. сериализуем саму книгу,
+    которая привязана к лендингу). Сейчас у BookLanding одна книга (book_id).
+    """
+    bl = db.query(BookLanding).get(book_landing_id)
+    if not bl:
+        logger.warning("[CART] book_landing_id=%s not found", book_landing_id)
+        return None
+
+    book = db.query(Book).get(bl.book_id)
+    if not book:
+        logger.warning("[CART] Book not found for book_landing_id=%s (book_id=%s)", book_landing_id, bl.book_id)
+        return None
+
+    # фронту достаточно карточки книги; цену берём из item.price
+    return {
+        "id": book.id,
+        "title": book.title,
+        "slug": book.slug,
+        "cover_url": book.cover_url,
+        # если нужно — можно добавить поля лендинга:
+        # "landing_name": bl.landing_name,
+        # "page_name": bl.page_name,
+    }
+
+
+# ──────────────────────────────── GET /api/cart ─────────────────────────────
+
+@router.get("", summary="Получить текущую корзину пользователя")
+def get_cart(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """
+    Возвращает корзину со всеми позициями.
+    Правила:
+      • скидка считается ТОЛЬКО по курсам (LANDING).
+      • книги (BOOK) прибавляются поверх, не влияя на скидку.
+    """
+    cart: Cart = get_or_create_cart(db, user)
+
+    # Собираем элементы
+    items: List[dict] = []
+    courses_sum = 0.0
+    books_sum = 0.0
+    courses_count = 0
+    books_count = 0
+
+    for it in (cart.items or []):
+        item_type = it.item_type.value if hasattr(it.item_type, "value") else str(it.item_type)
+        price = _safe_price(getattr(it, "price", 0.0))
+
+        if item_type == "LANDING":
+            # Курсовая позиция
+            ser = _serialize_landing(db, it.landing_id)
+            if not ser:
+                # битая ссылка — пропускаем
+                continue
+            courses_sum += price
+            courses_count += 1
+            items.append({
+                "id": it.id,
+                "price": price,
+                "item_type": "LANDING",
+                "landing": ser,
+                "book": None,
+            })
+
+
+        elif item_type == "BOOK":
+            # Книжный лендинг. В позиции price = цена ЭТОГО book_landin
+            ser = _serialize_book_landing_and_book(db, it.book_landing_id)
+
+            if not ser:
+                continue
+
+            books_sum += price
+            books_count += 1
+            items.append({
+                "id": it.id,
+                "price": price,
+                "item_type": "BOOK",
+                "landing": None,
+                "book": ser,  # карточка самой КНИГИ
+                # если фронту нужно знать какой именно лендинг был добавлен:
+                "book_landing_id": it.book_landing_id,
+
+            })
+
+        else:
+            logger.warning("[CART] Unknown item_type=%s, item_id=%s", item_type, it.id)
+
+    # Скидка — ТОЛЬКО по курсам
+    current_discount = _calc_discount(courses_count)
+    next_discount = _calc_discount(courses_count + 1)
+
+    discount_value = round(courses_sum * current_discount, 2)
+    total_amount = round((courses_sum - discount_value) + books_sum, 2)
+
+    # Не меняем БД в GET, но если хотите — можно синхронизировать cart.total_amount тут
+    response = {
+        "id": cart.id,
+        "total_amount": total_amount,
+        "subtotal_courses": round(courses_sum, 2),
+        "subtotal_books": round(books_sum, 2),
+        "courses_count": courses_count,
+        "books_count": books_count,
+        "current_discount": current_discount,
+        "next_discount": next_discount,
         "items": items,
     }
+
+    logger.debug(
+        "[CART] GET user_id=%s cart_id=%s courses=%s books=%s total=%s",
+        user.id, cart.id, courses_count, books_count, total_amount
+    )
+    return response
+
+
+# ───────────────────── ДОП. ЭНДПОИНТЫ ДЛЯ КНИГ (для удобства) ───────────────
+
+@router.post("/book-landings/{landing_id}", summary="Добавить книжный лендинг в корзину")
+def add_book_landing_to_cart(
+    landing_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    cart = cs_add_book(db, user, landing_id)
+    logger.info("[CART] POST add BOOK-LANDING user_id=%s book_landing_id=%s cart_id=%s", user.id, landing_id, cart.id)
+    return get_cart(db=db, user=user)
+
+
+@router.delete("/book-landings/{landing_id}", summary="Удалить книжный лендинг из корзины")
+def remove_book_landing_from_cart(
+    landing_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    cart = cs_remove_book(db, user, landing_id)
+    logger.info("[CART] DELETE BOOK-LANDING user_id=%s book_landing_id=%s cart_id=%s", user.id, landing_id, cart.id)
+    return get_cart(db=db, user=user)
+
