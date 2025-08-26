@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
-    health_checkers, smart_validations, clip_generator, slider, books
+    health_checkers, smart_validations, clip_generator, slider, books, search
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
@@ -36,6 +36,8 @@ def create_app() -> FastAPI:
     app.include_router(helpers.router, prefix="/api/helpers", tags=["helpers"])
 
     app.include_router(health_checkers.router, prefix="/api/healthcheckers", tags=["Health Checkers"])
+
+    app.include_router(search.router, prefix="/api/search", tags=["search"])
 
 
     @app.on_event("startup")
