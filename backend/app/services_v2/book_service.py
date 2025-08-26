@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
-    BookFileFormat, Author, BookLanding, User
+    BookFileFormat, Author, BookLanding, User, Tag
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
@@ -26,6 +26,18 @@ def _fetch_authors(db: Session, ids: List[int]) -> List[Author]:
             detail=f"Authors not found: {absent}",
         )
     return authors
+
+def _fetch_tags(db: Session, ids: list[int]) -> list[Tag]:
+    if not ids:
+        return []
+    tags = db.query(Tag).filter(Tag.id.in_(ids)).all()
+    if len(tags) != len(ids):
+        absent = sorted(set(ids) - {t.id for t in tags})
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Tags not found: {absent}",
+        )
+    return tags
 
 def _user_owns_book(db: Session, user_id: int, book_id: int) -> bool:
     """
@@ -59,6 +71,7 @@ def create_book(db: Session, payload: BookCreate) -> Book:
         description = payload.description,
         cover_url   = str(payload.cover_url),
         language    = payload.language.upper(),
+        tags=_fetch_tags(db, payload.tag_ids),
         authors     = authors,
     )
     db.add(book)
@@ -112,7 +125,8 @@ def update_book(db: Session, book_id: int, payload: BookUpdate) -> Book:
         _ensure_unique_slug(db, payload.slug,
                             exclude_book_id=book.id)
         book.slug = payload.slug
-
+    if payload.tag_ids is not None:
+        book.tags = _fetch_tags(db, payload.tag_ids)
     if payload.files is not None:
         # Полностью заменяем
         db.query(BookFile).filter(BookFile.book_id == book.id).delete()

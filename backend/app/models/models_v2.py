@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
-    Index, BigInteger
+    Index, BigInteger, Numeric
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -36,6 +36,15 @@ landing_tags = Table(
     Column('landing_id', Integer, ForeignKey('landings.id'), primary_key=True),
     Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
 )
+
+# Ассоциация «книга-тег»
+book_tags = Table(
+    "book_tags",
+    Base.metadata,
+    Column("book_id", Integer, ForeignKey("books.id"), primary_key=True),
+    Column("tag_id",  Integer, ForeignKey("tags.id"),  primary_key=True),
+)
+
 
 class PurchaseSource(str, PyEnum):
     HOMEPAGE                  = "HOMEPAGE"          # 1
@@ -265,12 +274,13 @@ class CartItem(Base):
     cart_id    = Column(Integer, ForeignKey("carts.id"), nullable=False)
     item_type  = Column(Enum(CartItemType, name="cart_item_type"), nullable=False)
     landing_id = Column(Integer, ForeignKey("landings.id"))
-    book_id    = Column(Integer)                      # для книг позже
+    book_landing_id = Column(Integer, ForeignKey("book_landings.id"))                      # для книг позже
     price      = Column(Float, nullable=False)
     added_at   = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
 
     cart = relationship("Cart", back_populates="items")
     landing = relationship("Landing")
+    book_landing = relationship("BookLanding")
 
 class ProcessedStripeEvent(Base):
     __tablename__ = "processed_stripe_events"
@@ -485,6 +495,13 @@ class Book(Base):
                                 back_populates="book",
                                 cascade="all, delete-orphan",
                                 lazy="selectin")
+    tags = relationship(
+        "Tag",
+        secondary=book_tags,
+        back_populates="books",
+        lazy="selectin",
+    )
+
 
 class BookFile(Base):
     """
@@ -518,7 +535,6 @@ class BookAudio(Base):
     title         = Column(String(255))
     duration_sec  = Column(Integer)
     s3_url        = Column(String(700), nullable=False)
-
     book = relationship("Book", back_populates="audio_files")
 
 class BookLanding(Base):
@@ -536,8 +552,8 @@ class BookLanding(Base):
                             server_default='EN')
     page_name     = Column(String(255), unique=True, nullable=False)
     landing_name  = Column(String(255))
-    old_price     = Column(String(50))
-    new_price     = Column(String(50))
+    old_price = Column(Numeric(10, 2))
+    new_price = Column(Numeric(10, 2))
     description   = Column(Text)
     preview_photo = Column(String(700))
     preview_pdf   = Column(String(700),
@@ -564,3 +580,15 @@ try:
         )
 except NameError as exc:
     logger.error("Author class not found while binding books: %s", exc)
+
+try:
+    Tag  # noqa: F401
+    if not hasattr(Tag, "books"):
+        Tag.books = relationship(
+            "Book",
+            secondary=book_tags,
+            back_populates="tags",
+            lazy="selectin",
+        )
+except NameError:
+    pass

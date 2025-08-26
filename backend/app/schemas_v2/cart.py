@@ -18,11 +18,20 @@ class LandingInCart(BaseModel):
         orm_mode = True
         allow_population_by_field_name = True
 
+class BookInCart(BaseModel):
+    id: int
+    title: str
+    slug: str
+    cover_url: Optional[str] = None
+    class Config:
+        orm_mode = True
+
 class CartItemOut(BaseModel):
     id         : int
     item_type  : Literal["LANDING","BOOK"] = "LANDING"
     added_at   : datetime
     landing    : Optional[LandingInCart]
+    book: Optional[BookInCart] = None
 
     class Config:
         orm_mode = True
