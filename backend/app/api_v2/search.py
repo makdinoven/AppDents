@@ -1,0 +1,40 @@
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from ..db.database import get_db
+from ..services_v2.search_service import search_everything
+from ..schemas_v2.search import SearchResponse, SearchTypeEnum
+
+router = APIRouter()
+
+@router.get(
+    "/v2",
+    response_model=SearchResponse,
+    summary="Глобальный поиск: авторы, курсы (лендинги), книги (книжные лендинги)"
+)
+def search_v2(
+    q: str = Query(..., min_length=1, description="Поисковая строка"),
+    types: Optional[List[SearchTypeEnum]] = Query(
+        None,
+        description="Фильтр типов: authors, landings, book_landings (мультивыбор)"
+    ),
+    languages: Optional[List[str]] = Query(
+        None,
+        description="Фильтр по языкам (мультивыбор): EN, RU, ES, PT, AR, IT"
+    ),
+    limit: int = Query(60, ge=1, le=200, description="Ограничение размера ответа (без пагинации)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает смешанную выдачу (authors/landings/book_landings) с «умным»
+    добавлением контента автора при совпадении запроса с именем автора.
+    Поддерживаются фильтры по типам и по языкам.
+    Возврат без пагинации: items обрезаются по `limit` (по умолчанию 60).
+    """
+    return search_everything(
+        db,
+        q=q,
+        types=[t.value for t in types] if types else None,
+        languages=languages,
+        limit=limit,
+    )
