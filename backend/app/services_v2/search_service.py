@@ -227,25 +227,50 @@ def search_everything(
     # 6) Сортировка по скору (DESC), затем по типу/ID как тiebreaker
     scored_items.sort(key=lambda it: (-it["_score"], it["_tie"]))
 
+    # ... после sort scored_items по (-_score, _tie)
+
     total = len(scored_items)
     applied_limit = max(1, min(int(limit or 60), 200))
-    items_out = scored_items[:applied_limit]
+
+    # наполняем три массива в порядке общей релевантности,
+    # пока не достигнем общего limit
+    authors_out = []
+    landings_out = []
+    book_landings_out = []
+    returned = 0
+
+    def _strip_private(it):
+        return {k: v for k, v in it.items() if not k.startswith("_")}
+
+    for it in scored_items:
+        if returned >= applied_limit:
+            break
+        t = it["type"]
+        if t == "author":
+            authors_out.append(_strip_private(it))
+        elif t == "landing":
+            landings_out.append(_strip_private(it))
+        elif t == "book_landing":
+            book_landings_out.append(_strip_private(it))
+        returned += 1
+
     truncated = total > applied_limit
 
-    # пересчёт counts по отображаемой выдаче не нужен — фронту важнее общее число найденных,
-    # но если захотите мини-счётчики по показанным — их можно добавить отдельно.
+    # counts — по всем найденным (после фильтров по типам/языкам), ДО урезания по limit
+    counts = {
+        "authors": sum(1 for it in scored_items if it["type"] == "author"),
+        "landings": sum(1 for it in scored_items if it["type"] == "landing"),
+        "book_landings": sum(1 for it in scored_items if it["type"] == "book_landing"),
+    }
+
     return {
-        "counts": {
-            "authors": sum(1 for it in scored_items if it["type"] == "author"),
-            "landings": sum(1 for it in scored_items if it["type"] == "landing"),
-            "book_landings": sum(1 for it in scored_items if it["type"] == "book_landing"),
-        },
-        "total": total,
-        "returned": len(items_out),
+        "counts": counts,
+        "total": sum(counts.values()),
+        "returned": returned,
         "limit": applied_limit,
         "truncated": truncated,
-        "items": [
-            {k: v for k, v in it.items() if not k.startswith("_")}
-            for it in items_out
-        ],
+        "authors": authors_out,
+        "landings": landings_out,
+        "book_landings": book_landings_out,
     }
+
