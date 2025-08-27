@@ -12,7 +12,7 @@ class SearchAuthorItem(BaseModel):
     id: int
     name: str
     photo: Optional[str] = None
-    language: str  # EN/RU/...
+    language: str
 
 class SearchLandingItem(BaseModel):
     type: Literal["landing"] = "landing"
@@ -23,7 +23,7 @@ class SearchLandingItem(BaseModel):
     old_price: Optional[str] = None
     new_price: Optional[str] = None
     language: str
-    authors: List[dict]  # [{id,name,photo,language?}]
+    authors: List[dict]
 
 class SearchBookLandingItem(BaseModel):
     type: Literal["book_landing"] = "book_landing"
@@ -44,9 +44,11 @@ class SearchCounts(BaseModel):
     book_landings: int
 
 class SearchResponse(BaseModel):
-    counts: SearchCounts          # полное число найденных по типам (после фильтров, до обрезки по limit)
+    counts: SearchCounts          # найдено по каждому типу (после фильтров, до урезания по limit)
     total: int                    # сумма counts.*
-    returned: int                 # сколько реально вернули (≤ limit)
+    returned: int                 # сколько реально отдали (≤ limit)
     limit: int                    # применённый лимит
     truncated: bool               # были ли урезания по лимиту
-    items: List[Union[SearchAuthorItem, SearchLandingItem, SearchBookLandingItem]]
+    authors: List[SearchAuthorItem]
+    landings: List[SearchLandingItem]
+    book_landings: List[SearchBookLandingItem]
