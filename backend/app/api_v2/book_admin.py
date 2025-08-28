@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Book, BookFile, BookFileFormat, BookAudio, Tag
+from ..services_v2.book_service import books_in_landing
 from ..tasks.book_formats import _k_job, _k_log, _k_fmt  # используем те же ключи
 from ..celery_app import celery
 
@@ -412,3 +413,42 @@ def start_landing_previews(
         queued.append(b.id)
 
     return {"message": "Preview tasks queued", "landing_id": landing_id, "book_ids": queued}
+
+
+@router.post("/admin/{user_id}/book-landings/{landing_id}",
+             summary="Выдать пользователю все книги из книжного лендинга (Админ)")
+def grant_books_from_landing(
+    user_id: int,
+    landing_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Добавляет пользователю все книги, входящие в указанный книжный лендинг (bundle или одиночная).
+    Использует INSERT IGNORE в users_books, чтобы не было ошибок при повторной выдаче.
+    """
+    logger = logging.getLogger("admin.grant_books")
+
+    bl = db.query(BookLanding).get(landing_id)
+    if not bl:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    books = books_in_landing(db, bl)
+    if not books:
+        raise HTTPException(status_code=400, detail="No books bound to this landing")
+
+    # INSERT IGNORE для MySQL — безопасно при повторной выдаче
+    values_sql = ",".join(f"({user_id},{b.id})" for b in books)
+    db.execute(text(f"INSERT IGNORE INTO users_books (user_id, book_id) VALUES {values_sql}"))
+    db.commit()
+
+    logger.info("[ADMIN][GRANT] user_id=%s landing_id=%s -> books=%s",
+                user_id, landing_id, [b.id for b in books])
+
+    return {
+        "message": "Books granted",
+        "user_id": user_id,
+        "landing_id": landing_id,
+        "book_ids": [b.id for b in books],
+        "count": len(books),
+    }
