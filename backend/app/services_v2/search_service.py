@@ -1,23 +1,35 @@
-from typing import Iterable, List, Optional, Tuple, Dict, Any
-from sqlalchemy.orm import Session
+from typing import List, Optional, Dict, Any
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import or_
 import math
 
-from ..models.models_v2 import Author, Landing, BookLanding, Book  # поля языка и связи существуют
-# Author.language, Landing.language, BookLanding.language; Landing.authors; BookLanding.book; Book.authors
+from ..models.models_v2 import Author, Landing, BookLanding, Book
 
-# ------------------------ утилиты ------------------------
-TITLE_WEIGHT = 1.0
-SLUG_WEIGHT  = 0.35
+# === Настройки скоринга ===
+TITLE_WEIGHT = 1.0   # видимое название
+SLUG_WEIGHT  = 0.35  # slug/page_name имеет пониженный вес
 
+# === Утилиты ===
 def _ilike(s: str) -> str:
     return f"%{s.strip()}%"
 
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
+def safe_price(v) -> float:
+    """Парсинг цены в float; нечисловые значения -> +inf."""
+    try:
+        if v is None:
+            return float("inf")
+        if isinstance(v, (int, float)):
+            return float(v)
+        s = str(v).strip().replace(",", ".")
+        return float(s)
+    except Exception:
+        return float("inf")
+
 def _text_score(field: Optional[str], q: str, tokens: List[str]) -> int:
-    """Сильный скоринг текста: exact > startswith > contains + бонусы за токены."""
+    """Скоринг текста: exact > startswith > contains + бонусы за токены."""
     if not field:
         return 0
     f = _norm(field)
@@ -28,7 +40,6 @@ def _text_score(field: Optional[str], q: str, tokens: List[str]) -> int:
         base += 60
     elif q in f:
         base += 30
-    # токены (минимальные «подсказки»)
     for t in tokens:
         if t and t in f:
             base += 8
@@ -40,8 +51,77 @@ def _authors_score(authors: List["Author"], q: str, tokens: List[str], scale: fl
         sc += int(_text_score(a.name, q, tokens) * scale)
     return sc
 
-# ------------------------ основной поиск ------------------------
+def _author_content_counts_like_detail(a: Author, langs: Optional[List[str]]) -> tuple[int, int]:
+    """
+    Подсчёт (courses_count, books_count) по логике из get_author_full_detail:
+    - landings: убираем скрытые, применяем фильтр языков;
+      считаем min цену по каждому course_id, оставляем лендинги,
+      у которых цена не хуже min для всех их курсов; собираем уникальные course_id.
+    - books: считаем книги, у которых есть хотя бы один видимый book_landing
+      нужного языка с конечной (числовой) ценой.
+    """
+    # --- 1) ЛЕНДИНГИ АВТОРА (курсы) ---
+    visible_landings: List[Landing] = []
+    for l in (a.landings or []):
+        if l.is_hidden:
+            continue
+        if langs and (l.language or "").upper() not in langs:
+            continue
+        visible_landings.append(l)
 
+    # min цена по каждому course_id
+    min_price_by_course: Dict[int, float] = {}
+    for l in visible_landings:
+        price = safe_price(l.new_price)
+        for c in (l.courses or []):
+            cid = c.id
+            prev = min_price_by_course.get(cid, float("inf"))
+            if price < prev:
+                min_price_by_course[cid] = price
+
+    # оставляем лендинги, цена которых не выше min для любого их курса
+    kept_landings: List[Landing] = []
+    for l in visible_landings:
+        price = safe_price(l.new_price)
+        # если у лендинга есть хоть один курс с более дешёвым лендингом — выкидываем
+        if any(price > min_price_by_course.get(c.id, float("inf")) for c in (l.courses or [])):
+            continue
+        kept_landings.append(l)
+
+    # уникальные course_id из оставшихся лендингов
+    course_ids = set()
+    for l in kept_landings:
+        for c in (l.courses or []):
+            if getattr(c, "id", None) is not None:
+                course_ids.add(c.id)
+    courses_count = len(course_ids)
+
+    # --- 2) КНИГИ АВТОРА ---
+    books_count = 0
+    for b in (getattr(a, "books", []) or []):
+        # видимые книжные лендинги нужного языка
+        visible_bl = []
+        for bl in (b.landings or []):
+            if bl.is_hidden:
+                continue
+            if langs and (bl.language or "").upper() not in langs:
+                continue
+            visible_bl.append(bl)
+
+        if not visible_bl:
+            continue
+
+        # минимальная цена по книге среди видимых лендингов
+        price_min = min(safe_price(bl.new_price) for bl in visible_bl)
+        if price_min == float("inf"):
+            # у книги нет валидной цены ни на одном видимом лендинге — не считаем такую книгу
+            continue
+
+        books_count += 1
+
+    return courses_count, books_count
+
+# === Основная функция ===
 def search_everything(
     db: Session,
     *,
@@ -53,9 +133,10 @@ def search_everything(
     Глобальный поиск с «умом»:
     - Ищет авторов/курсы(лендинги)/книжные лендинги.
     - Если найден автор, добавляет его курсы и книжные лендинги.
-    - Фильтр языков влияет и на счётчики, и на выдачу.
+    - Фильтр языков влияет на счётчики и выдачу.
     - Фильтр типов влияет ТОЛЬКО на выдачу (счётчики — без учёта типов).
-    - Без лимита: возвращаются все результаты (в трёх массивах).
+    - Без лимита: возвращаем все результаты (в трёх массивах).
+    - Снижен вес совпадения по slug (page_name).
     """
     q_like = _ilike(q)
     qn = _norm(q)
@@ -66,7 +147,15 @@ def search_everything(
         langs = [x.strip().upper() for x in languages if x and x.strip()]
 
     # --- 1) Поиск базовых совпадений ---
-    authors_q = db.query(Author).filter(Author.name.ilike(q_like))
+    # Авторы — с предзагрузкой нужных связей, чтобы корректно посчитать courses_count/books_count
+    authors_q = (
+        db.query(Author)
+          .options(
+              selectinload(Author.landings).selectinload(Landing.courses),
+              selectinload(Author.books).selectinload(Book.landings),
+          )
+          .filter(Author.name.ilike(q_like))
+    )
     if langs:
         authors_q = authors_q.filter(Author.language.in_(langs))
     authors = authors_q.all()
@@ -78,7 +167,7 @@ def search_everything(
           .filter(
               or_(
                   Landing.landing_name.ilike(q_like),
-                  Landing.page_name.ilike(q_like),   # slug с пониженным весом в скоринге (а не в фильтре)
+                  Landing.page_name.ilike(q_like),   # slug в фильтре остаётся; вес режем в скоринге
                   Author.name.ilike(q_like),
               )
           )
@@ -96,7 +185,7 @@ def search_everything(
           .filter(
               or_(
                   BookLanding.landing_name.ilike(q_like),
-                  BookLanding.page_name.ilike(q_like),  # slug с пониженным весом в скоринге
+                  BookLanding.page_name.ilike(q_like),
                   Book.title.ilike(q_like),
                   Author.name.ilike(q_like),
               )
@@ -142,18 +231,22 @@ def search_everything(
             if bl.id not in bl_ids:
                 book_landings.append(bl)
 
-    # --- 3) Нормализуем все найденные элементы и считаем счётчики (без учёта фильтра типов!) ---
+    # --- 3) Нормализуем, считаем счётчики (без учёта фильтра типов) и скорим ---
     scored_items: List[Dict[str, Any]] = []
 
-    # Авторы
+    # Авторы — добавляем courses_count / books_count по «детальной» логике
     for a in authors:
         score = _text_score(a.name, qn, tokens)
+        courses_count, books_count = _author_content_counts_like_detail(a, langs)
+
         scored_items.append({
             "type": "author",
             "id": a.id,
             "name": a.name,
             "photo": a.photo,
             "language": a.language,
+            "courses_count": courses_count,
+            "books_count": books_count,
             "_score": score,
             "_tie": (0, a.id),
         })
@@ -164,7 +257,6 @@ def search_everything(
         slug_s  = _text_score(l.page_name, qn, tokens)
         score   = int(TITLE_WEIGHT * title_s + SLUG_WEIGHT * slug_s)
         score  += _authors_score(list(l.authors or []), qn, tokens, scale=0.8)
-        # необязательный «толчок» популярности, если поле есть
         try:
             score += int(math.log10(max(int(getattr(l, "sales_count", 0) or 0), 1)))
         except Exception:
@@ -207,7 +299,7 @@ def search_everything(
             "_tie": (2, bl.id),
         })
 
-    # Счётчики (зависят только от текста запроса и языков)
+    # Счётчики (зависят только от q и languages)
     counts_all = {
         "authors":      sum(1 for it in scored_items if it["type"] == "author"),
         "landings":     sum(1 for it in scored_items if it["type"] == "landing"),
@@ -241,19 +333,14 @@ def search_everything(
         else:
             book_landings_out.append(_strip_private(it))
 
-    returned = len(filtered_items)   # отдали всё
-    # чтобы не ломать существующий контракт схемы:
-    limit_value = returned           # считаем, что «лимит = total» (никакого урезания)
-    truncated = False
-
+    returned = len(filtered_items)   # отдаём всё
     return {
-        "counts": counts_all,        # зависит только от языка (и q), не от типов
+        "counts": counts_all,        # только язык (и q), НЕ зависят от types
         "total": total_all,
         "returned": returned,
-        "limit": limit_value,
-        "truncated": truncated,
+        "limit": returned,           # для совместимости со схемой
+        "truncated": False,
         "authors": authors_out,
         "landings": landings_out,
         "book_landings": book_landings_out,
     }
-
