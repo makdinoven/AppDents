@@ -79,6 +79,20 @@ class BookLandingUpdate(BookLandingCreate):
     page_name: Optional[str] = None
     book_id:   Optional[int] = None
 
+# >>> app/schemas_v2/book.py — ДОБАВИТЬ ПЕРЕД/РЯДОМ С BookLandingResponse <<<
+
+class IncludedBookShort(BaseModel):
+    """
+    Короткое представление книги внутри лендинга:
+    id, title, slug, обложка и превью-PDF (15 страниц).
+    """
+    id: int
+    title: str
+    slug: str
+    cover_url: Optional[HttpUrl] = None
+    preview_pdf: Optional[HttpS3Url] = None  # может быть http/https/s3
+
+# … ниже уже есть BookLandingResponse — ЗАМЕНИ ЕГО ОБЪЯВЛЕНИЕ НА ЭТО:
 class BookLandingResponse(BaseModel):
     id:          int
     book_id:     int
@@ -93,8 +107,13 @@ class BookLandingResponse(BaseModel):
     sales_count:   int
     is_hidden:     bool
 
+    # ↓↓↓ ДОБАВЛЕНО: список книг, входящих в лендинг (bundle или одиночная)
+    included_books: List[IncludedBookShort] = Field(default_factory=list)
+    bundle_size: int = 0
+
     class Config:
         orm_mode = True
+
 
 # ─────────────────────── DOWNLOAD-модели ──────────────────────────
 class BookFileDownload(BaseModel):

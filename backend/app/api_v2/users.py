@@ -10,12 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Background
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
 from sqlalchemy import func, Float, and_, case
-from sqlalchemy.orm import Session, joinedload, aliased
+from sqlalchemy.orm import Session, joinedload, aliased, selectinload
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Purchase, Course, Landing, landing_course
+from ..models.models_v2 import User, Purchase, Course, Landing, landing_course, Book
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -29,6 +29,7 @@ from ..services_v2.user_service import (
     get_free_course_stats
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
+from ..utils.s3 import generate_presigned_url
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
@@ -695,3 +696,87 @@ def free_course_stats(
         limit=limit,
     )
 
+@router.get("/me/books", summary="Получить книги пользователя")
+def get_user_books(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает список купленных пользователем книг с форматами и аудио.
+    Для каждого файла/аудио отдаём подписанные (presigned) ссылки для скачивания.
+    Ссылки живут 24 часа.
+
+    Формат ответа:
+    {
+      "items": [
+         {
+           "id": <book_id>, "title": "...", "slug": "...", "cover_url": "...",
+           "files": [
+             {"format": "PDF", "size_bytes": 12345, "download_url": "https://..."},
+             ...
+           ],
+           "audios": [
+             {"id": 10, "chapter_index": 1, "title": "Chapter 1", "duration_sec": 1800, "download_url": "https://..."},
+             ...
+           ]
+         },
+         ...
+      ],
+      "count": <N>
+    }
+    """
+    # Грузим книги пользователя без N+1:
+    user = (
+        db.query(User)
+          .options(
+              selectinload(User.books).selectinload(Book.files),
+              selectinload(User.books).selectinload(Book.audio_files),
+          )
+          .filter(User.id == current_user.id)
+          .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Генератор подписей (24 часа)
+    from datetime import timedelta
+    def _sign(url: str | None) -> str | None:
+        if not url:
+            return None
+        try:
+            return generate_presigned_url(url, expires=timedelta(hours=24))
+        except Exception as exc:
+            return None
+
+    items: list[dict] = []
+    for b in user.books:
+        files = []
+        for f in (b.files or []):
+            # Enum может быть как str, так и Enum — берём value, если есть
+            fmt = getattr(f.file_format, "value", f.file_format)
+            files.append({
+                "format": fmt,
+                "size_bytes": f.size_bytes,
+                "download_url": _sign(f.s3_url),
+            })
+
+        audios = []
+        for a in (b.audio_files or []):
+            audios.append({
+                "id": a.id,
+                "chapter_index": a.chapter_index,
+                "title": a.title,
+                "duration_sec": a.duration_sec,
+                "download_url": _sign(a.s3_url),
+            })
+
+        items.append({
+            "id": b.id,
+            "title": b.title,
+            "slug": b.slug,
+            "cover_url": b.cover_url,
+            "files": files,
+            "audios": audios,
+        })
+
+    return {"items": items, "count": len(items)}

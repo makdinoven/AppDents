@@ -215,15 +215,18 @@ def delete_book_landing(db: Session, landing_id: int) -> None:
     db.commit()
     log.warning("[BOOK-LANDING] id=%d удалён", landing_id)
 
+# >>> app/services_v2/book_service.py — ЗАМЕНИ get_book_landing_by_slug <<<
+
 def get_book_landing_by_slug(
         db: Session, slug: str, language: str | None = None
 ) -> BookLandingResponse:
     """
-    Возвращает первый НЕ скрытый лендинг книги.
-    • language – опциональный фильтр ('RU', 'EN', …).
-    • preview_* поля конвертируются в HTTPS-URL
-      (для CDN-бакета – прямой адрес, иначе – Signed URL).
+    Возвращает первый НЕ скрытый лендинг книги по slug книги.
+    • language – опциональный фильтр ('RU','EN',…).
+    • preview_* поля приводим к публичным URL (CDN или Signed URL).
+    • ВКЛЮЧЕНО: included_books (каждая книга с preview_pdf) и bundle_size.
     """
+    # 1) найдём книгу по slug
     book = (
         db.query(Book)
           .options(selectinload(Book.landings))
@@ -233,9 +236,17 @@ def get_book_landing_by_slug(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    q = db.query(BookLanding).filter(
-        BookLanding.book_id == book.id,
-        BookLanding.is_hidden.is_(False),
+    # 2) найдём её видимый лендинг с нужным языком
+    q = (
+        db.query(BookLanding)
+          .options(
+              selectinload(BookLanding.books_bundle),
+              selectinload(BookLanding.book),
+          )
+          .filter(
+              BookLanding.book_id == book.id,
+              BookLanding.is_hidden.is_(False),
+          )
     )
     if language:
         q = q.filter(BookLanding.language == language.upper())
@@ -244,10 +255,28 @@ def get_book_landing_by_slug(
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    # ── конвертируем s3:// → https:// либо Signed URL ─────────────────────
+    # 3) подготовим helper для URL
     def _pub(url: str | None) -> str | None:
+        # если http/https — вернём как есть; если s3:// — подпишем
         return generate_presigned_url(url, expires=timedelta(hours=24)) if url else None
 
+    # 4) какие книги входят в лендинг (bundle > одиночная)
+    books = books_in_landing(db, landing)  # уже есть в этом модуле ниже
+    log.info("[BOOK-LANDING] slug=%s landing=%s includes %d book(s)",
+             slug, landing.page_name, len(books))
+
+    # 5) сериализуем список книг с превью-PDF каждой книги
+    included_books = []
+    for b in books:
+        included_books.append({
+            "id": b.id,
+            "title": b.title,
+            "slug": b.slug,
+            "cover_url": b.cover_url,
+            "preview_pdf": _pub(getattr(b, "preview_pdf", None)),
+        })
+
+    # 6) собрать итоговый ответ
     return BookLandingResponse(
         id            = landing.id,
         book_id       = landing.book_id,
@@ -262,6 +291,9 @@ def get_book_landing_by_slug(
         preview_imgs  = [_pub(u) for u in (landing.preview_imgs or [])] or None,
         sales_count   = landing.sales_count,
         is_hidden     = landing.is_hidden,
+
+        included_books = included_books,     # ← добавили
+        bundle_size    = len(included_books) # ← добавили
     )
 
 def get_book_detail(
@@ -338,3 +370,16 @@ def get_book_detail(
         created_at      = book.created_at,
         updated_at      = book.updated_at,
     )
+
+
+def books_in_landing(db: Session, bl: BookLanding) -> list[Book]:
+    """
+    Возвращает список книг, которые покупатель получит при покупке этого книжного лендинга.
+    Если M2M-бандл задан — он приоритетен. Иначе — одиночная книга из bl.book.
+    """
+    if bl.books_bundle:
+        return list(bl.books_bundle)
+    if getattr(bl, "book", None):
+        return [bl.book]
+    log.warning("[BOOKS] Landing %s has no books bound", bl.id)
+    return []
