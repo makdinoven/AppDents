@@ -1,5 +1,4 @@
 import s from "./ArrowButton.module.scss";
-import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Link } from "react-router-dom";
 import { CircleArrowSmall } from "../../../assets/icons/index.ts";
 import { Trans } from "react-i18next";
@@ -24,11 +23,11 @@ const ArrowButton = ({
       <CircleArrowSmall />
     </Link>
   ) : (
-    <UnstyledButton ref={ref} onClick={onClick} className={s.btn}>
+    <button ref={ref} onClick={onClick} className={s.btn}>
       <Trans i18nKey={text} />
       {children && <span>{children}</span>}
       <CircleArrowSmall />
-    </UnstyledButton>
+    </button>
   );
 };
 

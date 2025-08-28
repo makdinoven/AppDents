@@ -31,11 +31,7 @@ function App() {
 
   useEffect(() => {
     dispatch(getMe());
-  }, []);
-
-  useEffect(() => {
     initFacebookPixel();
-    // dispatch(getMe());
     const storedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || language;
     dispatch(setLanguage(storedLanguage));
   }, []);

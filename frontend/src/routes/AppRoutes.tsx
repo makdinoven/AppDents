@@ -28,11 +28,14 @@ import ProtectedRoute from "./protected/ProtectedRoute.tsx";
 import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
+import SearchPage from "../pages/SearchPage/SearchPage.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation || null;
-  const isModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
+  const isAuthModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
+  const isCartPage = location.pathname === Path.cart;
+  const isSearchPage = location.pathname === Path.search;
 
   return (
     <>
@@ -41,11 +44,16 @@ export const AppRoutes: FC = () => {
           {AUTH_MODAL_ROUTES.map((path) => (
             <Route key={path} path={path} element={<MainPage />} />
           ))}
-          <Route path={Path.cart} element={<MainPage />} />
+          {!backgroundLocation && (
+            <>
+              <Route path={Path.cart} element={<MainPage />} />
+              <Route path={Path.search} element={<MainPage />} />
+            </>
+          )}
+
           <Route path={Path.courses} element={<Courses isFree={false} />} />
           <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
           <Route index element={<MainPage />} />
-
           {LANDING_ROUTES.map((path) => (
             <Route
               key={path}
@@ -111,8 +119,9 @@ export const AppRoutes: FC = () => {
         </Route>
       </Routes>
 
-      {(backgroundLocation || isModalRoute) && <AuthModalManager />}
-      {location.pathname === Path.cart && <Cart />}
+      {(backgroundLocation || isAuthModalRoute) && <AuthModalManager />}
+      {isCartPage && <Cart />}
+      {isSearchPage && <SearchPage />}
     </>
   );
 };

@@ -11,6 +11,35 @@
   }
 }
 
+.toggle_btns_container {
+  display: flex;
+  //gap: 10px;
+  overflow: hidden;
+  background-color: $hover-color;
+  border-radius: 15px;
+  border: 1px solid $hover-color;
+
+  button {
+    padding: 5px 10px;
+    border-radius: 7px;
+    flex: 1;
+    @include transition();
+    @include clamped-p3;
+    text-transform: uppercase;
+
+    @media (hover: hover) {
+      &:hover:not(.active) {
+        color: $secondary-lighter;
+      }
+    }
+
+    &.active {
+      background-color: $background-color;
+      color: $primary;
+    }
+  }
+}
+
 .tooltip {
   @include clamped-p3;
   background-color: $background-color;
@@ -22,6 +51,12 @@
 .tooltip_date {
   text-align: center;
   margin-bottom: 5px;
+}
+
+.two_items {
+  gap: 10px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
 }
 
 .chart_container {
@@ -63,6 +98,11 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .two_items {
+    display: flex;
+    flex-direction: column;
+  }
+
   .analytics_options {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
@@ -72,6 +112,10 @@
     h2 {
       margin-bottom: 20px;
     }
+  }
+
+  .toggle_btns_container {
+    border-radius: 10px;
   }
 
   //.languages_table {

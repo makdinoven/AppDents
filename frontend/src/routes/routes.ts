@@ -14,6 +14,7 @@ export const Path = {
   landingClient: "client/course",
   freeLanding: "course/free",
   freeLandingClient: "client/course/free",
+  payment: "/buy",
   profile: "/profile",
   myCourse: "course",
   lesson: "lesson",

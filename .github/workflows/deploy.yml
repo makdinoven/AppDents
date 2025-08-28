@@ -3,25 +3,22 @@ name: Deploy to Production
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: prod-deploy
+  cancel-in-progress: true
 
 jobs:
-  # 1) Определяем, какие сервисы затронуты изменениями
   check-changes:
     runs-on: ubuntu-latest
-
-    # Список изменённых сервисов передадим как output этого job
     outputs:
       changed_services: ${{ steps.prepare.outputs.changed_services }}
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-
-      - name: Detect changed folders
-        id: changes
+      - uses: actions/checkout@v3
+      - id: changes
         uses: dorny/paths-filter@v2
         with:
-          # Настраиваем фильтры, указывая пути для каждого сервиса
           filters: |
             backend:
               - 'backend/**'
@@ -29,62 +26,80 @@ jobs:
               - 'frontend/**'
             nginx:
               - 'nginx/**'
-
-      - name: Prepare changed_services output
-        id: prepare
+      - id: prepare
         run: |
           SERVICES=""
-          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then
-            SERVICES="$SERVICES backend"
-          fi
-          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then
-            SERVICES="$SERVICES frontend"
-          fi
-          if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then
-            SERVICES="$SERVICES nginx"
-          fi
-          # Записываем результат в GITHUB_OUTPUT,
-          # чтобы передать в другой job.
-          echo "changed_services=$SERVICES" >> $GITHUB_OUTPUT
+          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then SERVICES="$SERVICES backend"; fi
+          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then SERVICES="$SERVICES frontend"; fi
+          if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then SERVICES="$SERVICES nginx"; fi
+          echo "changed_services=$SERVICES" >> "$GITHUB_OUTPUT"
 
-
-  # 2) Деплой на сервер с выборочной сборкой
   deploy:
     runs-on: ubuntu-latest
-    needs: [ check-changes ]
-
+    needs: [check-changes]
     steps:
       - uses: actions/checkout@v3
-
-      - name: SSH Deploy
-        uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.TW_SERVER_HOST }}
+          fetch-depth: 0
+
+      - name: SSH Deploy (git pull + compose up)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          # используем уже существующие TW_* секреты
+          host:     ${{ secrets.TW_SERVER_HOST }}
           username: ${{ secrets.TW_SERVER_USER }}
-          key: ${{ secrets.TW_SERVER_SSH_KEY }}
-          skip_host_key_check: true
-
-          # 1️⃣ Остановить action при первой же ошибке на сервере
-          script_stop: true   # ⬅️ ключ от самой action :contentReference[oaicite:0]{index=0}
-
+          key:      ${{ secrets.TW_SERVER_SSH_KEY }}
+          # port:   ${{ secrets.TW_SERVER_PORT }}   # раскомментируй, если не 22
+          debug: true
+          command_timeout: 15m
           script: |
-            # 2️⃣ Сделать оболочку «fail-fast»
-            set -Eeuo pipefail   # -e  выход при ошибке,  -o pipefail  учитывает пайпы
-            
+            set -Eeuo pipefail
+            set -x
+
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
-            
-            git pull --no-rebase -s recursive -X theirs origin main
-            
-            CHANGED_SERVICES="${{ needs.check-changes.outputs.changed_services }}"
-            if [ -n "$CHANGED_SERVICES" ]; then
-              echo "Есть изменения в: $CHANGED_SERVICES"
-              docker compose build $CHANGED_SERVICES nginx   # nginx всё равно пересобираем
-            else
-              echo "Нет изменений в сервисах — пересобираем только nginx"
-              docker compose build nginx
+
+            # Git: безопасный pull без ребейза/редактора, отключаем локальные хуки
+            git config --local core.hooksPath /dev/null || true
+            git config --local pull.rebase false
+            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            git pull --no-rebase --no-edit -s recursive -X theirs origin main
+
+            # .env обязателен
+            if [ ! -f .env ]; then
+              if [ -f /etc/appdents/prod.env ]; then
+                ln -sfn /etc/appdents/prod.env .env
+              else
+                echo "[env] .env missing and /etc/appdents/prod.env not found"; exit 1
+              fi
             fi
-            
-            docker compose up -d
-            docker compose exec nginx nginx -s reload
-            docker builder prune -f
+
+            # Сборка изменившихся сервисов + всегда nginx
+            CHANGED="$(echo "${{ needs.check-changes.outputs.changed_services }}" | xargs || true)"
+            if [ -z "$CHANGED" ]; then
+              echo "Нет изменений в сервисах — пересобираем только nginx"
+              docker compose -f docker-compose.yaml build nginx
+            else
+              echo "Есть изменения в: $CHANGED"
+              docker compose -f docker-compose.yaml build $CHANGED nginx
+            fi
+
+            # Рестарт стека с ретраями (устраняет гонки сетей)
+            docker compose -f docker-compose.yaml down --remove-orphans || true
+            docker network prune -f || true
+
+            for i in 1 2 3; do
+              if docker compose -f docker-compose.yaml up -d; then
+                break
+              fi
+              echo "[retry] compose up failed, attempt $i"
+              docker compose -f docker-compose.yaml down --remove-orphans || true
+              docker network prune -f || true
+              sleep 3
+            done
+
+            # Reload nginx (или restart при неудаче)
+            docker compose -f docker-compose.yaml exec nginx nginx -s reload || \
+              docker compose -f docker-compose.yaml restart nginx
+
+            docker builder prune -f || true

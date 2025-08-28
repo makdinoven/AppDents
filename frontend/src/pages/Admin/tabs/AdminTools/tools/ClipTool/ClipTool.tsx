@@ -34,7 +34,6 @@ const ClipTool = () => {
     const interval = setInterval(async () => {
       try {
         const res = await adminApi.getClipStatus(jobId);
-        console.log(jobStatus);
         setJobStatus(res.data.status);
         if (res.data.status === "done") {
           setJobStatus("");

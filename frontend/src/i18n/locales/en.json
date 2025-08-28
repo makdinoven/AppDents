@@ -97,6 +97,12 @@
     "sorry": "We apologize for any inconvenience caused"
   },
 
+  "payment": {
+    "encryptedPayment": "Payment is processed via Stripe in compliance with PCI DSS Level 1 — your card data is encrypted and never stored by us.",
+    "afterPayment": "After payment, the course will be added to your account and login details sent to your email. Check Spam if you don’t receive it.",
+    "privacyAgreement": "By clicking the \"Pay\" button, you agree to receive marketing e-mails, consent to our <1>Privacy Policy.</1>"
+  },
+
   "nav": {
     "home": "Home",
     "courses": "Courses",
@@ -328,6 +334,7 @@
     "discount": "Discount",
     "total": "Total",
     "useBalance": "Spend balance",
+    "balanceWillBeUsed": "С вашего баланса будет списана сумма ${{value}}",
     "replenish": "Replenish balance",
     "returnToShop": "Return to shop",
     "inCart": "In cart",

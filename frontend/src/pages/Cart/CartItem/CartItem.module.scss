@@ -83,6 +83,10 @@
   @include flex-column;
   gap: 5px;
   padding-right: 38px;
+
+  h4 {
+    hyphens: auto;
+  }
 }
 
 .item_middle {
@@ -162,7 +166,7 @@
   }
 
   .text_wrapper {
-    padding-right: 28px;
+    padding-right: 35px;
   }
 
   .img_wrapper {
