@@ -97,4 +97,7 @@ celery.conf.task_routes = {
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
+    "app.tasks.book_formats.*": {"queue": "special"},
+    "app.tasks.book_previews.*": {"queue": "special"},
+
 }

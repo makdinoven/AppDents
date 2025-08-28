@@ -22,6 +22,15 @@ users_courses = Table(
     Column('course_id', Integer, ForeignKey('courses.id'), primary_key=True)
 )
 
+
+users_books = Table(
+    'users_books',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('book_id', Integer, ForeignKey('books.id'), primary_key=True),
+)
+
+
 # ассоциативная таблица для связи лендингов и курсов (многие ко многим)
 landing_course = Table(
     'landing_course',
@@ -43,6 +52,14 @@ book_tags = Table(
     Base.metadata,
     Column("book_id", Integer, ForeignKey("books.id"), primary_key=True),
     Column("tag_id",  Integer, ForeignKey("tags.id"),  primary_key=True),
+)
+
+# Ассоциация «книжный лендинг — книги (бандл)»
+book_landing_books = Table(
+    "book_landing_books",
+    Base.metadata,
+    Column("book_landing_id", Integer, ForeignKey("book_landings.id"), primary_key=True),
+    Column("book_id",         Integer, ForeignKey("books.id"),         primary_key=True),
 )
 
 
@@ -160,6 +177,8 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    books = relationship("Book", secondary=users_books, backref="users")
+
 
     @hybrid_property
     def active_special_offer_ids(self) -> list[int]:
@@ -189,7 +208,8 @@ class Purchase(Base):
     landing_id = Column(Integer, ForeignKey('landings.id'), nullable=True)
     course_id = Column(Integer, ForeignKey('courses.id'), nullable=True)
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
-
+    book_landing_id = Column(Integer, ForeignKey('book_landings.id'), nullable=True)
+    book_id         = Column(Integer, ForeignKey('books.id'),         nullable=True)
     # Если хотите хранить "покупка была из рекламы или нет"
     from_ad = Column(Boolean, default=False)
     amount = Column(Float, nullable=False, default=0.0)
@@ -203,6 +223,8 @@ class Purchase(Base):
     user = relationship("User", backref="purchases")
     landing = relationship("Landing", backref="purchases")
     course = relationship("Course", backref="purchases")
+    book_landing = relationship("BookLanding")
+    book = relationship("Book")
 
 class WalletTxTypes(str, PyEnum):
     REFERRAL_CASHBACK = "REFERRAL_CASHBACK"
@@ -567,6 +589,11 @@ class BookLanding(Base):
                            onupdate=func.utc_timestamp())
 
     book = relationship("Book", back_populates="landings")
+    books_bundle = relationship(
+        "Book",
+        secondary=book_landing_books,
+        lazy="selectin",
+    )
 
 # ── Динамически вешаем обратную связь на Author ─────────────────────────────
 try:

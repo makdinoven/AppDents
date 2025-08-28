@@ -144,7 +144,11 @@ def add_book_landing(db: Session, user: User, book_landing_id: int) -> Cart:
         log.info("[CART] BOOK landing %s already in cart %s", book_landing_id, cart.id)
         return cart
 
-    bl = db.query(BookLanding).get(book_landing_id)
+    bl = (
+        db.query(BookLanding)
+        .options(selectinload(BookLanding.books_bundle))
+        .get(book_landing_id)
+    )
 
     if not bl or bl.is_hidden:
         raise HTTPException(status_code=404, detail="Book landing not found or hidden")
