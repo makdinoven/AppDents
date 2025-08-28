@@ -96,6 +96,13 @@
     "sorry": "Pedimos desculpas pelo transtorno"
   },
 
+  "payment": {
+    "encryptedPayment": "Pagamento seguro via Stripe (PCI DSS Nível 1): os dados do cartão são criptografados e não armazenados.",
+    "afterPayment": "Após o pagamento, o curso será adicionado à sua conta e os dados de acesso serão enviados por e-mail. Verifique o Spam se não receber.",
+    "privacyAgreement": "Ao clicar no botão \"Pagar\", você concorda em receber e-mails de marketing e consente com nossa <1>Política de Privacidade.</1>"
+  },
+
+
   "nav": {
     "home": "Início",
     "courses": "Cursos",

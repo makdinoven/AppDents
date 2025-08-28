@@ -20,7 +20,7 @@ export const cartApi = {
     return instance.delete(`cart/landing/${id}`, { headers: getAuthHeaders() });
   },
 
-  previewCart(data: { landing_ids: number[] }) {
-    return instance.post(`cart/preview`, data);
+  previewCart(landing_ids: number[]) {
+    return instance.post(`cart/preview`, { landing_ids });
   },
 };

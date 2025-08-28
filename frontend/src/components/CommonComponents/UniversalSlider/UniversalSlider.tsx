@@ -42,7 +42,7 @@ const UniversalSlider: FC<UniversalSliderProps> = ({
     <div
       style={{
         width: isFullWidth ? `100vw` : "100%",
-        left: isFullWidth ? `-20px` : "",
+        left: isFullWidth ? `-10px` : "",
       }}
       className={s.slider}
     >

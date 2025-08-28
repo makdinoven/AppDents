@@ -6,19 +6,21 @@ import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
 import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { Path } from "../../../../routes/routes.ts";
-import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PaymentModal from "../../../../components/Modals/PaymentModal/PaymentModal.tsx";
-import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import LessonCard from "./LessonCard/LessonCard.tsx";
 import LessonSkeletons from "../../../../components/ui/Skeletons/LessonSkeletons/LessonSkeletons.tsx";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../../store/store.ts";
+import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
+import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
+import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
 
 const CoursePage = () => {
+  const { openPaymentModal } = usePaymentPageHandler();
+  const dispatch = useDispatch<AppDispatchType>();
   const { courseId, lessonId } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const [isPartial, setIsPartial] = useState<boolean>(false);
-  const [isModalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const currentUrl = window.location.origin + location.pathname;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +28,35 @@ const CoursePage = () => {
       fetchCourseData();
     }
   }, [courseId]);
+
+  useEffect(() => {
+    if (course) {
+      const paymentData = {
+        landingIds: [course?.landing?.id],
+        courseIds: [course?.id],
+        priceCents: Math.ceil(course?.landing?.new_price * 100),
+        newPrice: course?.landing?.new_price,
+        oldPrice: course?.landing?.old_price,
+        region: course?.landing?.region,
+        fromAd: false,
+        source:
+          course?.access_level === "special_offer"
+            ? PAGE_SOURCES.specialOffer
+            : PAGE_SOURCES.cabinetFree,
+        courses: [
+          {
+            name: course?.landing?.landing_name,
+            newPrice: course?.landing?.new_price,
+            oldPrice: course?.landing?.old_price,
+            lessonsCount: course?.landing?.lessons_count,
+            img: course?.landing?.preview_photo,
+          },
+        ],
+      };
+
+      dispatch(setPaymentData(paymentData));
+    }
+  }, [course]);
 
   const fetchCourseData = async () => {
     try {
@@ -41,61 +72,10 @@ const CoursePage = () => {
     }
   };
 
-  const handleOpenModal = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const paymentData = {
-    landing_ids: [course?.landing?.id],
-    course_ids: [course?.id],
-    price_cents: Math.ceil(course?.landing?.new_price * 100),
-    total_new_price: course?.landing?.new_price,
-    total_old_price: course?.landing?.old_price,
-    region: course?.landing?.region,
-    success_url: `${BASE_URL}${Path.successPayment}`,
-    cancel_url: currentUrl,
-    source:
-      course?.access_level === "special_offer"
-        ? "SPECIAL_OFFER"
-        : "CABINET_FREE",
-    courses: [
-      {
-        name: course?.landing?.landing_name,
-        new_price: course?.landing?.new_price,
-        old_price: course?.landing?.old_price,
-        lessons_count: course?.landing?.lessons_count,
-      },
-    ],
-  };
-
-  const renderModal = () => {
-    if (isModalOpen) {
-      return (
-        <ModalWrapper
-          variant="dark"
-          title={"freeCourse.fullAccess"}
-          cutoutPosition="none"
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        >
-          <PaymentModal
-            paymentData={paymentData}
-            handleCloseModal={handleCloseModal}
-          />
-        </ModalWrapper>
-      );
-    }
-  };
-
   if (lessonId) {
     return (
       <>
-        <Outlet context={{ course, handleOpenModal, isPartial }} />
-        {renderModal()}
+        <Outlet context={{ course, isPartial }} />
       </>
     );
   }
@@ -129,7 +109,7 @@ const CoursePage = () => {
                         isPartial={isPartial && !lesson.video_link}
                         index={index}
                         key={lesson.id}
-                        handleClick={handleOpenModal}
+                        handleClick={() => openPaymentModal()}
                         name={lesson.lesson_name}
                         previewPhoto={lesson.preview}
                         link={`${Path.lesson}/${section.id}/${lesson.id}`}
@@ -143,7 +123,6 @@ const CoursePage = () => {
           </>
         )}
       </div>
-      {isPartial && renderModal()}
     </>
   );
 };

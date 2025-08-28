@@ -41,3 +41,7 @@ export { default as WarningEmail } from "./warning-email.svg?react";
 export { default as ConfirmedEmail } from "./confirmed-email.svg?react";
 export { default as Support } from "./support.svg?react";
 export { default as Mail } from "./mail.svg?react";
+export { default as CheckboxCheckMark } from "./checkbox-check-mark.svg?react";
+export { default as CheckboxBody } from "./checkbox-body.svg?react";
+export { default as Shield } from "./shield-logo.svg?react";
+export { default as PoweredByStripeLogo } from "./powered-by-stripe.svg?react";

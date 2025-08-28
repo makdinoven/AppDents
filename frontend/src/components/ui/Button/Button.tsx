@@ -11,6 +11,7 @@ interface ButtonProps {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
   variant?: "filled" | "outlined" | "outlined-dark" | "disabled";
+  icon?: any;
 }
 
 const Button = ({
@@ -21,6 +22,7 @@ const Button = ({
   link,
   variant = "outlined",
   type = "button",
+  icon,
 }: ButtonProps) => {
   return link ? (
     <Link className={s.btn} to={link}>
@@ -34,6 +36,7 @@ const Button = ({
       type={type}
     >
       <Trans i18nKey={text} />
+      <span className={s.icon}>{icon && icon}</span>
       {loading && <LoaderOverlay />}
     </button>
   );

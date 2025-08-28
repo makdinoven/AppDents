@@ -6,13 +6,20 @@ import { Path } from "../../routes/routes.ts";
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   const prevPathname = useRef<string | null>(null);
-  const dontScrollLinks = [Path.search, Path.cart, ...AUTH_MODAL_ROUTES];
+  const dontScrollLinks = [
+    Path.search,
+    Path.payment,
+    Path.cart,
+    ...AUTH_MODAL_ROUTES,
+  ];
 
   useEffect(() => {
     const isPrevAuthRoute = prevPathname.current
-      ? dontScrollLinks.includes(prevPathname.current)
+      ? dontScrollLinks.some((link) => prevPathname.current?.startsWith(link))
       : false;
-    const isCurrentAuthRoute = dontScrollLinks.includes(pathname);
+    const isCurrentAuthRoute = dontScrollLinks.some((link) =>
+      pathname.startsWith(link),
+    );
 
     if (!isPrevAuthRoute && !isCurrentAuthRoute) {
       window.scrollTo(0, 0);

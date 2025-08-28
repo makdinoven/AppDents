@@ -1,0 +1,38 @@
+.logos {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  column-gap: 7px;
+
+  li {
+    height: clamp(23px, 6vw, 40px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    svg {
+      max-height: 100%;
+      max-width: 100%;
+      width: auto;
+      height: auto;
+      display: block;
+    }
+  }
+}
+
+
+@media (max-width: $mobile-breakpoint) {
+  .logos {
+    gap: 4px;
+    grid-template-columns: repeat(10, 1fr);
+    justify-content: center;
+
+    //& li:nth-child(n + 7) {
+    //  grid-column: span 1;
+    //}
+    //
+    //& li:nth-child(7) {
+    //  grid-column-start: 2;
+    //}
+  }
+}
