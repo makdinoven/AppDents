@@ -10,7 +10,7 @@ from ..models.models_v2 import (
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
-    BookLandingCreate, BookLandingUpdate, BookDetailResponse, BookLandingResponse
+    BookLandingCreate, BookLandingUpdate, BookDetailResponse, BookLandingResponse, BookResponse
 )
 from ..utils.s3 import generate_presigned_url
 
