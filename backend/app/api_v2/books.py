@@ -113,7 +113,6 @@ from ..models.models_v2 import (
 )
 
 logger = logging.getLogger("api.books_catalog")
-router = APIRouter(tags=["Books page"])
 
 def _to_float(v) -> float | None:
     try:
