@@ -84,4 +84,27 @@ export const mainApi = {
   trackFacebookAd(slug: string) {
     return instance.post(`/landings/track-ad/${slug}`);
   },
+  globalSearch(params: {
+    q: string;
+    languages?: string[];
+    limit?: number;
+    types?: ("authors" | "landings" | "book_landings")[];
+  }) {
+    return instance.get(`/search/v2`, {
+      params,
+      paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+
+        Object.entries(params).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => searchParams.append(key, v));
+          } else if (value !== undefined && value !== null) {
+            searchParams.append(key, String(value));
+          }
+        });
+
+        return searchParams.toString();
+      },
+    });
+  },
 };

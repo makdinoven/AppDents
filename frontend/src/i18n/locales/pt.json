@@ -122,6 +122,11 @@
   "search": {
     "searchCourses": "Buscar cursos",
     "searchPlaceholder": "Digite o nome do curso ou nome do autor...",
+    "results": {
+      "landings": "Cursos",
+      "authors": "Autores",
+      "book_landings": "Livros"
+    },
     "result": "encontrados {{count}} cursos",
     "result_one": "{{count}} curso encontrado",
     "result_few": "{{count}} cursos encontrados",

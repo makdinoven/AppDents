@@ -122,6 +122,11 @@
   "search": {
     "searchCourses": "بحث عن الدورات",
     "searchPlaceholder": "أدخل اسم الدورة أو اسم المؤلف...",
+    "results": {
+      "landings": "الدورات",
+      "authors": "المؤلفون",
+      "book_landings": "الكتب"
+    },
     "result": "تم العثور على {{count,localizedNumber}} دورات",
     "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
     "result_few": "تم العثور على {{ localizedNumber,count}} دورات",

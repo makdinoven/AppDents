@@ -1,0 +1,19 @@
+.list_title {
+  color: $primary;
+  @include clamped-p3;
+  display: flex;
+  gap: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid $primary;
+
+  span {
+    font-size: inherit;
+  }
+
+  .quantity {
+    color: $background-color;
+    padding: 2px 10px;
+    background-color: $primary;
+    border-radius: 30px;
+  }
+}
