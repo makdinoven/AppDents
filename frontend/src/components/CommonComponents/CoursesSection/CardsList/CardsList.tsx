@@ -3,9 +3,7 @@ import CourseCard from "../CourseCard/CourseCard.tsx";
 import { Trans } from "react-i18next";
 import PrettyButton from "../../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
-import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Path } from "../../../../routes/routes.ts";
-// import { useLocation } from "react-router-dom";
 
 type Course = {
   id: number;
@@ -54,7 +52,6 @@ const CardsList: React.FC<CardsListProps> = ({
 
   return (
     <div className={s.list_wrapper}>
-      {loading && <LoaderOverlay />}
       {cards && cards.length > 0 ? (
         <>
           <ul className={s.list}>

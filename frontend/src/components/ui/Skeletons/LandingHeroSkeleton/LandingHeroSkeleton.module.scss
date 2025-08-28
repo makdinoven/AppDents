@@ -1,0 +1,280 @@
+$card-width: 610px;
+$card-height: 582px;
+
+$card-header-height: 120px;
+$card-header-width: $card-width - 325px;
+
+$card-bottom-height: 208px;
+$card-bottom-width: $card-width - 190px;
+
+$card-body-height: $card-height - $card-bottom-height - $card-header-height;
+
+$arrow-w: 66px;
+
+$border-radius-xs: 15px;
+$border-radius-small: 20px;
+$border-radius-medium: 25px;
+$border-radius-big: 30px;
+
+.hero_top {
+  position: relative;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  align-items: end;
+  gap: 30px;
+
+  h1 {
+    @include skeleton(
+      $pos: relative,
+      $h: clamp(70px, 15vw, $card-header-height),
+      $radius: var(--border-radius),
+      $color: $hover-color-15
+    );
+    display: flex;
+    margin: 0 clamp(10px, 2vw, 20px);
+    margin-bottom: 10px;
+    max-width: 618px;
+  }
+
+  .card_header {
+    position: relative;
+    background-color: $hover-color-15;
+    flex: 1;
+    flex-shrink: 0;
+    box-shadow: 0 4px 0 $hover-color-15;
+    max-width: 510px;
+    height: clamp(70px, 15vw, $card-header-height);
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+
+    @include circle-angle(
+      $bottom: 0,
+      $right: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: -20px,
+      $offset-y: 20px,
+      $shadow-color: $hover-color-15,
+      $border-bottom-left-radius: var(--border-radius)
+    );
+  }
+}
+
+.hero_content_wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.card {
+  @include flex-column;
+  max-height: $card-height;
+  flex: 1;
+
+  .card_body {
+    position: relative;
+    flex: 1;
+    min-width: 320px;
+    min-height: clamp(134px, 31vw, $card-body-height);
+    width: 100%;
+    background-color: $hover-color-15;
+    border-bottom-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+  }
+
+  .photo {
+    @include skeleton(
+      $t: clamp(20px, 5vw, 50px),
+      $radius: var(--border-radius),
+      $h: clamp(171px, 40vw, 324px),
+      $pos: relative,
+      $w: auto
+    );
+    right: 0;
+    z-index: 2;
+    margin: 0 clamp(10px, 2vw, 20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card_bottom {
+    margin-left: auto;
+    position: relative;
+    background-color: $hover-color-15;
+    box-shadow: 0 -4px 0 $hover-color-15;
+    min-height: clamp(110px, 31vw, 208px);
+    width: 69%;
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+
+    @include circle-angle(
+      $top: 0,
+      $left: calc(var(--border-radius) * (-2)),
+      $size: calc(var(--border-radius) * 2),
+      $offset-x: 20px,
+      $offset-y: -20px,
+      $shadow-color: $primary,
+      $border-top-right-radius: var(--border-radius)
+    );
+  }
+}
+
+.hero_content {
+  position: relative;
+  padding-top: var(--offset);
+  @include horizontal-line($top: 0, $right: 0, $width: 100%);
+
+  h2 {
+    @include skeleton(
+      $pos: relative,
+      $h: clamp(52px, 8vw, 80px),
+      $color: $hover-color-15
+    );
+    margin-bottom: var(--offset);
+  }
+
+  p {
+    @include skeleton(
+      $pos: relative,
+      $h: clamp(32px, 5vw, 52px),
+      $color: $hover-color-15,
+      $radius: $border-radius-xs
+    );
+    margin-right: 75px;
+    margin-bottom: 95px;
+  }
+
+  .buy_button {
+    @include skeleton(
+      $pos: relative,
+      $h: 60px,
+      $w: fit-content,
+      $radius: $border-radius-big,
+      $color: $hover-color-15
+    );
+    min-width: clamp(200px, 35vw, 400px);
+    padding: clamp(9.5px, 2vw, 12.5px) clamp(10px, 2vw, 20px);
+  }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    margin-bottom: var(--offset);
+    height: $arrow-w;
+    position: relative;
+    max-width: 255px;
+    @include horizontal-line(
+      $top: 50%,
+      $left: 0,
+      $width: 256px - $arrow-w,
+      $transform: y50 -2px
+    );
+    svg {
+      height: 100%;
+      width: $arrow-w;
+      circle {
+        stroke-width: 2px;
+        stroke: $accent;
+      }
+      path {
+        fill: $accent;
+      }
+    }
+  }
+}
+
+@media (max-width: $middle-breakpoint) {
+  .hero_content_wrapper {
+    @include flex-column;
+  }
+
+  .hero_content {
+    p {
+      margin: 0 0 20px 0;
+    }
+  }
+}
+
+@media (max-width: 940px) {
+  .hero_top {
+    gap: 0;
+
+    h1 {
+      max-width: 60%;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .card {
+    position: relative;
+
+    .folder {
+      position: relative;
+      margin-left: auto;
+      margin-right: 15px;
+      top: 10px;
+      width: calc(100% - 55px);
+      aspect-ratio: 265 / 56;
+      background-image: url("../../../../assets/folder-grey.svg");
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: bottom center;
+      z-index: 1;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+
+      h1 {
+        @include skeleton($pos: relative, $h: clamp(16px, 5vw, 26px), $w: 80px);
+        color: $background-color;
+        margin-right: 20px;
+
+        @media (max-width: 476px) {
+          margin-right: 7px;
+        }
+      }
+    }
+
+    .card_body {
+      background: none;
+      min-height: fit-content;
+
+      .photo {
+        position: relative;
+        margin: 0;
+        border: 2px solid $hover-color-15;
+        top: 0;
+        aspect-ratio: 16/9;
+        height: unset;
+
+        div {
+          width: 100%;
+          height: 100%;
+          background-repeat: no-repeat;
+          background-position: center center;
+          background-size: contain;
+        }
+      }
+    }
+
+    .card_bottom {
+      display: none;
+    }
+  }
+
+  .hero_content {
+    .arrow {
+      display: none;
+      visibility: hidden;
+      width: 229px;
+      height: 40px;
+      svg {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  }
+}

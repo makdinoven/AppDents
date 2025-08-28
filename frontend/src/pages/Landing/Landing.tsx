@@ -9,7 +9,6 @@ import {
   keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";
 import About from "./modules/About/About.tsx";
@@ -57,10 +56,10 @@ const Landing = () => {
   const currentUrl = window.location.origin + location.pathname;
   const dispatch = useDispatch<AppDispatchType>();
   const { role, isLogged, courses } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const isModalOpen = useSelector(
-    (state: AppRootStateType) => state.landing.isModalOpen,
+    (state: AppRootStateType) => state.landing.isModalOpen
   );
   const [isModalFree, setIsModalFree] = useState(false);
   const isPromotionLanding =
@@ -93,7 +92,7 @@ const Landing = () => {
       navigate(
         isClient
           ? `/${Path.landingClient}/${landingPath}`
-          : `${Path.landing}/${landingPath}`,
+          : `${Path.landing}/${landingPath}`
       );
     }
   }, [courses]);
@@ -130,7 +129,7 @@ const Landing = () => {
         setPrices({
           newPrice: !isWebinar ? res.data.new_price : 1,
           oldPrice: !isWebinar ? res.data.old_price : 49,
-        }),
+        })
       );
       dispatch(setLessonsCount({ lessonsCount: res.data.lessons_count }));
       setLoading(false);
@@ -333,37 +332,35 @@ const Landing = () => {
           </div>
         )}
       </div>
-      {loading ? (
-        <Loader />
-      ) : (
-        <div lang={landing?.language.toLowerCase()} className={s.landing}>
-          {!isVideo ? (
-            <>
-              <LandingHero data={heroData} />
-              <About data={isWebinar ? aboutDataWebinar : aboutData} />
-              {!isWebinar && <CourseProgram data={courseProgramData} />}
-              <LessonsProgram data={lessonsProgramData} />
-              <Professors data={landing?.authors} />
-              <Offer data={offerData} />
-            </>
-          ) : (
-            <>
-              <VideoSection data={videoSectionData} />
-            </>
-          )}
+      <div lang={landing?.language.toLowerCase()} className={s.landing}>
+        {!isVideo ? (
+          <>
+            <LandingHero data={heroData} loading={loading} />
+            {!loading && (
+              <>
+                <About data={isWebinar ? aboutDataWebinar : aboutData} />
+                {!isWebinar && <CourseProgram data={courseProgramData} />}
+                <LessonsProgram data={lessonsProgramData} />
+                <Professors data={landing?.authors} />
+                <Offer data={offerData} />
+              </>
+            )}
+          </>
+        ) : (
+          <>{!loading && <VideoSection data={videoSectionData} />}</>
+        )}
 
-          <Faq />
-          <CoursesSection
-            isFree={isFree}
-            isOffer={true}
-            isClient={isClient}
-            isVideo={isVideo}
-            showSort={true}
-            sectionTitle={"similarCourses"}
-            pageSize={4}
-          />
-        </div>
-      )}
+        <Faq />
+        <CoursesSection
+          isFree={isFree}
+          isOffer={true}
+          isClient={isClient}
+          isVideo={isVideo}
+          showSort={true}
+          sectionTitle={"similarCourses"}
+          pageSize={4}
+        />
+      </div>
 
       {isModalOpen && (
         <ModalWrapper

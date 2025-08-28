@@ -13,6 +13,7 @@ import {
   getCourses,
   getCoursesRecommend,
 } from "../../../store/actions/mainActions.ts";
+import CourseCardSkeletons from "../../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 
 type props = {
   sectionTitle?: string;
@@ -30,6 +31,12 @@ type props = {
   isFree?: boolean;
   isVideo?: boolean;
 };
+
+const ScreenResolutions = {
+  desktop: 1440,
+  tablet: 768,
+  mobile: 567,
+} as const;
 
 const CoursesSection = ({
   ref,
@@ -50,21 +57,22 @@ const CoursesSection = ({
   const dispatch = useDispatch<AppDispatchType>();
   const cards = useSelector((state: AppRootStateType) => state.main.courses);
   const total = useSelector(
-    (state: AppRootStateType) => state.main.totalCourses,
+    (state: AppRootStateType) => state.main.totalCourses
   );
   const userLoading = useSelector(
-    (state: AppRootStateType) => state.user.loading,
+    (state: AppRootStateType) => state.user.loading
   );
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
+    (state: AppRootStateType) => state.user.isLogged
   );
   const loading = useSelector((state: AppRootStateType) => state.main.loading);
   const [skip, setSkip] = useState(0);
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
+    (state: AppRootStateType) => state.user.language
   );
   const [internalFilter, setInternalFilter] = useState("all");
   const [internalSort, setInternalSort] = useState<string>("");
+  const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
   const [isReady, setIsReady] = useState(false);
   const filter = externalFilter ?? internalFilter;
   const sort = externalSort ?? internalSort;
@@ -113,6 +121,28 @@ const CoursesSection = ({
     }
   }, [isReady, language, skip, filter, sort, userLoading, isLogged]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [screenWidth]);
+
+  const countButtonSkeletonsAmount = () => {
+    if (screenWidth <= ScreenResolutions.desktop) {
+      return 15;
+    } else if (screenWidth <= ScreenResolutions.tablet) {
+      return 12;
+    } else if (screenWidth <= ScreenResolutions.mobile) {
+      return 6;
+    }
+  };
+
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
   };
@@ -139,39 +169,64 @@ const CoursesSection = ({
     <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         {sectionTitle && <SectionHeader name={sectionTitle} />}
-        {showFilters && tags && tags.length > 0 && (
-          <>
+        {loading ? (
+          <ul className={s.skeletons}>
+            {Array(countButtonSkeletonsAmount())
+              .fill({ length: countButtonSkeletonsAmount() })
+              .map((_, index) => (
+                <li key={index} className={s.skeleton}></li>
+              ))}
+          </ul>
+        ) : (
+          showFilters &&
+          tags &&
+          tags.length > 0 && (
             <SelectableList
               items={tags}
               activeValue={activeFilter}
               onSelect={onFilterChange}
             />
-            <span className={s.line}></span>
-          </>
+          )
         )}
-        {showSort && cards.length > 0 && (
-          <SelectableList
-            items={
-              isLogged
-                ? SORT_FILTERS
-                : SORT_FILTERS.filter((item) => item.value !== "recommend")
-            }
-            activeValue={activeSort}
-            onSelect={onSortChange}
-          />
+        <span className={s.line}></span>
+        {loading ? (
+          <ul className={s.skeletons}>
+            {Array(3)
+              .fill({ length: 3 })
+              .map((_, index) => (
+                <li key={index} className={s.skeleton}></li>
+              ))}
+          </ul>
+        ) : (
+          showSort &&
+          cards.length > 0 && (
+            <SelectableList
+              items={
+                isLogged
+                  ? SORT_FILTERS
+                  : SORT_FILTERS.filter((item) => item.value !== "recommend")
+              }
+              activeValue={activeSort}
+              onSelect={onSortChange}
+            />
+          )
         )}
       </div>
-      <CardsList
-        isVideo={isVideo}
-        isFree={isFree}
-        isOffer={isOffer}
-        isClient={isClient}
-        filter={activeFilter}
-        handleSeeMore={handleSeeMore}
-        loading={loading}
-        cards={cards}
-        showSeeMore={cards.length !== total}
-      />
+      {loading ? (
+        <CourseCardSkeletons shape />
+      ) : (
+        <CardsList
+          isVideo={isVideo}
+          isFree={isFree}
+          isOffer={isOffer}
+          isClient={isClient}
+          filter={activeFilter}
+          handleSeeMore={handleSeeMore}
+          loading={loading}
+          cards={cards}
+          showSeeMore={cards.length !== total}
+        />
+      )}
     </section>
   );
 };

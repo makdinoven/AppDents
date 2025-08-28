@@ -1,0 +1,278 @@
+@keyframes fadeInAnim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadeInMove {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeletons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 20px;
+  row-gap: 30px;
+}
+
+.card_wrapper {
+  animation:
+    fadeInAnim 0.2s ease-in-out,
+    fadeInMove 0.2s ease-out forwards;
+  @include transition();
+  @include flex-column;
+  min-height: 100%;
+  height: fit-content;
+  width: 100%;
+}
+
+.card_header {
+  @include flex-center;
+  position: relative;
+  border-bottom: unset;
+  padding: 15px 20px 5px;
+  width: fit-content;
+  max-width: 80%;
+  border-top-right-radius: 20px;
+  border-top-left-radius: 20px;
+  background-color: $hover-color-15;
+
+  &::after {
+    content: "";
+    display: block;
+    position: absolute;
+    height: 8px;
+    bottom: -3px;
+    left: 0;
+    right: 5px;
+    width: 105%;
+    background-color: $hover-color-15;
+  }
+  @include circle-angle(
+    $bottom: 0,
+    $right: -20px,
+    $size: 20px,
+    $offset-x: -20px,
+    $offset-y: 20px,
+    $shadow-color: $background-color,
+    $border-bottom-left-radius: 20px
+  );
+
+  &::before {
+    border-top: 0;
+    border-right: 0;
+    z-index: 2;
+    box-shadow: -2px 2px 0 2px $hover-color-15;
+  }
+
+  h6 {
+    position: relative;
+    width: 100%;
+    @include skeleton($h: 30px, $w: 90px, $pos: relative);
+  }
+}
+
+.professor_card {
+  @include flex-column;
+  flex: 1;
+  gap: 15px;
+  background-color: $hover-color-15;
+  border-radius: 20px;
+  align-items: center;
+  border-top-left-radius: unset;
+  border-top-right-radius: 20px;
+  padding: 10px 20px 20px;
+  height: fit-content;
+}
+
+.description_wrapper {
+  width: 100%;
+  height: fit-content;
+  position: relative;
+  gap: 5px;
+  @include flex-column;
+  justify-content: flex-start;
+  align-items: center;
+
+  &::after {
+    @include skeleton($pos: relative, $h: 30px);
+  }
+}
+
+.professor_link {
+  align-self: flex-end;
+
+  @include skeleton($pos: relative, $h: 30px, $w: 90px);
+}
+
+.description {
+  @include skeleton($pos: relative, $h: 50px, $radius: 10px);
+}
+
+.courses_count {
+  justify-self: center;
+  @include skeleton($pos: relative, $h: 40px, $w: 150px);
+}
+
+.card_content {
+  position: relative;
+  @include flex-column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 20px;
+  height: fit-content;
+  width: 100%;
+}
+
+.photo_wrapper {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  @include skeleton($pos: relative, $h: 180px);
+  max-width: 188px;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .skeletons {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .photo_wrapper {
+    width: 120px;
+    height: 120px;
+  }
+
+  .professor_card {
+    padding: 10px 15px 20px;
+  }
+
+  .card_header {
+    padding: 15px 15px 5px;
+  }
+
+  .courses_count {
+    @include skeleton($pos: relative, $h: 30px, $w: 120px);
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .skeletons {
+    @include flex-column;
+    gap: 10px;
+  }
+
+  .card_wrapper {
+    padding-bottom: 7px;
+    gap: 5px;
+    height: fit-content;
+    min-height: none;
+
+    &::after {
+      @include skeleton($t: unset, $h: 2px);
+      bottom: 0;
+    }
+  }
+
+  .photo_wrapper {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background-color: $hover-color-15;
+  }
+
+  .description_wrapper {
+    justify-content: flex-end;
+    gap: 3px;
+    padding-bottom: 30px;
+
+    &::after {
+      order: 1;
+      background-color: $hover-color-15;
+      border-radius: 10px;
+    }
+  }
+
+  .description {
+    order: 2;
+    background-color: $hover-color-15;
+  }
+
+  .professor_link {
+    display: none;
+  }
+
+  .courses_count {
+    order: 0;
+    padding: 0 5px;
+    border-radius: 5px;
+    align-self: flex-start !important;
+    height: 20px;
+    width: 80px;
+    background-color: $hover-color-15;
+  }
+
+  .card_header {
+    outline: none;
+    width: 100%;
+    padding: 0;
+    justify-content: flex-start;
+    background-color: transparent;
+
+    &::before {
+      display: none;
+      width: 15px;
+      height: 15px;
+      right: -15px;
+      border-bottom-left-radius: 15px;
+    }
+
+    &::after {
+      display: none;
+    }
+
+    h6 {
+      height: 20px;
+      background-color: $hover-color-15;
+    }
+  }
+
+  .card_content {
+    flex-direction: row !important;
+    align-items: unset;
+
+    &::before {
+      @include skeleton(
+        $h: 20px,
+        $w: 90px,
+        $t: unset,
+        $l: unset,
+        $color: $hover-color-15
+      );
+
+      right: 0;
+      bottom: 0px;
+    }
+  }
+
+  .professor_card {
+    padding: 0;
+    gap: 5px;
+    outline: unset;
+    border-radius: unset;
+    align-items: end;
+    background-color: transparent;
+  }
+
+  .card_content {
+    gap: 10px;
+  }
+}
