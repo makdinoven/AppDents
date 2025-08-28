@@ -13,6 +13,8 @@ class SearchAuthorItem(BaseModel):
     name: str
     photo: Optional[str] = None
     language: str
+    courses_count: int
+    books_count: int
 
 class SearchLandingItem(BaseModel):
     type: Literal["landing"] = "landing"
