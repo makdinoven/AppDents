@@ -22,7 +22,6 @@ def search_v2(
         None,
         description="Фильтр по языкам (мультивыбор): EN, RU, ES, PT, AR, IT"
     ),
-    limit: int = Query(60, ge=1, le=200, description="Ограничение размера ответа (без пагинации)"),
     db: Session = Depends(get_db),
 ):
     return search_everything(
@@ -30,5 +29,4 @@ def search_v2(
         q=q,
         types=[t.value for t in types] if types else None,
         languages=languages,
-        limit=limit,
     )
