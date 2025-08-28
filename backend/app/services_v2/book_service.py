@@ -16,6 +16,39 @@ from ..utils.s3 import generate_presigned_url
 
 log = logging.getLogger(__name__)
 
+def _serialize_book_file(bf: BookFile) -> dict:
+    return {
+        "file_format": bf.file_format.value,
+        "s3_url": bf.s3_url,
+        "size_bytes": bf.size_bytes,
+    }
+
+def _serialize_book_audio(ba: BookAudio) -> dict:
+    return {
+        "chapter_index": ba.chapter_index,
+        "title": ba.title,
+        "duration_sec": ba.duration_sec,
+        "s3_url": ba.s3_url,
+    }
+
+def _book_to_response(book: Book) -> BookResponse:
+    """
+    Преобразует ORM Book → BookResponse для ответов create/update.
+    Делает нужные списки словарей и author_ids.
+    """
+    return BookResponse(
+        id=book.id,
+        title=book.title,
+        description=book.description,
+        cover_url=book.cover_url,
+        language=book.language,
+        author_ids=[a.id for a in (book.authors or [])],
+        files=[_serialize_book_file(f) for f in (book.files or [])],
+        audio_files=[_serialize_book_audio(a) for a in (book.audio_files or [])],
+        created_at=book.created_at,
+        updated_at=book.updated_at,
+    )
+
 # ─────────────────────────── КНИГИ ───────────────────────────────────────────
 def _fetch_authors(db: Session, ids: List[int]) -> List[Author]:
     authors = db.query(Author).filter(Author.id.in_(ids)).all()
@@ -101,7 +134,7 @@ def create_book(db: Session, payload: BookCreate) -> Book:
     db.commit()
     db.refresh(book)
     log.info("[BOOK] %s (%d) создана", payload.title, book.id)
-    return book
+    return _book_to_response(book)
 
 def update_book(db: Session, book_id: int, payload: BookUpdate) -> Book:
     book = db.query(Book).get(book_id)
@@ -151,7 +184,7 @@ def update_book(db: Session, book_id: int, payload: BookUpdate) -> Book:
 
     db.commit()
     db.refresh(book)
-    return book
+    return _book_to_response(book)
 
 def delete_book(db: Session, book_id: int) -> None:
     rows = db.query(Book).filter(Book.id == book_id).delete()
