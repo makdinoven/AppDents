@@ -1,0 +1,436 @@
+@use "sass:color";
+//common
+$initial-card-height: 430px;
+
+$padding-right: 11px;
+$padding-left: 23px;
+$padding-bottom: 14px;
+$border-radius-big: 30px;
+$border-radius-small: 20px;
+$border-radius-xs: 10px;
+
+//card bottom
+$card_bottom-width: 53.5%;
+$card_bottom-height: 60px;
+
+//photo
+$photo-height: 174px;
+
+//card header
+$card_header-height: 60px;
+$card_header-width: 43.6%;
+
+//card
+$card-height: $initial-card-height - $card_bottom-height;
+
+//card body
+$card-body-height: $card-height - $card_header-height - $card_bottom-height;
+
+@keyframes fadeInAnim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadeInMove {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeletons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  column-gap: 24px;
+  row-gap: 20px;
+
+  &.shape {
+    margin-top: 60px;
+  }
+}
+
+.card {
+  animation:
+    fadeInAnim 0.2s ease-in-out,
+    fadeInMove 0.2s ease-out forwards;
+  @include transition();
+  @include flex-column;
+  position: relative;
+  background-position: center;
+  border-radius: $border-radius-small;
+  background-color: $hover-color-15;
+
+  &.shape {
+    border-radius: $border-radius-big;
+    height: 100%;
+    min-height: $card-height;
+    background-color: transparent;
+  }
+}
+
+.card_content {
+  @include flex-column;
+  position: relative;
+  background-color: $hover-color-15;
+  border-radius: $border-radius-small;
+  padding: 15px;
+  flex: 1;
+  gap: 10px;
+  justify-content: space-between;
+  border: 1px solid $hover-color-15;
+  z-index: 2;
+
+  h3 {
+    position: relative;
+    z-index: 2;
+
+    &::before {
+      @include skeleton($h: 66px, $radius: $border-radius-xs);
+    }
+  }
+
+  div {
+    width: 100%;
+    aspect-ratio: 16/9;
+    z-index: 2;
+    position: relative;
+    margin-top: 78px;
+
+    &::after {
+      @include skeleton();
+    }
+  }
+}
+
+.card_header,
+.card_body,
+.card_bottom {
+  background-color: $hover-color-15;
+}
+
+.card_header {
+  &.shape {
+    display: flex;
+    align-items: end;
+    position: absolute;
+    top: -$card-header-height;
+    text-transform: uppercase;
+    box-shadow: 0 4px 0 $hover-color-15;
+    width: $card_header-width;
+    height: $card_header-height;
+    padding-top: 31px;
+    padding-left: $padding-left;
+    padding-right: $padding-left;
+    border-top-left-radius: $border-radius-big;
+    border-top-right-radius: $border-radius-small;
+    &::before {
+      z-index: -1;
+      content: "";
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      bottom: 0;
+      right: -40px;
+      border-bottom-left-radius: $border-radius-small;
+      box-shadow: -15px 15px 0 2px $hover-color-15;
+      pointer-events: none;
+    }
+    &::after {
+      @include skeleton($h: 30px, $w: 50px, $pos: relative);
+      top: none;
+      bottom: 0;
+    }
+  }
+}
+
+.card_body {
+  @include flex-column;
+  flex: 1;
+  position: relative;
+  padding: 0 20px 25px 20px;
+  border-bottom-left-radius: $border-radius-small;
+  border-top-right-radius: $border-radius-small;
+}
+
+.card_bottom {
+  margin-left: auto;
+  cursor: pointer;
+  @include flex-center;
+  position: relative;
+  box-shadow: 0 -4px 0 $hover-color-15;
+  height: $card_bottom-height;
+  width: $card_bottom-width;
+  padding-left: 7px;
+  padding-right: $padding-right;
+  padding-bottom: $padding-bottom;
+  border-bottom-right-radius: $border-radius-big;
+  border-bottom-left-radius: $border-radius-small;
+  &::before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    top: 0px;
+    left: -40px;
+    border-top-right-radius: $border-radius-small;
+    box-shadow: 15px -15px 0 2px $hover-color-15;
+    pointer-events: none;
+  }
+}
+
+.card_content_header {
+  display: grid;
+  position: relative;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  height: 30px;
+  margin-top: 12px;
+
+  .prices {
+    position: relative;
+    flex-grow: 1;
+    height: 100%;
+
+    &::before {
+      @include skeleton();
+    }
+  }
+
+  .lessons_count {
+    position: relative;
+    flex-grow: 1;
+    height: 100%;
+    &::before {
+      @include skeleton();
+    }
+  }
+}
+
+.card_content_body {
+  position: relative;
+  @include flex-column;
+  flex: 1;
+  gap: 12px;
+  margin-top: 12px;
+
+  &::before {
+    @include skeleton($h: 66px, $radius: $border-radius-xs);
+  }
+
+  .authors {
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    height: 48px;
+    margin-top: 78px;
+
+    &::before {
+      @include skeleton($radius: $border-radius-big, $w: 48px);
+      aspect-ratio: 1/1;
+    }
+
+    &::after {
+      @include skeleton(
+        $w: 60%,
+        $h: 30px,
+        $t: 9px,
+        $l: 58px,
+        $radius: $border-radius-big
+      );
+    }
+  }
+}
+
+.card_bottom_shapeless {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px 15px 15px;
+
+  .buttons_shapeless {
+    position: relative;
+    width: 100%;
+    height: 35px;
+
+    &::before {
+      @include skeleton($w: 50%);
+    }
+    &::after {
+      @include skeleton($w: 30%, $l: none);
+      right: 0;
+    }
+  }
+}
+
+.content_bottom {
+  flex: 1;
+  @include flex-column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 30px;
+
+  .photo {
+    @include skeleton($pos: relative);
+    background-color: $hover-color-20;
+    aspect-ratio: 16/9;
+    max-width: 306px;
+  }
+
+  &::after {
+    @include skeleton(
+      $radius: $border-radius-big,
+      $w: 40%,
+      $pos: relative,
+      $h: 30px
+    );
+    align-self: flex-start;
+  }
+}
+
+.buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.32fr 1fr;
+  gap: 10px;
+  position: relative;
+
+  .buy {
+    @include skeleton($h: 54px, $pos: relative);
+    flex-grow: 1;
+  }
+
+  .cart {
+    @include skeleton($h: 52px, $pos: relative);
+    flex-grow: 1;
+  }
+}
+
+@media (max-width: $middle-breakpoint) {
+  .skeletons {
+    grid-template-columns: 1fr 1fr;
+    &.shape {
+      margin-top: 45px;
+    }
+  }
+  .card_header_background {
+    padding-left: 11px;
+    padding-right: 10px;
+    height: 45px;
+  }
+
+  .card_content_body {
+    position: relative;
+    .content_bottom {
+      margin-bottom: 10px;
+    }
+
+    .buttons {
+      z-index: 1;
+      @include flex-column;
+      align-self: flex-end;
+      width: 100%;
+      max-width: $card_bottom-width - 2%;
+      position: absolute;
+      bottom: -32px;
+
+      .buy,
+      .cart {
+        height: 30px;
+      }
+    }
+  }
+
+  .card_body {
+    padding: 5px 11px 11px 11px;
+
+    .photo {
+      max-width: unset;
+      width: 100%;
+
+      &::before {
+        width: 50px;
+        height: 60px;
+        top: -15px;
+        right: -8px;
+        transform: rotate(-60deg);
+      }
+    }
+  }
+
+  .card_bottom {
+    height: 45px;
+  }
+
+  .card_header {
+    &.shape {
+      height: 45px;
+      top: -45px;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .skeletons {
+    grid-template-columns: 1fr;
+    row-gap: 10px;
+
+    &.shape {
+      grid-template-columns: 1fr;
+      column-gap: 24px;
+      row-gap: 12px;
+    }
+  }
+  .card_body {
+    .photo {
+      position: relative;
+      max-height: 280px;
+    }
+  }
+
+  .card_content {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: start;
+    padding: 10px;
+    gap: 10px;
+
+    h3 {
+      flex-grow: 1;
+    }
+
+    div {
+      width: 40%;
+      height: auto;
+      max-height: 75px;
+      margin-top: 0;
+    }
+  }
+
+  .card_bottom_shapeless {
+    padding: 0 10px 8px 10px;
+    .buttons_shapeless {
+      height: 25px;
+      &::before {
+        width: 25%;
+        height: 25px;
+      }
+
+      &::after {
+        width: 20%;
+        height: 25px;
+      }
+    }
+  }
+}
