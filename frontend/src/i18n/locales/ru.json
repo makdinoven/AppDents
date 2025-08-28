@@ -121,6 +121,11 @@
   "search": {
     "searchCourses": "Поиск курсов",
     "searchPlaceholder": "Введите название курса или имя автора...",
+    "results": {
+      "landings": "Курсы",
+      "authors": "Лекторы",
+      "book_landings": "Книги"
+    },
     "result": "найдено {{count}} курсов",
     "result_one": "найден {{count}} курс ",
     "result_few": "найдено {{count}} курса",

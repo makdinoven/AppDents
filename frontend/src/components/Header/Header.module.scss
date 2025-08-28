@@ -28,12 +28,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 30px;
+  gap: 25px;
 }
 
 .nav_side {
   @include flex-center;
-  gap: inherit;
+  gap: 20px;
 }
 
 .nav_center {

@@ -123,6 +123,11 @@
   "search": {
     "searchCourses": "Search courses",
     "searchPlaceholder": "Enter course name or author name...",
+    "results": {
+      "landings": "Courses",
+      "authors": "Authors",
+      "book_landings": "Books"
+    },
     "result": "{{count}} courses found",
     "result_one": "{{count}} course found",
     "result_few": "{{count}} courses found",
