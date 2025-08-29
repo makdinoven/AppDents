@@ -8,12 +8,13 @@ import ListController from "../../components/ui/ListController/ListController.ts
 import { ParamsType } from "../../api/adminApi/types.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
+import ProfessorCardSkeletons from "../../components/ui/Skeletons/ProfessorCardSkeletons/ProfessorCardSkeletons.tsx";
 
 const SIZE = 12;
 
 const Professors = () => {
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
+    (state: AppRootStateType) => state.user.language
   );
   const [professors, setProfessors] = useState([]);
   const [total, setTotal] = useState(0);
@@ -54,11 +55,15 @@ const Professors = () => {
         total={total}
         totalPages={totalPages}
       >
-        <ProfessorsList
-          source={"page"}
-          professors={professors}
-          loading={loading}
-        />
+        {loading ? (
+          <ProfessorCardSkeletons />
+        ) : (
+          <ProfessorsList
+            source={"page"}
+            professors={professors}
+            loading={loading}
+          />
+        )}
       </ListController>
       {!isFirstLoad && (
         <CoursesSection

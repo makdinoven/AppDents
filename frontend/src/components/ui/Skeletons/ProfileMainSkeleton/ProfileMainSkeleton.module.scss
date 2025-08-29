@@ -1,0 +1,313 @@
+$border-radius-xs: 10px;
+$border-radius-small: 20px;
+$border-radius-medium: 20px;
+$border-radius-big: 30px;
+
+@keyframes fadeInAnim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadeInMove {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeleton {
+  @include flex-column;
+  gap: 40px;
+}
+
+.user_info {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  column-gap: 20px;
+  overflow: visible;
+}
+
+.user_top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+
+  &::before {
+    @include skeleton(
+      $pos: relative,
+      $h: 100px,
+      $w: auto,
+      $radius: 50%,
+      $color: $hover-color-15
+    );
+    aspect-ratio: 1/1;
+  }
+}
+
+.user_items {
+  @include flex-column;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  width: 100%;
+  max-width: 60%;
+}
+
+.left {
+  animation:
+    fadeInAnim 0.2s ease-in-out,
+    fadeInMove 0.2s ease-out forwards;
+  @include transition();
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+
+  .mail,
+  .support {
+    @include flex-center;
+    position: relative;
+    height: 35%;
+    width: 100%;
+
+    &::after {
+      @include skeleton(
+        $pos: relative,
+        $radius: $border-radius-small,
+        $color: $hover-color-15
+      );
+    }
+  }
+}
+
+.profile_buttons {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  width: 100%;
+
+  &::before {
+    @include skeleton(
+      $h: 40px,
+      $w: 120px,
+      $pos: relative,
+      $color: $hover-color-15
+    );
+  }
+  &::after {
+    @include skeleton(
+      $h: 50px,
+      $pos: relative,
+      $radius: $border-radius-big,
+      $color: $hover-color-15
+    );
+    flex-grow: 1;
+    max-width: 250px;
+    min-width: unset;
+  }
+}
+
+.referral_section {
+  position: relative;
+  animation:
+    fadeInAnim 0.2s ease-in-out,
+    fadeInMove 0.2s ease-out forwards;
+  @include transition();
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: fit-content;
+  overflow: visible;
+  gap: 10px;
+  background-color: $hover-color-15;
+  border-radius: $border-radius-medium;
+
+  .content_body {
+    position: relative;
+    display: grid;
+    padding: 10px 20px;
+    grid-template-columns: 2fr 1fr;
+    column-gap: 30px;
+    width: 100%;
+
+    .balance,
+    .button {
+      @include skeleton(
+        $pos: relative,
+        $h: 40px,
+        $radius: $border-radius-small
+      );
+    }
+
+    .button {
+      border-radius: 30px;
+    }
+  }
+
+  .text {
+    position: relative;
+    max-width: calc(100% - 40px);
+
+    @include skeleton($pos: relative, $radius: $border-radius-xs, $h: 60px);
+  }
+
+  .content_bottom {
+    position: relative;
+    width: 100%;
+    padding: 10px 20px;
+    display: grid;
+    grid-template-columns: 5fr 1fr;
+    align-items: center;
+
+    .copy {
+      @include skeleton($pos: relative, $h: 40px);
+    }
+
+    .link {
+      @include skeleton(
+        $pos: relative,
+        $h: 30px,
+        $w: 60%,
+        $radius: $border-radius-small
+      );
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .skeleton {
+    gap: 60px;
+  }
+
+  .user_info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .user_items {
+    gap: 5px;
+  }
+
+  .left {
+    gap: 20px;
+
+    .mail,
+    .support {
+      @include flex-center;
+      position: relative;
+      height: 25px;
+      width: 50%;
+
+      &::after {
+        @include skeleton(
+          $pos: relative,
+          $radius: $border-radius-xs,
+          $color: $hover-color-15
+        );
+      }
+    }
+  }
+
+  .profile_buttons {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+    width: 100%;
+
+    &::before {
+      @include skeleton(
+        $h: 30px,
+        $w: 90px,
+        $pos: relative,
+        $color: $hover-color-15
+      );
+    }
+    &::after {
+      @include skeleton(
+        $h: 30px,
+        $pos: relative,
+        $radius: $border-radius-big,
+        $color: $hover-color-15
+      );
+      max-width: 180px;
+    }
+  }
+
+  .user_top {
+    &::before {
+      @include skeleton(
+        $pos: relative,
+        $h: 60px,
+        $w: auto,
+        $radius: 50%,
+        $color: $hover-color-15
+      );
+      aspect-ratio: 1/1;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .skeleton {
+    gap: 30px;
+  }
+
+  .left {
+    gap: 10px;
+  }
+
+  .referral_section {
+    justify-content: space-between;
+    gap: 10px;
+
+    .content_body {
+      @include flex-column;
+      gap: 10px;
+      align-items: center;
+      padding: 7px 15px;
+
+      .balance {
+        max-width: 250px;
+        height: 30px;
+      }
+
+      .button {
+        max-width: 200px;
+        height: 30px;
+      }
+    }
+
+    .text {
+      height: 40px;
+    }
+
+    .content_bottom {
+      grid-template-columns: 4fr 1fr;
+      padding: 7px 15px;
+
+      .link {
+        height: 30px;
+      }
+
+      .copy {
+        height: 30px;
+      }
+    }
+  }
+}

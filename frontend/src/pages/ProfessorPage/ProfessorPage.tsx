@@ -4,7 +4,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
@@ -13,6 +12,7 @@ import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { Clock } from "../../assets/icons/index.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
+import ProfessorPageSkeleton from "../../components/ui/Skeletons/ProfessorPageSkeleton/ProfessorPageSkeleton.tsx";
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { AppDispatchType } from "../../store/store.ts";
 import {
@@ -39,7 +39,7 @@ const ProfessorPage = () => {
     if (professor) {
       const paymentData = {
         landingIds: professor?.landings.map(
-          (landing: { id: number }) => landing.id,
+          (landing: { id: number }) => landing.id
         ),
         courseIds: professor?.course_ids,
         priceCents: professor?.total_new_price * 100,
@@ -60,7 +60,7 @@ const ProfessorPage = () => {
             oldPrice: item.old_price,
             lessonsCount: item.lessons_count,
             img: item.main_image,
-          }),
+          })
         ),
       };
       setLocalPaymentData(paymentData);
@@ -129,61 +129,67 @@ const ProfessorPage = () => {
   return (
     <>
       <BackButton />
-      {loading || !professor ? (
-        <Loader />
-      ) : (
-        <div className={s.professor_page}>
-          <section className={s.professor_hero}>
-            {screenWidth < 577 && (
-              <h1 className={s.professor_name}>{professor.name}</h1>
-            )}
-            <div className={s.professor_info}>
-              {screenWidth > 577 && (
+
+      <div className={s.professor_page}>
+        {loading || !professor ? (
+          <ProfessorPageSkeleton />
+        ) : (
+          <>
+            <section className={s.professor_hero}>
+              {screenWidth < 577 && (
                 <h1 className={s.professor_name}>{professor.name}</h1>
               )}
-              <ExpandableText
-                lines={screenWidth > 577 ? 10 : 3}
-                textClassName={s.professor_description}
-                text={professor.description}
-                color={"primary"}
-              />
-              {/*<p className={s.professor_description}>{professor.description}</p>*/}
-            </div>
-            {professor.photo && (
-              <div className={s.card_wrapper}>
-                <div className={s.card}>
-                  <div className={s.card_header}></div>
-                  <div className={s.card_body}>
-                    <div className={s.photo}>
-                      <img src={professor.photo} alt="Professor image" />
-                    </div>
-                  </div>
-                  <div className={s.card_bottom}></div>
-                </div>
+              <div className={s.professor_info}>
+                {screenWidth > 577 && (
+                  <h1 className={s.professor_name}>{professor.name}</h1>
+                )}
+                <ExpandableText
+                  lines={screenWidth > 577 ? 10 : 3}
+                  textClassName={s.professor_description}
+                  text={professor.description}
+                  color={"primary"}
+                />
               </div>
-            )}
-          </section>
-          {renderBuySection()}
-          <div className={s.professor_cards}>
-            <SectionHeader name={"professor.professorsCourses"} />
-            <CardsList
-              isClient={true}
-              filter={"all"}
-              loading={false}
-              cards={professor.landings}
-              showSeeMore={false}
-              showEndOfList={false}
+              {professor.photo && (
+                <div className={s.card_wrapper}>
+                  <div className={s.card}>
+                    <div className={s.card_header}></div>
+                    <div className={s.card_body}>
+                      <div className={s.photo}>
+                        <img src={professor.photo} alt="Professor image" />
+                      </div>
+                    </div>
+                    <div className={s.card_bottom}></div>
+                  </div>
+                </div>
+              )}
+            </section>
+            {renderBuySection()}
+          </>
+        )}
+        {professor && (
+          <>
+            <div className={s.professor_cards}>
+              <SectionHeader name={"professor.professorsCourses"} />
+              <CardsList
+                isClient={true}
+                filter={"all"}
+                loading={false}
+                cards={professor.landings}
+                showSeeMore={false}
+                showEndOfList={false}
+              />
+            </div>
+            {renderBuySection()}
+            <CoursesSection
+              isOffer={true}
+              showSort={true}
+              sectionTitle={"other.otherCourses"}
+              pageSize={6}
             />
-          </div>
-          {renderBuySection()}
-          <CoursesSection
-            isOffer={true}
-            showSort={true}
-            sectionTitle={"other.otherCourses"}
-            pageSize={6}
-          />
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </>
   );
 };

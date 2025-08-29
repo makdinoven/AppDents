@@ -1,3 +1,53 @@
+@keyframes fadeInAnim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fadeInMove {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeletons {
+  width: 100%;
+  height: fit-content;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+
+  @media (max-width: $middle-breakpoint) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media (max-width: $mobile-breakpoint) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.skeleton {
+  animation:
+    fadeInAnim 0.2s ease-in-out,
+    fadeInMove 0.2s ease-out forwards;
+  @include transition();
+
+  @include skeleton($pos: relative, $h: 40px, $color: $hover-color-15);
+
+  @media (max-width: $tablet-breakpoint) {
+    @include skeleton($pos: relative, $h: 35px, $color: $hover-color-15);
+  }
+  @media (max-width: $mobile-breakpoint) {
+    @include skeleton($pos: relative, $h: 30px, $color: $hover-color-15);
+  }
+}
+
 .courses {
   @include flex-column;
   gap: 60px;
@@ -13,6 +63,15 @@
   position: relative;
   display: block;
   @include horizontal-line($right: 0, $width: 85%, $bottom: 0);
+
+  &.loading {
+    @include horizontal-line(
+      $right: 0,
+      $width: 85%,
+      $bottom: 0,
+      $color: $hover-color-20
+    );
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
