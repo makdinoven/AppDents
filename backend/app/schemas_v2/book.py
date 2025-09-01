@@ -132,3 +132,19 @@ class BookDetailResponse(BookResponse):
     landings: list[BookLandingResponse]
     files_download: list[BookFileDownload]
     audio_download: list[BookAudioDownload]
+
+class PdfUploadInitRequest(BaseModel):
+    filename: str = Field(..., description="Имя файла, например `book.pdf`")
+    content_type: str = Field("application/pdf", description="MIME, по умолчанию PDF")
+
+class PdfUploadInitResponse(BaseModel):
+    method: str = "POST"
+    url: str
+    fields: dict
+    key: str
+    cdn_url: str
+    max_size_mb: int = 2048
+
+class PdfUploadFinalizeRequest(BaseModel):
+    key: str = Field(..., description="S3 key, полученный на шаге INIT")
+    size_bytes: int | None = None
