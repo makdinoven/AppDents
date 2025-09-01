@@ -1,10 +1,12 @@
 .list_title {
+  position: relative;
   color: $primary;
   @include clamped-p3;
   display: flex;
-  gap: 15px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid $primary;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  @include horizontal-line($left: 50%, $width: 99%, $height: 2px, $bottom: 0, $color: $primary-06, $transform: x50);
 
   span {
     font-size: inherit;
@@ -12,8 +14,9 @@
 
   .quantity {
     color: $background-color;
-    padding: 2px 10px;
-    background-color: $primary;
-    border-radius: 30px;
+    padding: 0 15px;
+    background-color: $primary-06;
+    border: 0.5px solid $primary;
+    border-radius: 25px;
   }
 }

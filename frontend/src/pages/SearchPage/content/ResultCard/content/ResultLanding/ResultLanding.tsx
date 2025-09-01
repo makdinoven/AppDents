@@ -1,48 +1,28 @@
-import s from "./SearchCourseCard.module.scss";
-import { Path } from "../../../../../routes/routes.ts";
-import { useNavigate } from "react-router-dom";
-import { formatAuthorsDesc } from "../../../../../common/helpers/helpers.ts";
-import AddToCartButton from "../../../../../components/ui/AddToCartButton/AddToCartButton.tsx";
+import s from "./ResultLanding.module.scss";
 import LangLogo, {
   LanguagesType,
-} from "../../../../../components/ui/LangLogo/LangLogo.tsx";
+} from "../../../../../../components/ui/LangLogo/LangLogo.tsx";
+import AddToCartButton from "../../../../../../components/ui/AddToCartButton/AddToCartButton.tsx";
+import { formatAuthorsDesc } from "../../../../../../common/helpers/helpers.ts";
+import { ResultLandingData } from "../../../../../../store/slices/mainSlice.ts";
 
-type DataType = {
-  id: number;
-  landing_name: string;
-  new_price: number;
-  old_price: number;
-  preview_photo: string;
-  page_name: string;
-  authors: any[];
-  course_ids: number[];
-  language: string;
-};
-
-const SearchCourseCard = ({
+const ResultLanding = ({
   data: {
-    id,
+    preview_photo,
     landing_name,
     new_price,
     old_price,
-    preview_photo,
-    page_name,
-    authors,
-    course_ids,
     language,
+    id,
+    authors,
+    page_name,
+    course_ids,
   },
 }: {
-  data: DataType;
+  data: ResultLandingData;
 }) => {
-  const navigate = useNavigate();
-
-  const navigateToResult = () => {
-    navigate(`/${Path.landingClient}/${page_name}`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
-    <li onClick={navigateToResult} className={s.card}>
+    <>
       {preview_photo ? (
         <img className={s.photo} src={preview_photo} alt="" />
       ) : (
@@ -72,12 +52,11 @@ const SearchCourseCard = ({
             variant={"primary"}
           />
         </div>
-
         <p className={s.name}>{landing_name}</p>
         <p className={s.authors}>{formatAuthorsDesc(authors)}</p>
       </div>
-    </li>
+    </>
   );
 };
 
-export default SearchCourseCard;
+export default ResultLanding;

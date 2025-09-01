@@ -49,3 +49,4 @@ export { default as RuFlag } from "./ru-flag.svg?react";
 export { default as PtFlag } from "./pt-flag.svg?react";
 export { default as ItFlag } from "./it-flag.svg?react";
 export { default as ArFlag } from "./ar-flag.svg?react";
+export { default as NoResultsIcon } from "./no-result-icon.svg?react";

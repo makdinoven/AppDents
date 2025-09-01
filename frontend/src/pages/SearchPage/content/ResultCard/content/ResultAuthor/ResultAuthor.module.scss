@@ -1,0 +1,38 @@
+ .card_body {
+    @include flex-column;
+    flex: 1;
+    height: 100%;
+   gap: 10px;
+  }
+
+  .name_lang_container {
+    display: flex;
+    gap: 10px;
+    @include clamped-p2;
+  }
+
+
+  .icon_count_container {
+    color: $primary;
+    @include clamped-p3;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    .icon {
+      path {
+        stroke: $primary;
+      }
+    }
+  }
+
+  .photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    outline-offset: 2px;
+    margin: 5px;
+    outline: 3px solid $primary;
+    object-fit: cover;
+    background-color: $hover-color;
+  }
