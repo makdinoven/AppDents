@@ -1,20 +1,40 @@
-# Stage 1: сборка приложения
+# syntax=docker/dockerfile:1.7
+
+############################
+# Stage 1: Build (Vite)
+############################
 FROM node:22-alpine AS builder
 WORKDIR /app
-# Копируем package.json и package-lock.json (или yarn.lock)
-COPY package*.json ./
-RUN npm install --legacy-peer-deps
-# Копируем исходный код
-COPY . .
-# Собираем приложение – статические файлы попадут в папку dist
-RUN npm run build
 
-# Stage 2: отдача статики через Nginx
+# Больше памяти Node во время сборки (важно для Vite/Rollup)
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Ускоряем npm за счёт кэша
+COPY package*.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps --no-audit --no-fund
+
+# Копируем исходники
+COPY . .
+
+# Кэш для vite/esbuild, детальный вывод на время отладки
+# (убери DEBUG после диагностики)
+ENV DEBUG="vite:*,rollup:*"
+RUN --mount=type=cache,target=/root/.cache/vite \
+    --mount=type=cache,target=/root/.cache/esbuild \
+    npm run build
+
+############################
+# Stage 2: Static via Nginx
+############################
 FROM nginx:alpine
-# Копируем собранные файлы из stage builder в стандартную папку nginx для статики
+# (необязательно) немного улучшить кеширование статики
+RUN sed -i 's/sendfile.*/sendfile on;/' /etc/nginx/nginx.conf
+
+# Готовая статика
 COPY --from=builder /app/dist /usr/share/nginx/html
-# Копируем кастомную конфигурацию Nginx для SPA fallback
-# Если frontend.conf лежит в корне каталога фронтенда, то:
+
+# Конфиг SPA (fallback на index.html)
 COPY frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
