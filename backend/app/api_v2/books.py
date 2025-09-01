@@ -1,16 +1,38 @@
+import os
+
+import boto3
+import logging
+from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User
+from ..models.models_v2 import User, BookFileFormat, BookFile
 from ..schemas_v2.book import (
     BookCreate, BookUpdate, BookResponse,
-    BookLandingCreate, BookLandingUpdate, BookLandingResponse, BookDetailResponse,
+    BookLandingCreate, BookLandingUpdate, BookLandingResponse, BookDetailResponse, PdfUploadInitResponse,
+    PdfUploadInitRequest, PdfUploadFinalizeRequest,
 )
 from ..services_v2 import book_service
 
+
+S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
+S3_REGION      = os.getenv("S3_REGION", "ru-1")
+S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+
+s3v4 = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+)
+
+log = logging.getLogger(__name__)
 router = APIRouter()
 
 # ─────────────── КНИГИ ───────────────────────────────────────────────────────
@@ -257,3 +279,126 @@ def get_book_landing_by_slug(
     if not bl:
         raise HTTPException(status_code=404, detail="Book landing not found")
     return _serialize_landing(bl)
+
+
+# ── ДОБАВИТЬ В НИЗ ФАЙЛА (после CRUD), не меняя существующие роуты ────────────
+@router.post("/admin/books/{book_id}/upload-pdf-url",
+             response_model=PdfUploadInitResponse,
+             summary="Сгенерировать pre-signed POST для загрузки PDF напрямую в S3 (Админ)")
+def get_presigned_pdf_upload_url(
+    book_id: int,
+    payload: PdfUploadInitRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Возвращает pre-signed POST, чтобы загрузить PDF **напрямую** в S3.
+    После успешной загрузки **обязательно** вызвать finalize-роут (см. ниже),
+    чтобы сохранить запись BookFile в БД.
+    """
+    # проверим, что книга существует
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # путь в бакете, куда кладём оригиналы PDF
+    # (форматируем имя, но сохраняем расширение .pdf)
+    filename = payload.filename.strip().replace("\\", "/").split("/")[-1]
+    if not filename:
+        raise HTTPException(status_code=400, detail="Bad filename")
+    if not filename.lower().endswith(".pdf"):
+        # жёстко ограничим PDF: так проще для админки и последующих конвертаций
+        raise HTTPException(status_code=400, detail="Only .pdf allowed")
+    key = f"books/{book_id}/original/{filename}"
+
+    # Политика и поля для POST-загрузки
+    # Лимит размера — до 2 ГБ (подправь при необходимости).
+    max_size = 2 * 1024 * 1024 * 1024
+    conditions = [
+        {"bucket": S3_BUCKET},
+        ["starts-with", "$key", f"books/{book_id}/original/"],
+        {"acl": "public-read"},
+        {"Content-Type": payload.content_type},
+        ["content-length-range", 1, max_size],
+    ]
+    fields = {
+        "acl": "public-read",
+        "Content-Type": payload.content_type,
+        # можно добавить x-amz-meta-*, если нужно
+    }
+
+    post = s3v4.generate_presigned_post(
+        Bucket=S3_BUCKET,
+        Key=key,
+        Fields=fields,
+        Conditions=conditions,
+        ExpiresIn=3600,   # ссылка на загрузку активна 1 час
+    )
+
+    cdn_url = f"{S3_PUBLIC_HOST}/{key}"
+    log.info("[UPLOAD-PDF][INIT] book_id=%s key=%s url=%s", book_id, key, post["url"])
+    return PdfUploadInitResponse(
+        url=post["url"],
+        fields=post["fields"],
+        key=key,
+        cdn_url=cdn_url,
+    )
+
+@router.post("/admin/books/{book_id}/upload-pdf-finalize",
+             summary="Подтвердить загрузку PDF и сохранить BookFile (Админ)")
+def finalize_pdf_upload(
+    book_id: int,
+    payload: PdfUploadFinalizeRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Админ сообщает, что загрузка в S3 завершена.
+    Мы проверяем наличие объекта (head_object), берём размер/Content-Type,
+    сохраняем BookFile(file_format=PDF) в БД и возвращаем CDN-URL.
+    """
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    key = payload.key.strip()
+    expected_prefix = f"books/{book_id}/original/"
+    if not key.startswith(expected_prefix):
+        raise HTTPException(status_code=400, detail="Key does not match this book")
+
+    # Проверим объект в бакете
+    try:
+        head = s3v4.head_object(Bucket=S3_BUCKET, Key=key)
+    except Exception as e:
+        log.error("[UPLOAD-PDF][FINALIZE] HEAD failed key=%s: %s", key, e)
+        raise HTTPException(status_code=400, detail="Object not found in bucket")
+
+    ct = head.get("ContentType") or "application/pdf"
+    if not ct.startswith("application/pdf"):
+        log.warning("[UPLOAD-PDF][FINALIZE] Unexpected Content-Type: %s for key=%s", ct, key)
+
+    size = int(head.get("ContentLength") or 0)
+    if payload.size_bytes and payload.size_bytes > 0:
+        size = payload.size_bytes
+
+    # Сохраняем BookFile (PDF)
+    cdn_url = f"{S3_PUBLIC_HOST}/{key}"
+    bf = BookFile(
+        book_id     = book.id,
+        file_format = BookFileFormat.PDF,
+        s3_url      = cdn_url,         # важно: публичный CDN-URL
+        size_bytes  = size,
+    )
+    db.add(bf)
+    db.commit()
+    db.refresh(bf)
+
+    log.info("[UPLOAD-PDF][DONE] book_id=%s key=%s size=%s url=%s", book_id, key, size, cdn_url)
+    return {
+        "ok": True,
+        "book_id": book.id,
+        "file_id": bf.id,
+        "file_format": bf.file_format.value,
+        "url": cdn_url,
+        "size_bytes": size,
+    }
