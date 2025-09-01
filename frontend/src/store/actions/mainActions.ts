@@ -51,3 +51,20 @@ export const getCoursesRecommend = createAppAsyncThunk(
     }
   },
 );
+
+export const globalSearch = createAppAsyncThunk(
+  "main/search",
+  async (params: any, { rejectWithValue }) => {
+    try {
+      const res = await mainApi.globalSearch(params);
+
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data || "Unknown error");
+    }
+  },
+);

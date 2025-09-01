@@ -1,0 +1,26 @@
+.no_results {
+  @include flex-column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  padding: 20px 160px;
+}
+
+.icon {
+  width: 210px;
+  height: 220px;
+  margin-bottom: 30px;
+}
+
+.title {
+  text-transform: uppercase;
+  @include clamped-h3;
+  margin-bottom: 15px;
+}
+
+.desc {
+  @include clamped-p2;
+  text-align: center;
+}

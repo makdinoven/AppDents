@@ -11,7 +11,7 @@
   font-size: 18px;
 
   &.primary {
-    background-color: $primary;
+    background-color: $primary-06;
     border-color: $primary;
     color: $text-color;
     svg {
@@ -46,6 +46,11 @@
       border-color: $text-color;
       color: $primary;
 
+      &.primary {
+        background-color: $background-color-08;
+        border-color: $primary;
+      }
+
       svg {
         path {
           stroke: $primary;
@@ -61,6 +66,16 @@
     padding: 8px 15px;
     background-color: $text-color;
     border-color: $text-color;
+    @include transition();
+
+    @media (hover: hover) {
+      &:hover {
+        &.primary {
+          background-color: $error-color-lighten;
+          border-color: $error-color;
+        }
+      }
+    }
 
     svg {
       width: 25px;

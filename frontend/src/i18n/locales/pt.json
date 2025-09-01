@@ -121,11 +121,16 @@
 
   "search": {
     "searchCourses": "Buscar cursos",
-    "searchPlaceholder": "Digite o nome do curso ou nome do autor...",
+    "searchPlaceholder": "Pesquisar no site...",
     "results": {
+      "results": "Resultados da pesquisa:",
       "landings": "Cursos",
       "authors": "Autores",
       "book_landings": "Livros"
+    },
+    "noResults": {
+      "title": "Ops! Nada encontrado",
+      "description": "Por favor, tente usar outras palavras ou frases para uma pesquisa mais eficaz."
     },
     "result": "encontrados {{count}} cursos",
     "result_one": "{{count}} curso encontrado",

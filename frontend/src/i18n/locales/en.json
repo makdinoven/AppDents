@@ -122,11 +122,16 @@
 
   "search": {
     "searchCourses": "Search courses",
-    "searchPlaceholder": "Enter course name or author name...",
+    "searchPlaceholder": "Search the site...",
     "results": {
+      "results": "Search results:",
       "landings": "Courses",
       "authors": "Authors",
       "book_landings": "Books"
+    },
+    "noResults": {
+      "title": "Oops! Nothing found",
+      "description": "Please try using different words or phrases for a more effective search."
     },
     "result": "{{count}} courses found",
     "result_one": "{{count}} course found",

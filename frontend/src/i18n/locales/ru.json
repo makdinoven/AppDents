@@ -120,11 +120,16 @@
 
   "search": {
     "searchCourses": "Поиск курсов",
-    "searchPlaceholder": "Введите название курса или имя автора...",
+    "searchPlaceholder": "Поиск по сайту...",
     "results": {
+      "results": "Результаты поиска:",
       "landings": "Курсы",
       "authors": "Лекторы",
       "book_landings": "Книги"
+    },
+    "noResults": {
+      "title": "Упс! ничего не найдено",
+      "description": "Пожалуйста, попробуйте использовать другие слова или фразы для более эффективного поиска."
     },
     "result": "найдено {{count}} курсов",
     "result_one": "найден {{count}} курс ",

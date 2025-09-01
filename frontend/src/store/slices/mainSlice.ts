@@ -3,8 +3,10 @@ import {
   getCourses,
   getCoursesRecommend,
   getTags,
+  globalSearch,
 } from "../actions/mainActions.ts";
 import { transformTags } from "../../common/helpers/helpers.ts";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 
 type TagType = {
   id: number;
@@ -12,9 +14,53 @@ type TagType = {
   value: string;
 };
 
+export type ResultBookData = {
+  id: number;
+  title: string;
+  cover?: string;
+  price: number;
+};
+
+export type ResultLandingData = {
+  id: number;
+  landing_name: string;
+  new_price: number;
+  old_price: number;
+  preview_photo: string;
+  page_name: string;
+  authors: any[];
+  course_ids: number[];
+  language: string;
+};
+
+export type ResultAuthorData = {
+  id: number;
+  language: LanguagesType;
+  name: string;
+  photo: string;
+  courses_count: number;
+  books_count: number;
+};
+
+export type SearchResultsType = {
+  landings: ResultLandingData[] | null;
+  authors: ResultAuthorData[] | null;
+  book_landings: ResultBookData[];
+  counts: Record<"landings" | "authors" | "book_landings", number>;
+} | null;
+
+type SearchType = {
+  q: string | null;
+  loading: boolean;
+  selectedLanguages: LanguagesType[] | null;
+  selectedResultTypes: ("landings" | "authors" | "book_landings")[] | null;
+  results: SearchResultsType;
+};
+
 interface MainState {
   tags: TagType[];
   courses: any[];
+  search: SearchType;
   totalCourses: number;
   loading: boolean;
   error: string | null;
@@ -24,6 +70,13 @@ const initialState: MainState = {
   tags: [],
   courses: [],
   totalCourses: 0,
+  search: {
+    q: null,
+    loading: false,
+    selectedLanguages: null,
+    selectedResultTypes: null,
+    results: null,
+  },
   loading: true,
   error: null,
 };
@@ -35,6 +88,15 @@ const mainSlice = createSlice({
     clearCourses: (state) => {
       state.courses = [];
       state.totalCourses = 0;
+    },
+    clearSearch: (state) => {
+      state.search = {
+        q: null,
+        loading: false,
+        selectedLanguages: null,
+        selectedResultTypes: null,
+        results: null,
+      };
     },
   },
 
@@ -90,9 +152,31 @@ const mainSlice = createSlice({
               : cards;
           state.totalCourses = total;
         },
-      );
+      )
+      .addCase(globalSearch.pending, (state, action) => {
+        state.search.loading = true;
+        state.search.q = action.meta.arg.q;
+        state.search.selectedLanguages = action.meta.arg.languages;
+        state.search.selectedResultTypes = action.meta.arg.types;
+      })
+      .addCase(
+        globalSearch.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.search.loading = false;
+          state.search.results = {
+            landings: action.payload.res.data.landings,
+            book_landings: action.payload.res.data.book_landings,
+            authors: action.payload.res.data.authors,
+            counts: action.payload.res.data.counts,
+          };
+        },
+      )
+      .addCase(globalSearch.rejected, (state) => {
+        state.search.loading = false;
+        state.search.results = null;
+      });
   },
 });
 
-export const { clearCourses } = mainSlice.actions;
+export const { clearCourses, clearSearch } = mainSlice.actions;
 export const mainReducer = mainSlice.reducer;

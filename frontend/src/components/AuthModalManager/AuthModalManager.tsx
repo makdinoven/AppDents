@@ -65,7 +65,8 @@ const AuthModalManager = () => {
     <ModalWrapper
       title={modalContent.title}
       cutoutPosition={`${triggerRef ? "top-right" : "none"}`}
-      cutoutOffsetY={15}
+      cutoutOffsetY={10}
+      cutoutOffsetX={10}
       triggerElement={triggerRef?.current}
       isOpen={isModalOpen}
       onClose={handleClose}

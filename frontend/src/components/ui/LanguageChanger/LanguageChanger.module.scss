@@ -42,7 +42,7 @@
   z-index: 5;
   padding: 15px 7px 7px;
   position: absolute;
-  overflow: hidden;
+  //overflow: hidden;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
@@ -58,6 +58,8 @@
   align-items: flex-start;
   justify-content: space-between;
   box-shadow: 0 6px 18px -4px $primary-06;
+  -webkit-box-shadow: 0 6px 18px -4px $primary-06;
+  -moz-box-shadow: 0 6px 18px -4px $primary-06;
 
   &.closing {
     animation: moveToTop 0.2s ease forwards;
@@ -73,7 +75,7 @@
     transform: translateX(-50%);
     pointer-events: none;
     background-color: $background-color;
-    border: inherit;
+    border-bottom: inherit;
     border-radius: 50%;
     top: -16px;
   }
