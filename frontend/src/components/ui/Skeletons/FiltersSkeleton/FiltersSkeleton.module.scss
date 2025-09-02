@@ -1,0 +1,28 @@
+.skeletons {
+  width: 100%;
+  height: fit-content;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+
+  @media (max-width: $middle-breakpoint) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  @media (max-width: $mobile-breakpoint) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.skeleton {
+  @include fadeInMove();
+  @include transition();
+
+  @include skeleton($pos: relative, $h: 40px, $color: $light-grey);
+
+  @media (max-width: $tablet-breakpoint) {
+    @include skeleton($pos: relative, $h: 35px, $color: $light-grey);
+  }
+  @media (max-width: $mobile-breakpoint) {
+    @include skeleton($pos: relative, $h: 30px, $color: $light-grey);
+  }
+}

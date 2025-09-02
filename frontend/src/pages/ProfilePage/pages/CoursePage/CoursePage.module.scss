@@ -8,7 +8,7 @@
     width: 100%;
     min-height: 75px;
 
-    @include skeleton($pos: relative, $color: $hover-color-15);
+    @include skeleton($pos: relative, $color: $light-grey);
   }
 }
 

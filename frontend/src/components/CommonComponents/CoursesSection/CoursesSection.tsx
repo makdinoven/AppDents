@@ -14,6 +14,8 @@ import {
   getCoursesRecommend,
 } from "../../../store/actions/mainActions.ts";
 import CourseCardSkeletons from "../../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import FiltersSkeleton from "../../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
 type props = {
   sectionTitle?: string;
@@ -31,12 +33,6 @@ type props = {
   isFree?: boolean;
   isVideo?: boolean;
 };
-
-const ScreenResolutions = {
-  desktop: 1440,
-  tablet: 768,
-  mobile: 567,
-} as const;
 
 const CoursesSection = ({
   ref,
@@ -72,11 +68,11 @@ const CoursesSection = ({
   );
   const [internalFilter, setInternalFilter] = useState("all");
   const [internalSort, setInternalSort] = useState<string>("");
-  const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
   const [isReady, setIsReady] = useState(false);
   const filter = externalFilter ?? internalFilter;
   const sort = externalSort ?? internalSort;
   const skipResetInProgress = useRef(false);
+  const [isClicked, setIsClicked] = useState(false);
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
@@ -121,30 +117,9 @@ const CoursesSection = ({
     }
   }, [isReady, language, skip, filter, sort, userLoading, isLogged]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [screenWidth]);
-
-  const countButtonSkeletonsAmount = () => {
-    if (screenWidth <= ScreenResolutions.desktop) {
-      return 15;
-    } else if (screenWidth <= ScreenResolutions.tablet) {
-      return 12;
-    } else if (screenWidth <= ScreenResolutions.mobile) {
-      return 6;
-    }
-  };
-
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
+    setIsClicked(true);
   };
 
   const onFilterChange = (val: string) => {
@@ -169,37 +144,26 @@ const CoursesSection = ({
     <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         {sectionTitle && <SectionHeader name={sectionTitle} />}
-        {loading ? (
-          <ul className={s.skeletons}>
-            {Array(countButtonSkeletonsAmount())
-              .fill({ length: countButtonSkeletonsAmount() })
-              .map((_, index) => (
-                <li key={index} className={s.skeleton}></li>
-              ))}
-          </ul>
-        ) : (
-          showFilters &&
-          tags &&
-          tags.length > 0 && (
-            <SelectableList
-              items={tags}
-              activeValue={activeFilter}
-              onSelect={onFilterChange}
-            />
-          )
+        {showFilters && (
+          <>
+            {tags && tags.length > 0 ? (
+              <>
+                <SelectableList
+                  items={tags}
+                  activeValue={activeFilter}
+                  onSelect={onFilterChange}
+                />
+              </>
+            ) : (
+              <FiltersSkeleton />
+            )}
+            <span className={s.line}></span>
+          </>
         )}
-        <span className={s.line}></span>
-        {loading ? (
-          <ul className={s.skeletons}>
-            {Array(3)
-              .fill({ length: 3 })
-              .map((_, index) => (
-                <li key={index} className={s.skeleton}></li>
-              ))}
-          </ul>
-        ) : (
-          showSort &&
-          cards.length > 0 && (
+
+        {showSort && (
+          <div className={s.filters_wrapper}>
+            {!(cards.length > 0) && <LoaderOverlay />}
             <SelectableList
               items={
                 isLogged
@@ -209,10 +173,10 @@ const CoursesSection = ({
               activeValue={activeSort}
               onSelect={onSortChange}
             />
-          )
+          </div>
         )}
       </div>
-      {loading ? (
+      {!(cards.length > 0) ? (
         <CourseCardSkeletons shape />
       ) : (
         <CardsList
@@ -224,9 +188,10 @@ const CoursesSection = ({
           handleSeeMore={handleSeeMore}
           loading={loading}
           cards={cards}
-          showSeeMore={cards.length !== total}
+          showSeeMore={!loading && cards.length !== total}
         />
       )}
+      {isClicked && loading && <CourseCardSkeletons shape />}
     </section>
   );
 };
