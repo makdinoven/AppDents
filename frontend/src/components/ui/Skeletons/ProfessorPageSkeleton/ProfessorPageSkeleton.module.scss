@@ -29,7 +29,7 @@ $border-radius-big: 30px;
   @include skeleton(
     $pos: relative,
     $h: clamp(31px, 8vw, 95px),
-    $color: $hover-color-15,
+    $color: $light-grey,
     $radius: $border-radius-big
   );
 }
@@ -51,14 +51,14 @@ $border-radius-big: 30px;
     @include skeleton(
       $pos: relative,
       $h: clamp(235px, 10vw, 250px),
-      $color: $hover-color-15
+      $color: $light-grey
     );
 
     @media (max-width: $mobile-breakpoint) {
       @include skeleton(
         $pos: relative,
         $h: clamp(120px, 15vw, 250px),
-        $color: $hover-color-15
+        $color: $light-grey
       );
     }
   }
@@ -70,7 +70,7 @@ $border-radius-big: 30px;
   align-items: center;
   border-radius: 30px;
   padding: 30px;
-  background-color: $hover-color-15;
+  background-color: $light-grey;
 }
 
 .buy_section_desc {
@@ -108,7 +108,7 @@ $border-radius-big: 30px;
 
   .card_header {
     position: relative;
-    background-color: $hover-color-15;
+    background-color: $light-grey;
     width: 69%;
     min-height: 55px;
     border-top-left-radius: var(--border-radius-smaller);
@@ -120,7 +120,7 @@ $border-radius-big: 30px;
       $size: 40px,
       $offset-x: -15px,
       $offset-y: 15px,
-      $shadow-color: $hover-color-15,
+      $shadow-color: $light-grey,
       $border-bottom-left-radius: var(--border-radius-smaller)
     );
   }
@@ -130,7 +130,7 @@ $border-radius-big: 30px;
     flex: 1;
     height: 100%;
     width: 100%;
-    background-color: $hover-color-15;
+    background-color: $light-grey;
     border-bottom-left-radius: var(--border-radius-smaller);
     border-top-right-radius: var(--border-radius-smaller);
   }
@@ -148,14 +148,14 @@ $border-radius-big: 30px;
     left: 0;
     right: 0;
     bottom: 15px;
-    background-color: $hover-color-20;
+    background-color: $darker-grey;
     backdrop-filter: blur(5px);
   }
 
   .card_bottom {
     margin-left: auto;
     position: relative;
-    background-color: $hover-color-15;
+    background-color: $light-grey;
     min-height: $card-bottom-height;
     width: 69%;
     border-bottom-left-radius: var(--border-radius-smaller);
@@ -167,7 +167,7 @@ $border-radius-big: 30px;
       $size: 40px,
       $offset-x: 15px,
       $offset-y: -15px,
-      $shadow-color: $hover-color-15,
+      $shadow-color: $light-grey,
       $border-top-right-radius: var(--border-radius-smaller)
     );
   }

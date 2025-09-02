@@ -29,7 +29,7 @@ $border-radius-big: 30px;
       $pos: relative,
       $h: clamp(70px, 15vw, $card-header-height),
       $radius: var(--border-radius),
-      $color: $hover-color-15
+      $color: $light-grey
     );
     display: flex;
     margin: 0 clamp(10px, 2vw, 20px);
@@ -39,10 +39,10 @@ $border-radius-big: 30px;
 
   .card_header {
     position: relative;
-    background-color: $hover-color-15;
+    background-color: $light-grey;
     flex: 1;
     flex-shrink: 0;
-    box-shadow: 0 4px 0 $hover-color-15;
+    box-shadow: 0 4px 0 $light-grey;
     max-width: 510px;
     height: clamp(70px, 15vw, $card-header-height);
     border-top-left-radius: var(--border-radius);
@@ -54,7 +54,7 @@ $border-radius-big: 30px;
       $size: calc(var(--border-radius) * 2),
       $offset-x: -20px,
       $offset-y: 20px,
-      $shadow-color: $hover-color-15,
+      $shadow-color: $light-grey,
       $border-bottom-left-radius: var(--border-radius)
     );
   }
@@ -77,7 +77,7 @@ $border-radius-big: 30px;
     min-width: 320px;
     min-height: clamp(134px, 31vw, $card-body-height);
     width: 100%;
-    background-color: $hover-color-15;
+    background-color: $light-grey;
     border-bottom-left-radius: var(--border-radius);
     border-top-right-radius: var(--border-radius);
   }
@@ -101,8 +101,8 @@ $border-radius-big: 30px;
   .card_bottom {
     margin-left: auto;
     position: relative;
-    background-color: $hover-color-15;
-    box-shadow: 0 -4px 0 $hover-color-15;
+    background-color: $light-grey;
+    box-shadow: 0 -4px 0 $light-grey;
     min-height: clamp(110px, 31vw, 208px);
     width: 69%;
     border-bottom-left-radius: var(--border-radius);
@@ -129,7 +129,7 @@ $border-radius-big: 30px;
     @include skeleton(
       $pos: relative,
       $h: clamp(52px, 8vw, 80px),
-      $color: $hover-color-15
+      $color: $light-grey
     );
     margin-bottom: var(--offset);
   }
@@ -138,7 +138,7 @@ $border-radius-big: 30px;
     @include skeleton(
       $pos: relative,
       $h: clamp(32px, 5vw, 52px),
-      $color: $hover-color-15,
+      $color: $light-grey,
       $radius: $border-radius-xs
     );
     margin-right: 75px;
@@ -151,7 +151,7 @@ $border-radius-big: 30px;
       $h: 60px,
       $w: fit-content,
       $radius: $border-radius-big,
-      $color: $hover-color-15
+      $color: $light-grey
     );
     min-width: clamp(200px, 35vw, 400px);
     padding: clamp(9.5px, 2vw, 12.5px) clamp(10px, 2vw, 20px);
@@ -245,7 +245,7 @@ $border-radius-big: 30px;
       .photo {
         position: relative;
         margin: 0;
-        border: 2px solid $hover-color-15;
+        border: 2px solid $light-grey;
         top: 0;
         aspect-ratio: 16/9;
         height: unset;

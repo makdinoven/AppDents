@@ -26,25 +26,6 @@ $card-height: $initial-card-height - $card_bottom-height;
 //card body
 $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 
-@keyframes fadeInAnim {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-@keyframes fadeInMove {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .skeletons {
   width: 100%;
   display: grid;
@@ -58,15 +39,13 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 }
 
 .card {
-  animation:
-    fadeInAnim 0.2s ease-in-out,
-    fadeInMove 0.2s ease-out forwards;
+  @include fadeInMove();
   @include transition();
   @include flex-column;
   position: relative;
   background-position: center;
   border-radius: $border-radius-small;
-  background-color: $hover-color-15;
+  background-color: $light-grey;
 
   &.shape {
     border-radius: $border-radius-big;
@@ -79,13 +58,13 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 .card_content {
   @include flex-column;
   position: relative;
-  background-color: $hover-color-15;
+  background-color: $light-grey;
   border-radius: $border-radius-small;
   padding: 15px;
   flex: 1;
   gap: 10px;
   justify-content: space-between;
-  border: 1px solid $hover-color-15;
+  border: 1px solid $light-grey;
   z-index: 2;
 
   h3 {
@@ -113,7 +92,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 .card_header,
 .card_body,
 .card_bottom {
-  background-color: $hover-color-15;
+  background-color: $light-grey;
 }
 
 .card_header {
@@ -123,7 +102,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
     position: absolute;
     top: -$card-header-height;
     text-transform: uppercase;
-    box-shadow: 0 4px 0 $hover-color-15;
+    box-shadow: 0 4px 0 $light-grey;
     width: $card_header-width;
     height: $card_header-height;
     padding-top: 31px;
@@ -140,7 +119,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
       bottom: 0;
       right: -40px;
       border-bottom-left-radius: $border-radius-small;
-      box-shadow: -15px 15px 0 2px $hover-color-15;
+      box-shadow: -15px 15px 0 2px $light-grey;
       pointer-events: none;
     }
     &::after {
@@ -165,7 +144,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
   cursor: pointer;
   @include flex-center;
   position: relative;
-  box-shadow: 0 -4px 0 $hover-color-15;
+  box-shadow: 0 -4px 0 $light-grey;
   height: $card_bottom-height;
   width: $card_bottom-width;
   padding-left: 7px;
@@ -182,7 +161,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
     top: 0px;
     left: -40px;
     border-top-right-radius: $border-radius-small;
-    box-shadow: 15px -15px 0 2px $hover-color-15;
+    box-shadow: 15px -15px 0 2px $light-grey;
     pointer-events: none;
   }
 }
@@ -283,7 +262,7 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 
   .photo {
     @include skeleton($pos: relative);
-    background-color: $hover-color-20;
+    background-color: $darker-grey;
     aspect-ratio: 16/9;
     max-width: 306px;
   }
