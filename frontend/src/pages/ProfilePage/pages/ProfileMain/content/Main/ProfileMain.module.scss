@@ -106,7 +106,7 @@
   .mail_link {
     vertical-align: center;
     text-decoration: underline;
-    color: $secondary-lighter;
+    color: $primary;
   }
 }
 
@@ -130,7 +130,6 @@
     justify-content: flex-start;
     gap: 5px;
     @include clamped-h4;
-    color: $secondary-lighter;
   }
 }
 
