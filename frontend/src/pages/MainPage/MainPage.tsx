@@ -18,10 +18,10 @@ const MainPage = () => {
   const filterFromUrl = searchParams.get("filter");
   const sortFromUrl = searchParams.get("sort");
   const [activeFilter, setActiveFilter] = useState<string>(
-    filterFromUrl ? filterFromUrl : "all",
+    filterFromUrl ? filterFromUrl : "all"
   );
   const [activeSort, setActiveSort] = useState<string>(
-    sortFromUrl ? sortFromUrl : "",
+    sortFromUrl ? sortFromUrl : ""
   );
   const [skip, setSkip] = useState(0);
   const coursesRef = useRef<HTMLDivElement | null>(null);

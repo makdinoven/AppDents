@@ -83,15 +83,30 @@
   flex-direction: column;
   gap: 20px;
 
-  span {
-    @include clamped-h4;
-    text-transform: uppercase;
+  .mail,
+  .support {
+    @include flex-center;
+    justify-content: flex-start;
+    text-transform: capitalize;
+    flex-direction: row;
+    gap: 5px;
+    color: $accent;
+
+    svg {
+      height: 30px;
+      width: auto;
+      path {
+        stroke: $accent;
+        stroke-width: 1.5;
+        opacity: 1;
+      }
+    }
   }
 
   .mail_link {
     vertical-align: center;
     text-decoration: underline;
-    color: $secondary-lighter;
+    color: $primary;
   }
 }
 
@@ -109,6 +124,13 @@
 .user_items {
   @include flex-column;
   gap: 10px;
+
+  div {
+    @include flex-center;
+    justify-content: flex-start;
+    gap: 5px;
+    @include clamped-h4;
+  }
 }
 
 .buttons {
@@ -177,8 +199,8 @@
   }
 
   .user_icon {
-      width: 45px;
-      height: 45px;
+    width: 45px;
+    height: 45px;
   }
 
   .user_items {

@@ -2,7 +2,6 @@ $border-radius: 20px;
 
 .card {
   hyphens: auto;
-  @include fadeInMove();
   @include flex-column;
   position: relative;
   background-position: center;

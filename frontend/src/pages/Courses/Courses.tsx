@@ -11,15 +11,16 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
+import CourseCardSkeletons from "../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatchType>();
   const { language, isLogged, role } = useSelector(
-    (state: AppRootStateType) => state.user,
+    (state: AppRootStateType) => state.user
   );
   const userCourses = useSelector(
-    (state: AppRootStateType) => state.user.courses,
+    (state: AppRootStateType) => state.user.courses
   );
   const [courses, setCourses] = useState([]);
   const [total, setTotal] = useState(0);
@@ -69,14 +70,18 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         totalPages={totalPages}
         filters={["tags", "sort", "size"]}
       >
-        <CardsList
-          isFree={isFree}
-          isClient={true}
-          loading={loading}
-          showSeeMore={false}
-          showEndOfList={false}
-          cards={courses}
-        />
+        {loading ? (
+          <CourseCardSkeletons shape />
+        ) : (
+          <CardsList
+            isFree={isFree}
+            isClient={true}
+            loading={loading}
+            showSeeMore={false}
+            showEndOfList={false}
+            cards={courses}
+          />
+        )}
       </ListController>
       {!isFirstLoad && (
         <CoursesSection
