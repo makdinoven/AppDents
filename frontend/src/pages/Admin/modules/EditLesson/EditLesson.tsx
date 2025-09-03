@@ -37,26 +37,36 @@ const EditLesson = ({
             ? {
                 ...s,
                 lessons: s.lessons.map((l: any) =>
-                  l.id === lesson.id ? { ...l, [name]: value } : l,
+                  l.id === lesson.id ? { ...l, [name]: value } : l
                 ),
               }
-            : s,
+            : s
         ),
       };
     });
   };
 
   const handleChangeLanding = (e: any) => {
-    const { name, value } = e;
+    let { name, value } = e;
+    if (name === "link") {
+      value = handleShortenLink(value);
+    }
     setCourse((prev: any) => {
       if (!prev) return prev;
       return {
         ...prev,
         lessons_info: prev.lessons_info.map((l: any) =>
-          l.id === lesson.id ? { ...l, [name]: value } : l,
+          l.id === lesson.id ? { ...l, [name]: value } : l
         ),
       };
     });
+  };
+
+  const handleShortenLink = (link: string) => {
+    return link.replace(
+      /^https:\/\/[^\/]+\.s3\.twcstorage\.ru(\/\S*)$/,
+      "https://cdn.dent-s.com$1"
+    );
   };
 
   const courseFields = [
