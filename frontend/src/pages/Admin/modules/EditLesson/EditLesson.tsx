@@ -27,7 +27,10 @@ const EditLesson = ({
   };
 
   const handleChangeCourse = (e: any) => {
-    const { name, value } = e;
+    let { name, value } = e;
+    if (name === "video_link") {
+      value = handleShortenLink(value);
+    }
     setCourse((prev: any) => {
       if (!prev) return prev;
       return {
