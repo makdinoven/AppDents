@@ -99,6 +99,11 @@ def upload_pdf_and_generate(
     rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
+    rds.hset(prev_k_job(book.id), mapping={
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+    })
+    rds.delete(prev_k_log(book.id))
 
     # 4) пинаем Celery
     celery.send_task("app.tasks.book_formats.generate_book_formats", args=[book.id], queue="special")

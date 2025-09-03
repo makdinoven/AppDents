@@ -4,7 +4,7 @@ import shlex
 import subprocess
 import tempfile
 from datetime import datetime
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 
 import boto3
 import redis
@@ -73,6 +73,11 @@ def _run(cmd: str) -> tuple[int, str, str]:
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     out, err = proc.communicate()
     return proc.returncode, out, err
+
+def _cdn_url_for_key(key: str) -> str:
+    key = key.lstrip("/")
+    safe = quote(key, safe="/-._~()")
+    return f"{S3_PUBLIC_HOST}/{safe}"
 
 @shared_task(name="app.tasks.book_previews.generate_book_preview", rate_limit="20/m")
 def generate_book_preview(book_id: int, pages: int = 15) -> dict:
@@ -146,8 +151,7 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
                 _set_job_times(book_id, finished=True)
                 return {"ok": False, "error": "s3_upload_failed"}
 
-            cdn_url = f"{S3_PUBLIC_HOST}/{key}"
-
+            cdn_url = _cdn_url_for_key(key)
         # Обновляем книгу
         book.preview_pdf = cdn_url
         book.preview_generated_at = datetime.utcnow()

@@ -4,7 +4,7 @@ import shlex
 import subprocess
 import tempfile
 from datetime import datetime
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 
 import boto3
 import redis
@@ -78,7 +78,8 @@ def _content_type_for(ext: str) -> str:
 
 def _cdn_url_for_key(key: str) -> str:
     key = key.lstrip("/")
-    return f"{S3_PUBLIC_HOST}/{key}"
+    safe = quote(key, safe="/-._~()")   # ← важно: кодируем пробелы и спецсимволы
+    return f"{S3_PUBLIC_HOST}/{safe}"
 
 def _key_from_url(url: str) -> str:
     """
