@@ -17,6 +17,8 @@ celery = Celery(
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
             "app.tasks.abandoned_checkouts",
+            "app.tasks.book_previews",
+            "app.tasks.book_formats",
         ],
 )
 
