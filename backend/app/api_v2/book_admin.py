@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 from datetime import datetime
+from urllib.parse import quote
 
 import redis
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -12,7 +13,8 @@ from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Book, BookFile, BookFileFormat, BookAudio, Tag
 from ..services_v2.book_service import books_in_landing
-from ..tasks.book_formats import _k_job, _k_log, _k_fmt  # используем те же ключи
+from ..tasks.book_formats import _k_job as fmt_k_job, _k_log as fmt_k_log, _k_fmt
+
 from ..celery_app import celery
 
 # S3/Redis
@@ -42,7 +44,9 @@ def _pdf_key(book: Book) -> str:
     return f"books/{book.slug}/{book.slug}.pdf"
 
 def _cdn_url(key: str) -> str:
-    return f"{S3_PUBLIC_HOST}/{key.lstrip('/')}"
+    # кодируем path, чтобы URL был валидным (пробелы → %20 и т.д.)
+    safe_key = quote(key.lstrip('/'), safe="/-._~()")
+    return f"{S3_PUBLIC_HOST}/{safe_key}"
 
 @router.post("/{book_id}/upload-pdf", summary="Загрузить PDF книги и запустить генерацию форматов")
 def upload_pdf_and_generate(
@@ -88,12 +92,11 @@ def upload_pdf_and_generate(
     db.commit()
 
     # 3) подготавливаем Redis-статусы и стартуем таску
-    rds.hset(_k_job(book.id), mapping={
+    rds.hset(fmt_k_job(book.id), mapping={
         "status": "pending",
         "created_at": datetime.utcnow().isoformat() + "Z",
     })
-    # чистим старые логи/статусы форматов
-    rds.delete(_k_log(book.id))
+    rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
 
@@ -121,8 +124,8 @@ def start_generation(
     if not pdf:
         raise HTTPException(status_code=400, detail="No PDF file found for this book")
 
-    rds.hset(_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
-    rds.delete(_k_log(book.id))
+    rds.hset(fmt_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
+    rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
 
@@ -134,11 +137,11 @@ def get_format_status(
     book_id: int,
     current_admin: User = Depends(require_roles("admin")),
 ):
-    job = rds.hgetall(_k_job(book_id)) or {}
+    job = rds.hgetall(fmt_k_job(book_id)) or {}
     formats = {}
     for fmt in ("PDF", "EPUB", "MOBI", "AZW3", "FB2"):
         formats[fmt] = rds.hgetall(_k_fmt(book_id, fmt)) or {}
-    logs = rds.lrange(_k_log(book_id), 0, 100)  # последние 100 строк
+    logs = rds.lrange(fmt_k_log(book_id), 0, 100) # последние 100 строк
     return {"job": job, "formats": formats, "logs": logs}
 
 @router.post("/{user_id}/books/{book_id}", summary="Выдать книгу пользователю (Админ)")
@@ -164,11 +167,15 @@ def grant_book_to_user(
     logging.getLogger("admin.grant_book").info("Admin %s granted book %s to user %s", current_admin.id, book_id, user_id)
     return {"message": "Книга выдана пользователю", "user_id": user_id, "book_id": book_id}
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ..models.models_v2 import BookLanding
 
 class BundleSetPayload(BaseModel):
     book_ids: list[int]
+
+class FinalizeUploadPayload(BaseModel):
+    # Ключ объекта в бакете, который вы вернули из /upload-pdf-url
+    key: str = Field(..., description="S3 object key (например books/3/original/book.pdf)")
 
 @router.put("/book-landings/{landing_id}/books", summary="Задать полный список книг для лендинга (заменяет старый)")
 def set_bundle_for_landing(
@@ -356,7 +363,9 @@ def remove_book_tag(
     return {"book_id": book.id, "tag_ids": [t.id for t in book.tags]}
 
 from ..celery_app import celery
-from ..tasks.book_previews import _k_job, _k_log
+# ключи статусов для превью (первые 10–15 страниц)
+from ..tasks.book_previews import _k_job as prev_k_job, _k_log as prev_k_log
+
 
 @router.post("/{book_id}/generate-preview", summary="Сгенерировать превью PDF (первые 15 страниц)")
 def start_book_preview(
@@ -369,8 +378,8 @@ def start_book_preview(
         raise HTTPException(status_code=404, detail="Book not found")
 
     # подготовим статус и очистим логи
-    rds.hset(_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
-    rds.delete(_k_log(book.id))
+    rds.hset(prev_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
+    rds.delete(prev_k_log(book.id))
 
     celery.send_task("app.tasks.book_previews.generate_book_preview", args=[book.id], queue="special")
     return {"message": "Preview generation started", "book_id": book.id}
@@ -380,8 +389,8 @@ def book_preview_status(
     book_id: int,
     current_admin: User = Depends(require_roles("admin")),
 ):
-    job = rds.hgetall(_k_job(book_id)) or {}
-    logs = rds.lrange(_k_log(book_id), 0, 100)
+    job = rds.hgetall(prev_k_job(book_id)) or {}
+    logs = rds.lrange(prev_k_log(book_id), 0, 100)
     return {"job": job, "logs": logs}
 
 
@@ -407,8 +416,8 @@ def start_landing_previews(
 
     queued = []
     for b in books:
-        rds.hset(_k_job(b.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
-        rds.delete(_k_log(b.id))
+        rds.hset(prev_k_job(b.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
+        rds.delete(prev_k_log(b.id))
         celery.send_task("app.tasks.book_previews.generate_book_preview", args=[b.id], queue="special")
         queued.append(b.id)
 
@@ -451,4 +460,101 @@ def grant_books_from_landing(
         "landing_id": landing_id,
         "book_ids": [b.id for b in books],
         "count": len(books),
+    }
+
+@router.post("/admin/books/{book_id}/upload-pdf-finalize",
+             summary="Завершить загрузку PDF: зафиксировать в БД, запустить превью и конвертацию форматов")
+def finalize_pdf_upload(
+    book_id: int,
+    payload: FinalizeUploadPayload,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Что делает:
+      1) Проверяет, что объект `key` существует в S3, берёт размер.
+      2) Сохраняет/обновляет запись BookFile(PDF) у книги, с CDN-URL и size_bytes.
+      3) Инициализирует статусы в Redis.
+      4) Ставит две Celery-таски:
+         - app.tasks.book_previews.generate_book_preview
+         - app.tasks.book_formats.generate_book_formats
+    """
+    # 0) Валидации
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    key = (payload.key or "").lstrip("/")
+    if not key or not key.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Key must point to a .pdf object")
+
+    # Не строго, но подсветим возможный промах книгой
+    # (напр., ключ содержит другой id/slug) — это только warn в лог.
+    if f"/{book_id}/" not in f"/{key}/" and f"/{book.slug}/" not in f"/{key}/":
+        log.warning("[BOOK][FINALIZE] key %s не выглядит относящимся к книге id=%s slug=%s",
+                    key, book_id, book.slug)
+
+    # 1) head_object — убеждаемся, что файл на месте и берём размер
+    try:
+        head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+    except Exception as e:
+        log.error("[BOOK][FINALIZE] S3 head_object error for key=%s: %s", key, e)
+        raise HTTPException(status_code=400, detail="S3 object not found (key invalid?)")
+
+    size_bytes = int(head.get("ContentLength") or 0)
+    cdn_url = _cdn_url(key)  # публичный адрес для фронта / для скачивания без подписи
+
+    # 2) UPSERT BookFile(PDF)
+    pdf_row = (
+        db.query(BookFile)
+          .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.PDF)
+          .first()
+    )
+    if pdf_row:
+        pdf_row.s3_url = cdn_url
+        pdf_row.size_bytes = size_bytes
+    else:
+        db.add(BookFile(
+            book_id=book.id,
+            file_format=BookFileFormat.PDF,
+            s3_url=cdn_url,
+            size_bytes=size_bytes,
+        ))
+    db.commit()
+
+    # 3) Инициализация статусов в Redis
+    # --- превью (первые 10–15 страниц) ---
+    rds.hset(prev_k_job(book.id), mapping={
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "note": "awaiting preview generation",
+    })
+    rds.delete(prev_k_log(book.id))  # чистим логи предыдущих попыток
+
+    # --- форматы (EPUB/MOBI/AZW3/FB2) ---
+    rds.hset(fmt_k_job(book.id), mapping={
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "note": "awaiting calibre conversion",
+    })
+    rds.delete(fmt_k_log(book.id))
+    for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
+        rds.delete(_k_fmt(book.id, fmt))
+
+    # 4) Ставим Celery-таски (queue="special" как в конфиге)
+    celery.send_task("app.tasks.book_previews.generate_book_preview",
+                     args=[book.id], queue="special")
+    celery.send_task("app.tasks.book_formats.generate_book_formats",
+                     args=[book.id], queue="special")
+
+    log.info("[BOOK][FINALIZE] book_id=%s key=%s size=%sB → tasks queued", book.id, key, size_bytes)
+    return {
+        "message": "PDF finalized, preview & formats generation started",
+        "book_id": book.id,
+        "pdf_cdn_url": cdn_url,
+        "size_bytes": size_bytes,
+        "tasks": {
+            "preview": "queued",
+            "formats": "queued",
+        }
     }
