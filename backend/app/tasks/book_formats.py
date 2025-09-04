@@ -29,11 +29,11 @@ EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
 # Умеренные флаги (качество ок, память экономим)
 # PDF → EPUB
-PDF2EPUB_OPTS  = "--enable-heuristics --output-profile=tablet --flow-size=150 "
+PDF2EPUB_OPTS  = " "
 # EPUB → AZW3 (под Kindle)
-EPUB2AZW3_OPTS = "--output-profile=kindle_pw3 "
+EPUB2AZW3_OPTS = ""
 # EPUB → MOBI (KF8/new)
-EPUB2MOBI_OPTS = " --mobi-file-type=new"
+EPUB2MOBI_OPTS = ""
 # EPUB → FB2
 EPUB2FB2_OPTS  = ""
 
