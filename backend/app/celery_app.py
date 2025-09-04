@@ -90,6 +90,7 @@ celery.conf.task_queues = (
     Queue("default",      default_exc, routing_key="celery"),
     Queue("special",      default_exc, routing_key="special"),
     Queue("special_hls",  default_exc, routing_key="special_hls"),
+    Queue("book",   default_exc, routing_key="book"),
 )
 
 celery.conf.task_routes = {
@@ -99,7 +100,6 @@ celery.conf.task_routes = {
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
-    "app.tasks.book_formats.*": {"queue": "special"},
-    "app.tasks.book_previews.*": {"queue": "special"},
-
+    "app.tasks.book_formats.*": {"queue": "book"},
+    "app.tasks.book_previews.*": {"queue": "book"},
 }
