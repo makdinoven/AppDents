@@ -1,6 +1,7 @@
 import { SectionType } from "../../types.ts";
 import { useState } from "react";
 import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
+import { rewriteStorageLinkToCDN } from "../../../../common/helpers/helpers.ts";
 
 const EditLesson = ({
   type = "course",
@@ -27,9 +28,10 @@ const EditLesson = ({
   };
 
   const handleChangeCourse = (e: any) => {
-    let { name, value } = e;
+    let { value } = e;
+    const { name } = e;
     if (name === "video_link") {
-      value = handleShortenLink(value);
+      value = rewriteStorageLinkToCDN(value);
     }
     setCourse((prev: any) => {
       if (!prev) return prev;
@@ -40,36 +42,30 @@ const EditLesson = ({
             ? {
                 ...s,
                 lessons: s.lessons.map((l: any) =>
-                  l.id === lesson.id ? { ...l, [name]: value } : l
+                  l.id === lesson.id ? { ...l, [name]: value } : l,
                 ),
               }
-            : s
+            : s,
         ),
       };
     });
   };
 
   const handleChangeLanding = (e: any) => {
-    let { name, value } = e;
+    let { value } = e;
+    const { name } = e;
     if (name === "link") {
-      value = handleShortenLink(value);
+      value = rewriteStorageLinkToCDN(value);
     }
     setCourse((prev: any) => {
       if (!prev) return prev;
       return {
         ...prev,
         lessons_info: prev.lessons_info.map((l: any) =>
-          l.id === lesson.id ? { ...l, [name]: value } : l
+          l.id === lesson.id ? { ...l, [name]: value } : l,
         ),
       };
     });
-  };
-
-  const handleShortenLink = (link: string) => {
-    return link.replace(
-      /^https:\/\/[^\/]+\.s3\.twcstorage\.ru(\/\S*)$/,
-      "https://cdn.dent-s.com$1"
-    );
   };
 
   const courseFields = [
