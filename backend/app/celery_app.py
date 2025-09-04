@@ -29,8 +29,6 @@ celery.conf.update(
     task_default_routing_key="celery",
 )
 
-
-#    ↓↓↓  вместо include используем autodiscover
 celery.autodiscover_tasks(
     ["app"],
     related_name="tasks",
