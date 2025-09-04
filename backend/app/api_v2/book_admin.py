@@ -106,8 +106,8 @@ def upload_pdf_and_generate(
     rds.delete(prev_k_log(book.id))
 
     # 4) пинаем Celery
-    celery.send_task("app.tasks.book_formats.generate_book_formats", args=[book.id], queue="special")
-    celery.send_task("app.tasks.book_previews.generate_book_preview", args=[book.id], queue="special")
+    celery.send_task("app.tasks.book_formats.generate_book_formats", args=[book.id], queue="book")
+    celery.send_task("app.tasks.book_previews.generate_book_preview", args=[book.id], queue="book")
     log.info("[ADMIN] PDF uploaded for book_id=%s, task queued", book.id)
     return {"message": "PDF uploaded, conversion started", "book_id": book.id, "pdf_url": cdn_url}
 
@@ -134,7 +134,7 @@ def start_generation(
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
 
-    celery.send_task("app.tasks.book_formats.generate_book_formats", args=[book.id], queue="special")
+    celery.send_task("app.tasks.book_formats.generate_book_formats", args=[book.id], queue="book")
     return {"message": "Conversion started", "book_id": book.id}
 
 @router.get("/{book_id}/format-status", summary="Статус конвертации книги (Redis)")
@@ -386,7 +386,7 @@ def start_book_preview(
     rds.hset(prev_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
     rds.delete(prev_k_log(book.id))
 
-    celery.send_task("app.tasks.book_previews.generate_book_preview", args=[book.id], queue="special")
+    celery.send_task("app.tasks.book_previews.generate_book_preview", args=[book.id], queue="book")
     return {"message": "Preview generation started", "book_id": book.id}
 
 @router.get("/{book_id}/preview-status", summary="Статус генерации превью (Redis)")
@@ -423,7 +423,7 @@ def start_landing_previews(
     for b in books:
         rds.hset(prev_k_job(b.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
         rds.delete(prev_k_log(b.id))
-        celery.send_task("app.tasks.book_previews.generate_book_preview", args=[b.id], queue="special")
+        celery.send_task("app.tasks.book_previews.generate_book_preview", args=[b.id], queue="book")
         queued.append(b.id)
 
     return {"message": "Preview tasks queued", "landing_id": landing_id, "book_ids": queued}
@@ -548,9 +548,9 @@ def finalize_pdf_upload(
 
     # 4) Ставим Celery-таски (queue="special" как в конфиге)
     celery.send_task("app.tasks.book_previews.generate_book_preview",
-                     args=[book.id], queue="special")
+                     args=[book.id], queue="book")
     celery.send_task("app.tasks.book_formats.generate_book_formats",
-                     args=[book.id], queue="special")
+                     args=[book.id], queue="book")
 
     log.info("[BOOK][FINALIZE] book_id=%s key=%s size=%sB → tasks queued", book.id, key, size_bytes)
     return {

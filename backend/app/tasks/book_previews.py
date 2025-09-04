@@ -4,6 +4,7 @@ import shlex
 import subprocess
 import tempfile
 from datetime import datetime
+from pathlib import PurePosixPath
 from urllib.parse import urlparse, unquote, quote
 
 import boto3
@@ -76,8 +77,12 @@ def _run(cmd: str) -> tuple[int, str, str]:
 
 def _cdn_url_for_key(key: str) -> str:
     key = key.lstrip("/")
-    safe = quote(key, safe="/-._~()")
-    return f"{S3_PUBLIC_HOST}/{safe}"
+    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+
+def _preview_key_from_src(src_key: str, pages: int) -> str:
+    p = PurePosixPath(src_key)          # books/<ID>/original/<File.pdf>
+    base = p.parent.parent              # → books/<ID>
+    return str(base / "preview" / f"preview_{pages}p.pdf")
 
 @shared_task(name="app.tasks.book_previews.generate_book_preview", rate_limit="20/m")
 def generate_book_preview(book_id: int, pages: int = 15) -> dict:
@@ -142,7 +147,7 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
                 return {"ok": False, "error": "gs_failed"}
 
             # Загрузка превью на CDN
-            key = _target_key_for(book)
+            key = _preview_key_from_src(src_key, pages)
             try:
                 s3.upload_file(out_pdf, S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "application/pdf"})
             except ClientError as e:
