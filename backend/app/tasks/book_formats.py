@@ -29,7 +29,7 @@ EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
 # Умеренные флаги (качество ок, память экономим)
 # PDF → EPUB
-PDF2EPUB_OPTS  = "--enable-heuristics --output-profile=tablet --flow-size=150 --jpeg-output-quality=85 --no-inline-toc"
+PDF2EPUB_OPTS  = "--enable-heuristics --output-profile=tablet --flow-size=150 --no-inline-toc"
 # EPUB → AZW3 (под Kindle)
 EPUB2AZW3_OPTS = "--output-profile=kindle_pw3 --no-inline-toc"
 # EPUB → MOBI (KF8/new)
