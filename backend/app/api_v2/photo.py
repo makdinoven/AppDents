@@ -17,7 +17,6 @@ DOMAIN = "https://dent-s.com"
 def get_absolute_url(filename: str) -> str:
     return f"{DOMAIN}/assets/img/preview_img/{filename}"
 
-
 @router.post("/photo", status_code=status.HTTP_201_CREATED)
 async def upload_photo(file: UploadFile = File(...), current_admin: User = Depends(require_roles("admin"))):
     file_ext = os.path.splitext(file.filename)[1].lower()
