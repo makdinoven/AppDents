@@ -559,6 +559,24 @@ class BookAudio(Base):
     s3_url        = Column(String(700), nullable=False)
     book = relationship("Book", back_populates="audio_files")
 
+# ───────────────── BookLandingImage ─────────────────
+class BookLandingImage(Base):
+    __tablename__ = "book_landing_images"
+
+    id           = Column(Integer, primary_key=True)
+    landing_id   = Column(Integer, ForeignKey("book_landings.id"), nullable=False, index=True)
+    s3_url       = Column(String(700), nullable=False)
+    alt          = Column(String(255))
+    caption      = Column(String(255))
+    sort_index   = Column(Integer, nullable=False, server_default="0")
+    size_bytes   = Column(BigInteger)
+    content_type = Column(String(100))
+    created_at   = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    # при желании: relationship на BookLanding (не обязательно)
+    # landing = relationship("BookLanding", backref="gallery_images")
+
+
 class BookLanding(Base):
     """
     Отдельная посадочная страница книги (как Landing для курса).
