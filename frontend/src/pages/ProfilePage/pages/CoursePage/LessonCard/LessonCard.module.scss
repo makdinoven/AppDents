@@ -1,7 +1,6 @@
 $border-radius: 25px;
 
 .card_wrapper {
-  @include fadeInMove();
   display: flex;
   position: relative;
 

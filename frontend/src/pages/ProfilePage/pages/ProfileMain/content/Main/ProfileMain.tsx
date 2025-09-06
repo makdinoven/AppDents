@@ -7,7 +7,12 @@ import {
   AppDispatchType,
   AppRootStateType,
 } from "../../../../../../store/store.ts";
-import { LogoutIcon, User } from "../../../../../../assets/icons";
+import {
+  LogoutIcon,
+  Mail,
+  Support,
+  User,
+} from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
 import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
@@ -37,7 +42,7 @@ const ProfileMain = () => {
   const screenWidth = useScreenWidth();
 
   useEffect(() => {
-    dispatch(getCourses());
+    if (!courses.length) dispatch(getCourses());
   }, []);
 
   const handleLogout = () => {
@@ -65,15 +70,17 @@ const ProfileMain = () => {
                   <User className={s.user_icon} />
                   <div className={s.user_items}>
                     <div>
-                      <span>
+                      <div className={s.mail}>
+                        <Mail />
                         <Trans i18nKey="mail" />:{" "}
-                      </span>
+                      </div>
                       {email}
                     </div>
                     <div>
-                      <span>
+                      <div className={s.support}>
+                        <Support />
                         <Trans i18nKey="support" />:{" "}
-                      </span>
+                      </div>
                       <a
                         className={s.mail_link}
                         href="mailto:info.dis.org@gmail.com"
@@ -132,6 +139,7 @@ const ProfileMain = () => {
       </div>
 
       <div className={s.profile_page_content}>{activeTab?.component}</div>
+
       {showResetPasswordModal && (
         <ModalWrapper
           title={"resetPassword"}
