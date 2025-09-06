@@ -21,7 +21,12 @@ type ListControllerProps = {
   size: number;
   language?: string;
   children: React.ReactNode;
+  SkeletonComponent?: React.ComponentType<
+    { amount: number } & Record<string, any>
+  >;
+  skeletonProps?: Record<string, any>;
   filters?: FilterKeys[];
+  loading?: boolean;
 };
 
 const ListController = ({
@@ -33,6 +38,9 @@ const ListController = ({
   total,
   totalPages,
   filters = [],
+  SkeletonComponent,
+  skeletonProps,
+  loading,
 }: ListControllerProps) => {
   const SEARCH_KEY = `${type}_search`;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -130,14 +138,20 @@ const ListController = ({
           <FiltersPanel filters={filters} defaultSize={size} />
         )}
         <Search id={SEARCH_KEY} placeholder={`${type}.search`} />
-        {!!total && (
-          <p>
-            <Trans i18nKey={`${type}.found`} values={{ count: total }} />
-          </p>
-        )}
+
+        <p className={`${s.results_found} ${total ? s.loaded : ""}`}>
+          <Trans i18nKey={`${type}.found`} values={{ count: total }} />
+        </p>
       </div>
 
-      {children}
+      {loading && SkeletonComponent ? (
+        <SkeletonComponent
+          amount={currentFilters.size ? Number(currentFilters.size) : size}
+          {...skeletonProps}
+        />
+      ) : (
+        children
+      )}
 
       <Pagination totalPages={totalPages} />
     </div>
