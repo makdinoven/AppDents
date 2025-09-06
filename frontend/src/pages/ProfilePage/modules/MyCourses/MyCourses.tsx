@@ -9,13 +9,13 @@ import CourseCardSkeletons from "../../../../components/ui/Skeletons/CourseCardS
 
 const MyCourses = ({ courses }: { courses: any }) => {
   const loading = useSelector(
-    (state: AppRootStateType) => state.user.loadingCourses
+    (state: AppRootStateType) => state.user.loadingCourses,
   );
   return (
     <section className={s.courses}>
       <SectionHeader name={"profile.yourCourses"} />
       {loading ? (
-        <CourseCardSkeletons columns={3} />
+        <CourseCardSkeletons amount={6} columns={3} />
       ) : (
         <ul className={s.courses_list}>
           {courses.length > 0 ? (

@@ -42,7 +42,7 @@ const ProfileMain = () => {
   const screenWidth = useScreenWidth();
 
   useEffect(() => {
-    dispatch(getCourses());
+    if (!courses.length) dispatch(getCourses());
   }, []);
 
   const handleLogout = () => {

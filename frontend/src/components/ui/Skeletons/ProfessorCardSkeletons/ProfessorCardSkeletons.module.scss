@@ -6,7 +6,6 @@
 }
 
 .card_wrapper {
-  @include fadeInMove();
   @include transition();
   @include flex-column;
   min-height: 100%;

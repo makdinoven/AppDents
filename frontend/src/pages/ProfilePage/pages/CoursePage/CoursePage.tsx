@@ -13,6 +13,7 @@ import { AppDispatchType } from "../../../../store/store.ts";
 import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
 import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
 import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import DetailHeaderSkeleton from "../../../../components/ui/Skeletons/DetailHeaderSkeleton/DetailHeaderSkeleton.tsx";
 
 const CoursePage = () => {
   const { openPaymentModal } = usePaymentPageHandler();
@@ -63,7 +64,7 @@ const CoursePage = () => {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
       setIsPartial(
-        ["partial", "special_offer"].includes(res.data.access_level)
+        ["partial", "special_offer"].includes(res.data.access_level),
       );
       if (res.data.access_level === "none") navigate(Path.profile);
       setLoading(false);
@@ -85,15 +86,12 @@ const CoursePage = () => {
       <div className={s.course_page}>
         {loading ? (
           <>
-            <div className={s.header}></div>
+            <DetailHeaderSkeleton />
             <LessonSkeletons />
           </>
         ) : (
           <>
-            <DetailHeader
-              link={`${Path.profile}?content=your_courses`}
-              title={course?.name}
-            />
+            <DetailHeader title={course?.name} />
             <Outlet />
             <ul className={s.modules_list}>
               {course.sections.map((section: any) => (

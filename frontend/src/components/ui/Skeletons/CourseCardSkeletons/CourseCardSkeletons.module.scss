@@ -36,10 +36,17 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
   &.shape {
     margin-top: 60px;
   }
+
+  &.fade {
+    @include fadeInMove()
+  }
+
+  &.no_margin {
+    margin-top: -40px;
+  }
 }
 
 .card {
-  @include fadeInMove();
   @include transition();
   @include flex-column;
   position: relative;
@@ -301,6 +308,10 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
     grid-template-columns: 1fr 1fr;
     &.shape {
       margin-top: 45px;
+    }
+
+    &.no_margin {
+      margin-top: 0px;
     }
   }
   .card_header_background {

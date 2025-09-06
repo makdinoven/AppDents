@@ -17,15 +17,15 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatchType>();
   const { language, isLogged, role } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const userCourses = useSelector(
-    (state: AppRootStateType) => state.user.courses
+    (state: AppRootStateType) => state.user.courses,
   );
   const [courses, setCourses] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const isAdmin = role === "admin";
 
@@ -69,19 +69,18 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         total={total}
         totalPages={totalPages}
         filters={["tags", "sort", "size"]}
+        SkeletonComponent={CourseCardSkeletons}
+        skeletonProps={{ shape: true }}
+        loading={loading}
       >
-        {loading ? (
-          <CourseCardSkeletons shape />
-        ) : (
-          <CardsList
-            isFree={isFree}
-            isClient={true}
-            loading={loading}
-            showSeeMore={false}
-            showEndOfList={false}
-            cards={courses}
-          />
-        )}
+        <CardsList
+          isFree={isFree}
+          isClient={true}
+          loading={loading}
+          showSeeMore={false}
+          showEndOfList={false}
+          cards={courses}
+        />
       </ListController>
       {!isFirstLoad && (
         <CoursesSection
