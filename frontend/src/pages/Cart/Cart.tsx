@@ -25,6 +25,7 @@ import { Alert } from "../../components/ui/Alert/Alert.tsx";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
+import { clearUserCourses } from "../../store/slices/userSlice.ts";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -103,6 +104,7 @@ const Cart = () => {
       }
 
       if (balanceLeft) {
+        dispatch(clearUserCourses());
         Alert(
           t("successPaymentWithBalance", { balance: balanceLeft }),
           <CheckMark />,

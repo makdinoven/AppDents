@@ -33,7 +33,6 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
 }
 
 .card {
-  @include fadeInMove();
   @include transition();
   @include flex-center;
   justify-content: space-between;
@@ -56,7 +55,6 @@ $card-body-height: $card-height - $card_header-height - $card_bottom-height;
   border-radius: 25px;
   gap: 20px;
   flex: 1;
-  border: 1px solid $light-grey;
   z-index: 2;
   height: 100%;
   width: 100%;

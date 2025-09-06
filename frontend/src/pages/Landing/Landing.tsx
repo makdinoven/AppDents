@@ -54,7 +54,7 @@ const Landing = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatchType>();
   const { role, isLogged, courses } = useSelector(
-    (state: AppRootStateType) => state.user
+    (state: AppRootStateType) => state.user,
   );
   const isPromotionLanding =
     location.pathname.includes(Path.landing) &&
@@ -85,7 +85,7 @@ const Landing = () => {
       navigate(
         isClient
           ? `/${Path.landingClient}/${landingPath}`
-          : `${Path.landing}/${landingPath}`
+          : `${Path.landing}/${landingPath}`,
       );
     }
   }, [courses]);
@@ -148,7 +148,7 @@ const Landing = () => {
     if (landing) {
       openPaymentModal(
         landing.page_name,
-        getPaymentType(isButtonFree, undefined, isWebinar)
+        getPaymentType(isButtonFree, undefined, isWebinar),
       );
     }
   };
@@ -339,17 +339,20 @@ const Landing = () => {
         ) : (
           <>{!loading && <VideoSection data={videoSectionData} />}</>
         )}
-
-        <Faq />
-        <CoursesSection
-          isFree={isFree}
-          isOffer={true}
-          isClient={isClient}
-          isVideo={isVideo}
-          showSort={true}
-          sectionTitle={"similarCourses"}
-          pageSize={4}
-        />
+        {!loading && (
+          <>
+            <Faq />
+            <CoursesSection
+              isFree={isFree}
+              isOffer={true}
+              isClient={isClient}
+              isVideo={isVideo}
+              showSort={true}
+              sectionTitle={"similarCourses"}
+              pageSize={4}
+            />
+          </>
+        )}
       </div>
     </>
   );

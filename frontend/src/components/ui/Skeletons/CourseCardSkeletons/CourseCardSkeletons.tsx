@@ -5,18 +5,22 @@ interface CourseCardSkeletonsProps {
   shape?: boolean;
   amount?: number;
   columns?: number;
+  moveUp?: boolean;
+  fade?: boolean;
 }
 
 const CourseCardSkeleton: React.FC<CourseCardSkeletonsProps> = ({
   shape = false,
   amount = 4,
   columns = 2,
+  moveUp = false,
+  fade = false,
 }: CourseCardSkeletonsProps) => {
   const skeletonsList = Array(amount).fill({ length: amount });
 
   return (
     <ul
-      className={`${s.skeletons} ${shape && s.shape}`}
+      className={`${s.skeletons} ${shape ? s.shape : ""} ${moveUp ? s.no_margin : ""} ${fade ? s.fade : ""}`}
       style={{ "--columns": columns } as React.CSSProperties}
     >
       {skeletonsList.map((_, index) => {

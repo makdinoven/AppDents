@@ -14,12 +14,12 @@ const SIZE = 12;
 
 const Professors = () => {
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language
+    (state: AppRootStateType) => state.user.language,
   );
   const [professors, setProfessors] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const loadProfessors = async ({ page, language, q, size }: ParamsType) => {
@@ -54,16 +54,14 @@ const Professors = () => {
         loadData={(params) => loadProfessors(params)}
         total={total}
         totalPages={totalPages}
+        SkeletonComponent={ProfessorCardSkeletons}
+        loading={loading}
       >
-        {loading ? (
-          <ProfessorCardSkeletons />
-        ) : (
-          <ProfessorsList
-            source={"page"}
-            professors={professors}
-            loading={loading}
-          />
-        )}
+        <ProfessorsList
+          source={"page"}
+          professors={professors}
+          loading={loading}
+        />
       </ListController>
       {!isFirstLoad && (
         <CoursesSection

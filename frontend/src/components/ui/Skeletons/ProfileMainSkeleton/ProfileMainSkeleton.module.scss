@@ -44,7 +44,6 @@ $border-radius-big: 30px;
 }
 
 .left {
-  @include fadeInMove();
   @include transition();
   display: flex;
   flex-direction: column;
@@ -94,7 +93,6 @@ $border-radius-big: 30px;
 
 .referral_section {
   position: relative;
-  @include fadeInMove();
   @include transition();
   display: flex;
   flex-direction: column;

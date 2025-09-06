@@ -15,7 +15,6 @@ import {
 } from "../../../store/actions/mainActions.ts";
 import CourseCardSkeletons from "../../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import FiltersSkeleton from "../../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
-import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
 type props = {
   sectionTitle?: string;
@@ -53,18 +52,18 @@ const CoursesSection = ({
   const dispatch = useDispatch<AppDispatchType>();
   const cards = useSelector((state: AppRootStateType) => state.main.courses);
   const total = useSelector(
-    (state: AppRootStateType) => state.main.totalCourses
+    (state: AppRootStateType) => state.main.totalCourses,
   );
   const userLoading = useSelector(
-    (state: AppRootStateType) => state.user.loading
+    (state: AppRootStateType) => state.user.loading,
   );
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged
+    (state: AppRootStateType) => state.user.isLogged,
   );
   const loading = useSelector((state: AppRootStateType) => state.main.loading);
   const [skip, setSkip] = useState(0);
   const language = useSelector(
-    (state: AppRootStateType) => state.user.language
+    (state: AppRootStateType) => state.user.language,
   );
   const [internalFilter, setInternalFilter] = useState("all");
   const [internalSort, setInternalSort] = useState<string>("");
@@ -72,7 +71,8 @@ const CoursesSection = ({
   const filter = externalFilter ?? internalFilter;
   const sort = externalSort ?? internalSort;
   const skipResetInProgress = useRef(false);
-  const [isClicked, setIsClicked] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFilterChangeLoading, setIsFilterChangeLoading] = useState(false);
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
@@ -93,6 +93,19 @@ const CoursesSection = ({
       setSkip(0);
     }
   }, [language, activeFilter, activeSort]);
+
+  useEffect(() => {
+    if (activeFilter || activeSort) {
+      setIsFilterChangeLoading(true);
+    }
+  }, [activeFilter, activeSort, language]);
+
+  useEffect(() => {
+    if (!loading) {
+      setIsFilterChangeLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (isReady && !userLoading) {
@@ -119,7 +132,7 @@ const CoursesSection = ({
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
-    setIsClicked(true);
+    setIsLoadingMore(true);
   };
 
   const onFilterChange = (val: string) => {
@@ -163,7 +176,6 @@ const CoursesSection = ({
 
         {showSort && (
           <div className={s.filters_wrapper}>
-            {!(cards.length > 0) && <LoaderOverlay />}
             <SelectableList
               items={
                 isLogged
@@ -176,22 +188,27 @@ const CoursesSection = ({
           </div>
         )}
       </div>
-      {!(cards.length > 0) ? (
+      {!(cards.length > 0) && !!total ? (
         <CourseCardSkeletons shape />
       ) : (
-        <CardsList
-          isVideo={isVideo}
-          isFree={isFree}
-          isOffer={isOffer}
-          isClient={isClient}
-          filter={activeFilter}
-          handleSeeMore={handleSeeMore}
-          loading={loading}
-          cards={cards}
-          showSeeMore={!loading && cards.length !== total}
-        />
+        <>
+          <CardsList
+            showLoaderOverlay={isFilterChangeLoading}
+            isVideo={isVideo}
+            isFree={isFree}
+            isOffer={isOffer}
+            isClient={isClient}
+            filter={activeFilter}
+            handleSeeMore={handleSeeMore}
+            loading={loading}
+            cards={cards}
+            showSeeMore={!loading && cards.length !== total}
+          />
+        </>
       )}
-      {isClicked && loading && <CourseCardSkeletons shape />}
+      {isLoadingMore && loading && (
+        <CourseCardSkeletons amount={pageSize} fade moveUp shape />
+      )}
     </section>
   );
 };

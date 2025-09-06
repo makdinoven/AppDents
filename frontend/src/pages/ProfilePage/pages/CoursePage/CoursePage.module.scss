@@ -1,15 +1,6 @@
 .course_page {
   @include flex-column;
   gap: 80px;
-
-  .header {
-    position: relative;
-    display: flex;
-    width: 100%;
-    min-height: 75px;
-
-    @include skeleton($pos: relative, $color: $light-grey);
-  }
 }
 
 .modules_list {
