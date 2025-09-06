@@ -21,7 +21,6 @@
 
 .top {
     padding: 10vh 4vh 4vh;
-
     .content {
         width: 100%;
         height: 100%;
@@ -56,6 +55,11 @@
 
     .top {
         padding: 10px 10px 90px;
+        .content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     }
 }
 
