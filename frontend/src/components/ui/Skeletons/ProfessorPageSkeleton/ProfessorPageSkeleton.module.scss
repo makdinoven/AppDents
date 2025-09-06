@@ -25,13 +25,13 @@ $border-radius-big: 30px;
 
 .professor_name {
   position: relative;
-  @include horizontal-line($left: 0, $width: 70%, $bottom: -10px);
   @include skeleton(
-    $pos: relative,
-    $h: clamp(31px, 8vw, 95px),
-    $color: $light-grey,
-    $radius: $border-radius-big
+          $pos: relative,
+          $h: clamp(31px, 8vw, 95px),
+          $color: $light-grey,
+          $radius: $border-radius-big
   );
+  @include horizontal-line($left: 0, $width: 70%, $bottom: -10px);
 }
 
 .professor_info {
@@ -53,14 +53,6 @@ $border-radius-big: 30px;
       $h: clamp(235px, 10vw, 250px),
       $color: $light-grey
     );
-
-    @media (max-width: $mobile-breakpoint) {
-      @include skeleton(
-        $pos: relative,
-        $h: clamp(120px, 15vw, 250px),
-        $color: $light-grey
-      );
-    }
   }
 }
 
@@ -198,6 +190,14 @@ $border-radius-big: 30px;
     gap: 20px;
 
     .professor_info {
+
+      .professor_description {
+          @include skeleton(
+                  $pos: relative,
+                  $h: clamp(120px, 15vw, 250px),
+                  $color: $light-grey
+          );
+        }
       order: 3;
       gap: 10px;
       padding-bottom: 20px;
