@@ -1,26 +1,10 @@
 import s from "../Header.module.scss";
 import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
-import { openModal } from "../../../store/slices/landingSlice.ts";
-import { Trans } from "react-i18next";
-import {
-  BooksIcon,
-  ProfessorsIcon,
-  QuestionMark,
-} from "../../../assets/logos/index";
 import { scrollToElementById } from "../../../common/helpers/helpers.ts";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { BooksIcon, ProfessorsIcon, QuestionMark } from "../../../assets/icons";
 
 const PromoBookHeaderContent = () => {
-  const dispatch = useDispatch<AppDispatchType>();
-  const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
-  );
-  const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
-  );
-
   const NAV_BUTTONS_PROMOTE = [
     {
       icon: BooksIcon,
@@ -51,21 +35,21 @@ const PromoBookHeaderContent = () => {
         ))}
       </div>
       <BurgerMenu buttons={NAV_BUTTONS_PROMOTE} />
-      {!!oldPrice && !!newPrice && (
-        <button onClick={() => dispatch(openModal())} className={s.buy_btn}>
-          <Trans
-            i18nKey={"landing.buyFor"}
-            values={{
-              old_price: oldPrice,
-              new_price: newPrice,
-            }}
-            components={{
-              1: <span className="crossed-15" />,
-              2: <span className="highlight" />,
-            }}
-          />
-        </button>
-      )}
+      {/*{!!oldPrice && !!newPrice && (*/}
+      {/*  <button onClick={() => dispatch(openModal())} className={s.buy_btn}>*/}
+      {/*    <Trans*/}
+      {/*      i18nKey={"landing.buyFor"}*/}
+      {/*      values={{*/}
+      {/*        old_price: oldPrice,*/}
+      {/*        new_price: newPrice,*/}
+      {/*      }}*/}
+      {/*      components={{*/}
+      {/*        1: <span className="crossed-15" />,*/}
+      {/*        2: <span className="highlight" />,*/}
+      {/*      }}*/}
+      {/*    />*/}
+      {/*  </button>*/}
+      {/*)}*/}
     </>
   );
 };
