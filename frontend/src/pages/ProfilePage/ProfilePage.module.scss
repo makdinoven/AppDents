@@ -1,6 +1,6 @@
 .admin_wrapper {
-  display: flex;
-  justify-content: flex-end;
+  margin-bottom: 40px;
+  align-self: flex-end;
 }
 
 .profilePage {
@@ -10,5 +10,11 @@
 @media (max-width: $tablet-breakpoint) {
   .profilePage {
     margin-bottom: 80px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profilePage {
+    margin-bottom: 60px;
   }
 }

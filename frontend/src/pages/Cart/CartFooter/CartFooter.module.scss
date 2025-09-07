@@ -12,30 +12,27 @@
     gap: 15px;
   }
 
-  &::before {
+  &::before, &::after {
     z-index: -1;
     content: "";
     position: absolute;
     width: 40px;
     height: 40px;
+    pointer-events: none;
+  }
+
+  &::before {
     top: -40px;
     left: 0px;
     border-bottom-left-radius: 20px;
     box-shadow: -15px 15px 0 2px $accent;
-    pointer-events: none;
   }
 
   &::after {
-    z-index: -1;
-    content: "";
-    position: absolute;
-    width: 40px;
-    height: 40px;
     top: -40px;
     right: 0;
     border-bottom-right-radius: 20px;
     box-shadow: 15px 15px 0 2px $accent;
-    pointer-events: none;
   }
 
   .warn_text {
@@ -58,7 +55,7 @@
       align-items: flex-end;
       @include clamped-p4;
 
-      svg {
+      .percent {
         margin: 0 8px 0 5px;
         width: 18px;
         height: 18px;
@@ -79,9 +76,11 @@
       }
 
       &:last-child {
+        padding-top: 10px;
+        align-items: center;
         .label {
           text-transform: uppercase;
-          font-size: 20px;
+          font-size: 24px;
         }
 
         .values {
@@ -162,11 +161,16 @@
 
 @media (max-width: $mobile-breakpoint) {
   .cart_footer {
-    gap: 20px;
+    gap: 10px;
     border-radius: 20px;
-    padding: 15px 18px;
+    padding: 10px 18px;
+
+    .warn_text {
+      font-size: 10px;
+    }
 
     form {
+      gap: 10px;
       div:first-child {
         margin-right: 0;
       }
@@ -175,11 +179,20 @@
     ul {
       li {
         .label {
-          font-size: 16px;
+          font-size: 14px;
         }
 
         .values {
-          font-size: 20px;
+          font-size: 16px;
+        }
+
+        &:last-child {
+          padding-top: 5px;
+          gap: 5px;
+
+          .label {
+            font-size: 16px;
+          }
         }
       }
     }

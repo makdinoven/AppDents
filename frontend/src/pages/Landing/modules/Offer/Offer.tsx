@@ -1,10 +1,10 @@
 import s from "./Offer.module.scss";
-import CircleArrow from "../../../../assets/Icons/CircleArrow.tsx";
+import { CircleArrow } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
-import Clock from "../../../../assets/Icons/Clock.tsx";
+import { Clock } from "../../../../assets/icons";
 
 const Offer = ({
-  data: { landing_name, authors, renderBuyButton },
+  data: { landing_name, authors, renderBuyButton, isWebinar },
 }: {
   data: any;
 }) => {
@@ -32,7 +32,13 @@ const Offer = ({
                 <Clock />
               </span>
               <p>
-                <Trans i18nKey="landing.accessFull"></Trans>
+                <Trans
+                  i18nKey={
+                    isWebinar
+                      ? "landing.accessFullWebinar"
+                      : "landing.accessFull"
+                  }
+                ></Trans>
               </p>
             </div>
 

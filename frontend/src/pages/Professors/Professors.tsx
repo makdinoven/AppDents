@@ -8,6 +8,7 @@ import ListController from "../../components/ui/ListController/ListController.ts
 import { ParamsType } from "../../api/adminApi/types.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
+import ProfessorCardSkeletons from "../../components/ui/Skeletons/ProfessorCardSkeletons/ProfessorCardSkeletons.tsx";
 
 const SIZE = 12;
 
@@ -18,7 +19,7 @@ const Professors = () => {
   const [professors, setProfessors] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const loadProfessors = async ({ page, language, q, size }: ParamsType) => {
@@ -53,8 +54,14 @@ const Professors = () => {
         loadData={(params) => loadProfessors(params)}
         total={total}
         totalPages={totalPages}
+        SkeletonComponent={ProfessorCardSkeletons}
+        loading={loading}
       >
-        <ProfessorsList professors={professors} loading={loading} />
+        <ProfessorsList
+          source={"page"}
+          professors={professors}
+          loading={loading}
+        />
       </ListController>
       {!isFirstLoad && (
         <CoursesSection

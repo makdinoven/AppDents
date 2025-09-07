@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     FACEBOOK_ACCESS_TOKEN_ES: str
     FACEBOOK_PIXEL_ID_IT: str
     FACEBOOK_ACCESS_TOKEN_IT: str
+    FACEBOOK_PIXEL_ID_1_DOLLAR: str
+    FACEBOOK_ACCESS_TOKEN_1_DOLLAR: str
 
     class Config:
         env_file = ".env"

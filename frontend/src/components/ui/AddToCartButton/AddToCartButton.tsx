@@ -1,5 +1,5 @@
 import s from "./AddToCartButton.module.scss";
-import { CartIcon, CheckMarkIcon } from "../../../assets/logos/index";
+import { CartIcon, CheckMarkIcon } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 import { Trans } from "react-i18next";
 import {
@@ -42,7 +42,7 @@ const AddToCartButton = ({
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged,
+    (state: AppRootStateType) => state.user.isLogged
   );
 
   const toggleCardInCart = async () => {

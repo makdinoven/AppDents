@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
 from sqlalchemy import func, Float, and_, case
 from sqlalchemy.orm import Session, joinedload, aliased
+from datetime import datetime
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
@@ -26,7 +27,7 @@ from ..services_v2.user_service import (
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
-    get_free_course_stats
+    get_free_course_stats, get_purchases_by_source_timeseries
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 
@@ -209,11 +210,6 @@ def me(
         balance=current_user.balance,
     )
 
-@router.get("/search", response_model=List[UserRead], summary="Поиск  пользователей по email")
-def search_users(email: str = Query(..., description="Часть email для поиска"), db: Session = Depends(get_db)):
-    users = search_users_by_email(db, email)
-    return users
-
 @router.put("/{user_id}/role", response_model=UserRead, summary="Изменить роль пользователя")
 def change_user_role(user_id: int, role_data: UserUpdateRole, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     user = update_user_role(db, user_id, role_data.role)
@@ -384,7 +380,7 @@ def forgot_password(
         )
     new_password = generate_random_password()
     update_user_password(db, user.id, new_password, region)
-    return {"message": "New password send successfully", "new_password": new_password}
+    return {"message": "New password send successfully"}
 
 @router.post("/admin/users", response_model=UserRead, summary="Создать нового пользователя (Админ)")
 def create_user_admin(
@@ -543,6 +539,7 @@ def referral_stats(
     start_date: dt.date | None = Query(None, description="Дата начала (YYYY-MM-DD)."),
     end_date:   dt.date | None = Query(None, description="Дата конца (YYYY-MM-DD, включительно)."),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     now = dt.datetime.utcnow()                      # naive-UTC
 
@@ -575,6 +572,7 @@ def user_growth(
         None, description="Дата конца (YYYY-MM-DD, включительно)."
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Динамика пользователей:
@@ -621,6 +619,7 @@ def purchase_stats(
         description="Показывать только покупки с данным source (например LANDING, CART, HOMEPAGE).",
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Список покупок за период.
@@ -672,6 +671,7 @@ def free_course_stats(
         description="Сколько курсов вернуть (по умолчанию – все)"
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Аналитика free-курсов.
@@ -696,3 +696,17 @@ def free_course_stats(
         limit=limit,
     )
 
+@router.get("/analytics/purchase/source")
+def purchases_by_source_timeseries(
+    start_date: dt.date = Query(..., description="Дата начала (включительно), YYYY-MM-DD"),
+    end_date:   dt.date = Query(..., description="Дата конца (включительно), YYYY-MM-DD"),
+    source: str | None = Query(None, description="Фильтр по месту покупки: CART, LANDING, HOMEPAGE, ..."),
+    mode:   str = Query("count", regex="^(count|amount)$", description="count | amount"),
+    db: Session = Depends(get_db),
+):
+    # допускаем один и тот же день
+    if start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be <= end_date")
+    return get_purchases_by_source_timeseries(
+        db, start_date, end_date, source=source, mode=mode
+    )

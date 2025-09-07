@@ -13,6 +13,8 @@ import {
   getCourses,
   getCoursesRecommend,
 } from "../../../store/actions/mainActions.ts";
+import CourseCardSkeletons from "../../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import FiltersSkeleton from "../../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 
 type props = {
   sectionTitle?: string;
@@ -69,6 +71,8 @@ const CoursesSection = ({
   const filter = externalFilter ?? internalFilter;
   const sort = externalSort ?? internalSort;
   const skipResetInProgress = useRef(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFilterChangeLoading, setIsFilterChangeLoading] = useState(false);
 
   useEffect(() => {
     if (LANGUAGES.some((lang) => lang.value === language)) {
@@ -89,6 +93,19 @@ const CoursesSection = ({
       setSkip(0);
     }
   }, [language, activeFilter, activeSort]);
+
+  useEffect(() => {
+    if (activeFilter || activeSort) {
+      setIsFilterChangeLoading(true);
+    }
+  }, [activeFilter, activeSort, language]);
+
+  useEffect(() => {
+    if (!loading) {
+      setIsFilterChangeLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (isReady && !userLoading) {
@@ -115,6 +132,7 @@ const CoursesSection = ({
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
+    setIsLoadingMore(true);
   };
 
   const onFilterChange = (val: string) => {
@@ -139,39 +157,58 @@ const CoursesSection = ({
     <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
         {sectionTitle && <SectionHeader name={sectionTitle} />}
-        {showFilters && tags && tags.length > 0 && (
+        {showFilters && (
           <>
-            <SelectableList
-              items={tags}
-              activeValue={activeFilter}
-              onSelect={onFilterChange}
-            />
+            {tags && tags.length > 0 ? (
+              <>
+                <SelectableList
+                  items={tags}
+                  activeValue={activeFilter}
+                  onSelect={onFilterChange}
+                />
+              </>
+            ) : (
+              <FiltersSkeleton />
+            )}
             <span className={s.line}></span>
           </>
         )}
-        {showSort && cards.length > 0 && (
-          <SelectableList
-            items={
-              isLogged
-                ? SORT_FILTERS
-                : SORT_FILTERS.filter((item) => item.value !== "recommend")
-            }
-            activeValue={activeSort}
-            onSelect={onSortChange}
-          />
+
+        {showSort && (
+          <div className={s.filters_wrapper}>
+            <SelectableList
+              items={
+                isLogged
+                  ? SORT_FILTERS
+                  : SORT_FILTERS.filter((item) => item.value !== "recommend")
+              }
+              activeValue={activeSort}
+              onSelect={onSortChange}
+            />
+          </div>
         )}
       </div>
-      <CardsList
-        isVideo={isVideo}
-        isFree={isFree}
-        isOffer={isOffer}
-        isClient={isClient}
-        filter={activeFilter}
-        handleSeeMore={handleSeeMore}
-        loading={loading}
-        cards={cards}
-        showSeeMore={cards.length !== total}
-      />
+      {!(cards.length > 0) && !!total ? (
+        <CourseCardSkeletons shape />
+      ) : (
+        <>
+          <CardsList
+            showLoaderOverlay={isFilterChangeLoading}
+            isVideo={isVideo}
+            isFree={isFree}
+            isOffer={isOffer}
+            isClient={isClient}
+            filter={activeFilter}
+            handleSeeMore={handleSeeMore}
+            loading={loading}
+            cards={cards}
+            showSeeMore={!loading && cards.length !== total}
+          />
+        </>
+      )}
+      {isLoadingMore && loading && (
+        <CourseCardSkeletons amount={pageSize} fade moveUp shape />
+      )}
     </section>
   );
 };

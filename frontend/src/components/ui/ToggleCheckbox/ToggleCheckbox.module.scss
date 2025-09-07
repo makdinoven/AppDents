@@ -35,16 +35,16 @@
 }
 
 .small {
-  width: 50px;
-  height: 26px;
+  width: 42px;
+  height: 22px;
 
   &.checked::before {
-    transform: translateX(23.5px);
+    transform: translateX(20px);
   }
 
   &::before {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
     top: 2px;
     left: 2px;
   }

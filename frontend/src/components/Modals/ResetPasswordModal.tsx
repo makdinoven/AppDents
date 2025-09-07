@@ -8,10 +8,12 @@ import { userApi } from "../../api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { resetPasswordSchema } from "../../common/schemas/resetPasswordSchema.ts";
-import Input from "./modules/Input/Input.tsx";
 import { ResetPasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
+import { Alert } from "../ui/Alert/Alert.tsx";
+import { CheckMark } from "../../assets/icons/index.ts";
+import PasswordInput from "../ui/Inputs/PasswordInput/PasswordInput.tsx";
 
 const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
   const [error, setError] = useState<any>(null);
@@ -29,7 +31,7 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
     if (id) {
       try {
         await userApi.resetPassword(newPassword, id);
-        alert(t("passwordChanged"));
+        Alert(t("passwordChanged"), <CheckMark />);
         handleClose();
       } catch (error) {
         setError(error);
@@ -42,8 +44,7 @@ const ResetPasswordModal = ({ handleClose }: { handleClose: () => void }) => {
     <div className={s.modal}>
       <Form handleSubmit={handleSubmit(handleResetPassword)}>
         <>
-          <Input
-            type="password"
+          <PasswordInput
             id="password"
             placeholder={t("newPassword")}
             {...register("password")}

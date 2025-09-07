@@ -1,0 +1,74 @@
+.icon_wrapper {
+  position: absolute;
+  @include flex-center;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  pointer-events: none;
+  @include transition($property: opacity);
+  z-index: 5;
+  opacity: 0;
+
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  max-width: 95%;
+  color: $text-color;
+  padding: 5px 10px;
+  border-radius: 8px;
+  hyphens: auto;
+  font-size: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  @include transition();
+  backdrop-filter: blur(10px);
+  border: 0.5px solid $accent;
+
+  &.error_tooltip {
+    background-color: rgba($error-color, 0.4);
+    border-color: $error-color;
+  }
+
+  &.suggestion_tooltip, &.warning_tooltip {
+    cursor: pointer;
+    background-color: rgba($yellow, 0.4);
+    border-color: $yellow;
+  }
+
+  &.visible {
+    bottom: 95%;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media  (max-width: $mobile-breakpoint) {
+  .tooltip {
+    padding: 4px 8px;
+
+    &.visible {
+      bottom: 100%;
+    }
+  }
+
+  .icon_wrapper {
+    width: 23px;
+    height: 23px;
+
+    svg {
+      width: 23px;
+      height: 23px;
+    }
+  }
+}

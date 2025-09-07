@@ -2,7 +2,7 @@ import s from "./CommonModalStyles.module.scss";
 import { Trans } from "react-i18next";
 import ModalLink from "./modules/ModalLink/ModalLink.tsx";
 import Form from "./modules/Form/Form.tsx";
-import Input from "./modules/Input/Input.tsx";
+import Input from "../ui/Inputs/Input/Input.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
 import { emailSchema } from "../../common/schemas/emailSchema.ts";
@@ -15,6 +15,8 @@ import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
+import { Alert } from "../ui/Alert/Alert.tsx";
+import { CheckMark } from "../../assets/icons/index.ts";
 
 const ForgotPasswordModal = () => {
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,7 @@ const ForgotPasswordModal = () => {
     setLoading(true);
     try {
       await userApi.forgotPassword(email, language);
-      alert(t("forgotPasswordSuccess"));
+      Alert(t("forgotPasswordSuccess"), <CheckMark />);
       navigate("/login");
     } catch (error: any) {
       setError(error.response.data.detail.error.translation_key);

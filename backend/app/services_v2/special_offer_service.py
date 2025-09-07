@@ -1,6 +1,8 @@
 import datetime as _dt
 import logging
+import random
 from collections import Counter
+from typing import List, Optional, Tuple
 
 from sqlalchemy import func, case, Float, cast
 from sqlalchemy.orm import Session, selectinload
@@ -14,9 +16,10 @@ from ..models.models_v2 import (
 logger = logging.getLogger(__name__)
 
 _OFFER_TTL_HOURS = 24
-_INTERVAL_HOURS  = 48         # каждые 3 суток
+_INTERVAL_HOURS  = 72         # каждые 3 суток
 _HISTORY_LIMIT = 5
 BATCH = 600
+
 
 def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     """Возвращает дешёвые лендинги по каждому купленному курсу."""
@@ -45,27 +48,57 @@ def _cheapest_landings_for_purchased(db: Session, user: User) -> list[Landing]:
     return list(cheapest_by_course.values())
 
 
-def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | None:
+def _preferred_lang(user: User) -> str | None:
     """
-    1. Если есть покупки → подбираем по тегам из дешёвых лендингов.
-    2. Иначе → ротационный фолбэк по топ-продающим лендингам.
-    Курсы-«denied» (купленные, partial, активные офферы, в истории) никогда не попадают.
+    Берём самый частый язык лендингов купленных курсов.
+    Пустые/None не учитываются.
     """
-    # --- 0) подготавливаем список запрещённых курсов ---
-    purchased        = {p.course_id for p in user.purchases if p.course_id}
-    recent_offer_ids = {
-        so.course_id
-        for so in sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
-        [:_HISTORY_LIMIT]
-    }
-    partial_ids      = set(user.partial_course_ids)
-    active_ids       = set(user.active_special_offer_ids)
-    denied: set[int] = purchased | recent_offer_ids | partial_ids | active_ids
+    langs = Counter(
+        p.landing.language
+        for p in user.purchases
+        if p.landing and p.landing.language
+    )
+    return langs.most_common(1)[0][0] if langs else None
 
-    # --- 1) основной путь: есть покупки и теги? ---
+
+# ─── core ───────────────────────────────────────────────────────────────────
+def _pick_offer_landing(
+    db: Session,
+    user: User
+) -> Optional[Tuple[Landing, Course]]:
+    """
+    1.  Если есть покупки → ищем лендинг по тегу (cheap-by-tag) с учётом языка;
+        случайный из TOP-10.
+    2.  Иначе → случайный лендинг из TOP-20 по продажам.
+    3.  Курс никогда не возвращается, если он в denied-наборе
+        (куплен, partial, active-offer, был когда-либо в offers).
+    """
+
+    # ---------- denied ----------
+    now = _dt.datetime.utcnow()
+    purchased   = {p.course_id for p in user.purchases if p.course_id}
+    partial_ids = set(user.partial_course_ids or [])
+    active_ids  = {
+        so.course_id for so in user.special_offers
+        if so.is_active and so.expires_at > now
+    }
+    offered_ids = {so.course_id for so in user.special_offers}
+
+    denied: set[int] = purchased | partial_ids | active_ids | offered_ids
+
+    # ---------- язык ----------
+    pref_lang = _preferred_lang(user)        # 'RU', 'EN', …  или None
+
+    # helper: первый курс, который не в denied
+    def _first_allowed(landing: Landing) -> Optional[Course]:
+        for c in landing.courses:
+            if c.id not in denied:
+                return c
+        return None
+
+    # ---------- 1) cheap-by-tag ----------
     cheapest = _cheapest_landings_for_purchased(db, user)
     if cheapest:
-        # собираем веса по тегам
         tag_weights: Counter[int] = Counter()
         for l in cheapest:
             for idx, t in enumerate(l.tags or []):
@@ -73,44 +106,46 @@ def _pick_offer_landing(db: Session, user: User) -> tuple[Landing, Course] | Non
 
         if tag_weights:
             best_tag_id, _ = tag_weights.most_common(1)[0]
-            # берём топ-10 лендингов по продажам с этим тегом
-            candidates = (
+
+            base_q = (
                 db.query(Landing)
                   .join(Landing.tags)
-                  .filter(Tag.id == best_tag_id, Landing.is_hidden.is_(False))
+                  .filter(
+                      Tag.id == best_tag_id,
+                      Landing.is_hidden.is_(False),
+                  )
                   .options(selectinload(Landing.courses))
                   .order_by(Landing.sales_count.desc())
-                  .limit(10)
-                  .all()
             )
-            if candidates:
-                # ротация по user.id
-                chosen = candidates[user.id % len(candidates)]
-                logger.debug("User %s: picked landing %s by tag %s", user.id, chosen.id, best_tag_id)
-                for course in chosen.courses:
-                    if course.id not in denied:
-                        logger.debug("User %s: offer course %s", user.id, course.id)
-                        return chosen, course
+            if pref_lang:
+                base_q = base_q.filter(Landing.language == pref_lang)
 
-    # --- 2) fallback: ни покупок, ни релевантных тегов или не нашли свободный курс ---
-    #    берём топ-20 по продажам без разбора тегов
-    top = (
+            cand = base_q.limit(10).all()          # limit → САМЫЙ ПОСЛЕДНИЙ
+            random.shuffle(cand)
+            for land in cand:
+                course = _first_allowed(land)
+                if course:
+                    return land, course
+
+    # ---------- 2) popular fallback ----------
+    base_q = (
         db.query(Landing)
           .filter(Landing.is_hidden.is_(False))
           .options(selectinload(Landing.courses))
           .order_by(Landing.sales_count.desc())
-          .limit(20)
-          .all()
     )
-    if top:
-        chosen = top[user.id % len(top)]
-        logger.debug("User %s: fallback landing %s", user.id, chosen.id)
-        for course in chosen.courses:
-            if course.id not in denied:
-                logger.debug("User %s: fallback offer course %s", user.id, course.id)
-                return chosen, course
+    if pref_lang:
+        base_q = base_q.filter(Landing.language == pref_lang)
+
+    tops = base_q.limit(20).all()            # limit тоже в конце
+    random.shuffle(tops)
+    for land in tops:
+        course = _first_allowed(land)
+        if course:
+            return land, course
 
     return None
+
 
 
 def _need_new_offer(user: User) -> bool:
@@ -157,20 +192,26 @@ def generate_offer_for_user(db: Session, user: User) -> bool:
 
     db.commit()
     logger.info("Special offer → user=%s course=%s until %s", user.id, course.id, expires_at)
-    _trim_offer_history(db, user)
     return True
 
 
-def cleanup_expired_offers(db: Session) -> int:
-    """Удаляет протухшие записи, возвращает кол-во."""
-    now = _dt.datetime.utcnow()
-    q = db.query(SpecialOffer).filter(SpecialOffer.expires_at <= now)
-    count = q.count()
-    if count:
-        logger.debug("Cleaning %s expired special offers", count)
-        q.delete(synchronize_session=False)
+def deactivate_expired_offers(db: Session) -> int:
+    """
+    Помечает протухшие офферы как не-активные.
+    Возвращает количество изменённых строк.
+    """
+    updated = (
+        db.query(SpecialOffer)
+          .filter(
+              SpecialOffer.is_active.is_(True),
+              SpecialOffer.expires_at <= func.utc_timestamp()  # ← сравнение в БД
+          )
+          .update({SpecialOffer.is_active: False},
+                  synchronize_session=False)
+    )
+    if updated:
         db.commit()
-    return count
+    return updated
 
 
 def generate_offers_for_all_users(db: Session) -> None:
@@ -195,16 +236,3 @@ def generate_offers_for_all_users(db: Session) -> None:
         offset += BATCH
 
 
-# --- добавить куда-нибудь после cleanup_expired_offers ---
-def _trim_offer_history(db: Session, user: User, limit: int = _HISTORY_LIMIT) -> None:
-    """
-    Сохраняет не более `limit` последних записей SpecialOffer.
-    Старые записи удаляются, чтобы позже могли повторно попасть в оффер.
-    """
-    offers_sorted = sorted(user.special_offers, key=lambda so: so.created_at, reverse=True)
-    excess = offers_sorted[limit:]
-    for so in excess:
-        db.delete(so)
-    if excess:
-        logger.debug("Trimmed %s old offers for user %s", len(excess), user.id)
-        db.commit()

@@ -45,7 +45,7 @@ services:
         context: ./backend
         dockerfile: Dockerfile
       container_name: celery_worker_prod_default
-      command: celery -A app.celery_app worker -l info -Q default -n default@%h --concurrency=2
+      command: celery -A app.celery_app worker -l info -Q default -n default@%h --concurrency=1
       env_file:
         - .env
       working_dir: /app
@@ -74,6 +74,24 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - priv
+      - pub
+
+  celery_worker_hls:
+    build: ./backend
+    container_name: celery_worker_prod_hls
+    command: >
+      celery -A app.celery_app worker
+             -l info
+             -Q special_hls
+             -n hls@%h
+             --concurrency=1
+    env_file: .env
+    working_dir: /app
+    depends_on:
       redis:
         condition: service_started
     networks:
@@ -110,7 +128,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "0.0.0.0:8000:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -132,7 +150,7 @@ services:
     container_name: frontend_prod
     restart: always
     ports:
-      - "3002:80"
+      - "0.0.0.0:3002:80"
     networks:
       - pub
 
@@ -141,7 +159,7 @@ services:
     container_name: adminer_prod
     restart: always
     ports:
-      - "8080:8080"
+      - "0.0.0.0:8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -160,8 +178,8 @@ services:
       - frontend
       - adminer
     ports:
-      - "80:80"
-      - "443:443"
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
     networks:
       - pub
       - priv
@@ -169,6 +187,7 @@ services:
       - ./assets:/assets
       - certs_data:/etc/letsencrypt
       - ./webroot:/var/www/certbot
+      - /etc/docker/gai.conf:/etc/gai.conf:ro
     logging:
       driver: json-file
       options:
@@ -184,12 +203,15 @@ services:
     networks:
       - pub
 
+
 networks:
   pub:
     driver: bridge
+    enable_ipv6: false
   priv:
     driver: bridge
     internal: true
+    enable_ipv6: false
 
 volumes:
   mysql_data_prod:

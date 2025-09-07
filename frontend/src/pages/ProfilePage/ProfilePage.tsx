@@ -5,26 +5,22 @@ import { Outlet, useNavigate } from "react-router-dom";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 
 const ProfilePage = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
-  const loading = useSelector((state: AppRootStateType) => state.user.loading);
   const navigate = useNavigate();
-
-  if (loading) return <Loader />;
 
   return (
     <>
-      <div className={s.admin_wrapper}>
-        {role === "admin" && (
+      {role === "admin" && (
+        <div className={s.admin_wrapper}>
           <PrettyButton
             variant="primary"
             text={"Admin panel"}
             onClick={() => navigate(Path.admin)}
           />
-        )}
-      </div>
+        </div>
+      )}
       <div className={s.profilePage}>
         <Outlet />
       </div>

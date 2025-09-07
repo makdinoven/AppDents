@@ -12,6 +12,8 @@ import {
   FILTER_PARAM_KEYS,
   FilterKeys,
 } from "../../../../../common/helpers/commonConstants.ts";
+import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../assets/icons/index.ts";
 
 interface AdminListProps<T> {
   data: any;
@@ -55,8 +57,9 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
         size: SIZE,
       });
     } catch (err: any) {
-      alert(
+      Alert(
         `Error creating ${tab?.slice(0, -1)}, error message: ${err.message}`,
+        <ErrorIcon />
       );
     }
   };

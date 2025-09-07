@@ -16,7 +16,7 @@ from ..schemas_v2.author import AuthorResponse
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
-    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards
+    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
@@ -504,6 +504,8 @@ def language_stats(
             description="Дата конца (YYYY-MM-DD, включительно)."
         ),
         db: Session = Depends(get_db),
+        detailed:   bool  = Query(True, description="Нужна ли разбивка по дням"),
+        current_admin: User = Depends(require_roles("admin"))
 ):
     """
     Возвращает статистику покупок по языкам за указанный период.
@@ -538,8 +540,14 @@ def language_stats(
             detail="Если указываете end_date,  нужно обязательно передать start_date."
         )
 
-    data = get_purchases_by_language(db, start_dt, end_dt)
-    return {"data": data}
+    total = get_purchases_by_language(db, start_dt, end_dt)
+
+    daily = []
+    if detailed:
+        daily = get_purchases_by_language_per_day(db, start_dt, end_dt)
+
+
+    return {"total": total, "daily": daily}
 
 @router.get("/most-popular")
 def most_popular_landings(
@@ -552,6 +560,7 @@ def most_popular_landings(
         None, description="Конец периода (YYYY-MM-DD, включительно)"
     ),
     db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
 ):
     """
     • Если нет дат — используется агрегированное поле sales_count.

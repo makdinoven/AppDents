@@ -2,19 +2,15 @@ import s from "./CourseCard.module.scss";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
-import { Path } from "../../../../routes/routes.ts";
 import { Link } from "react-router-dom";
 import initialPhoto from "../../../../assets/no-pictures.png";
-import { useState } from "react";
-import ModalWrapper from "../../../Modals/ModalWrapper/ModalWrapper.tsx";
-import PaymentModal, {
-  PaymentDataType,
-} from "../../../Modals/PaymentModal/PaymentModal.tsx";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
-import LoaderOverlay from "../../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
 import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
+import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import { getPaymentType } from "../../../../common/helpers/helpers.ts";
 
 interface CourseCardProps {
   isClient?: boolean;
@@ -51,10 +47,11 @@ const CourseCard = ({
   slug,
   isFree = false,
 }: CourseCardProps) => {
-  const [paymentData, setPaymentData] = useState<PaymentDataType | null>(null);
-  const [paymentDataLoading, setPaymentDataLoading] = useState(false);
-  const currentUrl = window.location.origin + location.pathname;
-  const [isModalOpen, setModalOpen] = useState(false);
+  const { openPaymentModal } = usePaymentPageHandler();
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
+  const dispatch = useDispatch<AppDispatchType>();
   const screenWidth = useScreenWidth();
 
   const setCardColor = (whatIsReturned: "className" | "color") => {
@@ -68,48 +65,38 @@ const CourseCard = ({
   };
 
   const handleBuyClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    setPaymentDataLoading(true);
     e.preventDefault();
     e.stopPropagation();
-    fetchLandingDataAndOpenModal();
+    openPayment();
   };
 
-  const fetchLandingDataAndOpenModal = async () => {
-    try {
-      const res = await mainApi.getLanding(slug);
-      setPaymentData({
-        landing_ids: [res.data?.id],
-        course_ids: res.data?.course_ids,
-        price_cents: res.data?.new_price * 100,
-        total_new_price: res.data?.new_price,
-        total_old_price: res.data?.old_price,
-        region: res.data?.language,
-        success_url: `${BASE_URL}${Path.successPayment}`,
-        cancel_url: currentUrl,
-        courses: [
-          {
-            name: res.data?.landing_name,
-            new_price: res.data?.new_price,
-            old_price: res.data?.old_price,
-            lessons_count: res.data?.lessons_count,
-          },
-        ],
-      });
-      setModalOpen(true);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setPaymentDataLoading(false);
-    }
-  };
+  const openPayment = () => {
+    const paymentData = {
+      landingIds: [id],
+      courseIds: course_ids,
+      priceCents: new_price * 100,
+      newPrice: new_price,
+      oldPrice: old_price,
+      region: language,
+      fromAd: !isClient,
+      courses: [
+        {
+          name: name,
+          newPrice: new_price,
+          oldPrice: old_price,
+          lessonsCount: lessons_count,
+          img: photo,
+        },
+      ],
+    };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
+    dispatch(setPaymentData(paymentData));
+    openPaymentModal(slug, getPaymentType(isFree, isOffer));
   };
 
   return (
     <>
-      <li className={`${s.card} ${setCardColor("className")}`}>
+      <li id={slug} className={`${s.card} ${setCardColor("className")}`}>
         <div className={s.card_header}>
           <Link to={link} className={s.card_header_background}>
             <Trans i18nKey={tag} />
@@ -150,7 +137,6 @@ const CourseCard = ({
                   onClick={(e) => handleBuyClick(e)}
                   className={s.buy_btn}
                 >
-                  {paymentDataLoading && <LoaderOverlay />}
                   <Trans i18nKey={"buyNow"} />
                 </button>
                 {isClient && (
@@ -180,23 +166,6 @@ const CourseCard = ({
         </Link>
         <Link to={link} className={s.card_bottom}></Link>
       </li>
-
-      {isModalOpen && paymentData && (
-        <ModalWrapper
-          variant="dark"
-          title={isFree ? "freeWebinar" : "yourOrder"}
-          cutoutPosition="none"
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        >
-          <PaymentModal
-            isFree={isFree}
-            isOffer={isOffer}
-            paymentData={paymentData}
-            handleCloseModal={handleCloseModal}
-          />
-        </ModalWrapper>
-      )}
     </>
   );
 };

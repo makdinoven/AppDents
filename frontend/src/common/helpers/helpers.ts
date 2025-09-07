@@ -1,6 +1,11 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
-import { LS_TOKEN_KEY } from "./commonConstants.ts";
+import {
+  LS_TOKEN_KEY,
+  PAGE_SOURCES,
+  PAYMENT_SOURCES,
+  PAYMENT_TYPES,
+} from "./commonConstants.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
@@ -73,9 +78,11 @@ export const keepFirstTwoWithInsert = (initialStr: string) => {
   return `${parts[0]} ${t("landing.online")} ${secondWord}`;
 };
 
-export const getPricesData = (landing: any) => ({
-  old_price: landing?.old_price ? `${landing?.old_price}` : "",
-  new_price: landing?.new_price ? `${landing?.new_price}` : "",
+export const getPricesData = (landing: any, isWebinar?: boolean) => ({
+  old_price: landing?.old_price
+    ? `${!isWebinar ? landing?.old_price : 49}`
+    : "",
+  new_price: landing?.new_price ? `${!isWebinar ? landing?.new_price : 1}` : "",
 });
 
 export const calculateDiscount = (oldPrice: number, newPrice: number) => {
@@ -187,9 +194,61 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
 
-  return `${hours}:${minutes} ${day}.${month}.${year} `;
+  return `${hours}:${minutes} ${day}.${month}.${year}`;
 };
 
 export const getFormattedDate = (date: Date) => {
   return date.toISOString().split("T")[0];
+};
+
+export const formatShortDate = (isoDate: string) => {
+  const date = new Date(isoDate);
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+export const getBasePath = (pathname: string) => {
+  const segments = pathname.replace(/^\/|\/$/g, "").split("/");
+
+  if (segments.length === 1) {
+    return segments[0];
+  }
+
+  return segments.slice(0, -1).join("/");
+};
+
+export const getPaymentSource = (isOffer: boolean) => {
+  const pathname = location.pathname.startsWith("/")
+    ? location.pathname
+    : "/" + location.pathname;
+
+  const sources = PAYMENT_SOURCES.filter((s) => {
+    const isCorrectType = isOffer
+      ? s.name.endsWith("_OFFER")
+      : !s.name.endsWith("_OFFER");
+    return isCorrectType && s.path && pathname.startsWith(s.path);
+  });
+
+  const sorted = sources.sort((a, b) => b.path.length - a.path.length);
+  return sorted[0]?.name || PAGE_SOURCES.other;
+};
+
+export const getPaymentType = (
+  isFree?: boolean,
+  isOffer?: boolean,
+  isWebinar?: boolean,
+): keyof typeof PAYMENT_TYPES | undefined => {
+  if (isFree) return PAYMENT_TYPES.free;
+  if (isOffer) return PAYMENT_TYPES.offer;
+  if (isWebinar) return PAYMENT_TYPES.webinar;
+  return undefined;
+};
+
+export const rewriteStorageLinkToCDN = (link: string) => {
+  return link.replace(
+    /^https:\/\/[^/]+\.s3\.twcstorage\.ru(\/\S*)$/,
+    "https://cdn.dent-s.com$1",
+  );
 };

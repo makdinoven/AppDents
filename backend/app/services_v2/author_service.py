@@ -1,12 +1,16 @@
 from math import ceil
-
+import os, logging
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from sqlalchemy import func, literal_column
-from ..models.models_v2 import Author, Landing
+from ..models.models_v2 import Author, Landing, Book
 from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
+DISCOUNT_COURSES         = float(os.getenv("DISCOUNT_COURSES",         0.80))  # 20 %
+DISCOUNT_BOOKS           = float(os.getenv("DISCOUNT_BOOKS",           0.85))  # 15 %
+DISCOUNT_COURSES_BOOKS   = float(os.getenv("DISCOUNT_COURSES_BOOKS",   0.75))  # 25 %
+log = logging.getLogger(__name__)
 
 def list_authors_by_page(
     db: Session,
@@ -34,6 +38,7 @@ def list_authors_by_page(
             .selectinload(Landing.courses),
             selectinload(Author.landings)
             .selectinload(Landing.tags),
+            selectinload(Author.books),
         )
         .order_by(
             popularity_sub.c.popularity.desc(),  # ← сортировка
@@ -88,7 +93,7 @@ def list_authors_by_page(
         unique_tags: Set[str] = {
             t.name for l in kept_landings for t in l.tags
         }
-
+        books_cnt = len(a.books)
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -97,6 +102,7 @@ def list_authors_by_page(
                 language=a.language,
                 photo=a.photo,
                 courses_count=len(unique_course_ids),
+                books_count=books_cnt or None,
                 tags=sorted(unique_tags)
             )
         )
@@ -155,17 +161,16 @@ def delete_author(db: Session, author_id: int) -> None:
 from sqlalchemy.orm import Session, selectinload
 from typing import Dict, Tuple, Set, List
 
-def get_author_full_detail(db: Session, author_id: int) -> dict:
-    # 1. Автор и все связи одним запросом
+def get_author_full_detail(db: Session, author_id: int) -> dict | None:
+    # 1. Грузим автора и его связи
     author = (
         db.query(Author)
           .options(
-              selectinload(Author.landings)
-                .selectinload(Landing.courses),
-              selectinload(Author.landings)
-                .selectinload(Landing.tags),
-              selectinload(Author.landings)
-                .selectinload(Landing.authors),
+              selectinload(Author.landings).selectinload(Landing.courses),
+              selectinload(Author.landings).selectinload(Landing.tags),
+              selectinload(Author.landings).selectinload(Landing.authors),
+            selectinload(Author.books)  # ← книги
+            .selectinload(Book.landings)
           )
           .filter(Author.id == author_id)
           .first()
@@ -173,58 +178,66 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
     if not author:
         return None
 
-    # 2. Минимальная цена по каждому курсу среди всех лендингов автора
+    # 2. Удаляем скрытые лендинги
+    author.landings = [l for l in author.landings if not l.is_hidden]
+
+    # 3. Минимальная цена по каждому курсу
     min_price_by_course: Dict[int, float] = {}
     for l in author.landings:
-        try:
-            price = float(l.new_price)
-        except Exception:
-            price = float("inf")
+        price = safe_price(l.new_price)
         for c in l.courses:
             cid = c.id
-            cur = min_price_by_course.get(cid, float("inf"))
-            if price < cur:
-                min_price_by_course[cid] = price
+            min_price_by_course[cid] = min(min_price_by_course.get(cid, float("inf")), price)
 
-    # 3. Фильтруем лендинги:
-    #    исключаем, если нашлась хотя бы одна позиция дешевле
+    # 4. Оставляем только самые дешёвые лендинги по каждому курсу
     kept_landings = []
     for l in author.landings:
-        try:
-            price = float(l.new_price)
-        except Exception:
-            price = float("inf")
-        # есть ли курс, у которого эта цена НЕ минимальна?
-        has_cheaper_alt = any(
-            price > min_price_by_course.get(c.id, price)  # строго > !!!
-            for c in l.courses
-        )
-        if not has_cheaper_alt:
+        price = safe_price(l.new_price)
+        if not any(price > min_price_by_course[c.id] for c in l.courses):
             kept_landings.append(l)
 
-    # 4. Формируем агрегаты по отфильтрованному набору
-    landings_data: List[dict] = []
-    all_course_ids: Set[int] = set()
-    total_new_price = 0.0
-    total_old_price = 0.0
+    # 5. Агрегация
+    landings_data, all_course_ids = [], set()
+    total_new_price = total_old_price = 0.0
+    books_data, min_price_by_book, total_books_raw = [], {}, 0.0
+
+    for b in author.books:
+        # берём только НЕ скрытые BookLanding
+        visible_lnd = [l for l in b.landings if not l.is_hidden]
+        if not visible_lnd:
+            continue
+
+        # минимальная цена по книге
+        price, landing_best = min(
+            (
+                (safe_price(l.new_price), l)
+                for l in visible_lnd
+            ),
+            key=lambda t: t[0]
+        )
+        if price == float("inf"):  # цена нечисловая – пропускаем книгу
+            continue
+
+        min_price_by_book[b.id] = price
+        total_books_raw += price
+
+        books_data.append({
+            "id": b.id,
+            "title": b.title,
+            "slug": b.slug,
+            "cover_url": b.cover_url,
+        })
+
+    books_count = len(books_data)
 
     for l in kept_landings:
-        try:
-            p_new = float(l.new_price)
-            p_old = float(l.old_price)
-        except Exception:
-            p_new = p_old = 0.0
-
+        p_new = safe_price(l.new_price)
+        p_old = safe_price(l.old_price)
         total_new_price += p_new
         total_old_price += p_old
 
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
-
-        authors_info = [
-            {"id": a.id, "name": a.name, "photo": a.photo or ""}
-            for a in l.authors
-        ]
 
         landings_data.append({
             "id": l.id,
@@ -236,13 +249,23 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
             "first_tag": l.tags[0].name if l.tags else None,
             "lessons_count": l.lessons_count,
             "course_ids": course_ids,
-            "authors": authors_info,
+            "authors": [
+                {"id": a.id, "name": a.name, "photo": a.photo or ""}
+                for a in l.authors
+            ],
         })
 
-    # упорядочим по id для стабильности
     landings_data.sort(key=lambda x: x["id"])
 
-    return {
+    courses_price_discounted = round(total_new_price * DISCOUNT_COURSES, 2)
+    books_price_discounted = (round(total_books_raw * DISCOUNT_BOOKS, 2)
+                              if books_count else None)
+    combo_price_discounted = (round(
+        (total_new_price + total_books_raw) *
+        DISCOUNT_COURSES_BOOKS, 2)
+                              if books_count else None)
+
+    response = {
         "id": author.id,
         "name": author.name,
         "description": author.description,
@@ -250,11 +273,16 @@ def get_author_full_detail(db: Session, author_id: int) -> dict:
         "language": author.language,
         "landings": landings_data,
         "course_ids": list(all_course_ids),
-        "total_new_price": round(total_new_price * 0.8, 2),
+        "books": books_data or None,
+        "books_count": books_count or None,
+        "total_new_price": courses_price_discounted,  # курсы
+        "total_books_price": books_price_discounted,  # книги
+        "total_courses_books_price": combo_price_discounted,  # курсы+книги
         "total_old_price": total_old_price,
         "landing_count": len(landings_data),
         "tags": sorted({t.name for l in kept_landings for t in l.tags}),
     }
+    return response
 def safe_price(v) -> float:
         try:
             return float(v)
@@ -290,6 +318,7 @@ def list_authors_search_paginated(
                 .selectinload(Landing.courses),
               selectinload(Author.landings)
                 .selectinload(Landing.tags),
+                selectinload(Author.books),
           )
           .filter(Author.name.ilike(f"%{search}%"))
           .order_by(
@@ -334,7 +363,7 @@ def list_authors_search_paginated(
         unique_tags: Set[str] = {
             t.name for l in kept_landings for t in l.tags
         }
-
+        books_cnt = len(a.books)
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -343,6 +372,7 @@ def list_authors_search_paginated(
                 language=a.language,
                 photo=a.photo,
                 courses_count=len(unique_course_ids),
+                books_count=books_cnt or None,
                 tags = sorted(unique_tags)
         )
         )

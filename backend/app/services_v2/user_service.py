@@ -1,5 +1,6 @@
 import logging
 import secrets
+from collections import defaultdict
 from datetime import datetime, timedelta, date
 from math import ceil
 from typing import Optional, Dict, Any, List
@@ -534,24 +535,7 @@ def get_user_growth_stats(
     start_dt: datetime,
     end_dt: datetime,
 ) -> dict:
-    """
-    Возвращает:
-      {
-        "data": [
-          {"date": "2025-06-01", "new_users": 35, "total_users": 10235},
-          …
-        ],
-        "total_new_users": 120,
-        "start_total_users": 10115,
-        "end_total_users":   10235
-      }
-    • new_users   — количество регистраций за сутки;
-    • total_users — общее число пользователей *на конец дня*.
-    Гарантирует непрерывную шкалу дат (если в какой-то день нет
-    регистраций, new_users = 0).
-    """
-
-    # 1) пользователи по дням внутри периода ------------------------------
+    # 1) пользователи по дням внутри периода (исключаем balance == 5)
     rows = (
         db.query(
             cast(User.created_at, Date).label("day"),
@@ -560,27 +544,30 @@ def get_user_growth_stats(
         .filter(
             User.created_at >= start_dt,
             User.created_at <  end_dt,
+            User.balance != 5,          # ← исключаем
         )
         .group_by("day")
         .order_by("day")
         .all()
     )
-    # rows: [(2025-06-01, 35), (2025-06-02, 85), …]
 
-    # 2) приводим к словарю day → new_users
+    # 2) day → new_users
     per_day = {r.day: r.cnt for r in rows}
 
-    # 3) формируем полный диапазон дат (чтобы не было «дыр»)
+    # 3) полный диапазон дат
     days = []
     cur = start_dt.date()
     while cur < end_dt.date():
         days.append(cur)
         cur += timedelta(days=1)
 
-    # 4) стартовое общее число пользователей до периода
+    # 4) стартовое общее число пользователей до периода (также исключаем balance == 5)
     start_total_users: int = (
         db.query(func.count(User.id))
-        .filter(User.created_at < start_dt)
+        .filter(
+            User.created_at < start_dt,
+            User.balance != 5,          # ← исключаем
+        )
         .scalar()
     )
 
@@ -604,6 +591,7 @@ def get_user_growth_stats(
         "start_total_users": start_total_users,
         "end_total_users":   running_total,
     }
+
 
 def get_purchase_analytics(
     db: Session,
@@ -819,4 +807,87 @@ def get_free_course_stats(        # полностью заменяет стар
             "freebie_users":     freebie_users,
         },
         "courses": result_per_course,
+    }
+
+def get_purchases_by_source_timeseries(
+    db: Session,
+    start_dt: date,
+    end_dt: date,
+    *,
+    source: str | None = None,
+    mode: str = "count",
+) -> dict:
+    day_col = cast(Purchase.created_at, Date)
+
+    base = db.query(
+        day_col.label("day"),
+        Purchase.source.label("source"),
+        func.count(Purchase.id).label("cnt"),
+        func.coalesce(func.sum(Purchase.amount), 0.0).label("amt"),
+    ).filter(
+        # включительно по обеим границам
+        day_col.between(start_dt, end_dt)
+    )
+
+    src_enum = None
+    if source:
+        try:
+            src_enum = PurchaseSource[source.upper()]
+        except KeyError:
+            # неизвестный source -> пустая структура по каждому дню диапазона
+            days = []
+            cur = start_dt
+            while cur <= end_dt:
+                days.append(cur.isoformat())
+                cur += timedelta(days=1)
+            return {
+                "mode": mode,
+                "source": source.upper(),
+                "data": [{"date": d, "series": []} for d in days],
+                "total": 0,
+                "total_amount": "0.00 $",
+            }
+        base = base.filter(Purchase.source == src_enum)
+
+    rows = (base.group_by(day_col, Purchase.source)
+                 .order_by(day_col)
+                 .all())
+
+    stats = defaultdict(dict)
+    total_cnt = 0
+    total_amt = 0.0
+
+    for r in rows:
+        val_count = int(r.cnt)
+        val_amount = float(r.amt or 0.0)
+        stats[r.day][r.source.value] = (val_count if mode == "count" else val_amount)
+        total_cnt += val_count
+        total_amt += val_amount
+
+    data = []
+    cur = start_dt
+    while cur <= end_dt:
+        by_src = stats.get(cur, {})
+
+        if src_enum is None:
+            # возвращаем только те источники, где есть данные за день
+            # (как и в ваших текущих отчётах; при желании можно заполнить нулями все enum-ы)
+            series = [
+                {"source": s, "value": by_src.get(s, 0 if mode == "count" else 0.0)}
+                for s in sorted(by_src.keys())
+            ]
+        else:
+            sname = src_enum.value
+            val = by_src.get(sname, 0 if mode == "count" else 0.0)
+            series = [{"source": sname, "value": val}]
+
+        data.append({"date": cur.isoformat(), "series": series})
+        cur += timedelta(days=1)
+
+    return {
+        "mode": ("count" if mode == "count" else "amount"),
+        "source": "ALL" if src_enum is None else src_enum.value,
+        "data": data,
+        "total": total_cnt,
+        "total_amount": f"{total_amt:.2f} $",
     }

@@ -1,70 +1,83 @@
 import logging
-from sqlalchemy import text
 from celery import shared_task
+from sqlalchemy import text
+from sqlalchemy import exc as sa_exc
 
-from ..db.database import SessionLocal     # та же SessionLocal, что у вас уже есть
+from ..db.database import SessionLocal  # скорректируй путь
 
 logger = logging.getLogger(__name__)
 
+# паттерны
+PAT_OLD = (
+    r'https?://'
+    r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
+    r'\.(selstorage\.ru|s3\.twcstorage\.ru)'
+    r'(?:/|\?|#|$)'
+)
+PAT_BAD = (
+    r'https?://'
+    r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
+    r'-cdn\.dent-s\.com'
+    r'(?:/|\?|#|$)'
+)
 
-# NB: помещаем сразу в очередь «special»
-@shared_task(name="app.tasks.storage_links.replace_storage_links",
-             queue="special",
-             bind=True,  # удобно, если захотите self.request.id и др.
-             acks_late=True,  # на всякий случай, чтобы re-queue при падении
-             max_retries=3,
-             default_retry_delay=30)
+REPLACEMENT = 'https://cdn.dent-s.com/'
+REGEXP_TIME_LIMIT_MS = 5000
+USE_HINT = True  # выключи, если MariaDB или MySQL < 8.0.21
+
+
+def _update_table(db, table: str, column: str):
+    hint = f"/*+ SET_VAR(regexp_time_limit={REGEXP_TIME_LIMIT_MS}) */ " if USE_HINT else ""
+    # два прохода: сначала старые домены, затем «uuid-cdn.dent-s.com»
+    sql = f"""
+        UPDATE {table}
+           SET {column} = CAST(
+                   REGEXP_REPLACE(
+                       REGEXP_REPLACE(
+                           CAST({column} AS CHAR CHARACTER SET utf8mb4),
+                           :pat_old, :cdn, 1, 0  -- БЕЗ 'c'
+                       ),
+                       :pat_bad, :cdn, 1, 0    -- БЕЗ 'c'
+                   ) AS JSON
+               )
+         WHERE {column} REGEXP :pat_old
+            OR {column} REGEXP :pat_bad;
+    """
+    db.execute(
+        text(sql),
+        {"pat_old": PAT_OLD, "pat_bad": PAT_BAD, "cdn": REPLACEMENT}
+    )
+
+
+@shared_task(
+    name="app.tasks.storage_links.replace_storage_links",
+    queue="special",
+    bind=True,
+    autoretry_for=(sa_exc.OperationalError,),
+    retry_kwargs={"max_retries": 5, "countdown": 60},
+    acks_late=True,
+    task_reject_on_worker_lost=True,
+)
 def replace_storage_links(self):
     """
-    Каждые 3 часа ищем в JSON-полях `landings.lessons_info`
-    и `courses.sections` хосты вида
-
-        <uuid>.selstorage.ru
-        <uuid>.s3.twcstorage.ru
-
-    и меняем их на `cdn.dent-s.com`.
-
-    Работает исключительно через SQL — без выгрузки
-    данных в Python, поэтому не бьём БД огромным числом UPDATE’ов.
+    Заменяет:
+      https://<uuid>.selstorage.ru/...  или  https://<uuid>.s3.twcstorage.ru/...
+    и чинит:
+      https://<uuid>-cdn.dent-s.com/...
+    на:
+      https://cdn.dent-s.com/...
+    в landings.lessons_info и courses.sections
     """
     db = SessionLocal()
-
-    # ➊ Регулярка, которая ловит «любой UUID + точка + (selstorage|s3.twcstorage).ru»
-    #    \p{XDigit} не поддерживается, поэтому старый добрый [0-9a-f].
-    pattern = r'[0-9a-f\-]+\.(selstorage\.ru|s3\.twcstorage\.ru)'
-
     try:
-        with db.begin():               # атомарно, auto-commit по выходу
-            # landings
-            db.execute(text(f"""
-                UPDATE landings
-                SET lessons_info = CAST(
-                        REGEXP_REPLACE(
-                            CAST(lessons_info AS CHAR CHARACTER SET utf8mb4),
-                            '{pattern}',
-                            'cdn.dent-s.com'
-                        ) AS JSON
-                    )
-                WHERE lessons_info REGEXP '{pattern}';
-            """))
+        with db.begin():
+            # Не трогаем SESSION-переменную: у вас только GLOBAL.
+            _update_table(db, "landings", "lessons_info")
+            _update_table(db, "courses", "sections")
 
-            # courses
-            db.execute(text(f"""
-                UPDATE courses
-                SET sections = CAST(
-                        REGEXP_REPLACE(
-                            CAST(sections AS CHAR CHARACTER SET utf8mb4),
-                            '{pattern}',
-                            'cdn.dent-s.com'
-                        ) AS JSON
-                    )
-                WHERE sections REGEXP '{pattern}';
-            """))
-
-        logger.info("Storage links successfully replaced")
-    except Exception as exc:           # базовая защита от сбоев
-        logger.exception("Error while replacing storage links")
-        # ретрайните задачу, если считаете нужным
+        logger.info("replace_storage_links: success")
+    except Exception as exc:
+        logger.exception("replace_storage_links: failure")
         raise self.retry(exc=exc)
     finally:
         db.close()

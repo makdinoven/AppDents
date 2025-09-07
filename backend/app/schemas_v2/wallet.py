@@ -1,5 +1,5 @@
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import Optional, List, Any
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
@@ -10,9 +10,7 @@ class ReferralLinkResponse(BaseModel):
 
 class ReferralReportItem(BaseModel):
     # Информация по каждому приглашённому
-    user_id: int
     email: str
-    total_paid: float         # сколько потратил приглашённый
     total_cashback: float     # сколько вы получили кэшбэка от него
 
 
@@ -28,9 +26,11 @@ class WalletTransactionItem(BaseModel):
     id: int
     amount: float
     type: str
-    meta: dict
+    meta: dict[str, Any] | None = Field(default_factory=dict)
     created_at: datetime
-
+    slug: Optional[str] = None
+    landing_name: Optional[str] = None
+    email: Optional[str] = None
 
 class ReferralRuleIn(BaseModel):
     min_purchase_no: int

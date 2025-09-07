@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float
+from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
+    Index, BigInteger
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -50,12 +51,14 @@ class PurchaseSource(str, PyEnum):
     CABINET_FREE = "CABINET_FREE"
     SPECIAL_OFFER = "SPECIAL_OFFER"
     VIDEO_LANDING = "VIDEO_LANDING"
+    LANDING_WEBINAR = "LANDING_WEBINAR"
     OTHER                     = "OTHER"
 
 class FreeCourseSource(str, PyEnum):
     """Источник, откуда пользователь получил бесплатный доступ."""
     LANDING        = "landing"         # рекламный лендинг
     SPECIAL_OFFER  = "special_offer"   # спец-предложение
+    EMAIL = "email"
 
 class Course(Base):
     __tablename__ = 'courses'
@@ -328,18 +331,46 @@ class AbandonedCheckout(Base):
     course_ids = Column(String(255))                 # "12,34,56"
     region     = Column(String(10))
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+    message_sent = Column(
+        Boolean,
+        nullable=False,
+        server_default="0",
+        comment="TRUE – e-mail по лидy уже отправлен"
+    )
+
+class PreviewStatus(str, PyEnum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED  = "failed"
 
 class LessonPreview(Base):
-    """
-    Сохранённые превью одного кадра из видео-урока.
-    Ключ – сама ссылка на Boomstream.
-    """
     __tablename__ = "lesson_previews"
 
-    video_link   = Column(String(700), primary_key=True)
+    id           = Column(BigInteger, primary_key=True, autoincrement=True)
+    video_link   = Column(Text, nullable=False)
     preview_url  = Column(String(700), nullable=False)
-    generated_at = Column(DateTime, nullable=False, default=func.now())
-    checked_at = Column(DateTime(timezone=False), nullable=True)
+
+    generated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+    checked_at   = Column(DateTime)
+
+    status = Column(
+        Enum(
+            PreviewStatus,
+            name="previewstatus",
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],  # нижний регистр
+        ),
+        nullable=False,
+        server_default=PreviewStatus.PENDING.value,
+    )
+    enqueued_at  = Column(DateTime)
+    updated_at   = Column(DateTime, nullable=False,
+                          server_default=func.utc_timestamp(),
+                          onupdate=func.utc_timestamp())
+    attempts     = Column(Integer, nullable=False, server_default="0")
+    last_error   = Column(Text)
+
 
 class SpecialOffer(Base):
     """
@@ -355,7 +386,181 @@ class SpecialOffer(Base):
     landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False)
     created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
     expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, nullable=False, server_default="1",
+                       comment="True – оффер ещё действует; False – истёк или куплен")
 
     user    = relationship("User", back_populates="special_offers")
     course  = relationship("Course")
     landing = relationship("Landing")
+
+class SlideType(str, PyEnum):
+    """Тип слайда."""
+    COURSE = "COURSE"   # карточка курса (лендинг)
+    BOOK   = "BOOK"     # резерв под книги
+    FREE   = "FREE"     # произвольный promo-слайд
+
+class Slide(Base):
+    """
+    Один элемент слайдера для конкретного языка (региона).
+    Слайды выводятся в порядке `order_index`.
+    """
+    __tablename__ = "slides"
+
+    id          = Column(Integer, primary_key=True)
+    language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                              name='landing_language'), nullable=False)
+    order_index = Column(Integer, nullable=False, comment="Порядок показа")
+    type        = Column(Enum(SlideType, name="slide_type"), nullable=False)
+
+    # Привязка к лендингу курса (актуально для type=COURSE)
+    landing_id  = Column(Integer, ForeignKey("landings.id"))
+    landing     = relationship("Landing")
+
+    # Поля для type=FREE (promo-слайд)
+    bg_media_url = Column(String(700))
+    title        = Column(String(255))
+    description  = Column(Text)
+    target_url   = Column(String(700))
+
+    is_active  = Column(Boolean, nullable=False, server_default="1")
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.utc_timestamp(),
+                        onupdate=func.utc_timestamp(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_slide_lang_order", "language", "order_index"),
+    )
+import logging
+logger = logging.getLogger(__name__)
+
+book_authors = Table(
+    "book_authors",
+    Base.metadata,
+    Column("book_id",   Integer, ForeignKey("books.id"),   primary_key=True),
+    Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
+)
+
+class BookFileFormat(str, PyEnum):
+    PDF  = "PDF"
+    EPUB = "EPUB"
+    MOBI = "MOBI"
+    AZW3 = "AZW3"
+    FB2  = "FB2"
+
+class Book(Base):
+    """
+    Основная сущность «Книга».
+
+    • Файлы разных форматов — в BookFile.
+    • Аудиоверсии (целиком либо по главам) — BookAudio.
+    • Отдельные лендинги (разные языки/цены/оферы) — BookLanding.
+    """
+    __tablename__ = "books"
+
+    id          = Column(Integer, primary_key=True)
+    title       = Column(String(255), nullable=False)
+    slug = Column(String(255), nullable=False, unique=True)
+    description = Column(Text)
+    cover_url   = Column(String(700))
+    language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                              name='book_language'), nullable=False,
+                          server_default='EN')
+    created_at  = Column(DateTime, server_default=func.utc_timestamp(),
+                         nullable=False)
+    updated_at  = Column(DateTime, server_default=func.utc_timestamp(),
+                         onupdate=func.utc_timestamp(), nullable=False)
+
+    authors      = relationship("Author",
+                                secondary=book_authors,
+                                back_populates="books")
+    files        = relationship("BookFile",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+    audio_files  = relationship("BookAudio",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+    landings     = relationship("BookLanding",
+                                back_populates="book",
+                                cascade="all, delete-orphan",
+                                lazy="selectin")
+
+class BookFile(Base):
+    """
+    Один файл книги в конкретном формате (PDF, EPUB, …).
+
+    size_bytes   — для выводов «вес файла» на фронте.
+    """
+    __tablename__ = "book_files"
+
+    id          = Column(Integer, primary_key=True)
+    book_id     = Column(Integer, ForeignKey("books.id"), nullable=False)
+    file_format = Column(Enum(BookFileFormat,
+                              name="book_file_format"), nullable=False)
+    s3_url      = Column(String(700), nullable=False)
+    size_bytes  = Column(Integer)
+
+    book = relationship("Book", back_populates="files")
+
+class BookAudio(Base):
+    """
+    Аудиоверсия книги.
+
+    Если `chapter_index` = NULL → цельный mp3/ogg.
+    Иначе — конкретная глава.
+    """
+    __tablename__ = "book_audios"
+
+    id            = Column(Integer, primary_key=True)
+    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False)
+    chapter_index = Column(Integer)
+    title         = Column(String(255))
+    duration_sec  = Column(Integer)
+    s3_url        = Column(String(700), nullable=False)
+
+    book = relationship("Book", back_populates="audio_files")
+
+class BookLanding(Base):
+    """
+    Отдельная посадочная страница книги (как Landing для курса).
+
+    page_name — URL-slug: `/books/<page_name>`.
+    """
+    __tablename__ = "book_landings"
+
+    id            = Column(Integer, primary_key=True)
+    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False)
+    language      = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
+                                name='landing_language'), nullable=False,
+                            server_default='EN')
+    page_name     = Column(String(255), unique=True, nullable=False)
+    landing_name  = Column(String(255))
+    old_price     = Column(String(50))
+    new_price     = Column(String(50))
+    description   = Column(Text)
+    preview_photo = Column(String(700))
+    preview_pdf   = Column(String(700),
+                           comment="S3-URL PDF-файла с первыми 10-15 стр.")
+    preview_imgs  = Column(JSON,
+                           comment="['https://…/page1.jpg', '…/page2.jpg', …]")
+    sales_count   = Column(Integer, default=0)
+    is_hidden     = Column(Boolean, nullable=False, server_default='0')
+    created_at    = Column(DateTime, server_default=func.utc_timestamp())
+    updated_at    = Column(DateTime, server_default=func.utc_timestamp(),
+                           onupdate=func.utc_timestamp())
+
+    book = relationship("Book", back_populates="landings")
+
+# ── Динамически вешаем обратную связь на Author ─────────────────────────────
+try:
+    Author  # noqa: F401  — уже объявлен выше
+    if not hasattr(Author, "books"):
+        Author.books = relationship(
+            "Book",
+            secondary=book_authors,
+            back_populates="authors",
+            lazy="selectin",
+        )
+except NameError as exc:
+    logger.error("Author class not found while binding books: %s", exc)

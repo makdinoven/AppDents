@@ -69,4 +69,18 @@ export const userApi = {
       headers: getAuthHeaders(),
     });
   },
+
+  getMyReferrals() {
+    return instance.get("wallet/referrals", { headers: getAuthHeaders() });
+  },
+
+  getMyTransactions() {
+    return instance.get("wallet/transactions", {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  checkEmail(params: { email: string }) {
+    return instance.post("validations/check-email", params);
+  },
 };

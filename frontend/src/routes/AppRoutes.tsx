@@ -1,7 +1,7 @@
 import MainPage from "../pages/MainPage/MainPage.tsx";
 import Layout from "../components/Layout/Layout.tsx";
 import Landing from "../pages/Landing/Landing.tsx";
-import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/ProfileMain.tsx";
+import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/content/Main/ProfileMain.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
@@ -31,11 +31,14 @@ import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
 import BookLanding from "../pages/BookLanding/BookLanding.tsx";
 import Books from "../pages/Books/Books.tsx";
+import SearchPage from "../pages/SearchPage/SearchPage.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation || null;
-  const isModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
+  const isAuthModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
+  const isCartPage = location.pathname === Path.cart;
+  const isSearchPage = location.pathname === Path.search;
 
   return (
     <>
@@ -44,7 +47,13 @@ export const AppRoutes: FC = () => {
           {AUTH_MODAL_ROUTES.map((path) => (
             <Route key={path} path={path} element={<MainPage />} />
           ))}
-          <Route path={Path.cart} element={<MainPage />} />
+          {!backgroundLocation && (
+            <>
+              <Route path={Path.cart} element={<MainPage />} />
+              <Route path={Path.search} element={<MainPage />} />
+            </>
+          )}
+
           <Route path={Path.courses} element={<Courses isFree={false} />} />
           <Route path={Path.books} element={<Books />} />
           <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
@@ -123,8 +132,9 @@ export const AppRoutes: FC = () => {
         </Route>
       </Routes>
 
-      {(backgroundLocation || isModalRoute) && <AuthModalManager />}
-      {location.pathname === Path.cart && <Cart />}
+      {(backgroundLocation || isAuthModalRoute) && <AuthModalManager />}
+      {isCartPage && <Cart />}
+      {isSearchPage && <SearchPage />}
     </>
   );
 };
