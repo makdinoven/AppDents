@@ -317,7 +317,7 @@ const Landing = () => {
             </>
           )}
 
-          <Faq />
+          <Faq type={"course"} />
           <CoursesSection
             isFree={isFree}
             isOffer={true}

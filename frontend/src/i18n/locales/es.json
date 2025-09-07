@@ -8,6 +8,7 @@
   "nothingFound": "No se encontró nada",
   "searchCourses": "Buscar cursos por título o autor...",
   "similarCourses": "Cursos similares",
+  "similarBooks": "Libros similares",
   "back": "Atrás",
   "backToLogin": "Volver a iniciar sesión",
   "login": "Entrar",
@@ -91,6 +92,8 @@
     "search": "Buscar",
     "profile": "Perfil",
     "promote": {
+      "bookPages": "Páginas del libro",
+      "bookAuthors": "Autores del libro",
       "professors": "Profesores del curso",
       "program": "Programa del curso"
     }
@@ -152,6 +155,19 @@
     "common.rec": "Para ti"
   },
 
+  "bookLanding": {
+    "onlineBook": "Libro en línea",
+    "annotation": "Anotación",
+    "aboutAuthor": "Autores",
+    "about": "Sobre el libro",
+    "pages": {
+      "title": "Páginas",
+      "readFirstPages": "¡Lee las primeras páginas del libro!",
+      "fullBook": "El libro completo estará disponible después del pago."
+    }
+  },
+
+
   "landing": {
     "by": "Por",
     "about": "Acerca de este curso",
@@ -187,6 +203,10 @@
       "faq": "Preguntas Frecuentes",
       "1_question": "¿Cómo accedo a mi curso después de la compra?",
       "1_answer": "Una vez que se complete tu pago, recibirás acceso inmediato a tu curso. Tras el pago, serás dirigido automáticamente a tu cuenta, donde verás el curso adquirido (te recomendamos cambiar tu contraseña de inmediato para no olvidarla). También recibirás un recibo y una confirmación de inscripción por correo electrónico. Si no ves el correo, revisa tu carpeta de spam (y otras carpetas; el remitente es 'no-reply'). Los materiales del curso estarán disponibles al instante, permitiéndote aprender a tu ritmo desde cualquier dispositivo.",
+      "1_question_book": "¿Cómo accedo a mi libro después de la compra?",
+      "1_answer_book": "Tan pronto como se complete tu pago, recibirás acceso inmediato a tu libro. Después del pago, serás redirigido automáticamente a tu cuenta, donde verás el libro que compraste y podrás descargarlo (te recomendamos cambiar tu contraseña de inmediato para que no la olvides). También recibirás un recibo y confirmación de compra por correo electrónico. Si no ves el correo en tu bandeja de entrada, revisa la carpeta de spam (y otras carpetas — el remitente es 'no-reply'). Tu libro estará disponible de inmediato y podrás leerlo en cualquier momento desde cualquier dispositivo.",
+      "2_question_book": "¿Dónde puedo encontrar mis libros comprados si perdí los archivos descargados?",
+      "2_answer_book": "Todos los libros que compres permanecerán guardados de forma segura en tu cuenta personal todo el tiempo que los necesites — el acceso nunca expirará.",
       "2_question": "¿Hay un límite de tiempo para completar los cursos?",
       "2_answer": "No, todos nuestros cursos son de ritmo propio, lo que te da flexibilidad para comenzar, pausar y reanudar cuando quieras. Tendrás acceso de por vida a los materiales del curso.",
       "3_question": "¿Qué métodos de pago aceptan?",
@@ -244,7 +264,8 @@
 
   },
   "other": {
-    "otherCourses": "Otros cursos"
+    "otherCourses": "Otros cursos",
+    "otherBooks": "Otros libros"
   },
 
 
@@ -304,5 +325,11 @@
     "title": "todos los cursos",
     "search": "Buscar cursos...",
     "found": "Cursos encontrados: {{count}}"
+  },
+
+  "books": {
+    "title": "todos los libros",
+    "search": "Buscar libros...",
+    "found": "Libros encontrados: {{count}}"
   }
 }
