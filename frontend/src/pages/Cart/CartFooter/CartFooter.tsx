@@ -1,17 +1,18 @@
 import s from "./CartFooter.module.scss";
 import CartProgressBar from "../CartProgressBar/CartProgressBar.tsx";
-import Input from "../../../components/Modals/modules/Input/Input.tsx";
 import { t } from "i18next";
 import { Fragment } from "react";
 import { Trans } from "react-i18next";
-import ToggleCheckbox from "../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
 import { useForm } from "react-hook-form";
 import { ChangePasswordType } from "../../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { emailSchema } from "../../../common/schemas/emailSchema.ts";
 import Form from "../../../components/Modals/modules/Form/Form.tsx";
-import Percent from "../../../assets/Icons/Percent.tsx";
+import { Percent } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import EmailInput from "../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
+import UseBalanceOption from "../../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
+//import DisabledPaymentWarn from "../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 
 type props = {
   cartPreviewLoading?: boolean;
@@ -50,6 +51,7 @@ const CartFooter = ({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ChangePasswordType>({
     resolver: isLogged ? undefined : joiResolver(emailSchema),
@@ -89,7 +91,8 @@ const CartFooter = ({
     {
       label: (
         <>
-          <Percent /> <Trans i18nKey="cart.balanceDiscount" />
+          <Percent className={s.percent} />{" "}
+          <Trans i18nKey="cart.balanceDiscount" />
         </>
       ),
       line: false,
@@ -103,40 +106,70 @@ const CartFooter = ({
     {
       label: (
         <>
-          <Percent /> <Trans i18nKey="cart.currentDiscount" />
+          <Percent className={s.percent} />{" "}
+          <Trans i18nKey="cart.currentDiscount" />
         </>
       ),
       line: true,
       show: true,
       component: <span className={"highlight"}>- {current_discount}%</span>,
     },
+    // {
+    //   label: (
+    //     <span className={s.balance}>
+    //       <Trans i18nKey={"cart.useBalance"} />:{" "}
+    //       <span className={s.blue}>${balance}</span>
+    //     </span>
+    //   ),
+    //   show: isLogged,
+    //   component: (
+    //     <div className={s.balance_switch}>
+    //       <ToggleCheckbox
+    //         disabled={balance! === 0}
+    //         variant={"small"}
+    //         onChange={handleCheckboxToggle}
+    //         isChecked={isBalanceUsed}
+    //       />
+    //     </div>
+    //   ),
+    //   line: true,
+    // },
     {
       label: (
-        <span className={s.balance}>
-          <Trans i18nKey={"cart.useBalance"} />:{" "}
-          <span className={s.blue}>${balance}</span>
+        <span>
+          <Trans i18nKey="cart.total" />
+          {isLogged && (
+            <>
+              :{" "}
+              <span className={s.blue}>
+                $
+                {isBalanceUsed
+                  ? total_amount_with_balance_discount
+                  : total_amount}
+              </span>
+            </>
+          )}
         </span>
       ),
-      show: isLogged,
-      component: (
-        <div className={s.balance_switch}>
-          <ToggleCheckbox
-            disabled={balance! === 0}
-            variant={"small"}
-            onChange={handleCheckboxToggle}
-            isChecked={isBalanceUsed}
-          />
-        </div>
-      ),
-      line: true,
-    },
-    {
-      label: <Trans i18nKey="cart.total" />,
       show: true,
       component: (
-        <span className={s.blue}>
-          ${isBalanceUsed ? total_amount_with_balance_discount : total_amount}
-        </span>
+        <>
+          {isLogged ? (
+            <UseBalanceOption
+              balance={balance}
+              onToggle={handleCheckboxToggle}
+              disabled={balance === 0}
+              isChecked={isBalanceUsed}
+            />
+          ) : (
+            <span className={s.blue}>
+              $
+              {isBalanceUsed
+                ? total_amount_with_balance_discount
+                : total_amount}
+            </span>
+          )}
+        </>
       ),
     },
   ];
@@ -171,13 +204,18 @@ const CartFooter = ({
 
       <Form handleSubmit={handleSubmit(handlePay)}>
         {!isLogged && (
-          <Input
+          <EmailInput
+            isValidationUsed
             id="email"
-            placeholder={t("email")}
+            value={email}
+            setValue={setValue}
             error={errors.email?.message}
+            placeholder={t("email")}
             {...register("email")}
           />
         )}
+
+        {/*isPayDisabled && <DisabledPaymentWarn />*/}
 
         <button
           type="submit"

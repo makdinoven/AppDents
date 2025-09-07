@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
+import CourseCardSkeletons from "../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
   const [courses, setCourses] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const isAdmin = role === "admin";
 
@@ -68,6 +69,9 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         total={total}
         totalPages={totalPages}
         filters={["tags", "sort", "size"]}
+        SkeletonComponent={CourseCardSkeletons}
+        skeletonProps={{ shape: true }}
+        loading={loading}
       >
         <CardsList
           isFree={isFree}

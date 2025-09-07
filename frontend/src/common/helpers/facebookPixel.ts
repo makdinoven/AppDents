@@ -26,6 +26,23 @@ export const initFacebookPixel = () => {
   }
 };
 
+const lowPricePixelId = "1298218948485625";
+
+let lowPricePixelInitialized = false;
+
+export const initLowPricePixel = () => {
+  if (!lowPricePixelInitialized) {
+    ReactPixel.init(lowPricePixelId, undefined, options);
+    lowPricePixelInitialized = true;
+  }
+};
+
+export const trackLowPricePageView = () => {
+  if (lowPricePixelInitialized) {
+    ReactPixel.pageView();
+  }
+};
+
 export const initLanguagePixel = (lang: string) => {
   const pixelId = languagePixelIds[lang];
   if (!pixelId) return;

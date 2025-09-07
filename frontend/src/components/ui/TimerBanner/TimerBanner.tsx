@@ -1,27 +1,38 @@
 import { useEffect, useRef, useState } from "react";
 import s from "./TimerBanner.module.scss";
 import { Trans } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import { openModal } from "../../../store/slices/landingSlice.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 import Timer from "./Timer/Timer.tsx";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
+import {
+  getBasePath,
+  getPaymentType,
+} from "../../../common/helpers/helpers.ts";
+import { Path } from "../../../routes/routes.ts";
 
 const TimerBanner = () => {
-  const dispatch = useDispatch<AppDispatchType>();
+  const { openPaymentModal } = usePaymentPageHandler();
   const [showSticky, setShowSticky] = useState(false);
   const [renderSticky, setRenderSticky] = useState(false);
+  const [discount, setDiscount] = useState(0);
   const bannerRef = useRef<HTMLDivElement | null>(null);
-
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
+    (state: AppRootStateType) => state.payment.data?.newPrice,
   );
+  const basePath = getBasePath(location.pathname);
+  const isWebinar = basePath === Path.webinarLanding;
 
-  const discount = Number(
-    (((oldPrice - newPrice) / oldPrice) * 100).toFixed(0),
-  );
+  useEffect(() => {
+    if (oldPrice && newPrice) {
+      setDiscount(
+        Number((((oldPrice - newPrice) / oldPrice) * 100).toFixed(0)),
+      );
+    }
+  }, [oldPrice, newPrice]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -44,14 +55,15 @@ const TimerBanner = () => {
     };
   }, []);
 
-  const handleClick = () => {
-    dispatch(openModal());
-  };
-
   const renderBanner = (isSticky = false, isHiding = false) => (
     <div
       ref={!isSticky ? bannerRef : null}
-      onClick={handleClick}
+      onClick={() =>
+        openPaymentModal(
+          undefined,
+          getPaymentType(undefined, undefined, isWebinar),
+        )
+      }
       className={`${s.banner} ${isSticky ? s.sticky : ""} ${isHiding ? s.hiding : ""}`}
     >
       <div className={s.banner_container}>

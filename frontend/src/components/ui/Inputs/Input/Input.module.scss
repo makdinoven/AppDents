@@ -1,0 +1,56 @@
+.input_wrapper {
+  @include clamped-p1;
+  position: relative;
+  border-bottom: 2px solid $text-color;
+  padding-bottom: 5px;
+  @include transition();
+
+  input {
+    border-radius: 5px;
+    width: 100%;
+
+    &::placeholder {
+      color: $background-color;
+      opacity: 0.6;
+    }
+  }
+
+  &.error {
+    padding-right: 35px;
+    border-color: $error-color;
+  }
+
+  &.padding {
+    padding-right: 35px;
+  }
+
+  &.password {
+    padding-right: 35px;
+  }
+
+  &.password.error {
+    padding-right: 65px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .input_wrapper {
+    border-bottom: 1px solid $text-color;
+
+    &.padding {
+      padding-right: 25px;
+    }
+
+    &.password {
+      padding-right: 25px;
+    }
+
+    &.error {
+      padding-right: 25px;
+    }
+
+    &.password.error {
+      padding-right: 54px;
+    }
+  }
+}

@@ -2,7 +2,6 @@ $border-radius: 20px;
 
 .card {
   hyphens: auto;
-  @include fadeInMove();
   @include flex-column;
   position: relative;
   background-position: center;
@@ -139,6 +138,7 @@ $border-radius: 20px;
     width: 100%;
     aspect-ratio: 16/9;
     z-index: 2;
+    background-color: $background-color-05;
   }
 
   .no_photo {
@@ -191,7 +191,6 @@ $border-radius: 20px;
     text-transform: uppercase;
     border-color: $text-color;
     background-color: $text-color;
-    font-weight: 500;
 
     svg {
       path {
@@ -202,15 +201,22 @@ $border-radius: 20px;
   }
 }
 
+.offer_items {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  position: absolute;
+  height: 32px;
+  top: -16px;
+  left: 15px;
+  right: 15px;
+}
+
 .timer {
   display: flex;
   align-items: center;
   gap: 10px;
   @include clamped-p3;
-  position: absolute;
-  height: 34px;
-  top: -17px;
-  left: 20px;
   background-color: $background-color-08;
   backdrop-filter: blur(5px);
   padding: 2px 15px;
@@ -228,11 +234,7 @@ $border-radius: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
-  @include clamped-p4;
-  position: absolute;
-  height: 34px;
-  top: -17px;
-  right: 20px;
+  @include clamped-p5;
   color: $accent;
   font-weight: 500;
   text-transform: uppercase;
@@ -280,21 +282,22 @@ $border-radius: 20px;
   }
 }
 
-@media (max-width: $mobile-breakpoint) {
-  .timer {
+@media (max-width: $tablet-breakpoint) {
+  .offer_items {
+    gap: 5px;
     left: 10px;
+    right: 10px;
     height: 26px;
     top: -16px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .timer {
     svg {
       width: 16px;
       height: 16px;
     }
-  }
-
-  .free {
-    right: 10px;
-    top: -16px;
-    height: 26px;
   }
 
   .card_content {

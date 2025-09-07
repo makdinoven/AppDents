@@ -34,6 +34,7 @@
   "watch": "Guarda",
   "watchLesson": "Guarda lezione",
   "onlineCourse": "Corso online",
+  "onlineWebinar": "Webinar online",
   "professors": "Professori",
   "logout": "Disconnetti",
   "mail": "email",
@@ -62,14 +63,22 @@
   "freePaymentWarn": "Verrai automaticamente connesso al tuo account personale, dove potrai guardare la prima lezione gratuita del corso. Se non si apre, accedi manualmente con email e password.",
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
+  "here": "qui.",
+
+  "emailValidationTooltip": {
+    "suggestion": "Forse intendevi {{suggestedEmail}}?",
+    "warning": "Per favore, assicurati che l'email sia corretta"
+  },
+
   "freeCourse": {
-    "freePreview": "Lezione demo",
+    "freePreview": "Offerta speciale",
+    "discount": "Sconto del {{discount}}%",
     "registerToWatch": "Registrati per vedere",
     "tryFirstLesson": "Prova la prima lezione",
     "fullAccess": "Corso completo",
-    "get": "Ottieni il corso a ${{count}}",
     "title": "Serve il corso completo",
-    "desc": "Questa lezione fa parte di un corso. Acquista l'accesso completo.",
+    "get": "Ottieni tutte le lezioni per solo ${{count}}",
+    "desc": "Questa lezione fa parte di un corso completo. Ottieni l'accesso completo a tutte le lezioni acquistando il corso.",
     "access": {
       "full": "Accesso completo",
       "partial": "Accesso parziale",
@@ -81,7 +90,18 @@
     "title": "Solo <1>oggi</1> – <1>{{discount}}% sconto!</1>"
   },
 
+  "disabledPayment": {
+    "title": "L'acquisto dei corsi è temporaneamente non disponibile",
+    "date": "Dal 16 al 26 luglio 2025 i pagamenti saranno sospesi",
+    "boughtCourses": "Tutti i corsi acquistati in precedenza rimarranno accessibili",
+    "sorry": "Ci scusiamo per il disagio"
+  },
 
+  "payment": {
+    "encryptedPayment": "Il pagamento è gestito da Stripe secondo PCI DSS Livello 1: i dati della carta sono crittografati e mai memorizzati.",
+    "afterPayment": "Dopo il pagamento, il corso verrà aggiunto al tuo account e i dati di accesso verranno inviati via e-mail. Controlla la cartella Spam se non ricevi nulla.",
+    "privacyAgreement": "Facendo clic sul pulsante \"Paga\", accetti di ricevere email di marketing e acconsenti alla nostra <1>Informativa sulla Privacy.</1>"
+  },
 
   "nav": {
     "home": "Home",
@@ -92,13 +112,14 @@
     "search": "Cerca",
     "profile": "Profilo",
     "promote": {
+      "webinarProgram": "Programma del webinar",
+      "webinarProfessors": "Docenti del webinar",
       "bookPages": "Pagine del libro",
       "bookAuthors": "Autori del libro",
       "professors": "Docenti del corso",
       "program": "Programma del corso"
     }
   },
-
 
   "search": {
     "searchCourses": "Cerca corsi",
@@ -111,7 +132,7 @@
   },
 
   "main": {
-    "title" : "Scuola <1>dentale</1> online",
+    "title": "Scuola <1>dentale</1> online",
     "hero.widestRange": "La <1>più ampia</1> gamma di prodotti",
     "hero.bestPrices": "I <1>migliori</1> prezzi",
     "hero.description": "Corsi online per dentisti",
@@ -194,6 +215,8 @@
     "videoIsNotSupported": "Il tuo browser non supporta il video",
     "specialOffer": "Offerta speciale",
     "accessFull": "L'accesso al corso è illimitato nel tempo!",
+    "fullWebinarProgram": "Programma completo del webinar",
+    "accessFullWebinar": "L'accesso al webinar è illimitato nel tempo!",
     "video": {
       "modalTitle": "Sblocca il corso completo",
       "buyCourseToWatch": "Acquista il corso completo per continuare a guardare."
@@ -243,8 +266,28 @@
       "step_2": "2. Invia il link a un amico tramite WhatsApp, Telegram, email o come preferisci.",
       "step_3": "3. Il tuo amico acquista qualsiasi corso — ad esempio uno da <1>$19</1>.",
       "step_4": "4. Ricevi il <1>50%</1> del pagamento (es. <1>$9,50</1>) come credito nel tuo portafoglio."
-    }
+    },
 
+    "main": "Home",
+    "user": "Utente:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Invito",
+      "totalCashback": "cashback totale"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Utenti invitati",
+      "purchases": "Cronologia acquisti",
+      "purchaseSum": "Importo dell'acquisto:",
+      "adminAdjust": "Bonus",
+      "internalPurchase": "Pagamento",
+      "purchase": "Pagamento",
+      "referralCashback": "Cashback",
+      "fromBalance": "dal saldo",
+      "fromCart": "Dal carrello",
+      "noReferralsData": "Non hai ancora invitato amici? Scopri di più sul nostro programma di referral nella scheda principale del profilo — condividi la conoscenza e ottieni bonus!",
+      "noPurchasesData": "Non hai ancora effettuato alcun acquisto. Inizia a studiare oggi stesso: puoi scegliere il corso giusto <1>qui</1>."
+    }
   },
 
   "professor": {
@@ -266,7 +309,6 @@
     "otherBooks": "Altri libri"
   },
 
-
   "error": {
     "email.empty": "L'email non può essere vuota",
     "email.valid": "Inserisci un'email valida",
@@ -275,7 +317,7 @@
     "password.minLength": "La password deve contenere almeno 6 caratteri",
     "password.digitUppercaseLetter": "La password deve contenere almeno una cifra e una lettera maiuscola",
     "password.required": "La password è obbligatoria",
-    "error.invalid_credentials" : "Email o password errati",
+    "error.invalid_credentials": "Email o password errati",
     "errorChangingPassword": "Errore. La password non è stata cambiata."
   },
 
@@ -328,5 +370,4 @@
     "search": "Cerca libri...",
     "found": "Libri trovati: {{count}}"
   }
-
 }

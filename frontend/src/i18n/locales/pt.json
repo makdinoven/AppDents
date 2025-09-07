@@ -34,6 +34,7 @@
   "watch": "Assistir",
   "watchLesson": "Assistir aula",
   "onlineCourse": "Curso online",
+  "onlineWebinar": "Webinar online",
   "professors": "Professores",
   "logout": "Sair",
   "mail": "correio",
@@ -62,14 +63,22 @@
   "freePaymentWarn": "Você será conectado automaticamente à sua conta para assistir à primeira aula gratuita do curso. Se não abrir, faça login manualmente com seu e-mail e senha.",
   "firstFreeLesson": "Primeira aula grátis",
   "or": "ou",
+  "here": "aqui.",
+
+  "emailValidationTooltip": {
+    "suggestion": "Você quis dizer {{suggestedEmail}}?",
+    "warning": "Por favor, verifique se o e-mail está correto"
+  },
+
   "freeCourse": {
-    "freePreview": "Aula demo",
+    "freePreview": "Oferta especial",
+    "discount": "Desconto de {{discount}}%",
     "registerToWatch": "Cadastre-se para ver",
     "tryFirstLesson": "Teste a primeira aula",
     "fullAccess": "Curso completo",
-    "get": "Curso por apenas ${{count}}",
     "title": "Curso completo necessário",
-    "desc": "Esta aula é parte de um curso. Compre o acesso completo.",
+    "get": "Tenha todas as aulas por apenas ${{count}}",
+    "desc": "Esta aula faz parte de um curso completo. Tenha acesso total a todas as aulas comprando o curso.",
     "access": {
       "full": "Acesso completo",
       "partial": "Acesso parcial",
@@ -81,7 +90,18 @@
     "title": "Só <1>hoje</1> – <1>{{discount}}% off!</1>"
   },
 
+  "disabledPayment": {
+    "title": "A compra de cursos está temporariamente indisponível",
+    "date": "De 16 a 26 de julho de 2025, os pagamentos estarão suspensos",
+    "boughtCourses": "Todos os cursos comprados anteriormente continuarão disponíveis",
+    "sorry": "Pedimos desculpas pelo transtorno"
+  },
 
+  "payment": {
+    "encryptedPayment": "Pagamento seguro via Stripe (PCI DSS Nível 1): os dados do cartão são criptografados e não armazenados.",
+    "afterPayment": "Após o pagamento, o curso será adicionado à sua conta e os dados de acesso serão enviados por e-mail. Verifique o Spam se não receber.",
+    "privacyAgreement": "Ao clicar no botão \"Pagar\", você concorda em receber e-mails de marketing e consente com nossa <1>Política de Privacidade.</1>"
+  },
 
 
   "nav": {
@@ -96,10 +116,11 @@
       "bookPages": "Páginas do livro",
       "bookAuthors": "Autores do livro",
       "professors": "Professores do curso",
-      "program": "Programa do curso"
+      "program": "Programa do curso",
+      "webinarProgram": "Programa do webinar",
+      "webinarProfessors": "Professores do webinar"
     }
   },
-
 
   "search": {
     "searchCourses": "Buscar cursos",
@@ -194,6 +215,8 @@
     "videoIsNotSupported": "Seu navegador não suporta vídeo",
     "specialOffer": "Oferta especial",
     "accessFull": "O acesso ao curso é ilimitado no tempo!",
+    "fullWebinarProgram": "Programa completo do webinar",
+    "accessFullWebinar": "O acesso ao webinar é ilimitado no tempo!",
     "video": {
       "modalTitle": "Desbloqueie o curso completo",
       "buyCourseToWatch": "Compre o curso completo para continuar assistindo."
@@ -223,7 +246,6 @@
       "9_question": "Como redefinir minha senha?",
       "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha."
     }
-
   },
 
   "profile": {
@@ -244,10 +266,29 @@
       "step_2": "2. Envie para um amigo via WhatsApp, Telegram, e-mail ou como preferir.",
       "step_3": "3. O seu amigo compra qualquer curso — por exemplo, um que custa <1>$19</1>.",
       "step_4": "4. Você recebe <1>50%</1> do valor pago (ex: <1>$9,50</1>) como crédito na sua carteira."
+    },
+
+    "main": "Principal",
+    "user": "Usuário:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Convite",
+      "totalCashback": "cashback total"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Usuários convidados",
+      "purchases": "Histórico de compras",
+      "purchaseSum": "Valor da compra:",
+      "adminAdjust": "Bônus",
+      "internalPurchase": "Pagamento",
+      "purchase": "Pagamento",
+      "referralCashback": "Cashback",
+      "fromBalance": "do saldo",
+      "fromCart": "Do carrinho",
+      "noReferralsData": "Ainda não convidou seus amigos? Saiba mais sobre nosso programa de indicações na aba principal do perfil — compartilhe conhecimento e receba bônus!",
+      "noPurchasesData": "Você ainda não fez nenhuma compra. Comece a aprender hoje mesmo — escolha o curso certo <1>aqui</1>."
     }
-
   },
-
   "professor": {
     "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
     "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",
@@ -261,13 +302,11 @@
     "specialization": "Especialização:",
     "coursesCount_one": "{{count}} curso",
     "coursesCount_other": "{{count}} cursos"
-
   },
   "other": {
     "otherCourses": "Outros cursos",
     "otherBooks": "Outros livros"
   },
-
 
   "error": {
     "email.empty": "O e-mail não deve estar vazio",
@@ -330,5 +369,4 @@
     "search": "Procurar livros...",
     "found": "Livros encontrados: {{count}}"
   }
-
 }

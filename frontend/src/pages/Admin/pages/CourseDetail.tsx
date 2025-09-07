@@ -15,6 +15,8 @@ import {
   denormalizeCourse,
   normalizeCourse,
 } from "../../../common/helpers/helpers.ts";
+import { ErrorIcon } from "../../../assets/icons/index.ts";
+import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const CourseDetail = () => {
   const { courseId } = useParams();
@@ -32,7 +34,10 @@ const CourseDetail = () => {
       const res = await adminApi.getCourse(courseId);
       setCourse(normalizeCourse(res.data));
     } catch (error: any) {
-      alert(`Error fetching course data, error message: ${error.message}`);
+      Alert(
+        `Error fetching course data, error message: ${error.message}`,
+        <ErrorIcon />
+      );
     }
   };
 
@@ -42,7 +47,7 @@ const CourseDetail = () => {
 
   const handleAddItem = (
     itemType: "section" | "lesson",
-    sectionId?: number,
+    sectionId?: number
   ) => {
     updateCourseState((prev) => {
       if (itemType === "section") {
@@ -73,7 +78,7 @@ const CourseDetail = () => {
                     },
                   ],
                 }
-              : section,
+              : section
           ),
         };
       }
@@ -84,7 +89,7 @@ const CourseDetail = () => {
   const handleDeleteItem = (
     itemType: "course" | "section" | "lesson",
     sectionId?: number,
-    lessonId?: number,
+    lessonId?: number
   ) => {
     if (!confirm(`Are you sure you want to delete this ${itemType}?`)) return;
 
@@ -104,10 +109,10 @@ const CourseDetail = () => {
               ? {
                   ...section,
                   lessons: section.lessons.filter(
-                    (l: any) => l.id !== lessonId,
+                    (l: any) => l.id !== lessonId
                   ),
                 }
-              : section,
+              : section
           ),
         };
       }
@@ -129,8 +134,7 @@ const CourseDetail = () => {
       await adminApi.updateCourse(courseId, denormalizeCourse(course));
       navigate(-1);
     } catch (error) {
-      alert(`Error updating course data`);
-      console.error("Error updating course:", error);
+      Alert(`Error updating course data`, <ErrorIcon />);
     }
   };
 

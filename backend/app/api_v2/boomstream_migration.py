@@ -5,9 +5,11 @@ from typing import Dict, Any
 
 import boto3
 import requests
-from fastapi import FastAPI, HTTPException, Query, APIRouter
+from fastapi import FastAPI, HTTPException, Query, APIRouter, Depends
 from botocore.exceptions import BotoCoreError, ClientError
 
+from ..dependencies.role_checker import require_roles
+from ..models.models_v2 import User
 
 # — Конфиг AWS из ENV —
 AWS_REGION = os.getenv("AWS_REGION")
@@ -41,7 +43,8 @@ def slugify(text: str) -> str:
 @router.post("/migrate/{project_slug}")
 def migrate_project(
         project_slug: str,
-        api_key: str = Query(..., alias="api_key")
+        api_key: str = Query(..., alias="api_key"),
+        current_admin: User = Depends(require_roles("admin"))
 ):
     BOOM_API_BASE = "https://api.boomstream.com/v1"
     # 1) Метаданные проекта

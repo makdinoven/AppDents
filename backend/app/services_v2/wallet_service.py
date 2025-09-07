@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Dict, Any
 
 from sqlalchemy import func, or_, Integer, cast
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..core.config import settings
 from ..models import models_v2 as m
@@ -100,9 +100,7 @@ def get_referral_report(db, inviter_id: int) -> List[ReferralReportItem]:
 
         report.append(
             ReferralReportItem(
-                user_id=u.id,
                 email=u.email,
-                total_paid=total_paid,
                 total_cashback=total_cashback
             )
         )
@@ -158,3 +156,105 @@ def get_cashback_percent(db: Session, invitee_id: int) -> float:
     return rule.percent if rule else 0.0
 
 
+def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
+    # --- 1. кошелёк ---
+    tx_rows = (
+        db.query(m.WalletTransaction)
+          .filter(m.WalletTransaction.user_id == user_id)
+          .all()
+    )
+    tx_items = [
+        {
+            "id": tx.id,
+            "amount": tx.amount,
+            "type": tx.type.value,
+            "meta": tx.meta,
+            "created_at": tx.created_at,
+            "slug": None,
+            "landing_name": None,
+            "email": None,
+        }
+        for tx in tx_rows
+    ]
+
+    # --- 2. классические покупки ---
+    purchase_rows = (
+        db.query(m.Purchase)
+          .options(selectinload(m.Purchase.landing))
+          .filter(m.Purchase.user_id == user_id)
+          .all()
+    )
+    purchase_items = [
+        {
+            "id": p.id,
+            "amount": -abs(p.amount),
+            "type": "PURCHASE",
+            "meta": {"source": p.source.value},
+            "created_at": p.created_at,
+            "slug": p.landing.page_name if p.landing else None,
+            "landing_name": p.landing.landing_name if p.landing else None,
+            "email": None,
+        }
+        for p in purchase_rows
+    ]
+
+    # --- 3. склейка ---
+    items = tx_items + purchase_items
+
+    # ----------------------------------------------------------------------
+    # 4. СБОР ID, которые лежат в meta
+    # ----------------------------------------------------------------------
+    user_ids   = {i["meta"].get("from_user")    for i in items if isinstance(i["meta"], dict) and i["meta"].get("from_user")}
+    purch_ids  = {i["meta"].get("purchase_id")  for i in items if isinstance(i["meta"], dict) and i["meta"].get("purchase_id")}
+    course_ids = set()
+    for i in items:
+        meta = i["meta"]
+        if isinstance(meta, dict) and meta.get("courses"):
+            first = meta["courses"][0]
+            course_ids.add(first)
+
+    # ----------------------------------------------------------------------
+    # 5. ПОДТЯГИВАЕМ ДАННЫЕ одним запросом на каждый тип
+    # ----------------------------------------------------------------------
+    email_map = {}
+    if user_ids:
+        email_map = dict(db.query(m.User.id, m.User.email)
+                           .filter(m.User.id.in_(user_ids)))
+
+    purch_land_map = {}
+    if purch_ids:
+        purch_land_map = dict(
+            db.query(m.Purchase.id, m.Landing.landing_name)
+              .join(m.Landing, m.Purchase.landing_id == m.Landing.id, isouter=True)
+              .filter(m.Purchase.id.in_(purch_ids))
+        )
+
+    course_land_map = {}
+    if course_ids:
+                course_land_map = dict(
+                        db.query(m.Landing.id, m.Landing.landing_name)
+            .filter(m.Landing.id.in_(course_ids))
+                                           )
+
+    # ----------------------------------------------------------------------
+    # 6. ГИДРАТАЦИЯ элементов
+    # ----------------------------------------------------------------------
+    for itm in items:
+        meta = itm["meta"] if isinstance(itm["meta"], dict) else {}
+
+        # email
+        uid = meta.get("from_user")
+        if uid and uid in email_map:
+            itm["email"] = email_map[uid]
+
+        # landing_name (приоритет: purchase_id → courses[0] → уже заполнено)
+        if not itm["landing_name"]:
+            pid = meta.get("purchase_id")
+            if pid and pid in purch_land_map:
+                itm["landing_name"] = purch_land_map[pid]
+            elif meta.get("courses"):
+                cid = meta["courses"][0]
+                itm["landing_name"] = course_land_map.get(cid)
+
+    # итоги, отсортированные по дате ↓
+    return sorted(items, key=lambda x: x["created_at"], reverse=True)

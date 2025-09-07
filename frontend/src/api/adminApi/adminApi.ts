@@ -142,34 +142,55 @@ export const adminApi = {
   },
 
   uploadPhoto(file: any) {
-    return instance.post("photo/photo", file);
+    return instance.post("photo/photo", file, { headers: getAuthHeaders() });
   },
 
   getMostPopularLandings(params: any) {
-    return instance.get("landings/most-popular", { params: params });
+    return instance.get("landings/most-popular", {
+      params: params,
+      headers: getAuthHeaders(),
+    });
   },
   getLanguageStats(params: any) {
     return instance.get("landings/analytics/language-stats", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getReferrals(params: any) {
     return instance.get("users/analytics/referral-stats", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getPurchases(params: any) {
     return instance.get("users/analytics/purchases", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getUserGrowth(params: any) {
     return instance.get("users/analytics/user-growth", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getFreewebStats(params: any) {
     return instance.get("users/analytics/free-course-stats", {
+      params: params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getClip(url: string) {
+    return instance.post("/clip_generator/clip", {
+      url: url,
+    });
+  },
+  getClipStatus(id: string) {
+    return instance.get(`/clip_generator/clip/${id}`);
+  },
+  getPurchasesSourceChart(params: any) {
+    return instance.get("users/analytics/purchase/source", {
       params: params,
     });
   },

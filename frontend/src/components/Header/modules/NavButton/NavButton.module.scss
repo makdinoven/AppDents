@@ -40,8 +40,8 @@ $hoverColor: $primary;
   }
 
   .icon {
-    width: 27px;
-    height: 34px;
+    height: 30px;
+    width: auto;
 
     path {
       @include transition;

@@ -13,11 +13,20 @@ import {
 
 const savedLanguage = localStorage.getItem(LS_LANGUAGE_KEY) || "EN";
 
+interface ErrorResponse {
+  detail?: {
+    error?: {
+      translation_key?: string;
+    };
+  };
+}
+
 interface UserState {
   email: string | null;
   id: number | null;
   role: string | null;
   loading: boolean;
+  loadingCourses: boolean;
   error: ErrorResponse | null;
   isLogged: boolean;
   language: string;
@@ -38,6 +47,7 @@ const initialState: UserState = {
   email: null,
   role: null,
   loading: false,
+  loadingCourses: false,
   error: null,
   isLogged: false,
   balance: null,
@@ -64,6 +74,9 @@ const userSlice = createSlice({
       state.language = newLanguage;
       localStorage.setItem(LS_LANGUAGE_KEY, newLanguage);
       i18n.changeLanguage(newLanguage);
+    },
+    clearUserCourses: (state) => {
+      state.courses = [];
     },
   },
   extraReducers: (builder) => {
@@ -121,15 +134,21 @@ const userSlice = createSlice({
       })
       .addCase(getCourses.pending, (state) => {
         state.error = null;
+        state.loadingCourses = true;
       })
       .addCase(
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.courses = action.payload.res.data;
+          state.loadingCourses = false;
         },
-      );
+      )
+      .addCase(getCourses.rejected, (state, action) => {
+        state.error = action.payload as ErrorResponse;
+        state.loadingCourses = false;
+      });
   },
 });
 
-export const { logout, setLanguage } = userSlice.actions;
+export const { logout, setLanguage, clearUserCourses } = userSlice.actions;
 export const userReducer = userSlice.reducer;
