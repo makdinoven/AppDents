@@ -1,0 +1,225 @@
+.pdf_reader {
+  position: relative;
+  @include flex-column();
+  justify-content: flex-start;
+  align-items: center;
+  overflow: auto;
+  flex-grow: 1;
+  height: calc(100vh - 140px);
+  border: 2px solid $hover-color-analogue;
+  border-radius: 20px;
+  background-color: $hover-color-analogue;
+
+  @media (max-width: $tablet-breakpoint) {
+    height: 50vh;
+  }
+
+  &.full_screen {
+    position: absolute;
+    width: 100%;
+    z-index: 10;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  width: 100%;
+  height: 50px;
+  background-color: $background-color;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+
+  .left_side {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+    color: $accent;
+    height: 100%;
+
+    .list {
+      height: 30px;
+      width: 30px;
+
+      svg {
+        height: 100%;
+        width: 100%;
+
+        path {
+          stroke: $accent;
+          stroke-width: 1.5px;
+        }
+      }
+    }
+
+    .page_indicator {
+      display: flex;
+      @include clamped-p2();
+      height: 100%;
+      align-items: center;
+
+      &.full_screen {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        height: 100%;
+      }
+
+      .page_input {
+        border: 2px solid $hover-color;
+        border-radius: 15px;
+        @include flex-center();
+        flex-grow: 1;
+        max-width: 50px;
+        width: fit-content;
+        min-width: 60px;
+        height: 100%;
+        padding: 10px;
+      }
+    }
+  }
+
+  .right_side {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+
+    .scales_wrapper {
+      display: flex;
+      flex-direction: row;
+      gap: 15px;
+      justify-content: center;
+      align-items: center;
+
+      button {
+        width: 35px;
+        height: 35px;
+
+        svg {
+          width: 100%;
+          height: 100%;
+
+          path {
+            stroke: $accent;
+            stroke-width: 1.5px;
+          }
+        }
+
+        @media (max-width: $tablet-breakpoint) {
+          width: 30px;
+          height: 30px;
+        }
+      }
+    }
+  }
+
+  .expand_button {
+    width: 30px;
+    height: 30px;
+
+    svg {
+      width: 100%;
+      height: 100%;
+
+      path {
+        stroke: $accent;
+        stroke-width: 1.5px;
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+  .pdf_name {
+    @include clamped-p3();
+    margin: 0px 10px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: $accent;
+  }
+
+  .arrows_wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+
+    button {
+      width: 35px;
+      height: 35px;
+
+      svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      @media (max-width: $tablet-breakpoint) {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
+    .down {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.document {
+  width: 100%;
+  display: flex;
+  flex-grow: 1;
+  z-index: 1;
+  overflow-y: auto;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  @include custom-scrollbar();
+  scroll-behavior: smooth;
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $background-color;
+  }
+
+  scrollbar-color: $hover-color-dark transparent;
+
+  .pages_wrapper {
+    @include flex-column();
+    width: fit-content;
+    height: fit-content;
+    gap: 10px;
+    overflow-y: auto;
+  }
+}
+
+.overlay {
+  background-color: $hover-color-darken;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  opacity: 0;
+  @include transition();
+
+  &.open {
+    opacity: 1;
+  }
+}

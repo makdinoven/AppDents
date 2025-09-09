@@ -24,6 +24,7 @@
     "react-facebook-pixel": "^1.0.4",
     "react-hook-form": "^7.55.0",
     "react-i18next": "^15.4.0",
+    "react-pdf": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.1.5",
     "react-select": "^5.10.0",
