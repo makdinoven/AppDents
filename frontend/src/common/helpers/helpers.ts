@@ -171,6 +171,18 @@ export const isVideoLanding = (pathname: string): boolean => {
   return pathname === Path.landing || pathname.includes("/video/");
 };
 
+export const isBookLanding = (pathname: string): boolean => {
+  return pathname.includes(Path.bookLanding);
+};
+
+export const isBookLandingPromotion = (pathname: string): boolean => {
+  return (
+    pathname.includes(Path.bookLanding) &&
+    !pathname.includes(Path.bookLandingClient) &&
+    !pathname.includes(Path.books)
+  );
+};
+
 export const formatIsoToLocalDatetime = (isoString: string): string => {
   const date = new Date(isoString);
 
@@ -232,4 +244,11 @@ export const getPaymentType = (
   if (isOffer) return PAYMENT_TYPES.offer;
   if (isWebinar) return PAYMENT_TYPES.webinar;
   return undefined;
+};
+
+export const rewriteStorageLinkToCDN = (link: string) => {
+  return link.replace(
+    /^https:\/\/[^/]+\.s3\.twcstorage\.ru(\/\S*)$/,
+    "https://cdn.dent-s.com$1",
+  );
 };

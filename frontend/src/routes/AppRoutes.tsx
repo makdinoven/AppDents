@@ -22,12 +22,15 @@ import NotFoundPage from "../pages/NotFoundPage/NotFoundPage.tsx";
 import AuthModalManager from "../components/AuthModalManager/AuthModalManager.tsx";
 import {
   AUTH_MODAL_ROUTES,
+  BOOK_LANDING_ROUTES,
   LANDING_ROUTES,
 } from "../common/helpers/commonConstants.ts";
 import ProtectedRoute from "./protected/ProtectedRoute.tsx";
 import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
+import BookLanding from "../pages/BookLanding/BookLanding.tsx";
+import Books from "../pages/Books/Books.tsx";
 import SearchPage from "../pages/SearchPage/SearchPage.tsx";
 
 export const AppRoutes: FC = () => {
@@ -52,8 +55,18 @@ export const AppRoutes: FC = () => {
           )}
 
           <Route path={Path.courses} element={<Courses isFree={false} />} />
+          <Route path={Path.books} element={<Books />} />
           <Route path={Path.freeCourses} element={<Courses isFree={true} />} />
           <Route index element={<MainPage />} />
+
+          {BOOK_LANDING_ROUTES.map((path) => (
+            <Route
+              key={path}
+              path={`${path}/:landingPath?`}
+              element={<BookLanding />}
+            />
+          ))}
+
           {LANDING_ROUTES.map((path) => (
             <Route
               key={path}

@@ -1,3 +1,7 @@
+.filters_wrapper {
+  position: relative;
+}
+
 .courses {
   @include flex-column;
   gap: 60px;
@@ -13,6 +17,15 @@
   position: relative;
   display: block;
   @include horizontal-line($right: 0, $width: 85%, $bottom: 0);
+
+  &.loading {
+    @include horizontal-line(
+      $right: 0,
+      $width: 85%,
+      $bottom: 0,
+      $color: $darker-grey
+    );
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {

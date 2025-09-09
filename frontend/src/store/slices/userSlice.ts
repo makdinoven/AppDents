@@ -26,6 +26,7 @@ interface UserState {
   id: number | null;
   role: string | null;
   loading: boolean;
+  loadingCourses: boolean;
   error: ErrorResponse | null;
   isLogged: boolean;
   language: string;
@@ -46,6 +47,7 @@ const initialState: UserState = {
   email: null,
   role: null,
   loading: false,
+  loadingCourses: false,
   error: null,
   isLogged: false,
   balance: null,
@@ -73,6 +75,9 @@ const userSlice = createSlice({
       localStorage.setItem(LS_LANGUAGE_KEY, newLanguage);
       i18n.changeLanguage(newLanguage);
     },
+    clearUserCourses: (state) => {
+      state.courses = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -98,9 +103,9 @@ const userSlice = createSlice({
           state.isLogged = true;
           localStorage.setItem(
             LS_TOKEN_KEY,
-            action.payload.res.data.access_token
+            action.payload.res.data.access_token,
           );
-        }
+        },
       )
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -120,7 +125,7 @@ const userSlice = createSlice({
           state.email = action.payload.res.data.email;
           state.role = action.payload.res.data.role;
           state.id = action.payload.res.data.id;
-        }
+        },
       )
       .addCase(getMe.rejected, (state, action) => {
         state.error = action.payload as ErrorResponse;
@@ -129,15 +134,21 @@ const userSlice = createSlice({
       })
       .addCase(getCourses.pending, (state) => {
         state.error = null;
+        state.loadingCourses = true;
       })
       .addCase(
         getCourses.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.courses = action.payload.res.data;
-        }
-      );
+          state.loadingCourses = false;
+        },
+      )
+      .addCase(getCourses.rejected, (state, action) => {
+        state.error = action.payload as ErrorResponse;
+        state.loadingCourses = false;
+      });
   },
 });
 
-export const { logout, setLanguage } = userSlice.actions;
+export const { logout, setLanguage, clearUserCourses } = userSlice.actions;
 export const userReducer = userSlice.reducer;

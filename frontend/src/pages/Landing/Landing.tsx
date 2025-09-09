@@ -10,7 +10,6 @@ import {
   keepFirstTwoWithInsert,
   normalizeLessons,
 } from "../../common/helpers/helpers.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";
 import About from "./modules/About/About.tsx";
@@ -323,37 +322,38 @@ const Landing = () => {
           </div>
         )}
       </div>
-      {loading ? (
-        <Loader />
-      ) : (
-        <div lang={landing?.language.toLowerCase()} className={s.landing}>
-          {!isVideo ? (
-            <>
-              <LandingHero data={heroData} />
-              <About data={isWebinar ? aboutDataWebinar : aboutData} />
-              {!isWebinar && <CourseProgram data={courseProgramData} />}
-              <LessonsProgram data={lessonsProgramData} />
-              <Professors data={landing?.authors} />
-              <Offer data={offerData} />
-            </>
-          ) : (
-            <>
-              <VideoSection data={videoSectionData} />
-            </>
-          )}
-
-          <Faq />
-          <CoursesSection
-            isFree={isFree}
-            isOffer={true}
-            isClient={isClient}
-            isVideo={isVideo}
-            showSort={true}
-            sectionTitle={"similarCourses"}
-            pageSize={4}
-          />
-        </div>
-      )}
+      <div lang={landing?.language.toLowerCase()} className={s.landing}>
+        {!isVideo ? (
+          <>
+            <LandingHero data={heroData} loading={loading} />
+            {!loading && (
+              <>
+                <About data={isWebinar ? aboutDataWebinar : aboutData} />
+                {!isWebinar && <CourseProgram data={courseProgramData} />}
+                <LessonsProgram data={lessonsProgramData} />
+                <Professors data={landing?.authors} />
+                <Offer data={offerData} />
+              </>
+            )}
+          </>
+        ) : (
+          <>{!loading && <VideoSection data={videoSectionData} />}</>
+        )}
+        {!loading && (
+          <>
+            <Faq type={"course"} />
+            <CoursesSection
+              isFree={isFree}
+              isOffer={true}
+              isClient={isClient}
+              isVideo={isVideo}
+              showSort={true}
+              sectionTitle={"similarCourses"}
+              pageSize={4}
+            />
+          </>
+        )}
+      </div>
     </>
   );
 };

@@ -8,6 +8,7 @@
   "nothingFound": "Nada encontrado",
   "searchCourses": "Buscar cursos por título ou autor...",
   "similarCourses": "Cursos semelhantes",
+  "similarBooks": "Livros semelhantes",
   "back": "Voltar",
   "backToLogin": "Voltar para o login",
   "login": "Entrar",
@@ -112,6 +113,8 @@
     "search": "Buscar",
     "profile": "Perfil",
     "promote": {
+      "bookPages": "Páginas do livro",
+      "bookAuthors": "Autores do livro",
       "professors": "Professores do curso",
       "program": "Programa do curso",
       "webinarProgram": "Programa do webinar",
@@ -174,7 +177,19 @@
     "common.rec": "Para você"
   },
 
-  "landing": {
+  "bookLanding": {
+    "onlineBook": "Livro online",
+    "annotation": "Anotação",
+    "aboutAuthor": "Autores",
+    "about": "Sobre o livro",
+    "pages": {
+      "title": "Páginas",
+      "readFirstPages": "Leia as primeiras páginas do livro!",
+      "fullBook": "O livro completo estará disponível após o pagamento."
+    }
+  },
+
+"landing": {
     "by": "Por",
     "about": "Sobre este curso",
     "access": "o acesso não é limitado no tempo",
@@ -210,6 +225,10 @@
       "faq": "Perguntas Frequentes",
       "1_question": "Como acesso meu curso após a compra?",
       "1_answer": "Assim que o pagamento for concluído, você terá acesso imediato ao seu curso. Após o pagamento, você será direcionado automaticamente para sua conta, onde verá o curso adquirido (recomendamos alterar sua senha imediatamente para não esquecê-la). Você também receberá um recibo e confirmação de inscrição por e-mail. Se não encontrar o e-mail, verifique a pasta de spam (e outras pastas; o remetente é 'no-reply'). O material estará disponível instantaneamente para que você estude no seu próprio ritmo.",
+      "1_question_book": "Come posso accedere al mio libro dopo l’acquisto?",
+      "1_answer_book": "Non appena il pagamento sarà completato, riceverai l’accesso immediato al tuo libro. Dopo il pagamento, verrai automaticamente reindirizzato al tuo account, dove troverai il libro acquistato e potrai scaricarlo (ti consigliamo di cambiare subito la password per non dimenticarla). Riceverai anche una ricevuta e una conferma dell’acquisto via email. Se non vedi l’email nella posta in arrivo, controlla la cartella spam (e le altre cartelle — il mittente sarà 'no-reply'). Il tuo libro sarà subito disponibile e potrai leggerlo quando vuoi su qualsiasi dispositivo.",
+      "2_question_book": "Dove posso trovare i miei libri acquistati se ho perso i file scaricati?",
+      "2_answer_book": "Tutti i libri acquistati rimarranno archiviati in modo sicuro nel tuo account personale — l’accesso non scade mai.",
       "2_question": "Há um prazo para concluir os cursos?",
       "2_answer": "Não, todos os nossos cursos são autoguiados. Você poderá começar, pausar e retomar a qualquer momento e terá acesso vitalício ao conteúdo.",
       "3_question": "Quais métodos de pagamento são aceitos?",
@@ -285,7 +304,8 @@
     "coursesCount_other": "{{count}} cursos"
   },
   "other": {
-    "otherCourses": "Outros cursos"
+    "otherCourses": "Outros cursos",
+    "otherBooks": "Outros livros"
   },
 
   "error": {
@@ -343,5 +363,10 @@
     "title": "todos os cursos",
     "search": "Pesquisar cursos...",
     "found": "Cursos encontrados: {{count}}"
+  },
+  "books": {
+    "title": "todos os livros",
+    "search": "Procurar livros...",
+    "found": "Livros encontrados: {{count}}"
   }
 }

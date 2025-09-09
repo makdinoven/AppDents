@@ -5,8 +5,8 @@ import { Alert } from "../../../../../../components/ui/Alert/Alert";
 import s from "./PurchaseHistory.module.scss";
 import Purchase from "./Purchase/Purchase";
 import { capitalizeText } from "../../../../../../common/helpers/helpers";
-import Loader from "../../../../../../components/ui/Loader/Loader";
 import { AlertCirceIcon } from "../../../../../../assets/icons/index";
+import PurchaseHistorySkeleton from "../../../../../../components/ui/Skeletons/PurchaseHistorySkeleton/PurchaseHistorySkeleton";
 
 const PurchaseHistory: React.FC = () => {
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -89,19 +89,23 @@ const PurchaseHistory: React.FC = () => {
     return merged;
   };
 
-  return loading ? (
-    <Loader />
-  ) : (
+  return (
     <div className={s.purchase_history}>
-      <Purchase
-        content={referrals}
-        title={t("profile.purchaseHistory.invitedUsers")}
-        isReferral
-      />
-      <Purchase
-        content={mergeTransactions(transactions)}
-        title={t("profile.purchaseHistory.purchases")}
-      />
+      {loading ? (
+        <PurchaseHistorySkeleton />
+      ) : (
+        <>
+          <Purchase
+            content={referrals}
+            title={t("profile.purchaseHistory.invitedUsers")}
+            isReferral
+          />
+          <Purchase
+            content={mergeTransactions(transactions)}
+            title={t("profile.purchaseHistory.purchases")}
+          />
+        </>
+      )}
     </div>
   );
 };
