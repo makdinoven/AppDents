@@ -43,6 +43,7 @@
   "watchHere": "here.",
   "total": "Total:",
   "similarCourses": "Similar courses",
+  "similarBooks": "Similar books",
   "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
   "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
   "resetPassword": "Reset password",
@@ -114,6 +115,8 @@
     "promote": {
       "professors": "Course professors",
       "program": "Course program",
+      "bookPages": "Book pages",
+      "bookAuthors": "Book authors",
       "webinarProgram": "Webinar program",
       "webinarProfessors": "Webinar professors",
       "faq": "FAQ"
@@ -181,6 +184,18 @@
     "common.rec": "For you"
   },
 
+  "bookLanding": {
+    "onlineBook": "Online book",
+    "annotation": "Annotation",
+    "aboutAuthor": "Authors",
+    "about": "About book",
+    "pages": {
+      "title": "Pages",
+      "readFirstPages": "Read the first pages of the book!",
+      "fullBook": "The full book will be available after payment."
+    }
+  },
+
   "landing": {
     "by": "By",
     "about": "About this course",
@@ -202,6 +217,7 @@
     "buyLessonsFor_other": "Buy {{count}} lessons for <2>${{new_price}}</2> <1>${{old_price}}</1>",
     "buyForFull": "Buy full course for <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>${{new_price}}</2>, instead of the old one - ${{old_price}}",
+    "youCanBuyEntireBook": "You can now buy the <1>entire book</1> for just <2>${{new_price}}</2>, down from ${{old_price}}.",
     "fiveMinuteFragment": "Here you can watch a <1>five-minute fragment</1>",
     "durationOfLesson": "Duration:",
     "noVideoLink": "No video link or link is not valid",
@@ -217,8 +233,12 @@
       "faq": "Frequently Asked Questions",
       "1_question": "How do I access my course after purchase?",
       "1_answer": "As soon as your payment is completed, you'll receive immediate access to your course. After payment, you will automatically be taken to your account, where you will see the course you purchased (we recommend changing your password right away so you definitely don’t forget it). You’ll also receive a receipt and enrollment confirmation via email, ensuring you have everything you need to get started. If you don’t see the email in your inbox, please check your spam folder (and any other mail folders—the sender’s name is “no-reply”). Your course materials will be available instantly, allowing you to learn at your own pace from any device.",
+      "1_question_book": "How do I access my book after purchase?",
+      "1_answer_book": "As soon as your payment is completed, you'll receive immediate access to your book. After payment, you will automatically be taken to your account, where you will see the book you purchased, and you can download it (we recommend changing your password right away so you definitely don’t forget it). You’ll also receive a receipt and purchase confirmation via email, ensuring you have everything you need to get started. If you don’t see the email in your inbox, please check your spam folder (and any other mail folders—the sender’s name is “no-reply”). Your book will be available instantly, and you can download it to read at your own pace on any device.",
       "2_question": "Is there a time limit to complete the courses?",
       "2_answer": "No, all of our courses are self-paced, giving you the flexibility to start, pause, and resume at any time. You will have lifetime access to the course materials, so there’s no pressure to complete them within a certain timeframe.",
+      "2_question_book": "Where can I find my purchased books if I’ve lost the files I downloaded?",
+      "2_answer_book": "All the books you purchase will remain safely stored in your personal account for as long as you need—access never expires.",
       "3_question": "What payment methods are accepted?",
       "3_answer": "We accept all major credit cards, including Visa, MasterCard, and American Express and nearly all global payment systems (ApplePay, GooglePay, SamsungPay etc.). \nTo process payments, we use Stripe—the most popular and reliable payment service—which securely protects your card data.",
       "4_question": "Why are your prices cheaper?",
@@ -293,7 +313,8 @@
   },
 
   "other": {
-    "otherCourses": "Other courses"
+    "otherCourses": "Other courses",
+    "otherBooks": "Other books"
   },
 
   "error": {
@@ -354,6 +375,12 @@
     "title": "all courses",
     "search": "Search courses...",
     "found": "Courses found: {{count}}"
+  },
+
+  "books": {
+    "title": "all books",
+    "search": "Search books...",
+    "found": "Books found: {{count}}"
   },
 
   "admin": {

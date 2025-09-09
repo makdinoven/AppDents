@@ -17,6 +17,7 @@
 
 .img_wrapper {
   position: relative;
+  min-height: 228px;
   img {
     object-fit: cover;
     width: 100%;
