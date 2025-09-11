@@ -62,6 +62,13 @@ book_landing_books = Table(
     Column("book_id",         Integer, ForeignKey("books.id"),         primary_key=True),
 )
 
+book_landing_tags = Table(
+    "book_landing_tags",
+    Base.metadata,
+    Column("book_landing_id", Integer, ForeignKey("book_landings.id"), primary_key=True),
+    Column("tag_id",          Integer, ForeignKey("tags.id"),          primary_key=True),
+)
+
 
 class PurchaseSource(str, PyEnum):
     HOMEPAGE                  = "HOMEPAGE"          # 1
@@ -131,6 +138,8 @@ class Tag(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(255))
     landings = relationship("Landing", secondary=landing_tags, back_populates="tags")
+    book_landings = relationship("BookLanding", secondary=book_landing_tags, back_populates="tags", lazy="selectin")
+
 
 class Author(Base):
     __tablename__ = 'authors'
@@ -513,10 +522,7 @@ class Book(Base):
                                 back_populates="book",
                                 cascade="all, delete-orphan",
                                 lazy="selectin")
-    landings     = relationship("BookLanding",
-                                back_populates="book",
-                                cascade="all, delete-orphan",
-                                lazy="selectin")
+    landings = relationship("BookLanding", secondary=book_landing_books, back_populates="books", lazy="selectin")
     tags = relationship(
         "Tag",
         secondary=book_tags,
@@ -586,7 +592,6 @@ class BookLanding(Base):
     __tablename__ = "book_landings"
 
     id            = Column(Integer, primary_key=True)
-    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False)
     language      = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
                                 name='landing_language'), nullable=False,
                             server_default='EN')
@@ -596,8 +601,6 @@ class BookLanding(Base):
     new_price = Column(Numeric(10, 2))
     description   = Column(Text)
     preview_photo = Column(String(700))
-    preview_pdf   = Column(String(700),
-                           comment="S3-URL PDF-файла с первыми 10-15 стр.")
     preview_imgs  = Column(JSON,
                            comment="['https://…/page1.jpg', '…/page2.jpg', …]")
     sales_count   = Column(Integer, default=0)
@@ -607,11 +610,7 @@ class BookLanding(Base):
                            onupdate=func.utc_timestamp())
 
     book = relationship("Book", back_populates="landings")
-    books_bundle = relationship(
-        "Book",
-        secondary=book_landing_books,
-        lazy="selectin",
-    )
+    books = relationship("Book", secondary=book_landing_books, back_populates="landings", lazy="selectin")
 
 # ── Динамически вешаем обратную связь на Author ─────────────────────────────
 try:
