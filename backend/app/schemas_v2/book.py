@@ -124,9 +124,7 @@ class BookLandingOut(BaseModel):
     is_hidden: bool
     preview_photo: Optional[str]
     preview_imgs: Optional[List[str]]
-
     books: List[BookMini] = []
-    tags: List[TagMini] = []
 
     class Config:
         orm_mode = True
