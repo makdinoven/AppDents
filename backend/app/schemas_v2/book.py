@@ -113,18 +113,29 @@ class AuthorMini(BaseModel):
     photo: Optional[str] = None
     # counts можно добавить в детальном ответе как вычисляемые
 
+# в schemas_v2/book.py
+from pydantic import BaseModel, ConfigDict
+
+class BookBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    slug: str
+    cover_url: str | None = None
+
 class BookLandingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     language: str
     page_name: str
-    landing_name: Optional[str]
-    description: Optional[str]
-    old_price: Optional[Decimal]
-    new_price: Optional[Decimal]
+    landing_name: str | None = None
+    description: str | None = None
+    old_price: float | None = None
+    new_price: float | None = None
     is_hidden: bool
-    preview_photo: Optional[str]
-    preview_imgs: Optional[List[str]]
-    books: List[BookMini] = []
+    preview_photo: str | None = None
+    preview_imgs: list[str] | None = None
+    books: list[BookBrief] = []
 
     class Config:
         orm_mode = True
