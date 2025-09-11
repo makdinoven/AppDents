@@ -395,11 +395,10 @@ def list_book_landings(
     """
     qset = (
         db.query(BookLanding)
-          .options(
-              selectinload(BookLanding.books_bundle),
-              selectinload(BookLanding.book).selectinload(Book.authors),
-          )
-          .filter(BookLanding.is_hidden.is_(False))
+        .options(
+            selectinload(BookLanding.books).selectinload(Book.authors),
+        )
+        .filter(BookLanding.is_hidden.is_(False))
     )
 
     if language:
@@ -443,25 +442,6 @@ def list_book_landings(
         "total_pages": (total + size - 1) // size,
         "items": [_serialize_landing(bl) for bl in items],
     }
-
-@router.get("/{page_name}", summary="Книжный лендинг по slug (для проверок)")
-def get_book_landing_by_slug(
-    page_name: str,
-    db: Session = Depends(get_db),
-):
-    bl = (
-        db.query(BookLanding)
-          .options(
-              selectinload(BookLanding.books_bundle),
-              selectinload(BookLanding.book).selectinload(Book.authors),
-          )
-          .filter(BookLanding.page_name == page_name, BookLanding.is_hidden.is_(False))
-          .first()
-    )
-    if not bl:
-        raise HTTPException(status_code=404, detail="Book landing not found")
-    return _serialize_landing(bl)
-
 
 # ── ДОБАВИТЬ В НИЗ ФАЙЛА (после CRUD), не меняя существующие роуты ────────────
 @router.post("/admin/books/{book_id}/upload-pdf-url",
