@@ -297,11 +297,7 @@ def _to_float(v) -> float | None:
         return None
 
 def _serialize_landing(bl: BookLanding) -> dict:
-    # Список книг, которые продаёт лендинг: bundle > одиночная book
-    books = list(bl.books_bundle or [])
-    if not books and getattr(bl, "book", None):
-        books = [bl.book]
-
+    books = list(bl.books or [])
     return {
         "id": bl.id,
         "page_name": bl.page_name,
@@ -317,17 +313,16 @@ def _serialize_landing(bl: BookLanding) -> dict:
                 "title": b.title,
                 "slug": b.slug,
                 "cover_url": b.cover_url,
-                "preview_pdf": getattr(b, "preview_pdf", None),  # ← ДОБАВЛЕНО
+                "preview_pdf": f"{S3_PUBLIC_HOST}/books/{b.slug}/preview/preview_15p.pdf",
             } for b in books
         ],
+        # авторов теперь также собирай через bl.books:
         "authors": [
-            {
-                "id": a.id,
-                "name": a.name,
-                "photo": a.photo,
-            } for a in (bl.book.authors if getattr(bl, "book", None) else [])
+            {"id": a.id, "name": a.name, "photo": a.photo}
+            for b in books for a in b.authors
         ],
     }
+
 
 
 @router.get("", summary="Каталог книжных лендингов (листинг)")
@@ -358,31 +353,10 @@ def list_book_landings(
 
     # Фильтр по автору: через одиночную book.authors или через bundle (any)
     if author_id:
-        # LEFT JOIN book (single)
-        qset = qset.join(BookLanding.book, isouter=True)
-        # LEFT JOIN bundle association
-        qset = qset.join(book_landing_books, book_landing_books.c.book_landing_id == BookLanding.id, isouter=True)\
-                   .join(Book, Book.id == book_landing_books.c.book_id, isouter=True)
-        qset = qset.join(Author, or_(
-            Author.id.in_(db.query(Author.id).join(Author.books).filter(Book.id == BookLanding.book_id)),
-            Author.id.in_(db.query(Author.id).join(Author.books).filter(Author.id == author_id))
-        ), isouter=True)
-        # Упростим выражение: оставим лендинги, где есть совпадение по автору в любой из связей
-        qset = qset.filter(
-            or_(
-                BookLanding.book.has(Book.authors.any(Author.id == author_id)),
-                BookLanding.books_bundle.any(Book.authors.any(Author.id == author_id)),
-            )
-        )
+        qset = qset.filter(BookLanding.books.any(Book.authors.any(Author.id == author_id)))
 
-    # Фильтр по тегу (теги на самой КНИГЕ, не на лендинге)
     if tag_id:
-        qset = qset.filter(
-            or_(
-                BookLanding.book.has(Book.tags.any(Tag.id == tag_id)),
-                BookLanding.books_bundle.any(Book.tags.any(Tag.id == tag_id)),
-            )
-        )
+        qset = qset.filter(BookLanding.books.any(Book.tags.any(Tag.id == tag_id)))
 
     if q:
         like = f"%{q.strip()}%"
@@ -390,7 +364,7 @@ def list_book_landings(
             or_(
                 BookLanding.landing_name.ilike(like),
                 BookLanding.description.ilike(like),
-                BookLanding.book.has(Book.title.ilike(like)),
+                BookLanding.books.any(Book.title.ilike(like)),
             )
         )
 
