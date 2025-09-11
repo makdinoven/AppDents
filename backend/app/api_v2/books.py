@@ -7,7 +7,7 @@ from typing import Optional
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_
+from sqlalchemy import or_, in_
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -109,7 +109,7 @@ def create_book_landing(
     db.flush()
 
     if payload.book_ids:
-        books = db.query(Book).filter(Book.id.in__(payload.book_ids)).all()
+        books = db.query(Book).filter(Book.id.in_(payload.book_ids)).all()
         if not books or len(books) != len(set(payload.book_ids)):
             raise HTTPException(400, "Some book_ids not found")
         landing.books = books
@@ -147,7 +147,7 @@ def update_book_landing(
 
     if payload.book_ids is not None:
         if payload.book_ids:
-            books = db.query(Book).filter(Book.id.in__(payload.book_ids)).all()
+            books = db.query(Book).filter(Book.id.in_(payload.book_ids)).all()
             if not books or len(books) != len(set(payload.book_ids)):
                 raise HTTPException(400, "Some book_ids not found")
             landing.books = books
