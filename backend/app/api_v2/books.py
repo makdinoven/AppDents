@@ -7,7 +7,7 @@ from typing import Optional
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, in_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
