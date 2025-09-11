@@ -35,10 +35,10 @@ s3v4 = boto3.client(
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-def preview_pdf_url_for_book(book) -> str:
-    # Превью лежит по слугу книги:
-    # https://cdn.dent-s.com/books/{slug}/preview/preview_15p.pdf
-    return f"{S3_PUBLIC_HOST}/books/{book.slug}/preview/preview_15p.pdf"
+def preview_pdf_url_for_book(book_or_slug) -> str:
+    slug = book_or_slug.slug if hasattr(book_or_slug, "slug") else str(book_or_slug)
+    return f"{S3_PUBLIC_HOST}/books/{slug}/preview/preview_15p.pdf"
+
 # ─────────────── КНИГИ ───────────────────────────────────────────────────────
 @router.post("/", response_model=BookResponse)
 def create_new_book(
@@ -71,7 +71,6 @@ def delete_book_route(
 def create_book_landing(payload: BookLandingCreate,
                         db: Session = Depends(get_db),
                         current_admin=Depends(require_roles("admin"))):
-    # 1) создать лендинг
     landing = BookLanding(
         language     = payload.language,
         page_name    = payload.page_name,
@@ -83,25 +82,20 @@ def create_book_landing(payload: BookLandingCreate,
         preview_imgs = payload.preview_imgs or None
     )
     db.add(landing)
-    db.flush()  # получим ID
+    db.flush()
 
-    # 2) привязать книги (если передали)
     if payload.book_ids:
         books = db.query(Book).filter(Book.id.in__(payload.book_ids)).all()
         if not books or len(books) != len(set(payload.book_ids)):
             raise HTTPException(400, "Some book_ids not found")
         landing.books = books
 
-    # 3) привязать теги (если передали)
-    if payload.tag_ids:
-        tags = db.query(Tag).filter(Tag.id.in__(payload.tag_ids)).all()
-        if not tags or len(tags) != len(set(payload.tag_ids)):
-            raise HTTPException(400, "Some tag_ids not found")
-        landing.tags = tags
+    # ⟵ БЛОК С TAGS УДАЛЁН
 
     db.commit()
     db.refresh(landing)
     return landing
+
 
 @router.patch("/landing/{landing_id}", response_model=BookLandingOut)
 def update_book_landing(landing_id: int,
@@ -112,13 +106,11 @@ def update_book_landing(landing_id: int,
     if not landing:
         raise HTTPException(404, "Landing not found")
 
-    # простые поля
     for field in ("language","page_name","landing_name","description","old_price","new_price","is_hidden","preview_photo","preview_imgs"):
         val = getattr(payload, field, None)
         if val is not None:
             setattr(landing, field, val)
 
-    # заменить набор книг?
     if payload.book_ids is not None:
         if payload.book_ids:
             books = db.query(Book).filter(Book.id.in__(payload.book_ids)).all()
@@ -128,15 +120,7 @@ def update_book_landing(landing_id: int,
         else:
             landing.books = []
 
-    # заменить набор тегов?
-    if payload.tag_ids is not None:
-        if payload.tag_ids:
-            tags = db.query(Tag).filter(Tag.id.in__(payload.tag_ids)).all()
-            if not tags or len(tags) != len(set(payload.tag_ids)):
-                raise HTTPException(400, "Some tag_ids not found")
-            landing.tags = tags
-        else:
-            landing.tags = []
+    # ⟵ БЛОК С TAGS УДАЛЁН
 
     db.commit()
     db.refresh(landing)
@@ -205,7 +189,7 @@ def get_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
           .options(
               selectinload(BookLanding.books).selectinload(Book.authors),
               selectinload(BookLanding.books).selectinload(Book.files),
-              selectinload(BookLanding.tags),
+              # ⟵ selectinload(BookLanding.tags) УДАЛЁН
           )
           .filter(BookLanding.page_name == page_name)
           .first()
@@ -213,35 +197,25 @@ def get_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    # Галерея из отдельной таблицы
+    # Галерея
     gallery_rows = (
         db.query(BookLandingImage)
           .filter(BookLandingImage.landing_id == landing.id)
           .order_by(BookLandingImage.sort_index.asc(), BookLandingImage.id.asc())
           .all()
     )
-    gallery = [
-        {
-            "id": g.id,
-            "url": g.s3_url,
-            "alt": g.alt,
-            "caption": g.caption,
-            "sort_index": g.sort_index,
-            "size_bytes": g.size_bytes,
-            "content_type": g.content_type,
-        }
-        for g in gallery_rows
-    ]
+    gallery = [{
+        "id": g.id, "url": g.s3_url, "alt": g.alt, "caption": g.caption,
+        "sort_index": g.sort_index, "size_bytes": g.size_bytes, "content_type": g.content_type,
+    } for g in gallery_rows]
 
-    # Уникальные авторы по всем книгам лендинга
+    # Авторы (уникально)
     authors_map = {}
     for b in landing.books:
         for a in b.authors:
             if a.id not in authors_map:
                 authors_map[a.id] = {
-                    "id": a.id,
-                    "name": a.name,
-                    "photo": a.photo,
+                    "id": a.id, "name": a.name, "photo": a.photo,
                     "books_count": len(getattr(a, "books", []) or []),
                     "courses_count": len(getattr(a, "landings", []) or []),
                 }
@@ -252,19 +226,20 @@ def get_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     for b in landing.books:
         formats = [{
             "format": (f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format)),
-            "url": f.s3_url,
-            "size_bytes": f.size_bytes,
+            "url": f.s3_url, "size_bytes": f.size_bytes,
         } for f in b.files]
         books.append({
-            "id": b.id,
-            "title": b.title,
-            "slug": b.slug,
-            "cover_url": b.cover_url,
-            "preview_pdf_url": preview_pdf_url_for_book(b.slug),
+            "id": b.id, "title": b.title, "slug": b.slug, "cover_url": b.cover_url,
+            "preview_pdf_url": preview_pdf_url_for_book(b),  # ⟵ передаём объект b
             "formats": formats,
         })
 
-    tags = [{"id": t.id, "name": t.name} for t in landing.tags]
+    # Теги агрегируем с книг лендинга (уникально)
+    tags_seen = {}
+    for b in landing.books:
+        for t in b.tags:
+            tags_seen[t.id] = {"id": t.id, "name": t.name}
+    tags = list(tags_seen.values())
 
     return {
         "id": landing.id,
@@ -276,11 +251,12 @@ def get_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         "new_price": str(landing.new_price) if landing.new_price is not None else None,
         "is_hidden": bool(landing.is_hidden),
         "preview_photo": landing.preview_photo,
-        "tags": tags,
+        "tags": tags,          # ⟵ с книг, а не landing.tags
         "authors": authors,
         "gallery": gallery,
         "books": books,
     }
+
 @router.get("/{book_id}", response_model=BookDetailResponse,
             summary="Полная информация о книге + download-ссылки")
 def api_get_book_detail(
