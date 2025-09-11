@@ -116,7 +116,12 @@ def create_book_landing(
 
     db.commit()
     db.refresh(landing)
-    return landing
+    landing = (
+        db.query(BookLanding)
+        .options(selectinload(BookLanding.books))
+        .get(landing.id)
+    )
+    return BookLandingOut.model_validate(landing, from_attributes=True)
 
 
 @router.patch("/landing/{landing_id}", response_model=BookLandingOut)
