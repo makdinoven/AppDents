@@ -609,8 +609,10 @@ class BookLanding(Base):
     updated_at    = Column(DateTime, server_default=func.utc_timestamp(),
                            onupdate=func.utc_timestamp())
 
-    book = relationship("Book", back_populates="landings")
-    books = relationship("Book", secondary=book_landing_books, back_populates="landings", lazy="selectin")
+    books = relationship("Book", secondary=book_landing_books,
+                         back_populates="landings", lazy="selectin")
+    tags = relationship("Tag", secondary=book_landing_tags,
+                        back_populates="book_landings", lazy="selectin")
 
 # ── Динамически вешаем обратную связь на Author ─────────────────────────────
 try:
