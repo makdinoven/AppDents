@@ -10,6 +10,27 @@ class HttpS3Url(AnyUrl):
     """
     allowed_schemes = {'http', 'https', 's3'}
 
+
+
+
+class BookLandingBase(BaseModel):
+    language: str = Field(default="EN", pattern="^(EN|RU|ES|PT|AR|IT)$")
+    page_name: str
+    landing_name: Optional[str] = None
+    description: Optional[str] = None
+    old_price: Optional[Decimal] = None
+    new_price: Optional[Decimal] = None
+    is_hidden: Optional[bool] = False
+
+    # НЕОБЯЗАТЕЛЬНО:
+    book_ids: Optional[List[int]] = None
+    tag_ids: Optional[List[int]] = None
+    # preview_photo НЕ грузим здесь — это делает upload-роут (останется опциональным полем на PATCH)
+    preview_imgs: Optional[List[str]] = None   # если захотите руками задать
+
+class BookLandingCreate(BookLandingBase):
+    pass
+
 # ---------- ↓ Payload’ы CRUD книги -------------------------------------------------
 class BookFilePayload(BaseModel):
     file_format: constr(to_upper=True,
@@ -60,24 +81,61 @@ class BookResponse(BaseModel):
     class Config:
         orm_mode = True
 
-# ---------- ↓ Payload’ы CRUD лендинга книги ----------------------------------------
-class BookLandingCreate(BaseModel):
-    book_id:      int
-    page_name:    constr(regex=r"^[a-zA-Z0-9\-]+$")
-    language:     constr(to_upper=True,
-                         regex="^(EN|RU|ES|PT|AR|IT)$") = "EN"
-    landing_name: Optional[str]
-    old_price: condecimal(max_digits=10, decimal_places=2) | None = None
-    new_price: condecimal(max_digits=10, decimal_places=2) | None = None
-    description:  Optional[str]
-    preview_photo: Optional[HttpS3Url]
-    preview_pdf:   Optional[HttpS3Url]
-    preview_imgs:  Optional[List[HttpS3Url]]
-    is_hidden:     bool = False
 
-class BookLandingUpdate(BookLandingCreate):
+class BookLandingUpdate(BaseModel):
+    language: Optional[str] = Field(default=None, pattern="^(EN|RU|ES|PT|AR|IT)$")
     page_name: Optional[str] = None
-    book_id:   Optional[int] = None
+    landing_name: Optional[str] = None
+    description: Optional[str] = None
+    old_price: Optional[Decimal] = None
+    new_price: Optional[Decimal] = None
+    is_hidden: Optional[bool] = None
+
+    book_ids: Optional[List[int]] = None
+    tag_ids: Optional[List[int]] = None
+    preview_photo: Optional[str] = None
+    preview_imgs: Optional[List[str]] = None
+
+class BookMini(BaseModel):
+    id: int
+    title: str
+    slug: str
+    cover_url: Optional[str] = None
+    # Превью PDF берём вычисляемым полем на детальном GET (см. ниже)
+
+class TagMini(BaseModel):
+    id: int
+    name: str
+
+class AuthorMini(BaseModel):
+    id: int
+    name: str
+    photo: Optional[str] = None
+    # counts можно добавить в детальном ответе как вычисляемые
+
+class BookLandingOut(BaseModel):
+    id: int
+    language: str
+    page_name: str
+    landing_name: Optional[str]
+    description: Optional[str]
+    old_price: Optional[Decimal]
+    new_price: Optional[Decimal]
+    is_hidden: bool
+    preview_photo: Optional[str]
+    preview_imgs: Optional[List[str]]
+
+    books: List[BookMini] = []
+    tags: List[TagMini] = []
+
+    class Config:
+        orm_mode = True
+
+class BookLandingDetail(BookLandingOut):
+    # Расширение для детального GET
+    authors: List[AuthorMini] = []
+    # Превью по книгам:
+    book_previews: List[dict] = []  # [{book_id, preview_pdf_url}, ...]
 
 # >>> app/schemas_v2/book.py — ДОБАВИТЬ ПЕРЕД/РЯДОМ С BookLandingResponse <<<
 
@@ -92,7 +150,7 @@ class IncludedBookShort(BaseModel):
     cover_url: Optional[HttpUrl] = None
     preview_pdf: Optional[HttpS3Url] = None  # может быть http/https/s3
 
-# … ниже уже есть BookLandingResponse — ЗАМЕНИ ЕГО ОБЪЯВЛЕНИЕ НА ЭТО:
+
 class BookLandingResponse(BaseModel):
     id:          int
     book_id:     int
