@@ -22,9 +22,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-const PDF_LINK =
-  "https://cdn.dent-s.com/books/test-book-with-vol-2/preview/preview_15p.pdf";
-
 type SelectType = {
   value: number | string | string[];
   name: string;
@@ -45,14 +42,18 @@ export const scales = [
   { value: 2, label: "200%" },
 ];
 
-const PdfReader = () => {
+interface PdfReaderProps {
+  url: string;
+}
+
+const PdfReader = ({ url }: PdfReaderProps) => {
   const [totalPages, setTotalPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const documentRef = useRef<HTMLDivElement | null>(null);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
   const [fullScreen, setFullScreen] = useState(false);
-  const [scale, setScale] = useState<number>(1.0);
+  const [scale, setScale] = useState<number>(0.75);
   const [inputValue, setInputValue] = useState<string>("1");
   const [isThumbNailsOpen, setIsTumbNailsOpen] = useState(false);
 
@@ -309,7 +310,7 @@ const PdfReader = () => {
 
   return (
     <div
-      className={`${s.pdf_reader} ${fullScreen && s.full_screen}`}
+      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : ""}`}
       onClick={handleOverlayClick}
     >
       <div className={s.header}>{headerContent.get(fullScreen)}</div>
@@ -318,7 +319,7 @@ const PdfReader = () => {
         onLoadSuccess={onDocumentLoadSuccess}
         options={options}
         totalPages={totalPages}
-        link={PDF_LINK}
+        link={url}
         handlePageChange={handlePageChange}
         onClick={handleThumbNailsAreaClick}
         currentPage={pageNumber}
@@ -326,7 +327,7 @@ const PdfReader = () => {
       <div className={`${s.overlay} ${isThumbNailsOpen && s.open}`}></div>
       <div className={s.document} ref={documentRef}>
         <Document
-          file={PDF_LINK}
+          file={url}
           onLoadSuccess={onDocumentLoadSuccess}
           options={options}
           className={s.pages_wrapper}
