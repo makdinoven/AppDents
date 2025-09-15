@@ -1,0 +1,135 @@
+.hidden {
+  display: none;
+}
+
+.custom_player {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 30px;
+  background: $primary;
+  padding: 30px 20px;
+  border-radius: 20px;
+  color: $background-color;
+  width: 100%;
+  height: fit-content;
+
+  @media (max-width: $tablet-breakpoint) {
+    padding: 25px 20px;
+    gap: 25px;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    padding: 15px 10px;
+    gap: 15px;
+    border-radius: 15px;
+  }
+
+  .mp3 {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+  }
+
+  .controls {
+    @include flex-center();
+    flex-direction: row;
+    gap: 15px;
+
+    @media (max-width: $tablet-breakpoint) {
+      gap: 10px;
+      .play_button {
+        svg {
+          width: 50px;
+          height: 50px;
+        }
+      }
+
+      .previous,
+      .next {
+        svg {
+          height: 36px;
+          width: 28px;
+        }
+      }
+    }
+
+    .previous {
+      transform: scaleX(-1);
+    }
+
+    .previous,
+    .next {
+      svg {
+        width: 32px;
+        height: 40px;
+
+        path {
+          width: 100%;
+          height: 100%;
+        }
+
+        @media (max-width: $tablet-breakpoint) {
+          height: 36px;
+          width: auto;
+        }
+      }
+    }
+  }
+}
+
+.progress_wrapper {
+  @include flex-column();
+  flex-grow: 1;
+  gap: 8px;
+  transform: translateY(50%);
+
+  @media (max-width: $tablet-breakpoint) {
+    transform: translateY(65%);
+  }
+}
+
+.time_info {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  .time {
+    @include clamped-p3();
+    text-align: center;
+    color: $background-color;
+  }
+}
+
+.progress {
+  flex: 1;
+  appearance: none;
+  max-height: 10px;
+  border-radius: 40px;
+  background: $background-color-06;
+  cursor: pointer;
+
+  @media (max-width: $tablet-breakpoint) {
+    max-height: 8px;
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: $background-color;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  &::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: $background-color;
+    cursor: pointer;
+    border: none;
+  }
+}

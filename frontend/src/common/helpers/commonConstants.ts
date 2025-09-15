@@ -187,3 +187,5 @@ export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
 export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
+
+export const FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];

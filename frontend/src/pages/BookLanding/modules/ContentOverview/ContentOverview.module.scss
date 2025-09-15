@@ -1,0 +1,12 @@
+.content_overview {
+  @include flex-column();
+  gap: 40px;
+
+  .slider {
+    width: 100%;
+    height: fit-content;
+  }
+}
+:global(.swiper-pagination) {
+  visibility: hidden;
+}

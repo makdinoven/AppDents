@@ -9,15 +9,18 @@
   border: 2px solid $hover-color-analogue;
   border-radius: 20px;
   background-color: $hover-color-analogue;
+  pointer-events: all;
 
-  @media (max-width: $tablet-breakpoint) {
+  @media (max-width: $middle-breakpoint) {
     height: 50vh;
   }
 
   &.full_screen {
     position: absolute;
     width: 100%;
-    z-index: 10;
+    height: 100vh;
+    max-height: unset;
+    z-index: 100;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
@@ -197,6 +200,7 @@
 
   &::-webkit-scrollbar-thumb {
     background-color: $background-color;
+    pointer-events: all;
   }
 
   scrollbar-color: $hover-color-dark transparent;
@@ -218,8 +222,12 @@
   z-index: 2;
   opacity: 0;
   @include transition();
+  pointer-events: none;
 
   &.open {
     opacity: 1;
   }
+}
+
+@media (max-width: $mobile-breakpoint) {
 }
