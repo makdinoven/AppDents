@@ -140,7 +140,7 @@ def summarize_video_task(
 
     target_lang = _to_target_language(lang, language_code, output_language)
     model = final_model or DEFAULT_LEMUR_MODEL
-    lemur = aai.Lemur(final_model=model)
+    lemur = aai.Lemur()
 
     try:
         if answer_format.strip():
@@ -148,6 +148,7 @@ def summarize_video_task(
             if target_lang:
                 ctx += f"\nПожалуйста, ответь на языке: {target_lang}."
             res = lemur.summarize(
+                final_model=model,
                 context=ctx.strip(),
                 answer_format=answer_format.strip(),
                 input=text,
@@ -155,7 +156,7 @@ def summarize_video_task(
             summary = (res.response or "").strip()
         else:
             prompt = (context or DEFAULT_MARKETING_PROMPT).format(target_lang=target_lang)
-            res = lemur.task(prompt=prompt, input=text)
+            res = lemur.task(final_model=model,prompt=prompt, input=text)
             summary = (res.response or "").strip()
     except Exception as e:
         return {
