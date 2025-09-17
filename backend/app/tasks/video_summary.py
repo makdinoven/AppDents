@@ -151,12 +151,12 @@ def summarize_video_task(
                 final_model=model,
                 context=ctx.strip(),
                 answer_format=answer_format.strip(),
-                input=text,
+                input_text=text,
             )
             summary = (res.response or "").strip()
         else:
             prompt = (context or DEFAULT_MARKETING_PROMPT).format(target_lang=target_lang)
-            res = lemur.task(final_model=model,prompt=prompt, input=text)
+            res = lemur.task(final_model=model,prompt=prompt, input_text=text)
             summary = (res.response or "").strip()
     except Exception as e:
         return {
