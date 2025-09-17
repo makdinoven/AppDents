@@ -7,13 +7,15 @@ import { useTranslation } from "react-i18next";
 
 interface ContentOverviewProps {
   books: any[];
+  portalParentId: string;
 }
 
 const ContentOverview: React.FC<ContentOverviewProps> = ({
   books,
+  portalParentId,
 }: ContentOverviewProps) => {
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const MIDDLE = 1024;
+  const TABLET = 768;
 
   useEffect(() => {
     const handleResize = () => {
@@ -30,7 +32,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   }, [screenWidth]);
 
   const slides = books.map((book: any, index) => (
-    <ContentOverviewSlide book={book} index={index} />
+    <ContentOverviewSlide book={book} index={index} parentId={portalParentId} />
   ));
 
   const { t } = useTranslation();
@@ -40,9 +42,9 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
       <UniversalSlider
         slides={slides}
         className={s.slider}
-        navigation
+        navigation={!(screenWidth < TABLET)}
         navigationPosition="center"
-        pagination={screenWidth < MIDDLE}
+        pagination={screenWidth < TABLET}
         paginationType="dots"
       />
     </div>

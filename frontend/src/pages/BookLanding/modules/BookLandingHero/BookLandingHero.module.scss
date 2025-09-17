@@ -89,6 +89,7 @@
       h2 {
         @include clamped-h2();
         text-transform: uppercase;
+        color: $accent;
 
         @media (max-width: $sm-breakpoint) {
           @include clamped-h3();

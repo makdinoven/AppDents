@@ -1,15 +1,17 @@
 import React from "react";
 import s from "./ContentOverviewSlide.module.scss";
-import PdfReader from "../../../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
+import PdfReaderWrapper from "../../../../../../components/CommonComponents/PdfReader/PdfReaderWrapper.tsx";
 
 interface ContentOverviewSlideProps {
   book: any;
   index: number;
+  parentId: string;
 }
 
 const ContentOverviewSlide: React.FC<ContentOverviewSlideProps> = ({
   book,
   index,
+  parentId,
 }: ContentOverviewSlideProps) => {
   const description =
     " This book provides a comprehensive and evidence-based overview of\n" +
@@ -26,15 +28,16 @@ const ContentOverviewSlide: React.FC<ContentOverviewSlideProps> = ({
     "          guide, or a source for professional development, this publication is\n" +
     "          an essential resource for anyone involved in the rapidly evolving\n" +
     "          landscape of global medicine.";
+
   return (
     <li className={s.slide}>
       <h3>
-        <span>{index}.</span>
+        <span>{index + 1}. </span>
         <span>{book.title}</span>
       </h3>
       <div className={s.content}>
+        <PdfReaderWrapper parentId={parentId} url={book.preview_pdf_url} />
         <p className={s.description}>{description}</p>
-        <PdfReader />
       </div>
     </li>
   );

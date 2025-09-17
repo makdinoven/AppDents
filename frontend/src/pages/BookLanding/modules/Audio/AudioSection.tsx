@@ -26,6 +26,7 @@ const AudioSection: React.FC<AudioSectionProps> = ({
         <div className={s.audio_player}>
           <AudioPlayer
             audioUrl={
+              audioUrl ||
               "https://www.learningcontainer.com/wp-content/uploads/2020/02/Kalimba.mp3"
             }
           />

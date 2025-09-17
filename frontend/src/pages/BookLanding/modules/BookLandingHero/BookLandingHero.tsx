@@ -5,6 +5,7 @@ import HeroSlider from "./modules/HeroSlider/HeroSlider.tsx";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
 import { En, Pdf, Epub, Mobi, Azw3, Fb2 } from "../../../../assets/icons";
 import { FORMATS } from "../../../../common/helpers/commonConstants.ts";
+import Loader from "../../../../components/ui/Loader/Loader.tsx";
 
 interface LandingHeroProps {
   data: any;
@@ -15,12 +16,14 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  const slides = data?.gallery?.map((photo: any) => (
+  const slides = data.gallery.map((photo: any) => (
     <img src={photo.url} alt={photo.alt} />
   ));
 
   const authors = data?.authors?.map((author: any) => author.name);
-  return (
+  return loading ? (
+    <Loader />
+  ) : (
     <section className={s.hero}>
       <div className={s.left_side}>
         <div className={s.lang_price}>
