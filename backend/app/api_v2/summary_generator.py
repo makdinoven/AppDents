@@ -13,7 +13,7 @@ from ..celery_app import celery  # поправьте путь, если отл�
 LangCode = Literal["auto", "ru", "en", "it", "es"]
 OutLang = Literal["auto", "ru", "en", "it", "es"]
 
-router = APIRouter(prefix="/admin/ai", tags=["AI Summaries"])
+router = APIRouter()
 
 DEFAULT_LEMUR_MODEL = os.getenv("AAI_LEMUR_MODEL", "anthropic/claude-3-5-sonnet")
 
