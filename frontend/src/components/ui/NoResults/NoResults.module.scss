@@ -9,9 +9,12 @@
 }
 
 .icon {
-  width: 210px;
-  height: 220px;
+  min-width: 120px;
+  max-width: 210px;
+  min-height: 130px;
+  max-height: 220px;
   margin-bottom: 30px;
+  //flex-shrink: 0;
 }
 
 .title {
@@ -23,4 +26,38 @@
 .desc {
   @include clamped-p2;
   text-align: center;
+  opacity: 0.9;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .no_results {
+    padding: 10px;
+  }
+
+  .icon {
+    width: 120px;
+    height: 130px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .title {
+    margin-bottom: 10px;
+  }
+
+  .no_results {
+    padding: 5px;
+  }
+
+  .desc {
+    font-size: 14px;
+  }
+
+  .icon {
+    min-width: unset;
+    min-height: unset;
+    width: 90px;
+    height: 100px;
+    margin-bottom: 15px;
+  }
 }

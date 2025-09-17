@@ -7,6 +7,7 @@ import { formatAuthorsDesc } from "../../../../../../common/helpers/helpers.ts";
 import { ResultLandingData } from "../../../../../../store/slices/mainSlice.ts";
 
 const ResultLanding = ({
+  type,
   data: {
     preview_photo,
     landing_name,
@@ -19,19 +20,30 @@ const ResultLanding = ({
     course_ids,
   },
 }: {
+  type: "book_landing" | "landing";
   data: ResultLandingData;
 }) => {
+  const isBookLanding = type === "book_landing";
   return (
     <>
       {preview_photo ? (
-        <img className={s.photo} src={preview_photo} alt="" />
+        <img
+          className={`${s.photo} ${isBookLanding ? s.book : ""}`}
+          src={preview_photo}
+          alt=""
+        />
       ) : (
-        <div className={s.photo}></div>
+        <div className={`${s.photo} ${isBookLanding ? s.book : ""}`}></div>
       )}
       <div className={s.content}>
         <div className={s.content_header}>
           <div className={s.prices}>
-            <LangLogo lang={language as LanguagesType} />
+            {language && (
+              <LangLogo
+                className={s.lang_logo}
+                lang={language as LanguagesType}
+              />
+            )}
             <span className={s.new_price}>${new_price}</span>
             <span className={s.old_price}>${old_price}</span>
           </div>
@@ -52,8 +64,12 @@ const ResultLanding = ({
             variant={"primary"}
           />
         </div>
-        <p className={s.name}>{landing_name}</p>
-        <p className={s.authors}>{formatAuthorsDesc(authors)}</p>
+        <p lang={language.toLowerCase()} className={s.name}>
+          {landing_name}
+        </p>
+        <p lang={language.toLowerCase()} className={s.authors}>
+          {formatAuthorsDesc(authors)}
+        </p>
       </div>
     </>
   );

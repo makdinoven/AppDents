@@ -1,6 +1,6 @@
 import s from "./SearchPage.module.scss";
 import Search from "../../components/ui/Search/Search.tsx";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
@@ -10,27 +10,31 @@ import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx"
 import ResultList from "./content/ResultsList/ResultsList.tsx";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
-import LoaderOverlay from "../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import { LANGUAGES } from "../../common/helpers/commonConstants.ts";
-import LangLogo, {
-  LanguagesType,
-} from "../../components/ui/LangLogo/LangLogo.tsx";
 import NoResults from "../../components/ui/NoResults/NoResults.tsx";
-import ExtendedToggleButton from "../../components/ui/ExtendedToggleButton/ExtendedToggleButton.tsx";
 import { globalSearch } from "../../store/actions/mainActions.ts";
 import {
   clearSearch,
-  SearchResultsType,
+  ResultLandingData,
+  SearchResultKeysType,
 } from "../../store/slices/mainSlice.ts";
+import Loader from "../../components/ui/Loader/Loader.tsx";
+import LanguagesFilter from "./filters/LanguagesFilter/LanguagesFilter.tsx";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
+import {
+  arraysEqual,
+  mapCourseToResultLanding,
+} from "../../common/helpers/helpers.ts";
+import CategoriesFilter from "./filters/CategoriesFilter/CategoriesFilter.tsx";
+import { t } from "i18next";
 
-const RESULT_KEYS: (keyof Omit<Exclude<SearchResultsType, null>, "counts">)[] =
-  [
-    "landings",
-    "authors",
-    // "book_landings",
-  ];
+const RESULT_KEYS: SearchResultKeysType[] = [
+  "landings",
+  "authors",
+  // "book_landings",
+];
 
-// type ResultKey = keyof Omit<SearchResults, "counts">;
+const LANGS_URL_KEY = "langs";
+const TYPES_URL_KEY = "types";
 
 const SearchPage = () => {
   const SEARCH_KEY = "q";
@@ -41,22 +45,16 @@ const SearchPage = () => {
   const { loading, q } = useSelector(
     (state: AppRootStateType) => state.main.search,
   );
-  const selectedLanguagesFromStore = useSelector(
-    (state: AppRootStateType) => state.main.search.selectedLanguages,
-  );
-  const selectedResultTypesFromStore = useSelector(
-    (state: AppRootStateType) => state.main.search.selectedResultTypes,
-  );
   const searchResults = useSelector(
     (state: AppRootStateType) => state.main.search.results,
   );
   const [searchParams] = useSearchParams();
   const closeModalRef = useRef<() => void>(null);
-  const [selectedLanguages, setSelectedLanguages] = useState(
-    selectedLanguagesFromStore ?? [language],
+  const selectedLanguagesFromStore = useSelector(
+    (state: AppRootStateType) => state.main.search.selectedLanguages,
   );
-  const [selectedResultTypes, setSelectedResultTypes] = useState(
-    selectedResultTypesFromStore ?? RESULT_KEYS,
+  const selectedResultTypesFromStore = useSelector(
+    (state: AppRootStateType) => state.main.search.selectedResultTypes,
   );
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   useOutsideClick(wrapperRef, () => {
@@ -64,20 +62,44 @@ const SearchPage = () => {
   });
   const inputRef = useRef<HTMLInputElement | null>(null);
   const searchValue = searchParams.get(SEARCH_KEY);
-  const debouncedSearchValue = useDebounce(searchValue, 300);
+  const debouncedSearchValue = useDebounce(searchValue, 400);
+  const placeholderCoursesRaw = useSelector(
+    (state: AppRootStateType) => state.main.courses,
+  );
+  const placeholderCourses: ResultLandingData[] = placeholderCoursesRaw.map(
+    mapCourseToResultLanding,
+  );
+
+  const selectedLanguages = useMemo(() => {
+    const langs = searchParams.getAll(LANGS_URL_KEY) as LanguagesType[];
+    return langs.length > 0 ? langs : [language as LanguagesType];
+  }, [searchParams]);
+
+  const selectedResultTypes = useMemo(() => {
+    const types = searchParams.getAll(TYPES_URL_KEY) as SearchResultKeysType[];
+    return types.length > 0 ? types : RESULT_KEYS;
+  }, [searchParams, language]);
+
   const hasResults =
     searchResults &&
     RESULT_KEYS.some(
       (key) => searchResults[key] && searchResults[key]!.length > 0,
     );
-  const showNoResults = !hasResults && !loading;
+  const showNoResults =
+    !hasResults && !loading && !!debouncedSearchValue && searchValue === q;
+  const showPlaceholderCourses =
+    !hasResults &&
+    !showNoResults &&
+    !!placeholderCourses.length &&
+    !loading &&
+    !debouncedSearchValue;
 
   useEffect(() => {
     if (
       debouncedSearchValue === q &&
       hasResults &&
-      selectedLanguagesFromStore !== selectedLanguagesFromStore &&
-      selectedResultTypesFromStore !== selectedResultTypes
+      arraysEqual(selectedLanguagesFromStore!, selectedLanguages) &&
+      arraysEqual(selectedResultTypesFromStore!, selectedResultTypes)
     ) {
       return;
     }
@@ -92,33 +114,12 @@ const SearchPage = () => {
       );
     } else if (hasResults) {
       dispatch(clearSearch());
-      // setTotalResults(0);
     }
   }, [debouncedSearchValue, selectedLanguages, selectedResultTypes]);
-
-  // useEffect(() => {
-  //   console.log(searchResults);
-  // }, [searchResults]);
 
   const handleClose = () => {
     dispatch(clearSearch());
     closeModalRef.current?.();
-  };
-
-  const handleSelect = <T,>(
-    item: T,
-    setSelected: React.Dispatch<React.SetStateAction<T[]>>,
-  ) => {
-    setSelected((prev) => {
-      if (prev.includes(item)) {
-        if (prev.length === 1) {
-          return prev;
-        }
-        return prev.filter((p) => p !== item);
-      } else {
-        return [...prev, item];
-      }
-    });
   };
 
   return (
@@ -138,75 +139,48 @@ const SearchPage = () => {
             <h3 className={s.dropdown_title}>
               <Trans i18nKey={"nav.search"} />
             </h3>
-          </div>
 
-          <div className={s.search_body}>
-            <div className={s.search_wrapper}>
-              <Search
-                inputRef={inputRef}
-                id={SEARCH_KEY}
-                placeholder={"search.searchPlaceholder"}
+            <Loader className={`${s.loader} ${loading ? s.active : ""}`} />
+          </div>
+          <div className={s.search_wrapper}>
+            <Search
+              inputRef={inputRef}
+              id={SEARCH_KEY}
+              placeholder={"search.searchPlaceholder"}
+            />
+          </div>
+          <div className={s.filters_wrapper}>
+            <div className={s.search_filters}>
+              <p className={s.filters_label}>
+                <Trans i18nKey={"search.categories"} />
+              </p>
+              <CategoriesFilter
+                resultKeys={RESULT_KEYS}
+                loading={loading}
+                searchResults={searchResults}
+                selectedResultTypes={selectedResultTypes}
+                urlKey={TYPES_URL_KEY}
               />
-
-              {/*<p*/}
-              {/*  style={{ opacity: `${totalResults > 0 ? 1 : 0.7}` }}*/}
-              {/*  className={s.search_results}*/}
-              {/*>*/}
-              {/*  <Trans i18nKey={"search.result"} count={totalResults} />*/}
-              {/*</p>*/}
+            </div>
+            <div className={s.search_filters}>
+              <p className={s.filters_label}>
+                <Trans i18nKey={"search.languages"} />
+              </p>
+              <LanguagesFilter
+                selectedLanguages={selectedLanguages}
+                urlKey={LANGS_URL_KEY}
+                loading={loading}
+              />
             </div>
           </div>
-          <div className={s.search_filters}>
-            <div className={s.toggle_btns_list}>
-              {/*<p>*/}
-              {/*  <Trans i18nKey={"search.results.results"} />*/}
-              {/*</p>*/}
-              {RESULT_KEYS.map((key) => {
-                const isActive = selectedResultTypes.includes(key);
-                const isLastActive =
-                  isActive && selectedResultTypes.length === 1;
-                const isDisabled = !searchResults;
 
-                return (
-                  <ExtendedToggleButton
-                    handleClick={() =>
-                      handleSelect(key, setSelectedResultTypes)
-                    }
-                    isActive={isActive}
-                    key={key}
-                    isLastActive={isLastActive}
-                    isDisabled={isDisabled}
-                    transKey={`search.results.${key}`}
-                    num={searchResults?.counts[key] ?? undefined}
-                  />
-                );
-              })}
-            </div>
-
-            <ul className={s.languages_list}>
-              {LANGUAGES.map((lang) => (
-                <li key={lang.value}>
-                  <LangLogo
-                    isChecked={selectedLanguages.includes(lang.value)}
-                    isHoverable
-                    className={s.lang_logo}
-                    lang={lang.value as LanguagesType}
-                    onClick={() =>
-                      !loading && handleSelect(lang.value, setSelectedLanguages)
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
           <div className={s.results_container}>
             {hasResults && (
               <div className={s.results_list}>
-                {loading && <LoaderOverlay />}
                 {RESULT_KEYS.map((key) => {
                   const data = searchResults[key];
                   const quantity = searchResults.counts[key];
-                  if (!data || data.length === 0) return null;
+                  if (!data || data.length === 0 || loading) return null;
 
                   return (
                     <ResultList
@@ -220,6 +194,16 @@ const SearchPage = () => {
               </div>
             )}
             {showNoResults && <NoResults />}
+            {showPlaceholderCourses && (
+              <div className={s.results_list}>
+                <ResultList
+                  data={placeholderCourses}
+                  type={"landings"}
+                  quantity={placeholderCourses.length}
+                  customTitle={`${t("nav.courses")} ${t("tag.common.rec")}`}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

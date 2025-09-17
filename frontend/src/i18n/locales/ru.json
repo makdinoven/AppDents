@@ -120,7 +120,9 @@
 
   "search": {
     "searchCourses": "Поиск курсов",
-    "searchPlaceholder": "Поиск по сайту...",
+    "searchPlaceholder": "Введите для поиска...",
+    "categories": "Категории",
+    "languages": "Языки",
     "results": {
       "results": "Результаты поиска:",
       "landings": "Курсы",
@@ -131,11 +133,24 @@
       "title": "Упс! ничего не найдено",
       "description": "Пожалуйста, попробуйте использовать другие слова или фразы для более эффективного поиска."
     },
-    "result": "найдено {{count}} курсов",
-    "result_one": "найден {{count}} курс ",
-    "result_few": "найдено {{count}} курса",
-    "result_many": "найдено {{count}} курсов",
-    "result_zero": "Курсов не найдено"
+    "landingsResult": {
+      "result": "{{count}} курсов найдено",
+      "result_one": "{{count}} курс найден",
+      "result_few": "{{count}} курса найдено",
+      "result_many": "{{count}} курсов найдено"
+    },
+    "book_landingsResult": {
+      "result": "{{count}} книг найдено",
+      "result_one": "{{count}} книга найдена",
+      "result_few": "{{count}} книги найдено",
+      "result_many": "{{count}} книг найдено"
+    },
+    "authorsResult": {
+      "result": "{{count}} авторов найдено",
+      "result_one": "{{count}} автор найден",
+      "result_few": "{{count}} автора найдено",
+      "result_many": "{{count}} авторов найдено"
+    }
   },
 
   "main": {
@@ -296,7 +311,10 @@
     "coursesCount_one": "{{count}} курс",
     "coursesCount_few": "{{count}} курса",
     "coursesCount_many": "{{count}} курсов",
-    "coursesCount_other": "{{count}} курса"
+    "coursesCount_other": "{{count}} курса",
+    "booksCount_one": "{{count}} книга",
+    "booksCount_few": "{{count}} книги",
+    "booksCount_many": "{{count}} книг"
   },
   "other": {
     "otherCourses": "Другие курсы"

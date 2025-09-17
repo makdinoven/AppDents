@@ -6,6 +6,7 @@ import {
   PAYMENT_SOURCES,
   PAYMENT_TYPES,
 } from "./commonConstants.ts";
+import { ResultLandingData } from "../../store/slices/mainSlice.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
@@ -232,4 +233,21 @@ export const getPaymentType = (
   if (isOffer) return PAYMENT_TYPES.offer;
   if (isWebinar) return PAYMENT_TYPES.webinar;
   return undefined;
+};
+
+export const arraysEqual = (a: any[], b: any[]) =>
+  a.length === b.length && a.every((val, i) => val === b[i]);
+
+export const mapCourseToResultLanding = (course: any): ResultLandingData => {
+  return {
+    id: course.id,
+    landing_name: course.landing_name,
+    new_price: Number(course.new_price) || 0,
+    old_price: Number(course.old_price) || 0,
+    preview_photo: course.main_image || "",
+    page_name: course.slug || "",
+    authors: course.authors || [],
+    course_ids: course.course_ids || [],
+    language: "",
+  };
 };

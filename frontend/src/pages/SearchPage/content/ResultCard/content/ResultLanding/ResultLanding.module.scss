@@ -1,12 +1,19 @@
 .cart_btn {
   width: 100%;
   max-width: 150px;
-  background-color: $primary-06;
+  background-color: $primary;
   border: 1px solid $primary;
   height: 40px;
+  padding: 8px 10px !important;
+
+  svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
 }
 
 .content {
+  position: relative;
   @include flex-column;
   gap: 5px;
   flex: 1;
@@ -28,6 +35,13 @@
   max-width: 180px;
   height: 110px;
   background-color: $hover-color;
+
+  &.book {
+    aspect-ratio: 9 / 16;
+    height: 180px;
+    width: 110px;
+    min-width: unset;
+  }
 }
 
 .prices {
@@ -52,11 +66,84 @@
 }
 
 .name {
+  hyphens: auto;
   @include clamped-p2;
   color: $accent;
 }
 
 .authors {
+  hyphens: auto;
   @include clamped-p3;
   color: $primary;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .cart_btn {
+    max-width: 115px;
+    font-size: 16px;
+    padding: 0 15px;
+  }
+
+  .photo {
+    min-width: unset;
+    max-width: 140px;
+    height: 85px;
+
+    &.book {
+      min-height: unset;
+      max-height: 140px;
+      width: 85px;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .photo {
+    border-radius: 10px;
+    max-width: 90px;
+    height: 55px;
+
+    &.book {
+      max-height: 90px;
+      width: 55px;
+    }
+  }
+
+  .lang_logo {
+    position: absolute;
+    left: -22px;
+    top: -5px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .name {
+    font-size: 14px;
+  }
+
+  .authors {
+    //position: absolute;
+    font-size: 11px;
+  }
+
+  .old_price {
+    font-size: 12px;
+    text-decoration-thickness: 1px;
+  }
+
+  .content {
+    gap: 2px;
+  }
+
+  .cart_btn {
+    padding: 3px 6px !important;
+    font-size: 11px;
+    height: 25px;
+    max-width: 92px;
+
+    svg {
+      width: 12px !important;
+      height: 12px !important;
+    }
+  }
 }
