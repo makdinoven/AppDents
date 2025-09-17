@@ -15,6 +15,7 @@ class SearchAuthorItem(BaseModel):
     language: str
     courses_count: int
     books_count: int
+    description: str
 
 class SearchLandingItem(BaseModel):
     type: Literal["landing"] = "landing"
