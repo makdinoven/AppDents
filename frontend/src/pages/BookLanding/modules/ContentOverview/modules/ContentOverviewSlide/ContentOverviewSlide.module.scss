@@ -16,26 +16,28 @@
   }
 
   .content {
-    @include flex-center();
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: flex-start;
     width: calc(100% - 144px);
     height: 100%;
-    gap: 30px;
 
-    @media (max-width: $middle-breakpoint) {
-      grid-template-rows: auto;
-      grid-template-columns: 1fr;
-      row-gap: 30px;
+    &::after {
+      content: "";
+      display: block;
+      clear: both;
+    }
 
-      .description {
-        order: 2;
+    @media (max-width: $tablet-breakpoint) {
+      width: 100%;
+      @include flex-column();
+      gap: 40px;
+
+      &::after {
+        display: none;
       }
     }
 
     .description {
       text-align: justify;
+      @include clamped-p1();
     }
   }
 }

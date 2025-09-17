@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import s from "./BuySection.module.scss";
 import { Trans, useTranslation } from "react-i18next";
 import { ToothPatch } from "../../../assets";
-import glass from "@/assets/glass.svg";
 
 interface BuySectionProps {
   type: "download" | "buy";
@@ -35,7 +34,9 @@ const BuySection: React.FC<BuySectionProps> = ({
       <section
         className={`${s.buy_section} ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
       >
-        <p className={`${s.buy_text} ${s[buy]}`}>
+        <p
+          className={`${s.buy_text}  ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
+        >
           <Trans
             i18nKey={
               isDownload ? "bookLanding.chooseFormat" : "bookLanding.buyText"
@@ -63,7 +64,7 @@ const BuySection: React.FC<BuySectionProps> = ({
               return (
                 <li
                   key={format}
-                  className={activeFormat === format ? s.active : ""}
+                  className={`${activeFormat === format ? s.active : ""}  ${isFullWidth ? s.full_width : ""}`}
                 >
                   <button onClick={() => handleFormatChange(format)}>
                     {format}

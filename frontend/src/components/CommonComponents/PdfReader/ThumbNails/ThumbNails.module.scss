@@ -10,6 +10,7 @@
   transform: translateX(-100%);
   height: fit-content;
   max-height: calc(100% - 50px);
+  min-height: calc(100% - 50px);
   border-right: 2px solid $hover-color;
   @include transition();
 

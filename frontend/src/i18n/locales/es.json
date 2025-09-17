@@ -178,14 +178,28 @@
   },
 
   "bookLanding": {
-    "onlineBook": "Libro en línea",
+    "onlineBook": "Libro en Línea",
     "annotation": "Anotación",
-    "aboutAuthor": "Autores",
-    "about": "Sobre el libro",
+    "about": "Acerca del Libro",
+    "publishedDate": "Fecha de Publicación: <0>{{date}}</0>",
+    "author": "Autor: <0>{{authors}}</0>",
+    "authors": "Autores: <0>{{authors}}</0>",
+    "availableFormats": "Formatos Disponibles:",
+    "chooseFormat": "Elija un formato y descárguelo al instante",
+    "buyText": "Puede comprar la <0>edición completa</0> al nuevo precio ahora - <0>${{newPrice}}</0>, en lugar del precio antiguo - ${{oldPrice}}",
+    "download": "Descargar",
+    "contentOverview": "Descripción del Contenido",
+    "audioPreviewAvailable": "Escucha el fragmento de audio",
+    "audioText": "<0>Audio</0> está disponible para darte una breve visión del libro antes de sumergirte en su contenido.",
+    "audio": "audio",
+    "pdfReader": {
+      "error": "Ocurrió un error al cargar",
+      "loading": "Cargando..."
+    },
     "pages": {
       "title": "Páginas",
       "readFirstPages": "¡Lee las primeras páginas del libro!",
-      "fullBook": "El libro completo estará disponible después del pago."
+      "fullBook": "La versión completa del libro estará disponible después del pago."
     }
   },
 

@@ -1,6 +1,7 @@
 .content_overview {
   @include flex-column();
   gap: 40px;
+  height: fit-content;
 
   .slider {
     width: 100%;

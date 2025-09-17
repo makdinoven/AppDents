@@ -14,7 +14,7 @@ import {
 } from "../../../assets/icons";
 import { SingleValue } from "react-select";
 import MultiSelect from "../MultiSelect/MultiSelect.tsx";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import ThumbNails from "./ThumbNails/ThumbNails.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -44,16 +44,17 @@ export const scales = [
 
 interface PdfReaderProps {
   url: string;
+  fullScreen: boolean;
+  setFullScreen: (state: boolean) => void;
 }
 
-const PdfReader = ({ url }: PdfReaderProps) => {
+const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   const [totalPages, setTotalPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
   const pageRef = useRef<HTMLDivElement | null>(null);
   const documentRef = useRef<HTMLDivElement | null>(null);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
-  const [fullScreen, setFullScreen] = useState(false);
-  const [scale, setScale] = useState<number>(0.75);
+  const [scale, setScale] = useState<number>(0.5);
   const [inputValue, setInputValue] = useState<string>("1");
   const [isThumbNailsOpen, setIsTumbNailsOpen] = useState(false);
 
@@ -76,8 +77,6 @@ const PdfReader = ({ url }: PdfReaderProps) => {
     const userScale = sessionStorage.getItem("pdfScale");
     if (userScale) {
       setScale(JSON.parse(userScale));
-    } else {
-      setScale(1.0);
     }
   }, []);
 
@@ -262,15 +261,17 @@ const PdfReader = ({ url }: PdfReaderProps) => {
             <button onClick={handleZoomIn}>
               <ZoomIn />
             </button>
-            <MultiSelect
-              {...commonFilterProps}
-              id="scales-select"
-              placeholder={scale.toString()}
-              options={scales}
-              selectedValue={findScale?.value as number}
-              onChange={handleSelectChange}
-              centrate
-            />
+            {!screenResolutionMap.get("mobile") && (
+              <MultiSelect
+                {...commonFilterProps}
+                id="scales-select"
+                placeholder={scale.toString()}
+                options={scales}
+                selectedValue={findScale?.value as number}
+                onChange={handleSelectChange}
+                centrate
+              />
+            )}
           </div>
           <div className={s.arrows_wrapper}>
             <button onClick={goToPrevPage} className={s.up}>
@@ -331,9 +332,18 @@ const PdfReader = ({ url }: PdfReaderProps) => {
           onLoadSuccess={onDocumentLoadSuccess}
           options={options}
           className={s.pages_wrapper}
-          loading={<div></div>}
-          error={<div></div>}
-          renderMode="canvas"
+          loading={
+            <Trans
+              i18nKey={"bookLanding.pdfReader.loading"}
+              className={s.loading}
+            />
+          }
+          error={
+            <Trans
+              i18nKey={"bookLanding.pdfReader.error"}
+              className={s.error}
+            />
+          }
         >
           {Array.from(new Array(totalPages), (_el, index) => (
             <div
