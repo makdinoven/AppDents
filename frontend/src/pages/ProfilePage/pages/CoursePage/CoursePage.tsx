@@ -3,16 +3,17 @@ import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import LessonCard from "./LessonCard/LessonCard.tsx";
+import LessonSkeletons from "../../../../components/ui/Skeletons/LessonSkeletons/LessonSkeletons.tsx";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../../store/store.ts";
 import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
 import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
 import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import DetailHeaderSkeleton from "../../../../components/ui/Skeletons/DetailHeaderSkeleton/DetailHeaderSkeleton.tsx";
 
 const CoursePage = () => {
   const { openPaymentModal } = usePaymentPageHandler();
@@ -84,13 +85,13 @@ const CoursePage = () => {
     <>
       <div className={s.course_page}>
         {loading ? (
-          <Loader />
+          <>
+            <DetailHeaderSkeleton />
+            <LessonSkeletons />
+          </>
         ) : (
           <>
-            <DetailHeader
-              link={`${Path.profile}?content=your_courses`}
-              title={course?.name}
-            />
+            <DetailHeader title={course?.name} />
             <Outlet />
             <ul className={s.modules_list}>
               {course.sections.map((section: any) => (

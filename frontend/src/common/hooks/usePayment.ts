@@ -14,6 +14,7 @@ import { Path } from "../../routes/routes.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { usePaymentPageHandler } from "./usePaymentPageHandler.ts";
+import { clearUserCourses } from "../../store/slices/userSlice.ts";
 
 const IS_PAYMENT_DISABLED = false;
 
@@ -97,6 +98,7 @@ export const usePayment = ({ paymentData, isFree, isOffer }: any) => {
 
         if (balance_left) {
           await dispatch(getMe());
+          dispatch(clearUserCourses());
           navigate(Path.profile);
         }
       } catch (err) {
