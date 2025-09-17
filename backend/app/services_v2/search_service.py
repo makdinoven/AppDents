@@ -16,6 +16,21 @@ def _ilike(s: str) -> str:
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
+def clip(text: str | None, limit: int = 100, keep_words: bool = True, ellipsis: str = "…") -> str:
+    if not text:
+        return ""
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    if keep_words:
+        cut = text.rfind(" ", 0, limit)
+        if cut == -1:
+            cut = limit - len(ellipsis)
+        return text[:cut].rstrip() + ellipsis
+    # жёсткая обрезка посимвольно
+    return text[: limit - len(ellipsis)] + ellipsis
+
+
 def safe_price(v) -> float:
     """Парсинг цены в float; нечисловые значения -> +inf."""
     try:
@@ -245,6 +260,7 @@ def search_everything(
             "name": a.name,
             "photo": a.photo,
             "language": a.language,
+            "description": clip(a.description, 100),
             "courses_count": courses_count,
             "books_count": books_count,
             "_score": score,
