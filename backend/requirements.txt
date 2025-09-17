@@ -28,3 +28,4 @@ requests
 aiohttp
 dnspython
 email_validator
+assemblyai
