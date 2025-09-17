@@ -33,7 +33,9 @@ const ResultCard = ({ type, data }: ResultCardProps) => {
 
   switch (type) {
     case "landings":
-      cardContent = <ResultLanding data={data as ResultLandingData} />;
+      cardContent = (
+        <ResultLanding type={"landing"} data={data as ResultLandingData} />
+      );
 
       break;
 
@@ -42,10 +44,7 @@ const ResultCard = ({ type, data }: ResultCardProps) => {
       break;
 
     case "book_landings":
-      {
-        // const book = data as ResultBookData;
-        cardContent = <></>;
-      }
+      cardContent = <ResultLanding type={"book_landing"} data={data as any} />;
       break;
   }
 

@@ -6,9 +6,9 @@ const NoResults = () => {
   return (
     <div className={s.no_results}>
       <NoResultsIcon className={s.icon} />
-      <p className={s.title}>
+      <h4 className={s.title}>
         <Trans i18nKey="search.noResults.title" />
-      </p>
+      </h4>
       <p className={s.desc}>
         <Trans i18nKey="search.noResults.description" />
       </p>

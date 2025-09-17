@@ -8,6 +8,8 @@ import {
 import { transformTags } from "../../common/helpers/helpers.ts";
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 
+export type SearchResultKeysType = "landings" | "authors" | "book_landings";
+
 type TagType = {
   id: number;
   name: string;
@@ -40,20 +42,21 @@ export type ResultAuthorData = {
   photo: string;
   courses_count: number;
   books_count: number;
+  description: string;
 };
 
 export type SearchResultsType = {
   landings: ResultLandingData[] | null;
   authors: ResultAuthorData[] | null;
   book_landings: ResultBookData[];
-  counts: Record<"landings" | "authors" | "book_landings", number>;
+  counts: Record<SearchResultKeysType, number>;
 } | null;
 
 type SearchType = {
   q: string | null;
   loading: boolean;
   selectedLanguages: LanguagesType[] | null;
-  selectedResultTypes: ("landings" | "authors" | "book_landings")[] | null;
+  selectedResultTypes: SearchResultKeysType[] | null;
   results: SearchResultsType;
 };
 

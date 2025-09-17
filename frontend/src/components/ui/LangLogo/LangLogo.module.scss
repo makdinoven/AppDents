@@ -64,5 +64,10 @@
   .logo {
     width: 30px;
     height: 30px;
+
+    &.checked {
+      outline: 1.5px solid $primary;
+      outline-offset: 1.5px;
+    }
   }
 }

@@ -40,9 +40,9 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
   &.filled .placeholder_label {
     @include clamped-p4;
     top: 0;
-    color: $accent;
+    color: $hover-color-dark;
     transform: none;
-    opacity: 0.9;
+    //opacity: 0.9;
   }
 
   .placeholder_label {

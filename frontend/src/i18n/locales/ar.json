@@ -121,7 +121,9 @@
 
   "search": {
     "searchCourses": "بحث عن الدورات",
-    "searchPlaceholder": "ابحث في الموقع...",
+    "searchPlaceholder": "العربية: اكتب للبحث...",
+    "categories": "الفئات",
+    "languages": "اللغات",
     "results": {
       "results": "نتائج البحث:",
       "landings": "الدورات",
@@ -132,11 +134,24 @@
       "title": "عذرًا! لم يتم العثور على شيء",
       "description": "يرجى محاولة استخدام كلمات أو عبارات أخرى للحصول على نتائج بحث أكثر فعالية."
     },
-    "result": "تم العثور على {{count,localizedNumber}} دورات",
-    "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
-    "result_few": "تم العثور على {{ localizedNumber,count}} دورات",
-    "result_many": "تم العثور على {{count,localizedNumber}} دورات",
-    "result_zero": "لم يتم العثور على دورات"
+    "landingsResult": {
+      "result": "تم العثور على {{count}} دورة",
+      "result_one": "تم العثور على {{count}} دورة",
+      "result_few": "تم العثور على {{count}} دورات",
+      "result_many": "تم العثور على {{count}} دورة"
+    },
+    "book_landingsResult": {
+      "result": "تم العثور على {{count}} كتاب",
+      "result_one": "تم العثور على {{count}} كتاب",
+      "result_few": "تم العثور على {{count}} كتب",
+      "result_many": "تم العثور على {{count}} كتاب"
+    },
+    "authorsResult": {
+      "result": "تم العثور على {{count}} مؤلف",
+      "result_one": "تم العثور على {{count}} مؤلف",
+      "result_few": "تم العثور على {{count}} مؤلفين",
+      "result_many": "تم العثور على {{count}} مؤلف"
+    }
   },
 
   "main": {
@@ -304,7 +319,13 @@
     "coursesCount_two": "دورتان",
     "coursesCount_few": "{{count}} دورات",
     "coursesCount_many": "{{count}} دورة",
-    "coursesCount_other": "{{count}} دورة"
+    "coursesCount_other": "{{count}} دورة",
+    "booksCount_zero": "لا كتب",
+    "booksCount_one": "كتاب واحد",
+    "booksCount_two": "كتابان",
+    "booksCount_few": "{{count}} كتب",
+    "booksCount_many": "{{count}} كتاب",
+    "booksCount_other": "{{count}} كتاب"
   },
   "other": {
     "otherCourses": "دورات أخرى"

@@ -3,19 +3,37 @@
   position: relative;
   height: 35px;
   align-items: center;
-  @include clamped-p3;
+  @include clamped-p4;
   padding: 0 45px 0 15px;
   display: flex;
-  gap: 5px;
+  gap: 7px;
   @include transition;
   border: 1px solid $accent-06;
   border-radius: 20px;
   color: $accent;
+  justify-content: space-between;
   text-transform: uppercase;
 
   .num {
+    position: relative;
+    overflow: hidden;
+    @include transition;
+    @include clamped-p5;
     text-align: center;
-    transition: inherit;
+    width: 50px;
+    border-radius: 15px;
+    border: 0.5px solid $primary;
+    color: $background-color;
+    background-color: $primary;
+
+    span {
+      @include transition;
+      opacity: 1;
+
+      &.hidden {
+        opacity: 0.3;
+      }
+    }
   }
 
   .line {
@@ -24,7 +42,7 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    right: 35.5px;
+    right: 36.5px;
     width: 1px;
     height: 65%;
     background-color: $hover-color;
@@ -50,20 +68,36 @@
 
   &.last_active {
     cursor: auto;
-  }
-
-  &.active {
-    color: $text-color;
-    background-color: $primary-06;
-    border-color: $primary;
-    padding: 0 60px;
+    padding: 0 15px;
+    .arrow_icon {
+      opacity: 0;
+    }
 
     .line {
       opacity: 0;
     }
+  }
+
+  &.active {
+    opacity: 1;
+    color: $text-color;
+    background-color: $primary;
+    border-color: $primary;
+    //padding: 0 40px 0 15px;
+
+    .num {
+      border-color: $accent-06;
+      background-color: $background-color;
+      color: $accent;
+    }
+
+    .line {
+      //opacity: 0.2;
+      background-color: $background-color-06;
+    }
 
     .arrow_icon {
-      opacity: 0;
+      //opacity: 0;
       transform: translateY(-50%) rotate(0);
       path {
         stroke: $text-color;
@@ -71,11 +105,13 @@
     }
   }
 
+  &.no_click {
+    pointer-events: none;
+    cursor: auto;
+  }
+
   @media (hover: hover) {
-    &:hover:not(.last_active):not(.disabled) {
-      .line {
-        background-color: $primary-02;
-      }
+    &:hover:not(.last_active):not(.disabled):not(.no_click) {
       color: $primary;
       //background-color: $primary-02;
       border-color: $primary;
@@ -86,10 +122,24 @@
         }
       }
 
+      .num {
+        background-color: $background-color;
+        color: $primary;
+      }
+
       &.active {
         background-color: $background-color;
         border-color: $error-color;
         color: $accent;
+
+        .num {
+          color: $accent;
+          border-color: $error-color;
+        }
+
+        .line {
+          background-color: $hover-color;
+        }
 
         .arrow_icon {
           opacity: 1;
@@ -101,8 +151,9 @@
     }
   }
 
-  &:active:not(.disabled), &:active:hover:not(.disabled) {
-    background-color: $primary-08;
+  &:active:not(.disabled):not(.no_click),
+  &:active:hover:not(.disabled):not(.no_click) {
+    background-color: $primary;
     color: $text-color;
 
     .arrow_icon {
@@ -123,11 +174,39 @@
   }
 
   &.disabled {
-    opacity: 0.6;
-    color: $accent;
-    background-color: $quaternary-06;
-    border-color: transparent;
+    opacity: 0.4;
+    //color: $accent;
+    //background-color: $quaternary-06;
+    //border-color: transparent;
     cursor: auto;
     pointer-events: none;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .toggle_btn {
+    height: 25px;
+    padding: 0 25px 0 10px;
+    border-radius: 14px;
+    gap: 5px;
+
+    .num {
+      font-size: 11px;
+      width: 40px;
+    }
+
+    .line {
+      display: none;
+    }
+
+    &.last_active {
+      padding: 0 10px;
+    }
+
+    .arrow_icon {
+      width: 18px;
+      height: 18px;
+      right: 4.5px;
+    }
   }
 }

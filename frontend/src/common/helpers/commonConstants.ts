@@ -1,10 +1,17 @@
 import { Path } from "../../routes/routes.ts";
 import {
+  ArFlag,
   CartIcon,
   CoursesIcon,
+  EnFlag,
+  EsFlag,
   HomeIcon,
+  ItFlag,
   ProfessorsIcon,
+  PtFlag,
+  RuFlag,
 } from "../../assets/icons/index.ts";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },
@@ -184,3 +191,12 @@ export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
 export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
+
+export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
+  EN: EnFlag,
+  ES: EsFlag,
+  RU: RuFlag,
+  PT: PtFlag,
+  AR: ArFlag,
+  IT: ItFlag,
+};
