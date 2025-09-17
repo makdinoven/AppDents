@@ -116,12 +116,7 @@ def create_book_landing(
 
     db.commit()
     db.refresh(landing)
-    landing = (
-        db.query(BookLanding)
-        .options(selectinload(BookLanding.books))
-        .get(landing.id)
-    )
-    return BookLandingOut.model_validate(landing, from_attributes=True)
+    return landing
 
 
 @router.patch("/landing/{landing_id}", response_model=BookLandingOut)
@@ -294,6 +289,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
             "slug": b.slug,
             "cover_url": b.cover_url,
             "preview_pdf_url": preview_pdf_url_for_book(b),
+            "description": b.description,
         }
         for b in landing.books
     ]
