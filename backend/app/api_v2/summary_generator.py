@@ -21,11 +21,18 @@ class VideoSummaryRequest(BaseModel):
     video_url: AnyUrl
     language_code: LangCode = Field("auto", description="Язык контента: auto|ru|en|it|es")
     output_language: OutLang = Field("auto", description="Язык ответа: auto|ru|en|it|es")
-    context: Optional[str] = Field(
-        "Нужно сделать короткую выдержку о том, про что рассказывается в стоматологическом видео.", description="Контекст"
+    context: Optional[str] = Field(  # <-- было: дефолтная строка; стало: None
+        None,
+        description="Опционально: уточнение редактора (добавится к базовому промпту)",
     )
-    answer_format: Optional[str] = Field("", description="Формат ответа (например, '5–7 буллетов, без воды').")
-    final_model: Optional[str] = Field(DEFAULT_LEMUR_MODEL, description="LeMUR final_model")
+    answer_format: Optional[str] = Field(  # <-- тоже None
+        None,
+        description="Опционально: формат ответа; добавим наши ограничения стиля",
+    )
+    final_model: Optional[str] = Field(
+        DEFAULT_LEMUR_MODEL, description="LeMUR final_model"
+    )
+
 
 class EnqueueResponse(BaseModel):
     task_id: str
@@ -50,16 +57,16 @@ def enqueue_video_summary(
     """
     try:
         async_result = celery.send_task(
-            "app.tasks.video_summary.summarize_video_task",  # путь = <package>.<module>.<func>
+            "app.tasks.video_summary.summarize_video_task",
             kwargs={
                 "video_url": str(body.video_url),
                 "language_code": body.language_code,
                 "output_language": body.output_language,
-                "context": body.context or "",
-                "answer_format": body.answer_format or "",
+                "context": body.context or "",  # None → ""
+                "answer_format": body.answer_format or "",  # None → ""
                 "final_model": body.final_model or DEFAULT_LEMUR_MODEL,
             },
-            queue="special",   # отправляем в "special", как и другие тяжёлые задачи
+            queue="special",
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to enqueue task: {e}")
