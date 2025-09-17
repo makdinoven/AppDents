@@ -6,8 +6,8 @@ from pydantic import BaseModel, AnyUrl, Field
 
 import assemblyai as aai
 
-from AppDents.backend.app.dependencies.role_checker import require_roles
-from AppDents.backend.app.models.models_v2 import User
+from ..dependencies.role_checker import require_roles
+from ..models.models_v2 import User
 
 router = APIRouter()
 
