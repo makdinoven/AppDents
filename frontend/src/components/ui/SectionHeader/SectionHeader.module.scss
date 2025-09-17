@@ -13,4 +13,17 @@
     padding: 0 clamp(5px, 1vw, 10px);
     text-transform: unset;
   }
+
+  &.loading {
+    @include horizontal-line(
+      $top: 50%,
+      $right: 0,
+      $transform: y50,
+      $z: -1,
+      $color: $darker-grey
+    );
+    h3 {
+      color: $light-grey;
+    }
+  }
 }

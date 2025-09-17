@@ -1,6 +1,6 @@
 .logos {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   column-gap: 7px;
 
   li {
@@ -24,7 +24,7 @@
 @media (max-width: $mobile-breakpoint) {
   .logos {
     gap: 4px;
-    grid-template-columns: repeat(10, 1fr);
+    //grid-template-columns: repeat(10, 1fr);
     justify-content: center;
 
     //& li:nth-child(n + 7) {
