@@ -16,9 +16,14 @@ const ClipTool = () => {
   const [jobStatus, setJobStatus] = useState<string | null>(null);
 
   const getClip = async () => {
-    setLoading(true);
-    setClipUrl(null);
+    if (!srcUrl) {
+      Alert("Enter source URL");
+      return;
+    }
+
     try {
+      setLoading(true);
+      setClipUrl(null);
       const res = await adminApi.getClip(srcUrl);
       setJobId(res.data.job_id);
       setJobStatus(res.data.status);
