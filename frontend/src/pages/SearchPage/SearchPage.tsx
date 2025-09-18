@@ -26,6 +26,7 @@ import {
 } from "../../common/helpers/helpers.ts";
 import CategoriesFilter from "./filters/CategoriesFilter/CategoriesFilter.tsx";
 import { t } from "i18next";
+import ResultsListSkeleton from "../../components/ui/Skeletons/ResultsListSkeleton/ResultsListSkeleton.tsx";
 
 const RESULT_KEYS: SearchResultKeysType[] = [
   "landings",
@@ -53,8 +54,8 @@ const SearchPage = () => {
   const selectedLanguagesFromStore = useSelector(
     (state: AppRootStateType) => state.main.search.selectedLanguages,
   );
-  const selectedResultTypesFromStore = useSelector(
-    (state: AppRootStateType) => state.main.search.selectedResultTypes,
+  const selectedCategoriesFromStore = useSelector(
+    (state: AppRootStateType) => state.main.search.selectedCategories,
   );
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   useOutsideClick(wrapperRef, () => {
@@ -75,13 +76,13 @@ const SearchPage = () => {
     return langs.length > 0 ? langs : [language as LanguagesType];
   }, [searchParams]);
 
-  const selectedResultTypes = useMemo(() => {
+  const selectedCategories = useMemo(() => {
     const types = searchParams.getAll(TYPES_URL_KEY) as SearchResultKeysType[];
     return types.length > 0 ? types : RESULT_KEYS;
   }, [searchParams, language]);
 
   const hasResults =
-    searchResults &&
+    !!searchResults &&
     RESULT_KEYS.some(
       (key) => searchResults[key] && searchResults[key]!.length > 0,
     );
@@ -93,13 +94,13 @@ const SearchPage = () => {
     !!placeholderCourses.length &&
     !loading &&
     !debouncedSearchValue;
+  const showSkeleton = loading && !!debouncedSearchValue;
 
   useEffect(() => {
     if (
       debouncedSearchValue === q &&
-      hasResults &&
       arraysEqual(selectedLanguagesFromStore!, selectedLanguages) &&
-      arraysEqual(selectedResultTypesFromStore!, selectedResultTypes)
+      arraysEqual(selectedCategoriesFromStore!, selectedCategories)
     ) {
       return;
     }
@@ -109,13 +110,13 @@ const SearchPage = () => {
         globalSearch({
           q: debouncedSearchValue.trim(),
           languages: selectedLanguages,
-          types: selectedResultTypes,
+          types: selectedCategories,
         }),
       );
     } else if (hasResults) {
       dispatch(clearSearch());
     }
-  }, [debouncedSearchValue, selectedLanguages, selectedResultTypes]);
+  }, [debouncedSearchValue, selectedLanguages, selectedCategories]);
 
   const handleClose = () => {
     dispatch(clearSearch());
@@ -139,7 +140,6 @@ const SearchPage = () => {
             <h3 className={s.dropdown_title}>
               <Trans i18nKey={"nav.search"} />
             </h3>
-
             <Loader className={`${s.loader} ${loading ? s.active : ""}`} />
           </div>
           <div className={s.search_wrapper}>
@@ -158,8 +158,9 @@ const SearchPage = () => {
                 resultKeys={RESULT_KEYS}
                 loading={loading}
                 searchResults={searchResults}
-                selectedResultTypes={selectedResultTypes}
+                selectedCategories={selectedCategories}
                 urlKey={TYPES_URL_KEY}
+                isBtnDisabled={!hasResults}
               />
             </div>
             <div className={s.search_filters}>
@@ -175,13 +176,14 @@ const SearchPage = () => {
           </div>
 
           <div className={s.results_container}>
-            {hasResults && (
+            {showSkeleton && <ResultsListSkeleton />}
+            {showNoResults && <NoResults />}
+            {hasResults && !loading && (
               <div className={s.results_list}>
                 {RESULT_KEYS.map((key) => {
                   const data = searchResults[key];
                   const quantity = searchResults.counts[key];
-                  if (!data || data.length === 0 || loading) return null;
-
+                  if (!data || data.length === 0) return null;
                   return (
                     <ResultList
                       key={key}
@@ -193,7 +195,6 @@ const SearchPage = () => {
                 })}
               </div>
             )}
-            {showNoResults && <NoResults />}
             {showPlaceholderCourses && (
               <div className={s.results_list}>
                 <ResultList

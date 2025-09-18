@@ -56,7 +56,7 @@ type SearchType = {
   q: string | null;
   loading: boolean;
   selectedLanguages: LanguagesType[] | null;
-  selectedResultTypes: SearchResultKeysType[] | null;
+  selectedCategories: SearchResultKeysType[] | null;
   results: SearchResultsType;
 };
 
@@ -77,7 +77,7 @@ const initialState: MainState = {
     q: null,
     loading: false,
     selectedLanguages: null,
-    selectedResultTypes: null,
+    selectedCategories: null,
     results: null,
   },
   loading: true,
@@ -88,16 +88,12 @@ const mainSlice = createSlice({
   name: "main",
   initialState,
   reducers: {
-    clearCourses: (state) => {
-      state.courses = [];
-      state.totalCourses = 0;
-    },
     clearSearch: (state) => {
       state.search = {
         q: null,
         loading: false,
         selectedLanguages: null,
-        selectedResultTypes: null,
+        selectedCategories: null,
         results: null,
       };
     },
@@ -160,7 +156,7 @@ const mainSlice = createSlice({
         state.search.loading = true;
         state.search.q = action.meta.arg.q;
         state.search.selectedLanguages = action.meta.arg.languages;
-        state.search.selectedResultTypes = action.meta.arg.types;
+        state.search.selectedCategories = action.meta.arg.types;
       })
       .addCase(
         globalSearch.fulfilled,
@@ -181,5 +177,5 @@ const mainSlice = createSlice({
   },
 });
 
-export const { clearCourses, clearSearch } = mainSlice.actions;
+export const { clearSearch } = mainSlice.actions;
 export const mainReducer = mainSlice.reducer;

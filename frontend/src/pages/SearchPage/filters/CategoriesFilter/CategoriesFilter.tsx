@@ -8,29 +8,31 @@ import { useSearchParams } from "react-router-dom";
 
 const CategoriesFilter = ({
   resultKeys,
-  selectedResultTypes,
+  selectedCategories,
   loading,
   searchResults,
   urlKey,
+  isBtnDisabled,
 }: {
   resultKeys: SearchResultKeysType[];
-  selectedResultTypes: SearchResultKeysType[];
+  selectedCategories: SearchResultKeysType[];
   loading: boolean;
   searchResults: SearchResultsType;
   urlKey: string;
+  isBtnDisabled: boolean;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const handleClick = (key: SearchResultKeysType) => {
     let newValue: SearchResultKeysType[];
-    if (selectedResultTypes.includes(key)) {
-      if (selectedResultTypes.length > 1) {
-        newValue = selectedResultTypes.filter((l) => l !== key);
+    if (selectedCategories.includes(key)) {
+      if (selectedCategories.length > 1) {
+        newValue = selectedCategories.filter((l) => l !== key);
       } else {
-        newValue = selectedResultTypes;
+        newValue = selectedCategories;
       }
     } else {
-      newValue = [...selectedResultTypes, key];
+      newValue = [...selectedCategories, key];
     }
     searchParams.delete(urlKey);
     newValue.forEach((key) => searchParams.append(urlKey, key));
@@ -40,8 +42,8 @@ const CategoriesFilter = ({
   return (
     <div className={s.toggle_btns_list}>
       {resultKeys.map((key) => {
-        const isActive = selectedResultTypes.includes(key);
-        const isLastActive = isActive && selectedResultTypes.length === 1;
+        const isActive = selectedCategories.includes(key);
+        const isLastActive = isActive && selectedCategories.length === 1;
 
         return (
           <ExtendedToggleButton
@@ -52,6 +54,7 @@ const CategoriesFilter = ({
             loading={loading}
             isLastActive={isLastActive}
             transKey={`search.results.${key}`}
+            isDisabled={isBtnDisabled}
             num={searchResults?.counts[key] ?? undefined}
           />
         );
