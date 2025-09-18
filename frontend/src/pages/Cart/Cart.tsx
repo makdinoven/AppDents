@@ -1,10 +1,9 @@
 import s from "./Cart.module.scss";
 import s_footer from "./CartFooter/CartFooter.module.scss";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { Path } from "../../routes/routes.ts";
 import { Trans } from "react-i18next";
-import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import CartItem from "./CartItem/CartItem.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
@@ -23,18 +22,24 @@ import { cartApi } from "../../api/cartApi/cartApi.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
 import { t } from "i18next";
 import { Alert } from "../../components/ui/Alert/Alert.tsx";
+import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
+import { clearUserCourses } from "../../store/slices/userSlice.ts";
 
 const Cart = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [isVisible, setIsVisible] = useState(location.pathname === Path.cart);
-  const [isClosing, setIsClosing] = useState(false);
+  const closeModalRef = useRef<() => void>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [unloggedCartData, setUnloggedCartData] = useState<any>(null);
   const [cartPreviewLoading, setCartPreviewLoading] = useState(false);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged, email, language } = useSelector(
     (state: AppRootStateType) => state.user,
   );
+  useOutsideClick(modalRef, () => {
+    closeCart();
+  });
   const [loading, setLoading] = useState(false);
   const balance = useSelector((state: AppRootStateType) => state.user.balance);
   const {
@@ -51,43 +56,10 @@ const Cart = () => {
   const isCartEmpty = quantity === 0;
 
   useEffect(() => {
-    if (location.pathname === Path.cart) {
-      setIsVisible(true);
-    }
-  }, [location.pathname]);
-
-  useEffect(() => {
     if (!isLogged && quantity > 0) {
       previewCart();
     }
   }, [isLogged, quantity]);
-
-  const closeCart = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      setIsClosing(false);
-      setIsVisible(false);
-      if (location.state?.backgroundLocation) {
-        navigate(-1);
-      } else {
-        navigate(Path.main);
-      }
-    }, 300);
-  };
-
-  useEffect(() => {
-    if (!isVisible) return;
-
-    const handleEscape = (e: KeyboardEvent) =>
-      e.key === "Escape" && closeCart();
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = "";
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isVisible]);
 
   const handlePay = async (form: any) => {
     const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
@@ -125,13 +97,14 @@ const Cart = () => {
         if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
           window.location.href = checkoutUrl;
         } else {
-          closeCart();
+          // closeCart();
         }
       } else {
         console.error("Checkout URL is missing");
       }
 
       if (balanceLeft) {
+        dispatch(clearUserCourses());
         Alert(
           t("successPaymentWithBalance", { balance: balanceLeft }),
           <CheckMark />,
@@ -162,7 +135,7 @@ const Cart = () => {
     setCartPreviewLoading(true);
 
     try {
-      const res = await cartApi.previewCart({ landing_ids: cartLandingIds });
+      const res = await cartApi.previewCart(cartLandingIds);
       setUnloggedCartData(res.data);
       setCartPreviewLoading(false);
     } catch (e: any) {
@@ -170,17 +143,18 @@ const Cart = () => {
     }
   };
 
-  if (!isVisible) return null;
+  const closeCart = () => {
+    closeModalRef.current?.();
+  };
 
   return (
-    <div
-      className={`${s.cart_overlay} ${isClosing ? s.closing : s.open}`}
-      onClick={closeCart}
+    <ModalOverlay
+      isVisibleCondition={true}
+      isUsedAsPage
+      modalPosition="right"
+      onInitClose={(fn) => (closeModalRef.current = fn)}
     >
-      <div
-        className={`${s.cart} ${isCartEmpty ? s.empty : ""} ${isClosing ? s.closing : ""}`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div ref={modalRef} className={`${s.cart} ${isCartEmpty ? s.empty : ""}`}>
         <div className={s.cart_header}>
           <ModalCloseButton className={s.close_button} onClick={closeCart} />
           {!isCartEmpty && (
@@ -199,6 +173,7 @@ const Cart = () => {
             <ul className={s.cart_items}>
               {items.map((item) => (
                 <CartItem
+                  language={language}
                   key={item.landing.id}
                   item={item.landing}
                   type={"LANDING"}
@@ -254,7 +229,7 @@ const Cart = () => {
           </>
         )}
       </div>
-    </div>
+    </ModalOverlay>
   );
 };
 

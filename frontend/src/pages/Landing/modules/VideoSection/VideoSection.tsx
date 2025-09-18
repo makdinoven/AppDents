@@ -1,25 +1,33 @@
 import s from "./VideoSection.module.scss";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Glasses } from "../../../../assets/icons/index.ts";
-import { Book } from "../../../../assets/icons/index.ts";
-import { Clock } from "../../../../assets/icons/index.ts";
-import { Calendar } from "../../../../assets/icons/index.ts";
-import { Percent } from "../../../../assets/icons/index.ts";
-import { Dollar } from "../../../../assets/icons/index.ts";
+import {
+  Book,
+  Calendar,
+  Clock,
+  Dollar,
+  Glasses,
+  Percent,
+  PlayIcon,
+} from "../../../../assets/icons/index.ts";
 import { Trans } from "react-i18next";
-import { PlayIcon } from "../../../../assets/icons/index.ts";
 import AuthorsDesc from "../../../../components/ui/AuthorsDesc/AuthorsDesc.tsx";
 import Button from "../../../../components/ui/Button/Button.tsx";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../../store/store.ts";
-import { openModal } from "../../../../store/slices/landingSlice.ts";
 import ExpandableText from "../../../../components/ui/ExpandableText/ExpandableText.tsx";
 import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
 import SuggestionLessons from "./modules/SuggestionLessons/SuggestionLessons.tsx";
 import SuggestionLessonsSlider from "./modules/SuggestionLessonsSlider/SuggestionLessonsSlider.tsx";
 
 const VideoSection = ({
-  data: { lessons, about, course_program, authors, landing_name },
+  data: {
+    lessons,
+    about,
+    course_program,
+    authors,
+    landing_name,
+    handleNavigateToPayment,
+  },
 }: {
   data: any;
 }) => {
@@ -30,7 +38,7 @@ const VideoSection = ({
   const lessonDescRef = useRef<HTMLDivElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [lessonHeight, setLessonHeight] = useState<number | undefined>(
-    undefined
+    undefined,
   );
   const [isPlayerModalVisible, setIsPlayerModalVisible] = useState<boolean>();
   const screenWidth = useScreenWidth();
@@ -72,7 +80,7 @@ const VideoSection = ({
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      if (video.currentTime >= 120 && !isPlayerModalVisible) {
+      if (video.currentTime >= 1 && !isPlayerModalVisible) {
         videoRef.current!.pause();
         setIsPlayerModalVisible(true);
       }
@@ -122,7 +130,7 @@ const VideoSection = ({
                     <Trans i18nKey={"landing.video.buyCourseToWatch"} />
                   </p>
                   <Button
-                    onClick={() => dispatch(openModal())}
+                    onClick={handleNavigateToPayment}
                     text={"buy"}
                     variant={"outlined"}
                   />
@@ -145,7 +153,7 @@ const VideoSection = ({
             <div className={s.authors_btn_container}>
               <AuthorsDesc authors={authors} size={"large"} />
               <Button
-                onClick={() => dispatch(openModal())}
+                onClick={handleNavigateToPayment}
                 text={"buy"}
                 variant={"outlined-dark"}
               />
@@ -194,7 +202,6 @@ const VideoSection = ({
           lessons={lessons}
         />
       )}
-      {/*<span className={s.line}></span>*/}
     </section>
   );
 };

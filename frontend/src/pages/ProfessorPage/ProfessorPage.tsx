@@ -1,35 +1,77 @@
 import s from "./ProfessorPage.module.scss";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
-import { useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { Clock } from "../../assets/icons/index.ts";
-import ModalWrapper from "../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PaymentModal from "../../components/Modals/PaymentModal/PaymentModal.tsx";
-import { BASE_URL } from "../../common/helpers/commonConstants.ts";
-import { Path } from "../../routes/routes.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
+import ProfessorPageSkeleton from "../../components/ui/Skeletons/ProfessorPageSkeleton/ProfessorPageSkeleton.tsx";
+import { setPaymentData } from "../../store/slices/paymentSlice.ts";
+import { AppDispatchType } from "../../store/store.ts";
+import {
+  PAGE_SOURCES,
+  PAYMENT_PAGE_KEY,
+} from "../../common/helpers/commonConstants.ts";
+import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 
 const ProfessorPage = () => {
+  const { openPaymentModal } = usePaymentPageHandler();
+  const dispatch = useDispatch<AppDispatchType>();
+  const [localPaymentData, setLocalPaymentData] = useState<any>(null);
+  const [searchParams] = useSearchParams();
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const language = useSelector((state: any) => state.user.language);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const currentUrl = window.location.origin + location.pathname;
   const screenWidth = useScreenWidth();
 
   useEffect(() => {
     fetchProfessorData();
   }, [professorId]);
+
+  useEffect(() => {
+    if (professor) {
+      const paymentData = {
+        landingIds: professor?.landings.map(
+          (landing: { id: number }) => landing.id
+        ),
+        courseIds: professor?.course_ids,
+        priceCents: professor?.total_new_price * 100,
+        newPrice: professor?.total_new_price,
+        oldPrice: professor?.total_old_price,
+        source: PAGE_SOURCES.professor,
+        fromAd: false,
+        courses: professor?.landings.map(
+          (item: {
+            landing_name: string;
+            new_price: number;
+            old_price: number;
+            lessons_count: string;
+            main_image: string;
+          }) => ({
+            name: item.landing_name,
+            newPrice: item.new_price,
+            oldPrice: item.old_price,
+            lessonsCount: item.lessons_count,
+            img: item.main_image,
+          })
+        ),
+      };
+      setLocalPaymentData(paymentData);
+    }
+  }, [professor]);
+
+  useEffect(() => {
+    if (localPaymentData && !searchParams.get(PAYMENT_PAGE_KEY)) {
+      dispatch(setPaymentData(localPaymentData));
+    }
+  }, [localPaymentData]);
 
   const fetchProfessorData = async () => {
     setLoading(true);
@@ -42,32 +84,9 @@ const ProfessorPage = () => {
     }
   };
 
-  const paymentData = {
-    landing_ids: professor?.landings.map(
-      (landing: { id: number }) => landing.id
-    ),
-    course_ids: professor?.course_ids,
-    price_cents: professor?.total_new_price * 100,
-    total_new_price: professor?.total_new_price,
-    total_old_price: professor?.total_old_price,
-    region: language,
-    success_url: `${BASE_URL}${Path.successPayment}`,
-    cancel_url: currentUrl,
-    courses: professor?.landings.map(
-      (item: {
-        landing_name: string;
-        new_price: number;
-        old_price: number;
-      }) => ({
-        name: item.landing_name,
-        new_price: item.new_price,
-        old_price: item.old_price,
-      })
-    ),
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
+  const handleOpenModal = () => {
+    dispatch(setPaymentData(localPaymentData));
+    openPaymentModal();
   };
 
   const renderBuySection = () => {
@@ -92,7 +111,7 @@ const ProfessorPage = () => {
             }}
           />
         </p>
-        <ArrowButton onClick={() => setIsModalOpen(true)}>
+        <ArrowButton onClick={handleOpenModal}>
           <Trans
             i18nKey={"professor.getAllCourses"}
             values={{
@@ -110,75 +129,67 @@ const ProfessorPage = () => {
   return (
     <>
       <BackButton />
-      {loading || !professor ? (
-        <Loader />
-      ) : (
-        <div className={s.professor_page}>
-          <section className={s.professor_hero}>
-            {screenWidth < 577 && (
-              <h1 className={s.professor_name}>{professor.name}</h1>
-            )}
-            <div className={s.professor_info}>
-              {screenWidth > 577 && (
+
+      <div className={s.professor_page}>
+        {loading || !professor ? (
+          <ProfessorPageSkeleton />
+        ) : (
+          <>
+            <section className={s.professor_hero}>
+              {screenWidth < 577 && (
                 <h1 className={s.professor_name}>{professor.name}</h1>
               )}
-              <ExpandableText
-                lines={screenWidth > 577 ? 10 : 3}
-                textClassName={s.professor_description}
-                text={professor.description}
-                color={"primary"}
-              />
-              {/*<p className={s.professor_description}>{professor.description}</p>*/}
-            </div>
-            {professor.photo && (
-              <div className={s.card_wrapper}>
-                <div className={s.card}>
-                  <div className={s.card_header}></div>
-                  <div className={s.card_body}>
-                    <div className={s.photo}>
-                      <img src={professor.photo} alt="Professor image" />
-                    </div>
-                  </div>
-                  <div className={s.card_bottom}></div>
-                </div>
+              <div className={s.professor_info}>
+                {screenWidth > 577 && (
+                  <h1 className={s.professor_name}>{professor.name}</h1>
+                )}
+                <ExpandableText
+                  lines={screenWidth > 577 ? 10 : 3}
+                  textClassName={s.professor_description}
+                  text={professor.description}
+                  color={"primary"}
+                />
               </div>
-            )}
-          </section>
-          {renderBuySection()}
-          <div className={s.professor_cards}>
-            <SectionHeader name={"professor.professorsCourses"} />
-            <CardsList
-              isClient={true}
-              filter={"all"}
-              loading={false}
-              cards={professor.landings}
-              showSeeMore={false}
-              showEndOfList={false}
+              {professor.photo && (
+                <div className={s.card_wrapper}>
+                  <div className={s.card}>
+                    <div className={s.card_header}></div>
+                    <div className={s.card_body}>
+                      <div className={s.photo}>
+                        <img src={professor.photo} alt="Professor image" />
+                      </div>
+                    </div>
+                    <div className={s.card_bottom}></div>
+                  </div>
+                </div>
+              )}
+            </section>
+            {renderBuySection()}
+          </>
+        )}
+        {professor && (
+          <>
+            <div className={s.professor_cards}>
+              <SectionHeader name={"professor.professorsCourses"} />
+              <CardsList
+                isClient={true}
+                filter={"all"}
+                loading={false}
+                cards={professor.landings}
+                showSeeMore={false}
+                showEndOfList={false}
+              />
+            </div>
+            {renderBuySection()}
+            <CoursesSection
+              isOffer={true}
+              showSort={true}
+              sectionTitle={"other.otherCourses"}
+              pageSize={6}
             />
-          </div>
-          {renderBuySection()}
-          <CoursesSection
-            isOffer={true}
-            showSort={true}
-            sectionTitle={"other.otherCourses"}
-            pageSize={6}
-          />
-        </div>
-      )}
-      {isModalOpen && (
-        <ModalWrapper
-          variant="dark"
-          title={"yourOrder"}
-          cutoutPosition="none"
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        >
-          <PaymentModal
-            paymentData={paymentData}
-            handleCloseModal={handleCloseModal}
-          />
-        </ModalWrapper>
-      )}
+          </>
+        )}
+      </div>
     </>
   );
 };

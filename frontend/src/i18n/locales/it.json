@@ -96,6 +96,12 @@
     "sorry": "Ci scusiamo per il disagio"
   },
 
+  "payment": {
+    "encryptedPayment": "Il pagamento è gestito da Stripe secondo PCI DSS Livello 1: i dati della carta sono crittografati e mai memorizzati.",
+    "afterPayment": "Dopo il pagamento, il corso verrà aggiunto al tuo account e i dati di accesso verranno inviati via e-mail. Controlla la cartella Spam se non ricevi nulla.",
+    "privacyAgreement": "Facendo clic sul pulsante \"Paga\", accetti di ricevere email di marketing e acconsenti alla nostra <1>Informativa sulla Privacy.</1>"
+  },
+
   "nav": {
     "home": "Home",
     "courses": "Corsi",

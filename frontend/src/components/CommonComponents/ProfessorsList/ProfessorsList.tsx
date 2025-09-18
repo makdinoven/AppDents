@@ -1,7 +1,6 @@
 import s from "./ProfessorsList.module.scss";
 import ProfessorCard from "../ProfessorCard/ProfessorCard.tsx";
 import { Path } from "../../../routes/routes.ts";
-import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Trans } from "react-i18next";
 
 type Professor = {
@@ -29,7 +28,7 @@ const ProfessorsList = ({ professors, loading, source }: props) => {
 
   return (
     <div className={s.list_wrapper}>
-      {loading && <LoaderOverlay />}
+      {/*{loading && <LoaderOverlay />}*/}
       {professors.length > 0 ? (
         <ul
           style={{

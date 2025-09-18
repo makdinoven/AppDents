@@ -2,15 +2,15 @@ import { configureStore } from "@reduxjs/toolkit";
 import { userReducer } from "./slices/userSlice.ts";
 import { adminReducer } from "./slices/adminSlice.ts";
 import { mainReducer } from "./slices/mainSlice.ts";
-import { landingReducer } from "./slices/landingSlice.ts";
 import { cartReducer } from "./slices/cartSlice.ts";
+import { paymentReducer } from "./slices/paymentSlice.ts";
 
 export const store = configureStore({
   reducer: {
     user: userReducer,
+    payment: paymentReducer,
     admin: adminReducer,
     main: mainReducer,
-    landing: landingReducer,
     cart: cartReducer,
   },
   middleware: (getDefaultMiddleware) =>

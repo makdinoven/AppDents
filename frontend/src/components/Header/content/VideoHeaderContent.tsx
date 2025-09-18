@@ -1,20 +1,20 @@
 import s from "../Header.module.scss";
 import Timer from "../../ui/TimerBanner/Timer/Timer.tsx";
-import { openModal } from "../../../store/slices/landingSlice.ts";
 import { Trans } from "react-i18next";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 
 const VideoHeaderContent = () => {
-  const dispatch = useDispatch<AppDispatchType>();
+  const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice,
+    (state: AppRootStateType) => state.payment.data?.newPrice,
   );
   const lessonsCount = useSelector(
-    (state: AppRootStateType) => state.landing.lessonsCount,
+    (state: AppRootStateType) => state.payment.data?.courses[0].lessonsCount,
   );
 
   function extractMaxNumber(text: string) {
@@ -25,7 +25,11 @@ const VideoHeaderContent = () => {
     return Math.max(...numbers);
   }
 
-  const lessonsCountNumber = extractMaxNumber(lessonsCount);
+  let lessonsCountNumber;
+
+  if (lessonsCount) {
+    lessonsCountNumber = extractMaxNumber(lessonsCount);
+  }
 
   return (
     <div className={s.video_content}>
@@ -33,7 +37,7 @@ const VideoHeaderContent = () => {
         <>
           <Timer appearance={"primary"} />
           <button
-            onClick={() => dispatch(openModal())}
+            onClick={() => openPaymentModal()}
             className={`${s.buy_btn} ${s.video}`}
           >
             <Trans

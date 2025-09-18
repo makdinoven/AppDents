@@ -1,5 +1,4 @@
 import s from "./PrettyButton.module.scss";
-import UnstyledButton from "../../CommonComponents/UnstyledButton.tsx";
 import { Trans } from "react-i18next";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
@@ -17,13 +16,13 @@ const PrettyButton = ({
   className?: string;
 }) => {
   return (
-    <UnstyledButton
+    <button
       onClick={onClick}
-      className={`${s.btn} ${className ? className : ""} ${s[variant] || ""}`}
+      className={`${s.btn} ${className ? className : ""} ${s[variant] || ""} ${loading ? s.loading : ""}`}
     >
       {loading && <LoaderOverlay />}
       <Trans i18nKey={text} />
-    </UnstyledButton>
+    </button>
   );
 };
 

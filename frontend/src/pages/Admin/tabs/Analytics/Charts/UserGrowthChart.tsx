@@ -10,23 +10,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatShortDate } from "../../../../../common/helpers/helpers.ts";
 
 const UserGrowthChart = ({
   data,
 }: {
   data: { date: string; new_users: number; total_users: number }[];
 }) => {
-  const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-    });
-  };
-
   const formattedData = data.map((item) => ({
     ...item,
-    date: formatDate(item.date),
+    date: formatShortDate(item.date),
   }));
 
   return (
@@ -44,12 +37,6 @@ const UserGrowthChart = ({
             stroke="#7fdfd5"
             name="New users"
           />
-          {/*<Line*/}
-          {/*  type="monotone"*/}
-          {/*  dataKey="total_users"*/}
-          {/*  stroke="#79cee7"*/}
-          {/*  name="Total users"*/}
-          {/*/>*/}
         </LineChart>
       </ResponsiveContainer>
     </div>

@@ -1,6 +1,7 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "./types.ts";
+import { SummaryToolDataType } from "../../pages/Admin/tabs/AdminTools/tools/VideoSummaryTool/VideoSummaryTool.tsx";
 
 export const adminApi = {
   getCoursesList(params: ParamsType) {
@@ -182,8 +183,39 @@ export const adminApi = {
     });
   },
   getClip(url: string) {
-    return instance.post("/clip_generator/clip", {
-      url: url,
+    return instance.post(
+      "/clip_generator/clip",
+      {
+        url: url,
+      },
+      { headers: getAuthHeaders() },
+    );
+  },
+  getClipStatus(id: string) {
+    return instance.get(`/clip_generator/clip/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  getVideoSummary({ video_url, context, answer_format }: SummaryToolDataType) {
+    return instance.post(
+      "/summary_generator/video-summary",
+      {
+        video_url,
+        ...(context && { context }),
+        ...(answer_format && { answer_format }),
+        final_model: "anthropic/claude-3-5-sonnet",
+      },
+      { headers: getAuthHeaders() },
+    );
+  },
+  getVideoSummaryStatus(id: string) {
+    return instance.get(`/summary_generator/video-summary/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  getPurchasesSourceChart(params: any) {
+    return instance.get("users/analytics/purchase/source", {
+      params: params,
     });
   },
 };

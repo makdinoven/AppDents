@@ -1,15 +1,22 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import { CircleArrow } from "../../../../assets/icons/index.ts";
+import LandingHeroSkeleton from "../../../../components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
 
-const LandingHero = ({
-  data: { photo, landing_name, authors, renderBuyButton, isWebinar },
-}: {
+interface LandingHeroProps {
   data: any;
-}) => {
+  loading: boolean;
+}
+
+const LandingHero: React.FC<LandingHeroProps> = ({
+  data,
+  loading,
+}: LandingHeroProps) => {
+  const { photo, landing_name, authors, renderBuyButton, isWebinar } = data;
+
   const MOBILE_BREAKPOINT = 576;
 
   const [isMobile, setIsMobile] = useState(
@@ -30,48 +37,55 @@ const LandingHero = ({
 
   return (
     <section className={s.hero}>
-      {!isMobile ? (
-        <div className={s.hero_top}>
-          <Title>
-            <Trans i18nKey={isWebinar ? "onlineWebinar" : "onlineCourse"} />
-          </Title>
-          <div className={s.card_header}></div>
-        </div>
-      ) : null}
-
-      <div className={s.hero_content_wrapper}>
-        <div className={s.card}>
-          {isMobile ? (
-            <div className={s.folder}>
+      {loading ? (
+        <LandingHeroSkeleton />
+      ) : (
+        <>
+          {!isMobile ? (
+            <div className={s.hero_top}>
               <Title>
                 <Trans i18nKey={isWebinar ? "onlineWebinar" : "onlineCourse"} />
               </Title>
+              <div className={s.card_header}></div>
             </div>
           ) : null}
-          <div className={s.card_body}>
-            <div className={s.photo}>
-              {photo ? (
-                <img src={photo} alt="Course image" />
-              ) : (
-                <div
-                  style={{ backgroundImage: `url(${initialPhoto})` }}
-                  className={s.no_photo}
-                ></div>
-              )}
+          <div className={s.hero_content_wrapper}>
+            <div className={s.card}>
+              {isMobile ? (
+                <div className={s.folder}>
+                  <Title>
+                    <Trans
+                      i18nKey={isWebinar ? "onlineWebinar" : "onlineCourse"}
+                    />
+                  </Title>
+                </div>
+              ) : null}
+              <div className={s.card_body}>
+                <div className={s.photo}>
+                  {photo ? (
+                    <img src={photo} alt="Course image" />
+                  ) : (
+                    <div
+                      style={{ backgroundImage: `url(${initialPhoto})` }}
+                      className={s.no_photo}
+                    ></div>
+                  )}
+                </div>
+              </div>
+              <div className={s.card_bottom}></div>
+            </div>
+
+            <div className={s.hero_content}>
+              <h2>{landing_name}</h2>
+              <div className={s.arrow}>
+                <CircleArrow />
+              </div>
+              <p>{authors}</p>
+              {renderBuyButton}
             </div>
           </div>
-          <div className={s.card_bottom}></div>
-        </div>
-
-        <div className={s.hero_content}>
-          <h2>{landing_name}</h2>
-          <div className={s.arrow}>
-            <CircleArrow />
-          </div>
-          <p>{authors}</p>
-          {renderBuyButton}
-        </div>
-      </div>
+        </>
+      )}
     </section>
   );
 };
