@@ -420,6 +420,7 @@ def set_book_landing_is_hidden(
     db.refresh(bl)
     return bl
 
+
 # ── ДОБАВИТЬ В НИЗ ФАЙЛА (после CRUD), не меняя существующие роуты ────────────
 @router.post("/admin/books/{book_id}/upload-pdf-url",
              response_model=PdfUploadInitResponse,
