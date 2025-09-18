@@ -7,7 +7,6 @@ import { Path } from "../../../../routes/routes.ts";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
-import { HlsVideo } from "../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
 
 type OutletContextType = {
   course: any;
@@ -39,7 +38,7 @@ const LessonPage = () => {
 
   const prepareLesson = () => {
     const sectionIndex = course.sections.findIndex(
-      (section: any) => section.id === Number(sectionId),
+      (section: any) => section.id === Number(sectionId)
     );
 
     if (sectionIndex === -1) return;
@@ -47,7 +46,7 @@ const LessonPage = () => {
     const section = course.sections[sectionIndex];
     const lessons = section.lessons;
     const lessonIndex = lessons.findIndex(
-      (lesson: any) => lesson.id === Number(lessonId),
+      (lesson: any) => lesson.id === Number(lessonId)
     );
 
     if (lessonIndex === -1) return;
@@ -102,13 +101,16 @@ const LessonPage = () => {
               </video>
             </div>
           ) : lesson.video_link?.length > 0 ? (
-            <HlsVideo
-              src={lesson.video_link}
-              poster={lesson.preview_image} // если у тебя есть обложка
-              autoPlay={false}
-              controls
-              className={s.hls_player}
-            />
+            <div className={s.video_container}>
+              <iframe
+                src={lesson.video_link}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allow="autoplay; fullscreen"
+                allowFullScreen
+              />
+            </div>
           ) : (
             <p>
               <Trans i18nKey={"landing.noVideoLink"} />
