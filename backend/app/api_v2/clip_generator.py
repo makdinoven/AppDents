@@ -16,7 +16,7 @@ class ClipIn(BaseModel):
 @router.post("/clip", status_code=202)
 async def submit_clip(data: ClipIn, current_admin: User = Depends(require_roles("admin"))):
     # отправляем задачу в выделенную очередь "clip"
-    res = clip_video.apply_async(args=[data.url], queue="special")
+    res = clip_video.apply_async(args=[data.url], queue="default")
     return {"job_id": res.id, "status": "queued"}
 
 @router.get("/clip/{job_id}")
