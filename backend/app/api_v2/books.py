@@ -55,7 +55,7 @@ router = APIRouter()
 
 def preview_pdf_url_for_book(book_or_slug) -> str:
     slug = book_or_slug.slug if hasattr(book_or_slug, "slug") else str(book_or_slug)
-    return f"{S3_PUBLIC_HOST}/books/{slug}/preview/preview_15p.pdf"
+    return f"{S3_PUBLIC_HOST}/books/{id}/preview/preview_15p.pdf"
 
 
 # ─────────────── КНИГИ ───────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ def _serialize_landing(bl: BookLanding) -> dict:
                 "title": b.title,
                 "slug": b.slug,
                 "cover_url": b.cover_url,
-                "preview_pdf": f"{S3_PUBLIC_HOST}/books/{b.slug}/preview/preview_15p.pdf",
+                "preview_pdf": f"{S3_PUBLIC_HOST}/books/{b.id}/preview/preview_15p.pdf",
             } for b in books
         ],
         # авторов теперь также собирай через bl.books:
