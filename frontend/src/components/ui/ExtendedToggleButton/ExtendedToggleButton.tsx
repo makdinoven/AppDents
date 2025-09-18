@@ -32,7 +32,9 @@ const ExtendedToggleButton = ({
       <Trans i18nKey={transKey} />
       <span className={s.num}>
         {loading && !isDisabled && <LoaderOverlay />}
-        <span className={`${loading ? s.hidden : ""}`}>{num}</span>
+        <span className={`${!isDisabled && loading ? s.hidden : ""}`}>
+          {num}
+        </span>
       </span>
       <span className={s.line}></span>
       <ArrowX className={`${s.arrow_icon} ${isActive ? "" : s.hidden}`} />

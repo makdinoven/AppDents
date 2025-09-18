@@ -242,8 +242,11 @@ export const rewriteStorageLinkToCDN = (link: string) => {
   );
 };
 
-export const arraysEqual = (a: any[], b: any[]) =>
-  a.length === b.length && a.every((val, i) => val === b[i]);
+export const arraysEqual = (a?: any[] | null, b?: any[] | null) => {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  return a.every((val, i) => val === b[i]);
+};
 
 export const mapCourseToResultLanding = (course: any): ResultLandingData => {
   return {
