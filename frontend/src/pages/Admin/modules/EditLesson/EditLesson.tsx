@@ -1,6 +1,7 @@
 import { SectionType } from "../../types.ts";
 import { useState } from "react";
 import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
+import { rewriteStorageLinkToCDN } from "../../../../common/helpers/helpers.ts";
 
 const EditLesson = ({
   type = "course",
@@ -27,7 +28,11 @@ const EditLesson = ({
   };
 
   const handleChangeCourse = (e: any) => {
-    const { name, value } = e;
+    let { value } = e;
+    const { name } = e;
+    if (name === "video_link") {
+      value = rewriteStorageLinkToCDN(value);
+    }
     setCourse((prev: any) => {
       if (!prev) return prev;
       return {
@@ -47,7 +52,11 @@ const EditLesson = ({
   };
 
   const handleChangeLanding = (e: any) => {
-    const { name, value } = e;
+    let { value } = e;
+    const { name } = e;
+    if (name === "link") {
+      value = rewriteStorageLinkToCDN(value);
+    }
     setCourse((prev: any) => {
       if (!prev) return prev;
       return {

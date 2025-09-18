@@ -1,7 +1,6 @@
 import s from "../Header.module.scss";
 import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
-import { openModal } from "../../../store/slices/landingSlice.ts";
 import { Trans } from "react-i18next";
 import {
   BooksIcon,
@@ -10,19 +9,23 @@ import {
 } from "../../../assets/icons/index";
 import {
   getBasePath,
+  getPaymentType,
   scrollToElementById,
 } from "../../../common/helpers/helpers.ts";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 import { Path } from "../../../routes/routes.ts";
+import { useLocation } from "react-router-dom";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 
 const PromoHeaderContent = () => {
-  const dispatch = useDispatch<AppDispatchType>();
+  const location = useLocation();
+  const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.landing.oldPrice
+    (state: AppRootStateType) => state.payment.data?.oldPrice,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.landing.newPrice
+    (state: AppRootStateType) => state.payment.data?.newPrice,
   );
   const basePath = getBasePath(location.pathname);
   const isWebinar = basePath === Path.webinarLanding;
@@ -58,7 +61,15 @@ const PromoHeaderContent = () => {
       </div>
       <BurgerMenu buttons={NAV_BUTTONS_PROMOTE} />
       {!!oldPrice && !!newPrice && (
-        <button onClick={() => dispatch(openModal())} className={s.buy_btn}>
+        <button
+          onClick={() =>
+            openPaymentModal(
+              undefined,
+              getPaymentType(undefined, undefined, isWebinar),
+            )
+          }
+          className={s.buy_btn}
+        >
           <Trans
             i18nKey={"landing.buyFor"}
             values={{

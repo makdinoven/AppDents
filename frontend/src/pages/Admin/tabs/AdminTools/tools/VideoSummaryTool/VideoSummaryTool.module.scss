@@ -1,0 +1,48 @@
+.tool_title {
+  @include clamped-h2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tool_container {
+  @include flex-column;
+  gap: 20px;
+}
+
+.enter_url_container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.input {
+  flex: 1;
+}
+
+.pending {
+  background-color: $secondary;
+}
+
+.started {
+  background-color: $yellow;
+}
+
+.progress {
+  background-color: $green;
+}
+
+.text {
+  padding: 10px;
+  border-radius: 15px;
+  border: 1px solid $primary;
+
+  p {
+    @include clamped-p2;
+    margin-bottom: 10px;
+  }
+
+  button {
+    margin-left: auto;
+  }
+}

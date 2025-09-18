@@ -10,6 +10,7 @@ import {
 import { INITIAL_LANDING } from "../../../common/helpers/commonConstants.ts";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { ParamsType } from "../../../api/adminApi/types.ts";
+import { toggleLandingVisibility } from "../../../store/slices/adminSlice.ts";
 
 const AdminLandingsTab = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -21,7 +22,9 @@ const AdminLandingsTab = () => {
   const handleToggleLandingVisibility = (id: number, isHidden: boolean) => {
     try {
       adminApi.toggleLandingVisibility(id, isHidden);
+      dispatch(toggleLandingVisibility({ id, isHidden }));
     } catch (error) {
+      dispatch(toggleLandingVisibility({ id, isHidden: !isHidden }));
       console.log(error);
     }
   };

@@ -48,3 +48,19 @@ export const removeCartItem = createAppAsyncThunk(
     }
   },
 );
+
+export const getCartPreview = createAppAsyncThunk(
+  "cart/getCartPreview",
+  async (landing_ids: number[], { rejectWithValue }) => {
+    try {
+      const res = await cartApi.previewCart(landing_ids);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);

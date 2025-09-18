@@ -1,32 +1,7 @@
-.cart_overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 15px;
-  z-index: 1000;
-  opacity: 0;
-  @include fadeIn();
-  @include lightBlurBackground();
-
-  &.open {
-    opacity: 1;
-  }
-
-  &.closing {
-    @include fadeOut();
-  }
-}
-
 .cart {
-  @include fadeInMoveFromTop();
   color: $text-color;
   width: 100%;
   max-width: 530px;
-  //min-height: 640px;
   height: 100%;
   max-height: 930px;
   border-bottom-left-radius: var(--border-radius);
@@ -34,13 +9,8 @@
   backdrop-filter: blur(4px);
   display: flex;
   flex-direction: column;
-  //gap: 30px;
   position: relative;
   overflow: hidden;
-
-  &.closing {
-    @include fadeOutMoveToTop();
-  }
 
   &.empty {
     min-height: 400px;
@@ -57,7 +27,7 @@
   }
 
   h2 {
-    @include clamped-h2;
+    @include clamped-h3;
     width: 100%;
     text-transform: uppercase;
     text-align: center;
@@ -105,24 +75,30 @@
 }
 
 .cart_header {
-  padding: 30px 30px 0 30px;
+  padding: 20px 30px 0 30px;
   display: flex;
   gap: 20px;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px;
-}
-
-.cart_title {
-  @include clamped-h2;
-  text-transform: uppercase;
+  margin-bottom: 20px;
 }
 
 .close_button {
   flex-shrink: 0;
   position: relative;
-  width: 45px;
-  height: 45px;
+  width: 43px;
+  height: 43px;
+
+  &:hover {
+    svg {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
+      }
+    }
+  }
 }
 
 .cart_items {
@@ -133,31 +109,29 @@
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
-  gap: 10px;
-  //padding-right: 15px;
-  //padding-bottom: 10px;
+  gap: 7px;
   @include custom-scrollbar;
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .cart_overlay {
-    padding: 10px 10px 90px;
-    justify-content: center;
-  }
-
   .cart_header {
     padding: 10px 25px 0 18px;
     margin-bottom: 10px;
   }
 
   .cart {
-    border-radius: 20px;
+    border-radius: 25px;
     min-height: 300px;
+
+    &.empty {
+      padding: 20px;
+    }
   }
 
   .cart_items {
     padding: 0 10px 10px 15px;
     margin-right: 5px;
+    gap: 5px;
   }
 
   .cart_header {
@@ -165,8 +139,8 @@
   }
 
   .close_button {
-    width: 35px;
-    height: 35px;
+    width: 30px;
+    height: 30px;
   }
 
   .cart_icon_wrapper {
