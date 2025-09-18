@@ -7,7 +7,7 @@ from typing import Optional
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_
+from sqlalchemy import or_, desc
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -32,7 +32,9 @@ from ..schemas_v2.book import (
     PdfUploadInitRequest,
     BookLandingOut,
 )
+from ..schemas_v2.landing import LandingListPageResponse, LangEnum
 from ..services_v2 import book_service
+from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
 
 # ─────────────────────────── S3 config ───────────────────────────
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
@@ -167,6 +169,65 @@ def delete_book_landing_route(
 ):
     book_service.delete_book_landing(db, landing_id)
     return {"detail": "Book landing deleted successfully"}
+
+@router.get(
+    "/landing/list",
+    response_model=LandingListPageResponse,
+    summary="Список книжных лендингов (как у курсов; пагинация)"
+)
+def list_book_landings_like_courses(
+    page: int = Query(1, ge=1, description="Номер страницы (≥1)"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
+    language: Optional[LangEnum] = Query(
+        None, description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
+    ),
+    db: Session = Depends(get_db),
+):
+    q = (
+        db.query(BookLanding)
+          .options(selectinload(BookLanding.books))  # чтобы не словить N+1 при будущих расширениях
+          .order_by(desc(BookLanding.id))
+    )
+    if language:
+        q = q.filter(BookLanding.language == language.value)
+
+    return paginate_like_courses(q, page=page, size=size,
+                                  serializer=serialize_book_landing_to_course_item)
+
+
+@router.get(
+    "/landing/list/search",
+    response_model=LandingListPageResponse,
+    summary="Поиск книжных лендингов (как у курсов; пагинация)"
+)
+def search_book_landings_like_courses(
+    q: str = Query(..., min_length=1, description="Подстрока для поиска"),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, gt=0),
+    language: Optional[LangEnum] = Query(
+        None, description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
+    ),
+    db: Session = Depends(get_db),
+):
+    like = f"%{q.strip()}%"
+    query = (
+        db.query(BookLanding)
+          .options(selectinload(BookLanding.books))
+          .filter(
+              or_(
+                  BookLanding.landing_name.ilike(like),
+                  BookLanding.page_name.ilike(like),
+                  BookLanding.description.ilike(like),
+                  BookLanding.books.any(Book.title.ilike(like)),
+              )
+          )
+          .order_by(desc(BookLanding.id))
+    )
+    if language:
+        query = query.filter(BookLanding.language == language.value)
+
+    return paginate_like_courses(query, page=page, size=size,
+                                  serializer=serialize_book_landing_to_course_item)
 
 
 # ─────────────── ADMIN: DETAIL для редактирования ────────────────────────────
@@ -342,44 +403,6 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
 # ─────────────── КАТАЛОГ (публичный листинг) ────────────────────────────────
 logger = logging.getLogger("api.books_catalog")
 
-
-
-
-def _to_float(v) -> float | None:
-    try:
-        return float(v) if v is not None else None
-    except Exception:
-        return None
-
-def _serialize_landing(bl: BookLanding) -> dict:
-    books = list(bl.books or [])
-    return {
-        "id": bl.id,
-        "page_name": bl.page_name,
-        "landing_name": bl.landing_name,
-        "new_price": _to_float(bl.new_price),
-        "old_price": _to_float(bl.old_price),
-        "preview_photo": bl.preview_photo,
-        "sales_count": bl.sales_count or 0,
-        "language": bl.language,
-        "books": [
-            {
-                "id": b.id,
-                "title": b.title,
-                "slug": b.slug,
-                "cover_url": b.cover_url,
-                "preview_pdf": f"{S3_PUBLIC_HOST}/books/{b.id}/preview/preview_15p.pdf",
-            } for b in books
-        ],
-        # авторов теперь также собирай через bl.books:
-        "authors": [
-            {"id": a.id, "name": a.name, "photo": a.photo}
-            for b in books for a in b.authors
-        ],
-    }
-
-
-
 @router.get("", summary="Каталог книжных лендингов (листинг)")
 def list_book_landings(
     page: int = Query(1, ge=1),
@@ -441,8 +464,27 @@ def list_book_landings(
         "size": size,
         "total": total,
         "total_pages": (total + size - 1) // size,
-        "items": [_serialize_landing(bl) for bl in items],
+        "items": [serialize_landing(bl) for bl in items],
     }
+
+@router.patch(
+    "/landing/set-hidden/{landing_id}",
+    response_model=LandingDetailResponse,
+    summary="Скрыть/показать книжный лендинг (is_hidden)"
+)
+def set_book_landing_is_hidden(
+    landing_id: int,
+    is_hidden: bool = Query(..., description="True — скрыть, False — показать"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    bl = db.query(BookLanding).filter(BookLanding.id == landing_id).first()
+    if not bl:
+        raise HTTPException(status_code=404, detail="Landing not found")
+    bl.is_hidden = is_hidden
+    db.commit()
+    db.refresh(bl)
+    return bl
 
 # ── ДОБАВИТЬ В НИЗ ФАЙЛА (после CRUD), не меняя существующие роуты ────────────
 @router.post("/admin/books/{book_id}/upload-pdf-url",
