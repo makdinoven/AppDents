@@ -24,7 +24,7 @@ export const HlsVideo: React.FC<HlsVideoProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const source = useHlsSource(src, cdnHost);
   const [hlsInstance, setHlsInstance] = useState<Hls | null>(null);
-  const [levels, setLevels] = useState<any>([]);
+  const [levels, setLevels] = useState<Hls.Level[]>([]);
   const [currentLevel, setCurrentLevel] = useState<number>(-1);
 
   const canNativeHls = (video: HTMLVideoElement) =>
@@ -83,7 +83,7 @@ export const HlsVideo: React.FC<HlsVideoProps> = ({
   }, [autoPlay, muted, source]);
 
   const levelOptions = useMemo(() => {
-    return levels.map((level: any, i: any) => ({
+    return levels.map((level, i) => ({
       value: i,
       label: level.height
         ? `${level.height}p`
@@ -123,7 +123,7 @@ export const HlsVideo: React.FC<HlsVideoProps> = ({
             style={{ padding: "4px 8px", borderRadius: 6 }}
           >
             <option value={-1}>Auto</option>
-            {levelOptions.map((opt: any) => (
+            {levelOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
