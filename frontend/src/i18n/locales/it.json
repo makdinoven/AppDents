@@ -8,6 +8,7 @@
   "nothingFound": "Nessun risultato trovato",
   "searchCourses": "Cerca corsi per titolo o autore...",
   "similarCourses": "Corsi simili",
+  "similarBooks": "Libri simili",
   "back": "Indietro",
   "backToLogin": "Torna al login",
   "login": "Accedi",
@@ -113,6 +114,8 @@
     "promote": {
       "webinarProgram": "Programma del webinar",
       "webinarProfessors": "Docenti del webinar",
+      "bookPages": "Pagine del libro",
+      "bookAuthors": "Autori del libro",
       "professors": "Docenti del corso",
       "program": "Programma del corso"
     }
@@ -173,7 +176,34 @@
     "common.rec": "Per te"
   },
 
-  "landing": {
+  "bookLanding": {
+    "onlineBook": "Libro Online",
+    "annotation": "Annotazione",
+    "about": "Informazioni sul Libro",
+    "publishedDate": "Data di Pubblicazione: <0>{{date}}</0>",
+    "author": "Autore: <0>{{authors}}</0>",
+    "authors": "Autori: <0>{{authors}}</0>",
+    "availableFormats": "Formati Disponibili:",
+    "chooseFormat": "Scegli un formato e scarica istantaneamente",
+    "buyText": "Puoi acquistare la <0>versione completa</0> al nuovo prezzo ora - <0>${{newPrice}}</0>, invece del vecchio prezzo - ${{oldPrice}}",
+    "download": "Scarica",
+    "contentOverview": "Panoramica del Contenuto",
+    "audioPreviewAvailable": "Ascolta il frammento audio",
+    "audioText": "<0>Audio</0> è disponibile per darti una breve panoramica del libro prima di approfondire il suo contenuto.",
+    "audio": "audio",
+    "pdfReader": {
+      "error": "Si è verificato un errore durante il caricamento",
+      "loading": "Caricamento..."
+    },
+    "pages": {
+      "title": "Pagine",
+      "readFirstPages": "Leggi le prime pagine del libro!",
+      "fullBook": "La versione completa del libro sarà disponibile dopo il pagamento."
+    }
+  },
+
+
+"landing": {
     "by": "Da",
     "about": "Informazioni su questo corso",
     "access": "l'accesso non è limitato nel tempo",
@@ -209,6 +239,10 @@
       "faq": "Domande Frequenti",
       "1_question": "Come accedo al mio corso dopo l'acquisto?",
       "1_answer": "Non appena il pagamento sarà completato, riceverai accesso immediato al tuo corso. Dopo il pagamento, verrai reindirizzato automaticamente al tuo account, dove troverai il corso acquistato (consigliamo di cambiare subito la password per non dimenticarla). Riceverai anche una ricevuta e la conferma di iscrizione via email. Se non trovi l'email, controlla la cartella spam (e altre cartelle; il mittente è 'no-reply'). I materiali del corso saranno disponibili immediatamente.",
+      "1_question_book": "Come posso accedere al mio libro dopo l’acquisto?",
+      "1_answer_book": "Non appena il pagamento sarà completato, riceverai l’accesso immediato al tuo libro. Dopo il pagamento, verrai automaticamente reindirizzato al tuo account, dove troverai il libro acquistato e potrai scaricarlo (ti consigliamo di cambiare subito la password per non dimenticarla). Riceverai anche una ricevuta e una conferma dell’acquisto via email. Se non vedi l’email nella posta in arrivo, controlla la cartella spam (e le altre cartelle — il mittente sarà 'no-reply'). Il tuo libro sarà subito disponibile e potrai leggerlo quando vuoi su qualsiasi dispositivo.",
+      "2_question_book": "Dove posso trovare i miei libri acquistati se ho perso i file scaricati?",
+      "2_answer_book": "Tutti i libri acquistati rimarranno archiviati in modo sicuro nel tuo account personale — l’accesso non scade mai.",
       "2_question": "C'è un limite di tempo per completare i corsi?",
       "2_answer": "No, i nostri corsi sono a ritmo libero: puoi iniziare, sospendere e riprendere quando vuoi. L’accesso ai materiali è illimitato nel tempo.",
       "3_question": "Quali metodi di pagamento accettate?",
@@ -285,7 +319,8 @@
     "coursesCount_other": "{{count}} corsi"
   },
   "other": {
-    "otherCourses": "Altri corsi"
+    "otherCourses": "Altri corsi",
+    "otherBooks": "Altri libri"
   },
 
   "error": {
@@ -343,5 +378,10 @@
     "title": "tutti i corsi",
     "search": "Cerca corsi...",
     "found": "Corsi trovati: {{count}}"
+  },
+  "books": {
+    "title": "tutti i libri",
+    "search": "Cerca libri...",
+    "found": "Libri trovati: {{count}}"
   }
 }

@@ -1,0 +1,130 @@
+.hero {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-between;
+  width: 100%;
+  height: fit-content;
+  gap: 40px;
+
+  .left_side {
+    position: relative;
+    max-width: 50%;
+    width: auto;
+    height: 100%;
+
+    .lang_price {
+      position: absolute;
+      z-index: 2;
+      right: 0;
+      top: 0;
+      transform: translate(20px, -50%);
+      @include flex-center();
+      flex-direction: row;
+      gap: 15px;
+
+      svg {
+        width: 75px;
+        height: 75px;
+      }
+
+      .price {
+        background-color: $primary;
+        border-radius: 40px;
+        padding: 10px 30px;
+        @include flex-center();
+        gap: 5px;
+        height: fit-content;
+
+        .new_price {
+          color: $background-color;
+          height: fit-content;
+        }
+
+        .old_price {
+          color: $tertiary;
+          @include clamped-p3();
+          text-decoration: line-through;
+          height: fit-content;
+        }
+      }
+
+      @media (max-width: $tablet-breakpoint) {
+        bottom: 15px;
+        right: 15px;
+        top: unset;
+        transform: none;
+        align-items: flex-end;
+
+        svg {
+          width: 60px;
+          height: 60px;
+        }
+      }
+
+      @media (max-width: $mobile-breakpoint) {
+        top: 15px;
+        right: 15px;
+        bottom: unset;
+      }
+    }
+  }
+
+  .right_side {
+    width: auto;
+    height: 100%;
+    @include flex-column();
+    gap: 20px;
+    justify-content: space-between;
+
+    .info {
+      @include clamped-p1();
+      color: $accent-glass;
+      @include flex-column();
+      gap: 10px;
+      justify-content: flex-start;
+      align-items: flex-start;
+      height: fit-content;
+
+      h2 {
+        @include clamped-h2();
+        text-transform: uppercase;
+        color: $accent;
+
+        @media (max-width: $sm-breakpoint) {
+          @include clamped-h3();
+        }
+      }
+
+      .highlight {
+        color: $hover-color-dark;
+      }
+
+      .formats_field {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        gap: 5px;
+
+        .formats {
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-start;
+          align-items: center;
+          gap: 5px;
+        }
+      }
+    }
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    flex-direction: column;
+    gap: 10px;
+
+    .left_side {
+      width: 100%;
+      min-width: 100%;
+    }
+  }
+}
