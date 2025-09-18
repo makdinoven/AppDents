@@ -66,7 +66,7 @@ def enqueue_video_summary(
                 "answer_format": body.answer_format or "",  # None → ""
                 "final_model": body.final_model or DEFAULT_LEMUR_MODEL,
             },
-            queue="special",
+            queue="default",
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to enqueue task: {e}")

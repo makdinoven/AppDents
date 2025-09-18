@@ -126,7 +126,7 @@ def _lemur_summarize(lemur, *, model: str, context: str, answer_format: str, tex
     autoretry_for=(),
     default_retry_delay=30,
     max_retries=0,
-    queue="special",
+    queue="default",
 )
 def summarize_video_task(
     self,
