@@ -473,7 +473,13 @@
       "found": "Authors found: {{count}}"
     },
     "books": {
-      "books": "Books"
+      "books": "Books",
+      "search": "Search books...",
+      "create": "Create book",
+      "delete": "Delete book",
+      "edit": "Edit book",
+      "notFound": "No books found",
+      "found": "Books found: {{count}}"
     },
     "analytics": {
       "analytics": "Analytics",

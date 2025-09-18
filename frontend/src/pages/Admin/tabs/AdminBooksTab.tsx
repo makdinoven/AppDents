@@ -10,6 +10,7 @@ import {
 } from "../../../store/actions/adminActions.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { INITIAL_BOOK } from "../../../common/helpers/commonConstants.ts";
+import { Path } from "../../../routes/routes.ts";
 
 const AdminBooksTab = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -38,9 +39,8 @@ const AdminBooksTab = () => {
     <>
       <AdminList<any>
         data={books}
-        itemName={"book_name"}
-        // itemLink={(book) => `${Path.bookDetail}/${book.id}`}
-        itemLink={(book) => `ll/${book.id}`}
+        itemName={"landing_name"}
+        itemLink={(book) => `${Path.bookDetail}/${book.id}`}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createBook(INITIAL_BOOK))}

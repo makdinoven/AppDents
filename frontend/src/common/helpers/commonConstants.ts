@@ -80,6 +80,7 @@ export const INITIAL_LANDING = {
 export const INITIAL_BOOK = {
   book_name: "New book",
   is_hidden: true,
+  page_name: "book-1",
 };
 
 export const INITIAL_USER = {

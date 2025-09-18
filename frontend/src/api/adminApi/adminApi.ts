@@ -80,13 +80,13 @@ export const adminApi = {
   },
 
   getBooksList(params: ParamsType) {
-    return instance.get("books/landings/list", {
+    return instance.get("books/landing/list", {
       headers: getAuthHeaders(),
       params: params,
     });
   },
   searchBooks(params: ParamsType) {
-    return instance.get("books/landings/list/search", {
+    return instance.get("books/landing/list/search", {
       headers: getAuthHeaders(),
       params: params,
     });
@@ -97,7 +97,7 @@ export const adminApi = {
     });
   },
   createBook(data: any) {
-    return instance.post(`books/landings/`, data, {
+    return instance.post(`books/landing/`, data, {
       headers: getAuthHeaders(),
     });
   },
