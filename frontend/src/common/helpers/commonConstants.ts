@@ -77,6 +77,11 @@ export const INITIAL_LANDING = {
   is_hidden: true,
 };
 
+export const INITIAL_BOOK = {
+  book_name: "New book",
+  is_hidden: true,
+};
+
 export const INITIAL_USER = {
   email: "newuser@dents.com",
   password: "Newuserpassword123!",
