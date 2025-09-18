@@ -92,7 +92,7 @@ export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";
 
-export const BASE_URL = "https://dent-s.com";
+export const BASE_URL = "http://test.dent-s.com";
 
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },

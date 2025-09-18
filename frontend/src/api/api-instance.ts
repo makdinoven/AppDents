@@ -1,7 +1,8 @@
 import axios from "axios";
+import { BASE_URL } from "../common/helpers/commonConstants.ts";
 
 export const instance = axios.create({
-  baseURL: "https://dent-s.com/api",
+  baseURL: BASE_URL,
   withCredentials: false,
 });
 
