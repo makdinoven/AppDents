@@ -27,6 +27,7 @@ export const Path = {
   professors: "/professors",
   courseDetail: "/admin/course",
   landingDetail: "/admin/landing",
+  bookDetail: "/admin/book",
   userDetail: "/admin/user",
   authorDetail: "/admin/author",
   adminLandings: "/admin/landings",
