@@ -211,3 +211,37 @@ def books_in_landing(db: Session, bl: BookLanding) -> list[Book]:
         return [bl.book]
     log.warning("[BOOKS] Landing %s has no books bound", bl.id)
     return []
+
+def paginate_like_courses(query, page: int, size: int, serializer) -> dict:
+    total = query.count()
+    rows = query.offset((page - 1) * size).limit(size).all()
+    return {
+        "page": page,
+        "size": size,
+        "total": total,
+        "total_pages": (total + size - 1) // size,
+        "items": [serializer(bl) for bl in rows],
+    }
+
+def to_float(v):
+    try:
+        return float(v) if v is not None else None
+    except Exception:
+        return None
+
+def serialize_book_landing_to_course_item(bl: BookLanding) -> dict:
+    """
+    Возвращаем ровно те же поля, что ожидает LandingListItem (как в курсовых листингах).
+    Лишних ключей не добавляем.
+    """
+    return {
+        "id": bl.id,
+        "page_name": bl.page_name,
+        "landing_name": bl.landing_name,
+        "language": bl.language,
+        "is_hidden": bool(bl.is_hidden),
+        "sales_count": bl.sales_count or 0,
+        "preview_photo": bl.preview_photo,
+        "new_price": to_float(bl.new_price),
+        "old_price": to_float(bl.old_price),
+    }
