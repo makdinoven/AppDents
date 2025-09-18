@@ -472,6 +472,9 @@
       "notFound": "No authors found",
       "found": "Authors found: {{count}}"
     },
+    "books": {
+      "books": "Books"
+    },
     "analytics": {
       "analytics": "Analytics",
       "size": "Size",
