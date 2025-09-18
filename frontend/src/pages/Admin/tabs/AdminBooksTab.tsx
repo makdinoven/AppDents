@@ -9,7 +9,6 @@ import {
   searchBooks,
 } from "../../../store/actions/adminActions.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../routes/routes.ts";
 import { INITIAL_BOOK } from "../../../common/helpers/commonConstants.ts";
 
 const AdminBooksTab = () => {
@@ -40,7 +39,8 @@ const AdminBooksTab = () => {
       <AdminList<any>
         data={books}
         itemName={"book_name"}
-        itemLink={(book) => `${Path.bookDetail}/${book.id}`}
+        // itemLink={(book) => `${Path.bookDetail}/${book.id}`}
+        itemLink={(book) => `ll/${book.id}`}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createBook(INITIAL_BOOK))}
