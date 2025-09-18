@@ -11,7 +11,6 @@ from sqlalchemy import or_, desc
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
-from ..dependencies.auth import get_current_user_optional
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import (
     User,
@@ -32,7 +31,7 @@ from ..schemas_v2.book import (
     PdfUploadInitRequest,
     BookLandingOut,
 )
-from ..schemas_v2.landing import LandingListPageResponse, LangEnum
+from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse
 from ..services_v2 import book_service
 from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
 
@@ -402,71 +401,6 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
 
 # ─────────────── КАТАЛОГ (публичный листинг) ────────────────────────────────
 logger = logging.getLogger("api.books_catalog")
-
-@router.get("", summary="Каталог книжных лендингов (листинг)")
-def list_book_landings(
-    page: int = Query(1, ge=1),
-    size: int = Query(12, ge=1, le=100),
-    language: Optional[str] = Query(None, description="EN,RU,ES,PT,AR,IT"),
-    author_id: Optional[int] = Query(None),
-    tag_id: Optional[int] = Query(None),
-    q: Optional[str] = Query(None, description="Поиск по названию книги/лендинга"),
-    sort: str = Query("new", description="new|price|sales|name"),
-    db: Session = Depends(get_db),
-):
-    """
-    Возвращает страницу книжных лендингов (is_hidden = FALSE).
-    """
-    qset = (
-        db.query(BookLanding)
-        .options(
-            selectinload(BookLanding.books).selectinload(Book.authors),
-        )
-        .filter(BookLanding.is_hidden.is_(False))
-    )
-
-    if language:
-        qset = qset.filter(BookLanding.language == language.upper())
-
-    # Фильтр по автору: через одиночную book.authors или через bundle (any)
-    if author_id:
-        qset = qset.filter(BookLanding.books.any(Book.authors.any(Author.id == author_id)))
-
-    if tag_id:
-        qset = qset.filter(BookLanding.books.any(Book.tags.any(Tag.id == tag_id)))
-
-    if q:
-        like = f"%{q.strip()}%"
-        qset = qset.filter(
-            or_(
-                BookLanding.landing_name.ilike(like),
-                BookLanding.description.ilike(like),
-                BookLanding.books.any(Book.title.ilike(like)),
-            )
-        )
-
-    # Сортировка
-    if sort == "price":
-        qset = qset.order_by(BookLanding.new_price.asc().nullslast())
-    elif sort == "sales":
-        qset = qset.order_by(BookLanding.sales_count.desc().nullslast())
-    elif sort == "name":
-        qset = qset.order_by(BookLanding.landing_name.asc().nullslast())
-    else:
-        # по умолчанию — новизна (updated_at ↓, затем id ↓)
-        qset = qset.order_by(BookLanding.updated_at.desc().nullslast(), BookLanding.id.desc())
-
-    total = qset.count()
-    items = qset.offset((page - 1) * size).limit(size).all()
-
-    return {
-        "page": page,
-        "size": size,
-        "total": total,
-        "total_pages": (total + size - 1) // size,
-        "items": [serialize_landing(bl) for bl in items],
-    }
-
 @router.patch(
     "/landing/set-hidden/{landing_id}",
     response_model=LandingDetailResponse,
