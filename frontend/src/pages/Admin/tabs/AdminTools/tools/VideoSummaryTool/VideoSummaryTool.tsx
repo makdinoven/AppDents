@@ -89,6 +89,11 @@ const VideoSummaryTool = () => {
 
   const handleClear = () => {
     setSummary(null);
+    setDataToSend({
+      video_url: "",
+      context: null,
+      answer_format: null,
+    });
   };
 
   return (
