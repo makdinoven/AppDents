@@ -6,6 +6,8 @@ import {
   ProfessorsIcon,
 } from "../../assets/icons/index.ts";
 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },
@@ -27,7 +29,6 @@ export const LANGUAGES_NAME = [
 
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
-  // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
   { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
   { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
   { icon: CartIcon, text: "nav.cart", link: Path.cart },
@@ -77,6 +78,7 @@ export const INITIAL_LANDING = {
   is_hidden: true,
 };
 
+
 export const INITIAL_USER = {
   email: "newuser@dents.com",
   password: "Newuserpassword123!",
@@ -86,8 +88,6 @@ export const INITIAL_USER = {
 export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";
-
-export const BASE_URL = "https://dent-s.com";
 
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },
