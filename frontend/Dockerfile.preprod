@@ -22,7 +22,7 @@ COPY . .
 ENV DEBUG="vite:*,rollup:*"
 RUN --mount=type=cache,target=/root/.cache/vite \
     --mount=type=cache,target=/root/.cache/esbuild \
-    npm run build:prod
+    npm run build:preprod
 
 ############################
 # Stage 2: Static via Nginx

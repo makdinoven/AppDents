@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:preprod": "vite --mode preprod",
+    "dev:prod": "vite --mode prod",
+    "build:prod": "vite build --mode prod",
+    "build:preprod": "vite build --mode preprod",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
