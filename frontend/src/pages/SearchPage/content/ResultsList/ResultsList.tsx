@@ -13,7 +13,7 @@ import {
   ProfessorsIcon,
 } from "../../../../assets/icons";
 
-const ResultList = ({
+const ResultsList = ({
   type,
   data,
   quantity,
@@ -49,4 +49,4 @@ const ResultList = ({
   );
 };
 
-export default ResultList;
+export default ResultsList;

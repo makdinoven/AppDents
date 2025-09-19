@@ -7,7 +7,7 @@ import { Trans } from "react-i18next";
 import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import useDebounce from "../../common/hooks/useDebounce.ts";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
-import ResultList from "./content/ResultsList/ResultsList.tsx";
+import ResultsList from "./content/ResultsList/ResultsList.tsx";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
 import NoResults from "../../components/ui/NoResults/NoResults.tsx";
@@ -17,7 +17,6 @@ import {
   ResultLandingData,
   SearchResultKeysType,
 } from "../../store/slices/mainSlice.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
 import LanguagesFilter from "./filters/LanguagesFilter/LanguagesFilter.tsx";
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 import {
@@ -86,6 +85,7 @@ const SearchPage = () => {
     RESULT_KEYS.some(
       (key) => searchResults[key] && searchResults[key]!.length > 0,
     );
+
   const showNoResults =
     !hasResults && !loading && !!debouncedSearchValue && searchValue === q;
   const showPlaceholderCourses =
@@ -140,7 +140,7 @@ const SearchPage = () => {
             <h3 className={s.dropdown_title}>
               <Trans i18nKey={"nav.search"} />
             </h3>
-            <Loader className={`${s.loader} ${loading ? s.active : ""}`} />
+            {/*<Loader className={`${s.loader} ${loading ? s.active : ""}`} />*/}
           </div>
           <div className={s.search_wrapper}>
             <Search
@@ -176,7 +176,7 @@ const SearchPage = () => {
           </div>
 
           <div className={s.results_container}>
-            {showSkeleton && <ResultsListSkeleton />}
+            {showSkeleton && <ResultsListSkeleton types={selectedCategories} />}
             {showNoResults && <NoResults />}
             {hasResults && !loading && (
               <div className={s.results_list}>
@@ -185,7 +185,7 @@ const SearchPage = () => {
                   const quantity = searchResults.counts[key];
                   if (!data || data.length === 0) return null;
                   return (
-                    <ResultList
+                    <ResultsList
                       key={key}
                       type={key}
                       data={data}
@@ -197,7 +197,7 @@ const SearchPage = () => {
             )}
             {showPlaceholderCourses && (
               <div className={s.results_list}>
-                <ResultList
+                <ResultsList
                   data={placeholderCourses}
                   type={"landings"}
                   quantity={placeholderCourses.length}
