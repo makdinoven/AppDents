@@ -1,20 +1,10 @@
-# syntax=docker/dockerfile:1.7
-
-############################
-# Stage 1: Build (Vite)
-############################
+# Stage 1: сборка приложения
 FROM node:22-alpine AS builder
 WORKDIR /app
-
-# Больше памяти Node во время сборки (важно для Vite/Rollup)
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-
-# Ускоряем npm за счёт кэша
+# Копируем package.json и package-lock.json (или yarn.lock)
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps --no-audit --no-fund
-
-# Копируем исходники
+RUN npm install --legacy-peer-deps
+# Копируем исходный код
 COPY . .
 
 # Кэш для vite/esbuild, детальный вывод на время отладки
@@ -27,14 +17,12 @@ RUN --mount=type=cache,target=/root/.cache/vite \
 ############################
 # Stage 2: Static via Nginx
 ############################
+# Stage 2: отдача статики через Nginx
 FROM nginx:alpine
-# (необязательно) немного улучшить кеширование статики
-RUN sed -i 's/sendfile.*/sendfile on;/' /etc/nginx/nginx.conf
-
-# Готовая статика
+# Копируем собранные файлы из stage builder в стандартную папку nginx для статики
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Конфиг SPA (fallback на index.html)
+# Копируем кастомную конфигурацию Nginx для SPA fallback
+# Если frontend.conf лежит в корне каталога фронтенда, то:
 COPY frontend.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
