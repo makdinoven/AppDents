@@ -10,7 +10,7 @@ const ResultAuthorSkeleton = () => {
       <div className={s.card_body}>
         <h5 className={s.name_placeholder} />
         <div className={s.count_items}>
-          <div />
+          {/*<div />*/}
           <div />
         </div>
         <p className={s.description} />
