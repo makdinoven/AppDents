@@ -145,13 +145,24 @@ services:
       - frontend
       - adminer
     ports:
-      - "80:80"                       # HTTPS убран
+      - "80:80"
+      - "443:443"
     networks: [pub, priv]
     volumes:
-      - ./assets:/assets              # остаётся, чтобы отдавать static/media
+      - ./assets:/assets
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-web:/var/www/certbot
     logging:
       driver: json-file
       options: {max-size: "5m", max-file: "10"}
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot_preprod
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-web:/var/www/certbot
+    networks: [ pub ]
 
 # ───────────────────────── Networks & Volumes ───────────────────────
 networks:
@@ -160,3 +171,5 @@ networks:
 
 volumes:
   mysql_data_preprod:
+  certbot-etc:
+  certbot-web:
