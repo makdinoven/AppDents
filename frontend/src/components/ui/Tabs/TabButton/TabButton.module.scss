@@ -1,6 +1,7 @@
 .btn {
   display: flex;
   @include clamped-p2;
+  text-transform: capitalize;
   color: $accent;
   padding: 2px 5px;
   border-bottom: 2px solid $background-color;

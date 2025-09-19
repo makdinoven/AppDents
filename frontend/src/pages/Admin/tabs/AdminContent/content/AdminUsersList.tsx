@@ -1,16 +1,19 @@
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../routes/routes.ts";
-import { INITIAL_USER } from "../../../common/helpers/commonConstants.ts";
+import AdminList from "../../../modules/common/AdminList/AdminList.tsx";
+import { Path } from "../../../../../routes/routes.ts";
+import { INITIAL_USER } from "../../../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../../store/store.ts";
 import {
   createUser,
   getUsers,
   searchUsers,
-} from "../../../store/actions/adminActions.ts";
-import { ParamsType } from "../../../api/adminApi/types.ts";
+} from "../../../../../store/actions/adminActions.ts";
+import { ParamsType } from "../../../../../api/adminApi/types.ts";
 
-const AdminUsersTab = () => {
+const AdminUsersList = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const users = useSelector((state: AppRootStateType) => state.admin.users);
   const dispatch = useDispatch<AppDispatchType>();
@@ -37,4 +40,4 @@ const AdminUsersTab = () => {
   );
 };
 
-export default AdminUsersTab;
+export default AdminUsersList;

@@ -120,7 +120,9 @@ const AnalyticsPurchases = () => {
               ))}
             </div>
           </div>
-          <PurchasesSourceChart data={chartData} type={chartMode} />
+          {chartData && (
+            <PurchasesSourceChart data={chartData} type={chartMode} />
+          )}
           <Table
             data={data.items}
             columnLabels={{

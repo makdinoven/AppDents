@@ -1,38 +1,38 @@
 import s from "./AdminPanel.module.scss";
 import { useSearchParams } from "react-router-dom";
-import AdminCoursesTab from "../tabs/AdminCoursesTab.tsx";
-import AdminLandingsTab from "../tabs/AdminLandingsTab.tsx";
-import AdminAuthorsTab from "../tabs/AdminAuthorsTab.tsx";
-import AdminUsersTab from "../tabs/AdminUsersTab.tsx";
 import SelectableList from "../../../components/CommonComponents/SelectableList/SelectableList.tsx";
 import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
 import { FILTER_PARAM_KEYS } from "../../../common/helpers/commonConstants.ts";
 import AdminTools from "../tabs/AdminTools/AdminTools.tsx";
-import AdminBooksTab from "../tabs/AdminBooksTab.tsx";
+import AdminContent, {
+  ADMIN_CONTENT_QUERY_KEY,
+} from "../tabs/AdminContent/AdminContent.tsx";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabFromParams = searchParams.get("tab");
+  const defaultTabKey = "content";
   useEffect(() => {
     if (!tabFromParams) {
       const newParams = new URLSearchParams(searchParams);
-      newParams.set("tab", "landings");
+      newParams.set("tab", defaultTabKey);
       setSearchParams(newParams);
     }
   }, [tabFromParams, searchParams, setSearchParams]);
 
-  const activeTab = tabFromParams || "landings";
+  const activeTab = tabFromParams || defaultTabKey;
 
   const handleSelectTab = (value: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set("tab", value);
     newParams.delete(FILTER_PARAM_KEYS.language);
     newParams.delete(FILTER_PARAM_KEYS.size);
-    if (value === "analytics") {
+    if (value === "analytics" || value === "tools") {
       newParams.delete("page");
+      newParams.delete(ADMIN_CONTENT_QUERY_KEY);
     } else {
-      newParams.delete("content");
+      newParams.delete(ADMIN_CONTENT_QUERY_KEY);
       newParams.set("page", "1");
     }
     setSearchParams(newParams);
@@ -40,26 +40,10 @@ const AdminPanel = () => {
 
   const tabs = [
     {
-      name: "admin.landings.landings",
-      value: "landings",
-      component: <AdminLandingsTab />,
+      name: "admin.content",
+      value: "content",
+      component: <AdminContent />,
     },
-    {
-      name: "admin.courses.courses",
-      value: "courses",
-      component: <AdminCoursesTab />,
-    },
-    {
-      name: "admin.books.books",
-      value: "books",
-      component: <AdminBooksTab />,
-    },
-    {
-      name: "admin.authors.authors",
-      value: "authors",
-      component: <AdminAuthorsTab />,
-    },
-    { name: "admin.users.users", value: "users", component: <AdminUsersTab /> },
     {
       name: "admin.analytics.analytics",
       value: "analytics",
