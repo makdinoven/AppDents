@@ -1,5 +1,6 @@
 import { Path } from "../../routes/routes.ts";
 import {
+  BooksIcon,
   CartIcon,
   CoursesIcon,
   HomeIcon,
@@ -27,9 +28,9 @@ export const LANGUAGES_NAME = [
 
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
-  // { icon: BooksIcon, text: "nav.books", link: "Path.books" },
-  { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
   { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
+  { icon: BooksIcon, text: "nav.books", link: Path.books },
+  { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
   { icon: CartIcon, text: "nav.cart", link: Path.cart },
 ];
 
@@ -43,6 +44,8 @@ export const LANDING_ROUTES = [
   Path.videoLanding,
   Path.webinarLanding,
 ];
+
+export const BOOK_LANDING_ROUTES = [Path.bookLanding, Path.bookLandingClient];
 
 export const LANDING_AD_ROUTES = [
   Path.landing,
@@ -77,6 +80,12 @@ export const INITIAL_LANDING = {
   is_hidden: true,
 };
 
+export const INITIAL_BOOK = {
+  book_name: "New book",
+  is_hidden: true,
+  page_name: "book-1",
+};
+
 export const INITIAL_USER = {
   email: "newuser@dents.com",
   password: "Newuserpassword123!",
@@ -87,7 +96,7 @@ export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";
 
-export const BASE_URL = "https://dent-s.com";
+export const BASE_URL = "http://test.dent-s.com";
 
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },
@@ -184,3 +193,5 @@ export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
 export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
+
+export const FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
