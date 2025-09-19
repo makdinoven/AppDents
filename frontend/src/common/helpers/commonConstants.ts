@@ -7,6 +7,8 @@ import {
   ProfessorsIcon,
 } from "../../assets/icons/index.ts";
 
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export const LANGUAGES = [
   { label: "English", value: "EN" },
   { label: "Русский", value: "RU" },
@@ -83,7 +85,6 @@ export const INITIAL_LANDING = {
 export const INITIAL_BOOK = {
   book_name: "New book",
   is_hidden: true,
-  page_name: "book-1",
 };
 
 export const INITIAL_USER = {
@@ -95,8 +96,6 @@ export const INITIAL_USER = {
 export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";
-
-export const BASE_URL = "http://test.dent-s.com";
 
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },
