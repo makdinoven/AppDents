@@ -30,6 +30,7 @@ export const Path = {
   courseDetail: "/admin/course",
   landingDetail: "/admin/landing",
   bookDetail: "/admin/book",
+  bookLandingDetail: "/admin/book-landing",
   userDetail: "/admin/user",
   authorDetail: "/admin/author",
   adminLandings: "/admin/landings",
