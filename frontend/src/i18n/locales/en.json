@@ -513,10 +513,25 @@
       "tools": "tools",
       "clip": {
         "title": "Clip tool",
-        "placeholder": "Enter an URL",
-        "label": "Enter src video url",
+        "placeholder": "Enter an URL...",
+        "label": "Source video url *",
         "getClip": "Get clip",
         "yourClipUrl": "Your clip url:"
+      },
+      "videoSummary": {
+        "title": "Video summary tool",
+        "placeholder": "Enter an URL...",
+        "label": "Source video url *",
+        "getSummary": "Get summary",
+        "yourVideoSummary": "Your summary:",
+        "context": {
+          "label": "Summary context",
+          "placeholder": "Enter summary context.."
+        },
+        "answer": {
+          "label": "Answer format",
+          "placeholder": "Enter answer format.."
+        }
       }
     }
   }

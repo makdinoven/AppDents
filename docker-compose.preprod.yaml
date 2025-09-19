@@ -106,7 +106,7 @@ services:
 
   # ───────────────────────────── Frontend ───────────────────────────
   frontend:
-    build: {context: ./frontend, dockerfile: Dockerfile}
+    build: {context: ./frontend, dockerfile: Dockerfile.preprod}
     container_name: frontend_preprod
     restart: always
     ports: ["3002:80"]

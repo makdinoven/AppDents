@@ -43,7 +43,18 @@ const initialState: AdminState = {
 const adminSlice = createSlice({
   name: "admin",
   initialState,
-  reducers: {},
+  reducers: {
+    toggleLandingVisibility: (
+      state,
+      action: PayloadAction<{ id: number; isHidden: boolean }>,
+    ) => {
+      const { id, isHidden } = action.payload;
+      const landing = state.landings.list.find((item: any) => item.id === id);
+      if (landing) {
+        landing.is_hidden = isHidden;
+      }
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getCourses.pending, (state) => {
@@ -196,5 +207,5 @@ const adminSlice = createSlice({
       });
   },
 });
-
+export const { toggleLandingVisibility } = adminSlice.actions;
 export const adminReducer = adminSlice.reducer;
