@@ -14,6 +14,7 @@ interface MultiSelectProps<T> {
   labelKey: keyof T;
   isSearchable?: boolean;
   isWider?: boolean;
+  centrate?: boolean;
 }
 
 const HOVER_COLOR = "rgba(100, 116, 139, 0.1)";
@@ -33,6 +34,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
   labelKey,
   isSearchable,
   isWider = false,
+  centrate = false,
 }: MultiSelectProps<T>) => {
   const customStyles = {
     placeholder: (provided: any) => ({
@@ -117,6 +119,8 @@ const MultiSelect = <T extends { [key: string]: any }>({
       color: state.isSelected ? BACKGROUND_COLOR : ACCENT_COLOR,
       padding: "2px 10px",
       borderRadius: "15px",
+      display: "flex",
+      justifyContent: centrate ? "center" : "",
       transition: "all 0.15s ease-in-out",
       "&:hover": state.isSelected
         ? { backgroundColor: PRIMARY_COLOR, color: BACKGROUND_COLOR }

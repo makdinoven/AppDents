@@ -1,0 +1,61 @@
+.thumb_nails_wrapper {
+  position: absolute;
+  z-index: 3;
+  width: 160px;
+  background-color: $background-color;
+  top: 50px;
+  left: 0;
+  @include clamped-p3();
+  overflow-y: auto;
+  transform: translateX(-100%);
+  height: fit-content;
+  max-height: calc(100% - 50px);
+  min-height: calc(100% - 50px);
+  border-right: 2px solid $hover-color;
+  @include transition();
+
+  @include custom-scrollbar();
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $hover-color-darken;
+  }
+
+  scrollbar-color: $hover-color-darken transparent;
+
+  &.open {
+    transform: translateX(0px);
+  }
+
+  .thumb_nails_document {
+    position: relative;
+    margin: 10px 0;
+
+    .thumb_nails_list {
+      @include flex-column();
+      width: 100%;
+      height: 100%;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 12px;
+
+      .thumb_nail_wrapper {
+        @include flex-column();
+        align-items: center;
+
+        .thumb_nail {
+          @include flex-center();
+
+          &.active {
+            outline: 2px solid $primary;
+            outline-offset: 3px;
+          }
+        }
+
+        .page {
+          @include flex-center();
+          margin-top: 12px;
+        }
+      }
+    }
+  }
+}

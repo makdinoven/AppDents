@@ -1,0 +1,165 @@
+.section_wrapper {
+  position: relative;
+  width: 100%;
+  height: fit-content;
+
+  .buy_section {
+    border: 2px solid $hover-color;
+    border-radius: 20px;
+    color: $accent-glass;
+    padding: 15px;
+    @include flex-column();
+    @include clamped-p1();
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+
+    &.full_width {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      z-index: 3;
+      padding: 20px;
+      background: rgba(237, 248, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-top: none;
+      box-shadow:
+        0 0 5px rgba(0, 0, 0, 0.05),
+        inset 0 -5px 10px rgba(237, 248, 255, 1);
+
+      @include clamped-p1();
+
+      @media (max-width: $tablet-breakpoint) {
+        height: fit-content;
+      }
+
+      @media (max-width: $mobile-breakpoint) {
+        backdrop-filter: blur(10px);
+      }
+    }
+
+    &.buy {
+      align-items: flex-start;
+    }
+
+    &.download {
+    }
+
+    .buy_text {
+      text-align: center;
+      width: 100%;
+      display: block;
+      margin-bottom: 10px;
+      @include clamped-p2();
+
+      &.buy {
+        text-align: left;
+      }
+
+      .highlight {
+        color: $primary;
+      }
+
+      &.full_width {
+        @include clamped-p1();
+      }
+    }
+
+    .buy_button {
+      color: $tertiary;
+      text-transform: unset;
+      padding: 5px;
+      width: 60%;
+      border-radius: 40px;
+      margin-bottom: 6px;
+      background-color: $primary;
+      border-radius: 40px;
+      @include clamped-p1();
+
+      &.buy {
+        padding: 10px;
+        margin: 0;
+      }
+
+      .prices {
+        @include flex-center();
+        gap: 10px;
+
+        .old_price {
+          text-decoration: line-through;
+        }
+
+        .new_price {
+          color: $background-color;
+        }
+      }
+    }
+
+    .format_buttons {
+      @include flex-center();
+      flex-direction: row;
+      gap: 15px;
+      @include clamped-p3;
+
+      .active {
+        @include flex-center();
+        background-color: $primary;
+        border-radius: 50%;
+        aspect-ratio: 1/1;
+        width: 70px;
+        height: auto;
+        color: $tertiary;
+
+        @media (max-width: $tablet-breakpoint) {
+          width: 50px;
+        }
+
+        &.full_width {
+          @include clamped-p2();
+        }
+      }
+    }
+  }
+
+  .tooth {
+    position: absolute;
+    top: -50%;
+    right: 0;
+    z-index: 1;
+
+    width: auto;
+    height: 530px;
+    aspect-ratio: 42/53;
+
+    @media (max-width: $middle-breakpoint) {
+      top: -30%;
+      height: 430px;
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      top: -30%;
+      height: 340px;
+    }
+
+    @media (max-width: $mobile-breakpoint) {
+      height: 320px;
+    }
+
+    path {
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .buy_section {
+    min-height: 200px;
+
+    .buy_text {
+      @include clamped-p1();
+    }
+  }
+}

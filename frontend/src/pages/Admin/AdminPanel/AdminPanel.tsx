@@ -9,6 +9,7 @@ import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
 import { FILTER_PARAM_KEYS } from "../../../common/helpers/commonConstants.ts";
 import AdminTools from "../tabs/AdminTools/AdminTools.tsx";
+import AdminBooksTab from "../tabs/AdminBooksTab.tsx";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -47,6 +48,11 @@ const AdminPanel = () => {
       name: "admin.courses.courses",
       value: "courses",
       component: <AdminCoursesTab />,
+    },
+    {
+      name: "admin.books.books",
+      value: "books",
+      component: <AdminBooksTab />,
     },
     {
       name: "admin.authors.authors",
