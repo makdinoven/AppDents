@@ -26,6 +26,7 @@ import {
 import CategoriesFilter from "./filters/CategoriesFilter/CategoriesFilter.tsx";
 import { t } from "i18next";
 import ResultsListSkeleton from "../../components/ui/Skeletons/ResultsListSkeleton/ResultsListSkeleton.tsx";
+import Loader from "../../components/ui/Loader/Loader.tsx";
 
 const RESULT_KEYS: SearchResultKeysType[] = [
   "landings",
@@ -86,15 +87,14 @@ const SearchPage = () => {
       (key) => searchResults[key] && searchResults[key]!.length > 0,
     );
 
-  const showNoResults =
-    !hasResults && !loading && !!debouncedSearchValue && searchValue === q;
+  const showSkeleton = loading && !!debouncedSearchValue;
+  const showNoResults = !hasResults && !showSkeleton && !!debouncedSearchValue;
   const showPlaceholderCourses =
     !hasResults &&
     !showNoResults &&
     !!placeholderCourses.length &&
     !loading &&
     !debouncedSearchValue;
-  const showSkeleton = loading && !!debouncedSearchValue;
 
   useEffect(() => {
     if (
@@ -140,7 +140,7 @@ const SearchPage = () => {
             <h3 className={s.dropdown_title}>
               <Trans i18nKey={"nav.search"} />
             </h3>
-            {/*<Loader className={`${s.loader} ${loading ? s.active : ""}`} />*/}
+            <Loader className={`${s.loader} ${loading ? s.active : ""}`} />
           </div>
           <div className={s.search_wrapper}>
             <Search

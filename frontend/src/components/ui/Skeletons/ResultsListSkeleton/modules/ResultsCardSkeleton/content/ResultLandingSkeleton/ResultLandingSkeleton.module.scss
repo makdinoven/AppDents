@@ -46,15 +46,17 @@
 }
 
 .old_price {
+  width: 47px;
   @include skeleton(
     $pos: relative,
     $color: $darker-grey,
     $h: clamp(14px, 2.4vw, 20px),
-    $w: 40px
+    $w: 50px
   );
 }
 
 .new_price {
+  width: 46px;
   @include skeleton(
     $pos: relative,
     $color: $darker-grey,
@@ -70,18 +72,16 @@
 .name {
   @include skeleton(
     $pos: relative,
-    $h: clamp(30px, 5.8vw, 50px),
+    $h: 26px,
     $l: unset,
-    $radius: 15px
+    $radius: 15px,
+    $w: 90%
   );
+  margin-bottom: 5px;
 }
 
 .authors {
-  @include skeleton(
-    $pos: relative,
-    $h: clamp(24px, 4.4vw, 36px),
-    $radius: 15px
-  );
+  @include skeleton($pos: relative, $h: 20px, $radius: 15px, $w: 70%);
 }
 
 @media (max-width: $tablet-breakpoint) {
@@ -128,7 +128,29 @@
   }
 
   .content {
-    gap: 2px;
+    gap: 3px;
+  }
+
+  .name {
+    height: 32px;
+  }
+
+  .authors {
+    height: 27px;
+  }
+
+  .new_price,
+  .old_price {
+    width: 28px;
+    border-radius: 10px;
+  }
+
+  .new_price {
+    height: 21px;
+  }
+
+  .old_price {
+    height: 15.5px;
   }
 
   .cart_btn {

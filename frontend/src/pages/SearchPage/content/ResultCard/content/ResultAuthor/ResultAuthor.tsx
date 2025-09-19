@@ -41,14 +41,13 @@ const ResultAuthor = ({
         {hasCounts && (
           <div className={s.count_items}>
             {counts.map(
-              (item) => (
-                // item.count > 0 && (
-                <div key={item.key} className={s.icon_count_container}>
-                  {item.icon}
-                  <Trans i18nKey={item.key} count={item.count} />
-                </div>
-              ),
-              // ),
+              (item) =>
+                item.count > 0 && (
+                  <div key={item.key} className={s.icon_count_container}>
+                    {item.icon}
+                    <Trans i18nKey={item.key} count={item.count} />
+                  </div>
+                ),
             )}
           </div>
         )}

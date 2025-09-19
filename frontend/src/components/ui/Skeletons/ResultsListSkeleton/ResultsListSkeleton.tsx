@@ -3,17 +3,13 @@ import ResultCardSkeleton from "./modules/ResultsCardSkeleton/ResultCardSkeleton
 import { SearchResultKeysType } from "../../../../store/slices/mainSlice.ts";
 
 const ResultsListSkeleton = ({ types }: { types: SearchResultKeysType[] }) => {
-  const resolveType = () => {
-    if (types.length > 1) {
-      return "landings";
-    } else if (types[0] === "authors") {
-      return "authors";
-    } else {
-      return "book_landings";
-    }
-  };
+  let type: SearchResultKeysType;
 
-  const type = resolveType();
+  if (types.length > 1) {
+    type = "landings";
+  } else {
+    type = types[0];
+  }
 
   return (
     <div className={s.list_container}>
