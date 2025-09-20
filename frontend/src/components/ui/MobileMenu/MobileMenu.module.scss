@@ -1,6 +1,14 @@
 .menu {
   display: none;
   position: sticky;
+  padding: 2.5px;
+  bottom: 5px;
+  background-color: $primary-04;
+  backdrop-filter: blur(20px);
+  z-index: 999;
+  border-radius: 25px;
+  margin: 0 10px;
+  border: 0.5px solid $primary;
 
   .menu_content {
     padding: 5px;
@@ -10,30 +18,9 @@
     border-radius: 22px;
   }
 
-  padding: 2.5px;
-  bottom: 5px;
-  background-color: $primary-04;
-  backdrop-filter: blur(20px);
-  z-index: 999;
-  border-radius: 25px;
-  //border-top-left-radius: 15px;
-  //width: 100%;
-  margin: 0 10px;
-  border: 0.5px solid $primary;
-  //box-shadow: 0 -0.5px 1px $primary;
-
-  //&::after {
-  //  content: "";
-  //  display: block;
-  //  height: 50px;
-  //  width: 100%;
-  //  position: absolute;
-  //  bottom: -48px;
-  //  left: 0;
-  //  right: 0;
-  //  background-color: inherit;
-  //  backdrop-filter: blur(15px);
-  //}
+  @supports (-webkit-overflow-scrolling: touch) {
+    bottom: -5px;
+  }
 
   .btn_wrapper {
     width: 100%;
@@ -44,8 +31,5 @@
 @media (max-width: $tablet-breakpoint) {
   .menu {
     display: block;
-
-    .menu_content {
-    }
   }
 }
