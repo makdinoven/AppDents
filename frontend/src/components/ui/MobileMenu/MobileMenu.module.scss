@@ -18,6 +18,10 @@
     border-radius: 22px;
   }
 
+  @supports (-webkit-overflow-scrolling: touch) {
+    bottom: 0;
+  }
+
   .btn_wrapper {
     width: 100%;
     @include flex-center;
