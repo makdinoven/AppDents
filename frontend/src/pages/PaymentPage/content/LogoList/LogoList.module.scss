@@ -11,10 +11,9 @@
     overflow: hidden;
 
     svg {
-      max-height: 100%;
-      max-width: 100%;
-      width: auto;
-      height: auto;
+      width: 100%;
+      height: inherit;
+      object-fit: contain;
       display: block;
     }
   }
