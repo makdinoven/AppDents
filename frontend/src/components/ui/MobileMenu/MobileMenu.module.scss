@@ -2,7 +2,7 @@
   display: none;
   position: sticky;
   padding: 2.5px;
-  bottom: 5px;
+  bottom: 10px;
   background-color: $primary-04;
   backdrop-filter: blur(20px);
   z-index: 999;
@@ -16,6 +16,10 @@
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     background-color: $background-color-09;
     border-radius: 22px;
+  }
+
+  @supports (-webkit-overflow-scrolling: touch) {
+    bottom: 5px;
   }
 
   .btn_wrapper {
