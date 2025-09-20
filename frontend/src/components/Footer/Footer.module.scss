@@ -62,19 +62,6 @@ $row-gap: clamp(20px, 5vw, 43px);
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .footer {
-    &::after {
-      position: absolute;
-      content: "";
-      background-color: $accent;
-      bottom: -59px;
-      width: 100%;
-      height: 60px;
-    }
-  }
-}
-
-@media (max-width: $mobile-breakpoint) {
   .copyright {
     text-align: center;
   }
@@ -85,6 +72,17 @@ $row-gap: clamp(20px, 5vw, 43px);
 
     .list {
       text-align: left;
+    }
+  }
+
+  .footer {
+    &::after {
+      position: absolute;
+      content: "";
+      background-color: $accent;
+      bottom: -59px;
+      width: 100%;
+      height: 60px;
     }
   }
 }
