@@ -1,15 +1,39 @@
 .menu {
   display: none;
-  grid-template-columns: (repeat(3, 1fr));
   position: sticky;
-  padding: 7px 20px 17px;
-  bottom: 0;
-  background-color: $background-color;
+
+  .menu_content {
+    padding: 5px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    background-color: $background-color-09;
+    border-radius: 22px;
+  }
+
+  padding: 2.5px;
+  bottom: 5px;
+  background-color: $primary-04;
+  backdrop-filter: blur(20px);
   z-index: 999;
-  border-top-right-radius: 15px;
-  border-top-left-radius: 15px;
-  width: 100%;
-  box-shadow: 0 -0.5px 1px $primary;
+  border-radius: 25px;
+  //border-top-left-radius: 15px;
+  //width: 100%;
+  margin: 0 10px;
+  border: 0.5px solid $primary;
+  //box-shadow: 0 -0.5px 1px $primary;
+
+  //&::after {
+  //  content: "";
+  //  display: block;
+  //  height: 50px;
+  //  width: 100%;
+  //  position: absolute;
+  //  bottom: -48px;
+  //  left: 0;
+  //  right: 0;
+  //  background-color: inherit;
+  //  backdrop-filter: blur(15px);
+  //}
 
   .btn_wrapper {
     width: 100%;
@@ -19,7 +43,9 @@
 
 @media (max-width: $tablet-breakpoint) {
   .menu {
-    display: flex;
-    padding: 7px 10px 17px;
+    display: block;
+
+    .menu_content {
+    }
   }
 }

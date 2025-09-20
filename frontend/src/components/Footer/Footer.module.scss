@@ -1,20 +1,12 @@
 $row-gap: clamp(20px, 5vw, 43px);
 
 .footer {
-  overflow: hidden;
+  //overflow: hidden;
   position: relative;
   background-color: $accent;
   color: $text-color;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-}
-
-.logo {
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  right: -20px;
-  bottom: -72px;
 }
 
 .footer_container {
@@ -67,6 +59,19 @@ $row-gap: clamp(20px, 5vw, 43px);
 
 .copyright {
   @include clamped-p4;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .footer {
+    &::after {
+      position: absolute;
+      content: "";
+      background-color: $accent;
+      bottom: -59px;
+      width: 100%;
+      height: 60px;
+    }
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
