@@ -107,4 +107,14 @@ export const mainApi = {
       },
     });
   },
+
+  getPrivacyPolicy(lang: string) {
+    return instance.get(`/privacy-policy/${lang}`);
+  },
+  getCookiePolicy(lang: string) {
+    return instance.get(`/cookie-policy/${lang}`);
+  },
+  getTermsOfUse(lang: string) {
+    return instance.get(`/terms-of-use/${lang}`);
+  },
 };
