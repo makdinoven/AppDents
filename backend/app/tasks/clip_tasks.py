@@ -10,6 +10,7 @@ from urllib.parse import unquote, urlparse, quote
 from threading import Thread, Event
 from collections import deque
 import signal
+from typing import Callable, Optional
 
 import boto3
 from botocore.config import Config
@@ -25,12 +26,19 @@ S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# Таймаут до «первых байт»/после старта у стрима
+# Таймауты стриминга
 START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "600"))   # ждать первые байты, сек
 NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "120"))
 
-# Разрешить фолбэк на локальную загрузку/обрезку, если стрим не стартовал
+# Минимальный «разумный» размер клипа (защита от пустых заголовков)
+MIN_OK_BYTES        = int(os.getenv("CLIP_MIN_OK_BYTES", str(1_000_000)))  # 1 MB по умолчанию
+
+# Разрешить фолбэк на локальную загрузку/обрезку
 ALLOW_DOWNLOAD_FALLBACK = os.getenv("CLIP_ALLOW_DOWNLOAD_FALLBACK", "true").lower() == "true"
+
+# Размер части для multipart (≥ 5MiB)
+MIN_PART     = 5 * 1024 * 1024
+DEFAULT_PART = max(int(os.getenv("CLIP_PART_SIZE", str(8 * 1024 * 1024))), MIN_PART)
 
 # основной клиент
 s3 = boto3.client(
@@ -42,7 +50,7 @@ s3 = boto3.client(
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
 
-# presigned V4 клиент (если всё же понадобится)
+# presigned V4 клиент
 s3_v4 = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
@@ -104,10 +112,86 @@ def _stderr_collector(proc):
     return tail, stop
 
 def _make_presigned(bucket: str, key: str) -> str:
-    # V4 подпись
     return s3_v4.generate_presigned_url(
         "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=3600
     )
+
+# ---- ручной multipart upload из pipe (вместо upload_fileobj) ----
+def multipart_upload_from_pipe(
+    pipe,
+    *,
+    bucket: str,
+    key: str,
+    content_type: str = "video/mp4",
+    content_disposition: str = "inline",
+    part_size: int = DEFAULT_PART,
+    progress_cb: Optional[Callable[[int], None]] = None,
+) -> int:
+    """
+    Читает байты из pipe (ffmpeg stdout) и загружает их в S3 через Multipart Upload.
+    Возвращает общее число отправленных байт.
+    """
+    mpu = s3.create_multipart_upload(
+        Bucket=bucket,
+        Key=key,
+        ContentType=content_type,
+        ContentDisposition=content_disposition,
+    )
+    upload_id = mpu["UploadId"]
+    parts = []
+    part_no = 1
+    sent_total = 0
+    buf = bytearray()
+
+    try:
+        READ_CHUNK = 1024 * 1024
+        while True:
+            chunk = pipe.read(READ_CHUNK)
+            if not chunk:
+                break
+            buf += chunk
+            if progress_cb:
+                progress_cb(len(chunk))
+
+            while len(buf) >= part_size:
+                payload = bytes(buf[:part_size])
+                del buf[:part_size]
+                resp = s3.upload_part(
+                    Bucket=bucket,
+                    Key=key,
+                    PartNumber=part_no,
+                    UploadId=upload_id,
+                    Body=payload,
+                )
+                parts.append({"ETag": resp["ETag"], "PartNumber": part_no})
+                sent_total += len(payload)
+                part_no += 1
+
+        if buf:
+            resp = s3.upload_part(
+                Bucket=bucket,
+                Key=key,
+                PartNumber=part_no,
+                UploadId=upload_id,
+                Body=bytes(buf),
+            )
+            parts.append({"ETag": resp["ETag"], "PartNumber": part_no})
+            sent_total += len(buf)
+
+        s3.complete_multipart_upload(
+            Bucket=bucket,
+            Key=key,
+            UploadId=upload_id,
+            MultipartUpload={"Parts": parts},
+        )
+        return sent_total
+
+    except Exception:
+        try:
+            s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
+        finally:
+            pass
+        raise
 
 # ---- FFmpeg (HTTP input → stdout) ----
 def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
@@ -122,7 +206,7 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
         "-loglevel", "error",
         "-threads", "1",
 
-        # страховки для HTTP-ввода
+        # сетевые страховки
         "-rw_timeout", "30000000",  # 30s, μs
         "-reconnect", "1",
         "-reconnect_streamed", "1",
@@ -136,6 +220,7 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
         "-c", "copy",
         "-bsf:a", "aac_adtstoasc",
 
+        # запись в не-seekable stdout → fragmented MP4
         "-movflags", "frag_keyframe+empty_moov",
         "-muxpreload", "0",
         "-muxdelay", "0",
@@ -148,7 +233,7 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
 
 def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0: float):
     """
-    FFmpeg HTTP → stdout → S3 upload_fileobj, прогресс и двухфазный watchdog.
+    FFmpeg HTTP → stdout → S3 (ручной multipart), прогресс и двухфазный watchdog.
     Возвращает (uploaded_bytes, ffmpeg_ret, stderr_tail)
     """
     proc = _spawn_ffmpeg_http(in_url, length_sec=300)
@@ -183,13 +268,14 @@ def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: s
 
     def _uploader():
         try:
-            s3.upload_fileobj(
+            multipart_upload_from_pipe(
                 proc.stdout,
-                S3_BUCKET,
-                clip_key,
-                ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
-                Config=TRANSFER_CFG,
-                Callback=_cb,
+                bucket=S3_BUCKET,
+                key=clip_key,
+                content_type=mime,
+                content_disposition="inline",
+                part_size=DEFAULT_PART,
+                progress_cb=_cb,
             )
         except Exception as e:
             upload_err["exc"] = e
@@ -227,6 +313,7 @@ def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: s
             ret = 0
 
     tail = "\n".join(list(stderr_tail)[-30:])
+
     if upload_err["exc"] is not None:
         raise RuntimeError(f"S3 upload failed: {upload_err['exc']}; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}")
 
@@ -263,9 +350,9 @@ def _ffmpeg_local_clip(src_path: str, dst_path: str):
 )
 def clip_video(self, src_url: str) -> dict:
     """
-    Попытка A: прямой URL (HTTP) → ffmpeg → S3 (стрим).
-    Попытка B: presigned V4 → ffmpeg → S3 (стрим).
-    Фолбэк C (если разрешён): S3 → локальный файл → ffmpeg (файл) → локальный файл → S3.
+    Попытка A: прямой URL (HTTP) → ffmpeg → S3 (стрим, multipart).
+    Попытка B: presigned V4 → ffmpeg → S3 (стрим, multipart).
+    Фолбэк C: S3 → локальный файл → ffmpeg (файл) → локальный файл → S3.
     """
     t0 = time.time()
     task_id = getattr(self.request, "id", None) or getattr(self.request, "root_id", None)
@@ -288,18 +375,25 @@ def clip_video(self, src_url: str) -> dict:
 
     # ===== A: прямой URL как есть =====
     uploaded, ret, tail = _run_stream_pipeline(self, task_id, src_url, clip_key, mime, t0)
-    if uploaded > 0 and ret == 0:
+    if uploaded >= MIN_OK_BYTES and ret == 0:
         clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
         return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded, "elapsed_sec": int(time.time() - t0), "path": "direct"}
+    # если байт мало — удалим «пустышку» и пойдём дальше
+    if uploaded and uploaded < MIN_OK_BYTES:
+        try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+        except Exception: pass
 
     # ===== B: presigned V4 (пробуем только если ffmpeg реально упал сообщением) =====
     go_presigned = (ret != 0 and bool((tail or "").strip()))
     if go_presigned:
         presigned = _make_presigned(src_bucket, src_key)
         uploaded2, ret2, tail2 = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
-        if uploaded2 > 0 and ret2 == 0:
+        if uploaded2 >= MIN_OK_BYTES and ret2 == 0:
             clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
             return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded2, "elapsed_sec": int(time.time() - t0), "path": "presigned"}
+        if uploaded2 and uploaded2 < MIN_OK_BYTES:
+            try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+            except Exception: pass
     else:
         uploaded2, ret2, tail2 = 0, 0, ""
 
@@ -336,7 +430,7 @@ def clip_video(self, src_url: str) -> dict:
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "local_cut"})
             _ffmpeg_local_clip(src_path, dst_path)
 
-            # аплоад результата
+            # аплоад результата (из файла)
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "uploading_result"})
             s3.upload_file(
                 dst_path,
@@ -345,14 +439,20 @@ def clip_video(self, src_url: str) -> dict:
                 ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
                 Config=TRANSFER_CFG,
             )
+            uploaded3 = os.path.getsize(dst_path)
 
-        clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-        return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": os.path.getsize(dst_path) if os.path.exists(dst_path) else None, "elapsed_sec": int(time.time() - t0), "path": "download"}
+        if uploaded3 >= MIN_OK_BYTES:
+            clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
+            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded3, "elapsed_sec": int(time.time() - t0), "path": "download"}
+        else:
+            try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+            except Exception: pass
+            raise RuntimeError(f"clip too small after local fallback: {uploaded3} bytes (< {MIN_OK_BYTES})")
 
-    # Если дошли сюда — стрим не пошёл, фолбэк выключен → даём подробную ошибку
+    # Если дошли сюда — стрим не пошёл, фолбэк выключен
     raise RuntimeError(
         "no output produced:\n"
         f"direct ret={_fmt_ret(ret)} tail:\n{tail}\n\n"
-        f"presigned ret={_fmt_ret(ret2)} tail:\n{tail2}\n\n"
+        f"presigned ret={_fmt_ret(locals().get('ret2', 0))} tail:\n{locals().get('tail2','')}\n\n"
         "download fallback disabled (set CLIP_ALLOW_DOWNLOAD_FALLBACK=true to enable)."
     )
