@@ -53,7 +53,7 @@ const LandingDetail = () => {
     } catch (error: any) {
       Alert(
         `Error fetching landing data, error message: ${error.message}`,
-        <ErrorIcon />
+        <ErrorIcon />,
       );
     } finally {
       setLoading(false);
@@ -88,7 +88,7 @@ const LandingDetail = () => {
 
   const handleDeleteItem = (
     itemType: "landing" | "lesson",
-    lessonId?: number
+    lessonId?: number,
   ) => {
     if (!confirm(`Are you sure you want to delete this ${itemType}?`)) return;
 
@@ -109,6 +109,7 @@ const LandingDetail = () => {
     const denormalizedLanding = {
       ...landing,
       lessons_info: denormalizeLessons(landing?.lessons_info),
+      page_name: landing.page_name?.trim(),
     };
     try {
       await adminApi.updateLanding(landingId, denormalizedLanding);
