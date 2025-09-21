@@ -213,10 +213,7 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
 
   return (
     <div
-      className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn}`}
-      style={{
-        backgroundColor: isDropdown ? "" : "rgba(0, 0, 0, 0.06)",
-      }}
+      className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn} ${isDropdown ? "" : s.overlay_bg}`}
       onClick={handleClose}
     >
       <div className={s.modal_container} style={modalContainerStyles}>
