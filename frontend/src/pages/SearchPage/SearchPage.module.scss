@@ -189,12 +189,11 @@
 
   .modal {
     padding: 4px;
-    border-radius: 25px;
   }
 
   .modal_content {
     padding: 15px 10px;
-    border-radius: 22px;
+    border-radius: 27px;
     gap: 15px;
   }
 
@@ -206,6 +205,14 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  @supports (-webkit-overflow-scrolling: touch) {
+    .modal {
+      -webkit-box-shadow: 0 5px 5px -4px $primary-06;
+      -moz-box-shadow: 0 5px 5px -4px $primary-06;
+      box-shadow: 0 5px 5px -4px $primary-06;
+    }
+  }
+
   .search_wrapper {
     padding: 0 10px;
   }
