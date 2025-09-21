@@ -9,7 +9,7 @@ from ..models.models_v2 import User
 from ..tasks.clip_tasks import clip_video
 
 # Можно задать префикс, если так принято у вас:
-router = APIRouter(prefix="/api/clip_generator")
+router = APIRouter()
 
 class ClipIn(BaseModel):
     url: str
