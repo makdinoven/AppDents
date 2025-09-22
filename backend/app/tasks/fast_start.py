@@ -1,68 +1,70 @@
-import os
-import time
-import tempfile
-import subprocess
-import logging
-import io
+# app/tasks/ensure_faststart.py (или там же, где у тебя сейчас)
 
-import redis
+import os, tempfile, subprocess, logging, time, json
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from celery import shared_task, current_app
+from celery import shared_task
+import requests
+from urllib.parse import quote
 
-# --- Configuration (from your environment) ---
+# ----- ENV -----
 S3_ENDPOINT     = os.getenv("S3_ENDPOINT",     "https://s3.timeweb.com")
-S3_BUCKET       = os.getenv("S3_BUCKET",       "cdn.dent-s.com")
+S3_BUCKET       = os.getenv("S3_BUCKET",       "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")  # <- УКАЖИ ИМЕННО origin-bucket, не CDN-домен
 S3_PUBLIC_HOST  = os.getenv("S3_PUBLIC_HOST",  "https://cdn.dent-s.com")
 S3_REGION       = os.getenv("S3_REGION",       "ru-1")
-REDIS_URL       = os.getenv("REDIS_URL",       "redis://redis:6379/0")
-NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 15))
-FFMPEG_RETRIES  = int(os.getenv("FFMPEG_RETRIES", 3))
-PRESIGN_EXPIRY  = 3600  # seconds
+NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", "200"))  # подними лимит
+FFMPEG_RETRIES  = int(os.getenv("FFMPEG_RETRIES", "2"))
 
-# --- Clients ---
 logger = logging.getLogger(__name__)
-rds    = redis.Redis.from_url(REDIS_URL, decode_responses=False)
-s3     = boto3.client(
+logger.setLevel(logging.INFO)
+
+s3 = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(
-        signature_version="s3",
-        s3={"addressing_style": "path"},
-    ),
+    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
+
+def _ffprobe_duration(path_or_url: str) -> float | None:
+    try:
+        p = subprocess.run(
+            ["ffprobe","-v","error","-show_entries","format=duration","-of","json", path_or_url],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30
+        )
+        if p.returncode != 0:
+            return None
+        return float(json.loads(p.stdout.decode("utf-8"))["format"]["duration"])
+    except Exception:
+        return None
 
 @shared_task(name="app.tasks.ensure_faststart")
 def ensure_faststart():
     """
-    Scan entire S3 bucket for .mp4 objects without faststart metadata and enqueue up to NEW_TASKS_LIMIT jobs.
+    Идём по бакету и ставим в очередь до NEW_TASKS_LIMIT объектов .mp4 без метадаты faststart=true.
     """
     paginator = s3.get_paginator("list_objects_v2")
     queued = 0
 
-    # No specific prefix: check all objects
+    # при желании можно ограничить префиксом: Prefix="narezki/" или наоборот исключить narezki
     for page in paginator.paginate(Bucket=S3_BUCKET):
         for obj in page.get("Contents", []):
             key = obj["Key"]
-            # only .mp4 files
             if not key.lower().endswith(".mp4"):
                 continue
-
-            # skip if already processed (metadata faststart=true)
             try:
                 head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-                if head.get('Metadata', {}).get('faststart') == 'true':
-                    continue
             except ClientError as e:
                 logger.warning("HeadObject failed for %s: %s", key, e)
                 continue
 
-            # enqueue processing
-            process_faststart_video.apply_async((key,), queue='special')
+            # пропускаем уже обработанные
+            if head.get("Metadata", {}).get("faststart") == "true":
+                continue
+
+            process_faststart_video.apply_async((key,), queue="special")
             queued += 1
             logger.info("Enqueued faststart for %s", key)
 
@@ -72,39 +74,51 @@ def ensure_faststart():
 
     logger.info("Scan complete, enqueued %d tasks", queued)
 
+@shared_task(name="app.tasks.process_faststart_video", bind=True, autoretry_for=(), retry_backoff=False)
+def process_faststart_video(self, key: str):
+    """
+    Надёжно: скачать → ffmpeg -c copy -movflags +faststart → перезалить → метадата faststart=true → PURGE CDN.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        in_mp4  = os.path.join(tmp, "in.mp4")
+        out_mp4 = os.path.join(tmp, "out.mp4")
 
-@shared_task(name="app.tasks.process_faststart_video")
-def process_faststart_video(key: str):
-    def process_faststart_video_disk(key: str):
-        """
-        Надёжный вариант: скачиваем файл, добавляем +faststart на диске, заливаем обратно.
-        Требует свободного пространства ≥ размера видео.
-        """
-        with tempfile.TemporaryDirectory() as tmp:
-            in_mp4 = os.path.join(tmp, "in.mp4")
-            out_mp4 = os.path.join(tmp, "out.mp4")
+        # 1) скачиваем
+        s3.download_file(S3_BUCKET, key, in_mp4)
 
-            # 1) Скачать
-            s3.download_file(S3_BUCKET, key, in_mp4)
+        # 2) ремукс с faststart (+ несколько попыток)
+        last_err = None
+        for attempt in range(1, FFMPEG_RETRIES + 1):
+            try:
+                subprocess.run(
+                    ["ffmpeg","-hide_banner","-nostdin","-loglevel","error",
+                     "-y","-i", in_mp4, "-c","copy", "-movflags","+faststart", out_mp4],
+                    check=True
+                )
+                break
+            except subprocess.CalledProcessError as e:
+                last_err = e
+                logger.warning("ffmpeg faststart failed (%s/%s) for %s: %s", attempt, FFMPEG_RETRIES, key, e)
+                time.sleep(2)
+        else:
+            raise RuntimeError(f"ffmpeg faststart failed for {key}: {last_err}")
 
-            # 2) Remux с faststart
-            cmd = [
-                "ffmpeg", "-y",
-                "-i", in_mp4,
-                "-c", "copy",
-                "-movflags", "+faststart",
-                out_mp4
-            ]
-            subprocess.run(cmd, check=True)
+        # 3) лёгкая валидация: есть длительность (> 1 сек)
+        dur = _ffprobe_duration(out_mp4)
+        if dur is None or dur < 1:
+            raise RuntimeError(f"ffprobe duration invalid for {key}: {dur}")
 
-            # 3) Загрузить обратно
-            s3.upload_file(
-                out_mp4, S3_BUCKET, key,
-                ExtraArgs={
-                    "ACL": "public-read",
-                    "ContentType": "video/mp4",
-                    "Metadata": {"faststart": "true"}
-                }
-            )
+        # 4) перезаливаем (inline + отметка faststart)
+        s3.upload_file(
+            out_mp4,
+            S3_BUCKET,
+            key,
+            ExtraArgs={
+                "ContentType": "video/mp4",
+                "ContentDisposition": "inline",
+                "Metadata": {"faststart": "true", "ver": str(int(time.time()))},
+            },
+        )
 
-        logger.info("Faststart applied (disk) → %s", key)
+    logger.info("Faststart applied → %s (dur≈%.1fs)", key, dur or -1)
+    return {"key": key, "duration": dur}
