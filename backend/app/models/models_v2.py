@@ -564,3 +564,16 @@ try:
         )
 except NameError as exc:
     logger.error("Author class not found while binding books: %s", exc)
+
+class LandingVisit(Base):
+    __tablename__ = "landing_visits"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
+    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())  # у тебя уже так в моделях
+
+    landing = relationship("Landing", backref="visits")
+
+    __table_args__ = (
+        Index("ix_lvisit_landing_dt", "landing_id", "visited_at"),
+    )
