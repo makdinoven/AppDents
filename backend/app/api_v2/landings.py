@@ -4,13 +4,13 @@ import logging
 from datetime import datetime, timedelta, time, date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, selectinload
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing, Author
+from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
@@ -779,3 +779,129 @@ def personalized_cards(
         sort=sort,
         language=language,
     )
+
+@router.post("/{landing_id}/visit", status_code=201)
+def track_landing_visit(
+    landing_id: int,
+    db: Session = Depends(get_db),
+):
+    # убедимся, что лендинг существует
+    exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    db.add(LandingVisit(landing_id=landing_id))  # visited_at выставит БД
+    db.commit()
+    return {"ok": True}
+
+Granularity = Literal["hour", "day"]
+
+def _resolve_period(
+    start_date: Optional[date],
+    end_date: Optional[date],
+) -> tuple[datetime, datetime]:
+    now = datetime.utcnow()
+    if start_date is None and end_date is None:
+        return datetime(now.year, now.month, now.day), now
+    if start_date is not None and end_date is None:
+        return datetime.combine(start_date, time.min), now
+    if start_date is not None and end_date is not None:
+        return datetime.combine(start_date, time.min), datetime.combine(end_date + timedelta(days=1), time.min)
+    raise HTTPException(status_code=400, detail="Если указываете end_date, нужно обязательно передать start_date.")
+
+def _auto_granularity(start_dt: datetime, end_dt: datetime) -> Granularity:
+    return "hour" if (end_dt - start_dt) <= timedelta(hours=48) else "day"
+
+def _bucket_expr_mysql(ts_col, granularity: Granularity):
+    if granularity == "day":
+        return func.date(ts_col)  # 'YYYY-MM-DD'
+    return func.date_format(ts_col, '%Y-%m-%d %H:00:00')  # 'YYYY-MM-DD HH:00:00'
+
+def _coerce_bucket_to_dt(v, granularity: Granularity) -> datetime:
+    if isinstance(v, datetime):
+        return v.replace(minute=0, second=0, microsecond=0) if granularity == "hour" else v.replace(hour=0, minute=0, second=0, microsecond=0)
+    if isinstance(v, date):
+        return datetime(v.year, v.month, v.day)
+    # MySQL DATE_FORMAT -> str
+    from datetime import datetime as _dt
+    if len(v) == 19:
+        return _dt.strptime(v, "%Y-%m-%d %H:%M:%S")
+    return _dt.strptime(v, "%Y-%m-%d")
+
+def _iter_grid(start_dt: datetime, end_dt: datetime, granularity: Granularity):
+    step = timedelta(hours=1) if granularity == "hour" else timedelta(days=1)
+    cur = start_dt.replace(minute=0, second=0, microsecond=0) if granularity == "hour" \
+        else start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    while cur < end_dt:
+        yield cur
+        cur += step
+
+def _fill_series(start_dt: datetime, end_dt: datetime, granularity: Granularity, m: Dict[datetime, int]):
+    return [{"ts": ts.isoformat() + "Z", "count": int(m.get(ts, 0))} for ts in _iter_grid(start_dt, end_dt, granularity)]
+
+def _fetch_counts(
+    db: Session,
+    ts_col,
+    filters,
+    start_dt: datetime,
+    end_dt: datetime,
+    granularity: Granularity,
+) -> tuple[Dict[datetime, int], int]:
+    bucket = _bucket_expr_mysql(ts_col, granularity).label("b")
+    rows = (db.query(bucket, func.count("*"))
+              .filter(ts_col >= start_dt, ts_col < end_dt, *filters)
+              .group_by(bucket)
+              .order_by(bucket)
+              .all())
+    m: Dict[datetime, int] = {}
+    total = 0
+    for b, cnt in rows:
+        dt = _coerce_bucket_to_dt(b, granularity)
+        m[dt] = int(cnt)
+        total += int(cnt)
+    return m, total
+
+@router.get("/analytics/landing-traffic")
+def landing_traffic(
+    landing_id: int,
+    start_date: Optional[date] = Query(None, description="Начало (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец (YYYY-MM-DD, включительно)"),
+    bucket:     Optional[Granularity] = Query(None, description="hour|day; по умолчанию авто"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    # validate landing
+    if not db.query(Landing.id).filter(Landing.id == landing_id).first():
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    start_dt, end_dt = _resolve_period(start_date, end_date)
+    gran = bucket or _auto_granularity(start_dt, end_dt)
+
+    # visits
+    visit_map, visit_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id == landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+    # purchases
+    purchase_map, purchase_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.landing_id == landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    return {
+        "range": {"start": start_dt.isoformat() + "Z", "end": end_dt.isoformat() + "Z"},
+        "granularity": gran,
+        "totals": {"visits": visit_total, "purchases": purchase_total},
+        "series": {
+            "visits": _fill_series(start_dt, end_dt, gran, visit_map),
+            "purchases": _fill_series(start_dt, end_dt, gran, purchase_map),
+        }
+    }
