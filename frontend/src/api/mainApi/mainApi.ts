@@ -98,7 +98,6 @@ export const mainApi = {
       params,
       paramsSerializer: (params) => {
         const searchParams = new URLSearchParams();
-
         Object.entries(params).forEach(([key, value]) => {
           if (Array.isArray(value)) {
             value.forEach((v) => searchParams.append(key, v));
@@ -106,7 +105,6 @@ export const mainApi = {
             searchParams.append(key, String(value));
           }
         });
-
         return searchParams.toString();
       },
     });
