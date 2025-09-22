@@ -6,12 +6,14 @@ interface TableProps<T extends Record<string, any>> {
   title?: string;
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
+  landingLinkByIdPath?: string;
 }
 
 const Table = <T extends Record<string, any>>({
   title,
   data,
   columnLabels = {},
+  landingLinkByIdPath,
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
@@ -29,6 +31,18 @@ const Table = <T extends Record<string, any>>({
 
   const renderCell = (key: string, value: any, row: T) => {
     if (key === "landing_name") {
+      if (landingLinkByIdPath) {
+        return (
+          <a
+            href={`${landingLinkByIdPath}/${row.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {value}
+          </a>
+        );
+      }
+
       const slug = row.slug || row.landing_slug;
       return (
         <a

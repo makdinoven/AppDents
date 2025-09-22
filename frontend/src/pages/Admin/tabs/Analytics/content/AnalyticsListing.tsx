@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import { Path } from "../../../../../routes/routes.ts";
 
 const AnalyticsListing = () => {
   const [language, setLanguage] = useState<string>("EN");
@@ -98,6 +99,7 @@ const AnalyticsListing = () => {
       ) : (
         <Table
           data={landings}
+          landingLinkByIdPath={Path.landingAnalytics}
           columnLabels={{
             id: "ID",
             landing_name: "Name",

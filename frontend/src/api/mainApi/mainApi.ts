@@ -15,6 +15,10 @@ export const mainApi = {
     return instance.get(`landings/detail/by-page/${pageName}`);
   },
 
+  trackLandingVisit(id: number) {
+    return instance.post(`landings/${id}/visit`);
+  },
+
   buyCourse(data: any, isLogged: boolean) {
     const { fbp, fbc } = getFacebookData();
     const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
