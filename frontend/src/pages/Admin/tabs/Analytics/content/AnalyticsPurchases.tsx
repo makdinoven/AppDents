@@ -8,6 +8,7 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import PurchasesSourceChart from "../Charts/PurchasesSourceChart.tsx";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { PAYMENT_SOURCES_OPTIONS } from "../../../../../common/helpers/commonConstants.ts";
+import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const AnalyticsPurchases = () => {
   const [data, setData] = useState<any>(null);
@@ -108,17 +109,11 @@ const AnalyticsPurchases = () => {
               valueKey={"value"}
               labelKey={"value"}
             />
-            <div className={s.toggle_btns_container}>
-              {["count", "amount"].map((mode) => (
-                <button
-                  key={mode}
-                  className={`${chartMode === mode ? s.active : ""}`}
-                  onClick={() => setChartMode(mode as "count" | "amount")}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
+            <SwitchButtons
+              buttonsArr={["count", "amount"]}
+              activeValue={chartMode}
+              handleClick={(val) => setChartMode(val)}
+            />
           </div>
           <PurchasesSourceChart data={chartData} type={chartMode} />
           <Table

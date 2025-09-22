@@ -1,0 +1,34 @@
+.toggle_btns_container {
+  display: flex;
+  //gap: 10px;
+  overflow: hidden;
+  background-color: $hover-color;
+  border-radius: 15px;
+  border: 1px solid $hover-color;
+
+  button {
+    padding: 5px 10px;
+    border-radius: 7px;
+    flex: 1;
+    @include transition();
+    @include clamped-p3;
+    text-transform: uppercase;
+
+    @media (hover: hover) {
+      &:hover:not(.active) {
+        color: $secondary-lighter;
+      }
+    }
+
+    &.active {
+      background-color: $background-color;
+      color: $primary;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .toggle_btns_container {
+    border-radius: 10px;
+  }
+}
