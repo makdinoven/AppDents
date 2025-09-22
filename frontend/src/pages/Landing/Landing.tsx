@@ -106,6 +106,7 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
+      mainApi.trackLandingVisit(res.data.id);
       const paymentData = {
         fromAd: isPromotionLanding,
         landingIds: [res.data.id],
