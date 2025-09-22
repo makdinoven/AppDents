@@ -1,6 +1,7 @@
 import s from "./Lesson.module.scss";
 import { Trans } from "react-i18next";
 import ProgramContent from "../ProgramContent/ProgramContent.tsx";
+import HlsVideo from "../../../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
 
 const Lesson = ({ lesson, renderBuyButton }: any) => {
   return (
@@ -18,18 +19,7 @@ const Lesson = ({ lesson, renderBuyButton }: any) => {
             <div className={s.video_wrapper}>
               {lesson.link?.length > 0 ? (
                 // <iframe src={lesson.link} frameBorder="0" />
-                <video poster={lesson.preview} controls>
-                  <source src={lesson.link} type="video/mp4" />
-                  <source
-                    src={lesson.link.replace(".mp4", ".webm")}
-                    type="video/webm"
-                  />
-                  <source
-                    src={lesson.link.replace(".mp4", ".ogg")}
-                    type="video/ogg"
-                  />
-                  <Trans i18nKey="landing.videoIsNotSupported" />
-                </video>
+                <HlsVideo srcMp4={lesson.link} poster={lesson.preview} />
               ) : (
                 <p>
                   <Trans i18nKey={"landing.noVideoLink"} />
