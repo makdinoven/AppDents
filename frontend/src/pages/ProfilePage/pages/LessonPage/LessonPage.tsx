@@ -8,6 +8,7 @@ import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import HlsVideo from "../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
 
 type OutletContextType = {
   course: any;
@@ -103,14 +104,7 @@ const LessonPage = () => {
             </div>
           ) : lesson.video_link?.length > 0 ? (
             <div className={s.video_container}>
-              <iframe
-                src={lesson.video_link}
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allow="autoplay; fullscreen"
-                allowFullScreen
-              />
+              <HlsVideo srcMp4={lesson.link} poster={lesson.preview} />
             </div>
           ) : (
             <p>
