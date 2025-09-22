@@ -1,0 +1,28 @@
+.landing_analytics_container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr;
+  gap: 20px;
+}
+
+.tooltip {
+  @include clamped-p3;
+  background-color: $background-color;
+  border-radius: 10px;
+  border: 1px solid $hover-color;
+  padding: 10px;
+
+  .purchases {
+    color: $green;
+  }
+}
+
+.tooltip_date {
+  text-align: center;
+  margin-bottom: 5px;
+}
