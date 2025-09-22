@@ -46,13 +46,23 @@ celery = Celery("dent_backend", broker=BROKER, backend=BACKEND)
 
 CLIP_TASK_NAME = "app.tasks.clip_tasks.clip_video"
 
-s3 = boto3.client(
+s3_data = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+)
+
+# для листинга нужен V4
+s3_list = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
 )
 
 RE_CLIP = re.compile(r"^(?P<base>.+)_clip_[0-9a-f]{32}$", re.IGNORECASE)
@@ -86,7 +96,8 @@ def to_origin_url(bucket: str, key: str) -> str:
     return f"https://{bucket}.s3.twcstorage.ru/{quote(key, safe='/')}"
 
 def main():
-    paginator = s3.get_paginator("list_objects_v2")
+    # пагинатор
+    paginator = s3_list.get_paginator("list_objects_v2")
     pages = paginator.paginate(Bucket=BUCKET, Prefix=PREFIX, PaginationConfig={"PageSize": 1000})
 
     queued = 0
@@ -109,8 +120,9 @@ def main():
 
             # убедимся, что исходник существует
             try:
-                s3.head_object(Bucket=BUCKET, Key=src_key)
+                s3_data.head_object(Bucket=BUCKET, Key=src_key)
             except Exception as e:
+                s3_list.head_object(Bucket=BUCKET, Key=src_key)
                 print(f"[skip] source missing: {src_key} (for clip {key}) err={e}")
                 skipped += 1
                 continue
