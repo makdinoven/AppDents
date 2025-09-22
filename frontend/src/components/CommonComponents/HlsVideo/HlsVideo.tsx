@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { mp4ToHlsUrl } from "../../../common/utils/hls.ts";
+import { resolveHlsUrl } from "../../../common/utils/hls"; // см. обновлённый utils/hls.ts
 
 type Props = {
   srcMp4: string;
@@ -10,7 +10,7 @@ type Props = {
   controls?: boolean;
   loop?: boolean;
   muted?: boolean;
-  preferHls?: boolean;
+  preferHls?: boolean; // по умолчанию true
 };
 
 const externalHosts = [
@@ -28,55 +28,84 @@ const HlsVideo: React.FC<Props> = ({
   autoPlay,
   controls = true,
   loop,
-  muted,
+  muted = true,
   preferHls = true,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [useMp4Fallback, setUseMp4Fallback] = useState(!preferHls);
-  const [resolvedHls, setResolvedHls] = useState<string | null>(null);
+  const [hlsUrl, setHlsUrl] = useState<string | null>(null);
 
-  // 2️⃣ Наши mp4 → пробуем HLS
+  // 0) внешние провайдеры — сразу iframe
+
+  // 1) Резолвим реальный playlist.m3u8 (с проверкой Content-Type и #EXTM3U)
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       if (!preferHls) {
-        setResolvedHls(null);
+        setHlsUrl(null);
+        setUseMp4Fallback(true);
         return;
       }
-      const url = await mp4ToHlsUrl(srcMp4);
-      if (!cancelled) setResolvedHls(url);
+
+      setUseMp4Fallback(false); // пробуем HLS снова при смене src
+      const url = await resolveHlsUrl(srcMp4);
+      if (cancelled) return;
+
+      if (url) {
+        setHlsUrl(url);
+      } else {
+        setHlsUrl(null);
+        setUseMp4Fallback(true);
+      }
     })();
+
     return () => {
       cancelled = true;
     };
   }, [srcMp4, preferHls]);
 
+  // 2) Инициализация плеера (нативный HLS в Safari / hls.js в остальных)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (!preferHls || useMp4Fallback || !resolvedHls) {
+    // MP4 фолбэк или HLS не найден — ставим обычный mp4-источник
+    if (!preferHls || useMp4Fallback || !hlsUrl) {
       video.src = srcMp4;
       return;
     }
 
-    const canNative = video.canPlayType("application/vnd.apple.mpegurl");
-    if (canNative) {
-      video.src = resolvedHls;
+    // Safari/iOS: нативная поддержка HLS
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = hlsUrl;
       return;
     }
 
+    // hls.js для остальных браузеров
     if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 30,
+      });
+
       let manifestOk = false;
+      let firstFragLoaded = false;
 
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        hls.loadSource(resolvedHls);
+        hls.loadSource(hlsUrl);
       });
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         manifestOk = true;
-        if (autoPlay) video.play().catch(() => {});
+        if (autoPlay) {
+          video.play().catch(() => {});
+        }
+      });
+
+      hls.on(Hls.Events.FRAG_LOADED, () => {
+        firstFragLoaded = true;
       });
 
       hls.on(Hls.Events.ERROR, (_evt, data) => {
@@ -97,7 +126,8 @@ const HlsVideo: React.FC<Props> = ({
 
       hls.attachMedia(video);
 
-      const t = window.setTimeout(() => {
+      // тайм-ауты защиты: нет манифеста или нет первых сегментов — уходим в mp4
+      const tManifest = window.setTimeout(() => {
         if (!manifestOk) {
           try {
             hls.destroy();
@@ -106,8 +136,18 @@ const HlsVideo: React.FC<Props> = ({
         }
       }, 5000);
 
+      const tFirstFrag = window.setTimeout(() => {
+        if (manifestOk && !firstFragLoaded) {
+          try {
+            hls.destroy();
+          } catch {}
+          setUseMp4Fallback(true);
+        }
+      }, 6000);
+
       return () => {
-        window.clearTimeout(t);
+        window.clearTimeout(tManifest);
+        window.clearTimeout(tFirstFrag);
         try {
           hls.destroy();
         } catch {}
@@ -115,36 +155,22 @@ const HlsVideo: React.FC<Props> = ({
     } else {
       setUseMp4Fallback(true);
     }
-  }, [resolvedHls, useMp4Fallback, preferHls, srcMp4, autoPlay]);
+  }, [hlsUrl, useMp4Fallback, preferHls, srcMp4, autoPlay]);
 
   try {
     const u = new URL(srcMp4);
     if (externalHosts.some((host) => u.hostname.includes(host))) {
       return (
         <div className={className}>
-          <iframe
-            src={srcMp4}
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-          />
+          <iframe src={srcMp4} width="100%" height="100%" allowFullScreen />
         </div>
       );
     }
   } catch {
-    // если невалидный URL — тоже iframe
+    // если srcMp4 невалидный как URL — тоже iframe (совместимость с существующей логикой)
     return (
       <div className={className}>
-        <iframe
-          src={srcMp4}
-          width="100%"
-          height="100%"
-          frameBorder="0"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-        />
+        <iframe src={srcMp4} width="100%" height="100%" allowFullScreen />
       </div>
     );
   }
@@ -155,10 +181,10 @@ const HlsVideo: React.FC<Props> = ({
       className={className}
       poster={poster}
       controls={controls}
-      autoPlay={autoPlay}
       loop={loop}
       muted={muted}
       playsInline
+      preload="metadata" // при желании можно включить
     />
   );
 };
