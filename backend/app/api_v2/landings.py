@@ -877,7 +877,7 @@ def landing_traffic(
 ):
     # 1) лендинг + имя
     landing_row = (
-        db.query(Landing.id, Landing.landing_name)
+        db.query(Landing.id, Landing.landing_name, Landing.created_at)
           .filter(Landing.id == landing_id)
           .first()
     )
