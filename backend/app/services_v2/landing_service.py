@@ -618,7 +618,12 @@ def get_sales_totals(
 
 AD_TTL = timedelta(hours=3)
 
+AD_TTL = timedelta(hours=3)
+
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    now = datetime.utcnow()
+
+    # 1) лог ад-визита (как было)
     visit = AdVisit(
         landing_id=landing_id,
         fbp=fbp,
@@ -627,10 +632,27 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
     )
     db.add(visit)
 
-    landing = db.query(Landing).filter(Landing.id == landing_id).first()
-    if landing:
+    # 2) включить/продлить рекламу и ОТКРЫТЬ период при первом включении
+    landing = (
+        db.query(Landing)
+          .filter(Landing.id == landing_id)
+          .with_for_update()      # чтобы избежать гонок при шквале визитов
+          .first()
+    )
+    if not landing:
+        db.commit()               # зафиксируем сам визит, чтобы не потерять
+        return
+
+    # если реклама была выключена — включаем и открываем период
+    if not landing.in_advertising:
         landing.in_advertising = True
-        landing.ad_flag_expires_at = datetime.utcnow() + AD_TTL
+        _open_ad_period_if_needed(db, landing.id, started_by=None)
+
+    # продлеваем TTL (монотонно вперёд)
+    new_ttl = now + AD_TTL
+    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+        landing.ad_flag_expires_at = new_ttl
+
     db.commit()
 
 def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
