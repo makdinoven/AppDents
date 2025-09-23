@@ -2,6 +2,7 @@ import copy
 import uuid
 import logging
 from datetime import datetime, timedelta, time, date
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_, func
@@ -553,21 +554,13 @@ def language_stats(
 def most_popular_landings(
     language: Optional[str] = Query(None),
     limit: int = Query(10, gt=0, le=500),
-    start_date: Optional[date] = Query(
-        None, description="Начало периода (YYYY-MM-DD)"
-    ),
-    end_date: Optional[date] = Query(
-        None, description="Конец периода (YYYY-MM-DD, включительно)"
-    ),
+    start_date: Optional[date] = Query(None, description="Начало периода (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец периода (YYYY-MM-DD, включительно)"),
+    sort_by: SortBy = Query("sales", description="Поле сортировки: sales | created_at"),
+    sort_dir: SortDir = Query("desc", description="Направление: asc | desc"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
-    """
-    • Если нет дат — используется агрегированное поле sales_count.
-    • Если есть только start_date — все продажи от start_date до сегодня.
-    • Если есть обе даты — все продажи за каждый день от start_date до end_date включительно.
-    • end_date без start_date — ошибка.
-    """
     if not start_date and not end_date:
         sd, ed = None, None
     elif start_date and not end_date:
@@ -586,6 +579,8 @@ def most_popular_landings(
         limit=limit,
         start_date=sd,
         end_date=ed,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
     return [
@@ -596,6 +591,7 @@ def most_popular_landings(
             "sales_count": sales,
             "language": l.language,
             "in_advertising": l.in_advertising,
+            "created_at": l.created_at.isoformat() if getattr(l, "created_at", None) else None,
         }
         for l, sales in rows
     ]
@@ -861,6 +857,12 @@ def _fetch_counts(
         total += int(cnt)
     return m, total
 
+def _pct(numer: int, denom: int) -> float:
+    if denom <= 0:
+        return 0.0
+    # округление до двух знаков как в витринах
+    return float(Decimal(numer * 100) / Decimal(denom).quantize(Decimal("1.00"), rounding=ROUND_HALF_UP))
+
 @router.get("/analytics/landing-traffic")
 def landing_traffic(
     landing_id: int,
@@ -870,15 +872,23 @@ def landing_traffic(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
-    # validate landing
-    if not db.query(Landing.id).filter(Landing.id == landing_id).first():
+    # 1) лендинг + имя
+    landing_row = (
+        db.query(Landing.id, Landing.landing_name)
+          .filter(Landing.id == landing_id)
+          .first()
+    )
+    if not landing_row:
         raise HTTPException(status_code=404, detail="Landing not found")
+    landing_name = landing_row.landing_name
+    landing_created_at = _coerce_bucket_to_dt(landing_row.created_at, bucket)
 
+    # 2) период и гранулярность
     start_dt, end_dt = _resolve_period(start_date, end_date)
     gran = bucket or _auto_granularity(start_dt, end_dt)
 
-    # visits
-    visit_map, visit_total = _fetch_counts(
+    # 3) визиты/покупки за диапазон (у тебя это уже было)
+    visit_map, visits_range_total = _fetch_counts(
         db=db,
         ts_col=LandingVisit.visited_at,
         filters=[LandingVisit.landing_id == landing_id],
@@ -886,8 +896,8 @@ def landing_traffic(
         end_dt=end_dt,
         granularity=gran,
     )
-    # purchases
-    purchase_map, purchase_total = _fetch_counts(
+
+    purchase_map, purchases_range_total = _fetch_counts(
         db=db,
         ts_col=Purchase.created_at,
         filters=[Purchase.landing_id == landing_id],
@@ -896,10 +906,47 @@ def landing_traffic(
         granularity=gran,
     )
 
+    # 4) суммы «за всё время» (без ограничений по дате)
+    visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(LandingVisit.landing_id == landing_id)
+          .scalar()
+        or 0
+    )
+    purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.landing_id == landing_id)
+          .scalar()
+        or 0
+    )
+
+    # 5) конверсия «за всё время» (не зависит от выбранного диапазона)
+    conversion_all_time_percent = _pct(purchases_all_time, visits_all_time)
+
     return {
-        "range": {"start": start_dt.isoformat() + "Z", "end": end_dt.isoformat() + "Z"},
+        "landing": {
+            "id": landing_id,
+            "name": landing_name,
+            "created_at": landing_created_at,
+        },
+        "range": {
+            "start": start_dt.isoformat() + "Z",
+            "end":   end_dt.isoformat() + "Z",
+        },
         "granularity": gran,
-        "totals": {"visits": visit_total, "purchases": purchase_total},
+
+        # Итоги
+        "totals_all_time": {
+            "visits": visits_all_time,
+            "purchases": purchases_all_time,
+            "conversion_percent": conversion_all_time_percent
+        },
+        "totals_range": {
+            "visits": visits_range_total,
+            "purchases": purchases_range_total
+        },
+
+        # Серии для графика
         "series": {
             "visits": _fill_series(start_dt, end_dt, gran, visit_map),
             "purchases": _fill_series(start_dt, end_dt, gran, purchase_map),

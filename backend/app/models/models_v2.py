@@ -87,6 +87,16 @@ class Landing(Base):
     is_hidden = Column(Boolean, nullable=False, server_default='0')
     in_advertising = Column(Boolean, default=False)
     ad_flag_expires_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),  # MySQL CURRENT_TIMESTAMP
+    )
+
+    __table_args__ = (
+        # если у тебя уже есть другие индексы — добавь этот в кортеж
+        Index("ix_landings_created_at", "created_at"),
+    )
 
 
     # Связь с лекторами через ассоциативную таблицу

@@ -450,11 +450,15 @@ def get_top_landings_by_sales(
     limit: int = 10,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
+    sort_by: str = "sales",      # 'sales' | 'created_at'
+    sort_dir: str = "desc",      # 'asc' | 'desc'
 ):
     reset_expired_ad_flags(db)
 
-    # если есть хотя бы одна дата — считаем реальный sales
+    order_desc = (sort_dir.lower() == "desc")
+
     if start_date or end_date:
+        # считаем реальные sales в подзапросе за период дат
         subq = (
             db.query(
                 Purchase.landing_id.label("landing_id"),
@@ -463,41 +467,48 @@ def get_top_landings_by_sales(
             .filter(Purchase.landing_id.isnot(None))
         )
 
-        # приводим created_at → date и фильтруем
         if start_date:
-            subq = subq.filter(
-                cast(Purchase.created_at, Date) >= start_date
-            )
+            subq = subq.filter(cast(Purchase.created_at, Date) >= start_date)
         if end_date:
-            subq = subq.filter(
-                cast(Purchase.created_at, Date) <= end_date
-            )
+            subq = subq.filter(cast(Purchase.created_at, Date) <= end_date)
 
         subq = subq.group_by(Purchase.landing_id).subquery()
 
         q = (
             db.query(Landing, subq.c.sales)
-            .join(subq, subq.c.landing_id == Landing.id)
-            .filter(Landing.is_hidden.is_(False))
+              .join(subq, subq.c.landing_id == Landing.id)
+              .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
 
-        result = q.order_by(subq.c.sales.desc()).limit(limit).all()
+        # сортировка
+        if sort_by == "created_at":
+            q = q.order_by(Landing.created_at.desc() if order_desc else Landing.created_at.asc())
+        else:  # sales
+            q = q.order_by(subq.c.sales.desc() if order_desc else subq.c.sales.asc())
+
+        result = q.limit(limit).all()
 
     else:
-        # старое поведение: агрегированное поле
+        # старое поведение: агрегированное поле sales_count
         q = (
             db.query(Landing, Landing.sales_count.label("sales"))
-            .filter(Landing.is_hidden.is_(False))
+              .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
 
-        result = q.order_by(Landing.sales_count.desc()).limit(limit).all()
+        if sort_by == "created_at":
+            q = q.order_by(Landing.created_at.desc() if order_desc else Landing.created_at.asc())
+        else:
+            q = q.order_by(Landing.sales_count.desc() if order_desc else Landing.sales_count.asc())
+
+        result = q.limit(limit).all()
 
     db.commit()
     return result
+
 
 
 AD_TTL = timedelta(hours=3)
