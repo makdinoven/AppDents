@@ -509,7 +509,43 @@ def get_top_landings_by_sales(
     db.commit()
     return result
 
+def get_sales_totals(
+    db: Session,
+    language: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> dict[str, int]:
+    """
+    Возвращает:
+      {
+        "sales_total": <все продажи>,
+        "ad_sales_total": <продажи с рекламы>
+      }
+    Фильтры: язык (через Landing), период (по Purchase.created_at), is_hidden=False.
+    """
+    base = (
+        db.query(func.count(Purchase.id))
+          .join(Landing, Landing.id == Purchase.landing_id)
+          .filter(
+              Purchase.landing_id.isnot(None),
+              Landing.is_hidden.is_(False),
+          )
+    )
+    if language:
+        base = base.filter(Landing.language == language)
 
+    # Период (если задан): используем те же правила, что в /most-popular
+    if start_date:
+        base = base.filter(cast(Purchase.created_at, Date) >= start_date)
+    if end_date:
+        base = base.filter(cast(Purchase.created_at, Date) <= end_date)
+
+    sales_total = base.scalar() or 0
+
+    ad_base = base.filter(Purchase.from_ad.is_(True))
+    ad_sales_total = ad_base.scalar() or 0
+
+    return {"sales_total": int(sales_total), "ad_sales_total": int(ad_sales_total)}
 
 AD_TTL = timedelta(hours=3)
 

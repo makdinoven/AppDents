@@ -17,7 +17,8 @@ from ..schemas_v2.author import AuthorResponse
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
-    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day
+    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
+    get_sales_totals
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
@@ -559,8 +560,8 @@ def most_popular_landings(
     limit: int = Query(10, gt=0, le=500),
     start_date: Optional[date] = Query(None, description="Начало периода (YYYY-MM-DD)"),
     end_date:   Optional[date] = Query(None, description="Конец периода (YYYY-MM-DD, включительно)"),
-    sort_by: SortBy = Query("sales", description="Поле сортировки: sales | created_at"),
-    sort_dir: SortDir = Query("desc", description="Направление: asc | desc"),
+    sort_by: str = Query("sales", description="Поле сортировки: sales | created_at"),
+    sort_dir: str = Query("desc", description="Направление: asc | desc"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
@@ -586,18 +587,28 @@ def most_popular_landings(
         sort_dir=sort_dir,
     )
 
+    totals = get_sales_totals(
+        db=db,
+        language=language,
+        start_date=sd,
+        end_date=ed,
+    )
+
     return [
         {
             "id": l.id,
             "landing_name": l.landing_name,
             "slug": l.page_name,
-            "sales_count": sales,
+            "sales_count": int(sales or 0),
+            "ad_sales_count": int(ad_sales_count or 0),   # ← НОВОЕ ПОЛЕ
             "language": l.language,
             "in_advertising": l.in_advertising,
             "created_at": l.created_at.isoformat() if getattr(l, "created_at", None) else None,
+            "totals": totals,
         }
-        for l, sales in rows
+        for (l, sales, ad_sales_count) in rows
     ]
+
 
 @router.post("/track-ad/{slug}")
 def track_ad(slug: str,
@@ -965,7 +976,6 @@ def landing_traffic(
             "visits": visits_range_total,
             "purchases": purchases_range_total
         },
-
         # Серии для графика
         "series": {
             "visits": _fill_series(start_dt, end_dt, gran, visit_map),
