@@ -172,7 +172,10 @@ export const isVideoLanding = (pathname: string): boolean => {
   return pathname === Path.landing || pathname.includes("/video/");
 };
 
-export const formatIsoToLocalDatetime = (isoString: string): string => {
+export const formatIsoToLocalDatetime = (
+  isoString: string,
+  showTime?: boolean,
+): string => {
   const date = new Date(isoString);
 
   const pad = (n: number): string => n.toString().padStart(2, "0");
@@ -183,7 +186,9 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
 
-  return `${hours}:${minutes} ${day}.${month}.${year}`;
+  const timeStr = `${hours}:${minutes}`;
+
+  return `${showTime ? timeStr : ""} ${day}.${month}.${year}`;
 };
 
 export const getFormattedDate = (date: Date) => {
