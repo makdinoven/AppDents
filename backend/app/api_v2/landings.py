@@ -884,7 +884,7 @@ def landing_traffic(
     if not landing_row:
         raise HTTPException(status_code=404, detail="Landing not found")
     landing_name = landing_row.landing_name
-    landing_created_at = _coerce_bucket_to_dt(landing_row.created_at, bucket)
+    landing_created_at = landing_row.created_at
 
     # 2) период и гранулярность
     start_dt, end_dt = _resolve_period(start_date, end_date)
