@@ -864,7 +864,7 @@ def _pct(numer: int, denom: int) -> float:
     if denom <= 0:
         return 0.0
     # округление до двух знаков как в витринах
-    return float(Decimal(numer * 100) / Decimal(denom).quantize(Decimal("1.00"), rounding=ROUND_HALF_UP))
+    return float(Decimal(numer) / Decimal(denom).quantize(Decimal("1.00"), rounding=ROUND_HALF_UP)*100)
 
 @router.get("/analytics/landing-traffic")
 def landing_traffic(
@@ -923,8 +923,24 @@ def landing_traffic(
         or 0
     )
 
-    # 5) конверсия «за всё время» (не зависит от выбранного диапазона)
-    conversion_all_time_percent = _pct(purchases_all_time, visits_all_time)
+    first_visit_at = (
+        db.query(func.min(LandingVisit.visited_at))
+        .filter(LandingVisit.landing_id == landing_id)
+        .scalar()
+    )
+    if first_visit_at is not None:
+        purchases_since_first_visit = (
+                                          db.query(func.count(Purchase.id))
+                                          .filter(
+                                              Purchase.landing_id == landing_id,
+                                              Purchase.created_at >= first_visit_at
+                                          )
+                                          .scalar()
+                                      ) or 0
+    else:
+        purchases_since_first_visit = 0
+
+    conversion_all_time_percent = _pct(purchases_since_first_visit, visits_all_time)
 
     return {
         "landing": {
@@ -942,7 +958,8 @@ def landing_traffic(
         "totals_all_time": {
             "visits": visits_all_time,
             "purchases": purchases_all_time,
-            "conversion_percent": conversion_all_time_percent
+            "conversion_percent": conversion_all_time_percent,
+            "purchases_first_visit":purchases_since_first_visit,
         },
         "totals_range": {
             "visits": visits_range_total,
