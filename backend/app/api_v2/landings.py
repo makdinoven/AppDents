@@ -565,6 +565,7 @@ def most_popular_landings(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
+    # нормализуем даты как раньше
     if not start_date and not end_date:
         sd, ed = None, None
     elif start_date and not end_date:
@@ -577,6 +578,7 @@ def most_popular_landings(
             detail="Если указываете end_date, нужно обязательно передать start_date."
         )
 
+    # список
     rows = get_top_landings_by_sales(
         db=db,
         language=language,
@@ -587,6 +589,21 @@ def most_popular_landings(
         sort_dir=sort_dir,
     )
 
+    items = [
+        {
+            "id": l.id,
+            "landing_name": l.landing_name,
+            "slug": l.page_name,
+            "sales_count": int(sales or 0),
+            "ad_sales_count": int(ad_sales_count or 0),
+            "language": l.language,
+            "in_advertising": l.in_advertising,
+            "created_at": l.created_at.isoformat() if getattr(l, "created_at", None) else None,
+        }
+        for (l, sales, ad_sales_count) in rows
+    ]
+
+    # totals по тем же фильтрам (датам/языку)
     totals = get_sales_totals(
         db=db,
         language=language,
@@ -594,20 +611,11 @@ def most_popular_landings(
         end_date=ed,
     )
 
-    return [
-        {
-            "id": l.id,
-            "landing_name": l.landing_name,
-            "slug": l.page_name,
-            "sales_count": int(sales or 0),
-            "ad_sales_count": int(ad_sales_count or 0),   # ← НОВОЕ ПОЛЕ
-            "language": l.language,
-            "in_advertising": l.in_advertising,
-            "created_at": l.created_at.isoformat() if getattr(l, "created_at", None) else None,
-            "totals": totals,
-        }
-        for (l, sales, ad_sales_count) in rows
-    ]
+    return {
+        "totals": totals,   # {"sales_total": N, "ad_sales_total": M}
+        "items": items
+    }
+
 
 
 @router.post("/track-ad/{slug}")
