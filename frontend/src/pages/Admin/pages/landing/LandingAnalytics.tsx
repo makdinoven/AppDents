@@ -20,6 +20,7 @@ const LandingAnalytics = () => {
   const [landing, setLanding] = useState<{
     data: any;
     totals: { all: any; range: any };
+    periods: { start: string; end: string }[];
   } | null>(null);
   const [dateRange, setDateRange] = useState({
     startDate: "",
@@ -56,6 +57,7 @@ const LandingAnalytics = () => {
       setLanding({
         data: res.data.landing,
         totals: { all: res.data.totals_all_time, range: res.data.totals_range },
+        periods: res.data.ad_periods,
       });
     } catch (err) {
       console.error(err);
@@ -87,7 +89,7 @@ const LandingAnalytics = () => {
       {landing ? (
         <>
           <span className={s.created_at}>
-            Created: {formatIsoToLocalDatetime(landing.data.created_at)}
+            Created: {formatIsoToLocalDatetime(landing.data.created_at, true)}
           </span>
           <div className={s.filters}>
             <DateRangeFilter
@@ -108,6 +110,10 @@ const LandingAnalytics = () => {
               data={[
                 { metric: "Purchases", value: landing.totals.range.purchases },
                 { metric: "Visits", value: landing.totals.range.visits },
+                {
+                  metric: "Visits from ad",
+                  value: landing.totals.range.ad_visits,
+                },
               ]}
               columnLabels={{ metric: "Metric", value: "Value" }}
             />
@@ -117,7 +123,7 @@ const LandingAnalytics = () => {
               data={[
                 {
                   metric: "Conversion",
-                  value: `${landing.totals.all.conversion_percent.toFixed(0)}%`,
+                  value: `${landing.totals.all.conversion_percent.toFixed(2)}%`,
                 },
                 {
                   metric: "Purchases from first visit",
@@ -131,6 +137,10 @@ const LandingAnalytics = () => {
                   metric: "All time visits",
                   value: landing.totals.all.visits,
                 },
+                {
+                  metric: "Visits from ad",
+                  value: landing.totals.all.ad_visits,
+                },
               ]}
               columnLabels={{ metric: "Metric", value: "Value" }}
             />
@@ -139,6 +149,12 @@ const LandingAnalytics = () => {
           {chartData && (
             <LandingAnalyticsChart data={chartData} type={chartMode} />
           )}
+
+          <Table
+            title="Start/End Ad"
+            data={landing.periods}
+            columnLabels={{ start: "Start date", end: "End date" }}
+          />
         </>
       ) : (
         <Loader />

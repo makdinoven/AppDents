@@ -52,3 +52,4 @@ export { default as PtFlag } from "./pt-flag.svg?react";
 export { default as ItFlag } from "./it-flag.svg?react";
 export { default as ArFlag } from "./ar-flag.svg?react";
 export { default as NoResultsIcon } from "./no-result-icon.svg?react";
+export { default as SettingsIcon } from "./settings-icon.svg?react";

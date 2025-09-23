@@ -131,6 +131,10 @@ $font-sz-err-mob: 14px;
   flex-direction: column;
 }
 
+@mixin box-shadow {
+  box-shadow: 0 4px 8px rgba(1, 67, 61, 0.1);
+}
+
 @mixin container {
   max-width: 1280px;
   min-width: 360px;

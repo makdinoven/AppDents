@@ -79,7 +79,7 @@ const Table = <T extends Record<string, any>>({
     }
 
     if (key === "registered_at" || key === "created_at" || key === "paid_at") {
-      return formatIsoToLocalDatetime(value);
+      return formatIsoToLocalDatetime(value, false);
     }
 
     if (typeof value === "boolean") {
