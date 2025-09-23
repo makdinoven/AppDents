@@ -550,6 +550,9 @@ def language_stats(
 
     return {"total": total, "daily": daily}
 
+SortBy = Literal["sales", "created_at"]
+SortDir = Literal["asc", "desc"]
+
 @router.get("/most-popular")
 def most_popular_landings(
     language: Optional[str] = Query(None),
