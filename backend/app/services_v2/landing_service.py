@@ -454,47 +454,82 @@ def get_top_landings_by_sales(
     sort_dir: str = "desc",      # 'asc' | 'desc'
 ):
     reset_expired_ad_flags(db)
-
     order_desc = (sort_dir.lower() == "desc")
 
+    # --- когда есть даты
     if start_date or end_date:
-        # считаем реальные sales в подзапросе за период дат
-        subq = (
+        sales_subq = (
             db.query(
                 Purchase.landing_id.label("landing_id"),
                 func.count(Purchase.id).label("sales"),
             )
             .filter(Purchase.landing_id.isnot(None))
         )
-
         if start_date:
-            subq = subq.filter(cast(Purchase.created_at, Date) >= start_date)
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
         if end_date:
-            subq = subq.filter(cast(Purchase.created_at, Date) <= end_date)
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        sales_subq = sales_subq.group_by(Purchase.landing_id).subquery()
 
-        subq = subq.group_by(Purchase.landing_id).subquery()
+        ad_sales_subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
+            )
+            .filter(
+                Purchase.landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+        )
+        if start_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
+        if end_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        ad_sales_subq = ad_sales_subq.group_by(Purchase.landing_id).subquery()
 
         q = (
-            db.query(Landing, subq.c.sales)
-              .join(subq, subq.c.landing_id == Landing.id)
-              .filter(Landing.is_hidden.is_(False))
+            db.query(
+                Landing,
+                sales_subq.c.sales.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .join(sales_subq, sales_subq.c.landing_id == Landing.id)
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
 
-        # сортировка
         if sort_by == "created_at":
             q = q.order_by(Landing.created_at.desc() if order_desc else Landing.created_at.asc())
-        else:  # sales
-            q = q.order_by(subq.c.sales.desc() if order_desc else subq.c.sales.asc())
+        else:
+            q = q.order_by(sales_subq.c.sales.desc() if order_desc else sales_subq.c.sales.asc())
 
         result = q.limit(limit).all()
 
+    # --- когда дат нет
     else:
-        # старое поведение: агрегированное поле sales_count
+        ad_sales_subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
+            )
+            .filter(
+                Purchase.landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+            .group_by(Purchase.landing_id)
+            .subquery()
+        )
+
         q = (
-            db.query(Landing, Landing.sales_count.label("sales"))
-              .filter(Landing.is_hidden.is_(False))
+            db.query(
+                Landing,
+                Landing.sales_count.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
@@ -506,7 +541,7 @@ def get_top_landings_by_sales(
 
         result = q.limit(limit).all()
 
-    db.commit()
+    # db.commit() тут не нужен, но если был — не страшно
     return result
 
 def get_sales_totals(
