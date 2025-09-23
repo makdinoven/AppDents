@@ -958,7 +958,8 @@ def landing_traffic(
         "totals_all_time": {
             "visits": visits_all_time,
             "purchases": purchases_all_time,
-            "conversion_percent": conversion_all_time_percent
+            "conversion_percent": conversion_all_time_percent,
+            "rurchases_first_visit":purchases_since_first_visit,
         },
         "totals_range": {
             "visits": visits_range_total,
