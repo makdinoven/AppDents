@@ -42,7 +42,7 @@
 .analytics_options {
   height: fit-content;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr 1fr 0.8fr 1fr 1fr;
   align-items: flex-end;
   gap: 20px;
 

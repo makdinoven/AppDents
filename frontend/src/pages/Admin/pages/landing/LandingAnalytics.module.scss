@@ -3,6 +3,19 @@
   flex-direction: column;
   gap: 40px;
 }
+.info_container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  justify-items: center;
+}
+
+.created_at {
+  display: flex;
+  width: 100%;
+  text-align: right;
+  justify-content: flex-end;
+}
 
 .filters {
   display: grid;
