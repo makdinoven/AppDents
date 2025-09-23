@@ -74,7 +74,7 @@ const AnalyticsListing = () => {
 
     try {
       const res = await adminApi.getMostPopularLandings(params);
-      setLandings(res.data);
+      setLandings(res.data.items);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -97,48 +97,54 @@ const AnalyticsListing = () => {
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
         />
-        <MultiSelect
-          isSearchable={false}
-          id={"language"}
-          options={LANGUAGES}
-          placeholder={"Choose a language"}
-          selectedValue={language}
-          isMultiple={false}
-          onChange={(e) => setLanguage(e.value as string)}
-          valueKey="value"
-          labelKey="label"
-        />
-        <MultiSelect
-          isSearchable={false}
-          id={"limits"}
-          options={ANALYTICS_LIMITS}
-          placeholder={""}
-          selectedValue={limit}
-          isMultiple={false}
-          onChange={(e) => setLimit(e.value as string)}
-          valueKey="value"
-          labelKey="name"
-        />
-        <SortByDate
-          transKey={"Date"}
-          activeBtn={sortDirection}
-          handleBtnClick={handleSortDirectionChange}
-        />
-        <MultiSelect
-          isSearchable={false}
-          id={"sort_add"}
-          options={[
-            { value: "all", name: "All ads" },
-            { value: "ad", name: "Ad" },
-            { value: "no-ad", name: "No ad" },
-          ]}
-          placeholder={""}
-          selectedValue={adSort}
-          isMultiple={false}
-          onChange={(e) => setAdSort(e.value as "all" | "no-ad" | "ad")}
-          valueKey="value"
-          labelKey="name"
-        />
+
+        <div className={s.column_two_items}>
+          <MultiSelect
+            isSearchable={false}
+            id={"language"}
+            options={LANGUAGES}
+            placeholder={"Choose a language"}
+            selectedValue={language}
+            isMultiple={false}
+            onChange={(e) => setLanguage(e.value as string)}
+            valueKey="value"
+            labelKey="label"
+          />
+          <MultiSelect
+            isSearchable={false}
+            id={"limits"}
+            options={ANALYTICS_LIMITS}
+            placeholder={""}
+            selectedValue={limit}
+            isMultiple={false}
+            onChange={(e) => setLimit(e.value as string)}
+            valueKey="value"
+            labelKey="name"
+          />
+        </div>
+
+        <div className={s.column_two_items}>
+          <MultiSelect
+            isSearchable={false}
+            id={"sort_add"}
+            options={[
+              { value: "all", name: "All ads" },
+              { value: "ad", name: "Ad" },
+              { value: "no-ad", name: "No ad" },
+            ]}
+            placeholder={""}
+            selectedValue={adSort}
+            isMultiple={false}
+            onChange={(e) => setAdSort(e.value as "all" | "no-ad" | "ad")}
+            valueKey="value"
+            labelKey="name"
+          />
+          <SortByDate
+            transKey={"Date"}
+            activeBtn={sortDirection}
+            handleBtnClick={handleSortDirectionChange}
+          />
+        </div>
       </div>
       {!landings && loading ? (
         <Loader />
@@ -152,6 +158,8 @@ const AnalyticsListing = () => {
             sales_count: "Sales",
             language: "Lang",
             in_advertising: "Ad",
+            ad_sales_count: "Sales(Ad)",
+            created_at: "Created",
           }}
         />
       )}

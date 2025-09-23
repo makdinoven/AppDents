@@ -15,8 +15,8 @@ export const mainApi = {
     return instance.get(`landings/detail/by-page/${pageName}`);
   },
 
-  trackLandingVisit(id: number) {
-    return instance.post(`landings/${id}/visit`);
+  trackLandingVisit(id: number, ad: boolean) {
+    return instance.post(`landings/${id}/visit`, { from_ad: ad });
   },
 
   buyCourse(data: any, isLogged: boolean) {
