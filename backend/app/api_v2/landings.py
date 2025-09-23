@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, time, date
 from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
+from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional, Dict, Literal
@@ -797,18 +798,23 @@ def personalized_cards(
         sort=sort,
         language=language,
     )
+class VisitIn(BaseModel):
+    from_ad: bool = False
 
 @router.post("/{landing_id}/visit", status_code=201)
 def track_landing_visit(
     landing_id: int,
+    payload: VisitIn | None = None,
     db: Session = Depends(get_db),
 ):
-    # убедимся, что лендинг существует
     exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
     if not exists:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    db.add(LandingVisit(landing_id=landing_id))  # visited_at выставит БД
+    db.add(LandingVisit(
+        landing_id=landing_id,
+        from_ad=(payload.from_ad if payload else False),
+    ))
     db.commit()
     return {"ok": True}
 
@@ -941,12 +947,51 @@ def landing_traffic(
           .scalar()
         or 0
     )
+    ad_visit_map, ad_visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id == landing_id,
+                 LandingVisit.from_ad.is_(True)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+    # Пересечение периодов рекламы с выбранным окном [start_dt, end_dt)
+    period_rows = (
+        db.query(LandingAdPeriod.started_at, LandingAdPeriod.ended_at)
+        .filter(
+            LandingAdPeriod.landing_id == landing_id,
+            LandingAdPeriod.started_at < end_dt,
+            func.coalesce(LandingAdPeriod.ended_at, datetime.utcnow()) > start_dt
+        )
+        .order_by(LandingAdPeriod.started_at.asc())
+        .all()
+    )
+
+    ad_periods = []
+    now = datetime.utcnow()
+    for s, e in period_rows:
+        clip_start = max(s, start_dt)
+        clip_end = min(e or now, end_dt)
+        if clip_start < clip_end:
+            ad_periods.append({
+                "start": clip_start.isoformat() + "Z",
+                "end": clip_end.isoformat() + "Z"
+            })
+
+    ad_visits_all_time = (
+                             db.query(func.count(LandingVisit.id))
+                             .filter(LandingVisit.landing_id == landing_id,
+                                     LandingVisit.from_ad.is_(True))
+                             .scalar()
+                         ) or 0
 
     first_visit_at = (
         db.query(func.min(LandingVisit.visited_at))
         .filter(LandingVisit.landing_id == landing_id)
         .scalar()
     )
+
     if first_visit_at is not None:
         purchases_since_first_visit = (
                                           db.query(func.count(Purchase.id))
@@ -966,6 +1011,7 @@ def landing_traffic(
             "id": landing_id,
             "name": landing_name,
             "created_at": landing_created_at,
+            "in_advertising": bool(db.query(Landing.in_advertising).filter(Landing.id == landing_id).scalar()),
         },
         "range": {
             "start": start_dt.isoformat() + "Z",
@@ -976,17 +1022,21 @@ def landing_traffic(
         # Итоги
         "totals_all_time": {
             "visits": visits_all_time,
+            "ad_visits": ad_visits_all_time,
             "purchases": purchases_all_time,
             "conversion_percent": conversion_all_time_percent,
             "purchases_first_visit":purchases_since_first_visit,
         },
         "totals_range": {
             "visits": visits_range_total,
+            "ad_visits": ad_visits_range_total,
             "purchases": purchases_range_total
         },
         # Серии для графика
         "series": {
             "visits": _fill_series(start_dt, end_dt, gran, visit_map),
+            "ad_visits": _fill_series(start_dt, end_dt, gran, ad_visit_map),
             "purchases": _fill_series(start_dt, end_dt, gran, purchase_map),
-        }
+        },
+        "ad_periods": ad_periods
     }
