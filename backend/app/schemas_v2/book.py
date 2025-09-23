@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, HttpUrl, constr, validator, condecimal
-from datetime import datetime
+from datetime import datetime, date
 from pydantic import AnyUrl
 
 class HttpS3Url(AnyUrl):
@@ -55,6 +55,7 @@ class BookCreate(BaseModel):
     author_ids:  List[int] = Field(default_factory=list)
     files:       List[BookFilePayload]
     audio_files: List[BookAudioPayload] = Field(default_factory=list)
+    publication_date: Optional[date] = None
 
 class BookUpdate(BookCreate):
     """Все поля те же, все опциональные."""
@@ -77,6 +78,7 @@ class BookResponse(BaseModel):
     audio_files: List[Dict[str, Any]]
     created_at:  datetime
     updated_at:  datetime
+    publication_date: Optional[date] = None
 
     class Config:
         orm_mode = True
