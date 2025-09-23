@@ -12,7 +12,7 @@ from typing import List, Optional, Dict, Literal
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase
+from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase, LandingAdPeriod
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
