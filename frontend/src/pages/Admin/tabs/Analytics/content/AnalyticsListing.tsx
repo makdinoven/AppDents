@@ -17,6 +17,7 @@ const AnalyticsListing = () => {
   const [limit, setLimit] = useState<string>("500");
   const [landings, setLandings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [totals, setTotals] = useState<any>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
     null,
   );
@@ -75,6 +76,7 @@ const AnalyticsListing = () => {
     try {
       const res = await adminApi.getMostPopularLandings(params);
       setLandings(res.data.items);
+      setTotals(res.data.totals);
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -146,6 +148,17 @@ const AnalyticsListing = () => {
           />
         </div>
       </div>
+      {totals && (
+        <div className={s.totals}>
+          <p>
+            Total sales(Ad): <span>{totals.ad_sales_total}</span>
+          </p>
+          <p>
+            Total sales: <span>{totals.sales_total}</span>
+          </p>
+        </div>
+      )}
+
       {!landings && loading ? (
         <Loader />
       ) : (
