@@ -1,0 +1,77 @@
+.sort_container {
+  @include transition;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 1.5px solid $hover-color;
+  padding: 0 10px;
+  border-radius: 15px;
+  min-height: 39px;
+
+  .buttons {
+    display: flex;
+    gap: 5px;
+  }
+
+  button {
+    padding: 3px 5px;
+    border-radius: 10px;
+    @include transition;
+    display: flex;
+    align-items: center;
+    border: 0.5px solid transparent;
+
+    svg {
+      width: 22px;
+      height: 22px;
+
+      path {
+        @include transition;
+      }
+    }
+
+    &:hover {
+      background-color: $hover-color;
+    }
+
+    &:active {
+      background-color: $primary;
+      border-color: $hover-color-dark;
+
+      svg {
+        path {
+          stroke: $background-color;
+        }
+      }
+    }
+
+    &.active {
+      background-color: $primary;
+      border-color: $hover-color-dark;
+
+      svg {
+        path {
+          stroke: $background-color;
+        }
+      }
+    }
+  }
+
+  .up_btn {
+    svg {
+      transform: rotate(90deg);
+    }
+  }
+
+  .down_btn {
+    svg {
+      transform: rotate(-90deg);
+    }
+  }
+
+  span {
+    @include clamped-p2();
+  }
+}
