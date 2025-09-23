@@ -21,10 +21,6 @@ type SeriesData = {
   count: number;
 };
 
-type Data = {
-  series: Record<string, SeriesData[]>;
-};
-
 const CustomTooltip = ({ active, payload }: any) => {
   if (!active || !payload || !payload.length) return null;
   const fullDate = payload[0].payload.fullDate;
@@ -45,12 +41,12 @@ const LandingAnalyticsChart = ({
   data,
   type,
 }: {
-  data: Data;
+  data: Record<string, SeriesData[]>;
   type: "hour" | "day";
 }) => {
   const isHour = type === "hour";
-  const sources = Object.keys(data.series);
-  const timestamps = data.series[sources[0]]?.map((s) => s.ts) || [];
+  const sources = Object.keys(data);
+  const timestamps = data[sources[0]]?.map((s) => s.ts) || [];
 
   const formattedData = timestamps.map((ts, idx) => {
     const d = new Date(ts);
@@ -61,7 +57,7 @@ const LandingAnalyticsChart = ({
     };
 
     sources.forEach((src) => {
-      row[src] = data.series[src][idx]?.count ?? 0;
+      row[src] = data[src][idx]?.count ?? 0;
     });
 
     return row;
