@@ -110,6 +110,26 @@ class Landing(Base):
         """Список ID курсов, связанных с этим лендингом."""
         return [c.id for c in self.courses]
 
+class LandingAdPeriod(Base):
+    __tablename__ = "landing_ad_periods"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
+
+    started_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    ended_at   = Column(DateTime, nullable=True)  # NULL = ещё в рекламе
+
+    # опционально, если хочешь хранить «кто» переключил
+    started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    ended_by   = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    landing = relationship("Landing", backref="ad_periods")
+
+    __table_args__ = (
+        Index("ix_ladp_landing_started", "landing_id", "started_at"),
+        Index("ix_ladp_landing_ended",   "landing_id", "ended_at"),
+    )
+
 class Tag(Base):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True)
@@ -580,7 +600,8 @@ class LandingVisit(Base):
 
     id         = Column(Integer, primary_key=True, autoincrement=True)
     landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
-    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())  # у тебя уже так в моделях
+    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    from_ad = Column(Boolean, nullable=False, server_default="0")
 
     landing = relationship("Landing", backref="visits")
 

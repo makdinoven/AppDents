@@ -21,7 +21,7 @@ from ..models.models_v2 import (
     Tag,
     Purchase,
     AdVisit,
-    users_courses,
+    users_courses, LandingAdPeriod,
 )
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum, LandingCardResponse
 
@@ -61,21 +61,55 @@ def _discount_expr():
     new = cast(Landing.__table__.c.new_price, Float())
     return ((old - new) / old) * 100
 
-# 4. Базовый SELECT по лендингам + обнуление истёкших реклам
-def reset_expired_ad_flags(db: Session):
-    updated = (
-        db.query(Landing)
-        .filter(
-            Landing.in_advertising.is_(True),
-            Landing.ad_flag_expires_at < func.utc_timestamp(),
-        )
-        .update(
-            {Landing.in_advertising: False, Landing.ad_flag_expires_at: None},
-            synchronize_session=False,
-        )
-    )
-    if updated:
-        db.commit()
+
+def reset_expired_ad_flags(db: Session) -> int:
+    """
+    Гасит просроченные рекламные флаги и закрывает открытые периоды рекламы.
+
+    Возвращает: количество лендингов, у которых флаг был сброшен.
+    """
+    # 1) Выберем ID лендингов с просроченным рекламным флагом
+    expiring_ids = [
+        lid for (lid,) in
+        db.query(Landing.id)
+          .filter(
+              Landing.in_advertising.is_(True),
+              Landing.ad_flag_expires_at.isnot(None),
+              Landing.ad_flag_expires_at < func.utc_timestamp(),  # серверное UTC-время
+          )
+          .all()
+    ]
+
+    if not expiring_ids:
+        return 0
+
+    # 2) Закроем все открытые периоды рекламы для этих лендингов
+    db.query(LandingAdPeriod) \
+      .filter(
+          LandingAdPeriod.landing_id.in_(expiring_ids),
+          LandingAdPeriod.ended_at.is_(None),
+      ) \
+      .update(
+          {
+              LandingAdPeriod.ended_at: func.utc_timestamp(),
+              LandingAdPeriod.ended_by: None,  # при авто-гашении — неизвестно кем закрыто
+          },
+          synchronize_session=False,
+      )
+
+    # 3) Сбросим флаги у лендингов
+    db.query(Landing) \
+      .filter(Landing.id.in_(expiring_ids)) \
+      .update(
+          {
+              Landing.in_advertising: False,
+              Landing.ad_flag_expires_at: None,
+          },
+          synchronize_session=False,
+      )
+
+    db.commit()
+    return len(expiring_ids)
 
 def _base_landing_query(db: Session) -> Query:
     """Общий базовый запрос: не скрытые лендинги."""
@@ -831,3 +865,38 @@ def _user_landing_ids(db: Session, user_id: int) -> set[int]:
           .all()
     )
     return {r[0] for r in rows}
+
+def _open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None = None):
+    # есть ли открытый период?
+    open_period = (
+        db.query(LandingAdPeriod)
+          .filter(LandingAdPeriod.landing_id == landing_id,
+                  LandingAdPeriod.ended_at.is_(None))
+          .first()
+    )
+    if not open_period:
+        db.add(LandingAdPeriod(landing_id=landing_id, started_by=started_by))
+
+def _close_ad_period_if_open(db: Session, landing_id: int, ended_by: int | None = None):
+    open_period = (
+        db.query(LandingAdPeriod)
+          .filter(LandingAdPeriod.landing_id == landing_id,
+                  LandingAdPeriod.ended_at.is_(None))
+          .first()
+    )
+    if open_period:
+        open_period.ended_at = datetime.utcnow()
+        open_period.ended_by = ended_by
+
+def set_in_advertising(db: Session, landing: Landing, value: bool, actor_user_id: int | None = None):
+    if value and not landing.in_advertising:
+        # включаем рекламу
+        landing.in_advertising = True
+        _open_ad_period_if_needed(db, landing.id, started_by=actor_user_id)
+
+    elif not value and landing.in_advertising:
+        # выключаем рекламу
+        landing.in_advertising = False
+        _close_ad_period_if_open(db, landing.id, ended_by=actor_user_id)
+
+    db.commit()
