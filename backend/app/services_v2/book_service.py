@@ -47,6 +47,7 @@ def _book_to_response(book: Book) -> BookResponse:
         audio_files=[_serialize_book_audio(a) for a in (book.audio_files or [])],
         created_at=book.created_at,
         updated_at=book.updated_at,
+        publication_date=book.publication_date,
     )
 
 # ─────────────────────────── КНИГИ ───────────────────────────────────────────
@@ -106,6 +107,7 @@ def create_book(db: Session, payload: BookCreate) -> Book:
         language    = payload.language.upper(),
         tags=_fetch_tags(db, payload.tag_ids),
         authors     = authors,
+        publication_date=payload.publication_date,
     )
     db.add(book)
     db.flush()                       # → book.id
@@ -151,7 +153,8 @@ def update_book(db: Session, book_id: int, payload: BookUpdate) -> Book:
         book.cover_url = str(payload.cover_url)
     if payload.language is not None:
         book.language = payload.language.upper()
-
+    if payload.publication_date is not None:
+        book.publication_date = payload.publication_date
     if payload.author_ids is not None:
         book.authors = _fetch_authors(db, payload.author_ids)
     if payload.slug is not None and payload.slug != book.slug:
