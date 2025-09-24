@@ -2,7 +2,7 @@ import s from "../Analytics.module.scss";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import {
   ANALYTICS_LIMITS,
-  LANGUAGES,
+  LANGUAGES_NAME,
 } from "../../../../../common/helpers/commonConstants.ts";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRa
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import { Path } from "../../../../../routes/routes.ts";
 import SortByDate from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsListing = () => {
   const [language, setLanguage] = useState<string>("EN");
@@ -22,19 +23,13 @@ const AnalyticsListing = () => {
     null,
   );
   const [adSort, setAdSort] = useState<"ad" | "no-ad" | "all">("all");
-
-  const [dateRange, setDateRange] = useState(() => ({
-    startDate: "",
-    endDate: "",
-  }));
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("custom");
 
   const handleSortDirectionChange = (direction: "asc" | "desc") => {
     if (direction === sortDirection) {
@@ -51,16 +46,19 @@ const AnalyticsListing = () => {
   const fetchMostPopularLandings = async () => {
     setLoading(true);
     const params: {
-      language: string;
+      language?: string;
       limit: string;
       start_date?: string;
       end_date?: string;
       sort_by?: string;
       sort_dir?: string;
     } = {
-      language: language,
       limit: limit,
     };
+
+    if (language !== "all") {
+      params.language = language;
+    }
 
     if (dateRange.startDate) {
       params.start_date = dateRange.startDate;
@@ -98,19 +96,21 @@ const AnalyticsListing = () => {
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
         />
 
         <div className={s.column_two_items}>
           <MultiSelect
             isSearchable={false}
             id={"language"}
-            options={LANGUAGES}
+            options={LANGUAGES_NAME}
             placeholder={"Choose a language"}
             selectedValue={language}
             isMultiple={false}
             onChange={(e) => setLanguage(e.value as string)}
             valueKey="value"
-            labelKey="label"
+            labelKey="name"
           />
           <MultiSelect
             isSearchable={false}
@@ -163,6 +163,7 @@ const AnalyticsListing = () => {
         <Loader />
       ) : (
         <Table
+          loading={loading}
           data={filteredLandings}
           landingLinkByIdPath={Path.landingAnalytics}
           columnLabels={{

@@ -32,6 +32,7 @@
 }
 
 .chart_container {
+  position: relative;
   color: $accent;
   @include clamped-p3;
 

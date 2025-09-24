@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatShortDate } from "../../../../../common/helpers/helpers.ts";
+import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const lineColors: Record<string, string> = {
   CABINET_OFFER: "#01433d",
@@ -26,7 +27,9 @@ const lineColors: Record<string, string> = {
 const PurchasesSourceChart = ({
   data,
   type,
+  loading,
 }: {
+  loading?: boolean;
   data: any[];
   type: "amount" | "count";
 }) => {
@@ -67,6 +70,7 @@ const PurchasesSourceChart = ({
 
   return (
     <div className={s.chart_container}>
+      {loading && <LoaderOverlay />}
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" />

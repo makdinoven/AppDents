@@ -8,6 +8,7 @@
 }
 
 .table_wrapper {
+  position: relative;
   overflow-x: auto;
   border-radius: 10px;
   border: 1px solid $hover-color;

@@ -1,8 +1,10 @@
 import s from "./Table.module.scss";
 import { Path } from "../../../routes/routes.ts";
 import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.ts";
+import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
 interface TableProps<T extends Record<string, any>> {
+  loading?: boolean;
   title?: string;
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
@@ -10,6 +12,7 @@ interface TableProps<T extends Record<string, any>> {
 }
 
 const Table = <T extends Record<string, any>>({
+  loading,
   title,
   data,
   columnLabels = {},
@@ -97,6 +100,7 @@ const Table = <T extends Record<string, any>>({
     <div className={s.table_component}>
       {title && <h4 className={s.table_title}>{title}</h4>}
       <div className={s.table_wrapper}>
+        {loading && <LoaderOverlay />}
         <table className={s.table}>
           <thead>
             <tr>

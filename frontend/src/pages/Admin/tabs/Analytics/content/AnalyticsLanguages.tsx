@@ -3,25 +3,20 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import LangPurchasesChart from "../Charts/LangPurchasesChart.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsLanguages = () => {
   const [languageStats, setLanguageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState(() => ({
-    startDate: getFormattedDate(new Date()),
-    endDate: getFormattedDate(new Date()),
-  }));
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("today");
 
   useEffect(() => {
     fetchLandingsStats();
@@ -51,6 +46,8 @@ const AnalyticsLanguages = () => {
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
         />
         {languageStats && (
           <>
@@ -85,6 +82,7 @@ const AnalyticsLanguages = () => {
         <div className={s.languages_content}>
           <div className={s.languages_table}>
             <Table
+              loading={loading}
               data={languageStats.total}
               columnLabels={{
                 language: "Lang",
@@ -93,7 +91,7 @@ const AnalyticsLanguages = () => {
               }}
             />
           </div>
-          <LangPurchasesChart data={languageStats.daily} />
+          <LangPurchasesChart loading={loading} data={languageStats.daily} />
         </div>
       )}
     </>
