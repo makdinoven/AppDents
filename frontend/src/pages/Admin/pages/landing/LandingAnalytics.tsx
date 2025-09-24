@@ -104,6 +104,11 @@ const LandingAnalytics = () => {
               handleClick={(val) => setChartMode(val)}
             />
           </div>
+
+          {chartData && (
+            <LandingAnalyticsChart data={chartData} type={chartMode} />
+          )}
+
           <div className={s.info_container}>
             <Table
               title="Range data"
@@ -145,10 +150,6 @@ const LandingAnalytics = () => {
               columnLabels={{ metric: "Metric", value: "Value" }}
             />
           </div>
-
-          {chartData && (
-            <LandingAnalyticsChart data={chartData} type={chartMode} />
-          )}
 
           <Table
             title="Start/End Ad"

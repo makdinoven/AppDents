@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 40px;
 }
+
 .info_container {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -11,6 +12,7 @@
 }
 
 .created_at {
+  @include clamped-p2;
   display: flex;
   width: 100%;
   text-align: right;
@@ -18,9 +20,14 @@
 }
 
 .filters {
-  display: grid;
-  grid-template-columns: 2fr 2fr 1fr;
+  display: flex;
+  justify-content: space-between;
   gap: 20px;
+  align-items: flex-end;
+}
+
+.chart_container {
+  @include clamped-p3;
 }
 
 .tooltip {
@@ -38,4 +45,21 @@
 .tooltip_date {
   text-align: center;
   margin-bottom: 5px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .landing_analytics_container {
+    gap: 20px;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .info_container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 }
