@@ -1,22 +1,22 @@
-import s from "../DetailPage.module.scss";
-import EditLanding from "../../modules/EditLanding/EditLanding.tsx";
-import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../../modules/common/DetailBottom/DetailBottom.tsx";
+import s from "./DetailPage.module.scss";
+import EditLanding from "../modules/EditLanding/EditLanding.tsx";
+import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
-import EditLesson from "../../modules/EditLesson/EditLesson.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import EditLesson from "../modules/EditLesson/EditLesson.tsx";
+import Loader from "../../../components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../api/adminApi/adminApi.ts";
+import { mainApi } from "../../../api/mainApi/mainApi.ts";
 import {
   denormalizeLessons,
   normalizeLessons,
-} from "../../../../common/helpers/helpers.ts";
-import { ErrorIcon } from "../../../../assets/icons";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
+} from "../../../common/helpers/helpers.ts";
+import { ErrorIcon } from "../../../assets/icons";
+import { Alert } from "../../../components/ui/Alert/Alert.tsx";
 
 const LandingDetail = () => {
   const { landingId } = useParams();

@@ -8,7 +8,7 @@ import { Route, Routes, useLocation } from "react-router-dom";
 import AdminPanel from "../pages/Admin/AdminPanel/AdminPanel.tsx";
 import CourseDetail from "../pages/Admin/pages/CourseDetail.tsx";
 import AdminPage from "../pages/Admin/AdminPage.tsx";
-import LandingDetail from "../pages/Admin/pages/landing/LandingDetail.tsx";
+import LandingDetail from "../pages/Admin/pages/LandingDetail.tsx";
 import AuthorDetail from "../pages/Admin/pages/AuthorDetail.tsx";
 import CoursePage from "../pages/ProfilePage/pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
@@ -29,7 +29,7 @@ import AdminRoute from "./protected/AdminRoute.tsx";
 import Cart from "../pages/Cart/Cart.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
 import SearchPage from "../pages/SearchPage/SearchPage.tsx";
-import LandingAnalytics from "../pages/Admin/pages/landing/LandingAnalytics.tsx";
+import LandingAnalytics from "../pages/Admin/tabs/Analytics/content/LandingAnalytics/LandingAnalytics.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
