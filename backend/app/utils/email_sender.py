@@ -1239,6 +1239,223 @@ def send_password_to_user(recipient_email: str, password: str, region: str):
     except Exception as e:
         print("Error sending email:", repr(e))
 
+import ssl, smtplib, email.utils
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+def send_successful_purchase_email(
+    recipient_email: str,
+    course_names: list[str],
+    new_account: bool = False,
+    password: str | None = None,
+    region: str = "EN",
+):
+    """
+    Отправляет письмо с подтверждением успешной покупки.
+    Работает с SMTP_SSL:465 (snakeoil → без проверки TLS) и с SMTP:587 (STARTTLS).
+
+    Требуемые settings:
+      EMAIL_HOST, EMAIL_PORT (465 или 587),
+      EMAIL_USERNAME, EMAIL_PASSWORD,
+      EMAIL_SENDER (например, 'noreply@dent-s.com')
+    """
+    # === Настройки SMTP / отправителя ===
+    smtp_server   = settings.EMAIL_HOST
+    smtp_port     = settings.EMAIL_PORT
+    smtp_username = settings.EMAIL_USERNAME      # envelope-from для Return-Path
+    smtp_password = settings.EMAIL_PASSWORD
+    sender_email  = settings.EMAIL_SENDER        # будет в заголовке From
+
+    # === Данные письма ===
+    contact_email = "info.dis.org@gmail.com"
+    login_url     = "https://dent-s.com/login"
+    more_url      = "https://dent-s.com/"
+    courses_str   = ", ".join(course_names) if course_names else ""
+
+    translations = {
+        "EN": {
+            "subject":        "Purchase Confirmation — Your Course(s) Has Been Added",
+            "heading_default":"Purchase Confirmation",
+            "heading_new":    "Welcome and Congratulations!",
+            "purchased":      "You have successfully purchased the following course(s): <strong>{courses_str}</strong>.",
+            "account_info":   "We have created a new account for you.",
+            "label_email":    "<strong>Email:</strong> {recipient_email}",
+            "label_password": "<strong>Temporary Password:</strong> <span class=\"password\">{password}</span>",
+            "added":          "They have been added to your account.",
+            "prompt":         "Please use the button below to log in:",
+            "btn_login":      "Log In",
+            "btn_more":       "More courses here",
+            "thanks":         "Thank you for your purchase!",
+            "support":        "If you have any questions, contact us at <strong>{contact_email}</strong>."
+        },
+        "RU": {
+            "subject":        "Подтверждение покупки — ваш курс добавлен",
+            "heading_default":"Подтверждение покупки",
+            "heading_new":    "Добро пожаловать и поздравляем!",
+            "purchased":      "Вы успешно приобрели курс(ы): <strong>{courses_str}</strong>.",
+            "account_info":   "Для вас создан новый аккаунт.",
+            "label_email":    "<strong>Email:</strong> {recipient_email}",
+            "label_password": "<strong>Пароль:</strong> <span class=\"password\">{password}</span>",
+            "added":          "Они добавлены в ваш аккаунт.",
+            "prompt":         "Пожалуйста, перейдите по кнопке ниже, чтобы войти:",
+            "btn_login":      "Войти",
+            "btn_more":       "Больше курсов здесь",
+            "thanks":         "Спасибо за покупку!",
+            "support":        "Если у вас возникнут вопросы, напишите на <strong>{contact_email}</strong>."
+        },
+        "ES": {
+            "subject":        "Confirmación de compra — su curso ha sido agregado",
+            "heading_default":"Confirmación de compra",
+            "heading_new":    "¡Bienvenido y felicitaciones!",
+            "purchased":      "Ha comprado con éxito el/los curso(s): <strong>{courses_str}</strong>.",
+            "account_info":   "Se ha creado una nueva cuenta para usted.",
+            "label_email":    "<strong>Email:</strong> {recipient_email}",
+            "label_password": "<strong>Contraseña temporal:</strong> <span class=\"password\">{password}</span>",
+            "added":          "Se han agregado a su cuenta.",
+            "prompt":         "Use el botón a continuación para iniciar sesión:",
+            "btn_login":      "Iniciar sesión",
+            "btn_more":       "Más cursos aquí",
+            "thanks":         "¡Gracias por su compra!",
+            "support":        "Si tiene alguna pregunta, escriba a <strong>{contact_email}</strong>."
+        },
+        "IT": {
+            "subject":        "Conferma di acquisto — il tuo corso è stato aggiunto",
+            "heading_default":"Conferma di acquisto",
+            "heading_new":    "Benvenuto e congratulazioni!",
+            "purchased":      "Hai acquistato con successo il/los corso(i): <strong>{courses_str}</strong>.",
+            "account_info":   "Abbiamo creato un nuovo account per te.",
+            "label_email":    "<strong>Email:</strong> {recipient_email}",
+            "label_password": "<strong>Password temporanea:</strong> <span class=\"password\">{password}</span>",
+            "added":          "Sono stati aggiunti al tuo account.",
+            "prompt":         "Per favore, usa il pulsante qui sotto per accedere:",
+            "btn_login":      "Accedi",
+            "btn_more":       "Altri corsi qui",
+            "thanks":         "Grazie per il tuo acquisto!",
+            "support":        "Se hai domande, contatta <strong>{contact_email}</strong>."
+        },
+        "PT": {
+            "subject":        "Confirmação de compra — seu curso foi adicionado",
+            "heading_default":"Confirmação de compra",
+            "heading_new":    "Bem-vindo e parabéns!",
+            "purchased":      "Você comprou com sucesso o(s) curso(s): <strong>{courses_str}</strong>.",
+            "account_info":   "Criamos uma nova conta para você.",
+            "label_email":    "<strong>Email:</strong> {recipient_email}",
+            "label_password": "<strong>Senha temporária:</strong> <span class=\"password\">{password}</span>",
+            "added":          "Eles foram adicionados à sua conta.",
+            "prompt":         "Por favor, use o botão abaixo para fazer login:",
+            "btn_login":      "Entrar",
+            "btn_more":       "Mais cursos aqui",
+            "thanks":         "Obrigado pela sua compra!",
+            "support":        "Se tiver dúvidas, entre em contato em <strong>{contact_email}</strong>."
+        },
+        "AR": {
+            "subject":        "تأكيد الشراء — تم إضافة دورتك",
+            "heading_default":"تأكيد الشراء",
+            "heading_new":    "مرحبًا وتهانينا!",
+            "purchased":      "لقد اشتريت بنجاح الدورة(الدورات): <strong>{courses_str}</strong>.",
+            "account_info":   "تم إنشاء حساب جديد لك.",
+            "label_email":    "<strong>البريد الإلكتروني:</strong> {recipient_email}",
+            "label_password": "<strong>كلمة المرور المؤقتة:</strong> <span class=\"password\">{password}</span>",
+            "added":          "تمت إضافتها إلى حسابك.",
+            "prompt":         "يرجى استخدام الزر أدناه لتسجيل الدخول:",
+            "btn_login":      "تسجيل الدخول",
+            "btn_more":       "المزيد من الدورات هنا",
+            "thanks":         "شكرًا لشرائك!",
+            "support":        "إذا كانت لديك أي أسئلة، تواصل معنا على <strong>{contact_email}</strong>."
+        },
+    }
+
+    locale = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
+
+    body_html = f"""<!DOCTYPE html>
+<html{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <title>{locale["subject"]}</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+    .container {{
+      background-color: #fff; padding: 20px; border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto;
+    }}
+    h2 {{ color: #333; }}
+    p {{ font-size: 16px; line-height: 1.5; color: #555; }}
+    .password {{ font-size: 18px; font-weight: bold; color: #d9534f; }}
+    .btn {{
+      display: inline-block; padding: 10px 20px; margin-top: 20px;
+      background-color: #28a745; color: #fff; text-decoration: none; border-radius: 5px;
+    }}
+    .btn-more {{ background-color: #007bff; margin-left: 10px; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>{locale["heading_new"] if new_account else locale["heading_default"]}</h2>
+    <p>{locale["purchased"].format(courses_str=courses_str)}</p>"""
+
+    if new_account:
+        body_html += f"""
+    <p>{locale["account_info"]}</p>
+    <p>{locale["label_email"].format(recipient_email=recipient_email)}</p>
+    <p class="password">{locale["label_password"].format(password=password or "")}</p>"""
+    else:
+        body_html += f"""
+    <p>{locale["added"]}</p>"""
+
+    body_html += f"""
+    <p>{locale["prompt"]}</p>
+    <a href="{login_url}" class="btn">{locale["btn_login"]}</a>
+    <a href="{more_url}" class="btn btn-more">{locale["btn_more"]}</a>
+    <p>{locale["thanks"]}</p>
+    <p>{locale["support"].format(contact_email=contact_email)}</p>
+  </div>
+</body>
+</html>"""
+
+    # MIME
+    msg = MIMEMultipart()
+    msg["From"]       = f"DENT-S <{sender_email}>"
+    msg["To"]         = recipient_email
+    msg["Subject"]    = locale["subject"]
+    msg["Date"]       = email.utils.formatdate(localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain="dent-s.com")
+    msg["List-Unsubscribe"] = "<mailto:unsubscribe@dent-s.com>, <https://dent-s.com/unsub>"
+    msg.attach(MIMEText(body_html, "html"))
+
+    # Envelope-From влияет на Return-Path и DMARC alignment
+    envelope_from = smtp_username or sender_email
+
+    # TLS под snakeoil: ОТКЛЮЧАЕМ проверку (временно!)
+    tls_ctx = ssl.create_default_context()
+    tls_ctx.check_hostname = False
+    tls_ctx.verify_mode = ssl.CERT_NONE
+
+    try:
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_server, 465, context=tls_ctx, timeout=30) as server:
+                if smtp_username and smtp_password:
+                    server.login(smtp_username, smtp_password)
+                server.sendmail(envelope_from, [recipient_email], msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
+                server.ehlo()
+                if smtp_port == 587:
+                    server.starttls(context=tls_ctx)
+                    server.ehlo()
+                if smtp_username and smtp_password:
+                    server.login(smtp_username, smtp_password)
+                server.sendmail(envelope_from, [recipient_email], msg.as_string())
+        return True
+    except smtplib.SMTPResponseException as e:
+        code, resp = e.smtp_code, e.smtp_error
+        print(f"SMTP error {code}: {resp!r}")
+        return False
+    except Exception as e:
+        print("Error sending purchase confirmation email:", repr(e))
+        return False
+
+
 
 def send_recovery_email(recipient_email: str, new_password: str, region: str = "EN"):
     """
