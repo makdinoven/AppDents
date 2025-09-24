@@ -28,6 +28,7 @@
   gap: 10px;
   display: grid;
   grid-template-columns: 3fr 1fr;
+  align-items: flex-end;
 }
 
 .chart_container {
@@ -73,6 +74,21 @@
   gap: 20px;
 }
 
+.totals {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  justify-content: flex-end;
+
+  p {
+    @include clamped-p2;
+
+    span {
+      color: $secondary-lighter;
+    }
+  }
+}
+
 @media (max-width: $tablet-breakpoint) {
   .analytics_options {
     display: flex;
@@ -90,7 +106,6 @@
 @media (max-width: $mobile-breakpoint) {
   .two_items {
     display: flex;
-    flex-direction: column;
   }
 
   .analytics_page {

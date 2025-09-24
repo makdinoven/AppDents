@@ -5,6 +5,8 @@
   background-color: $hover-color;
   border-radius: 15px;
   border: 1px solid $hover-color;
+  min-width: 200px;
+  height: fit-content;
 
   button {
     padding: 5px 10px;
