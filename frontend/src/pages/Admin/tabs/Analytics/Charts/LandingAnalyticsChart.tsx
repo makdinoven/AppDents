@@ -1,4 +1,4 @@
-import s from "./../../../pages/landing/LandingAnalytics.module.scss";
+import s from "../content/LandingAnalytics/LandingAnalytics.module.scss";
 import {
   CartesianGrid,
   Legend,
