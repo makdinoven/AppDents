@@ -27,7 +27,9 @@
 }
 
 .chart_container {
+  position: relative;
   @include clamped-p3;
+  margin-left: -30px;
 }
 
 .tooltip {

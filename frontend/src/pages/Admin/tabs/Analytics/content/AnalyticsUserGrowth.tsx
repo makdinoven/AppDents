@@ -1,34 +1,23 @@
 // import s from "../Analytics.module.scss"
 
 import { useEffect, useState } from "react";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import UserGrowthChart from "../Charts/UserGrowthChart.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsUserGrowth = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState(() => {
-    const today = new Date();
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(today.getDate() - 7);
-
-    return {
-      startDate: getFormattedDate(oneWeekAgo),
-      endDate: getFormattedDate(today),
-    };
-  });
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("lastWeek");
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,6 +47,8 @@ const AnalyticsUserGrowth = () => {
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
         />
         {data && (
           <>
@@ -77,7 +68,11 @@ const AnalyticsUserGrowth = () => {
         )}
       </div>
 
-      {!data && loading ? <Loader /> : <UserGrowthChart data={data.data} />}
+      {!data && loading ? (
+        <Loader />
+      ) : (
+        <UserGrowthChart loading={loading} data={data.data} />
+      )}
     </>
   );
 };

@@ -12,9 +12,11 @@ import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons
 import s from "./LandingAnalytics.module.scss";
 import LandingAnalyticsChart from "../../tabs/Analytics/Charts/LandingAnalyticsChart.tsx";
 import Table from "../../../../components/ui/Table/Table.tsx";
+import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
 
 const LandingAnalytics = () => {
   const { landingId } = useParams();
+  const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
   const [chartMode, setChartMode] = useState<"hour" | "day">("day");
   const [landing, setLanding] = useState<{
@@ -22,20 +24,17 @@ const LandingAnalytics = () => {
     totals: { all: any; range: any };
     periods: { start: string; end: string }[];
   } | null>(null);
-  const [dateRange, setDateRange] = useState({
-    startDate: "",
-    endDate: "",
-  });
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("custom");
 
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
+  const fetchData = async () => {
+    setLoading(true);
 
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
-
-  const fetchChartData = async () => {
     const params: {
       landing_id: string;
       bucket: string;
@@ -57,26 +56,30 @@ const LandingAnalytics = () => {
       setLanding({
         data: res.data.landing,
         totals: { all: res.data.totals_all_time, range: res.data.totals_range },
-        periods: res.data.ad_periods,
+        periods: res.data.ad_periods.map(
+          (p: { start: string; end: string }) => ({
+            start: formatIsoToLocalDatetime(p.start, true),
+            end: formatIsoToLocalDatetime(p.end, true),
+          }),
+        ),
       });
+      setLoading(false);
     } catch (err) {
       console.error(err);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchChartData();
+    fetchData();
   }, [dateRange, chartMode]);
 
   useEffect(() => {
     if (landing?.data?.created_at) {
       const createdAt = getFormattedDate(new Date(landing.data.created_at));
       const today = getFormattedDate(new Date());
-
-      setDateRange({
-        startDate: createdAt,
-        endDate: today,
-      });
+      handleStartDateChange(createdAt);
+      handleEndDateChange(today);
     }
   }, [landing?.data?.created_at]);
 
@@ -97,6 +100,8 @@ const LandingAnalytics = () => {
               endDate={dateRange.endDate}
               onEndDateChange={handleEndDateChange}
               onStartDateChange={handleStartDateChange}
+              selectedPreset={selectedPreset}
+              setPreset={setPreset}
             />
             <SwitchButtons
               buttonsArr={["hour", "day"]}
@@ -106,11 +111,16 @@ const LandingAnalytics = () => {
           </div>
 
           {chartData && (
-            <LandingAnalyticsChart data={chartData} type={chartMode} />
+            <LandingAnalyticsChart
+              loading={loading}
+              data={chartData}
+              type={chartMode}
+            />
           )}
 
           <div className={s.info_container}>
             <Table
+              loading={loading}
               title="Range data"
               data={[
                 { metric: "Purchases", value: landing.totals.range.purchases },
@@ -124,6 +134,7 @@ const LandingAnalytics = () => {
             />
 
             <Table
+              loading={loading}
               title="All time data"
               data={[
                 {
@@ -152,6 +163,7 @@ const LandingAnalytics = () => {
           </div>
 
           <Table
+            loading={loading}
             title="Start/End Ad"
             data={landing.periods}
             columnLabels={{ start: "Start date", end: "End date" }}

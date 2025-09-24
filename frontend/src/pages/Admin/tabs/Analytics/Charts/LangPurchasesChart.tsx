@@ -9,10 +9,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const LangPurchasesChart = ({
   data,
+  loading,
 }: {
+  loading?: boolean;
   data: {
     date: string;
     languages: { language: string; count: number; total_amount: string }[];
@@ -70,6 +73,7 @@ const LangPurchasesChart = ({
 
   return (
     <div className={s.chart_container}>
+      {loading && <LoaderOverlay />}
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" />
