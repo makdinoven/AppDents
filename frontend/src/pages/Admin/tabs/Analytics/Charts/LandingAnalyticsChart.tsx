@@ -14,6 +14,7 @@ import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOver
 
 const lineColors: Record<string, string> = {
   visits: "#01433d",
+  ad_visits: "#006d8d",
   purchases: "#90e895",
 };
 
@@ -31,7 +32,7 @@ const CustomTooltip = ({ active, payload }: any) => {
       <p className={s.tooltip_date}>{fullDate}</p>
       {payload.map((entry: any) => (
         <p className={s[entry.name]} key={entry.dataKey}>
-          {entry.name}: {entry.value}
+          {entry.name === "ad_visits" ? "Ad visits" : entry.name}: {entry.value}
         </p>
       ))}
     </div>
