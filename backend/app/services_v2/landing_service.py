@@ -616,9 +616,7 @@ def get_sales_totals(
 
     return {"sales_total": int(sales_total), "ad_sales_total": int(ad_sales_total)}
 
-AD_TTL = timedelta(hours=3)
-
-AD_TTL = timedelta(hours=3)
+AD_TTL = timedelta(hours=6)
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
     now = datetime.utcnow()
