@@ -38,9 +38,14 @@
   border-radius: 10px;
   border: 1px solid $hover-color;
   padding: 10px;
+  text-transform: capitalize;
 
   .purchases {
     color: $green;
+  }
+
+  .ad_visits {
+    color: $secondary;
   }
 }
 
