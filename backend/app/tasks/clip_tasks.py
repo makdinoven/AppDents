@@ -21,28 +21,39 @@ from boto3.s3.transfer import TransferConfig
 from celery import shared_task
 from celery.exceptions import SoftTimeLimitExceeded
 
-# ---------------- ENV / S3 ----------------
+# =========================
+# S3 / ENV
+# =========================
 S3_BUCKET      = os.getenv("S3_BUCKET", "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 
-# Таймауты стриминга
-START_TIMEOUT       = int(os.getenv("CLIP_START_TIMEOUT", "600"))   # ждать первые байты, сек
-NOPROGRESS_TIMEOUT  = int(os.getenv("CLIP_NOPROGRESS_TIMEOUT", "120"))
+# =========================
+# Жёстко вшитые настройки (без ENV)
+# =========================
+# таймауты стрима
+START_TIMEOUT       = 180   # сек до первых байт
+NOPROGRESS_TIMEOUT  = 60    # сек без прогресса → перезапуск/фолбэк
+# критерии валидности
+MIN_OK_BYTES        = 1_000_000     # не публикуем пустышки
+MIN_OK_DURATION_SEC = 2.0
+# Multipart размеры
+MIN_PART            = 5 * 1024 * 1024
+DEFAULT_PART        = 8 * 1024 * 1024
+# Аудио-стратегия
+TRANSCODE_NON_AAC   = True          # не-AAC → перекодировать в AAC
+AUDIO_BR            = "128k"        # битрейт при перекодировании
+# Поведение
+ALLOW_DOWNLOAD_FALLBACK = True      # разрешить локальный фолбэк (надёжно, но использует диск)
 
-# Минимальные критерии «нормального» клипа
-MIN_OK_BYTES        = int(os.getenv("CLIP_MIN_OK_BYTES", str(1_000_000)))     # 1 MB
-MIN_OK_DURATION_SEC = float(os.getenv("CLIP_MIN_OK_DURATION_SEC", "2.0"))     # ≥ 2 сек
+# Celery лимиты — увеличены, чтобы не падать по софт-таймауту на медленных сетях
+CELERY_SOFT_LIMIT = 2400   # 40 минут
+CELERY_HARD_LIMIT = 3600   # 60 минут
 
-# Разрешить фолбэк на локальную загрузку/обрезку
-ALLOW_DOWNLOAD_FALLBACK = os.getenv("CLIP_ALLOW_DOWNLOAD_FALLBACK", "true").lower() == "true"
-
-# Размер части для multipart (≥ 5MiB)
-MIN_PART     = 5 * 1024 * 1024
-DEFAULT_PART = max(int(os.getenv("CLIP_PART_SIZE", str(8 * 1024 * 1024))), MIN_PART)
-
-# основной клиент
+# =========================
+# S3 clients
+# =========================
 s3 = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
@@ -52,7 +63,6 @@ s3 = boto3.client(
     config=Config(signature_version="s3", s3={"addressing_style": "path"}),
 )
 
-# presigned V4 клиент
 s3_v4 = boto3.client(
     "s3",
     endpoint_url=S3_ENDPOINT,
@@ -63,13 +73,15 @@ s3_v4 = boto3.client(
 )
 
 TRANSFER_CFG = TransferConfig(
-    multipart_threshold=8 * 1024 * 1024,
-    multipart_chunksize=8 * 1024 * 1024,
+    multipart_threshold=DEFAULT_PART,
+    multipart_chunksize=DEFAULT_PART,
     max_concurrency=2,
     use_threads=True,
 )
 
-# ---------------- helpers ----------------
+# =========================
+# helpers
+# =========================
 def _bucket_from_url(url: str) -> str:
     host = urlparse(url).hostname or ""
     return host.split(".")[0] if host.endswith(".s3.twcstorage.ru") else S3_BUCKET
@@ -118,11 +130,8 @@ def _make_presigned(bucket: str, key: str, ttl: int = 3600) -> str:
         "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=ttl
     )
 
-# ---- ffprobe helpers ----
-def _ffprobe_duration_url(url: str, timeout: int = 30) -> Tuple[Optional[float], Optional[str]]:
-    """
-    Возвращает (duration_sec | None, raw_json | None).
-    """
+# ----- ffprobe -----
+def _ffprobe_duration_url(url: str, timeout: int = 25) -> Tuple[Optional[float], Optional[str]]:
     try:
         cp = subprocess.run(
             ["ffprobe", "-v", "error", "-show_format", "-of", "json", url],
@@ -136,7 +145,7 @@ def _ffprobe_duration_url(url: str, timeout: int = 30) -> Tuple[Optional[float],
     except Exception:
         return None, None
 
-def _ffprobe_duration_file(path: str, timeout: int = 30) -> Optional[float]:
+def _ffprobe_duration_file(path: str, timeout: int = 25) -> Optional[float]:
     try:
         cp = subprocess.run(
             ["ffprobe", "-v", "error", "-show_format", "-of", "json", path],
@@ -150,10 +159,39 @@ def _ffprobe_duration_file(path: str, timeout: int = 30) -> Optional[float]:
     except Exception:
         return None
 
+def _ffprobe_codecs(url_or_path: str, timeout: int = 20) -> Tuple[Optional[str], Optional[str]]:
+    """Возвращает (audio_codec, video_codec)."""
+    a = v = None
+    try:
+        p = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+             "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
+        )
+        if p.returncode == 0:
+            obj = json.loads(p.stdout.decode("utf-8","ignore") or "{}")
+            arr = obj.get("streams") or []
+            if arr:
+                a = (arr[0].get("codec_name") or "").lower() or None
+    except Exception:
+        pass
+    try:
+        p2 = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
+        )
+        if p2.returncode == 0:
+            obj2 = json.loads(p2.stdout.decode("utf-8","ignore") or "{}")
+            arr2 = obj2.get("streams") or []
+            if arr2:
+                v = (arr2[0].get("codec_name") or "").lower() or None
+    except Exception:
+        pass
+    return a, v
+
 def _validate_clip_s3(bucket: str, key: str) -> Tuple[bool, str]:
-    """
-    Проверяем загруженный клип: размер и (по возможности) длительность.
-    """
+    """Проверяем загруженный клип: размер и (по возможности) длительность."""
     try:
         head = s3.head_object(Bucket=bucket, Key=key)
     except Exception as e:
@@ -162,17 +200,17 @@ def _validate_clip_s3(bucket: str, key: str) -> Tuple[bool, str]:
     if size < MIN_OK_BYTES:
         return False, f"too small: {size} < {MIN_OK_BYTES}"
 
-    # Проверим длительность по presigned URL (для fMP4 обычно корректно)
     url = _make_presigned(bucket, key, ttl=300)
     dur, _ = _ffprobe_duration_url(url, timeout=25)
     if dur is None:
-        # не смогли определить длительность — считаем «условно ок» по размеру
         return True, f"ok_by_size_only:{size}"
     if dur < MIN_OK_DURATION_SEC:
         return False, f"too short: {dur:.3f}s < {MIN_OK_DURATION_SEC}s"
     return True, f"ok:{size}bytes,{dur:.3f}s"
 
-# ---- ручной multipart upload из pipe (вместо upload_fileobj) ----
+# =========================
+# Multipart upload из pipe (ручной)
+# =========================
 def multipart_upload_from_pipe(
     pipe,
     *,
@@ -184,10 +222,6 @@ def multipart_upload_from_pipe(
     progress_cb: Optional[Callable[[int], None]] = None,
     min_ok_bytes: int = MIN_OK_BYTES,
 ) -> int:
-    """
-    Читает байты из pipe (ffmpeg stdout) и загружает их в S3 через Multipart Upload.
-    Возвращает общее число отправленных байт. Если данных < min_ok_bytes — MPU абортируется, объект не создаётся.
-    """
     mpu = s3.create_multipart_upload(
         Bucket=bucket,
         Key=key,
@@ -236,7 +270,6 @@ def multipart_upload_from_pipe(
             sent_total += len(buf)
 
         if sent_total < max(min_ok_bytes, 1):
-            # не создаём «пустышку»
             s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
             raise RuntimeError(f"too few bytes streamed ({sent_total} < {min_ok_bytes})")
 
@@ -255,39 +288,48 @@ def multipart_upload_from_pipe(
             pass
         raise
 
-# ---- FFmpeg (HTTP input → stdout) ----
-def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
+# =========================
+# FFmpeg запуск (HTTP → stdout)
+# =========================
+def _spawn_ffmpeg_http(in_url: str, length_sec: int, audio_codec: Optional[str]) -> subprocess.Popen:
     """
-    Вход по HTTP(S) (seekable), выход в fMP4 на stdout (pipe:1)
+    Вход HTTPS (seekable), выход в fMP4 на stdout.
+    - AAC: копируем аудио + aac_adtstoasc.
+    - НЕ AAC: либо копируем (если TRANSCODE_NON_AAC=False), либо транскодируем в AAC.
     """
+    copy_audio = (audio_codec == "aac") or (audio_codec is None and not TRANSCODE_NON_AAC)
+
     cmd = [
         "nice", "-n", "10",
         "ffmpeg",
-        "-hide_banner",
-        "-nostdin",
-        "-loglevel", "error",
+        "-hide_banner", "-nostdin", "-loglevel", "error",
         "-threads", "1",
 
         # сетевые страховки
-        "-rw_timeout", "30000000",  # 30s, μs
+        "-rw_timeout", "30000000",         # 30s (μs)
         "-reconnect", "1",
         "-reconnect_streamed", "1",
         "-reconnect_delay_max", "3",
         "-reconnect_on_network_error", "1",
 
-        "-ss", "0",
-        "-i", in_url,
+        "-ss", "0", "-i", in_url,
         "-t", str(length_sec),
 
-        "-c", "copy",
-        "-bsf:a", "aac_adtstoasc",
+        "-c:v", "copy",
+    ]
 
-        # запись в не-seekable stdout → fragmented MP4
+    if copy_audio:
+        cmd += ["-c:a", "copy"]
+        if audio_codec == "aac":
+            cmd += ["-bsf:a", "aac_adtstoasc"]
+    else:
+        cmd += ["-c:a", "aac", "-b:a", AUDIO_BR]
+
+    cmd += [
         "-movflags", "frag_keyframe+empty_moov",
         "-muxpreload", "0",
         "-muxdelay", "0",
         "-flush_packets", "1",
-
         "-f", "mp4",
         "pipe:1",
     ]
@@ -295,10 +337,12 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int = 300) -> subprocess.Popen:
 
 def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: str, t0: float):
     """
-    FFmpeg HTTP → stdout → S3 (ручной multipart), прогресс и двухфазный watchdog.
-    Возвращает (uploaded_bytes, ffmpeg_ret, stderr_tail)
+    HTTPS → ffmpeg(stdout) → S3 (ручной MPU), прогресс и watchdog.
+    Возвращает (uploaded_bytes, ffmpeg_ret, stderr_tail).
     """
-    proc = _spawn_ffmpeg_http(in_url, length_sec=300)
+    # определим кодеки входа и подготовим ffmpeg
+    a_codec, _ = _ffprobe_codecs(in_url, timeout=20)
+    proc = _spawn_ffmpeg_http(in_url, length_sec=300, audio_codec=a_codec)
     if not proc.stdout:
         return 0, -1, "ffmpeg stdout is not available"
 
@@ -348,7 +392,7 @@ def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: s
 
     try:
         while th.is_alive():
-            time.sleep(1)
+            time.sleep(0.5)
             if first_byte_ts is None and (time.time() - t0) > START_TIMEOUT:
                 try: proc.terminate()
                 except Exception: pass
@@ -376,58 +420,66 @@ def _run_stream_pipeline(self, task_id: str, in_url: str, clip_key: str, mime: s
             ret = 0
 
     tail = "\n".join(list(stderr_tail)[-30:])
-
     if upload_err["exc"] is not None:
         raise RuntimeError(f"S3 upload failed: {upload_err['exc']}; ffmpeg ret={_fmt_ret(ret)}; stderr tail:\n{tail}")
 
     return uploaded, ret, tail
 
-# ---- локальная загрузка/обрезка (fallback) ----
+# =========================
+# Локальный fallback
+# =========================
 def _ffmpeg_local_clip(src_path: str, dst_path: str):
-    """
-    Обрезка 0..300 c без перекодирования, +faststart (moov в начало) — файл на диске.
-    """
+    a_codec, _ = _ffprobe_codecs(src_path, timeout=15)
     cmd = [
-        "ffmpeg",
-        "-hide_banner",
-        "-nostdin",
-        "-loglevel", "error",
+        "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "error",
         "-threads", "2",
         "-i", src_path,
         "-t", "300",
-        "-c", "copy",
-        "-movflags", "+faststart",
-        "-y",
-        dst_path,
+        "-c:v", "copy",
     ]
-    completed = subprocess.run(cmd, capture_output=True)
-    if completed.returncode != 0:
-        raise RuntimeError(f"local ffmpeg failed: {completed.stderr.decode('utf-8', 'ignore')[:2000]}")
+    if a_codec == "aac":
+        cmd += ["-c:a", "copy"]
+    else:
+        if TRANSCODE_NON_AAC:
+            cmd += ["-c:a", "aac", "-b:a", AUDIO_BR]
+        else:
+            cmd += ["-c:a", "copy"]
 
-# ---------------- task ----------------
+    cmd += ["-movflags", "+faststart", "-y", dst_path]
+
+    cp = subprocess.run(cmd, capture_output=True)
+    if cp.returncode != 0:
+        raise RuntimeError(f"local ffmpeg failed: {cp.stderr.decode('utf-8','ignore')[:2000]}")
+
+# =========================
+# TASK
+# =========================
 @shared_task(
     bind=True,
     track_started=True,
-    soft_time_limit=20 * 60,
-    time_limit=30 * 60,
+    soft_time_limit=CELERY_SOFT_LIMIT,
+    time_limit=CELERY_HARD_LIMIT,
     name="app.tasks.clip_tasks.clip_video",
 )
 def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_download: bool = False) -> dict:
     """
-    Попытка A: прямой URL (HTTP) → ffmpeg → S3 (стрим, multipart) + валидация.
-    Попытка B: presigned V4 → ffmpeg → S3 (стрим, multipart) + валидация.
-    Фолбэк C: S3 → локальный файл → ffmpeg (файл) → локальный файл → S3 + валидация локально до аплоада.
-    Если результат «плохой» — удаляем объект/абортируем MPU и пробуем следующий путь, либо завершаем ошибкой.
+    A: origin presigned → ffmpeg → S3 (стрим, MPU) + валидация.
+    B: (если A не дал результата и был stderr) тот же presigned повторно (редко нужно).
+    C: локальный фолбэк (при разрешении): S3→диск→ffmpeg→S3 + валидация ДО аплоада.
+    Всегда работаем с origin (presigned), вне зависимости от того, пришла CDN-или прямая ссылка.
     """
     t0 = time.time()
     task_id = getattr(self.request, "id", None) or getattr(self.request, "root_id", None)
     if not task_id:
         raise RuntimeError("No Celery task_id in context")
 
-    # 0) HEAD исходника — быстрый 404/403/размер
     self.update_state(task_id=task_id, state="STARTED", meta={"stage": "preparing"})
+
+    # Нормализуем источник (bucket/key) из любой ссылки
     src_bucket = _bucket_from_url(src_url)
     src_key    = _key_from_url(src_url)
+
+    # HEAD на исходник
     try:
         head = s3.head_object(Bucket=src_bucket, Key=src_key)
     except ClientError as e:
@@ -438,125 +490,95 @@ def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_downloa
     clip_key = dest_key if dest_key else _unique_clip_name(src_key)
     mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
 
-    # ===== C (принудительно): локальный фолбэк сразу =====
-    if force_download:
+    # Если принудительно — сразу надёжный локальный путь
+    if force_download or not ALLOW_DOWNLOAD_FALLBACK:
         with tempfile.TemporaryDirectory() as tmp:
             src_path  = os.path.join(tmp, "src.bin")
             dst_path  = os.path.join(tmp, "clip.mp4")
-
-            # скачиваем целиком (S3 → файл)
+            # Скачиваем целиком (из origin)
             s3.download_file(src_bucket, src_key, src_path, Config=TRANSFER_CFG)
-
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "local_cut"})
             _ffmpeg_local_clip(src_path, dst_path)
-
-            # валидация локального результата до аплоада
             dur = _ffprobe_duration_file(dst_path) or 0.0
             if dur < MIN_OK_DURATION_SEC:
                 raise RuntimeError(f"local result too short: {dur:.3f}s < {MIN_OK_DURATION_SEC}s")
-
-            # аплоад результата
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "uploading_result"})
             s3.upload_file(
-                dst_path,
-                S3_BUCKET,
-                clip_key,
+                dst_path, S3_BUCKET, clip_key,
                 ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
                 Config=TRANSFER_CFG,
             )
             uploaded3 = os.path.getsize(dst_path)
-
         if uploaded3 >= MIN_OK_BYTES:
             clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded3, "elapsed_sec": int(time.time() - t0), "path": "download"}
+            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded3,
+                    "elapsed_sec": int(time.time() - t0), "path": "download",
+                    "validated": f"local:{uploaded3}b,{dur:.3f}s"}
         else:
             try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
             except Exception: pass
             raise RuntimeError(f"clip too small after local fallback: {uploaded3} bytes (< {MIN_OK_BYTES})")
 
-    # ===== A: прямой URL как есть (стриминг) =====
-    uploaded, ret, tail = _run_stream_pipeline(self, task_id, src_url, clip_key, mime, t0)
+    # A: всегда используем origin presigned URL для ffmpeg (стабильнее, чем CDN)
+    presigned = _make_presigned(src_bucket, src_key)
+    uploaded, ret, tail = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
     if uploaded > 0 and ret == 0:
         ok, why = _validate_clip_s3(S3_BUCKET, clip_key)
         if ok:
             clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-            return {
-                "clip_url": clip_url,
-                "length_sec": 300,
-                "uploaded_bytes": uploaded,
-                "elapsed_sec": int(time.time() - t0),
-                "path": "direct",
-                "validated": why,
-            }
+            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded,
+                    "elapsed_sec": int(time.time() - t0), "path": "presigned", "validated": why}
         else:
-            # удаляем некачественный клип и пробуем дальше
             try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
             except Exception: pass
-    # если байт мало — объект уже не создан (Abort MPU) или удалён выше
 
-    # ===== B: presigned V4 =====
-    go_presigned = (ret != 0 and bool((tail or "").strip()))
-    if go_presigned:
-        presigned = _make_presigned(src_bucket, src_key)
+    # B: повторная попытка тем же presigned, если был внятный stderr (редкие сетевые проблемы)
+    go_retry = (ret != 0 and bool((tail or "").strip()))
+    if go_retry:
         uploaded2, ret2, tail2 = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
         if uploaded2 > 0 and ret2 == 0:
             ok2, why2 = _validate_clip_s3(S3_BUCKET, clip_key)
             if ok2:
                 clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-                return {
-                    "clip_url": clip_url,
-                    "length_sec": 300,
-                    "uploaded_bytes": uploaded2,
-                    "elapsed_sec": int(time.time() - t0),
-                    "path": "presigned",
-                    "validated": why2,
-                }
+                return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded2,
+                        "elapsed_sec": int(time.time() - t0), "path": "presigned-retry", "validated": why2}
             else:
                 try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
                 except Exception: pass
     else:
-        uploaded2, ret2, tail2 = 0, 0, ""
+        ret2, tail2 = 0, ""
 
-    # ===== C: локальный фолбэк (если разрешён) =====
+    # C: локальный фолбэк
     if ALLOW_DOWNLOAD_FALLBACK:
         with tempfile.TemporaryDirectory() as tmp:
             src_path  = os.path.join(tmp, "src.bin")
             dst_path  = os.path.join(tmp, "clip.mp4")
-
-            # скачиваем целиком (S3 → файл)
             s3.download_file(src_bucket, src_key, src_path, Config=TRANSFER_CFG)
-
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "local_cut"})
             _ffmpeg_local_clip(src_path, dst_path)
-
-            # валидация локально
             dur = _ffprobe_duration_file(dst_path) or 0.0
             if dur < MIN_OK_DURATION_SEC:
                 raise RuntimeError(f"local result too short: {dur:.3f}s < {MIN_OK_DURATION_SEC}s")
-
-            # аплоад результата
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "uploading_result"})
             s3.upload_file(
-                dst_path,
-                S3_BUCKET,
-                clip_key,
+                dst_path, S3_BUCKET, clip_key,
                 ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
                 Config=TRANSFER_CFG,
             )
             uploaded3 = os.path.getsize(dst_path)
-
         if uploaded3 >= MIN_OK_BYTES:
             clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded3, "elapsed_sec": int(time.time() - t0), "path": "download", "validated": f"local:{uploaded3}b,{dur:.3f}s"}
+            return {"clip_url": clip_url, "length_sec": 300, "uploaded_bytes": uploaded3,
+                    "elapsed_sec": int(time.time() - t0), "path": "download", "validated": f"local:{uploaded3}b,{dur:.3f}s"}
         else:
             try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
             except Exception: pass
             raise RuntimeError(f"clip too small after local fallback: {uploaded3} bytes (< {MIN_OK_BYTES})")
 
-    # Если дошли сюда — ничего не вышло
+    # ничего не вышло
     raise RuntimeError(
         "no output produced:\n"
-        f"direct ret={_fmt_ret(ret)} tail:\n{tail}\n\n"
-        f"presigned ret={_fmt_ret(locals().get('ret2', 0))} tail:\n{locals().get('tail2','')}\n\n"
-        "download fallback disabled or failed."
+        f"first presigned ret={_fmt_ret(ret)} tail:\n{tail}\n\n"
+        f"retry ret={_fmt_ret(locals().get('ret2', 0))} tail:\n{locals().get('tail2','')}\n"
+        "local fallback was disabled or failed."
     )
