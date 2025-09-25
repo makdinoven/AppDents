@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { pdfjs, Document, Page } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
@@ -54,9 +54,12 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const documentRef = useRef<HTMLDivElement | null>(null);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
-  const [scale, setScale] = useState<number>(0.5);
+  const userScale = sessionStorage.getItem("pdfScale") as string;
+  const [scale, setScale] = useState<number>(JSON.parse(userScale) || 0.75);
   const [inputValue, setInputValue] = useState<string>("1");
-  const [isThumbNailsOpen, setIsTumbNailsOpen] = useState(false);
+  const [isThumbNailsOpen, setIsThumbNailsOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const { t } = useTranslation();
 
@@ -74,11 +77,10 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   }, [pageNumber]);
 
   useEffect(() => {
-    const userScale = sessionStorage.getItem("pdfScale");
     if (userScale) {
       setScale(JSON.parse(userScale));
-    }
-  }, []);
+    } else setScale(0.75);
+  }, [userScale]);
 
   useEffect(() => {
     sessionStorage.setItem("pdfScale", JSON.stringify(scale));
@@ -133,7 +135,12 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
     numPages: nextNumPages,
   }: PDFDocumentProxy): void {
     setTotalPages(nextNumPages);
+    setLoading(false);
   }
+
+  const onDocumentLoadError = (error: any) => {
+    setError(error.message);
+  };
 
   const goToPrevPage = () => {
     setPageNumber((prev) => Math.max(1, prev - 1));
@@ -148,6 +155,8 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handleCloseFullScreen = () => {
+    setScale(0.75);
+    sessionStorage.setItem("pdfScale", JSON.stringify(0.75));
     setFullScreen(false);
   };
 
@@ -205,7 +214,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handleThumbNailsClick = () => {
-    setIsTumbNailsOpen((prev) => !prev);
+    setIsThumbNailsOpen((prev) => !prev);
   };
 
   const handlePageChange = (currentPage: number) => {
@@ -213,7 +222,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handleOverlayClick = () =>
-    isThumbNailsOpen && setIsTumbNailsOpen(false);
+    isThumbNailsOpen && setIsThumbNailsOpen(false);
 
   const handleThumbNailsAreaClick = (
     event: React.MouseEvent<HTMLDivElement>,
@@ -261,7 +270,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
             <button onClick={handleZoomIn}>
               <ZoomIn />
             </button>
-            {!screenResolutionMap.get("mobile") && (
+            {screenWidth > screenResolutionMap.get("mobile")!.width && (
               <MultiSelect
                 {...commonFilterProps}
                 id="scales-select"
@@ -273,14 +282,16 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
               />
             )}
           </div>
-          <div className={s.arrows_wrapper}>
-            <button onClick={goToPrevPage} className={s.up}>
-              <Chevron />
-            </button>
-            <button onClick={goToNextPage} className={s.down}>
-              <Chevron />
-            </button>
-          </div>
+          {screenWidth > screenResolutionMap.get("mobile")!.width && (
+            <div className={s.arrows_wrapper}>
+              <button onClick={goToPrevPage} className={s.up}>
+                <Chevron />
+              </button>
+              <button onClick={goToNextPage} className={s.down}>
+                <Chevron />
+              </button>
+            </div>
+          )}
         </div>
       </>,
     ],
@@ -327,39 +338,42 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
       />
       <div className={`${s.overlay} ${isThumbNailsOpen && s.open}`}></div>
       <div className={s.document} ref={documentRef}>
-        <Document
-          file={url}
-          onLoadSuccess={onDocumentLoadSuccess}
-          options={options}
-          className={s.pages_wrapper}
-          loading={
-            <Trans
-              i18nKey={"bookLanding.pdfReader.loading"}
-              className={s.loading}
-            />
-          }
-          error={
-            <Trans
-              i18nKey={"bookLanding.pdfReader.error"}
-              className={s.error}
-            />
-          }
-        >
-          {Array.from(new Array(totalPages), (_el, index) => (
-            <div
-              key={index + 1}
-              ref={pageNumber === index + 1 ? pageRef : null}
-            >
-              <Page
-                pageNumber={index + 1}
-                width={handleResizePage()}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                scale={scale}
-              />
-            </div>
-          ))}
-        </Document>
+        {loading ? (
+          <div className={s.loading}>
+            <Trans i18nKey={"bookLanding.pdfReader.loading"} />
+          </div>
+        ) : (
+          <Document
+            file={url}
+            onLoadSuccess={onDocumentLoadSuccess}
+            options={options}
+            className={s.pages_wrapper}
+            loading={false}
+            onLoadError={onDocumentLoadError}
+            error={false}
+          >
+            {Array.from(new Array(totalPages), (_el, index) => (
+              <div
+                key={index + 1}
+                ref={pageNumber === index + 1 ? pageRef : null}
+              >
+                <Page
+                  pageNumber={index + 1}
+                  width={handleResizePage()}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  scale={scale}
+                  loading={false}
+                />
+              </div>
+            ))}
+          </Document>
+        )}
+        {error && (
+          <div className={s.error}>
+            <Trans i18nKey={"bookLanding.pdfReader.error"} />
+          </div>
+        )}
       </div>
     </div>
   );

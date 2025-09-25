@@ -62,3 +62,5 @@ export { default as Headphones } from "./headphones.svg?react";
 export { default as PlayCircle } from "./play-circle.svg?react";
 export { default as PauseCircle } from "./pause-circle.svg?react";
 export { default as Control } from "./control.svg?react";
+export { default as Bookmark } from "./bookmark.svg?react";
+export { default as LongArrow } from "./long-arrow.svg?react";

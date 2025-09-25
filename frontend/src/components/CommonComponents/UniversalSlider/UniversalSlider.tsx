@@ -1,4 +1,4 @@
-import { FC, ReactNode, useRef } from "react";
+import { forwardRef, ReactNode, useImperativeHandle, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Navigation, Pagination } from "swiper/modules";
 import "swiper/swiper-bundle.css";
@@ -6,7 +6,7 @@ import "swiper/swiper-bundle.css";
 import s from "./UniversalSlider.module.scss";
 import { BackArrow } from "../../../assets/icons";
 
-type UniversalSliderProps = {
+export type UniversalSliderProps = {
   slides: ReactNode[];
   autoplay?: boolean;
   loop?: boolean;
@@ -19,88 +19,108 @@ type UniversalSliderProps = {
   className?: string;
   isFullWidth?: boolean;
   navigationPosition?: "center" | "bottom";
+  onSlideChange?: (activeIndex: number) => void;
 };
 
-const UniversalSlider: FC<UniversalSliderProps> = ({
-  slides,
-  autoplay = false,
-  loop = true,
-  pagination = true,
-  navigation,
-  paginationType = "story",
-  slidesPerView = 1,
-  effect = "slide",
-  navigationPosition = "center",
-  delay = 5000,
-  className = "",
-  isFullWidth = false,
-}) => {
-  const prevRef = useRef(null);
-  const nextRef = useRef(null);
+export interface UniversalSliderRef {
+  slidePrev: () => void;
+  slideNext: () => void;
+}
 
-  return (
-    <div
-      style={{
-        width: isFullWidth ? `100vw` : "100%",
-        left: isFullWidth ? `-10px` : "",
-      }}
-      className={s.slider}
-    >
-      <Swiper
-        autoHeight={false}
-        className={className}
-        modules={[Autoplay, Pagination, Navigation, EffectFade]}
-        loop={loop}
-        navigation={{
-          prevEl: prevRef.current,
-          nextEl: nextRef.current,
+const UniversalSlider = forwardRef<UniversalSliderRef, UniversalSliderProps>(
+  (
+    {
+      slides,
+      autoplay = false,
+      loop = true,
+      pagination = true,
+      navigation,
+      paginationType = "story",
+      slidesPerView = 1,
+      effect = "slide",
+      navigationPosition = "center",
+      delay = 5000,
+      className = "",
+      isFullWidth = false,
+      onSlideChange,
+    },
+    ref,
+  ) => {
+    const prevRef = useRef(null);
+    const nextRef = useRef(null);
+    const swiperRef = useRef<any>(null);
+
+    useImperativeHandle(ref, () => ({
+      slidePrev: () => swiperRef.current?.slidePrev(),
+      slideNext: () => swiperRef.current?.slideNext(),
+    }));
+
+    return (
+      <div
+        style={{
+          width: isFullWidth ? `100vw` : "100%",
+          left: isFullWidth ? `-10px` : "",
         }}
-        slidesPerView={slidesPerView}
-        centeredSlides
-        onBeforeInit={(swiper) => {
-          if (
-            swiper.params.navigation &&
-            typeof swiper.params.navigation !== "boolean"
-          ) {
-            swiper.params.navigation.prevEl = prevRef.current;
-            swiper.params.navigation.nextEl = nextRef.current;
-          }
-        }}
-        pagination={
-          pagination
-            ? {
-                clickable: true,
-                renderBullet: (_, className) => {
-                  const isStory = paginationType === "story";
-                  const innerSpan = isStory
-                    ? `<span class="${autoplay ? "progress" : "filled"}"></span>`
-                    : "";
-                  return `<span class="${className} ${paginationType}">${innerSpan}</span>`;
-                },
-              }
-            : false
-        }
-        autoplay={autoplay ? { delay, disableOnInteraction: false } : false}
-        effect={effect}
+        className={s.slider}
       >
-        {slides.map((slide, idx) => (
-          <SwiperSlide className={s.slide} key={idx}>
-            {slide}
-          </SwiperSlide>
-        ))}
-      </Swiper>
-      {navigation && (
-        <div className={`${s.customNav} ${s[navigationPosition]}`}>
-          <button ref={prevRef} className={s.prev}>
-            <BackArrow />
-          </button>
-          <button ref={nextRef} className={s.next}>
-            <BackArrow />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
+        <Swiper
+          autoHeight={false}
+          className={className}
+          modules={[Autoplay, Pagination, Navigation, EffectFade]}
+          loop={loop}
+          navigation={{
+            prevEl: prevRef.current,
+            nextEl: nextRef.current,
+          }}
+          slidesPerView={slidesPerView}
+          centeredSlides
+          onBeforeInit={(swiper) => {
+            if (
+              swiper.params.navigation &&
+              typeof swiper.params.navigation !== "boolean"
+            ) {
+              swiper.params.navigation.prevEl = prevRef.current;
+              swiper.params.navigation.nextEl = nextRef.current;
+            }
+          }}
+          pagination={
+            pagination
+              ? {
+                  clickable: true,
+                  renderBullet: (_, className) => {
+                    const isStory = paginationType === "story";
+                    const innerSpan = isStory
+                      ? `<span class="${autoplay ? "progress" : "filled"}"></span>`
+                      : "";
+                    return `<span class="${className} ${paginationType}">${innerSpan}</span>`;
+                  },
+                }
+              : false
+          }
+          autoplay={autoplay ? { delay, disableOnInteraction: false } : false}
+          effect={effect}
+          onSlideChange={(swiper) => onSlideChange?.(swiper.realIndex)}
+          onSwiper={(swiper) => (swiperRef.current = swiper)}
+        >
+          {slides.map((slide, idx) => (
+            <SwiperSlide className={s.slide} key={idx}>
+              {slide}
+            </SwiperSlide>
+          ))}
+        </Swiper>
+        {navigation && (
+          <div className={`${s.customNav} ${s[navigationPosition]}`}>
+            <button ref={prevRef} className={s.prev}>
+              <BackArrow />
+            </button>
+            <button ref={nextRef} className={s.next}>
+              <BackArrow />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  },
+);
 
 export default UniversalSlider;

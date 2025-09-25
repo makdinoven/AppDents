@@ -12,15 +12,11 @@ interface LandingHeroProps {
   loading: boolean;
 }
 
-const LandingHero: React.FC<LandingHeroProps> = ({
+const BookLandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  const slides = data.gallery.map((photo: any) => (
-    <img src={photo.url} alt={photo.alt} />
-  ));
-
-  const authors = data?.authors?.map((author: any) => author.name);
+  const authors = data.authors?.map((author: any) => author.name);
   return loading ? (
     <Loader />
   ) : (
@@ -28,27 +24,20 @@ const LandingHero: React.FC<LandingHeroProps> = ({
       <div className={s.left_side}>
         <div className={s.lang_price}>
           <div className={s.price}>
-            <span className={s.new_price}>${data?.new_price}</span>
-            <span className={s.old_price}>${data?.old_price}</span>
+            <span className={s.new_price}>${data.new_price}</span>
+            <span className={s.old_price}>${data.old_price}</span>
           </div>
           <En />
         </div>
-        <HeroSlider slides={slides} />
+        <HeroSlider gallery={data.gallery} />
       </div>
       <div className={s.right_side}>
         <div className={s.info}>
-          <h2>{data?.landing_name}</h2>
+          <h2>{data.landing_name}</h2>
           <p>
             <Trans
-              i18nKey="bookLanding.publishedDate"
-              values={{ date: "11.09.2005" }}
-              components={[<span className={s.highlight} />]}
-            />
-          </p>
-          <p>
-            <Trans
-              i18nKey={`${data?.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
-              values={{ authors: authors?.join(", ") }}
+              i18nKey={`${data.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
+              values={{ authors: authors!.join(", ") }}
               components={[<span className={s.highlight} />]}
             />
           </p>
@@ -68,12 +57,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({
         <BuySection
           type="download"
           formats={FORMATS}
-          oldPrice={data?.old_price}
-          newPrice={data?.new_price}
+          oldPrice={data.old_price}
+          newPrice={data.new_price}
         />
       </div>
     </section>
   );
 };
 
-export default LandingHero;
+export default BookLandingHero;
