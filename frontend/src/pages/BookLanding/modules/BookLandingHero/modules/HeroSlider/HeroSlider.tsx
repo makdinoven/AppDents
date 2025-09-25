@@ -1,4 +1,4 @@
-import { FC, useState, JSX, useRef, useEffect, useMemo } from "react";
+import { FC, useState, JSX, useRef, useEffect } from "react";
 
 import "swiper/swiper-bundle.css";
 import s from "./HeroSlider.module.scss";
@@ -17,6 +17,10 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
   const lastItemRef = useRef<HTMLLIElement>(null);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const MOBILE = 576;
+  const [showArrow, setShowArrow] = useState({
+    up: false,
+    down: true,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -32,35 +36,7 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     };
   }, [screenWidth]);
 
-  gallery = useMemo(
-    () => [
-      ...gallery,
-      {
-        id: Date.now(),
-        url: "https://cdn.dent-s.com/images/book_landings/2/preview/ba52045d84174f4881be140905e8fa61.webp",
-        alt: "string",
-        caption: "string",
-        sort_index: 0,
-      },
-      {
-        id: Date.now(),
-        url: "https://dent-s.com/assets/img/preview_img/da86fd0501ad4ff0954209ec345b3d3e.jpg",
-        alt: "string",
-        caption: "string",
-        sort_index: 0,
-      },
-      {
-        id: Date.now(),
-        url: "https://cdn.dent-s.com/images/book_landings/2/preview/ba52045d84174f4881be140905e8fa611.webp",
-        alt: "string",
-        caption: "string",
-        sort_index: 0,
-      },
-    ],
-    [gallery],
-  );
-
-  // const needsArrows = gallery.length > 4;
+  const needsArrows = gallery.length > 4;
 
   useEffect(() => {
     const result =
@@ -123,6 +99,35 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     setActiveSlideIndex(index);
   };
 
+  const checkScrollPosition = () => {
+    if (galleryRef.current && firstItemRef.current && lastItemRef.current) {
+      const galleryRect = galleryRef.current.getBoundingClientRect();
+      const firstItemRect = firstItemRef.current.getBoundingClientRect();
+      const lastItemRect = lastItemRef.current.getBoundingClientRect();
+
+      const isFirstItemAtTop =
+        Math.abs(firstItemRect.top - galleryRect.top) < 5;
+
+      const isLastItemAtBottom =
+        Math.abs(lastItemRect.bottom - galleryRect.bottom) < 5;
+
+      setShowArrow({
+        up: !isFirstItemAtTop,
+        down: !isLastItemAtBottom,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const gallery = galleryRef.current;
+    if (gallery) {
+      gallery.addEventListener("scroll", checkScrollPosition);
+      checkScrollPosition();
+
+      return () => gallery.removeEventListener("scroll", checkScrollPosition);
+    }
+  }, []);
+
   const handleScroll = (direction: "up" | "down") => {
     if (galleryRef.current) {
       const isMobile = screenWidth < MOBILE;
@@ -132,22 +137,29 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
           left: direction === "up" ? -132 : 132,
           behavior: "smooth",
         });
-      } else
+      } else {
         galleryRef.current.scrollBy({
           top: direction === "up" ? -132 : 132,
           behavior: "smooth",
         });
+      }
+
+      setTimeout(checkScrollPosition, 300);
     }
   };
 
   return (
     <div className={s.slider}>
-      <CircleArrowSmall className={s.up} onClick={() => handleScroll("up")} />
+      {needsArrows && showArrow.up && (
+        <CircleArrowSmall className={s.up} onClick={() => handleScroll("up")} />
+      )}
       {renderGallery()}
-      <CircleArrowSmall
-        className={s.down}
-        onClick={() => handleScroll("down")}
-      />
+      {needsArrows && showArrow.down && (
+        <CircleArrowSmall
+          className={s.down}
+          onClick={() => handleScroll("down")}
+        />
+      )}
       <img src={activeUrl} alt="preview" className={s.preview_photo} />
       <div className={s.slide_indicators}>
         {Array(gallery.length)

@@ -31,39 +31,12 @@ const BookLanding = () => {
       });
   }, [landingPath]);
 
-  const booksM = [
-    {
-      id: 2,
-      title: "AAAA",
-      slug: "zero-bone-loss-concepts-book",
-      cover_url: "https://example.com/covers/zblc.jpg",
-      preview_pdf_url:
-        "https://cdn.dent-s.com/books/zero-bone-loss-concepts-book/preview/preview_15p.pdf",
-    },
-    {
-      id: 2,
-      title: "Zero Bone Loss Concepts (Book)",
-      slug: "zero-bone-loss-concepts-book",
-      cover_url: "https://example.com/covers/zblc.jpg",
-      preview_pdf_url:
-        "https://cdn.dent-s.com/books/zero-bone-loss-concepts-book/preview/preview_15p.pdf",
-    },
-    {
-      id: 2,
-      title: "DDDDDDDDDDDDDDDDDDDDD",
-      slug: "zero-bone-loss-concepts-book",
-      cover_url: "https://example.com/covers/zblc.jpg",
-      preview_pdf_url:
-        "https://cdn.dent-s.com/books/zero-bone-loss-concepts-book/preview/preview_15p.pdf",
-    },
-  ];
-
   const renderSections = () => {
     if (data) {
       return (
         <>
           <BookLandingHero data={data} loading={loading} />
-          <ContentOverview books={booksM} portalParentId="portal_parent" />
+          <ContentOverview books={data.books} portalParentId="portal_parent" />
           <BuySection
             type="download"
             isFullWidth={true}
