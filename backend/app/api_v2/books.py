@@ -2,12 +2,13 @@
 
 import os
 import logging
+from math import ceil
 from typing import Optional
 
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, desc
+from sqlalchemy import or_, desc, func
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -58,6 +59,17 @@ def preview_pdf_url_for_book(book_or_slug) -> str:
     book_id = book_or_slug.id if hasattr(book_or_slug, "id") else str(book_or_slug)
     return f"{S3_PUBLIC_HOST}/books/{book_id}/preview/preview_15p.pdf"
 
+def _unique_landing_name(db: Session, desired: str | None) -> str:
+    base = (desired or "Book landing").strip()
+    if not base:
+        base = "Book landing"
+    name = base
+    i = 2
+    while db.query(BookLanding.id).filter(BookLanding.landing_name == name).first():
+        # «Book landing #2», «Book landing #3», …
+        name = f"{base} #{i}"
+        i += 1
+    return name
 
 # ─────────────── КНИГИ ───────────────────────────────────────────────────────
 @router.post("/", response_model=BookResponse)
@@ -99,7 +111,7 @@ def create_book_landing(
     landing = BookLanding(
         language=payload.language,
         page_name=payload.page_name,
-        landing_name=payload.landing_name,
+        landing_name=payload.landing_name or _unique_landing_name(db, payload.page_name),
         description=payload.description,
         old_price=payload.old_price,
         new_price=payload.new_price,
@@ -484,3 +496,76 @@ def get_presigned_pdf_upload_url(
         key=key,
         cdn_url=cdn_url,
     )
+
+@router.get(
+    "/books/list",
+    response_model=BookListPageResponse,
+    summary="Список книг (пагинация по страницам)"
+)
+def get_book_listing(
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1"),
+    size: int = Query(10, gt=0, description="Размер страницы"),
+    language: Optional[str] = Query(None, description="EN,RU,ES,PT,AR,IT"),
+    db: Session = Depends(get_db),
+) -> dict:
+    total = db.query(func.count(Book.id)).scalar()
+    offset = (page - 1) * size
+    q = db.query(Book)
+    if language:
+        q = q.filter(Book.language == language.upper())
+    books = (
+        q.order_by(Book.id.desc())
+         .offset(offset)
+         .limit(size)
+         .all()
+    )
+    total_pages = ceil(total / size) if total else 0
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": books,  # благодаря orm_mode/from_attributes схеме, можно отдавать ORM
+    }
+
+
+@router.get(
+    "/books/list/search",
+    response_model=BookListPageResponse,
+    summary="Поиск книг по названию или slug с пагинацией"
+)
+def search_book_listing(
+    q: str = Query(..., min_length=1, description="Подстрока для поиска"),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, gt=0),
+    language: Optional[str] = Query(None, description="EN,RU,ES,PT,AR,IT"),
+    db: Session = Depends(get_db),
+) -> dict:
+    offset = (page - 1) * size
+
+    base = db.query(Book)
+    if language:
+        base = base.filter(Book.language == language.upper())
+
+    like = f"%{q.strip()}%"
+    base = base.filter(or_(
+        Book.title.ilike(like),
+        Book.slug.ilike(like),
+    ))
+
+    total = base.with_entities(func.count()).scalar()
+    items = (
+        base.order_by(desc(Book.id))
+            .offset(offset)
+            .limit(size)
+            .all()
+    )
+    total_pages = ceil(total / size) if total else 0
+
+    return {
+        "total": total,
+        "total_pages": total_pages,
+        "page": page,
+        "size": size,
+        "items": items,
+    }

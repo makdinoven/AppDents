@@ -3,6 +3,8 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, HttpUrl, constr, validator, condecimal
 from datetime import datetime, date
 from pydantic import AnyUrl
+from pydantic.v1 import ConfigDict
+
 
 class HttpS3Url(AnyUrl):
     """
@@ -83,6 +85,21 @@ class BookResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
+class BookListResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    title: str
+    slug: str
+    language: str
+    cover_url: str | None = None
+
+class BookListPageResponse(BaseModel):
+    total: int
+    total_pages: int
+    page: int
+    size: int
+    items: list[BookListResponse]
 
 class BookLandingUpdate(BaseModel):
     language: Optional[str] = Field(default=None, pattern="^(EN|RU|ES|PT|AR|IT)$")
