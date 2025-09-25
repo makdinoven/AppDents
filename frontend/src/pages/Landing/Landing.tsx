@@ -27,7 +27,7 @@ import {
   PAGE_SOURCES,
 } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
-import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
+import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
@@ -342,11 +342,13 @@ const Landing = () => {
         {!loading && (
           <>
             <Faq type={"course"} />
-            <CoursesSection
-              isFree={isFree}
-              isOffer={true}
-              isClient={isClient}
-              isVideo={isVideo}
+            <ProductsSection
+              productCardFlags={{
+                isFree: isFree,
+                isOffer: true,
+                isClient: isClient,
+                isVideo: isVideo,
+              }}
               showSort={true}
               sectionTitle={"similarCourses"}
               pageSize={4}

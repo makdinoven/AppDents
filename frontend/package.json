@@ -9,6 +9,8 @@
     "dev:prod": "vite --mode prod",
     "build:prod": "vite build --mode prod",
     "build:preprod": "vite build --mode preprod",
+    "dev:medg-prod": "vite dev --mode medg-prod",
+    "build:medg-prod": "vite build --mode medg-prod",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",

@@ -3,14 +3,17 @@ import {
   createCourse,
   getCourses,
   searchCourses,
-} from "../../../store/actions/adminActions.ts";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../routes/routes.ts";
-import { INITIAL_COURSE } from "../../../common/helpers/commonConstants.ts";
-import { ParamsType } from "../../../api/adminApi/types.ts";
+} from "../../../../../store/actions/adminActions.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../../store/store.ts";
+import AdminList from "../../../modules/common/AdminList/AdminList.tsx";
+import { Path } from "../../../../../routes/routes.ts";
+import { INITIAL_COURSE } from "../../../../../common/helpers/commonConstants.ts";
+import { ParamsType } from "../../../../../api/adminApi/types.ts";
 
-const AdminCoursesTab = () => {
+const AdminCoursesList = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const courses = useSelector((state: AppRootStateType) => state.admin.courses);
   const dispatch = useDispatch<AppDispatchType>();
@@ -37,4 +40,4 @@ const AdminCoursesTab = () => {
   );
 };
 
-export default AdminCoursesTab;
+export default AdminCoursesList;

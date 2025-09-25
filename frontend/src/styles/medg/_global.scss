@@ -1,0 +1,405 @@
+$font-family:
+  "Rethink Sans",
+  -apple-system,
+  sans-serif;
+$second-family:
+  "Roboto",
+  -apple-system,
+  sans-serif;
+
+$sm-breakpoint: 1200px;
+$middle-breakpoint: 1024px;
+$tablet-breakpoint: 768px;
+$mobile-breakpoint: 576px;
+
+$background-color: rgb(237, 248, 255);
+$background-color-06: rgba(237, 248, 255, 0.6);
+$background-color-08: rgba(237, 248, 255, 0.8);
+$cart-background: #edf8ff66;
+$background-color-05: rgba(237, 248, 255, 0.5);
+$background-color-08: rgba(237, 248, 255, 0.8);
+$primary: orange;
+$primary-04: rgba(127, 169, 223, 0.4);
+$primary-06: rgba(127, 169, 223, 0.6);
+$primary-light: #abe9e6;
+$primary-08: rgba(127, 169, 223, 0.8);
+$primary-glass: rgba(127, 169, 223, 0.8);
+$primary-accent: #7f95df;
+$accent: #050143;
+$accent-03: rgba(5, 1, 67, 0.3);
+$accent-06: rgba(5, 1, 67, 0.6);
+$accent-glass: rgba(5, 1, 67, 0.8);
+$secondary: #006d8d;
+$secondary-lighter: #79cee7;
+$secondary-lighter-04: rgba(121, 206, 231, 0.4);
+$secondary-lighter-06: rgba(121, 206, 231, 0.6);
+$tertiary: #017f74;
+$quaternary: #5b6968;
+$text-color: $background-color;
+$text-color-accent: $accent;
+$error-color: #fe0502;
+$green: #90e895;
+$yellow: #e8db90;
+$green-06: rgba(144, 232, 149, 0.6);
+$green-08: rgba(144, 232, 149, 0.8);
+$error-color-lighten: #ffbebf;
+$hover-color-darken: rgba(100, 116, 139, 0.25);
+$hover-color-dark: rgba(100, 116, 139, 0.4);
+$hover-color-darken-analogue: #c9d7e1;
+$hover-color: rgba(100, 116, 139, 0.1);
+$hover-color-analogue: #e0ecf4;
+$light-grey: #dfebf3;
+$darker-grey: #d8e4ee;
+$blur: blur(10px);
+
+$font-sz-h1-desk: 95px;
+$font-sz-h1-mob: 31px;
+$font-sz-h2-desk: 40px;
+$font-sz-h2-mob: 26px;
+$font-sz-h3-desk: 30px;
+$font-sz-h3-mob: 20px;
+$font-sz-h4-desk: 26px;
+$font-sz-h4-mob: 16px;
+$font-sz-p1-desk: 30px;
+$font-sz-p1-mob: 20px;
+$font-sz-p2-desk: 26px;
+$font-sz-p2-mob: 16px;
+$font-sz-p3-desk: 20px;
+$font-sz-p3-mob: 14px;
+$font-sz-p4-desk: 18px;
+$font-sz-p4-mob: 12px;
+$font-sz-p5-desk: 16px;
+$font-sz-p5-mob: 12px;
+$font-sz-err-desk: 20px;
+$font-sz-err-mob: 14px;
+
+@mixin clamped-h1 {
+  font-size: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
+}
+
+@mixin clamped-h2 {
+  font-size: clamp($font-sz-h2-mob, 4vw, $font-sz-h2-desk);
+}
+
+@mixin clamped-h3 {
+  font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+}
+
+@mixin clamped-h4 {
+  font-size: clamp($font-sz-h4-mob, 3vw, $font-sz-h4-desk);
+}
+
+@mixin clamped-p1 {
+  font-size: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+}
+
+@mixin clamped-p2 {
+  font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+}
+
+@mixin clamped-p3 {
+  font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+}
+
+@mixin clamped-p4 {
+  font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
+}
+
+@mixin clamped-p5 {
+  font-size: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
+}
+
+@mixin clamped-err {
+  font-size: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
+}
+
+@mixin accent-glass {
+  background-color: $accent-glass;
+  backdrop-filter: blur(5px);
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin container {
+  max-width: 1280px;
+  min-width: 360px;
+  padding: 0 20px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@mixin transition($property: all, $duration: 0.15s) {
+  transition: $property $duration ease-in-out;
+}
+
+@mixin lightBlurBackground($blur: 5px) {
+  background-color: $cart-background;
+  backdrop-filter: blur($blur);
+}
+
+@mixin horizontal-line(
+  $color: $accent,
+  $height: 2px,
+  $width: 100%,
+  $top: null,
+  $left: null,
+  $right: null,
+  $bottom: null,
+  $transform: null,
+  $z: 1
+) {
+  &::after {
+    content: "";
+    position: absolute;
+
+    @if $top != null {
+      top: $top;
+    }
+
+    @if $bottom != null {
+      bottom: $bottom;
+    }
+    @if $left != null {
+      left: $left;
+    }
+    @if $right != null {
+      right: $right;
+    }
+
+    @if $transform != null {
+      @if $transform == y50 {
+        transform: translateY(-50%);
+      }
+      @if $transform == x50 {
+        transform: translateX(-50%);
+      }
+    }
+
+    width: $width;
+    height: $height;
+    background-color: $color;
+    z-index: $z;
+    border-radius: 10px;
+
+    @media (max-width: $mobile-breakpoint) {
+      height: 1px;
+    }
+  }
+}
+
+@mixin custom-scrollbar {
+  overflow-y: auto;
+
+  // Скроллбар трек
+  &::-webkit-scrollbar {
+    width: 4px;
+    border-radius: 10px;
+  }
+
+  // Полоса (ползунок)
+  &::-webkit-scrollbar-thumb {
+    background-color: $primary;
+    border-radius: 10px;
+  }
+
+  // Трек (фон под полосой)
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  // Для Firefox
+  scrollbar-width: thin; // толщина: auto | thin | none
+  scrollbar-color: $primary transparent; // thumb track
+}
+
+@mixin circle-angle(
+  $right: null,
+  $left: null,
+  $top: null,
+  $bottom: null,
+  $border-top-left-radius: null,
+  $border-top-right-radius: null,
+  $border-bottom-left-radius: null,
+  $border-bottom-right-radius: null,
+  $size,
+  $offset-x,
+  $offset-y,
+  $shadow-color
+) {
+  &::before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: $size;
+    height: $size;
+    @if $top != null {
+      top: $top;
+    }
+    @if $bottom != null {
+      bottom: $bottom;
+    }
+    @if $left != null {
+      left: $left;
+    }
+    @if $right != null {
+      right: $right;
+    }
+    @if $border-top-left-radius != null {
+      border-top-left-radius: $border-top-left-radius;
+    }
+    @if $border-top-right-radius != null {
+      border-top-right-radius: $border-top-right-radius;
+    }
+    @if $border-bottom-left-radius != null {
+      border-bottom-left-radius: $border-bottom-left-radius;
+    }
+    @if $border-bottom-right-radius != null {
+      border-bottom-right-radius: $border-bottom-right-radius;
+    }
+    box-shadow: $offset-x $offset-y 0 2px $shadow-color;
+    pointer-events: none;
+  }
+}
+
+@mixin fadeIn($duration: 0.2s, $timing: ease-in-out) {
+  animation: fadeInAnim $duration $timing;
+}
+
+@mixin fadeOut($duration: 0.2s, $timing: ease-in-out) {
+  animation: fadeOutAnim $duration $timing;
+}
+
+@mixin fadeInMove($duration: 0.2s, $timing: ease-out) {
+  animation: fadeInMove $duration $timing forwards;
+}
+
+@mixin fadeInMoveFromTop($duration: 0.3s, $timing: ease-in-out) {
+  animation: fadeInMoveFromTopAnim $duration $timing;
+}
+
+@mixin fadeOutMoveToTop($duration: 0.3s, $timing: ease-in-out) {
+  animation: fadeOutMoveToTopAnim $duration $timing;
+}
+
+@mixin shake($duration: 0.5s, $timing: ease) {
+  animation: shake $duration $timing;
+}
+
+@keyframes fadeInMove {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInMoveFromTopAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(-920px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOutMoveToTopAnim {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-920px);
+  }
+}
+
+@keyframes fadeInAnim {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutAnim {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  0% {
+    transform: translateY(-50%) translateX(0);
+  }
+  25% {
+    transform: translateY(-50%) translateX(4px);
+  }
+  50% {
+    transform: translateY(-50%) translateX(-4px);
+  }
+  75% {
+    transform: translateY(-50%) translateX(4px);
+  }
+  100% {
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+@mixin skeleton(
+  $pos: absolute,
+  $z: 1,
+  $radius: 20px,
+  $h: 100%,
+  $w: 100%,
+  $t: 0,
+  $l: 0,
+  $color: $darker-grey
+) {
+  z-index: $z;
+  content: "";
+  position: $pos;
+  top: $t;
+  left: $l;
+  width: $w;
+  height: $h;
+  border-radius: $radius;
+  background-color: $color;
+
+  background-image: linear-gradient(
+    90deg,
+    rgba(237, 248, 255, 0) 0%,
+    rgba(237, 248, 255, 1) 50%,
+    rgba(237, 248, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+
+  animation: shimmer 1.8s infinite linear;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

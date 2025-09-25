@@ -134,8 +134,8 @@
   },
 
   "main": {
-    "title": "Online <1>dental</1> school",
-    "hero.description": "Online courses for\u00A0dentists",
+    "title": "Online <1>medical</1> group",
+    "hero.description": "Online courses for\u00A0surgerists",
     "hero.widestRange": "The <1>widest</1> range of products ",
     "hero.chooseCourse": "Choose your course",
     "hero.bestPrices": "Best <1>prices</1>",
@@ -403,6 +403,7 @@
     "view": "view",
     "open": "open",
     "promo": "promo link",
+    "content": "content",
     "courses": {
       "courses": "courses",
       "search": "Search courses...",
@@ -514,13 +515,22 @@
       "found": "Authors found: {{count}}"
     },
     "books": {
-      "books": "Books",
+      "books": "books",
       "search": "Search books...",
       "create": "Create book",
       "delete": "Delete book",
       "edit": "Edit book",
       "notFound": "No books found",
       "found": "Books found: {{count}}"
+    },
+    "book-landings": {
+      "bookLandings": "book landings",
+      "search": "Search book landings...",
+      "create": "Create book landing",
+      "delete": "Delete book landing",
+      "edit": "Edit book landing",
+      "notFound": "No book landings found",
+      "found": "Book landings found: {{count}}"
     },
     "analytics": {
       "analytics": "Analytics",

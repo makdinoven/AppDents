@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
+  getBooks,
   getCourses,
   getMe,
   login,
@@ -27,11 +28,13 @@ interface UserState {
   role: string | null;
   loading: boolean;
   loadingCourses: boolean;
+  loadingBooks: boolean;
   error: ErrorResponse | null;
   isLogged: boolean;
   language: string;
   balance: number | null;
   courses: [];
+  books: [];
 }
 
 interface ErrorResponse {
@@ -48,11 +51,13 @@ const initialState: UserState = {
   role: null,
   loading: false,
   loadingCourses: false,
+  loadingBooks: false,
   error: null,
   isLogged: false,
   balance: null,
   language: savedLanguage,
   courses: [],
+  books: [],
 };
 
 const userSlice = createSlice({
@@ -68,6 +73,7 @@ const userSlice = createSlice({
       state.isLogged = false;
       state.balance = null;
       state.courses = [];
+      state.books = [];
     },
     setLanguage: (state, action: PayloadAction<string>) => {
       const newLanguage = action.payload;
@@ -77,6 +83,9 @@ const userSlice = createSlice({
     },
     clearUserCourses: (state) => {
       state.courses = [];
+    },
+    clearUserBooks: (state) => {
+      state.books = [];
     },
   },
   extraReducers: (builder) => {
@@ -146,9 +155,25 @@ const userSlice = createSlice({
       .addCase(getCourses.rejected, (state, action) => {
         state.error = action.payload as ErrorResponse;
         state.loadingCourses = false;
+      })
+      .addCase(getBooks.pending, (state) => {
+        state.error = null;
+        state.loadingBooks = true;
+      })
+      .addCase(
+        getBooks.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.books = action.payload.res.data;
+          state.loadingBooks = false;
+        },
+      )
+      .addCase(getBooks.rejected, (state, action) => {
+        state.error = action.payload as ErrorResponse;
+        state.loadingBooks = false;
       });
   },
 });
 
-export const { logout, setLanguage, clearUserCourses } = userSlice.actions;
+export const { logout, setLanguage, clearUserCourses, clearUserBooks } =
+  userSlice.actions;
 export const userReducer = userSlice.reducer;
