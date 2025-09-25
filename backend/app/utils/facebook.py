@@ -184,6 +184,8 @@ def send_facebook_events(
         pixels_purchase: list[dict] = [
             {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
             {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_2, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_2},
+
         ]
 
         # ─ регион-специфичный пиксель (если сконфигурирован) ─
