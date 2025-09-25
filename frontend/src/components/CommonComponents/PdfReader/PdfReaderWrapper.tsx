@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import PdfReader from "./PdfReader.tsx";
 import s from "./PdfReader.module.scss";
+import ModalOverlay from "../../Modals/ModalOverlay/ModalOverlay.tsx";
 
 interface PdfReaderWrapperProps {
   parentId: string;
@@ -20,16 +21,11 @@ const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
       target.appendChild(containerRef.current);
     }
 
-    if (isFullScreen) {
-      document.body.style.overflow = "hidden";
-    }
-
     return () => {
       if (containerRef.current && target.contains(containerRef.current)) {
         target.removeChild(containerRef.current);
         containerRef.current = null;
       }
-      document.body.style.overflow = "";
     };
   }, [parentId, isFullScreen]);
 
@@ -57,12 +53,13 @@ const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
   return isFullScreen && containerRef.current ? (
     ReactDOM.createPortal(
       <>
-        <PdfReader
-          url={url}
-          fullScreen={isFullScreen}
-          setFullScreen={handleFullScreen}
-        />
-        <div className={s.wrapper_overlay} />
+        <ModalOverlay isVisibleCondition={true} modalPosition={"top"}>
+          <PdfReader
+            url={url}
+            fullScreen={isFullScreen}
+            setFullScreen={handleFullScreen}
+          />
+        </ModalOverlay>
       </>,
       containerRef.current,
     )
