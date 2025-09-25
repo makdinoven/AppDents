@@ -1,12 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   getAuthors,
-  getBooks,
+  getBookLandings,
   getCourses,
   getLandings,
   getUsers,
   searchAuthors,
-  searchBooks,
+  searchBookLandings,
   searchCourses,
   searchLandings,
   searchUsers,
@@ -22,6 +22,7 @@ interface AdminState {
   courses: PaginationListType;
   landings: PaginationListType;
   books: PaginationListType;
+  bookLandings: PaginationListType;
   users: PaginationListType;
   authors: PaginationListType;
   loading: boolean;
@@ -38,6 +39,7 @@ const initialState: AdminState = {
   courses: initialPaginationListState,
   landings: initialPaginationListState,
   books: initialPaginationListState,
+  bookLandings: initialPaginationListState,
   users: initialPaginationListState,
   authors: initialPaginationListState,
   loading: false,
@@ -58,12 +60,12 @@ const adminSlice = createSlice({
         landing.is_hidden = isHidden;
       }
     },
-    toggleBookVisibility: (
+    toggleBookLandingVisibility: (
       state,
       action: PayloadAction<{ id: number; isHidden: boolean }>,
     ) => {
       const { id, isHidden } = action.payload;
-      const book = state.books.list.find((item: any) => item.id === id);
+      const book = state.bookLandings.list.find((item: any) => item.id === id);
       if (book) {
         book.is_hidden = isHidden;
       }
@@ -145,38 +147,38 @@ const adminSlice = createSlice({
       });
 
     builder
-      .addCase(getBooks.pending, (state) => {
+      .addCase(getBookLandings.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        getBooks.fulfilled,
+        getBookLandings.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.books.list = action.payload.res.data.items;
-          state.books.total_pages = action.payload.res.data.total_pages;
-          state.books.total = action.payload.res.data.total;
+          state.bookLandings.list = action.payload.res.data.items;
+          state.bookLandings.total_pages = action.payload.res.data.total_pages;
+          state.bookLandings.total = action.payload.res.data.total;
         },
       )
-      .addCase(searchBooks.rejected, (state, action) => {
+      .addCase(searchBookLandings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
     builder
-      .addCase(searchBooks.pending, (state) => {
+      .addCase(searchBookLandings.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(
-        searchBooks.fulfilled,
+        searchBookLandings.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          state.books.list = action.payload.res.data.items;
-          state.books.total_pages = action.payload.res.data.total_pages;
-          state.books.total = action.payload.res.data.total;
+          state.bookLandings.list = action.payload.res.data.items;
+          state.bookLandings.total_pages = action.payload.res.data.total_pages;
+          state.bookLandings.total = action.payload.res.data.total;
         },
       )
-      .addCase(getBooks.rejected, (state, action) => {
+      .addCase(getBookLandings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
@@ -258,6 +260,6 @@ const adminSlice = createSlice({
       });
   },
 });
-export const { toggleLandingVisibility, toggleBookVisibility } =
+export const { toggleLandingVisibility, toggleBookLandingVisibility } =
   adminSlice.actions;
 export const adminReducer = adminSlice.reducer;

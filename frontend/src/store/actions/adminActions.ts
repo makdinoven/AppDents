@@ -98,11 +98,11 @@ export const createLanding = createAppAsyncThunk(
   },
 );
 
-export const getBooks = createAppAsyncThunk(
-  "admin/getBooks",
+export const getBookLandings = createAppAsyncThunk(
+  "admin/getBookLandings",
   async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.getBooksList(params);
+      const res = await adminApi.getBookLandingsList(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -114,11 +114,11 @@ export const getBooks = createAppAsyncThunk(
   },
 );
 
-export const searchBooks = createAppAsyncThunk(
-  "admin/searchBooks",
+export const searchBookLandings = createAppAsyncThunk(
+  "admin/searchBookLandings",
   async (params: ParamsType, { rejectWithValue }) => {
     try {
-      const res = await adminApi.searchBooks(params);
+      const res = await adminApi.searchBookLandings(params);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -130,11 +130,11 @@ export const searchBooks = createAppAsyncThunk(
   },
 );
 
-export const createBook = createAppAsyncThunk(
-  "admin/createBook",
+export const createBookLanding = createAppAsyncThunk(
+  "admin/createBookLanding",
   async (data: any, { rejectWithValue }) => {
     try {
-      const res = await adminApi.createBook(data);
+      const res = await adminApi.createBookLanding(data);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }

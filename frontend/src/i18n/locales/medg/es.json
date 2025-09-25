@@ -1,0 +1,390 @@
+{
+  "home": "Inicio",
+  "pay": "Pagar",
+  "buy": "Comprar",
+  "buyNow": "Comprar ahora",
+  "buyFor": "Comprar por",
+  "etAl": "y otros",
+  "nothingFound": "No se encontró nada",
+  "searchCourses": "Buscar cursos por título o autor...",
+  "similarCourses": "Cursos similares",
+  "similarBooks": "Libros similares",
+  "back": "Atrás",
+  "backToLogin": "Volver a iniciar sesión",
+  "login": "Entrar",
+  "signup": "Registrarse",
+  "firstTimeHere": "¿Primera vez aquí?",
+  "forgotPassword": "¿Olvidaste tu contraseña?",
+  "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+  "passwordResetMailSent": "Se enviará una nueva contraseña a tu correo electrónico",
+  "passwordReset": "restablecimiento de contraseña",
+  "reset": "restablecer",
+  "update": "actualizar",
+  "email": "Correo electrónico...",
+  "yourName": "Su nombre...",
+  "yourOrder": "Su pedido",
+  "seeMore": "Ver más",
+  "endOfList": "Estos son todos los cursos por ahora. ¡Pronto habrá más!",
+  "endOfListFilter": "Cursos filtrados por «{{filter}}». Eso es todo por ahora. ¡Pronto habrá más!",
+  "password": "Contraseña...",
+  "open": "abrir",
+  "viewCourse": "Ver curso",
+  "view": "Ver",
+  "watch": "Ver",
+  "daysShort": "d",
+  "watchLesson": "Ver lección",
+  "onlineCourse": "Curso en línea",
+  "onlineWebinar": "Webinario en línea",
+  "professors": "Profesores",
+  "logout": "Cerrar sesión",
+  "mail": "correo",
+  "successPayment": "Tu compra ha sido exitosa. Serás redirigido a tu perfil en breve, donde podrás acceder al curso y comenzar a aprender.",
+  "videoFailedToLoad": "No se pudo cargar el video. Intenta verlo directamente",
+  "watchHere": "aquí.",
+  "total": "Total:",
+  "emailGrant": "Este correo electrónico se utilizará para otorgarle acceso a su curso comprado inmediatamente después del pago.",
+  "paymentWarn": "Una vez confirmado su pago, sus datos de acceso se enviarán automáticamente a su correo electrónico. Si no recibe el mensaje en su bandeja de entrada, revise su carpeta de correo no deseado.",
+  "resetPassword": "cambiar contraseña",
+  "newPassword": "Introduce una nueva contraseña...",
+  "change": "Cambiar",
+  "passwordChanged": "La contraseña se ha cambiado correctamente",
+  "forgotPasswordSuccess": "Tu nueva contraseña ha sido enviada a tu correo electrónico. Ahora puedes iniciar sesión con la nueva contraseña. Si no ves el mensaje, revisa la carpeta de spam.",
+  "registrationSuccess": "¡Registro exitoso! Tu contraseña ha sido enviada a tu correo electrónico. Ahora puedes iniciar sesión. Si no ves el mensaje, revisa la carpeta de spam.",
+  "showLess": "Mostrar menos",
+  "readMore": "Leer más",
+  "support": "Soporte",
+  "copy": "Copiar",
+  "copied": "¡Copiado!",
+  "successPaymentWithBalance": "¡Pago exitoso! Ahora tienes acceso al curso. Saldo restante: ${{balance}}. Serás redirigido a tu perfil en breve.",
+  "tryCourseForFree": "Prueba gratis",
+  "get": "Obtener",
+  "freeWebinar": "Webinar gratis",
+  "free": "Gratis",
+  "freePaymentWarn": "Se iniciará sesión automáticamente en tu cuenta, donde podrás ver la primera lección gratis del curso. Si no se abre, inicia sesión manualmente con tu correo y contraseña.",
+  "firstFreeLesson": "Primera clase gratis",
+  "or": "o",
+  "here": "aquí.",
+
+  "emailValidationTooltip": {
+    "suggestion": "¿Quisiste decir {{suggestedEmail}}?",
+    "warning": "Por favor, asegúrate de que el correo electrónico sea correcto"
+  },
+
+  "freeCourse": {
+    "freePreview": "Oferta especial",
+    "discount": "Descuento {{discount}}%",
+    "registerToWatch": "Regístrate para ver",
+    "tryFirstLesson": "Prueba la primera clase",
+    "fullAccess": "Curso completo",
+    "title": "Curso completo requerido",
+    "get": "Obtén todas las lecciones por solo ${{count}}",
+    "desc": "Esta lección es parte de un curso completo. Obtén acceso completo a todas las lecciones comprando el curso.",
+    "access": {
+      "full": "Acceso completo",
+      "partial": "Acceso parcial",
+      "offer": "Oferta especial"
+    }
+  },
+
+  "banner": {
+    "title": "Sólo <1>hoy</1> <1>– {{discount}}% de descuento!</1>"
+  },
+
+  "disabledPayment": {
+    "title": "La compra de cursos no está disponible temporalmente",
+    "date": "Del 16 al 26 de julio de 2025, los pagos estarán suspendidos",
+    "boughtCourses": "Todos los cursos comprados previamente seguirán disponibles",
+    "sorry": "Disculpa las molestias ocasionadas"
+  },
+
+  "payment": {
+    "encryptedPayment": "Pago seguro con Stripe (PCI DSS Nivel 1): tus datos se encriptan y nunca se almacenan.",
+    "afterPayment": "Después del pago, el curso se añadirá a tu cuenta y los datos de acceso se enviarán a tu correo electrónico. Revisa la carpeta de Spam si no lo recibes.",
+    "privacyAgreement": "Al hacer clic en el botón «Pagar», aceptas recibir correos electrónicos de marketing y consientes nuestra <1>Política de Privacidad.</1>"
+  },
+
+
+  "nav": {
+    "home": "Inicio",
+    "courses": "Cursos",
+    "books": "Libros",
+    "professors": "Profesores",
+    "cart": "Carrito",
+    "search": "Buscar",
+    "profile": "Perfil",
+    "promote": {
+      "bookPages": "Páginas del libro",
+      "bookAuthors": "Autores del libro",
+      "webinarProgram": "Programa del webinario",
+      "webinarProfessors": "Profesores del webinario",
+      "professors": "Profesores del curso",
+      "program": "Programa del curso"
+    }
+  },
+
+  "search": {
+    "searchCourses": "Buscar cursos",
+    "searchPlaceholder": "Ingrese el nombre del curso o el nombre del autor...",
+    "result": "se encontraron {{count}} cursos",
+    "result_one": "{{count}} curso encontrado",
+    "result_few": "{{count}} cursos encontrados",
+    "result_many": "se encontraron {{count}} cursos",
+    "result_zero": "No se encontraron cursos"
+  },
+
+  "main": {
+    "title": "Escuela <1>dental</1> en línea",
+    "hero.widestRange": "La <1>más amplia</1> gama de productos",
+    "hero.bestPrices": "Mejores <1>precios</1>",
+    "hero.description": "Cursos en línea para dentistas",
+    "hero.chooseCourse": "Elige tu curso",
+    "ourCurses": "Nuestros cursos",
+    "viewCourse": "Ver curso",
+    "noCourses": "No se encontraron cursos",
+    "noCoursesFilter": "No se encontraron cursos para el filtro «{{filter}}»."
+  },
+
+  "footer": {
+    "contacts.title": "Contactos",
+    "polities": "Políticas",
+    "product": "Producto",
+    "terms": "Términos de uso",
+    "cookie": "Política de cookies",
+    "privacy": "Política de privacidad",
+    "home": "Página principal",
+    "tour": "Tour",
+    "templates": "Plantillas",
+    "copyright": "© 2025 Dent-S. Todos los derechos reservados."
+  },
+
+  "tag": {
+    "allCourses": "Todos los cursos",
+    "surgery": "Cirugía",
+    "orthodontics": "Ortodoncia",
+    "periodontology": "Periodoncia",
+    "restoration": "Restauración",
+    "endodontics": "Endodoncia",
+    "gnathology": "Gnatología",
+    "prosthodontics": "Prostodoncia",
+    "digital_dentistry": "Odontología digital",
+    "pediatric_dentistry": "Pediátrica",
+    "orthopedics": "Ortopedia",
+    "esthetic": "Estética",
+    "management": "Gestión",
+    "common.popular": "Popular",
+    "common.bestPrices": "Mejores precios",
+    "common.new": "Nuevo",
+    "common.rec": "Para ti"
+  },
+
+  "bookLanding": {
+    "onlineBook": "Libro en Línea",
+    "annotation": "Anotación",
+    "about": "Acerca del Libro",
+    "publishedDate": "Fecha de Publicación: <0>{{date}}</0>",
+    "author": "Autor: <0>{{authors}}</0>",
+    "authors": "Autores: <0>{{authors}}</0>",
+    "availableFormats": "Formatos Disponibles:",
+    "chooseFormat": "Elija un formato y descárguelo al instante",
+    "buyText": "Puede comprar la <0>edición completa</0> al nuevo precio ahora - <0>${{newPrice}}</0>, en lugar del precio antiguo - ${{oldPrice}}",
+    "download": "Descargar",
+    "contentOverview": "Descripción del Contenido",
+    "audioPreviewAvailable": "Escucha el fragmento de audio",
+    "audioText": "<0>Audio</0> está disponible para darte una breve visión del libro antes de sumergirte en su contenido.",
+    "audio": "audio",
+    "pdfReader": {
+      "error": "Ocurrió un error al cargar",
+      "loading": "Cargando..."
+    },
+    "pages": {
+      "title": "Páginas",
+      "readFirstPages": "¡Lee las primeras páginas del libro!",
+      "fullBook": "La versión completa del libro estará disponible después del pago."
+    }
+  },
+
+
+  "landing": {
+    "by": "Por",
+    "about": "Acerca de este curso",
+    "access": "el acceso no está limitado en el tiempo",
+    "duration": "Duración:",
+    "lessons_one": "lección",
+    "lessons_other": "lecciones",
+    "professors_one": "profesor",
+    "professors_other": "profesores",
+    "onlineLessons": "clases en línea",
+    "online": "en línea",
+    "discount": "descuento {{count}}%",
+    "savings": "ahorros",
+    "courseProgram": "Programa del curso",
+    "fullCourseProgram": "El programa completo del curso",
+    "buyFor": "Comprar por <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyLessonsFor_one": "Comprar {{count}} lección:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "buyLessonsFor_other": "Comprar {{count}} lecciones:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
+    "fullWebinarProgram": "Programa completo del webinario",
+    "accessFullWebinar": "¡El acceso al webinario es ilimitado en el tiempo!",
+    "buyForFull": "Comprar curso para <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "Puedes comprar el <1>curso completo</1> ahora al nuevo precio <2>${{new_price}}</2>, en lugar del antiguo - ${{old_price}}",
+    "fiveMinuteFragment": "Aquí puedes ver un <1>fragmento de cinco minutos</1>",
+    "durationOfLesson": "Duración:",
+    "noVideoLink": "No hay enlace de video o el enlace no es válido",
+    "videoIsNotSupported": "Tu navegador no admite video",
+    "specialOffer": "Oferta especial",
+    "accessFull": "¡El acceso al curso es ilimitado en el tiempo!",
+    "video": {
+      "modalTitle": "Desbloquea el curso completo",
+      "buyCourseToWatch": "Compra el curso completo para seguir viendo."
+    },
+    "faq": {
+      "faq": "Preguntas Frecuentes",
+      "1_question": "¿Cómo accedo a mi curso después de la compra?",
+      "1_answer": "Una vez que se complete tu pago, recibirás acceso inmediato a tu curso. Tras el pago, serás dirigido automáticamente a tu cuenta, donde verás el curso adquirido (te recomendamos cambiar tu contraseña de inmediato para no olvidarla). También recibirás un recibo y una confirmación de inscripción por correo electrónico. Si no ves el correo, revisa tu carpeta de spam (y otras carpetas; el remitente es 'no-reply'). Los materiales del curso estarán disponibles al instante, permitiéndote aprender a tu ritmo desde cualquier dispositivo.",
+      "1_question_book": "¿Cómo accedo a mi libro después de la compra?",
+      "1_answer_book": "Tan pronto como se complete tu pago, recibirás acceso inmediato a tu libro. Después del pago, serás redirigido automáticamente a tu cuenta, donde verás el libro que compraste y podrás descargarlo (te recomendamos cambiar tu contraseña de inmediato para que no la olvides). También recibirás un recibo y confirmación de compra por correo electrónico. Si no ves el correo en tu bandeja de entrada, revisa la carpeta de spam (y otras carpetas — el remitente es 'no-reply'). Tu libro estará disponible de inmediato y podrás leerlo en cualquier momento desde cualquier dispositivo.",
+      "2_question_book": "¿Dónde puedo encontrar mis libros comprados si perdí los archivos descargados?",
+      "2_answer_book": "Todos los libros que compres permanecerán guardados de forma segura en tu cuenta personal todo el tiempo que los necesites — el acceso nunca expirará.",
+      "2_question": "¿Hay un límite de tiempo para completar los cursos?",
+      "2_answer": "No, todos nuestros cursos son de ritmo propio, lo que te da flexibilidad para comenzar, pausar y reanudar cuando quieras. Tendrás acceso de por vida a los materiales del curso.",
+      "3_question": "¿Qué métodos de pago aceptan?",
+      "3_answer": "Aceptamos todas las principales tarjetas de crédito, incluyendo Visa, MasterCard y American Express, además de casi todos los sistemas de pago globales (ApplePay, GooglePay, SamsungPay, etc.). Usamos Stripe para procesar pagos de forma segura.",
+      "4_question": "¿Por qué sus precios son más bajos?",
+      "4_answer": "En Dent-S creemos que la educación de calidad debe estar disponible para todos, sin importar el país, estatus social o experiencia profesional. Cuanto mejores sean los médicos, más sana y feliz será la humanidad. Por eso ofrecemos los precios más bajos posibles. Gracias a tu apoyo, podemos expandir y mejorar nuestro proyecto.",
+      "5_question": "¿Puedo acceder a mis cursos desde un móvil o tablet?",
+      "5_answer": "¡Sí! Nuestra plataforma está completamente optimizada para móviles y tabletas, permitiéndote aprender desde cualquier dispositivo en cualquier momento.",
+      "6_question": "¿Recibiré una factura de mi compra?",
+      "6_answer": "Si necesitas una factura, contacta a nuestro equipo de soporte (sus datos aparecen en tu recibo de pago) y te la proporcionaremos.",
+      "7_question": "¿Qué pasa si no estoy satisfecho con el curso?",
+      "7_answer": "Ofrecemos reemplazo del curso o reembolso completo si no estás satisfecho. Contacta a soporte dentro de los 15 días de la compra para asistencia.",
+      "8_question": "¿Cómo contacto con soporte?",
+      "8_answer": "Puedes contactar a soporte desde tu cuenta en <link1>dent-s.com</link1> o usando el correo de contacto en tu recibo de pago.",
+      "9_question": "¿Cómo restablezco mi contraseña?",
+      "9_answer": "Haz clic en <link1>¿Olvidaste tu contraseña?</link1> en la <link2>página de inicio de sesión</link2> y sigue las instrucciones para crear una nueva contraseña."
+    }
+  },
+
+  "profile": {
+    "yourCourses": "Tus cursos",
+    "noCourses": "No hay cursos",
+    "nextLesson": "Siguiente lección",
+    "prevLesson": "Lección anterior",
+    "pdfText": "Esta lección contiene materiales en PDF en lugar de un video. Haz clic en el enlace de abajo para abrir el archivo.",
+    "openPdf": "Abrir materiales en PDF",
+    "referral": {
+      "myReferrals": "Mis referidos",
+      "balance": "Tu saldo: <1>{{count}}$</1>",
+      "spend": "¡Gasta en cualquier curso!",
+      "link": "Enlace de invitación:",
+      "invite": "Invita a un amigo y gana un bono.",
+      "friendsPurchases": "¡<1>50%</1> de las compras de tus amigos van directamente a tu saldo!",
+      "step_1": "1. Copia tu enlace personal a continuación.",
+      "step_2": "2. Envíalo a un amigo por WhatsApp, Telegram, correo electrónico o como prefieras.",
+      "step_3": "3. Tu amigo compra cualquier curso — por ejemplo, uno que cuesta <1>$19</1>.",
+      "step_4": "4. Recibes el <1>50%</1> del pago (por ejemplo, <1>$9.50</1>) como crédito en tu billetera."
+    },
+
+    "main": "Principal",
+    "user": "Usuario:",
+    "referrals": {
+      "email": "Correo electrónico",
+      "invitation": "Invitación",
+      "totalCashback": "cashback total"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Usuarios invitados",
+      "purchases": "Historial de compras",
+      "purchaseSum": "Importe de la compra:",
+      "adminAdjust": "Bono",
+      "internalPurchase": "Pago",
+      "purchase": "Pago",
+      "referralCashback": "Cashback",
+      "fromBalance": "del saldo",
+      "fromCart": "Del carrito",
+      "noReferralsData": "¿Aún no has invitado a tus amigos? Descubre más sobre nuestro programa de referidos en la pestaña principal del perfil: ¡comparte conocimiento y gana bonos!",
+      "noPurchasesData": "Aún no has realizado ninguna compra. Comienza a aprender hoy mismo: puedes elegir el curso adecuado <1>aquí</1>."
+    }
+  },
+
+  "professor": {
+    "youCanBuyAllCourses": "¡Obtén todos los cursos de este profesor con un <1>20%</1> de descuento por solo <1>${{new_price}}</1> — en lugar de <2>${{old_price}}</2>!",
+    "getAllCourses": "Todos los cursos por <1>${{new_price}}</1>",
+    "accessToAllCourses": "¡Acceso ilimitado a los cursos, para siempre!",
+    "professorsCourses": "Cursos de este profesor",
+    "professors.title": "Nuestros profesores",
+    "search": "Buscar profesores...",
+    "found": "Profesores encontrados: {{count}}",
+    "noProfessors": "No se encontraron profesores",
+    "about": "Detallado",
+    "specialization": "Especialización:",
+    "coursesCount_one": "{{count}} curso",
+    "coursesCount_other": "{{count}} cursos"
+  },
+  "other": {
+    "otherCourses": "Otros cursos",
+    "otherBooks": "Otros libros"
+  },
+
+  "error": {
+    "email.empty": "El correo electrónico no debe estar vacío",
+    "email.valid": "Por favor, introduce un correo electrónico válido",
+    "email.required": "El correo electrónico es obligatorio",
+    "password.empty": "La contraseña no debe estar vacía",
+    "password.minLength": "La contraseña debe tener al menos 6 caracteres",
+    "password.digitUppercaseLetter": "La contraseña debe contener al menos un dígito y una letra mayúscula",
+    "password.required": "La contraseña es obligatoria",
+    "error.invalid_credentials": "Correo electrónico o contraseña incorrectos",
+    "errorChangingPassword": "Error. La contraseña no se cambió."
+  },
+
+  "workingWarn": {
+    "title": "Volveremos pronto",
+    "first": "Estamos realizando actualizaciones para mejorar tu experiencia de aprendizaje.",
+    "second": "Nuestra plataforma de cursos no está disponible temporalmente por mantenimiento programado.",
+    "third": "Vuelve a visitarnos pronto: ¡se avecinan nuevas funciones y mejoras!",
+    "fourth": "Gracias por tu paciencia y por seguir confiando en nuestros cursos.",
+    "last": "— El equipo de Dent-S"
+  },
+
+  "pageNotFound": {
+    "num": "404",
+    "title": "Página no encontrada",
+    "sorry": "Lo sentimos, la página que buscas no existe",
+    "goBack": "Volver atrás",
+    "backToHome": "Volver a la página principal"
+  },
+
+  "cart": {
+    "title": "Tu carrito",
+    "balance": "Tu saldo",
+    "subtotal": "Subtotal",
+    "discount": "Descuento",
+    "total": "Total",
+    "useBalance": "Usar saldo",
+    "replenish": "Recargar saldo",
+    "returnToShop": "Volver a la tienda",
+    "inCart": "En el carrito",
+    "priceWithoutDiscount_one": "Subtotal por {{count}} curso",
+    "priceWithoutDiscount_other": "Subtotal por {{count}} cursos",
+    "balanceDiscount": "Del saldo",
+    "currentDiscount": "Descuento actual",
+    "barText_1": "Ahora tienes un <1>{{current}}%</1> de descuento.",
+    "barText_2": "¡Agrega 1 curso más para <2>{{next}}%</2>!",
+    "barTextMaxDiscount": "¡Has alcanzado el descuento máximo de <1>{{current}}%</1>!",
+    "empty": {
+      "title": "Tu carrito está vacío",
+      "haventAdded": "Parece que aún no has agregado nada. ¡Explora nuestro catálogo y añade algo ahora!"
+    }
+  },
+
+  "courses": {
+    "title": "todos los cursos",
+    "search": "Buscar cursos...",
+    "found": "Cursos encontrados: {{count}}"
+  },
+
+  "books": {
+    "title": "todos los libros",
+    "search": "Buscar libros...",
+    "found": "Libros encontrados: {{count}}"
+  }
+}

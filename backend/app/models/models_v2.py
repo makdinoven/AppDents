@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, JSON, ForeignKey, Table, Enum, Boolean, DateTime, func, Float, \
-    Index, BigInteger, Numeric
+    Index, BigInteger, Numeric, Date
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
@@ -506,6 +506,7 @@ class Book(Base):
     language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
                               name='book_language'), nullable=False,
                           server_default='EN')
+    publication_date = Column(Date, nullable=True, comment="Дата публикации книги")
     created_at  = Column(DateTime, server_default=func.utc_timestamp(),
                          nullable=False)
     updated_at  = Column(DateTime, server_default=func.utc_timestamp(),

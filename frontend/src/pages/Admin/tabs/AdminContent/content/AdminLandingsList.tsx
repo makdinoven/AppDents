@@ -1,18 +1,21 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../routes/routes.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../../store/store.ts";
+import AdminList from "../../../modules/common/AdminList/AdminList.tsx";
+import { Path } from "../../../../../routes/routes.ts";
 import {
   createLanding,
   getLandings,
   searchLandings,
-} from "../../../store/actions/adminActions.ts";
-import { INITIAL_LANDING } from "../../../common/helpers/commonConstants.ts";
-import { adminApi } from "../../../api/adminApi/adminApi.ts";
-import { ParamsType } from "../../../api/adminApi/types.ts";
-import { toggleLandingVisibility } from "../../../store/slices/adminSlice.ts";
+} from "../../../../../store/actions/adminActions.ts";
+import { INITIAL_LANDING } from "../../../../../common/helpers/commonConstants.ts";
+import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
+import { ParamsType } from "../../../../../api/adminApi/types.ts";
+import { toggleLandingVisibility } from "../../../../../store/slices/adminSlice.ts";
 
-const AdminLandingsTab = () => {
+const AdminLandingsList = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const landings = useSelector(
     (state: AppRootStateType) => state.admin.landings,
@@ -56,4 +59,4 @@ const AdminLandingsTab = () => {
   );
 };
 
-export default AdminLandingsTab;
+export default AdminLandingsList;
