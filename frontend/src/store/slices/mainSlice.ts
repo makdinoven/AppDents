@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
+  getBooks,
+  getBooksRecommend,
   getCourses,
   getCoursesRecommend,
   getTags,
@@ -16,6 +18,8 @@ interface MainState {
   tags: TagType[];
   courses: any[];
   totalCourses: number;
+  books: any[];
+  totalBooks: number;
   loading: boolean;
   error: string | null;
 }
@@ -24,6 +28,8 @@ const initialState: MainState = {
   tags: [],
   courses: [],
   totalCourses: 0,
+  books: [],
+  totalBooks: 0,
   loading: true,
   error: null,
 };
@@ -35,6 +41,10 @@ const mainSlice = createSlice({
     clearCourses: (state) => {
       state.courses = [];
       state.totalCourses = 0;
+    },
+    clearBooks: (state) => {
+      state.books = [];
+      state.totalBooks = 0;
     },
   },
 
@@ -90,9 +100,45 @@ const mainSlice = createSlice({
               : cards;
           state.totalCourses = total;
         },
+      )
+      .addCase(getBooks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getBooks.fulfilled,
+        (state, action: PayloadAction<{ res: any }, string, { arg: any }>) => {
+          state.loading = false;
+          const { cards, total } = action.payload.res.data;
+          state.books =
+            state.books.length && action.meta.arg.skip !== 0
+              ? [...state.books, ...cards]
+              : cards;
+          state.totalBooks = total;
+        },
+      )
+      .addCase(getBooks.rejected, (state, action) => {
+        state.loading = false;
+        if (action.payload) state.error = action.payload;
+      })
+      .addCase(getBooksRecommend.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getBooksRecommend.fulfilled,
+        (state, action: PayloadAction<{ res: any }, string, { arg: any }>) => {
+          state.loading = false;
+          const { cards, total } = action.payload.res.data;
+          state.books =
+            state.books.length && action.meta.arg.skip !== 0
+              ? [...state.books, ...cards]
+              : cards;
+          state.totalBooks = total;
+        },
       );
   },
 });
 
-export const { clearCourses } = mainSlice.actions;
+export const { clearCourses, clearBooks } = mainSlice.actions;
 export const mainReducer = mainSlice.reducer;
