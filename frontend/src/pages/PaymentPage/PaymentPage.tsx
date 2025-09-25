@@ -193,7 +193,7 @@ const PaymentPage = () => {
       <div ref={modalRef} className={s.modal}>
         {renderHeader()}
         {renderCourses()}
-        {!isFree && renderBody()}
+        {renderBody()}
         {renderFooter()}
       </div>
     </ModalOverlay>
