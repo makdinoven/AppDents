@@ -19,7 +19,6 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   const { t } = useTranslation();
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const slideRefs = useRef<ContentOverviewSlideRef[]>([]);
-  const TABLET = 768;
 
   useEffect(() => {
     const handleResize = () => {
@@ -46,7 +45,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
     />
   ));
 
-  const showLabels = screenWidth < TABLET || slides.length > 1;
+  const showLabels = slides.length > 1;
 
   return (
     <div className={s.content_overview}>
