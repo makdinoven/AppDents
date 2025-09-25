@@ -1,18 +1,18 @@
 import { useParams } from "react-router-dom";
-import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import DetailHeader from "../../../../modules/common/DetailHeader/DetailHeader.tsx";
+import { adminApi } from "../../../../../../api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 import {
   formatIsoToLocalDatetime,
   getFormattedDate,
-} from "../../../../common/helpers/helpers.ts";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+} from "../../../../../../common/helpers/helpers.ts";
+import DateRangeFilter from "../../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import Loader from "../../../../../../components/ui/Loader/Loader.tsx";
+import SwitchButtons from "../../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 import s from "./LandingAnalytics.module.scss";
-import LandingAnalyticsChart from "../../tabs/Analytics/Charts/LandingAnalyticsChart.tsx";
-import Table from "../../../../components/ui/Table/Table.tsx";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
+import LandingAnalyticsChart from "../../Charts/LandingAnalyticsChart.tsx";
+import Table from "../../../../../../components/ui/Table/Table.tsx";
+import { useDateRangeFilter } from "../../../../../../common/hooks/useDateRangeFilter.ts";
 
 const LandingAnalytics = () => {
   const { landingId } = useParams();

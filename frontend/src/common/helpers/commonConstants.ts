@@ -85,7 +85,6 @@ export const INITIAL_LANDING = {
   is_hidden: true,
 };
 
-
 export const INITIAL_USER = {
   email: "newuser@dents.com",
   password: "Newuserpassword123!",
@@ -119,6 +118,7 @@ export const ANALYTICS_LIMITS = [
   { name: "100", value: "100" },
   { name: "200", value: "200" },
   { name: "500", value: "500" },
+  // { name: "1000", value: "1000" },
 ];
 
 export const PAGE_SIZES = [

@@ -12,8 +12,12 @@ import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import { Path } from "../../../../../routes/routes.ts";
 import SortByDate from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
 import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
+import Search from "../../../../../components/ui/Search/Search.tsx";
+import { t } from "i18next";
+import { useSearchParams } from "react-router-dom";
 
 const AnalyticsListing = () => {
+  const [searchParams] = useSearchParams();
   const [language, setLanguage] = useState<string>("EN");
   const [limit, setLimit] = useState<string>("500");
   const [landings, setLandings] = useState<any>(null);
@@ -30,6 +34,8 @@ const AnalyticsListing = () => {
     selectedPreset,
     setPreset,
   } = useDateRangeFilter("custom");
+  const analyticsSearch = "listing-search";
+  const searchQuery = searchParams.get(analyticsSearch)?.toLowerCase() || "";
 
   const handleSortDirectionChange = (direction: "asc" | "desc") => {
     if (direction === sortDirection) {
@@ -81,12 +87,20 @@ const AnalyticsListing = () => {
     }
   };
 
-  const filteredLandings = landings?.filter((landing: any) => {
-    if (adSort === "all") return true;
-    if (adSort === "ad") return landing.in_advertising === true;
-    if (adSort === "no-ad") return landing.in_advertising === false;
-    return true;
-  });
+  const filteredLandings = landings
+    ?.filter((landing: any) => {
+      if (adSort === "all") return true;
+      if (adSort === "ad") return landing.in_advertising === true;
+      if (adSort === "no-ad") return landing.in_advertising === false;
+      return true;
+    })
+    ?.filter((landing: any) => {
+      if (!searchQuery) return true;
+      return (
+        landing.landing_name?.toLowerCase().includes(searchQuery) ||
+        String(landing.id).includes(searchQuery)
+      );
+    });
 
   return (
     <>
@@ -162,20 +176,26 @@ const AnalyticsListing = () => {
       {!landings && loading ? (
         <Loader />
       ) : (
-        <Table
-          loading={loading}
-          data={filteredLandings}
-          landingLinkByIdPath={Path.landingAnalytics}
-          columnLabels={{
-            id: "ID",
-            landing_name: "Name",
-            sales_count: "Sales",
-            language: "Lang",
-            in_advertising: "Ad",
-            ad_sales_count: "Sales(Ad)",
-            created_at: "Created",
-          }}
-        />
+        <>
+          <Search
+            id={analyticsSearch}
+            placeholder={t("admin.landings.search")}
+          />
+          <Table
+            loading={loading}
+            data={filteredLandings}
+            landingLinkByIdPath={Path.landingAnalytics}
+            columnLabels={{
+              id: "ID",
+              landing_name: "Name",
+              sales_count: "Sales",
+              language: "Lang",
+              in_advertising: "Ad",
+              ad_sales_count: "Sales(Ad)",
+              created_at: "Created",
+            }}
+          />
+        </>
       )}
     </>
   );
