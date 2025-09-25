@@ -30,7 +30,7 @@ from ..schemas_v2.book import (
     BookDetailResponse,
     PdfUploadInitResponse,
     PdfUploadInitRequest,
-    BookLandingOut,
+    BookLandingOut, BookListPageResponse,
 )
 from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse
 from ..services_v2 import book_service
