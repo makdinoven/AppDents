@@ -12,10 +12,12 @@ interface FieldProps {
   label?: React.ReactNode;
   error?: string;
   placeholder?: string;
+  className?: string;
 }
 
 const AdminField: React.FC<FieldProps> = ({
   placeholder,
+  className,
   id,
   type,
   value,
@@ -31,7 +33,9 @@ const AdminField: React.FC<FieldProps> = ({
   };
 
   return (
-    <div className={`${s.field_wrapper} ${error ? s.error : ""}`}>
+    <div
+      className={`${s.field_wrapper} ${error ? s.error : ""} ${className ? className : ""}`}
+    >
       {label && <label htmlFor={id}>{label}</label>}
 
       {type === "textarea" ? (
