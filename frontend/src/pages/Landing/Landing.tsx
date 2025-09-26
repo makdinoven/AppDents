@@ -66,6 +66,7 @@ const Landing = () => {
   }, [location.search]);
   const isAdmin = role === "admin";
   const basePath = getBasePath(location.pathname);
+  // const isFromLocalhost = window.location.origin.includes("localhost")
 
   const isVideo = basePath === Path.videoLanding;
   const isClient =
