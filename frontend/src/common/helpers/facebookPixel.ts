@@ -5,7 +5,12 @@ const options = {
   debug: false,
 };
 
-const pixelIds = ["355039504358349", "1105921817166633", "975797817469515"];
+const pixelIds = [
+  "355039504358349",
+  "1105921817166633",
+  "975797817469515",
+  "726394920443618",
+];
 
 const languagePixelIds: Record<string, string> = {
   IT: "722350576947991",
