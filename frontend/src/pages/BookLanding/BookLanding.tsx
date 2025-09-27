@@ -7,7 +7,7 @@ import AudioSection from "./modules/Audio/AudioSection.tsx";
 import BuySection from "../../components/CommonComponents/BuySection/BuySection.tsx";
 import { FORMATS } from "../../common/helpers/commonConstants.ts";
 import Professors from "./modules/Professors/Professors.tsx";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 const BookLanding = () => {
@@ -16,9 +16,7 @@ const BookLanding = () => {
   const landingPath = useParams();
 
   useEffect(() => {
-    fetch(
-      `https://test.dent-s.com/api/books/landing/slug/zero-bone-loss-concepts-book`,
-    )
+    fetch(`https://test.dent-s.com/api/books/landing/slug/landing-643652`)
       .then((response) => {
         return response.json();
       })
