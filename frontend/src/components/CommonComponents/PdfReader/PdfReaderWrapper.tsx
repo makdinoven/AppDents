@@ -53,7 +53,11 @@ const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
   return isFullScreen && containerRef.current ? (
     ReactDOM.createPortal(
       <>
-        <ModalOverlay isVisibleCondition={true} modalPosition={"top"}>
+        <ModalOverlay
+          isVisibleCondition={true}
+          modalPosition={"top"}
+          customHandleClose={() => handleFullScreen(!isFullScreen)}
+        >
           <PdfReader
             url={url}
             fullScreen={isFullScreen}
