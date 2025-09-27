@@ -15,7 +15,7 @@ const AnalyticsLanguages = () => {
   const [selectedCurrency, setSelectedCurrency] = useState<"eur" | "usd">(
     "usd",
   );
-  const [exchangeRate, setExchangeRate] = useState(0.85);
+  const [exchangeRate, setExchangeRate] = useState("0.85");
   const {
     dateRange,
     handleStartDateChange,
@@ -31,7 +31,7 @@ const AnalyticsLanguages = () => {
   const convertAmount = (amount: string, currency: "usd" | "eur") => {
     const num = parseFloat(amount.replace("$", ""));
     if (currency === "eur") {
-      return `${(num * exchangeRate).toFixed(2)} €`;
+      return `${(num * parseFloat(exchangeRate)).toFixed(2)} €`;
     }
     return `${num.toFixed(2)} $`;
   };
@@ -93,8 +93,9 @@ const AnalyticsLanguages = () => {
                   className={s.currency_input}
                   id={"exchange_rate"}
                   type={"input"}
+                  inputType={"number"}
                   value={exchangeRate}
-                  onChange={(val) => setExchangeRate(parseFloat(val))}
+                  onChange={(e: any) => setExchangeRate(e.value)}
                 />
                 <SwitchButtons
                   buttonsArr={["eur", "usd"]}
@@ -111,7 +112,8 @@ const AnalyticsLanguages = () => {
                       (sum: number, item: any) =>
                         sum + parseFloat(item.total_amount),
                       0,
-                    ) * (selectedCurrency === "eur" ? exchangeRate : 1)
+                    ) *
+                    (selectedCurrency === "eur" ? parseFloat(exchangeRate) : 1)
                   ).toFixed(2)}{" "}
                   {selectedCurrency.toUpperCase()}
                 </span>
