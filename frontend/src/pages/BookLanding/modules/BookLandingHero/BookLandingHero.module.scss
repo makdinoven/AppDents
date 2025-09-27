@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  justify-content: space-between;
+  //justify-content: space-between;
   width: 100%;
   height: fit-content;
   gap: 40px;
@@ -93,9 +93,8 @@
   }
 
   .right_side {
-    width: auto;
-    max-width: 60%;
     max-height: 100%;
+    flex: 1;
     @include flex-column();
     gap: 20px;
     justify-content: space-between;

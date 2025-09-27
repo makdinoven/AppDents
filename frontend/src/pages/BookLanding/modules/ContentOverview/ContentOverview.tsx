@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import s from "./ContentOverview.module.scss";
 import ContentOverviewSlide, {
   ContentOverviewSlideRef,
 } from "./modules/ContentOverviewSlide/ContentOverviewSlide.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { useTranslation } from "react-i18next";
 import ContentSliderWrapper from "./modules/ContentSliderWrapper/ContentSliderWrapper.tsx";
+import { t } from "i18next";
 
 interface ContentOverviewProps {
   books: any[];
@@ -16,23 +16,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   books,
   portalParentId,
 }: ContentOverviewProps) => {
-  const { t } = useTranslation();
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const slideRefs = useRef<ContentOverviewSlideRef[]>([]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenWidth(window.innerWidth);
-    };
-
-    handleResize();
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [screenWidth]);
 
   const slides = books.map((book: any, index) => (
     <ContentOverviewSlide
