@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import PdfReader from "./PdfReader.tsx";
 import s from "./PdfReader.module.scss";
@@ -11,6 +11,7 @@ interface PdfReaderWrapperProps {
 
 const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const closeFullscreenRef = useRef<() => void>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
@@ -29,17 +30,6 @@ const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
     };
   }, [parentId, isFullScreen]);
 
-  useEffect(() => {
-    const viewerState = sessionStorage.getItem("viewerState");
-    if (viewerState) {
-      setIsFullScreen(JSON.parse(viewerState));
-    }
-  }, []);
-
-  useEffect(() => {
-    sessionStorage.setItem("viewerState", JSON.stringify(isFullScreen));
-  }, [isFullScreen]);
-
   if (!containerRef.current && isFullScreen) {
     const container = document.createElement("div");
     container.className = s.portal_container;
@@ -47,28 +37,35 @@ const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
   }
 
   const handleFullScreen = (state: boolean) => {
-    setIsFullScreen(state);
+    if (!state) {
+      closeFullscreenRef.current?.();
+    } else {
+      setIsFullScreen(state);
+    }
   };
 
-  return isFullScreen && containerRef.current ? (
-    ReactDOM.createPortal(
-      <>
-        <ModalOverlay isVisibleCondition={true} modalPosition={"top"}>
-          <PdfReader
-            url={url}
-            fullScreen={isFullScreen}
-            setFullScreen={handleFullScreen}
-          />
-        </ModalOverlay>
-      </>,
-      containerRef.current,
-    )
-  ) : (
+  const reader = (
     <PdfReader
       url={url}
       fullScreen={isFullScreen}
       setFullScreen={handleFullScreen}
     />
   );
+
+  return isFullScreen && containerRef.current
+    ? ReactDOM.createPortal(
+        <>
+          <ModalOverlay
+            isVisibleCondition={isFullScreen}
+            customHandleClose={() => setIsFullScreen(false)}
+            onInitClose={(fn) => (closeFullscreenRef.current = fn)}
+            modalPosition={"fullscreen"}
+          >
+            {reader}
+          </ModalOverlay>
+        </>,
+        containerRef.current,
+      )
+    : reader;
 };
 export default PdfReaderWrapper;
