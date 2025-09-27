@@ -3,6 +3,7 @@ import { FC, useState, JSX, useRef, useEffect } from "react";
 import "swiper/swiper-bundle.css";
 import s from "./HeroSlider.module.scss";
 import { CircleArrowSmall } from "../../../../../../assets/icons";
+import ModalOverlay from "../../../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 
 type HeroSliderProps = {
   gallery: any[];
@@ -21,6 +22,7 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     up: false,
     down: true,
   });
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -61,7 +63,10 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
 
   const renderGallery = (): JSX.Element => {
     return (
-      <ul className={s.gallery} ref={galleryRef}>
+      <ul
+        className={`${s.gallery} ${isFullScreen && s.full_screen}`}
+        ref={galleryRef}
+      >
         {resultGallery.map((item: any, index) =>
           item.url ? (
             <li
@@ -148,8 +153,12 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     }
   };
 
-  return (
-    <div className={s.slider}>
+  const handleOpenFullScreen = () => {
+    setIsFullScreen((prev) => !prev);
+  };
+
+  const slider = (
+    <div className={`${s.slider} ${isFullScreen && s.full_screen}`}>
       {needsArrows && showArrow.up && (
         <CircleArrowSmall className={s.up} onClick={() => handleScroll("up")} />
       )}
@@ -160,8 +169,13 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
           onClick={() => handleScroll("down")}
         />
       )}
-      <img src={activeUrl} alt="preview" className={s.preview_photo} />
-      <div className={s.slide_indicators}>
+      <img
+        src={activeUrl}
+        alt="preview"
+        className={`${s.preview_photo} ${isFullScreen && s.full_screen}`}
+        onClick={handleOpenFullScreen}
+      />
+      <div className={`${s.slide_indicators} ${isFullScreen && s.full_screen}`}>
         {Array(gallery.length)
           .fill({ length: gallery.length })
           .map((_, index) => (
@@ -173,6 +187,18 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
           ))}
       </div>
     </div>
+  );
+
+  return isFullScreen ? (
+    <ModalOverlay
+      isVisibleCondition={isFullScreen}
+      modalPosition="top"
+      customHandleClose={handleOpenFullScreen}
+    >
+      <div className={s.modal}>{slider}</div>
+    </ModalOverlay>
+  ) : (
+    <>{slider}</>
   );
 };
 

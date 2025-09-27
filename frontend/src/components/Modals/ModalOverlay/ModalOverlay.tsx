@@ -38,6 +38,7 @@ const ModalOverlay = ({
           navigate(Path.main);
         }
       }
+
       customHandleClose?.();
     }, 300);
   };
