@@ -11,10 +11,13 @@ import {
   YAxis,
 } from "recharts";
 import { formatShortDate } from "../../../../../common/helpers/helpers.ts";
+import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const UserGrowthChart = ({
+  loading,
   data,
 }: {
+  loading?: boolean;
   data: { date: string; new_users: number; total_users: number }[];
 }) => {
   const formattedData = data.map((item) => ({
@@ -24,6 +27,7 @@ const UserGrowthChart = ({
 
   return (
     <div className={s.chart_container}>
+      {loading && <LoaderOverlay />}
       <ResponsiveContainer width="100%" height={400}>
         <LineChart data={formattedData}>
           <CartesianGrid strokeDasharray="3 3" />

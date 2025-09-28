@@ -15,6 +15,10 @@ export const mainApi = {
     return instance.get(`landings/detail/by-page/${pageName}`);
   },
 
+  trackLandingVisit(id: number, ad: boolean) {
+    return instance.post(`landings/${id}/visit`, { from_ad: ad });
+  },
+
   buyCourse(data: any, isLogged: boolean) {
     const { fbp, fbc } = getFacebookData();
     const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
@@ -50,6 +54,10 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
+  getBookCards(params: any) {
+    return instance.get(`landings/cards`, { params: params });
+  },
+
   getCourseCardsRecommend(params: any) {
     return instance.get(`landings/recommend/cards`, {
       headers: getAuthHeaders(),
@@ -57,7 +65,18 @@ export const mainApi = {
     });
   },
 
+  getBookCardsRecommend(params: any) {
+    return instance.get(`landings/recommend/cards`, {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+
   getLandingCards(params: any) {
+    return instance.get(`landings/v1/cards`, { params: params });
+  },
+
+  getBookLandingCards(params: any) {
     return instance.get(`landings/v1/cards`, { params: params });
   },
 
@@ -83,5 +102,26 @@ export const mainApi = {
 
   trackFacebookAd(slug: string) {
     return instance.post(`/landings/track-ad/${slug}`);
+  },
+  globalSearch(params: {
+    q: string;
+    languages?: string[];
+    limit?: number;
+    types?: ("authors" | "landings" | "book_landings")[];
+  }) {
+    return instance.get(`/search/v2`, {
+      params,
+      paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => searchParams.append(key, v));
+          } else if (value !== undefined && value !== null) {
+            searchParams.append(key, String(value));
+          }
+        });
+        return searchParams.toString();
+      },
+    });
   },
 };

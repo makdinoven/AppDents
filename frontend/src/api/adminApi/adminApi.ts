@@ -260,4 +260,10 @@ export const adminApi = {
       params: params,
     });
   },
+  getLandingTraffic(params: any) {
+    return instance.get("landings/analytics/landing-traffic", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
 };

@@ -217,7 +217,7 @@ const Purchase = ({
                     {renderPurchaseSum(contentUnit)}
                     {contentUnit.created_at && (
                       <div className={s.purchase_date}>
-                        {formatIsoToLocalDatetime(contentUnit.created_at)
+                        {formatIsoToLocalDatetime(contentUnit.created_at, true)
                           .split(" ")
                           .map((value, index) => {
                             return <span key={index}>{value}</span>;

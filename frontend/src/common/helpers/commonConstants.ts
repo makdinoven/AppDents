@@ -1,11 +1,18 @@
 import { Path } from "../../routes/routes.ts";
 import {
+  ArFlag,
   BooksIcon,
   CartIcon,
   CoursesIcon,
+  EnFlag,
+  EsFlag,
   HomeIcon,
+  ItFlag,
   ProfessorsIcon,
+  PtFlag,
+  RuFlag,
 } from "../../assets/icons/index.ts";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -189,3 +196,12 @@ export const LS_TOKEN_KEY = "access_token";
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
 
 export const FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
+
+export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
+  EN: EnFlag,
+  ES: EsFlag,
+  RU: RuFlag,
+  PT: PtFlag,
+  AR: ArFlag,
+  IT: ItFlag,
+};

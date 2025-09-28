@@ -4,23 +4,19 @@ import s from "../Analytics.module.scss";
 import Table from "../../../../../components/ui/Table/Table.tsx";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsReferrals = () => {
   // const [limit, setLimit] = useState<string>("10");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState(() => ({
-    startDate: "",
-    endDate: "",
-  }));
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("custom");
 
   const fetchReferrals = async () => {
     const params: {
@@ -37,6 +33,8 @@ const AnalyticsReferrals = () => {
     if (dateRange.endDate) {
       params.end_date = dateRange.endDate;
     }
+
+    setLoading(true);
 
     try {
       const res = await adminApi.getReferrals(params);
@@ -59,15 +57,18 @@ const AnalyticsReferrals = () => {
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
         />
       </div>
-      {loading ? (
+      {!data && loading ? (
         <Loader />
       ) : (
         <>
           <Table
             title={"Inviters"}
             data={data.inviters}
+            loading={loading}
             columnLabels={{
               inviter_id: "Inviter id",
               email: "Email",
@@ -77,6 +78,7 @@ const AnalyticsReferrals = () => {
             }}
           />
           <Table
+            loading={loading}
             title={"Referral users"}
             data={data.referrals}
             columnLabels={{

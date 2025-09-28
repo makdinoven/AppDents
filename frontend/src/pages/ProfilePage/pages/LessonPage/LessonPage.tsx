@@ -8,6 +8,7 @@ import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Arrow } from "../../../../assets/icons/index.ts";
 import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
 import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import HlsVideo from "../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
 
 type OutletContextType = {
   course: any;
@@ -22,7 +23,6 @@ const LessonPage = () => {
   const [lesson, setLesson] = useState<any | null>(null);
   const [prevLesson, setPrevLesson] = useState<any | null>(null);
   const [nextLesson, setNextLesson] = useState<any | null>(null);
-  const isTsVideo = (link: string) => link.endsWith(".ts");
 
   useEffect(() => {
     if (course && sectionId && lessonId) {
@@ -94,23 +94,9 @@ const LessonPage = () => {
                 isExternal={true}
               />
             </p>
-          ) : isTsVideo(lesson.video_link) ? (
-            <div className={s.video_container}>
-              <video controls width="100%" height="100%">
-                <source src={lesson.video_link} type="video/mp2t" />
-                {t("videoNotSupported")}
-              </video>
-            </div>
           ) : lesson.video_link?.length > 0 ? (
             <div className={s.video_container}>
-              <iframe
-                src={lesson.video_link}
-                width="100%"
-                height="100%"
-                frameBorder="0"
-                allow="autoplay; fullscreen"
-                allowFullScreen
-              />
+              <HlsVideo srcMp4={lesson.video_link} poster={lesson.preview} />
             </div>
           ) : (
             <p>

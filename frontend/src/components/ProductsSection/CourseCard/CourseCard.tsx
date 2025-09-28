@@ -1,42 +1,44 @@
 import s from "./CourseCard.module.scss";
-import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
-import ViewLink from "../../../ui/ViewLink/ViewLink.tsx";
+import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
+import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
-import initialPhoto from "../../../../assets/no-pictures.png";
-import AddToCartButton from "../../../ui/AddToCartButton/AddToCartButton.tsx";
-import AuthorsDesc from "../../../ui/AuthorsDesc/AuthorsDesc.tsx";
+import initialPhoto from "../../../assets/no-pictures.png";
+import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
+import AuthorsDesc from "../../ui/AuthorsDesc/AuthorsDesc.tsx";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
-import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
-import { getPaymentType } from "../../../../common/helpers/helpers.ts";
+import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { setPaymentData } from "../../../store/slices/paymentSlice.ts";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
+import { getPaymentType } from "../../../common/helpers/helpers.ts";
+import { Path } from "../../../routes/routes.ts";
+
+export type ProductCardFlags = {
+  isFree?: boolean;
+  isVideo?: boolean;
+  isClient?: boolean;
+  isOffer?: boolean;
+};
 
 interface CourseCardProps {
-  isClient?: boolean;
   id: number;
   name: string;
   tag: string;
-  link: string;
   photo: string;
   index: number;
   old_price: number;
   new_price: number;
   authors: any[];
   lessons_count: string;
-  isOffer?: boolean;
   course_ids: number[];
-  isFree?: boolean;
   slug: string;
+  flags: ProductCardFlags;
 }
 
 const CourseCard = ({
-  isClient,
-  isOffer = false,
   id,
   name,
   tag,
-  link,
   photo,
   old_price,
   new_price,
@@ -45,7 +47,7 @@ const CourseCard = ({
   lessons_count,
   course_ids,
   slug,
-  isFree = false,
+  flags,
 }: CourseCardProps) => {
   const { openPaymentModal } = usePaymentPageHandler();
   const language = useSelector(
@@ -53,6 +55,13 @@ const CourseCard = ({
   );
   const dispatch = useDispatch<AppDispatchType>();
   const screenWidth = useScreenWidth();
+  const { isFree, isVideo, isClient, isOffer } = flags;
+
+  const link = isFree
+    ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${slug}`
+    : isVideo
+      ? `/${Path.videoLanding}/${slug}`
+      : `/${isClient ? Path.landingClient : Path.landing.slice(1)}/${slug}`;
 
   const setCardColor = (whatIsReturned: "className" | "color") => {
     const returnValue = whatIsReturned === "className" ? s.blue : "blue";

@@ -6,6 +6,7 @@ import {
   PAYMENT_SOURCES,
   PAYMENT_TYPES,
 } from "./commonConstants.ts";
+import { ResultLandingData } from "../../store/slices/mainSlice.ts";
 
 export const getAuthHeaders = () => {
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
@@ -177,15 +178,20 @@ export const isBookLanding = (pathname: string): boolean => {
 
 export const isBookLandingPromotion = (pathname: string): boolean => {
   return (
-    pathname.includes(Path.bookLanding) &&
-    !pathname.includes(Path.bookLandingClient) &&
-    !pathname.includes(Path.books) &&
-    !pathname.includes(Path.bookDetail) &&
-    !pathname.includes(Path.bookLandingDetail)
+      pathname.includes(Path.bookLanding) &&
+      !pathname.includes(Path.bookLandingClient) &&
+      !pathname.includes(Path.books) &&
+      !pathname.includes(Path.bookDetail) &&
+      !pathname.includes(Path.bookLandingDetail)
   );
 };
 
-export const formatIsoToLocalDatetime = (isoString: string): string => {
+
+
+export const formatIsoToLocalDatetime = (
+    isoString: string,
+    showTime?: boolean,
+): string => {
   const date = new Date(isoString);
 
   const pad = (n: number): string => n.toString().padStart(2, "0");
@@ -196,7 +202,9 @@ export const formatIsoToLocalDatetime = (isoString: string): string => {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
 
-  return `${hours}:${minutes} ${day}.${month}.${year}`;
+  const timeStr = `${hours}:${minutes}`;
+
+  return `${showTime ? timeStr : ""} ${day}.${month}.${year}`;
 };
 
 export const getFormattedDate = (date: Date) => {
@@ -253,4 +261,24 @@ export const rewriteStorageLinkToCDN = (link: string) => {
     /^https:\/\/[^/]+\.s3\.twcstorage\.ru(\/\S*)$/,
     "https://cdn.dent-s.com$1",
   );
+};
+
+export const arraysEqual = (a?: any[] | null, b?: any[] | null) => {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  return a.every((val, i) => val === b[i]);
+};
+
+export const mapCourseToResultLanding = (course: any): ResultLandingData => {
+  return {
+    id: course.id,
+    landing_name: course.landing_name,
+    new_price: Number(course.new_price) || 0,
+    old_price: Number(course.old_price) || 0,
+    preview_photo: course.main_image || "",
+    page_name: course.slug || "",
+    authors: course.authors || [],
+    course_ids: course.course_ids || [],
+    language: "",
+  };
 };

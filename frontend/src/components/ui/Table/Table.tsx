@@ -1,17 +1,22 @@
 import s from "./Table.module.scss";
 import { Path } from "../../../routes/routes.ts";
 import { formatIsoToLocalDatetime } from "../../../common/helpers/helpers.ts";
+import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
 
 interface TableProps<T extends Record<string, any>> {
+  loading?: boolean;
   title?: string;
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
+  landingLinkByIdPath?: string;
 }
 
 const Table = <T extends Record<string, any>>({
+  loading,
   title,
   data,
   columnLabels = {},
+  landingLinkByIdPath,
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
@@ -29,6 +34,18 @@ const Table = <T extends Record<string, any>>({
 
   const renderCell = (key: string, value: any, row: T) => {
     if (key === "landing_name") {
+      if (landingLinkByIdPath) {
+        return (
+          <a
+            href={`${landingLinkByIdPath}/${row.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {value}
+          </a>
+        );
+      }
+
       const slug = row.slug || row.landing_slug;
       return (
         <a
@@ -65,7 +82,7 @@ const Table = <T extends Record<string, any>>({
     }
 
     if (key === "registered_at" || key === "created_at" || key === "paid_at") {
-      return formatIsoToLocalDatetime(value);
+      return formatIsoToLocalDatetime(value, false);
     }
 
     if (typeof value === "boolean") {
@@ -83,6 +100,7 @@ const Table = <T extends Record<string, any>>({
     <div className={s.table_component}>
       {title && <h4 className={s.table_title}>{title}</h4>}
       <div className={s.table_wrapper}>
+        {loading && <LoaderOverlay />}
         <table className={s.table}>
           <thead>
             <tr>
