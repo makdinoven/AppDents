@@ -1,5 +1,6 @@
 .logo {
   position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9,12 +10,16 @@
   outline: 2px solid transparent;
   outline-offset: 1.5px;
   //overflow: hidden;
+  border: 0.5px solid $accent-glass;
   @include transition();
 
   svg {
-    border: 0.5px solid $accent-glass;
-    width: inherit;
-    height: inherit;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
   }
 
@@ -64,6 +69,11 @@
   .logo {
     width: 30px;
     height: 30px;
+
+    svg {
+      width: 31px;
+      height: 31px;
+    }
 
     &.checked {
       outline: 1.5px solid $primary;

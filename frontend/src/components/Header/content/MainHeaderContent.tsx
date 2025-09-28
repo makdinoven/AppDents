@@ -76,7 +76,7 @@ const MainHeaderContent = () => {
               <NavButton
                 key={btn.text}
                 icon={btn.icon}
-                text={btn.text}
+                // text={btn.text}
                 quantity={quantity}
                 onClick={() =>
                   navigate(Path.cart, {
