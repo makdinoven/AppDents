@@ -5,6 +5,8 @@ import PrettyButton from "../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import BookCard from "../BookCard/BookCard.tsx";
+import BooksImg from "../../../assets/BOOK_IMG.png";
+import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
 
 type Course = {
   id: number;
@@ -23,7 +25,7 @@ export type BookCardType = {
   id: number;
   index: number;
   landing_name: string;
-  language: string;
+  language: LanguagesType;
   publication_date: string;
   authors: any[];
   first_tag: string;
@@ -32,6 +34,7 @@ export type BookCardType = {
   old_price: number;
   new_price: number;
   book_ids: number[];
+  tags: string[];
 };
 
 type CardsListProps =
@@ -106,6 +109,7 @@ const CardsList: React.FC<CardsListProps> = ({
                       new_price: 19,
                       publication_date: "09.02.1021",
                       index: index,
+                      tags: ["surgery", "orthopedics"],
                       authors: [
                         {
                           id: 1621,
@@ -128,11 +132,11 @@ const CardsList: React.FC<CardsListProps> = ({
                       ],
                       book_ids: book.book_ids,
                       images: [
-                        "https://dent-s.com/assets/img/preview_img/Orthognathic.png",
-                        "https://dent-s.com/assets/img/preview_img/Precision.png",
-                        "https://dent-s.com/assets/img/preview_img/3step.png",
-                        // "https://dent-s.com/assets/img/preview_img/40a42bb917e44782b214db7a27601b92.jpeg",
-                        // "https://dent-s.com/assets/img/preview_img/Advanced Periodontology, Surgical Protocols.png",
+                        BooksImg,
+                        BooksImg,
+                        BooksImg,
+                        // BooksImg,
+                        // BooksImg,
                       ],
                       first_tag: book.first_tag,
                     }}

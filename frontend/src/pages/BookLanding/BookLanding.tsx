@@ -5,9 +5,9 @@ import BookLandingHero from "./modules/BookLandingHero/BookLandingHero.tsx";
 import ContentOverview from "./modules/ContentOverview/ContentOverview.tsx";
 import AudioSection from "./modules/Audio/AudioSection.tsx";
 import BuySection from "../../components/CommonComponents/BuySection/BuySection.tsx";
-import { FORMATS } from "../../common/helpers/commonConstants.ts";
+import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
 import Professors from "./modules/Professors/Professors.tsx";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 const BookLanding = () => {
@@ -42,7 +42,7 @@ const BookLanding = () => {
           isFullWidth={true}
           oldPrice={data.old_price}
           newPrice={data.new_price}
-          formats={FORMATS}
+          formats={BOOK_FORMATS}
         />
         <AudioSection audioUrl="" title="NYSORA Nerve Block Manual" />
         <Professors professors={data.authors} />

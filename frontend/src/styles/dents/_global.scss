@@ -13,6 +13,9 @@ $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
 $background-color: rgb(237, 248, 255);
+$background-color-01: rgba(237, 248, 255, 0.1);
+$background-color-02: rgba(237, 248, 255, 0.2);
+$background-color-04: rgba(237, 248, 255, 0.4);
 $background-color-06: rgba(237, 248, 255, 0.6);
 $background-color-08: rgba(237, 248, 255, 0.8);
 $background-color-09: rgba(237, 248, 255, 0.9);
@@ -35,6 +38,7 @@ $secondary: #006d8d;
 $secondary-lighter: #79cee7;
 $secondary-lighter-04: rgba(121, 206, 231, 0.4);
 $secondary-lighter-06: rgba(121, 206, 231, 0.6);
+$secondary-lighter-08: rgba(121, 206, 231, 0.8);
 $tertiary: #017f74;
 $quaternary: #5b6968;
 $quaternary-06: rgba(91, 105, 104, 0.6);
