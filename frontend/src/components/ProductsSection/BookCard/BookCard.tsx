@@ -39,7 +39,7 @@ const BookCard = ({ book }: { book: BookCardType }) => {
   return (
     <Link to={link} className={`${s.card} ${setCardColor("className")}`}>
       <div className={s.card_top}>
-        <div className={s.images_wrapper}>
+        <div className={s.images_container}>
           <BookCardImages images={images} />
           <LangLogo
             className={s.lang_logo}
