@@ -25,7 +25,7 @@ interface MainState {
   books: any[];
   totalBooks: number;
   loading: boolean;
-    search: SearchType,
+  search: SearchType;
   error: string | null;
 }
 
@@ -80,13 +80,13 @@ const initialState: MainState = {
   books: [],
   totalBooks: 0,
   loading: true,
-    search: {
-        q: null,
-        loading: false,
-        selectedLanguages: null,
-        selectedCategories: null,
-        results: null,
-    },
+  search: {
+    q: null,
+    loading: false,
+    selectedLanguages: null,
+    selectedCategories: null,
+    results: null,
+  },
   error: null,
 };
 
@@ -102,14 +102,15 @@ const mainSlice = createSlice({
       state.books = [];
       state.totalBooks = 0;
     },
-      clearSearch: (state) => {
-          state.search = {
-              q: null,
-              loading: false,
-              selectedLanguages: null,
-              selectedCategories: null,
-              results: null,
-          };
+    clearSearch: (state) => {
+      state.search = {
+        q: null,
+        loading: false,
+        selectedLanguages: null,
+        selectedCategories: null,
+        results: null,
+      };
+    },
   },
 
   extraReducers: (builder) => {
