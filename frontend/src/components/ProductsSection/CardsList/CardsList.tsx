@@ -19,16 +19,19 @@ type Course = {
   course_ids: number[];
 };
 
-type Book = {
+export type BookCardType = {
   id: number;
+  index: number;
   landing_name: string;
+  language: string;
+  publication_date: string;
   authors: any[];
   first_tag: string;
   slug: string;
-  main_image: string;
+  images: string[];
   old_price: number;
   new_price: number;
-  course_ids: number[];
+  book_ids: number[];
 };
 
 type CardsListProps =
@@ -48,7 +51,7 @@ type CardsListProps =
       handleSeeMore?: () => void;
       showSeeMore: boolean;
       filter?: string;
-      cards: Book[] | null;
+      cards: BookCardType[] | null;
       showEndOfList?: boolean;
       showLoaderOverlay?: boolean;
       productCardFlags: ProductCardFlags;
@@ -93,7 +96,48 @@ const CardsList: React.FC<CardsListProps> = ({
                   />
                 ))
               : cards.map((book, index) => (
-                  <BookCard book={book} key={index} />
+                  <BookCard
+                    book={{
+                      id: book.id,
+                      language: "EN",
+                      landing_name: "Art and Nature In Ceramic Restorations",
+                      slug: "///sdds",
+                      old_price: 190,
+                      new_price: 19,
+                      publication_date: "09.02.1021",
+                      index: index,
+                      authors: [
+                        {
+                          id: 1621,
+                          name: "BILL DISCHINGER",
+                          photo:
+                            "https://dent-s.com/assets/img/preview_img/b9f23bdcad574a8bb3d16ec31901bb3a.png",
+                        },
+                        {
+                          id: 1622,
+                          name: "ALFREDO RIZZO",
+                          photo:
+                            "https://dent-s.com/assets/img/preview_img/e264710492764d09b55ea792b0723ab8.png",
+                        },
+                        {
+                          id: 1623,
+                          name: "Trevor Nichols",
+                          photo:
+                            "https://dent-s.com/assets/img/preview_img/4cfe995dd4ae45d89b28207cd1c22015.png",
+                        },
+                      ],
+                      book_ids: book.book_ids,
+                      images: [
+                        "https://dent-s.com/assets/img/preview_img/Orthognathic.png",
+                        "https://dent-s.com/assets/img/preview_img/Precision.png",
+                        "https://dent-s.com/assets/img/preview_img/3step.png",
+                        // "https://dent-s.com/assets/img/preview_img/40a42bb917e44782b214db7a27601b92.jpeg",
+                        // "https://dent-s.com/assets/img/preview_img/Advanced Periodontology, Surgical Protocols.png",
+                      ],
+                      first_tag: book.first_tag,
+                    }}
+                    key={book.id}
+                  />
                 ))}
           </ul>
           {showSeeMore ? (
