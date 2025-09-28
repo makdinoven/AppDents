@@ -18,6 +18,7 @@
 .copy_button {
   min-width: unset;
   width: fit-content;
+  margin-left: auto;
   @include clamped-p3;
 }
 
@@ -38,6 +39,7 @@
 .section_header {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -53,6 +55,7 @@
 .spend {
   @include clamped-p3;
   border-radius: 20px;
+  margin-left: auto;
   padding: 2px 15px;
   height: fit-content;
   text-align: center;
@@ -141,6 +144,7 @@
   color: $accent;
   width: 100%;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
@@ -169,6 +173,16 @@
     border-bottom-right-radius: 20px;
     box-shadow: 15px 15px 0 2px $primary;
     pointer-events: none;
+  }
+}
+
+@media (max-width: $middle-breakpoint) {
+  .copy_button {
+    margin: unset;
+  }
+
+  .spend {
+    margin: unset;
   }
 }
 

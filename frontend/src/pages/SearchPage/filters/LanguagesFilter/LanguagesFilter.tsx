@@ -3,7 +3,7 @@ import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
 import LangLogo, {
   LanguagesType,
 } from "../../../../components/ui/LangLogo/LangLogo.tsx";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 const LanguagesFilter = ({
   selectedLanguages,
@@ -15,6 +15,7 @@ const LanguagesFilter = ({
   urlKey: string;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   const handleClick = (lang: LanguagesType) => {
     let newValue: LanguagesType[];
@@ -29,7 +30,12 @@ const LanguagesFilter = ({
     }
     searchParams.delete(urlKey);
     newValue.forEach((l) => searchParams.append(urlKey, l));
-    setSearchParams(searchParams, { replace: true });
+    setSearchParams(searchParams, {
+      replace: true,
+      ...(location.state?.backgroundLocation
+        ? { state: { backgroundLocation: location.state.backgroundLocation } }
+        : {}),
+    });
   };
 
   return (

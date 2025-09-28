@@ -4,7 +4,7 @@ import {
   SearchResultKeysType,
   SearchResultsType,
 } from "../../../../store/slices/mainSlice.ts";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 const CategoriesFilter = ({
   resultKeys,
@@ -22,6 +22,7 @@ const CategoriesFilter = ({
   isBtnDisabled: boolean;
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   const handleClick = (key: SearchResultKeysType) => {
     let newValue: SearchResultKeysType[];
@@ -36,7 +37,12 @@ const CategoriesFilter = ({
     }
     searchParams.delete(urlKey);
     newValue.forEach((key) => searchParams.append(urlKey, key));
-    setSearchParams(searchParams, { replace: true });
+    setSearchParams(searchParams, {
+      replace: true,
+      ...(location.state?.backgroundLocation
+        ? { state: { backgroundLocation: location.state.backgroundLocation } }
+        : {}),
+    });
   };
 
   return (

@@ -119,6 +119,10 @@
   display: flex;
   gap: 10px;
   align-items: center;
+
+  svg {
+    flex-shrink: 0;
+  }
 }
 
 .user_items {
@@ -152,14 +156,16 @@
   justify-content: space-between;
 }
 
-@media (max-width: $tablet-breakpoint) {
-  .profile_page {
-    gap: 60px;
-  }
-
+@media (max-width: $middle-breakpoint) {
   .user_info {
     display: flex;
     flex-direction: column;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .profile_page {
+    gap: 60px;
   }
 
   .left {
@@ -196,11 +202,19 @@
 
   .left {
     gap: 10px;
+
+    .mail,
+    .support {
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 
   .user_icon {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
   }
 
   .user_items {
