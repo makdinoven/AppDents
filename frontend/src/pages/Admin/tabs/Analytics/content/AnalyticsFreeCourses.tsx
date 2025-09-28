@@ -1,29 +1,21 @@
 import { useEffect, useState } from "react";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import s from "../Analytics.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import Table from "../../../../../components/ui/Table/Table.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsFreeCourses = () => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [dateRange, setDateRange] = useState(() => {
-    const today = new Date();
-    return {
-      startDate: getFormattedDate(today),
-      endDate: getFormattedDate(today),
-    };
-  });
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("today");
 
   const fetchData = async () => {
     setLoading(true);
@@ -51,6 +43,8 @@ const AnalyticsFreeCourses = () => {
         <DateRangeFilter
           startDate={dateRange.startDate}
           endDate={dateRange.endDate}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
         />
@@ -76,6 +70,7 @@ const AnalyticsFreeCourses = () => {
         <Loader />
       ) : (
         <Table
+          loading={loading}
           data={data.courses}
           columnLabels={{
             course_name: "Course",

@@ -1,0 +1,132 @@
+.card_body {
+  position: relative;
+  @include flex-column;
+  flex: 1;
+  height: 100%;
+  gap: 10px;
+  min-width: 0;
+}
+
+.name_placeholder {
+  @include skeleton(
+    $pos: relative,
+    $h: clamp(16px, 5.8vw, 34px),
+    $w: 50%,
+    $radius: 15px
+  );
+}
+
+.description {
+  @include skeleton($pos: relative, $h: clamp(15px, 4vw, 23.5px));
+  min-width: 0;
+}
+
+.button {
+  @include skeleton($pos: relative, $w: 200px, $h: 39px, $radius: 30px);
+  margin-left: auto;
+  padding: 5px 30px;
+  @include transition;
+}
+
+.count_items {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 10px;
+
+  div {
+    @include skeleton($pos: relative, $h: 30px, $w: 170px);
+  }
+}
+
+.photo_wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.language_placeholder {
+  @include skeleton($w: 35px, $h: 35px, $l: unset, $z: 5);
+  right: 0;
+}
+
+.photo_placeholder {
+  @include skeleton(
+    $pos: relative,
+    $w: 120px,
+    $h: 120px,
+    $color: $darker-grey,
+    $radius: 50%
+  );
+  outline-offset: 2px;
+  outline: 2.5px solid $darker-grey;
+  margin: 5px;
+  flex-shrink: 0;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .count_items {
+    gap: 5px;
+    position: relative;
+    top: unset;
+    right: unset;
+  }
+
+  .photo_placeholder {
+    width: 100px;
+    height: 100px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .photo_placeholder {
+    width: 80px;
+    height: 80px;
+  }
+
+  .button {
+    height: 35px;
+    width: 125px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .count_items {
+    gap: 10px;
+
+    div {
+      @include skeleton($pos: relative, $h: 20px, $w: 120px);
+    }
+  }
+
+  .card_body {
+    gap: 4px;
+  }
+
+  .name_placeholder {
+    height: 21px;
+  }
+
+  .count_items {
+    div {
+      height: 17px;
+    }
+  }
+
+  .photo_placeholder {
+    width: 61px;
+    height: 61px;
+    outline: 1px solid $darker-grey;
+    outline-offset: 1.5px;
+  }
+
+  .language_placeholder {
+    width: 20px;
+    height: 20px;
+  }
+
+  .button {
+    padding: 2px 20px;
+    height: 22.5px;
+  }
+}

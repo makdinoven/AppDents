@@ -90,6 +90,7 @@ const ProfessorPage = () => {
   };
 
   const renderBuySection = () => {
+    if (professor.landings.length <= 0) return null;
     return (
       <section className={s.buy_section}>
         <div className={s.professor_access}>

@@ -27,9 +27,11 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
       width: 102%;
     }
 
-    svg {
-      path {
-        stroke: $primary;
+    .search_icon {
+      svg {
+        path {
+          stroke: $primary;
+        }
       }
     }
   }
@@ -38,9 +40,9 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
   &.filled .placeholder_label {
     @include clamped-p4;
     top: 0;
-    color: $accent;
+    color: $hover-color-dark;
     transform: none;
-    opacity: 0.9;
+    //opacity: 0.9;
   }
 
   .placeholder_label {
@@ -78,10 +80,16 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
     cursor: pointer;
     position: relative;
 
+    svg {
+      path {
+        stroke-width: 0.7;
+      }
+    }
+
     &:hover {
       svg {
         path {
-          stroke: $primary;
+          stroke: $error-color;
         }
       }
     }

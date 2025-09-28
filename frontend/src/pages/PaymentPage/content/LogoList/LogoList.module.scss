@@ -1,6 +1,6 @@
 .logos {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(10, 1fr);
   column-gap: 7px;
 
   li {
@@ -11,28 +11,26 @@
     overflow: hidden;
 
     svg {
-      max-height: 100%;
-      max-width: 100%;
-      width: auto;
-      height: auto;
+      width: 100%;
+      height: inherit;
+      object-fit: contain;
       display: block;
     }
   }
 }
 
-
 @media (max-width: $mobile-breakpoint) {
   .logos {
     gap: 4px;
-    //grid-template-columns: repeat(10, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     justify-content: center;
 
-    //& li:nth-child(n + 7) {
-    //  grid-column: span 1;
-    //}
-    //
-    //& li:nth-child(7) {
-    //  grid-column-start: 2;
-    //}
+    & li:nth-child(n + 7) {
+      grid-column: span 1;
+    }
+
+    & li:nth-child(7) {
+      grid-column-start: 2;
+    }
   }
 }

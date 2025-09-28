@@ -8,6 +8,7 @@
 }
 
 .table_wrapper {
+  position: relative;
   overflow-x: auto;
   border-radius: 10px;
   border: 1px solid $hover-color;
@@ -89,4 +90,10 @@
   padding: 16px;
   text-align: center;
   color: $hover-color-darken;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .table_component {
+    gap: 10px;
+  }
 }

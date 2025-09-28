@@ -1,0 +1,166 @@
+.cart_btn {
+  @include skeleton($pos: relative, $color: $darker-grey, $h: 40px);
+  max-width: 150px;
+  padding: 8px 10px;
+}
+
+.content {
+  position: relative;
+  @include flex-column;
+  gap: 5px;
+  flex: 1;
+}
+
+.content_header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.photo_placeholder {
+  @include skeleton(
+    $pos: relative,
+    $color: $darker-grey,
+    $radius: 15px,
+    $h: 110px
+  );
+  user-select: none;
+  min-width: 140px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  max-width: 180px;
+
+  &.book {
+    aspect-ratio: 9 / 16;
+    height: 180px;
+    width: 110px;
+    min-width: unset;
+  }
+}
+
+.prices {
+  width: fit-content;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+}
+
+.old_price {
+  width: 47px;
+  @include skeleton(
+    $pos: relative,
+    $color: $darker-grey,
+    $h: clamp(14px, 2.4vw, 20px),
+    $w: 50px
+  );
+}
+
+.new_price {
+  width: 46px;
+  @include skeleton(
+    $pos: relative,
+    $color: $darker-grey,
+    $h: clamp(16px, 3vw, 26px),
+    $w: 40px
+  );
+}
+
+.language_placeholder {
+  @include skeleton($pos: relative, $color: $darker-grey, $h: 35px, $w: 35px);
+}
+
+.name {
+  @include skeleton(
+    $pos: relative,
+    $h: 26px,
+    $l: unset,
+    $radius: 15px,
+    $w: 90%
+  );
+  margin-bottom: 5px;
+}
+
+.authors {
+  @include skeleton($pos: relative, $h: 20px, $radius: 15px, $w: 70%);
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .cart_btn {
+    max-width: 115px;
+    padding: 0 15px;
+  }
+
+  .photo_placeholder {
+    min-width: unset;
+    max-width: 140px;
+    height: 85px;
+
+    &.book {
+      min-height: unset;
+      max-height: 140px;
+      width: 85px;
+    }
+  }
+
+  .old_price {
+    width: 30px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .photo_placeholder {
+    border-radius: 10px;
+    max-width: 90px;
+    height: 55px;
+
+    &.book {
+      max-height: 90px;
+      width: 55px;
+    }
+  }
+
+  .language_placeholder {
+    position: absolute;
+    left: -22px;
+    top: -5px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .content {
+    gap: 3px;
+  }
+
+  .name {
+    height: 32px;
+  }
+
+  .authors {
+    height: 27px;
+  }
+
+  .new_price,
+  .old_price {
+    width: 28px;
+    border-radius: 10px;
+  }
+
+  .new_price {
+    height: 21px;
+  }
+
+  .old_price {
+    height: 15.5px;
+  }
+
+  .cart_btn {
+    padding: 3px 6px !important;
+    height: 25px;
+    max-width: 92px;
+
+    svg {
+      width: 12px !important;
+      height: 12px !important;
+    }
+  }
+}
