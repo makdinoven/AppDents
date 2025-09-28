@@ -1,52 +1,205 @@
 .card {
+  @include transition();
   padding: 15px;
+  position: relative;
   border-radius: 20px;
   border: 1px solid $primary;
   cursor: pointer;
   background-color: $background-color;
+  @include flex-column;
+  gap: 11px;
+  z-index: 2;
 
   &.blue {
     border-color: $secondary-lighter;
+
+    .prices {
+      background-color: $secondary-lighter-08;
+      border-color: $secondary-lighter;
+    }
+
+    .format_item {
+      border-color: $secondary-lighter;
+      color: $secondary-lighter;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-7px);
+      box-shadow: 10px 10px 0 -3px $primary-08;
+
+      &.blue {
+        box-shadow: 10px 10px 0 -3px $secondary-lighter-08;
+      }
+    }
+  }
+
+  &:active {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 -1px $primary-08;
+
+    &.blue {
+      box-shadow: 4px 4px 0 -1px $secondary-lighter-08;
+    }
   }
 }
 
-.images_wrapper {
+.card_top {
+  @include flex-column;
+  gap: 5px;
+}
+
+.book_name {
+  //font-weight: 450;
+  font-size: 22px;
+  text-transform: uppercase;
+}
+
+.card_bottom {
+  @include flex-column;
+  gap: inherit;
+}
+
+.formats_list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.format_item {
+  border: 1px solid $primary;
+  border-radius: 15px;
+  color: $primary;
+  font-size: 14px;
+  padding: 2px 5px;
+  text-align: center;
+}
+
+.lang_logo {
+  z-index: 20;
+  position: absolute !important;
+  top: -5px;
+  left: -5px;
+}
+
+.book_info {
+  li {
+    font-size: 16px;
+    display: flex;
+    gap: 3px;
+  }
+
+  .book_info_value {
+    color: $hover-color-dark;
+  }
+}
+
+.prices {
   display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 2px 6px;
+  gap: 3px;
+  border: 1px solid $primary;
+  background-color: $primary-08;
+  backdrop-filter: blur(5px);
+  border-radius: 28px;
+  position: absolute;
+  right: -5px;
+  top: -3px;
+  z-index: 20;
+
+  .new_price {
+    color: $background-color;
+    font-size: 22px;
+  }
+
+  .old_price {
+    font-size: 14px;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    color: $tertiary;
+    opacity: 0.8;
+  }
 }
 
-.img_wrapper {
-  position: relative;
-  width: 175px;
-  height: 228px;
-  border-radius: 18px;
-  border: 0.9px solid $primary;
-  background: $hover-color;
-  margin-left: -156px;
-  overflow: hidden;
-  //backdrop-filter: blur(10px);
-  //@include transition();
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+}
 
-  &:first-child {
-    margin-left: 0;
+.buy_btn {
+  @include transition;
+  color: $background-color;
+  background-color: $accent;
+  border-radius: 20px;
+  font-size: 20px;
+  padding: 5px;
+  flex: 1;
+  outline: 1px solid $primary;
+  outline-offset: 1px;
+
+  &.blue {
+    outline: 1px solid $secondary-lighter;
   }
 
-  &.no_photo {
-    background-color: $hover-color;
-    border-color: $hover-color-dark;
+  @media (hover: hover) {
+    &:hover {
+      background-color: $primary;
+
+      &.blue {
+        background-color: $secondary-lighter;
+      }
+    }
   }
 
-  //@media (hover: hover) {
-  //  &:hover:not(&:first-child) {
-  //    opacity: 1 !important;
-  //    z-index: 10 !important;
-  //    margin-left: 0;
-  //  }
-  //}
+  &:active {
+    background-color: $tertiary;
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: none;
+    &.blue {
+      background-color: $secondary;
+    }
+  }
+}
+
+.cart_btn {
+  cursor: pointer;
+  border: 1px solid $accent;
+  @include transition;
+  padding: 5px 20px;
+  width: 90px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      border-color: $primary;
+      background-color: $primary !important;
+
+      &.blue {
+        border-color: $secondary-lighter !important;
+        background-color: $secondary-lighter !important;
+      }
+
+      svg {
+        path {
+          stroke: $background-color !important;
+        }
+      }
+    }
+  }
+
+  &:active {
+    border-color: $accent !important;
+    background-color: $primary !important;
+
+    &.blue {
+      background-color: $secondary-lighter !important;
+    }
   }
 }

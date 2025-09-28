@@ -3,8 +3,8 @@ import s from "./BookLandingHero.module.scss";
 import { Trans } from "react-i18next";
 import HeroSlider from "./modules/HeroSlider/HeroSlider.tsx";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
-import { En, Pdf, Epub, Mobi, Azw3, Fb2 } from "../../../../assets/icons";
-import { FORMATS } from "../../../../common/helpers/commonConstants.ts";
+import { Azw3, En, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
+import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
 
 interface LandingHeroProps {
@@ -67,7 +67,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({
         </div>
         <BuySection
           type="download"
-          formats={FORMATS}
+          formats={BOOK_FORMATS}
           oldPrice={data?.old_price}
           newPrice={data?.new_price}
         />
