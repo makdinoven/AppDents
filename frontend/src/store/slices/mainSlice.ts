@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
+  getBooks,
+  getBooksRecommend,
   getCourses,
   getCoursesRecommend,
   getTags,
@@ -15,6 +17,17 @@ type TagType = {
   name: string;
   value: string;
 };
+
+interface MainState {
+  tags: TagType[];
+  courses: any[];
+  totalCourses: number;
+  books: any[];
+  totalBooks: number;
+  loading: boolean;
+  search: SearchType;
+  error: string | null;
+}
 
 export type ResultBookData = {
   id: number;
@@ -60,19 +73,13 @@ type SearchType = {
   results: SearchResultsType;
 };
 
-interface MainState {
-  tags: TagType[];
-  courses: any[];
-  search: SearchType;
-  totalCourses: number;
-  loading: boolean;
-  error: string | null;
-}
-
 const initialState: MainState = {
   tags: [],
   courses: [],
   totalCourses: 0,
+  books: [],
+  totalBooks: 0,
+  loading: true,
   search: {
     q: null,
     loading: false,
@@ -80,7 +87,6 @@ const initialState: MainState = {
     selectedCategories: null,
     results: null,
   },
-  loading: true,
   error: null,
 };
 
@@ -88,6 +94,14 @@ const mainSlice = createSlice({
   name: "main",
   initialState,
   reducers: {
+    clearCourses: (state) => {
+      state.courses = [];
+      state.totalCourses = 0;
+    },
+    clearBooks: (state) => {
+      state.books = [];
+      state.totalBooks = 0;
+    },
     clearSearch: (state) => {
       state.search = {
         q: null,
@@ -152,6 +166,42 @@ const mainSlice = createSlice({
           state.totalCourses = total;
         },
       )
+      .addCase(getBooks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getBooks.fulfilled,
+        (state, action: PayloadAction<{ res: any }, string, { arg: any }>) => {
+          state.loading = false;
+          const { cards, total } = action.payload.res.data;
+          state.books =
+            state.books.length && action.meta.arg.skip !== 0
+              ? [...state.books, ...cards]
+              : cards;
+          state.totalBooks = total;
+        },
+      )
+      .addCase(getBooks.rejected, (state, action) => {
+        state.loading = false;
+        if (action.payload) state.error = action.payload;
+      })
+      .addCase(getBooksRecommend.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getBooksRecommend.fulfilled,
+        (state, action: PayloadAction<{ res: any }, string, { arg: any }>) => {
+          state.loading = false;
+          const { cards, total } = action.payload.res.data;
+          state.books =
+            state.books.length && action.meta.arg.skip !== 0
+              ? [...state.books, ...cards]
+              : cards;
+          state.totalBooks = total;
+        },
+      )
       .addCase(globalSearch.pending, (state, action) => {
         state.search.loading = true;
         state.search.q = action.meta.arg.q;
@@ -177,5 +227,5 @@ const mainSlice = createSlice({
   },
 });
 
-export const { clearSearch } = mainSlice.actions;
+export const { clearSearch, clearCourses, clearBooks } = mainSlice.actions;
 export const mainReducer = mainSlice.reducer;
