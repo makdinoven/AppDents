@@ -1,25 +1,29 @@
-import s from "./CoursesSection.module.scss";
-import SectionHeader from "../../ui/SectionHeader/SectionHeader.tsx";
-import SelectableList from "../SelectableList/SelectableList.tsx";
+import s from "./ProductsSection.module.scss";
+import SectionHeader from "../ui/SectionHeader/SectionHeader.tsx";
+import SelectableList from "../CommonComponents/SelectableList/SelectableList.tsx";
 import CardsList from "./CardsList/CardsList.tsx";
 import {
   LANGUAGES,
   SORT_FILTERS,
-} from "../../../common/helpers/commonConstants.ts";
+} from "../../common/helpers/commonConstants.ts";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import {
+  getBooks,
+  getBooksRecommend,
   getCourses,
   getCoursesRecommend,
-} from "../../../store/actions/mainActions.ts";
-import CourseCardSkeletons from "../../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
-import FiltersSkeleton from "../../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+} from "../../store/actions/mainActions.ts";
+import CourseCardSkeletons from "../ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import FiltersSkeleton from "../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+import { ProductCardFlags } from "./CourseCard/CourseCard.tsx";
+import BookCardSkeletons from "../ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 
 type props = {
+  cardType?: ProductCardType;
   sectionTitle?: string;
   pageSize: number;
-  isClient?: boolean;
   tags?: any[];
   activeFilter?: string;
   activeSort?: string;
@@ -28,31 +32,32 @@ type props = {
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
   ref?: React.RefObject<any>;
-  isOffer?: boolean;
-  isFree?: boolean;
-  isVideo?: boolean;
+  productCardFlags: ProductCardFlags;
 };
 
-const CoursesSection = ({
+export type ProductCardType = "course" | "book";
+
+const ProductsSection = ({
   ref,
   sectionTitle,
   pageSize,
-  isClient = true,
-  isVideo = false,
-  isFree = false,
+  productCardFlags,
   tags,
+  cardType = "course",
   showFilters = false,
   showSort = false,
   activeFilter: externalFilter,
   activeSort: externalSort,
   handleSetActiveFilter,
   handleSetActiveSort,
-  isOffer = false,
 }: props) => {
   const dispatch = useDispatch<AppDispatchType>();
-  const cards = useSelector((state: AppRootStateType) => state.main.courses);
-  const total = useSelector(
-    (state: AppRootStateType) => state.main.totalCourses,
+  const isCourse = cardType === "course";
+  const cards = useSelector((state: AppRootStateType) =>
+    isCourse ? state.main.courses : state.main.books,
+  );
+  const total = useSelector((state: AppRootStateType) =>
+    isCourse ? state.main.totalCourses : state.main.totalBooks,
   );
   const userLoading = useSelector(
     (state: AppRootStateType) => state.user.loading,
@@ -123,9 +128,17 @@ const CoursesSection = ({
       };
 
       if (isLogged) {
-        dispatch(getCoursesRecommend(params));
+        if (isCourse) {
+          dispatch(getCoursesRecommend(params));
+        } else {
+          dispatch(getBooksRecommend(params));
+        }
       } else {
-        dispatch(getCourses(params));
+        if (isCourse) {
+          dispatch(getCourses(params));
+        } else {
+          dispatch(getBooks(params));
+        }
       }
     }
   }, [isReady, language, skip, filter, sort, userLoading, isLogged]);
@@ -189,15 +202,17 @@ const CoursesSection = ({
         )}
       </div>
       {!(cards.length > 0) && !!total ? (
-        <CourseCardSkeletons shape />
+        isCourse ? (
+          <CourseCardSkeletons shape />
+        ) : (
+          <BookCardSkeletons />
+        )
       ) : (
         <>
           <CardsList
+            cardType={cardType}
             showLoaderOverlay={isFilterChangeLoading}
-            isVideo={isVideo}
-            isFree={isFree}
-            isOffer={isOffer}
-            isClient={isClient}
+            productCardFlags={productCardFlags}
             filter={activeFilter}
             handleSeeMore={handleSeeMore}
             loading={loading}
@@ -206,10 +221,14 @@ const CoursesSection = ({
           />
         </>
       )}
-      {isLoadingMore && loading && (
-        <CourseCardSkeletons amount={pageSize} fade moveUp shape />
-      )}
+      {isLoadingMore &&
+        loading &&
+        (isCourse ? (
+          <CourseCardSkeletons amount={pageSize} fade moveUp shape />
+        ) : (
+          <BookCardSkeletons />
+        ))}
     </section>
   );
 };
-export default CoursesSection;
+export default ProductsSection;

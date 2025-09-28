@@ -107,7 +107,6 @@ const MainHeaderContent = () => {
             })
           }
           icon={SearchIcon}
-          // text={"nav.search"}
           isActive={location.pathname === Path.search}
         />
         <LanguageChanger />

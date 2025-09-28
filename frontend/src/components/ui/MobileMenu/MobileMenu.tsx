@@ -18,10 +18,10 @@ const MobileMenu = () => {
   const navigate = useNavigate();
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const isLogged = useSelector(
-    (state: AppRootStateType) => state.user.isLogged
+    (state: AppRootStateType) => state.user.isLogged,
   );
   const quantity = useSelector(
-    (state: AppRootStateType) => state.cart.quantity
+    (state: AppRootStateType) => state.cart.quantity,
   );
   const screenWidth = useScreenWidth();
 
@@ -62,43 +62,45 @@ const MobileMenu = () => {
 
   return (
     <nav className={s.menu}>
-      {buttons.map((btn, i) => {
-        if (btn.text.includes("cart")) {
+      <div className={s.menu_content}>
+        {buttons.map((btn, i) => {
+          if (btn.text.includes("cart")) {
+            return (
+              <div key={i} className={s.btn_wrapper}>
+                <NavButton
+                  icon={btn.icon}
+                  text={btn.text}
+                  direction={"vertical"}
+                  quantity={quantity}
+                  onClick={() =>
+                    navigate(Path.cart, {
+                      state: { backgroundLocation: location },
+                    })
+                  }
+                  isActive={location.pathname.includes(btn.link)}
+                />
+              </div>
+            );
+          }
+
           return (
-            <div key={i} className={s.btn_wrapper}>
+            <div key={btn.text} className={s.btn_wrapper}>
               <NavButton
                 icon={btn.icon}
                 text={btn.text}
+                link={btn.link}
                 direction={"vertical"}
-                quantity={quantity}
-                onClick={() =>
-                  navigate(Path.cart, {
-                    state: { backgroundLocation: location },
-                  })
+                onClick={btn.onClick}
+                isActive={
+                  btn.link === Path.main
+                    ? location.pathname === Path.main
+                    : location.pathname.includes(btn.link)
                 }
-                isActive={location.pathname.includes(btn.link)}
               />
             </div>
           );
-        }
-
-        return (
-          <div key={btn.text} className={s.btn_wrapper}>
-            <NavButton
-              icon={btn.icon}
-              text={btn.text}
-              link={btn.link}
-              direction={"vertical"}
-              onClick={btn.onClick}
-              isActive={
-                btn.link === Path.main
-                  ? location.pathname === Path.main
-                  : location.pathname.includes(btn.link)
-              }
-            />
-          </div>
-        );
-      })}
+        })}
+      </div>
     </nav>
   );
 };

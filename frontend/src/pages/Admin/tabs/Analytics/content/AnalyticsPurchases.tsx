@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getFormattedDate } from "../../../../../common/helpers/helpers.ts";
 import s from "../Analytics.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
@@ -8,6 +7,8 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import PurchasesSourceChart from "../Charts/PurchasesSourceChart.tsx";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { PAYMENT_SOURCES_OPTIONS } from "../../../../../common/helpers/commonConstants.ts";
+import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsPurchases = () => {
   const [data, setData] = useState<any>(null);
@@ -15,22 +16,17 @@ const AnalyticsPurchases = () => {
   const [loading, setLoading] = useState(true);
   const [chartMode, setChartMode] = useState<"count" | "amount">("count");
   const [chartSource, setChartSource] = useState<any>(null);
-  const [dateRange, setDateRange] = useState(() => ({
-    startDate: getFormattedDate(new Date()),
-    endDate: getFormattedDate(new Date()),
-  }));
-
-  const handleStartDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, startDate: value }));
-  };
-
-  const handleEndDateChange = (value: string) => {
-    setDateRange((prev) => ({ ...prev, endDate: value }));
-  };
+  const {
+    dateRange,
+    handleStartDateChange,
+    handleEndDateChange,
+    selectedPreset,
+    setPreset,
+  } = useDateRangeFilter("today");
 
   const fetchData = async () => {
     setLoading(true);
-    const params = {
+    const params: { start_date?: string; end_date?: string } = {
       start_date: dateRange.startDate,
       end_date: dateRange.endDate,
     };
@@ -78,6 +74,8 @@ const AnalyticsPurchases = () => {
           endDate={dateRange.endDate}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+          selectedPreset={selectedPreset}
+          setPreset={setPreset}
         />
         {data && (
           <>
@@ -108,22 +106,19 @@ const AnalyticsPurchases = () => {
               valueKey={"value"}
               labelKey={"value"}
             />
-            <div className={s.toggle_btns_container}>
-              {["count", "amount"].map((mode) => (
-                <button
-                  key={mode}
-                  className={`${chartMode === mode ? s.active : ""}`}
-                  onClick={() => setChartMode(mode as "count" | "amount")}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
+            <SwitchButtons
+              buttonsArr={["count", "amount"]}
+              activeValue={chartMode}
+              handleClick={(val) => setChartMode(val)}
+            />
           </div>
-          {chartData && (
-            <PurchasesSourceChart data={chartData} type={chartMode} />
-          )}
+          <PurchasesSourceChart
+            loading={loading}
+            data={chartData}
+            type={chartMode}
+          />
           <Table
+            loading={loading}
             data={data.items}
             columnLabels={{
               email: "Email",

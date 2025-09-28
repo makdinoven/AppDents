@@ -1,0 +1,54 @@
+.card {
+  padding: 15px;
+  display: flex;
+  gap: 20px;
+  position: relative;
+  @include transition;
+  border-radius: 20px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  &:not(:last-child) {
+    @include horizontal-line(
+      $left: 50%,
+      $width: 90%,
+      $bottom: -11.5px,
+      $color: $hover-color,
+      $transform: x50,
+      $events: off
+    );
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $primary-02;
+      border-color: $primary;
+    }
+  }
+
+  &:active {
+    background-color: $primary-04;
+  }
+
+  &:focus-visible {
+    outline: none;
+    background-color: $hover-color;
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    & {
+      padding: 10px;
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      padding: 4px;
+      gap: 7px;
+      border-radius: 15px;
+
+      &:not(:last-child)::after {
+        bottom: -6.5px;
+      }
+    }
+  }
+}

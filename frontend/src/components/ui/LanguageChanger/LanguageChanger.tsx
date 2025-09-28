@@ -1,20 +1,29 @@
 import s from "./LanguageChanger.module.scss";
-import { CheckMark, LanguageIcon } from "../../../assets/icons/index.ts";
-import ModalWrapper from "../../Modals/ModalWrapper/ModalWrapper.tsx";
 import { useRef, useState } from "react";
 import { LANGUAGES } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../../store/store.ts";
 import { setLanguage } from "../../../store/slices/userSlice.ts";
+import LangLogo, { LanguagesType } from "../LangLogo/LangLogo.tsx";
+import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
 
 const LanguageChanger = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const language = useSelector((state: any) => state.user.language);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleCloseModal = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      setIsModalOpen(false);
+    }, 200);
+  };
+  useOutsideClick(modalRef, handleCloseModal);
 
   const handleLanguageChange = (selectedLanguage: string) => {
     dispatch(setLanguage(selectedLanguage));
@@ -22,42 +31,38 @@ const LanguageChanger = () => {
   };
 
   return (
-    <>
+    <div className={s.language_changer_container}>
       <button
         onClick={handleOpenModal}
         ref={triggerRef}
-        className={`${s.language_changer} ${isModalOpen ? s.active : ""}`}
+        className={s.language_changer}
       >
-        <LanguageIcon />
-        <span className={s.language_preview}>{language.toLowerCase()}</span>
+        <LangLogo
+          isHoverable
+          className={s.lang_logo}
+          isChecked={isModalOpen}
+          lang={language}
+        />
       </button>
       {isModalOpen && (
-        <ModalWrapper
-          isDropdown={true}
-          hasTitle={false}
-          hasCloseButton={false}
-          cutoutPosition="top-right"
-          cutoutOffsetY={10}
-          cutoutOffsetX={15}
-          triggerElement={triggerRef.current}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
+        <div
+          ref={modalRef}
+          className={`${s.language_changer_modal} ${isClosing ? s.closing : ""}`}
         >
-          <ul className={s.language_changer_modal}>
-            {LANGUAGES.map((button) => (
-              <li
-                key={button.value}
-                className={`${button.value === language.toUpperCase() ? s.checked : ""}`}
-                onClick={() => handleLanguageChange(button.value)}
-              >
-                ({button.value.toLowerCase()}) {button.label}
-                {button.value === language.toUpperCase() && <CheckMark />}
-              </li>
-            ))}
-          </ul>
-        </ModalWrapper>
+          {LANGUAGES.filter(
+            (button) => button.value !== language.toUpperCase(),
+          ).map((button) => (
+            <LangLogo
+              key={button.value}
+              isChecked={button.value === language.toUpperCase()}
+              lang={button.value as LanguagesType}
+              isHoverable
+              onClick={() => handleLanguageChange(button.value)}
+            />
+          ))}
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

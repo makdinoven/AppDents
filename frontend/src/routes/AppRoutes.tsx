@@ -34,6 +34,7 @@ import Books from "../pages/Books/Books.tsx";
 import SearchPage from "../pages/SearchPage/SearchPage.tsx";
 import BookLandingDetail from "../pages/Admin/pages/BookLandingDetail..tsx";
 import BookDetail from "../pages/Admin/pages/BookDetail.tsx";
+import LandingAnalytics from "../pages/Admin/tabs/Analytics/content/LandingAnalytics/LandingAnalytics.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -116,6 +117,10 @@ export const AppRoutes: FC = () => {
             <Route
               path={`${Path.courseDetail}/:courseId?`}
               element={<CourseDetail />}
+            />
+            <Route
+              path={`${Path.landingAnalytics}/:landingId?`}
+              element={<LandingAnalytics />}
             />
             <Route
               path={`${Path.landingDetail}/:landingId?`}

@@ -70,6 +70,12 @@ export const userApi = {
     });
   },
 
+  getBooks() {
+    return instance.get("users/me/courses", {
+      headers: getAuthHeaders(),
+    });
+  },
+
   getMyReferrals() {
     return instance.get("wallet/referrals", { headers: getAuthHeaders() });
   },

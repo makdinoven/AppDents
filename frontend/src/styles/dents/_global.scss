@@ -15,10 +15,12 @@ $mobile-breakpoint: 576px;
 $background-color: rgb(237, 248, 255);
 $background-color-06: rgba(237, 248, 255, 0.6);
 $background-color-08: rgba(237, 248, 255, 0.8);
+$background-color-09: rgba(237, 248, 255, 0.9);
 $cart-background: #edf8ff66;
 $background-color-05: rgba(237, 248, 255, 0.5);
 $background-color-08: rgba(237, 248, 255, 0.8);
 $primary: #7fdfd5;
+$primary-02: rgba(127, 223, 213, 0.2);
 $primary-04: rgba(127, 223, 213, 0.4);
 $primary-06: rgba(127, 223, 213, 0.6);
 $primary-light: #abe9e6;
@@ -35,6 +37,7 @@ $secondary-lighter-04: rgba(121, 206, 231, 0.4);
 $secondary-lighter-06: rgba(121, 206, 231, 0.6);
 $tertiary: #017f74;
 $quaternary: #5b6968;
+$quaternary-06: rgba(91, 105, 104, 0.6);
 $text-color: $background-color;
 $text-color-accent: $accent;
 $error-color: #fe0502;
@@ -129,6 +132,10 @@ $font-sz-err-mob: 14px;
   flex-direction: column;
 }
 
+@mixin box-shadow {
+  box-shadow: 0 4px 8px rgba(1, 67, 61, 0.1);
+}
+
 @mixin container {
   max-width: 1280px;
   min-width: 360px;
@@ -155,7 +162,8 @@ $font-sz-err-mob: 14px;
   $right: null,
   $bottom: null,
   $transform: null,
-  $z: 1
+  $z: 1,
+  $events: on
 ) {
   &::after {
     content: "";
@@ -182,6 +190,10 @@ $font-sz-err-mob: 14px;
       @if $transform == x50 {
         transform: translateX(-50%);
       }
+    }
+
+    @if $events == off {
+      pointer-events: none;
     }
 
     width: $width;

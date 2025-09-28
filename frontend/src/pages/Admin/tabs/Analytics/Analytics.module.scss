@@ -11,31 +11,21 @@
   }
 }
 
-.toggle_btns_container {
-  display: flex;
-  //gap: 10px;
-  overflow: hidden;
-  background-color: $hover-color;
-  border-radius: 15px;
-  border: 1px solid $hover-color;
+.currency_total_container {
+  @include flex-column;
+  gap: 5px;
 
-  button {
-    padding: 5px 10px;
-    border-radius: 7px;
-    flex: 1;
-    @include transition();
+  .currency_items {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .currency_input {
     @include clamped-p3;
-    text-transform: uppercase;
 
-    @media (hover: hover) {
-      &:hover:not(.active) {
-        color: $secondary-lighter;
-      }
-    }
-
-    &.active {
-      background-color: $background-color;
-      color: $primary;
+    input {
+      padding: 5px;
     }
   }
 }
@@ -57,9 +47,11 @@
   gap: 10px;
   display: grid;
   grid-template-columns: 3fr 1fr;
+  align-items: flex-end;
 }
 
 .chart_container {
+  position: relative;
   color: $accent;
   @include clamped-p3;
 
@@ -71,7 +63,7 @@
 .analytics_options {
   height: fit-content;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: flex-end;
   gap: 20px;
 
@@ -87,6 +79,11 @@
   grid-template-columns: 1fr 1fr 1fr;
 }
 
+.column_two_items {
+  @include flex-column;
+  gap: 5px;
+}
+
 .languages_table {
   height: 100%;
   flex: 1;
@@ -97,25 +94,44 @@
   gap: 20px;
 }
 
+.totals {
+  display: flex;
+  width: 100%;
+  gap: 20px;
+  justify-content: flex-end;
+
+  p {
+    @include clamped-p2;
+
+    span {
+      color: $secondary-lighter;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .analytics_options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .column_two_items {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .two_items {
     display: flex;
-    flex-direction: column;
-  }
-
-  .analytics_options {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
   }
 
   .analytics_page {
     h2 {
       margin-bottom: 20px;
     }
-  }
-
-  .toggle_btns_container {
-    border-radius: 10px;
   }
 
   //.languages_table {

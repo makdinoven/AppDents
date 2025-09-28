@@ -133,10 +133,14 @@ const PaymentPage = () => {
 
   const renderFooter = () => (
     <div className={s.modal_footer}>
-      {!isFree && (
+      {!isFree && isLogged ? (
         <p lang={language.toLowerCase()} className={s.stripe_text}>
-          <Shield />
+          <Shield className={s.shield_logo} />
           <Trans i18nKey="payment.encryptedPayment" />
+        </p>
+      ) : (
+        <p lang={language.toLowerCase()} className={s.after_payment_text}>
+          <Trans i18nKey="payment.afterPayment" />
         </p>
       )}
       {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
@@ -153,6 +157,12 @@ const PaymentPage = () => {
           lang={language.toLowerCase()}
           className={`${s.footer_text} ${isFree ? s.free : ""}`}
         >
+          {!isFree && (
+            <p className={s.stripe_text}>
+              <Shield className={s.shield_logo} />
+              <Trans i18nKey="payment.encryptedPayment" />
+            </p>
+          )}
           <p className={s.privacy_text}>
             <Trans
               i18nKey={isFree ? "freePaymentWarn" : "payment.privacyAgreement"}
@@ -167,11 +177,6 @@ const PaymentPage = () => {
               }}
             />
           </p>
-          {!isFree && (
-            <p className={s.after_payment_text}>
-              <Trans i18nKey="payment.afterPayment" />
-            </p>
-          )}
         </div>
       )}
       {!isFree && <LogoList />}
@@ -188,7 +193,7 @@ const PaymentPage = () => {
       <div ref={modalRef} className={s.modal}>
         {renderHeader()}
         {renderCourses()}
-        {!isFree && renderBody()}
+        {renderBody()}
         {renderFooter()}
       </div>
     </ModalOverlay>

@@ -52,7 +52,7 @@ const ClipTool = () => {
         setLoading(false);
         clearInterval(interval);
       }
-    }, 5000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [jobId]);
