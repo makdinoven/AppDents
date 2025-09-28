@@ -18,7 +18,7 @@
 .copy_button {
   min-width: unset;
   width: fit-content;
-  margin: 0 auto;
+  margin-left: auto;
   @include clamped-p3;
 }
 
@@ -55,7 +55,7 @@
 .spend {
   @include clamped-p3;
   border-radius: 20px;
-  margin: 0 auto;
+  margin-left: auto;
   padding: 2px 15px;
   height: fit-content;
   text-align: center;
