@@ -6,10 +6,16 @@ import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRa
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import LangPurchasesChart from "../Charts/LangPurchasesChart.tsx";
 import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
+import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import AdminField from "../../../modules/common/AdminField/AdminField.tsx";
 
 const AnalyticsLanguages = () => {
   const [languageStats, setLanguageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedCurrency, setSelectedCurrency] = useState<"eur" | "usd">(
+    "usd",
+  );
+  const [exchangeRate, setExchangeRate] = useState("0.85");
   const {
     dateRange,
     handleStartDateChange,
@@ -21,6 +27,27 @@ const AnalyticsLanguages = () => {
   useEffect(() => {
     fetchLandingsStats();
   }, [dateRange]);
+
+  const convertAmount = (amount: string, currency: "usd" | "eur") => {
+    const num = parseFloat(amount.replace("$", ""));
+    if (currency === "eur") {
+      return `${(num * parseFloat(exchangeRate)).toFixed(2)} €`;
+    }
+    return `${num.toFixed(2)} $`;
+  };
+
+  const convertedTotals = languageStats?.total.map((item: any) => ({
+    ...item,
+    total_amount: convertAmount(item.total_amount, selectedCurrency),
+  }));
+
+  const convertedDaily = languageStats?.daily.map((day: any) => ({
+    ...day,
+    languages: day.languages.map((lang: any) => ({
+      ...lang,
+      total_amount: convertAmount(lang.total_amount, selectedCurrency),
+    })),
+  }));
 
   const fetchLandingsStats = async () => {
     setLoading(true);
@@ -60,19 +87,38 @@ const AnalyticsLanguages = () => {
                 )}
               </span>
             </p>
-            <p>
-              Amount:
-              <span className={"highlight_blue_bold"}>
-                {languageStats.total
-                  .reduce(
-                    (sum: number, item: any) =>
-                      sum + parseFloat(item.total_amount),
-                    0,
-                  )
-                  .toFixed(2)}{" "}
-                $
-              </span>
-            </p>
+            <div className={s.currency_total_container}>
+              <div className={s.currency_items}>
+                <AdminField
+                  className={s.currency_input}
+                  id={"exchange_rate"}
+                  type={"input"}
+                  inputType={"number"}
+                  value={exchangeRate}
+                  onChange={(e: any) => setExchangeRate(e.value)}
+                />
+                <SwitchButtons
+                  buttonsArr={["eur", "usd"]}
+                  activeValue={selectedCurrency}
+                  handleClick={(val) => setSelectedCurrency(val)}
+                />
+              </div>
+
+              <p>
+                Amount:
+                <span className={"highlight_blue_bold"}>
+                  {(
+                    languageStats.total.reduce(
+                      (sum: number, item: any) =>
+                        sum + parseFloat(item.total_amount),
+                      0,
+                    ) *
+                    (selectedCurrency === "eur" ? parseFloat(exchangeRate) : 1)
+                  ).toFixed(2)}{" "}
+                  {selectedCurrency.toUpperCase()}
+                </span>
+              </p>
+            </div>
           </>
         )}
       </div>
@@ -83,7 +129,7 @@ const AnalyticsLanguages = () => {
           <div className={s.languages_table}>
             <Table
               loading={loading}
-              data={languageStats.total}
+              data={convertedTotals}
               columnLabels={{
                 language: "Lang",
                 count: "Sales",
@@ -91,7 +137,7 @@ const AnalyticsLanguages = () => {
               }}
             />
           </div>
-          <LangPurchasesChart loading={loading} data={languageStats.daily} />
+          <LangPurchasesChart loading={loading} data={convertedDaily} />
         </div>
       )}
     </>

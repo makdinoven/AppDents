@@ -79,6 +79,48 @@ export const adminApi = {
     );
   },
 
+  getBookLandingsList(params: ParamsType) {
+    return instance.get("books/landing/list", {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  searchBookLandings(params: ParamsType) {
+    return instance.get("books/landing/list/search", {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  getBookLanding(id: any) {
+    return instance.get(`books/${id}/detail/`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createBookLanding(data: any) {
+    return instance.post(`books/landing`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  deleteBookLanding(id: any) {
+    return instance.delete(`books/landing/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateBookLanding(id: any, data: any) {
+    return instance.put(`books/landings/${id}`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  toggleBookLandingVisibility(id: number, is_hidden: boolean) {
+    return instance.patch(
+      `books/landings/set-hidden/${id}?is_hidden=${is_hidden}`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+
   getAuthorsList(params: ParamsType) {
     return instance.get("authors/", { params: params });
   },
