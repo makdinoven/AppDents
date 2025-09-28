@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { ParamsType } from "../../api/adminApi/types.ts";
 import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
-import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
+import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import CourseCardSkeletons from "../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
@@ -74,8 +74,8 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         loading={loading}
       >
         <CardsList
-          productCardFlags={{ isFree: isFree, isClient: true }}
-          cardType={"course"}
+          isFree={isFree}
+          isClient={true}
           loading={loading}
           showSeeMore={false}
           showEndOfList={false}
@@ -83,9 +83,10 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
         />
       </ListController>
       {!isFirstLoad && (
-        <ProductsSection
+        <CoursesSection
+          isFree={isFree}
+          isOffer={true}
           showSort={true}
-          productCardFlags={{ isFree: isFree, isOffer: true, isClient: true }}
           sectionTitle={"other.otherCourses"}
           pageSize={4}
         />

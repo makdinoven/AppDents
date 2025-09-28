@@ -16,7 +16,7 @@ export const login = createAppAsyncThunk(
     } catch (e: any) {
       return rejectWithValue(e.response.data);
     }
-  },
+  }
 );
 
 export const getMe = createAppAsyncThunk(
@@ -33,7 +33,7 @@ export const getMe = createAppAsyncThunk(
     } catch (e: any) {
       return rejectWithValue(e.response?.data || "Unknown error");
     }
-  },
+  }
 );
 
 export const getCourses = createAppAsyncThunk(
@@ -50,24 +50,7 @@ export const getCourses = createAppAsyncThunk(
     } catch (e: any) {
       return rejectWithValue(e.response?.data || "Unknown error");
     }
-  },
-);
-
-export const getBooks = createAppAsyncThunk(
-  "user/getBooks",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await userApi.getBooks();
-
-      if (res.data.error) {
-        return rejectWithValue(res.data.error);
-      }
-
-      return { res };
-    } catch (e: any) {
-      return rejectWithValue(e.response?.data || "Unknown error");
-    }
-  },
+  }
 );
 
 export const logoutAsync = createAppAsyncThunk(
@@ -75,5 +58,5 @@ export const logoutAsync = createAppAsyncThunk(
   async (_) => {
     localStorage.removeItem(LS_TOKEN_KEY);
     return;
-  },
+  }
 );

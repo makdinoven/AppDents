@@ -1,0 +1,372 @@
+@use "sass:color";
+//common
+$initial-card-height: 430px;
+
+$padding-right: 11px;
+$padding-left: 23px;
+$padding-bottom: 14px;
+$border-radius-big: 30px;
+$border-radius-small: 20px;
+
+//card bottom
+$card_bottom-width: 53.5%;
+$card_bottom-height: 60px;
+
+//photo
+$photo-height: 174px;
+$tooth-top: 34px;
+
+//card header
+$card_header-height: 60px;
+$card_header-width: 43.6%;
+
+//card
+$card-height: $initial-card-height - $card_bottom-height;
+
+//card body
+$card-body-height: $card-height - $card_header-height - $card_bottom-height;
+$card-body-padding-bottom-initial: 20px;
+$card-body-padding-bottom: calc(
+  $photo-height - $card_bottom-height + $card-body-padding-bottom-initial +
+    $padding-bottom + $tooth-top
+);
+
+.prices {
+  @include clamped-h2;
+  flex-shrink: 0;
+  .new_price {
+    font-weight: 500;
+    color: $text-color;
+  }
+}
+
+.card {
+  position: relative;
+  @include flex-column;
+  @include clamped-p3;
+  border-radius: 30px;
+  color: $accent;
+  height: 100%;
+  min-height: $card-height;
+
+  h4 {
+    @include clamped-p1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
+
+.card_header_background,
+.card_body,
+.card_bottom {
+  background-color: $primary;
+}
+
+.card_header_background {
+  display: flex;
+  align-items: end;
+  position: absolute;
+  top: -$card-header-height;
+  text-transform: uppercase;
+  box-shadow: 0 4px 0 $primary;
+  width: $card_header-width;
+  height: $card_header-height;
+  padding-top: 31px;
+  padding-left: $padding-left;
+  padding-right: $padding-left;
+  border-top-left-radius: $border-radius-big;
+  border-top-right-radius: $border-radius-small;
+  &::before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    bottom: 0;
+    right: -40px;
+    border-bottom-left-radius: $border-radius-small;
+    box-shadow: -15px 15px 0 2px #7fdfd5;
+    pointer-events: none;
+  }
+}
+
+.card_body {
+  @include flex-column;
+  flex: 1;
+  position: relative;
+  padding: 0 20px 25px 20px;
+  border-bottom-left-radius: $border-radius-small;
+  border-top-right-radius: $border-radius-small;
+}
+
+.card_bottom {
+  margin-left: auto;
+  cursor: pointer;
+  @include flex-center;
+  position: relative;
+  box-shadow: 0 -4px 0 $primary;
+  //bottom: -$card_bottom-height;
+  //right: 0;
+  height: $card_bottom-height;
+  width: $card_bottom-width;
+  padding-left: 7px;
+  padding-right: $padding-right;
+  padding-bottom: $padding-bottom;
+  border-bottom-right-radius: $border-radius-big;
+  border-bottom-left-radius: $border-radius-small;
+  &::before {
+    z-index: -1;
+    content: "";
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    top: 0px;
+    left: -40px;
+    border-top-right-radius: $border-radius-small;
+    box-shadow: 15px -15px 0 2px $primary;
+    pointer-events: none;
+  }
+}
+
+.no_photo {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(1, 67, 61, 0.4);
+  border-radius: $border-radius-small;
+}
+
+.photo {
+  //background-color: $accent;
+  position: relative;
+  aspect-ratio: 16/9;
+  width: 100%;
+  max-width: 306px;
+  border-radius: $border-radius-small;
+  //height: $photo-height;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+
+  img {
+    border-radius: $border-radius-small;
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    background-color: $background-color-05;
+  }
+
+  &::before {
+    z-index: 3;
+    content: "";
+    position: absolute;
+    top: -$tooth-top;
+    right: 5px;
+    width: 70px;
+    height: 89px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: contain;
+    background-image: url("/src/assets/tooth.svg");
+  }
+}
+
+.blue {
+  h4 {
+    color: $secondary;
+  }
+
+  .card_header_background,
+  .card_body,
+  .card_bottom {
+    background-color: $secondary-lighter;
+  }
+
+  .card_header_background {
+    box-shadow: 0 4px 0 $secondary-lighter;
+    &::before {
+      box-shadow: -15px 15px 0 2px $secondary-lighter;
+    }
+  }
+
+  .card_bottom {
+    box-shadow: 0 -4px 0 $secondary-lighter;
+    &::before {
+      box-shadow: 15px -15px 0 2px $secondary-lighter;
+    }
+  }
+
+  .photo {
+    &::after {
+      background-color: color.adjust(
+        color.adjust($secondary-lighter, $lightness: 15%),
+        $saturation: 70%
+      );
+    }
+
+    &::before {
+      background-image: url("/src/assets/tooth-blue.svg");
+    }
+  }
+}
+
+.card_content_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.card_content_body {
+  @include flex-column;
+  flex: 1;
+  gap: 5px;
+}
+
+.lessons_count {
+  font-weight: 500;
+  width: fit-content;
+  border-radius: 15px;
+  text-align: center;
+  border: 1.5px solid $background-color;
+  color: $text-color;
+  padding: 2px 12px;
+  @include clamped-p4;
+}
+
+.content_bottom {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.buy_btn {
+  overflow: hidden;
+  position: relative;
+  @include clamped-p2;
+  background-color: $accent;
+  padding: 7.5px 40px;
+  width: 100%;
+  color: $text-color;
+  border-radius: 20px;
+  border: 1.5px solid $accent;
+  @include transition;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      border-color: $background-color;
+      color: $accent;
+    }
+  }
+
+  &:active {
+    background-color: $background-color;
+    border-color: $background-color;
+    color: $accent;
+  }
+}
+
+.buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2.32fr 1fr;
+  gap: 10px;
+  position: relative;
+}
+
+.link_btn {
+  max-width: unset !important;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .card_header_background {
+    padding-left: 11px;
+    padding-right: 10px;
+    height: 45px;
+  }
+
+  .cart_btn {
+    z-index: 5;
+    padding: 3px 15px !important;
+    position: absolute !important;
+    bottom: -41px;
+    border-width: 1.5px !important;
+    font-size: 16px !important;
+    width: 100%;
+  }
+
+  .content_bottom {
+    margin-bottom: 10px;
+  }
+
+  .buy_btn {
+    padding: 3.5px 15px;
+  }
+
+  .buttons {
+    display: flex;
+    flex-direction: column;
+    align-self: flex-end;
+    width: 100%;
+    max-width: $card_bottom-width - 2%;
+  }
+
+  .card_body {
+    padding: 5px 11px 11px 11px;
+
+    .photo {
+      max-width: unset;
+      width: 100%;
+
+      &::before {
+        width: 50px;
+        height: 60px;
+        top: -15px;
+        right: -8px;
+        transform: rotate(-60deg);
+      }
+    }
+
+    .link_btn {
+      left: 14px;
+      position: absolute;
+      bottom: 16px;
+
+      &.free {
+        left: unset;
+        right: 29px;
+        z-index: 20;
+        bottom: -31px;
+      }
+    }
+  }
+
+  .card_bottom {
+    height: 45px;
+  }
+
+  .card_header_background {
+    height: 45px;
+    top: -45px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .card_body {
+    .photo {
+      position: relative;
+      max-height: 280px;
+
+      img {
+        max-height: 280px;
+      }
+    }
+  }
+}

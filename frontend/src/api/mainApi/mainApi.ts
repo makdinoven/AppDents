@@ -54,10 +54,6 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  getBookCards(params: any) {
-    return instance.get(`landings/cards`, { params: params });
-  },
-
   getCourseCardsRecommend(params: any) {
     return instance.get(`landings/recommend/cards`, {
       headers: getAuthHeaders(),
@@ -65,18 +61,7 @@ export const mainApi = {
     });
   },
 
-  getBookCardsRecommend(params: any) {
-    return instance.get(`landings/recommend/cards`, {
-      headers: getAuthHeaders(),
-      params: params,
-    });
-  },
-
   getLandingCards(params: any) {
-    return instance.get(`landings/v1/cards`, { params: params });
-  },
-
-  getBookLandingCards(params: any) {
     return instance.get(`landings/v1/cards`, { params: params });
   },
 

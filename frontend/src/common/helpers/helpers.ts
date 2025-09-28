@@ -172,25 +172,9 @@ export const isVideoLanding = (pathname: string): boolean => {
   return pathname === Path.landing || pathname.includes("/video/");
 };
 
-export const isBookLanding = (pathname: string): boolean => {
-  return pathname.includes(Path.bookLanding);
-};
-
-export const isBookLandingPromotion = (pathname: string): boolean => {
-  return (
-      pathname.includes(Path.bookLanding) &&
-      !pathname.includes(Path.bookLandingClient) &&
-      !pathname.includes(Path.books) &&
-      !pathname.includes(Path.bookDetail) &&
-      !pathname.includes(Path.bookLandingDetail)
-  );
-};
-
-
-
 export const formatIsoToLocalDatetime = (
-    isoString: string,
-    showTime?: boolean,
+  isoString: string,
+  showTime?: boolean,
 ): string => {
   const date = new Date(isoString);
 

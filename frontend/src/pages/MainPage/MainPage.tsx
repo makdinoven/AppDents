@@ -1,5 +1,5 @@
 import Hero from "./Hero/Hero.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType } from "../../store/store.ts";
@@ -18,10 +18,10 @@ const MainPage = () => {
   const filterFromUrl = searchParams.get("filter");
   const sortFromUrl = searchParams.get("sort");
   const [activeFilter, setActiveFilter] = useState<string>(
-    filterFromUrl ? filterFromUrl : "all",
+    filterFromUrl ? filterFromUrl : "all"
   );
   const [activeSort, setActiveSort] = useState<string>(
-    sortFromUrl ? sortFromUrl : "",
+    sortFromUrl ? sortFromUrl : ""
   );
   const [skip, setSkip] = useState(0);
   const coursesRef = useRef<HTMLDivElement | null>(null);
@@ -58,7 +58,7 @@ const MainPage = () => {
   return (
     <>
       <Hero onClickScroll={() => scrollToElement(coursesRef)} />
-      <ProductsSection
+      <CoursesSection
         ref={coursesRef}
         sectionTitle={"main.ourCurses"}
         pageSize={PAGE_SIZE}
@@ -67,7 +67,6 @@ const MainPage = () => {
         tags={tags}
         showFilters={true}
         showSort={true}
-        productCardFlags={{ isClient: true }}
         handleSetActiveFilter={(filter: string) =>
           handleSetActiveParam("filter", filter)
         }

@@ -27,7 +27,7 @@ import {
   PAGE_SOURCES,
 } from "../../common/helpers/commonConstants.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import BackButton from "../../components/ui/BackButton/BackButton.tsx";
@@ -66,7 +66,6 @@ const Landing = () => {
   }, [location.search]);
   const isAdmin = role === "admin";
   const basePath = getBasePath(location.pathname);
-  // const isFromLocalhost = window.location.origin.includes("localhost")
 
   const isVideo = basePath === Path.videoLanding;
   const isClient =
@@ -343,14 +342,12 @@ const Landing = () => {
         )}
         {!loading && (
           <>
-            <Faq type={"course"} />
-            <ProductsSection
-              productCardFlags={{
-                isFree: isFree,
-                isOffer: true,
-                isClient: isClient,
-                isVideo: isVideo,
-              }}
+            <Faq />
+            <CoursesSection
+              isFree={isFree}
+              isOffer={true}
+              isClient={isClient}
+              isVideo={isVideo}
               showSort={true}
               sectionTitle={"similarCourses"}
               pageSize={4}

@@ -4,7 +4,7 @@ import { AppRootStateType } from "../../store/store.ts";
 import { Outlet, useNavigate } from "react-router-dom";
 import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../routes/routes.ts";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 
 const ProfilePage = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
@@ -25,8 +25,8 @@ const ProfilePage = () => {
         <Outlet />
       </div>
       <div id={"profile_courses"}>
-        <ProductsSection
-          productCardFlags={{ isOffer: true, isClient: true }}
+        <CoursesSection
+          isOffer={true}
           showSort={true}
           sectionTitle={"similarCourses"}
           pageSize={4}

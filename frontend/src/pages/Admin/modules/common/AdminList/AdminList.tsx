@@ -14,7 +14,6 @@ import {
 } from "../../../../../common/helpers/commonConstants.ts";
 import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../assets/icons/index.ts";
-import { ADMIN_CONTENT_QUERY_KEY } from "../../../tabs/AdminContent/AdminContent.tsx";
 
 interface AdminListProps<T> {
   data: any;
@@ -42,7 +41,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   showToggle = false,
 }: AdminListProps<T>) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = searchParams.get(ADMIN_CONTENT_QUERY_KEY);
+  const tab = searchParams.get("tab");
   const SEARCH_KEY = `admin.${tab}`;
   const itemsList = data.list as T[];
 
@@ -60,7 +59,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     } catch (err: any) {
       Alert(
         `Error creating ${tab?.slice(0, -1)}, error message: ${err.message}`,
-        <ErrorIcon />,
+        <ErrorIcon />
       );
     }
   };
