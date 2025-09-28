@@ -3,7 +3,7 @@ import { useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import ProfessorsList from "../../components/CommonComponents/ProfessorsList/ProfessorsList.tsx";
 import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
 import { ParamsType } from "../../api/adminApi/types.ts";
 import { useSelector } from "react-redux";
@@ -64,8 +64,8 @@ const Professors = () => {
         />
       </ListController>
       {!isFirstLoad && (
-        <ProductsSection
-          productCardFlags={{ isOffer: true, isClient: true }}
+        <CoursesSection
+          isOffer={true}
           showSort={true}
           sectionTitle={"other.otherCourses"}
           pageSize={4}

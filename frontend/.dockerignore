@@ -4,9 +4,3 @@ dist
 .cache
 logs
 *.log
-**/*.mp4
-**/*.mkv
-**/*.pdf
-**/*.zip
-**/*.mov
-public/media/**

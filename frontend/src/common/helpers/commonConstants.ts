@@ -1,7 +1,6 @@
 import { Path } from "../../routes/routes.ts";
 import {
   ArFlag,
-  BooksIcon,
   CartIcon,
   CoursesIcon,
   EnFlag,
@@ -37,9 +36,8 @@ export const LANGUAGES_NAME = [
 
 export const NAV_BUTTONS = [
   { icon: HomeIcon, text: "nav.home", link: Path.main },
-  { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
-  { icon: BooksIcon, text: "nav.books", link: Path.books },
   { icon: ProfessorsIcon, text: "nav.professors", link: Path.professors },
+  { icon: CoursesIcon, text: "nav.courses", link: Path.courses },
   { icon: CartIcon, text: "nav.cart", link: Path.cart },
 ];
 
@@ -53,8 +51,6 @@ export const LANDING_ROUTES = [
   Path.videoLanding,
   Path.webinarLanding,
 ];
-
-export const BOOK_LANDING_ROUTES = [Path.bookLanding, Path.bookLandingClient];
 
 export const LANDING_AD_ROUTES = [
   Path.landing,
@@ -122,6 +118,7 @@ export const ANALYTICS_LIMITS = [
   { name: "100", value: "100" },
   { name: "200", value: "200" },
   { name: "500", value: "500" },
+  // { name: "1000", value: "1000" },
 ];
 
 export const PAGE_SIZES = [
@@ -194,8 +191,6 @@ export const LS_LANGUAGE_KEY = "DENTS_LANGUAGE";
 export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
-
-export const FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
 
 export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
   EN: EnFlag,

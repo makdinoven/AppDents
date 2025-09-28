@@ -11,25 +11,6 @@
   }
 }
 
-.currency_total_container {
-  @include flex-column;
-  gap: 5px;
-
-  .currency_items {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .currency_input {
-    @include clamped-p3;
-
-    input {
-      padding: 5px;
-    }
-  }
-}
-
 .tooltip {
   @include clamped-p3;
   background-color: $background-color;

@@ -4,9 +4,9 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
-import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
+import CardsList from "../../components/CommonComponents/CoursesSection/CardsList/CardsList.tsx";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
 import { Clock } from "../../assets/icons/index.ts";
@@ -39,7 +39,7 @@ const ProfessorPage = () => {
     if (professor) {
       const paymentData = {
         landingIds: professor?.landings.map(
-          (landing: { id: number }) => landing.id,
+          (landing: { id: number }) => landing.id
         ),
         courseIds: professor?.course_ids,
         priceCents: professor?.total_new_price * 100,
@@ -60,7 +60,7 @@ const ProfessorPage = () => {
             oldPrice: item.old_price,
             lessonsCount: item.lessons_count,
             img: item.main_image,
-          }),
+          })
         ),
       };
       setLocalPaymentData(paymentData);
@@ -173,8 +173,7 @@ const ProfessorPage = () => {
             <div className={s.professor_cards}>
               <SectionHeader name={"professor.professorsCourses"} />
               <CardsList
-                productCardFlags={{ isClient: true }}
-                cardType={"course"}
+                isClient={true}
                 filter={"all"}
                 loading={false}
                 cards={professor.landings}
@@ -183,8 +182,8 @@ const ProfessorPage = () => {
               />
             </div>
             {renderBuySection()}
-            <ProductsSection
-              productCardFlags={{ isClient: true, isOffer: true }}
+            <CoursesSection
+              isOffer={true}
               showSort={true}
               sectionTitle={"other.otherCourses"}
               pageSize={6}

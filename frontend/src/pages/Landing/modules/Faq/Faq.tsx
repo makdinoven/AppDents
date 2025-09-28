@@ -4,11 +4,11 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import { Trans } from "react-i18next";
 import { BackArrow } from "../../../../assets/icons/index.ts";
 
-const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
+const Faq = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const answerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const faqItemsCourse = [
+  const faqItems = [
     { question: "1_question", answer: { text: "1_answer", links: [""] } },
     { question: "2_question", answer: { text: "2_answer", links: [""] } },
     { question: "3_question", answer: { text: "3_answer", links: [""] } },
@@ -32,36 +32,6 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
     },
   ];
 
-  const faqItemsBook = [
-    {
-      question: "1_question_book",
-      answer: { text: "1_answer_book", links: [""] },
-    },
-    {
-      question: "2_question_book",
-      answer: { text: "2_answer_book", links: [""] },
-    },
-    { question: "3_question", answer: { text: "3_answer", links: [""] } },
-    { question: "4_question", answer: { text: "4_answer", links: [""] } },
-    { question: "6_question", answer: { text: "6_answer", links: [""] } },
-    {
-      question: "8_question",
-      answer: { text: "8_answer", links: ["https://dent-s.com/"] },
-    },
-    {
-      question: "9_question",
-      answer: {
-        text: "9_answer",
-        links: [
-          "https://dent-s.com/password-reset",
-          "https://dent-s.com/login",
-        ],
-      },
-    },
-  ];
-
-  const items = type === "course" ? faqItemsCourse : faqItemsBook;
-
   const toggleItem = (index: number) => {
     setOpenIndex((prevIndex) => (prevIndex === index ? null : index));
   };
@@ -71,7 +41,7 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
       <SectionHeader name="landing.faq.faq" />
 
       <ul className={s.faq_list}>
-        {items.map((item, index) => (
+        {faqItems.map((item, index) => (
           <li
             key={index}
             className={`${s.faq_item} ${openIndex === index ? s.opened : ""}`}
