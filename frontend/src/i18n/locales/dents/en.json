@@ -125,12 +125,37 @@
 
   "search": {
     "searchCourses": "Search courses",
-    "searchPlaceholder": "Enter course name or author name...",
-    "result": "{{count}} courses found",
-    "result_one": "{{count}} course found",
-    "result_few": "{{count}} courses found",
-    "result_many": "{{count}} courses found",
-    "result_zero": "No courses found"
+    "searchPlaceholder": "Type to search...",
+    "categories": "Categories",
+    "languages": "Languages",
+    "results": {
+      "results": "Search results:",
+      "landings": "Courses",
+      "authors": "Authors",
+      "book_landings": "Books"
+    },
+    "noResults": {
+      "title": "Oops! Nothing found",
+      "description": "Please try using different words or phrases for a more effective search."
+    },
+    "landingsResult": {
+      "result": "{{count}} courses found",
+      "result_one": "{{count}} course found",
+      "result_few": "{{count}} courses found",
+      "result_many": "{{count}} courses found"
+    },
+    "book_landingsResult": {
+      "result": "{{count}} books found",
+      "result_one": "{{count}} book found",
+      "result_few": "{{count}} books found",
+      "result_many": "{{count}} books found"
+    },
+    "authorsResult": {
+      "result": "{{count}} authors found",
+      "result_one": "{{count}} author found",
+      "result_few": "{{count}} author found",
+      "result_many": "{{count}} authors found"
+    }
   },
 
   "main": {
@@ -323,7 +348,9 @@
     "about": "About",
     "specialization": "Specialization:",
     "coursesCount_one": "{{count}} course",
-    "coursesCount_other": "{{count}} courses"
+    "coursesCount_other": "{{count}} courses",
+    "booksCount_one": "{{count}} book",
+    "booksCount_other": "{{count}} books"
   },
 
   "other": {

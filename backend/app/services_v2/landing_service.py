@@ -21,7 +21,7 @@ from ..models.models_v2 import (
     Tag,
     Purchase,
     AdVisit,
-    users_courses,
+    users_courses, LandingAdPeriod,
 )
 from ..schemas_v2.landing import LandingCreate, LandingUpdate, LangEnum, LandingCardResponse
 
@@ -61,21 +61,55 @@ def _discount_expr():
     new = cast(Landing.__table__.c.new_price, Float())
     return ((old - new) / old) * 100
 
-# 4. Базовый SELECT по лендингам + обнуление истёкших реклам
-def reset_expired_ad_flags(db: Session):
-    updated = (
-        db.query(Landing)
-        .filter(
-            Landing.in_advertising.is_(True),
-            Landing.ad_flag_expires_at < func.utc_timestamp(),
-        )
-        .update(
-            {Landing.in_advertising: False, Landing.ad_flag_expires_at: None},
-            synchronize_session=False,
-        )
-    )
-    if updated:
-        db.commit()
+
+def reset_expired_ad_flags(db: Session) -> int:
+    """
+    Гасит просроченные рекламные флаги и закрывает открытые периоды рекламы.
+
+    Возвращает: количество лендингов, у которых флаг был сброшен.
+    """
+    # 1) Выберем ID лендингов с просроченным рекламным флагом
+    expiring_ids = [
+        lid for (lid,) in
+        db.query(Landing.id)
+          .filter(
+              Landing.in_advertising.is_(True),
+              Landing.ad_flag_expires_at.isnot(None),
+              Landing.ad_flag_expires_at < func.utc_timestamp(),  # серверное UTC-время
+          )
+          .all()
+    ]
+
+    if not expiring_ids:
+        return 0
+
+    # 2) Закроем все открытые периоды рекламы для этих лендингов
+    db.query(LandingAdPeriod) \
+      .filter(
+          LandingAdPeriod.landing_id.in_(expiring_ids),
+          LandingAdPeriod.ended_at.is_(None),
+      ) \
+      .update(
+          {
+              LandingAdPeriod.ended_at: func.utc_timestamp(),
+              LandingAdPeriod.ended_by: None,  # при авто-гашении — неизвестно кем закрыто
+          },
+          synchronize_session=False,
+      )
+
+    # 3) Сбросим флаги у лендингов
+    db.query(Landing) \
+      .filter(Landing.id.in_(expiring_ids)) \
+      .update(
+          {
+              Landing.in_advertising: False,
+              Landing.ad_flag_expires_at: None,
+          },
+          synchronize_session=False,
+      )
+
+    db.commit()
+    return len(expiring_ids)
 
 def _base_landing_query(db: Session) -> Query:
     """Общий базовый запрос: не скрытые лендинги."""
@@ -450,59 +484,144 @@ def get_top_landings_by_sales(
     limit: int = 10,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
+    sort_by: str = "sales",      # 'sales' | 'created_at'
+    sort_dir: str = "desc",      # 'asc' | 'desc'
 ):
     reset_expired_ad_flags(db)
+    order_desc = (sort_dir.lower() == "desc")
 
-    # если есть хотя бы одна дата — считаем реальный sales
+    # --- когда есть даты
     if start_date or end_date:
-        subq = (
+        sales_subq = (
             db.query(
                 Purchase.landing_id.label("landing_id"),
                 func.count(Purchase.id).label("sales"),
             )
             .filter(Purchase.landing_id.isnot(None))
         )
-
-        # приводим created_at → date и фильтруем
         if start_date:
-            subq = subq.filter(
-                cast(Purchase.created_at, Date) >= start_date
-            )
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
         if end_date:
-            subq = subq.filter(
-                cast(Purchase.created_at, Date) <= end_date
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        sales_subq = sales_subq.group_by(Purchase.landing_id).subquery()
+
+        ad_sales_subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
             )
-
-        subq = subq.group_by(Purchase.landing_id).subquery()
+            .filter(
+                Purchase.landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+        )
+        if start_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
+        if end_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        ad_sales_subq = ad_sales_subq.group_by(Purchase.landing_id).subquery()
 
         q = (
-            db.query(Landing, subq.c.sales)
-            .join(subq, subq.c.landing_id == Landing.id)
+            db.query(
+                Landing,
+                sales_subq.c.sales.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .join(sales_subq, sales_subq.c.landing_id == Landing.id)
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.landing_id == Landing.id)
             .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
 
-        result = q.order_by(subq.c.sales.desc()).limit(limit).all()
+        if sort_by == "created_at":
+            q = q.order_by(Landing.created_at.desc() if order_desc else Landing.created_at.asc())
+        else:
+            q = q.order_by(sales_subq.c.sales.desc() if order_desc else sales_subq.c.sales.asc())
 
+        result = q.limit(limit).all()
+
+    # --- когда дат нет
     else:
-        # старое поведение: агрегированное поле
+        ad_sales_subq = (
+            db.query(
+                Purchase.landing_id.label("landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
+            )
+            .filter(
+                Purchase.landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+            .group_by(Purchase.landing_id)
+            .subquery()
+        )
+
         q = (
-            db.query(Landing, Landing.sales_count.label("sales"))
+            db.query(
+                Landing,
+                Landing.sales_count.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.landing_id == Landing.id)
             .filter(Landing.is_hidden.is_(False))
         )
         if language:
             q = q.filter(Landing.language == language)
 
-        result = q.order_by(Landing.sales_count.desc()).limit(limit).all()
+        if sort_by == "created_at":
+            q = q.order_by(Landing.created_at.desc() if order_desc else Landing.created_at.asc())
+        else:
+            q = q.order_by(Landing.sales_count.desc() if order_desc else Landing.sales_count.asc())
 
-    db.commit()
+        result = q.limit(limit).all()
+
+    # db.commit() тут не нужен, но если был — не страшно
     return result
 
+def get_sales_totals(
+    db: Session,
+    language: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> dict[str, int]:
+    """
+    Возвращает:
+      {
+        "sales_total": <все продажи>,
+        "ad_sales_total": <продажи с рекламы>
+      }
+    Фильтры: язык (через Landing), период (по Purchase.created_at), is_hidden=False.
+    """
+    base = (
+        db.query(func.count(Purchase.id))
+          .join(Landing, Landing.id == Purchase.landing_id)
+          .filter(
+              Purchase.landing_id.isnot(None),
+              Landing.is_hidden.is_(False),
+          )
+    )
+    if language:
+        base = base.filter(Landing.language == language)
 
-AD_TTL = timedelta(hours=3)
+    # Период (если задан): используем те же правила, что в /most-popular
+    if start_date:
+        base = base.filter(cast(Purchase.created_at, Date) >= start_date)
+    if end_date:
+        base = base.filter(cast(Purchase.created_at, Date) <= end_date)
+
+    sales_total = base.scalar() or 0
+
+    ad_base = base.filter(Purchase.from_ad.is_(True))
+    ad_sales_total = ad_base.scalar() or 0
+
+    return {"sales_total": int(sales_total), "ad_sales_total": int(ad_sales_total)}
+
+AD_TTL = timedelta(hours=6)
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    now = datetime.utcnow()
+
+    # 1) лог ад-визита (как было)
     visit = AdVisit(
         landing_id=landing_id,
         fbp=fbp,
@@ -511,10 +630,27 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
     )
     db.add(visit)
 
-    landing = db.query(Landing).filter(Landing.id == landing_id).first()
-    if landing:
+    # 2) включить/продлить рекламу и ОТКРЫТЬ период при первом включении
+    landing = (
+        db.query(Landing)
+          .filter(Landing.id == landing_id)
+          .with_for_update()      # чтобы избежать гонок при шквале визитов
+          .first()
+    )
+    if not landing:
+        db.commit()               # зафиксируем сам визит, чтобы не потерять
+        return
+
+    # если реклама была выключена — включаем и открываем период
+    if not landing.in_advertising:
         landing.in_advertising = True
-        landing.ad_flag_expires_at = datetime.utcnow() + AD_TTL
+        _open_ad_period_if_needed(db, landing.id, started_by=None)
+
+    # продлеваем TTL (монотонно вперёд)
+    new_ttl = now + AD_TTL
+    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+        landing.ad_flag_expires_at = new_ttl
+
     db.commit()
 
 def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
@@ -749,3 +885,38 @@ def _user_landing_ids(db: Session, user_id: int) -> set[int]:
           .all()
     )
     return {r[0] for r in rows}
+
+def _open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None = None):
+    # есть ли открытый период?
+    open_period = (
+        db.query(LandingAdPeriod)
+          .filter(LandingAdPeriod.landing_id == landing_id,
+                  LandingAdPeriod.ended_at.is_(None))
+          .first()
+    )
+    if not open_period:
+        db.add(LandingAdPeriod(landing_id=landing_id, started_by=started_by))
+
+def _close_ad_period_if_open(db: Session, landing_id: int, ended_by: int | None = None):
+    open_period = (
+        db.query(LandingAdPeriod)
+          .filter(LandingAdPeriod.landing_id == landing_id,
+                  LandingAdPeriod.ended_at.is_(None))
+          .first()
+    )
+    if open_period:
+        open_period.ended_at = datetime.utcnow()
+        open_period.ended_by = ended_by
+
+def set_in_advertising(db: Session, landing: Landing, value: bool, actor_user_id: int | None = None):
+    if value and not landing.in_advertising:
+        # включаем рекламу
+        landing.in_advertising = True
+        _open_ad_period_if_needed(db, landing.id, started_by=actor_user_id)
+
+    elif not value and landing.in_advertising:
+        # выключаем рекламу
+        landing.in_advertising = False
+        _close_ad_period_if_open(db, landing.id, ended_by=actor_user_id)
+
+    db.commit()

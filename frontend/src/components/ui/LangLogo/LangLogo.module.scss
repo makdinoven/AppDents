@@ -1,0 +1,73 @@
+.logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  outline: 2px solid transparent;
+  outline-offset: 1.5px;
+  //overflow: hidden;
+  @include transition();
+
+  svg {
+    border: 0.5px solid $accent-glass;
+    width: inherit;
+    height: inherit;
+    border-radius: 50%;
+  }
+
+  .popup {
+    display: flex;
+    align-items: center;
+    height: 120%;
+    pointer-events: none;
+    transition: inherit;
+    padding: 0 30px;
+    position: absolute;
+    opacity: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $text-color;
+    left: 130%;
+    background-color: $primary-04;
+    border: 1px solid $primary;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+  }
+
+  &.checked {
+    outline: 2.5px solid $primary;
+    outline-offset: 2px;
+  }
+
+  &.hoverable {
+    @media (hover: hover) {
+      cursor: pointer;
+      &:hover:not(&.checked) {
+        .popup {
+          z-index: 10;
+          opacity: 1;
+        }
+        outline: 2px solid $primary;
+      }
+    }
+
+    &:active {
+      outline-offset: -1px;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .logo {
+    width: 30px;
+    height: 30px;
+
+    &.checked {
+      outline: 1.5px solid $primary;
+      outline-offset: 1.5px;
+    }
+  }
+}

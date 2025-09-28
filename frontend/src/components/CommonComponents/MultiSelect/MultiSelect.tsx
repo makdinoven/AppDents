@@ -68,7 +68,7 @@ const MultiSelect = <T extends { [key: string]: any }>({
     // }),
     control: (provided: any, state: any) => ({
       ...provided,
-      padding: "0 15px",
+      padding: "0 4px",
       paddingRight: "40px",
       height: "100%",
       flex: "1",

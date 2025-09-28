@@ -66,6 +66,7 @@ const Landing = () => {
   }, [location.search]);
   const isAdmin = role === "admin";
   const basePath = getBasePath(location.pathname);
+  // const isFromLocalhost = window.location.origin.includes("localhost")
 
   const isVideo = basePath === Path.videoLanding;
   const isClient =
@@ -106,6 +107,7 @@ const Landing = () => {
         lessons_info: normalizeLessons(res.data.lessons_info),
       });
       dispatch(setLanguage(res.data.language));
+      mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
       const paymentData = {
         fromAd: isPromotionLanding,
         landingIds: [res.data.id],

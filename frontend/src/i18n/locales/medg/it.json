@@ -123,12 +123,37 @@
 
   "search": {
     "searchCourses": "Cerca corsi",
-    "searchPlaceholder": "Inserisci il nome del corso o il nome dell'autore...",
-    "result": "trovati {{count}} corsi",
-    "result_one": "{{count}} corso trovato",
-    "result_few": "{{count}} corsi trovati",
-    "result_many": "trovati {{count}} corsi",
-    "result_zero": "Nessun corso trovato"
+    "searchPlaceholder": "Digita per cercare...",
+    "categories": "Categorie",
+    "languages": "Lingue",
+    "results": {
+      "results": "Risultati della ricerca:",
+      "landings": "Corsi",
+      "authors": "Autori",
+      "book_landings": "Libri"
+    },
+    "noResults": {
+      "title": "Ops! Nessun risultato trovato",
+      "description": "Per favore, prova a usare altre parole o frasi per una ricerca più efficace."
+    },
+    "landingsResult": {
+      "result": "{{count}} corsi trovati",
+      "result_one": "{{count}} corso trovato",
+      "result_few": "{{count}} corsi trovati",
+      "result_many": "{{count}} corsi trovati"
+    },
+    "book_landingsResult": {
+      "result": "{{count}} libri trovati",
+      "result_one": "{{count}} libro trovato",
+      "result_few": "{{count}} libri trovati",
+      "result_many": "{{count}} libri trovati"
+    },
+    "authorsResult": {
+      "result": "{{count}} autori trovati",
+      "result_one": "{{count}} autore trovato",
+      "result_few": "{{count}} autori trovati",
+      "result_many": "{{count}} autori trovati"
+    }
   },
 
   "main": {
@@ -316,7 +341,9 @@
     "about": "Dettagliato",
     "specialization": "Specializzazione:",
     "coursesCount_one": "{{count}} corso",
-    "coursesCount_other": "{{count}} corsi"
+    "coursesCount_other": "{{count}} corsi",
+    "booksCount_one": "{{count}} libro",
+    "booksCount_other": "{{count}} libri"
   },
   "other": {
     "otherCourses": "Altri corsi",

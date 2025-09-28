@@ -8,6 +8,9 @@ $content-padding-y: clamp(18px, 2vw, 26px);
   width: 100vw;
   height: 100vh;
   z-index: 1000;
+  &.overlay_bg {
+    background-color: rgba(0, 0, 0, 0.06);
+  }
 }
 
 .modal_overlay.fadeIn {
@@ -110,4 +113,36 @@ $content-padding-y: clamp(18px, 2vw, 26px);
 .close_button {
   top: $content-padding-y;
   left: $content-padding-x;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .modal_overlay {
+    &.overlay_bg {
+      @include lightBlurBackground();
+
+      @supports (-webkit-overflow-scrolling: touch) {
+        background-color: unset;
+        backdrop-filter: unset;
+
+        &::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-color: $cart-background;
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+          z-index: -1;
+          mask-image: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 1) 0,
+            rgba(0, 0, 0, 1) 70%,
+            rgba(0, 0, 0, 0) 100%
+          );
+          mask-repeat: no-repeat;
+          mask-size: 100% 100%;
+          mask-position: top;
+        }
+      }
+    }
+  }
 }

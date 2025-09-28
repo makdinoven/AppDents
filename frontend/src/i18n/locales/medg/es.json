@@ -124,12 +124,37 @@
 
   "search": {
     "searchCourses": "Buscar cursos",
-    "searchPlaceholder": "Ingrese el nombre del curso o el nombre del autor...",
-    "result": "se encontraron {{count}} cursos",
-    "result_one": "{{count}} curso encontrado",
-    "result_few": "{{count}} cursos encontrados",
-    "result_many": "se encontraron {{count}} cursos",
-    "result_zero": "No se encontraron cursos"
+    "searchPlaceholder": "Escriba para buscar...",
+    "categories": "Categorías",
+    "languages": "Idiomas",
+    "results": {
+      "results": "Resultados de la búsqueda:",
+      "landings": "Cursos",
+      "authors": "Autores",
+      "book_landings": "Libros"
+    },
+    "noResults": {
+      "title": "¡Vaya! No se ha encontrado nada",
+      "description": "Por favor, intente usar otras palabras o frases para una búsqueda más efectiva."
+    },
+    "landingsResult": {
+      "result": "{{count}} cursos encontrados",
+      "result_one": "{{count}} curso encontrado",
+      "result_few": "{{count}} cursos encontrados",
+      "result_many": "{{count}} cursos encontrados"
+    },
+    "book_landingsResult": {
+      "result": "{{count}} libros encontrados",
+      "result_one": "{{count}} libro encontrado",
+      "result_few": "{{count}} libros encontrados",
+      "result_many": "{{count}} libros encontrados"
+    },
+    "authorsResult": {
+      "result": "{{count}} autores encontrados",
+      "result_one": "{{count}} autor encontrado",
+      "result_few": "{{count}} autores encontrados",
+      "result_many": "{{count}} autores encontrados"
+    }
   },
 
   "main": {
@@ -317,7 +342,9 @@
     "about": "Detallado",
     "specialization": "Especialización:",
     "coursesCount_one": "{{count}} curso",
-    "coursesCount_other": "{{count}} cursos"
+    "coursesCount_other": "{{count}} cursos",
+    "booksCount_one": "{{count}} libro",
+    "booksCount_other": "{{count}} libros"
   },
   "other": {
     "otherCourses": "Otros cursos",
