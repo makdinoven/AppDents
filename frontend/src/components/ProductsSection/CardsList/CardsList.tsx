@@ -103,7 +103,8 @@ const CardsList: React.FC<CardsListProps> = ({
                     book={{
                       id: book.id,
                       language: "EN",
-                      landing_name: "Art and Nature In Ceramic Restorations",
+                      landing_name:
+                        "Art and Nature In Ceramic Restorations Nature In Ceramiс and art",
                       slug: "///sdds",
                       old_price: 190,
                       new_price: 19,
@@ -135,8 +136,7 @@ const CardsList: React.FC<CardsListProps> = ({
                         BooksImg,
                         BooksImg,
                         BooksImg,
-                        // BooksImg,
-                        // BooksImg,
+                        // BooksImg
                       ],
                       first_tag: book.first_tag,
                     }}

@@ -8,6 +8,7 @@
   background-color: $background-color;
   @include flex-column;
   gap: 11px;
+  justify-content: space-between;
   z-index: 2;
 
   &.blue {
@@ -51,9 +52,16 @@
 }
 
 .book_name {
-  //font-weight: 450;
   font-size: 22px;
+  line-height: 22px;
   text-transform: uppercase;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; // максимум 3 строки
+  overflow: hidden;
+  text-overflow: ellipsis;
+  hyphens: auto; // переносы по слогам
+  word-break: break-word; // если нет пробелов, ломаем
 }
 
 .card_bottom {
@@ -79,8 +87,8 @@
 .lang_logo {
   z-index: 20;
   position: absolute !important;
-  top: -5px;
-  left: -5px;
+  top: 0;
+  left: 0;
 }
 
 .book_info {
@@ -103,20 +111,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 6px;
+  padding: 3px 6px;
   gap: 3px;
   border: 1px solid $primary;
   background-color: $primary-08;
   backdrop-filter: blur(1px);
   border-radius: 28px;
   position: absolute;
-  right: -5px;
-  top: -3px;
+  right: 0;
+  top: 0;
   z-index: 20;
 
   .new_price {
     color: $background-color;
     font-size: 22px;
+    line-height: 22px;
   }
 
   .old_price {

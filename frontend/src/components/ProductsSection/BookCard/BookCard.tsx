@@ -40,7 +40,7 @@ const BookCard = ({ book }: { book: BookCardType }) => {
     <Link to={link} className={`${s.card} ${setCardColor("className")}`}>
       <div className={s.card_top}>
         <div className={s.images_container}>
-          <BookCardImages images={images} />
+          <BookCardImages color={setCardColor("color")} images={images} />
           <LangLogo
             className={s.lang_logo}
             isHoverable={false}
@@ -52,7 +52,9 @@ const BookCard = ({ book }: { book: BookCardType }) => {
           </div>
         </div>
 
-        <h4 className={s.book_name}>{landing_name}</h4>
+        <h4 lang={language.toLowerCase()} className={s.book_name}>
+          {landing_name}
+        </h4>
       </div>
 
       <div className={s.card_bottom}>
@@ -80,18 +82,17 @@ const BookCard = ({ book }: { book: BookCardType }) => {
           authors={authors}
           color={setCardColor("color")}
         />
-
-        <div className={s.buttons}>
-          <button
-            onClick={(e) => handleBuyClick(e)}
-            className={`${s.buy_btn} ${setCardColor("className")}`}
-          >
-            {<Trans i18nKey={"buy"} />}
-          </button>
-          <AddToCartButton
-            className={`${s.cart_btn} ${setCardColor("className")}`}
-          />
-        </div>
+      </div>
+      <div className={s.buttons}>
+        <button
+          onClick={(e) => handleBuyClick(e)}
+          className={`${s.buy_btn} ${setCardColor("className")}`}
+        >
+          {<Trans i18nKey={"buy"} />}
+        </button>
+        <AddToCartButton
+          className={`${s.cart_btn} ${setCardColor("className")}`}
+        />
       </div>
     </Link>
   );
