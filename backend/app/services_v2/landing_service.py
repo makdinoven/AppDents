@@ -597,7 +597,6 @@ def get_sales_totals(
           .join(Landing, Landing.id == Purchase.landing_id)
           .filter(
               Purchase.landing_id.isnot(None),
-              Landing.is_hidden.is_(False),
           )
     )
     if language:
