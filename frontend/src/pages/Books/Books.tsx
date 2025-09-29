@@ -61,7 +61,7 @@ const Books = () => {
       <DetailHeader title={"books.title"} />
       <ListController
         language={language}
-        size={10}
+        size={12}
         type="books"
         loadData={(params) => loadBooks(params)}
         total={total}

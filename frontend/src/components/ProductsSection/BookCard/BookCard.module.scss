@@ -17,6 +17,10 @@
     .prices {
       background-color: $secondary-lighter-08;
       border-color: $secondary-lighter;
+
+      .old_price {
+        color: $secondary;
+      }
     }
 
     .format_item {
@@ -72,6 +76,7 @@
 .formats_list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -79,7 +84,7 @@
   border: 1px solid $primary;
   border-radius: 15px;
   color: $primary;
-  font-size: 14px;
+  @include clamped-p6;
   padding: 2px 5px;
   text-align: center;
 }
@@ -93,7 +98,7 @@
 
 .book_info {
   li {
-    font-size: 16px;
+    @include clamped-p5;
     display: flex;
     gap: 3px;
   }
@@ -111,7 +116,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 6px;
+  padding: 3px 8px;
   gap: 3px;
   border: 1px solid $primary;
   background-color: $primary-08;
@@ -148,7 +153,7 @@
   color: $background-color;
   background-color: $accent;
   border-radius: 20px;
-  font-size: 20px;
+  @include clamped-p3;
   padding: 5px;
   flex: 1;
   outline: 1px solid $primary;

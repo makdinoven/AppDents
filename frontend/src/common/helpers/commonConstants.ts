@@ -131,6 +131,13 @@ export const PAGE_SIZES = [
   { name: "100", value: "100" },
 ];
 
+export const PAGE_SIZES_ALTERNATE = [
+  { name: "12", value: "12" },
+  { name: "24", value: "24" },
+  { name: "58", value: "58" },
+  { name: "116", value: "116" },
+];
+
 export const PAGE_SOURCES = {
   main: "HOMEPAGE",
   cart: "CART",
