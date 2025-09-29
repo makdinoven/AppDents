@@ -5,6 +5,7 @@ import {
   FilterKeys,
   LANGUAGES_NAME,
   PAGE_SIZES,
+  PAGE_SIZES_ALTERNATE,
   SORT_FILTERS,
 } from "../../../common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,7 +52,7 @@ const FiltersPanel = ({ filters, defaultSize }: FiltersPanelProps) => {
       defaultValue: "popular",
     },
     size: {
-      options: PAGE_SIZES,
+      options: defaultSize === 12 ? PAGE_SIZES_ALTERNATE : PAGE_SIZES,
       defaultValue: defaultSize.toString(),
     },
     language: {
