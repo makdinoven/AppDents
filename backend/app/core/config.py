@@ -63,6 +63,8 @@ class Settings(BaseSettings):
 
     FACEBOOK_ACCESS_TOKEN_NEW_4:str
     FACEBOOK_PIXEL_ID_NEW_4: str
+    FACEBOOK_ACCESS_TOKEN_NEW_5: str
+    FACEBOOK_PIXEL_ID_NEW_5: str
 
 
     class Config:
