@@ -1040,3 +1040,136 @@ def landing_traffic(
         },
         "ad_periods": ad_periods
     }
+
+@router.get("/analytics/site-traffic")
+def site_traffic(
+    language: Optional[str] = Query(
+        None,
+        description="Фильтр по языку лендинга: EN, RU, ES, IT, AR, PT. Пусто = все языки."
+    ),
+    start_date: Optional[date] = Query(None, description="Начало (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец (YYYY-MM-DD, включительно)"),
+    bucket:     Optional[Granularity] = Query(None, description="hour|day; по умолчанию авто"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Агрегированная аналитика по ВСЕМ лендингам (опционально по языку).
+    Показатели: visits, ad_visits, purchases, ad_purchases.
+    Формат аналогичен /analytics/landing-traffic.
+    """
+    # 0) подготовим множество лендингов: is_hidden = False (+ язык, если задан)
+    landings_q = db.query(Landing.id).filter(Landing.is_hidden.is_(False))
+    if language:
+        landings_q = landings_q.filter(Landing.language == language.upper().strip())
+    landing_ids_subq = landings_q.subquery()  # один столбец id
+
+    # 1) период и гранулярность (та же логика)
+    start_dt, end_dt = _resolve_period(start_date, end_date)
+    gran = bucket or _auto_granularity(start_dt, end_dt)
+
+    # 2) серии и итоги за диапазон
+    visit_map, visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id.in_(landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_visit_map, ad_visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[
+            LandingVisit.landing_id.in_(landing_ids_subq),
+            LandingVisit.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    purchase_map, purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.landing_id.in_(landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_purchase_map, ad_purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[
+            Purchase.landing_id.in_(landing_ids_subq),
+            Purchase.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # 3) totals «за всё время» (без ограничений по дате)
+    visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(LandingVisit.landing_id.in_(landing_ids_subq))
+          .scalar()
+    ) or 0
+
+    ad_visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(
+              LandingVisit.landing_id.in_(landing_ids_subq),
+              LandingVisit.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
+
+    purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.landing_id.in_(landing_ids_subq))
+          .scalar()
+    ) or 0
+
+    ad_purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(
+              Purchase.landing_id.in_(landing_ids_subq),
+              Purchase.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
+
+    # 4) ответ — структура максимально похожа на landing_traffic
+    return {
+        "scope": {
+            "language": language.upper() if language else "ALL"
+        },
+        "range": {
+            "start": start_dt.isoformat() + "Z",
+            "end":   end_dt.isoformat() + "Z",
+        },
+        "granularity": gran,
+
+        "totals_all_time": {
+            "visits": visits_all_time,
+            "ad_visits": ad_visits_all_time,
+            "purchases": purchases_all_time,
+            "ad_purchases": ad_purchases_all_time,
+        },
+        "totals_range": {
+            "visits": visits_range_total,
+            "ad_visits": ad_visits_range_total,
+            "purchases": purchases_range_total,
+            "ad_purchases": ad_purchases_range_total,
+        },
+
+        "series": {
+            "visits":        _fill_series(start_dt, end_dt, gran, visit_map),
+            "ad_visits":     _fill_series(start_dt, end_dt, gran, ad_visit_map),
+            "purchases":     _fill_series(start_dt, end_dt, gran, purchase_map),
+            "ad_purchases":  _fill_series(start_dt, end_dt, gran, ad_purchase_map),
+        }
+    }
