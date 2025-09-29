@@ -10,6 +10,7 @@ const pixelIds = [
   "1105921817166633",
   "975797817469515",
   "650811281430656",
+  "24812913481682501",
 ];
 
 const languagePixelIds: Record<string, string> = {
