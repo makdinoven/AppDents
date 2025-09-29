@@ -224,4 +224,10 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getSiteTraffic(params: any) {
+    return instance.get("landings/analytics/site-traffic", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
 };

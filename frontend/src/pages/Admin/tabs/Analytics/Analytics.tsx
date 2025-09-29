@@ -7,6 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import AnalyticsPurchases from "./content/AnalyticsPurchases.tsx";
 import AnalyticsUserGrowth from "./content/AnalyticsUserGrowth.tsx";
 import AnalyticsFreeCourses from "./content/AnalyticsFreeCourses.tsx";
+import AnalyticsTraffic from "./content/AnalyticsTraffic.tsx";
 
 const QUERY_KEY = "content";
 
@@ -44,6 +45,11 @@ const Analytics = () => {
       name: "admin.analytics.freeCourses",
       value: "free_courses",
       component: <AnalyticsFreeCourses />,
+    },
+    {
+      name: "admin.analytics.traffic",
+      value: "traffic",
+      component: <AnalyticsTraffic />,
     },
     // {
     //   name: "admin.analytics.videoCheck",
