@@ -12,10 +12,18 @@ import {
 import { formatShortDate } from "../../../../../common/helpers/helpers.ts";
 import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
+const lineLabels: Record<string, string> = {
+  visits: "Visits",
+  ad_visits: "Ad visits",
+  purchases: "Purchases",
+  ad_purchases: "Ad purchases",
+};
+
 const lineColors: Record<string, string> = {
   visits: "#01433d",
   ad_visits: "#006d8d",
   purchases: "#90e895",
+  ad_purchases: "#017f74",
 };
 
 type SeriesData = {
@@ -31,8 +39,8 @@ const CustomTooltip = ({ active, payload }: any) => {
     <div className={s.tooltip}>
       <p className={s.tooltip_date}>{fullDate}</p>
       {payload.map((entry: any) => (
-        <p className={s[entry.name]} key={entry.dataKey}>
-          {entry.name === "ad_visits" ? "Ad visits" : entry.name}: {entry.value}
+        <p className={s[entry.dataKey]} key={entry.dataKey}>
+          {entry.name}: {entry.value}
         </p>
       ))}
     </div>
@@ -83,7 +91,7 @@ const LandingAnalyticsChart = ({
               type="monotone"
               dataKey={src}
               stroke={lineColors[src] || "#000"}
-              name={src}
+              name={lineLabels[src] || src}
               strokeWidth={2}
             />
           ))}
