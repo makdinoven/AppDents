@@ -63,6 +63,8 @@ class Settings(BaseSettings):
 
     FACEBOOK_ACCESS_TOKEN_NEW_2:str
     FACEBOOK_PIXEL_ID_NEW_2: str
+    FACEBOOK_ACCESS_TOKEN_NEW_3:str
+    FACEBOOK_PIXEL_ID_NEW_3: str
 
     class Config:
         env_file = ".env"
