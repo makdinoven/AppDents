@@ -663,21 +663,37 @@ def book_landing_cards(
 
     # сортировка (как у курсов: popular/discount/new)
     if sort == "popular":
-        base = base.order_by(BookLanding.sales_count.desc().nullslast(),
-                             BookLanding.updated_at.desc().nullslast(),
-                             BookLanding.id.desc())
+        # Было: sales_count.desc().nullslast()
+        base = base.order_by(
+            BookLanding.sales_count.is_(None),  # NULL'ы в конец
+            BookLanding.sales_count.desc(),
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc(),
+        )
     elif sort == "discount":
-        discount = (func.nullif(BookLanding.old_price, 0) - BookLanding.new_price)
-        base = base.order_by(discount.desc().nullslast(),
-                             BookLanding.updated_at.desc().nullslast(),
-                             BookLanding.id.desc())
+        # Было: разность с NULLS LAST
+        # В MySQL делаем COALESCE/IFNULL → NULL превращаем в 0, и сортировка работает без NULLS LAST
+        discount = func.ifnull(BookLanding.old_price, 0) - func.ifnull(BookLanding.new_price, 0)
+        base = base.order_by(
+            discount.desc(),
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc(),
+        )
     elif sort == "new":
-        base = base.order_by(BookLanding.updated_at.desc().nullslast(),
-                             BookLanding.id.desc())
+        # Было: updated_at.desc().nullslast()
+        base = base.order_by(
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc(),
+        )
     else:
-        base = base.order_by(BookLanding.updated_at.desc().nullslast(),
-                             BookLanding.id.desc())
-
+        base = base.order_by(
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc(),
+        )
     # total — с теми же фильтрами
     total = base.order_by(None).with_entities(func.count()).scalar() or 0
 
