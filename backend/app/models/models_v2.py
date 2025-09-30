@@ -601,9 +601,6 @@ class BookLanding(Base):
     old_price = Column(Numeric(10, 2))
     new_price = Column(Numeric(10, 2))
     description   = Column(Text)
-    preview_photo = Column(String(700))
-    preview_imgs  = Column(JSON,
-                           comment="['https://…/page1.jpg', '…/page2.jpg', …]")
     sales_count   = Column(Integer, default=0)
     is_hidden     = Column(Boolean, nullable=False, server_default='0')
     created_at    = Column(DateTime, server_default=func.utc_timestamp())

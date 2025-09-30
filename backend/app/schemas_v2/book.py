@@ -27,8 +27,6 @@ class BookLandingBase(BaseModel):
     # НЕОБЯЗАТЕЛЬНО:
     book_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
-    # preview_photo НЕ грузим здесь — это делает upload-роут (останется опциональным полем на PATCH)
-    preview_imgs: Optional[List[str]] = None   # если захотите руками задать
 
 class BookLandingCreate(BookLandingBase):
     pass
@@ -112,8 +110,6 @@ class BookLandingUpdate(BaseModel):
 
     book_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
-    preview_photo: Optional[str] = None
-    preview_imgs: Optional[List[str]] = None
 
 class BookMini(BaseModel):
     id: int
@@ -152,8 +148,6 @@ class BookLandingOut(BaseModel):
     old_price: float | None = None
     new_price: float | None = None
     is_hidden: bool
-    preview_photo: str | None = None
-    preview_imgs: list[str] | None = None
     books: list[BookBrief] = []
 
     class Config:
@@ -187,9 +181,7 @@ class BookLandingResponse(BaseModel):
     old_price: Decimal | None = None
     new_price: Decimal | None = None
     description:  Optional[str]
-    preview_photo: Optional[HttpS3Url]
     preview_pdf:   Optional[HttpS3Url]
-    preview_imgs:  Optional[List[HttpS3Url]]
     sales_count:   int
     is_hidden:     bool
 
@@ -234,3 +226,33 @@ class PdfUploadInitResponse(BaseModel):
 class PdfUploadFinalizeRequest(BaseModel):
     key: str = Field(..., description="S3 key, полученный на шаге INIT")
     size_bytes: int | None = None
+
+class CatalogGalleryImage(BaseModel):
+    id: int
+    url: HttpUrl
+    alt: str | None = None
+    caption: str | None = None
+    sort_index: int
+
+class BookLandingCatalogItem(BaseModel):
+    id: int
+    page_name: str
+    landing_name: str | None = None
+    language: str
+    old_price: float | None = None
+    new_price: float | None = None
+    tags: list[TagMini] = []
+    gallery: list[CatalogGalleryImage] = []
+
+# Один ответ для обоих типов пагинации
+class BookLandingCatalogPageResponse(BaseModel):
+    # для пагинации по страницам
+    total: int | None = None
+    total_pages: int | None = None
+    page: int | None = None
+    size: int | None = None
+    # для "see more" (курсорная)
+    next_cursor: int | None = None
+    has_more: bool | None = None
+
+    items: list[BookLandingCatalogItem]

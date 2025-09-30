@@ -54,7 +54,6 @@ def _cdn_url(key: str) -> str:
 EntityType = Literal[
     "book_cover",
     "book_landing_preview",
-    "book_landing_galary",   # оставил как вы написали
     "book_landing_gallery",  # и добавил правильное написание, чтобы не словить 400
     "landing_preview",
     "author_preview",
@@ -66,8 +65,6 @@ def _webp_key_by_entity(entity_type: EntityType, entity_id: int) -> str:
         return f"images/books/{entity_id}/cover/{uid}.webp"
     if entity_type == "book_landing_preview":
         return f"images/book_landings/{entity_id}/preview/{uid}.webp"
-    if entity_type in ("book_landing_galary", "book_landing_gallery"):
-        return f"images/book_landings/{entity_id}/gallery/{uid}.webp"
     if entity_type == "landing_preview":
         return f"images/landings/{entity_id}/preview/{uid}.webp"
     if entity_type == "author_preview":
@@ -170,15 +167,7 @@ async def upload_image(
         db.commit()
         return {"attached": "book_cover", "book_id": entity_id, "url": url, "size": size, "content_type": "image/webp"}
 
-    if entity_type == "book_landing_preview":
-        bl = db.query(BookLanding).get(entity_id)
-        if not bl:
-            raise HTTPException(404, "BookLanding not found")
-        bl.preview_photo = url
-        db.commit()
-        return {"attached": "book_landing_preview", "landing_id": entity_id, "url": url, "size": size, "content_type": "image/webp"}
-
-    if entity_type in ("book_landing_galary", "book_landing_gallery"):
+    if entity_type == "book_landing_gallery":
         bl = db.query(BookLanding).get(entity_id)
         if not bl:
             raise HTTPException(404, "BookLanding not found")

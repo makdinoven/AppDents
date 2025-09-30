@@ -30,7 +30,8 @@ from ..schemas_v2.book import (
     BookDetailResponse,
     PdfUploadInitResponse,
     PdfUploadInitRequest,
-    BookLandingOut, BookListPageResponse,
+    BookLandingOut, BookListPageResponse, BookLandingCatalogPageResponse, CatalogGalleryImage, BookLandingCatalogItem,
+    TagMini,
 )
 from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse
 from ..services_v2 import book_service
@@ -116,7 +117,6 @@ def create_book_landing(
         old_price=payload.old_price,
         new_price=payload.new_price,
         is_hidden=payload.is_hidden if payload.is_hidden is not None else False,
-        preview_imgs=payload.preview_imgs or None,
     )
     db.add(landing)
     db.flush()
@@ -151,8 +151,6 @@ def update_book_landing(
         "old_price",
         "new_price",
         "is_hidden",
-        "preview_photo",
-        "preview_imgs",
     ):
         val = getattr(payload, field, None)
         if val is not None:
@@ -302,8 +300,6 @@ def get_book_landing_detail(landing_id: int, db: Session = Depends(get_db)):
         "old_price": str(landing.old_price) if landing.old_price is not None else None,
         "new_price": str(landing.new_price) if landing.new_price is not None else None,
         "is_hidden": bool(landing.is_hidden),
-        "preview_photo": landing.preview_photo,
-        "preview_imgs": landing.preview_imgs or [],
         "book_ids": book_ids,
         "gallery": gallery,
         "authors": list(authors_map.values()),
@@ -404,7 +400,6 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         "description": landing.description,
         "old_price": str(landing.old_price) if landing.old_price is not None else None,
         "new_price": str(landing.new_price) if landing.new_price is not None else None,
-        "preview_photo": landing.preview_photo,
         "gallery": gallery,
         "books": books,
         "authors": authors,
@@ -569,3 +564,146 @@ def search_book_listing(
         "size": size,
         "items": items,
     }
+
+@router.get(
+    "/landing/catalog",
+    response_model=BookLandingCatalogPageResponse,
+    summary="Каталог книжных лендингов (галерея/цены/регион/теги). Поддержка page и cursor пагинации"
+)
+def catalog_book_landings(
+    mode: str = Query("page", pattern="^(page|cursor)$",
+                      description="Тип пагинации: page или cursor"),
+    # page-пагинация
+    page: int | None = Query(1, ge=1),
+    size: int = Query(12, gt=0, le=200),
+    # cursor-пагинация
+    after: int | None = Query(None, description="ID последнего элемента для 'see more'"),
+    limit: int | None = Query(None, gt=0, le=200),
+    # фильтры (минимум – язык как 'регион')
+    language: Optional[str] = Query(None, description="EN,RU,ES,PT,AR,IT"),
+    db: Session = Depends(get_db),
+):
+    base = (
+        db.query(BookLanding)
+          .options(
+              selectinload(BookLanding.books).selectinload(Book.tags)  # для тегов
+          )
+          .filter(BookLanding.is_hidden.is_(False))
+    )
+    if language:
+        base = base.filter(BookLanding.language == language.upper())
+
+    # ── выбор режима
+    if mode == "cursor":
+        lim = limit or size
+        q = base.order_by(BookLanding.id.desc())
+        if after is not None:
+            q = q.filter(BookLanding.id < after)
+        rows = q.limit(lim).all()
+
+        # галерея пачкой
+        ids = [r.id for r in rows]
+        gallery_map: dict[int, list[CatalogGalleryImage]] = {i: [] for i in ids}
+        if ids:
+            imgs = (
+                db.query(BookLandingImage)
+                  .filter(BookLandingImage.landing_id.in_(ids))
+                  .order_by(BookLandingImage.landing_id.asc(),
+                            BookLandingImage.sort_index.asc(),
+                            BookLandingImage.id.asc())
+                  .all()
+            )
+            for g in imgs:
+                gallery_map[g.landing_id].append(CatalogGalleryImage(
+                    id=g.id, url=g.s3_url, alt=g.alt,
+                    caption=g.caption, sort_index=g.sort_index or 0
+                ))
+
+        # собираем теги из книг лендинга (уникально)
+        items: list[BookLandingCatalogItem] = []
+        for r in rows:
+            tag_seen: dict[int, TagMini] = {}
+            for b in r.books:
+                for t in b.tags:
+                    tag_seen[t.id] = TagMini(id=t.id, name=t.name)
+            items.append(BookLandingCatalogItem(
+                id=r.id,
+                page_name=r.page_name,
+                landing_name=r.landing_name,
+                language=r.language,
+                old_price=float(r.old_price) if r.old_price is not None else None,
+                new_price=float(r.new_price) if r.new_price is not None else None,
+                tags=list(tag_seen.values()),
+                gallery=gallery_map.get(r.id, []),
+            ))
+
+        # посчитать next_cursor / has_more
+        next_cursor = items[-1].id if items else None
+        has_more = False
+        if next_cursor is not None:
+            has_more = db.query(BookLanding.id)\
+                         .filter(BookLanding.is_hidden.is_(False),
+                                 BookLanding.id < next_cursor)\
+                         .first() is not None
+
+        return BookLandingCatalogPageResponse(
+            # поля page-пагинации опускаем
+            total=None, total_pages=None, page=None, size=None,
+            # курсорная
+            next_cursor=next_cursor,
+            has_more=has_more,
+            items=items,
+        )
+
+    # ── режим страницы (page)
+    total = base.with_entities(func.count()).scalar() or 0
+    offset = ((page or 1) - 1) * size
+    rows = (
+        base.order_by(BookLanding.updated_at.desc().nullslast(), BookLanding.id.desc())
+            .offset(offset).limit(size).all()
+    )
+
+    ids = [r.id for r in rows]
+    gallery_map: dict[int, list[CatalogGalleryImage]] = {i: [] for i in ids}
+    if ids:
+        imgs = (
+            db.query(BookLandingImage)
+              .filter(BookLandingImage.landing_id.in_(ids))
+              .order_by(BookLandingImage.landing_id.asc(),
+                        BookLandingImage.sort_index.asc(),
+                        BookLandingImage.id.asc())
+              .all()
+        )
+        for g in imgs:
+            gallery_map[g.landing_id].append(CatalogGalleryImage(
+                id=g.id, url=g.s3_url, alt=g.alt,
+                caption=g.caption, sort_index=g.sort_index or 0
+            ))
+
+    items: list[BookLandingCatalogItem] = []
+    for r in rows:
+        tag_seen: dict[int, TagMini] = {}
+        for b in r.books:
+            for t in b.tags:
+                tag_seen[t.id] = TagMini(id=t.id, name=t.name)
+        items.append(BookLandingCatalogItem(
+            id=r.id,
+            page_name=r.page_name,
+            landing_name=r.landing_name,
+            language=r.language,
+            old_price=float(r.old_price) if r.old_price is not None else None,
+            new_price=float(r.new_price) if r.new_price is not None else None,
+            tags=list(tag_seen.values()),
+            gallery=gallery_map.get(r.id, []),
+        ))
+
+    return BookLandingCatalogPageResponse(
+        total=total,
+        total_pages=(ceil(total / size) if total else 0),
+        page=page or 1,
+        size=size,
+        # курсорные поля можно отдать как None
+        next_cursor=None,
+        has_more=None,
+        items=items,
+    )
