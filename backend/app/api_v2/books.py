@@ -624,12 +624,11 @@ def _serialize_book_card(bl: BookLanding, gallery: List[BookLandingGalleryItem])
 
 @router.get(
     "/landing/cards",
-    response_model=Union[BookLandingCardsResponse, BookLandingCardsResponsePaginations],
+    response_model=Union[BookLandingCardsResponsePaginations, BookLandingCardsResponse],
     summary="Карточки книжных лендингов (mode=cursor|page). Пагинация — как у курсов; карточки — книжные."
 )
 def book_landing_cards(
-    mode: str = Query("cursor", pattern="^(cursor|page)$",
-                      description="cursor — как /recommend/cards (total + cards); page — как /v1/cards (total, total_pages, page, size, cards)"),
+    mode: str = Query("cursor", regex="^(cursor|page)$"),
     tags: Optional[List[str]] = Query(None, description="Фильтр по тегам (имена)"),
     sort: Optional[str] = Query(None, description="popular | discount | new"),
     language: Optional[str] = Query(None, description="EN, RU, ES, IT, AR, PT"),
