@@ -5,6 +5,8 @@ from datetime import datetime, date
 from pydantic import AnyUrl
 from pydantic.v1 import ConfigDict
 
+from ..schemas_v2.landing import AuthorCardResponse, TagResponse
+
 
 class HttpS3Url(AnyUrl):
     """
@@ -256,3 +258,33 @@ class BookLandingCatalogPageResponse(BaseModel):
     has_more: bool | None = None
 
     items: list[BookLandingCatalogItem]
+
+class BookLandingGalleryItem(BaseModel):
+    id: int
+    url: str
+    alt: Optional[str] = None
+    caption: Optional[str] = None
+    sort_index: int
+
+class BookLandingCardResponse(BaseModel):
+    id: int
+    landing_name: str
+    slug: str                 # = page_name
+    language: str             # регион/язык
+    old_price: Optional[str] = None
+    new_price: Optional[str] = None
+    authors: List[AuthorCardResponse] = []
+    tags: List[TagResponse] = []
+    first_tag: Optional[str] = None
+    gallery: List[BookLandingGalleryItem] = []
+
+class BookLandingCardsResponse(BaseModel):
+    total: int
+    cards: List[BookLandingCardResponse]
+
+class BookLandingCardsResponsePaginations(BaseModel):
+    total: int
+    total_pages: int
+    page: int
+    size: int
+    cards: List[BookLandingCardResponse]
