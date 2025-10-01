@@ -186,6 +186,7 @@ def send_facebook_events(
             {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
             {"id": settings.FACEBOOK_PIXEL_ID_NEW_4, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_4},
             {"id": settings.FACEBOOK_PIXEL_ID_NEW_5, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_5},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_11, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_11},
             {"id": settings.FACEBOOK_PIXEL_ID_NEW_10, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_10},
 
         ]
