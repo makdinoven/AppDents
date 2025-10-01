@@ -5,7 +5,7 @@ pymysql
 pydantic<2.0.0
 pydantic[email]
 python-dotenv
-passlib[bcrypt]
+passlib[bcrypt]==1.7.4
 python-jose[cryptography]
 Alembic==1.14.1
 python-dotenv==1.0.1
