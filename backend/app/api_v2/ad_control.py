@@ -103,6 +103,96 @@ def _o_color(sales10:int) -> str:
         return "orange"
     return "green"
 
+GRACE_HOURS = 6  # или 2*AD_TTL.hours
+
+def _merge_periods(periods, now: datetime) -> list[tuple[datetime, datetime|None]]:
+    """
+    periods: [(started_at, ended_at or None)] отсортированные по started_at.
+    Склеиваем соседние, если gap <= GRACE_HOURS.
+    """
+    if not periods:
+        return []
+    grace = timedelta(hours=GRACE_HOURS)
+    merged = []
+    cur_start, cur_end = periods[0][0], periods[0][1] or now
+
+    for st, en in periods[1:]:
+        st2, en2 = st, (en or now)
+        # если перерыв между cur_end и st2 небольшой — склеиваем
+        if st2 - cur_end <= grace:
+            # расширяем конец
+            cur_end = max(cur_end, en2)
+        else:
+            merged.append((cur_start, cur_end))
+            cur_start, cur_end = st2, en2
+    merged.append((cur_start, cur_end))
+    return merged
+
+def _effective_cycle_count_map(db: Session, landing_ids: list[int]) -> dict[int, int]:
+    """
+    Количество СКЛЕЕННЫХ эпизодов рекламы (а не сырых периодов).
+    """
+    if not landing_ids:
+        return {}
+    rows = (
+        db.query(
+            LandingAdPeriod.landing_id,
+            LandingAdPeriod.started_at,
+            LandingAdPeriod.ended_at,
+        )
+        .filter(LandingAdPeriod.landing_id.in_(landing_ids))
+        .order_by(LandingAdPeriod.landing_id.asc(), LandingAdPeriod.started_at.asc())
+        .all()
+    )
+    now = datetime.utcnow()
+    by_lid: dict[int, list[tuple[datetime, datetime|None]]] = {}
+    for lid, st, en in rows:
+        by_lid.setdefault(lid, []).append((st, en))
+
+    out: dict[int, int] = {}
+    for lid, periods in by_lid.items():
+        merged = _merge_periods(periods, now)
+        out[lid] = len(merged)
+    return out
+
+def _active_episode_start_map(db: Session, landing_ids: list[int]) -> dict[int, datetime]:
+    """
+    Для тех, у кого сейчас реклама (есть open-период ended_at IS NULL),
+    возвращает НАЧАЛО СКЛЕЕННОГО эпизода (первое started_at с учётом склейки).
+    """
+    if not landing_ids:
+        return {}
+    now = datetime.utcnow()
+
+    # грузим все периоды по нужным лендингам
+    rows = (
+        db.query(
+            LandingAdPeriod.landing_id,
+            LandingAdPeriod.started_at,
+            LandingAdPeriod.ended_at,
+        )
+        .filter(LandingAdPeriod.landing_id.in_(landing_ids))
+        .order_by(LandingAdPeriod.landing_id.asc(), LandingAdPeriod.started_at.asc())
+        .all()
+    )
+
+    by_lid: dict[int, list[tuple[datetime, datetime|None]]] = {}
+    for lid, st, en in rows:
+        by_lid.setdefault(lid, []).append((st, en))
+
+    episode_start: dict[int, datetime] = {}
+    for lid, periods in by_lid.items():
+        merged = _merge_periods(periods, now)
+        if not merged:
+            continue
+        # активный эпизод = последний в склеенном списке, если сейчас есть open-период
+        # проверим: есть ли open-период вообще (с ended_at IS NULL)
+        has_open = any(en is None for _, en in periods)
+        if has_open:
+            start, _ = merged[-1]
+            episode_start[lid] = start
+    return episode_start
+
 @router.get("/ads/quarantine")
 def ads_quarantine_list(
     language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
@@ -111,35 +201,54 @@ def ads_quarantine_list(
 ):
     now = datetime.utcnow()
 
-    rows = _active_ad_periods(db, language)  # [(Landing, started_at)]
+    rows = _active_ad_periods(db, language)  # [(Landing, started_at_of_open_period)]
     if not rows:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
     landing_ids = [l.id for (l, _) in rows]
-    cycles      = _cycle_count_map(db, landing_ids)
-    first5      = _ad_sales_first5_map(db, [(l.id, st) for (l, st) in rows])
+
+    # 1) начало СКЛЕЕННОГО эпизода
+    episode_start_map = _active_episode_start_map(db, landing_ids)
+
+    # 2) корректный счётчик кругов (склеенные эпизоды)
+    cycles = _effective_cycle_count_map(db, landing_ids)
+
+    # 3) продажи в первые 5 дней от СКЛЕЕННОГО начала
+    pairs = []
+    for (landing, _) in rows:
+        st = episode_start_map.get(landing.id)
+        if st:
+            pairs.append((landing.id, st))
+    first5 = _ad_sales_first5_map(db, pairs)
 
     items = []
-    for landing, started_at in rows:
-        days = (now - started_at).days
+    for landing, _open_started_at in rows:
+        st = episode_start_map.get(landing.id)
+        if not st:
+            # safety — пропустим, если что-то не склеилось
+            continue
+
+        days = (now - st).days
         first5_cnt = first5.get(landing.id, 0)
 
-        # определяем стадийность динамически
-        in_first5_window = now < (started_at + timedelta(days=5))
+        # «Карантин»:
+        #  - пока не прошло 5 дней с начала эпизода
+        #  - ИЛИ прошло 5 дней, но продаж в первые 5 дней не было
+        in_first5_window = now < (st + timedelta(days=5))
         is_quarantine = in_first5_window or (not in_first5_window and first5_cnt == 0)
         if not is_quarantine:
-            continue  # этот лендинг попадёт в /ads/observation
+            continue
 
         color = _q_color(days, any_sale=(first5_cnt > 0))
-
         assign = db.query(LandingAdAssignment).get(landing.id)
+
         items.append({
             "id": landing.id,
             "landing_name": landing.landing_name,
             "language": landing.language,
-            "cycle_no": cycles.get(landing.id, 0),
-            "stage_started_at": started_at.isoformat() + "Z",
-            "quarantine_ends_at": (started_at + timedelta(days=5)).isoformat() + "Z",
+            "cycle_no": cycles.get(landing.id, 0),            # ← эффективные круги
+            "stage_started_at": st.isoformat() + "Z",         # ← старт склеенного эпизода
+            "quarantine_ends_at": (st + timedelta(days=5)).isoformat() + "Z",
             "days_in_stage": days,
             "ad_purchases_first_5_days": first5_cnt,
             "color": color,
@@ -151,6 +260,7 @@ def ads_quarantine_list(
 
     return {"items": items, "as_of": now.isoformat() + "Z"}
 
+
 @router.get("/ads/observation")
 def ads_observation_list(
     language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
@@ -159,25 +269,47 @@ def ads_observation_list(
 ):
     now = datetime.utcnow()
 
-    rows = _active_ad_periods(db, language)
+    rows = _active_ad_periods(db, language)  # [(Landing, started_at_of_open_period)]
     if not rows:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
     landing_ids = [l.id for (l, _) in rows]
-    cycles      = _cycle_count_map(db, landing_ids)
-    first5      = _ad_sales_first5_map(db, [(l.id, st) for (l, st) in rows])
 
-    # сюда берём только тех, кто прошёл 5 дней И имел ≥1 продажу в первые 5 дней
-    obs_ids = [l.id for (l, st) in rows if (datetime.utcnow() >= st + timedelta(days=5) and first5.get(l.id, 0) >= 1)]
+    # Используем те же «склеенные» основы, что и в карантине
+    episode_start_map = _active_episode_start_map(db, landing_ids)
+    cycles = _effective_cycle_count_map(db, landing_ids)
+
+    # продажи в первые 5 дней от СКЛЕЕННОГО начала
+    pairs = []
+    for (landing, _) in rows:
+        st = episode_start_map.get(landing.id)
+        if st:
+            pairs.append((landing.id, st))
+    first5 = _ad_sales_first5_map(db, pairs)
+
+    # Берём только тех, кто:
+    #  - прошёл 5 дней с начала эпизода
+    #  - и имел ≥ 1 продажу с рекламы в первые 5 дней
+    obs_ids = []
+    for (landing, _) in rows:
+        st = episode_start_map.get(landing.id)
+        if not st:
+            continue
+        if (now >= st + timedelta(days=5)) and (first5.get(landing.id, 0) >= 1):
+            obs_ids.append(landing.id)
+
     if not obs_ids:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
+    # Продажи с рекламы за последние 10 дней — для цвета светофора
     last10 = _ad_sales_last10_map(db, obs_ids)
 
     items = []
-    for (landing, started_at) in rows:
+    for (landing, _) in rows:
         if landing.id not in obs_ids:
             continue
+
+        st = episode_start_map.get(landing.id)
         sales10 = last10.get(landing.id, 0)
         color = _o_color(sales10)
         assign = db.query(LandingAdAssignment).get(landing.id)
@@ -186,8 +318,8 @@ def ads_observation_list(
             "id": landing.id,
             "landing_name": landing.landing_name,
             "language": landing.language,
-            "cycle_no": cycles.get(landing.id, 0),
-            "stage_started_at": started_at.isoformat() + "Z",
+            "cycle_no": cycles.get(landing.id, 0),            # ← эффективные циклы
+            "stage_started_at": st.isoformat() + "Z",         # ← старт склеенного эпизода
             "ad_purchases_last_10_days": sales10,
             "color": color,
             "assignee": {
