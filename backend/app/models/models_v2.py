@@ -608,3 +608,23 @@ class LandingVisit(Base):
     __table_args__ = (
         Index("ix_lvisit_landing_dt", "landing_id", "visited_at"),
     )
+
+class AdStaff(Base):
+    __tablename__ = "ad_staff"
+    id   = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+
+class AdAccount(Base):
+    __tablename__ = "ad_accounts"
+    id   = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+
+class LandingAdAssignment(Base):
+    __tablename__ = "landing_ad_assignments"
+    landing_id = Column(Integer, ForeignKey("landings.id"), primary_key=True)
+    staff_id   = Column(Integer, ForeignKey("ad_staff.id"), nullable=True)
+    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=True)
+
+    landing = relationship("Landing", backref=backref("ad_assignment", uselist=False))
+    staff   = relationship("AdStaff")
+    account = relationship("AdAccount")
