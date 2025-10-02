@@ -108,8 +108,16 @@
 
 @media (max-width: $sm-breakpoint) {
   .img_wrapper {
-    width: 153px;
-    height: 206px;
-    margin-left: -132px;
+    width: 145px;
+    height: 198px;
+    margin-left: -129px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .img_wrapper {
+    width: 90px;
+    height: 143px;
+    margin-left: -74px;
   }
 }

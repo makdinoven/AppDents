@@ -34,6 +34,10 @@
   .list {
     row-gap: 12px;
     margin-top: 45px;
+
+    &.books {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
   }
 }
 

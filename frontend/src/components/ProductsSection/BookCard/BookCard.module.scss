@@ -74,16 +74,17 @@
 }
 
 .formats_list {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  justify-content: center;
 }
 
 .format_item {
   border: 1px solid $primary;
   border-radius: 15px;
   color: $primary;
+  width: 50px;
   @include clamped-p6;
   padding: 2px 5px;
   text-align: center;
@@ -219,5 +220,15 @@
     &.blue {
       background-color: $secondary-lighter !important;
     }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .card {
+    gap: 7px;
+  }
+
+  .book_name {
+    font-size: 16px;
   }
 }

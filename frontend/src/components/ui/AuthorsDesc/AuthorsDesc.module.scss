@@ -80,6 +80,17 @@
         height: 40px;
       }
     }
+
+    &.small {
+      .author_photo {
+        width: 20px;
+        height: 20px;
+      }
+
+      p {
+        font-size: 10px;
+      }
+    }
   }
 
   .author_photo {

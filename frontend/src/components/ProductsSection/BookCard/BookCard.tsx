@@ -16,7 +16,6 @@ const BookCard = ({ book }: { book: BookCardType }) => {
     slug,
     old_price,
     new_price,
-    publication_date,
     authors,
     tags,
     index,
@@ -24,23 +23,25 @@ const BookCard = ({ book }: { book: BookCardType }) => {
   } = book;
   // const screenWidth = useScreenWidth();
 
-  const setCardColor = (whatIsReturned: "className" | "color") => {
-    const returnValue = whatIsReturned === "className" ? s.blue : "blue";
+  const setCardColor = () => {
+    const returnValue = "blue";
     return index % 2 === 0 ? returnValue : "";
   };
 
+  const cardColor = setCardColor();
+
   const link = `${Path.bookLandingClient}/${slug}`;
 
-  const handleBuyClick = (e) => {
+  const handleBuyClick = (e: any) => {
     e.preventDefault();
     e.stopPropagation();
   };
 
   return (
-    <Link to={link} className={`${s.card} ${setCardColor("className")}`}>
+    <Link to={link} className={`${s.card} ${s[cardColor]}`}>
       <div className={s.card_top}>
         <div className={s.images_container}>
-          <BookCardImages color={setCardColor("color")} images={images} />
+          <BookCardImages color={cardColor} images={images} />
           <LangLogo
             className={s.lang_logo}
             isHoverable={false}
@@ -68,31 +69,21 @@ const BookCard = ({ book }: { book: BookCardType }) => {
 
         <ul className={s.book_info}>
           <li>
-            <Trans i18nKey={"publication.date"} />:
-            <span className={s.book_info_value}> {publication_date}</span>
-          </li>
-          <li>
             <Trans i18nKey={"tags"} />:
             <span className={s.book_info_value}> {tags}</span>
           </li>
         </ul>
 
-        <AuthorsDesc
-          size={"small"}
-          authors={authors}
-          color={setCardColor("color")}
-        />
+        <AuthorsDesc size={"small"} authors={authors} color={cardColor} />
       </div>
       <div className={s.buttons}>
         <button
           onClick={(e) => handleBuyClick(e)}
-          className={`${s.buy_btn} ${setCardColor("className")}`}
+          className={`${s.buy_btn} ${s[cardColor]}`}
         >
           {<Trans i18nKey={"buy"} />}
         </button>
-        <AddToCartButton
-          className={`${s.cart_btn} ${setCardColor("className")}`}
-        />
+        <AddToCartButton className={`${s.cart_btn} ${s[cardColor]}`} />
       </div>
     </Link>
   );

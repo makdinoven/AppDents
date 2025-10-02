@@ -66,15 +66,15 @@ const BookCardImages = ({
           {realImages.map((_, i) => (
             <div
               key={i}
+              onMouseEnter={() => setHover(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                setShift(i);
+              }}
               className={`${s.bullet} ${i === shift ? s.active : ""}`}
-            >
-              <div
-                className={s.progress}
-                // style={{
-                //   width: `${i === shift ? progress : i < shift ? 100 : 0}%`,
-                // }}
-              />
-            </div>
+            ></div>
           ))}
         </div>
       )}
