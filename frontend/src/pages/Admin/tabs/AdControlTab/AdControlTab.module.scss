@@ -1,0 +1,10 @@
+.ad_control_tab {
+  @include flex-column;
+  gap: 40px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .ad_control_tab {
+    gap: 20px;
+  }
+}

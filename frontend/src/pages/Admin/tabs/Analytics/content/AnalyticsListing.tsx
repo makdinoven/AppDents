@@ -10,7 +10,7 @@ import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../../components/ui/Loader/Loader.tsx";
 import { Path } from "../../../../../routes/routes.ts";
-import SortByDate from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
+import SortOrderToggle from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
 import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 import Search from "../../../../../components/ui/Search/Search.tsx";
 import { t } from "i18next";
@@ -23,9 +23,7 @@ const AnalyticsListing = () => {
   const [landings, setLandings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [totals, setTotals] = useState<any>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
-    null,
-  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [adSort, setAdSort] = useState<"ad" | "no-ad" | "all">("all");
   const {
     dateRange,
@@ -37,17 +35,9 @@ const AnalyticsListing = () => {
   const analyticsSearch = "listing-search";
   const searchQuery = searchParams.get(analyticsSearch)?.toLowerCase() || "";
 
-  const handleSortDirectionChange = (direction: "asc" | "desc") => {
-    if (direction === sortDirection) {
-      setSortDirection(null);
-    } else {
-      setSortDirection(direction);
-    }
-  };
-
   useEffect(() => {
     fetchMostPopularLandings();
-  }, [language, limit, dateRange, sortDirection]);
+  }, [language, limit, dateRange, sortOrder]);
 
   const fetchMostPopularLandings = async () => {
     setLoading(true);
@@ -72,9 +62,9 @@ const AnalyticsListing = () => {
     if (dateRange.endDate) {
       params.end_date = dateRange.endDate;
     }
-    if (sortDirection) {
+    if (sortOrder) {
       params.sort_by = "created_at";
-      params.sort_dir = sortDirection;
+      params.sort_dir = sortOrder;
     }
 
     try {
@@ -155,10 +145,10 @@ const AnalyticsListing = () => {
             valueKey="value"
             labelKey="name"
           />
-          <SortByDate
+          <SortOrderToggle
             transKey={"Date"}
-            activeBtn={sortDirection}
-            handleBtnClick={handleSortDirectionChange}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
           />
         </div>
       </div>
