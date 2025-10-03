@@ -12,6 +12,10 @@ from ..models.models_v2 import LandingAdAssignment, AdAccount, User, AdStaff, Pu
     LandingAdPeriod, Landing
 
 router = APIRouter()
+
+DEFAULT_STAFF_NAME = "Не назначен"
+DEFAULT_ACCOUNT_NAME = "Не указан"
+
 def _active_ad_periods(db: Session, language: Optional[str] = None):
     """
     Возвращает список (Landing, started_at) только для тех, кто сейчас в рекламе,
@@ -216,65 +220,60 @@ def _color_rank_observation(c: str) -> int:
 @router.get("/ads/quarantine")
 def ads_quarantine_list(
     language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
-    # ── фильтры ──────────────────────────────────────────────────────────────
+    # ── фильтры
     q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
     staff_id: Optional[int] = Query(None, description="Фильтр по ответственному"),
     account_id: Optional[int] = Query(None, description="Фильтр по рекламному кабинету"),
-    colors: Optional[List[ColorLiteral]] = Query(None, description="Список цветов: white|orange|red|green"),
+    colors: Optional[List[ColorLiteral]] = Query(None, description="white|orange|red|green"),
     cycle_min: Optional[int] = Query(None),
     cycle_max: Optional[int] = Query(None),
-    days_min: Optional[int] = Query(None, description="Мин. дней в стадии (от начала склеенного эпизода)"),
+    days_min: Optional[int] = Query(None, description="Мин. дней в стадии"),
     days_max: Optional[int] = Query(None, description="Макс. дней в стадии"),
-    first5_min: Optional[int] = Query(None, description="Мин. продаж с рекламы в первые 5 дней"),
-    first5_max: Optional[int] = Query(None, description="Макс. продаж с рекламы в первые 5 дней"),
-    # ── сортировка ───────────────────────────────────────────────────────────
+    first5_min: Optional[int] = Query(None, description="Мин. ad-продаж за первые 5 дней"),
+    first5_max: Optional[int] = Query(None, description="Макс. ad-продаж за первые 5 дней"),
+    stage_start_from: Optional[date] = Query(None, description="Не раньше этой даты (склеённый старт)"),
+    stage_start_to: Optional[date] = Query(None, description="Не позже этой даты (склеённый старт)"),
+    # ── сортировка
     sort_by: Literal["deadline", "days", "first5", "cycle", "name", "language", "stage_start", "color"] = Query("deadline"),
     sort_dir: Literal["asc", "desc"] = Query("asc"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
-    """
-    Возвращает список лендингов в «Карантине» с фильтрами и сортировками.
-    Логика включения в карантин:
-      • В первые 5 дней от начала *склеенного* эпизода — всегда.
-      • После 5 дней — только если в первые 5 дней не было ни одной ad-покупки.
-    Цвет: белый/зелёный/оранжевый/красный — как в ранее согласованной логике.
-    """
     now = datetime.utcnow()
 
-    # 0) активные открытые периоды рекламы
     rows = _active_ad_periods(db, language)  # [(Landing, started_at_of_open_period)]
     if not rows:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
     landing_ids = [l.id for (l, _) in rows]
 
-    # 1) склеённый старт эпизода
+    # 1) начало СКЛЕЕННОГО эпизода
     episode_start_map = _active_episode_start_map(db, landing_ids)
 
-    # 2) «эффективный» счётчик циклов
-    cycles = _effective_cycle_count_map(db, landing_ids)
+    # 2) корректный счётчик кругов
+    cycles_map = _effective_cycle_count_map(db, landing_ids)
 
-    # 3) продажи в первые 5 дней (по склеённому старту)
+    # 3) продажи в первые 5 дней от СКЛЕЕННОГО начала
     pairs = [(l.id, episode_start_map.get(l.id)) for (l, _) in rows if episode_start_map.get(l.id)]
-    first5 = _ad_sales_first5_map(db, pairs)
+    first5_map = _ad_sales_first5_map(db, pairs)
 
-    # 4) разом подтянем назначения
-    assign_rows = (
-        db.query(LandingAdAssignment)
-          .filter(LandingAdAssignment.landing_id.in_(landing_ids))
-          .all()
-    )
+    # 4) назначения + словари имён (одним батчем)
+    assign_rows = db.query(LandingAdAssignment).filter(LandingAdAssignment.landing_id.in_(landing_ids)).all()
     assign_map = {a.landing_id: a for a in assign_rows}
+    staff_ids = [a.staff_id for a in assign_rows if a.staff_id is not None]
+    acc_ids = [a.account_id for a in assign_rows if a.account_id is not None]
+    staff_name_map = {s.id: s.name for s in db.query(AdStaff).filter(AdStaff.id.in_(staff_ids)).all()} if staff_ids else {}
+    acc_name_map = {a.id: a.name for a in db.query(AdAccount).filter(AdAccount.id.in_(acc_ids)).all()} if acc_ids else {}
 
-    # 5) соберём «сырые» строки для последующей фильтрации/сортировки
-    raw: List[dict] = []
+    # 5) собираем сырой список
+    raw = []
     for landing, _open_started_at in rows:
         st = episode_start_map.get(landing.id)
         if not st:
             continue
-        days = (now - st).days
-        first5_cnt = int(first5.get(landing.id, 0))
+
+        days = (now - st).days  # целые дни
+        first5_cnt = int(first5_map.get(landing.id, 0))
         in_first5_window = now < (st + timedelta(days=5))
         is_quarantine = in_first5_window or (not in_first5_window and first5_cnt == 0)
         if not is_quarantine:
@@ -284,11 +283,13 @@ def ads_quarantine_list(
         assign = assign_map.get(landing.id)
         q_end = st + timedelta(days=5)
 
+        cycle_no = int(cycles_map.get(landing.id, 0))  # гарантируем int
+
         raw.append({
             "id": landing.id,
             "landing_name": landing.landing_name,
             "language": landing.language,
-            "cycle_no": int(cycles.get(landing.id, 0)),
+            "cycle_no": cycle_no,
             "stage_started_dt": st,
             "quarantine_ends_dt": q_end,
             "days_in_stage": int(days),
@@ -298,7 +299,7 @@ def ads_quarantine_list(
             "account_id": getattr(assign, "account_id", None),
         })
 
-    # 6) фильтры
+    # 6) фильтры (инклюзивные границы)
     def _like(s: str, sub: str) -> bool:
         return sub.lower() in (s or "").lower()
 
@@ -312,17 +313,21 @@ def ads_quarantine_list(
             continue
         if colors and r["color"] not in colors:
             continue
-        if cycle_min is not None and r["cycle_no"] < cycle_min:
+        if cycle_min is not None and r["cycle_no"] < int(cycle_min):
             continue
-        if cycle_max is not None and r["cycle_no"] > cycle_max:
+        if cycle_max is not None and r["cycle_no"] > int(cycle_max):
             continue
-        if days_min is not None and r["days_in_stage"] < days_min:
+        if days_min is not None and r["days_in_stage"] < int(days_min):
             continue
-        if days_max is not None and r["days_in_stage"] > days_max:
+        if days_max is not None and r["days_in_stage"] > int(days_max):
             continue
-        if first5_min is not None and r["ad_purchases_first_5_days"] < first5_min:
+        if first5_min is not None and r["ad_purchases_first_5_days"] < int(first5_min):
             continue
-        if first5_max is not None and r["ad_purchases_first_5_days"] > first5_max:
+        if first5_max is not None and r["ad_purchases_first_5_days"] > int(first5_max):
+            continue
+        if stage_start_from is not None and r["stage_started_dt"].date() < stage_start_from:
+            continue
+        if stage_start_to is not None and r["stage_started_dt"].date() > stage_start_to:
             continue
         filtered.append(r)
 
@@ -345,26 +350,32 @@ def ads_quarantine_list(
     elif sort_by == "color":
         keyfn = lambda x: _color_rank_quarantine(x["color"])
     else:
-        keyfn = lambda x: x["quarantine_ends_dt"]  # fallback
+        keyfn = lambda x: x["quarantine_ends_dt"]
 
     sorted_rows = sorted(filtered, key=keyfn, reverse=reverse)
 
-    # 8) финальная форма (ISO-строки)
-    items = [{
-        "id": r["id"],
-        "landing_name": r["landing_name"],
-        "language": r["language"],
-        "cycle_no": r["cycle_no"],
-        "stage_started_at": r["stage_started_dt"].isoformat() + "Z",
-        "quarantine_ends_at": r["quarantine_ends_dt"].isoformat() + "Z",
-        "days_in_stage": r["days_in_stage"],
-        "ad_purchases_first_5_days": r["ad_purchases_first_5_days"],
-        "color": r["color"],
-        "assignee": {
-            "staff_id": r["staff_id"],
-            "account_id": r["account_id"],
-        }
-    } for r in sorted_rows]
+    # 8) финальный ответ (добавили имена, не ломая структуру)
+    items = []
+    for r in sorted_rows:
+        sid = r["staff_id"]
+        aid = r["account_id"]
+        items.append({
+            "id": r["id"],
+            "landing_name": r["landing_name"],
+            "language": r["language"],
+            "cycle_no": r["cycle_no"],
+            "stage_started_at": r["stage_started_dt"].isoformat() + "Z",
+            "quarantine_ends_at": r["quarantine_ends_dt"].isoformat() + "Z",
+            "days_in_stage": r["days_in_stage"],
+            "ad_purchases_first_5_days": r["ad_purchases_first_5_days"],
+            "color": r["color"],
+            "assignee": {
+                "staff_id": sid,
+                "staff_name": staff_name_map.get(sid, DEFAULT_STAFF_NAME) if sid is not None else DEFAULT_STAFF_NAME,
+                "account_id": aid,
+                "account_name": acc_name_map.get(aid, DEFAULT_ACCOUNT_NAME) if aid is not None else DEFAULT_ACCOUNT_NAME,
+            }
+        })
 
     return {"items": items, "as_of": now.isoformat() + "Z"}
 
@@ -372,85 +383,75 @@ def ads_quarantine_list(
 @router.get("/ads/observation")
 def ads_observation_list(
     language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
-    # ── фильтры ──────────────────────────────────────────────────────────────
+    # ── фильтры
     q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
     staff_id: Optional[int] = Query(None),
     account_id: Optional[int] = Query(None),
     colors: Optional[List[ColorLiteral]] = Query(None, description="white|orange|red|green"),
     cycle_min: Optional[int] = Query(None),
     cycle_max: Optional[int] = Query(None),
-    days_min: Optional[int] = Query(None, description="Мин. дней с начала склеенного эпизода"),
+    days_min: Optional[int] = Query(None),
     days_max: Optional[int] = Query(None),
-    sales10_min: Optional[int] = Query(None, description="Мин. продаж с рекламы за последние 10 дней"),
-    sales10_max: Optional[int] = Query(None, description="Макс. продаж с рекламы за последние 10 дней"),
-    # ── сортировка ───────────────────────────────────────────────────────────
+    sales10_min: Optional[int] = Query(None, description="Мин. ad-продаж за последние 10 дней"),
+    sales10_max: Optional[int] = Query(None, description="Макс. ad-продаж за последние 10 дней"),
+    stage_start_from: Optional[date] = Query(None, description="Не раньше этой даты (склеённый старт)"),
+    stage_start_to: Optional[date] = Query(None, description="Не позже этой даты (склеённый старт)"),
+    # ── сортировка
     sort_by: Literal["sales10", "days", "cycle", "name", "language", "stage_start", "color"] = Query("sales10"),
     sort_dir: Literal["asc", "desc"] = Query("desc"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
-    """
-    Возвращает список лендингов в «Наблюдении» с фильтрами и сортировками.
-    В «Наблюдение» попадают активные лендинги, у которых:
-      • прошло >= 5 дней от начала *склеенного* эпизода,
-      • и есть ≥ 1 продажа с рекламы в первые 5 дней.
-    Цвет по правилу наблюдения (последние 10 дней: 1 — red, 2–3 — orange, >3 — green).
-    """
     now = datetime.utcnow()
 
-    rows = _active_ad_periods(db, language)  # [(Landing, started_at_of_open_period)]
+    rows = _active_ad_periods(db, language)
     if not rows:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
     landing_ids = [l.id for (l, _) in rows]
-
-    # склеённый старт эпизода
     episode_start_map = _active_episode_start_map(db, landing_ids)
+    cycles_map = _effective_cycle_count_map(db, landing_ids)
 
-    # счётчик циклов
-    cycles = _effective_cycle_count_map(db, landing_ids)
-
-    # продажи в первые 5 дней — по склеённому старту
     pairs = [(l.id, episode_start_map.get(l.id)) for (l, _) in rows if episode_start_map.get(l.id)]
-    first5 = _ad_sales_first5_map(db, pairs)
+    first5_map = _ad_sales_first5_map(db, pairs)
 
     # кандидаты в наблюдение
     obs_ids = [
         l.id for (l, _st) in rows
         if (episode_start_map.get(l.id) is not None
             and now >= episode_start_map[l.id] + timedelta(days=5)
-            and int(first5.get(l.id, 0)) >= 1)
+            and int(first5_map.get(l.id, 0)) >= 1)
     ]
     if not obs_ids:
         return {"items": [], "as_of": now.isoformat() + "Z"}
 
-    # продажи за последние 10 дней
-    last10 = _ad_sales_last10_map(db, obs_ids)
+    last10_map = _ad_sales_last10_map(db, obs_ids)
 
-    # назначения
-    assign_rows = (
-        db.query(LandingAdAssignment)
-          .filter(LandingAdAssignment.landing_id.in_(obs_ids))
-          .all()
-    )
+    # назначения + имена
+    assign_rows = db.query(LandingAdAssignment).filter(LandingAdAssignment.landing_id.in_(obs_ids)).all()
     assign_map = {a.landing_id: a for a in assign_rows}
+    staff_ids = [a.staff_id for a in assign_rows if a.staff_id is not None]
+    acc_ids = [a.account_id for a in assign_rows if a.account_id is not None]
+    staff_name_map = {s.id: s.name for s in db.query(AdStaff).filter(AdStaff.id.in_(staff_ids)).all()} if staff_ids else {}
+    acc_name_map = {a.id: a.name for a in db.query(AdAccount).filter(AdAccount.id.in_(acc_ids)).all()} if acc_ids else {}
 
     # сырые строки
-    raw: List[dict] = []
+    raw = []
     for (landing, _st_open) in rows:
         if landing.id not in obs_ids:
             continue
         st = episode_start_map[landing.id]
         days = (now - st).days
-        sales10 = int(last10.get(landing.id, 0))
-        color = _o_color(sales10)  # по правилам наблюдения
+        sales10 = int(last10_map.get(landing.id, 0))
+        color = _o_color(sales10)
         assign = assign_map.get(landing.id)
+        cycle_no = int(cycles_map.get(landing.id, 0))
 
         raw.append({
             "id": landing.id,
             "landing_name": landing.landing_name,
             "language": landing.language,
-            "cycle_no": int(cycles.get(landing.id, 0)),
+            "cycle_no": cycle_no,
             "stage_started_dt": st,
             "days_in_stage": int(days),
             "ad_purchases_last_10_days": sales10,
@@ -459,7 +460,7 @@ def ads_observation_list(
             "account_id": getattr(assign, "account_id", None),
         })
 
-    # фильтры
+    # фильтры (инклюзивные)
     def _like(s: str, sub: str) -> bool:
         return sub.lower() in (s or "").lower()
 
@@ -473,17 +474,21 @@ def ads_observation_list(
             continue
         if colors and r["color"] not in colors:
             continue
-        if cycle_min is not None and r["cycle_no"] < cycle_min:
+        if cycle_min is not None and r["cycle_no"] < int(cycle_min):
             continue
-        if cycle_max is not None and r["cycle_no"] > cycle_max:
+        if cycle_max is not None and r["cycle_no"] > int(cycle_max):
             continue
-        if days_min is not None and r["days_in_stage"] < days_min:
+        if days_min is not None and r["days_in_stage"] < int(days_min):
             continue
-        if days_max is not None and r["days_in_stage"] > days_max:
+        if days_max is not None and r["days_in_stage"] > int(days_max):
             continue
-        if sales10_min is not None and r["ad_purchases_last_10_days"] < sales10_min:
+        if sales10_min is not None and r["ad_purchases_last_10_days"] < int(sales10_min):
             continue
-        if sales10_max is not None and r["ad_purchases_last_10_days"] > sales10_max:
+        if sales10_max is not None and r["ad_purchases_last_10_days"] > int(sales10_max):
+            continue
+        if stage_start_from is not None and r["stage_started_dt"].date() < stage_start_from:
+            continue
+        if stage_start_to is not None and r["stage_started_dt"].date() > stage_start_to:
             continue
         filtered.append(r)
 
@@ -504,25 +509,30 @@ def ads_observation_list(
     elif sort_by == "color":
         keyfn = lambda x: _color_rank_observation(x["color"])
     else:
-        keyfn = lambda x: x["ad_purchases_last_10_days"]  # fallback
+        keyfn = lambda x: x["ad_purchases_last_10_days"]
 
     sorted_rows = sorted(filtered, key=keyfn, reverse=reverse)
 
-    # финальный ответ
-    items = [{
-        "id": r["id"],
-        "landing_name": r["landing_name"],
-        "language": r["language"],
-        "cycle_no": r["cycle_no"],
-        "stage_started_at": r["stage_started_dt"].isoformat() + "Z",
-        "days_in_stage": r["days_in_stage"],  # добавили, чтобы можно было понимать «возраст» эпизода
-        "ad_purchases_last_10_days": r["ad_purchases_last_10_days"],
-        "color": r["color"],
-        "assignee": {
-            "staff_id": r["staff_id"],
-            "account_id": r["account_id"],
-        }
-    } for r in sorted_rows]
+    items = []
+    for r in sorted_rows:
+        sid = r["staff_id"]
+        aid = r["account_id"]
+        items.append({
+            "id": r["id"],
+            "landing_name": r["landing_name"],
+            "language": r["language"],
+            "cycle_no": r["cycle_no"],
+            "stage_started_at": r["stage_started_dt"].isoformat() + "Z",
+            "days_in_stage": r["days_in_stage"],
+            "ad_purchases_last_10_days": r["ad_purchases_last_10_days"],
+            "color": r["color"],
+            "assignee": {
+                "staff_id": sid,
+                "staff_name": staff_name_map.get(sid, DEFAULT_STAFF_NAME) if sid is not None else DEFAULT_STAFF_NAME,
+                "account_id": aid,
+                "account_name": acc_name_map.get(aid, DEFAULT_ACCOUNT_NAME) if aid is not None else DEFAULT_ACCOUNT_NAME,
+            }
+        })
 
     return {"items": items, "as_of": now.isoformat() + "Z"}
 
