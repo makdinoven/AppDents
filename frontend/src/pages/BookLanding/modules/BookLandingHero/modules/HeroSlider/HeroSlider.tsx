@@ -2,7 +2,11 @@ import { FC, useState, JSX, useRef, useEffect } from "react";
 
 import "swiper/swiper-bundle.css";
 import s from "./HeroSlider.module.scss";
-import { CircleArrowSmall } from "../../../../../../assets/icons";
+import {
+  ArrowX,
+  BackArrow,
+  CircleArrowSmall,
+} from "../../../../../../assets/icons";
 import ModalOverlay from "../../../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 
 type HeroSliderProps = {
@@ -18,11 +22,15 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
   const lastItemRef = useRef<HTMLLIElement>(null);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const MOBILE = 576;
+  const TABLET = 768;
   const [showArrow, setShowArrow] = useState({
     up: false,
     down: true,
+    left: false,
+    right: true,
   });
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const closeFullscreenRef = useRef<() => void>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -70,7 +78,7 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
         {resultGallery.map((item: any, index) =>
           item.url ? (
             <li
-              key={item.url}
+              key={item.url + index}
               onClick={() => handleSlideChange(item.index)}
               className={activeSlideIndex === item.index ? s.active : ""}
               ref={
@@ -85,7 +93,9 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
             </li>
           ) : (
             <li key={item.index}>
-              <div className={s.photo_placeholder} />
+              <div
+                className={`${s.photo_placeholder} ${isFullScreen && s.full_screen}`}
+              />
             </li>
           ),
         )}
@@ -105,20 +115,20 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
   };
 
   const checkScrollPosition = () => {
-    if (galleryRef.current && firstItemRef.current && lastItemRef.current) {
-      const galleryRect = galleryRef.current.getBoundingClientRect();
-      const firstItemRect = firstItemRef.current.getBoundingClientRect();
-      const lastItemRect = lastItemRef.current.getBoundingClientRect();
+    if (galleryRef.current) {
+      const el = galleryRef.current;
 
-      const isFirstItemAtTop =
-        Math.abs(firstItemRect.top - galleryRect.top) < 5;
+      const isAtLeft = el.scrollLeft <= 5;
+      const isAtRight = el.scrollWidth - el.clientWidth - el.scrollLeft <= 5;
 
-      const isLastItemAtBottom =
-        Math.abs(lastItemRect.bottom - galleryRect.bottom) < 5;
+      const isAtTop = el.scrollTop <= 5;
+      const isAtBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= 5;
 
       setShowArrow({
-        up: !isFirstItemAtTop,
-        down: !isLastItemAtBottom,
+        up: !isAtTop,
+        down: !isAtBottom,
+        left: !isAtLeft,
+        right: !isAtRight,
       });
     }
   };
@@ -133,18 +143,24 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     }
   }, []);
 
-  const handleScroll = (direction: "up" | "down") => {
+  const handleScroll = (direction: "prev" | "next") => {
     if (galleryRef.current) {
       const isMobile = screenWidth < MOBILE;
+      const isTablet = screenWidth < TABLET;
 
-      if (isMobile) {
+      if (isMobile || (isTablet && isFullScreen)) {
         galleryRef.current.scrollBy({
-          left: direction === "up" ? -132 : 132,
+          left: direction === "prev" ? -132 : 132,
+          behavior: "smooth",
+        });
+      } else if (isFullScreen) {
+        galleryRef.current.scrollBy({
+          top: direction === "prev" ? -200 : 200,
           behavior: "smooth",
         });
       } else {
         galleryRef.current.scrollBy({
-          top: direction === "up" ? -132 : 132,
+          top: direction === "prev" ? -132 : 132,
           behavior: "smooth",
         });
       }
@@ -153,27 +169,77 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     }
   };
 
-  const handleOpenFullScreen = () => {
-    setIsFullScreen((prev) => !prev);
+  const handleFullScreen = (state: boolean) => {
+    if (!state) {
+      closeFullscreenRef.current?.();
+    } else {
+      setIsFullScreen(true);
+    }
   };
 
-  const slider = (
-    <div className={`${s.slider} ${isFullScreen && s.full_screen}`}>
-      {needsArrows && showArrow.up && (
-        <CircleArrowSmall className={s.up} onClick={() => handleScroll("up")} />
-      )}
-      {renderGallery()}
-      {needsArrows && showArrow.down && (
-        <CircleArrowSmall
-          className={s.down}
-          onClick={() => handleScroll("down")}
-        />
-      )}
+  const goToPrev = () => {
+    setActiveSlideIndex((prev) => {
+      const newIndex = prev === 0 ? prev : prev - 1;
+      const { url } = resultGallery[newIndex];
+      setActiveUrl(url);
+      return newIndex;
+    });
+  };
+  const goToNext = () => {
+    setActiveSlideIndex((prev) => {
+      const newIndex = prev === gallery.length - 1 ? prev : prev + 1;
+      const { url } = resultGallery[newIndex];
+      setActiveUrl(url);
+      return newIndex;
+    });
+  };
+
+  const renderArrows = (
+    type: "back" | "circle",
+    content: JSX.Element | (() => JSX.Element),
+  ) => {
+    const renderedContent = typeof content === "function" ? content() : content;
+    return type === "circle" ? (
+      <>
+        {(showArrow.up || showArrow.left) && (
+          <CircleArrowSmall
+            className={`${s.arrow_up} ${isFullScreen && s.full_screen}`}
+            onClick={() => handleScroll("prev")}
+          />
+        )}
+        {renderedContent}
+        {(showArrow.down || showArrow.right) && (
+          <CircleArrowSmall
+            className={`${s.arrow_down} ${isFullScreen && s.full_screen}`}
+            onClick={() => handleScroll("next")}
+          />
+        )}
+      </>
+    ) : (
+      <>
+        <button
+          className={`${s.arrow_prev} ${activeSlideIndex === 0 && s.disabled}`}
+          onClick={goToPrev}
+        >
+          <BackArrow />
+        </button>
+        {renderedContent}
+        <button
+          className={`${s.arrow_next} ${activeSlideIndex === gallery.length - 1 && s.disabled}`}
+          onClick={goToNext}
+        >
+          <BackArrow />
+        </button>
+      </>
+    );
+  };
+
+  const preview = (
+    <div className={`${s.preview_photo} ${isFullScreen && s.full_screen}`}>
       <img
         src={activeUrl}
         alt="preview"
-        className={`${s.preview_photo} ${isFullScreen && s.full_screen}`}
-        onClick={handleOpenFullScreen}
+        onClick={() => handleFullScreen(true)}
       />
       <div className={`${s.slide_indicators} ${isFullScreen && s.full_screen}`}>
         {Array(gallery.length)
@@ -189,11 +255,26 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     </div>
   );
 
+  const slider = (
+    <div className={`${s.slider} ${isFullScreen && s.full_screen}`}>
+      {needsArrows ? renderArrows("circle", renderGallery) : renderGallery()}
+      <div className={`${s.preview_section} ${isFullScreen && s.full_screen}`}>
+        {isFullScreen ? renderArrows("back", preview) : preview}
+      </div>
+      {isFullScreen && (
+        <button className={s.close} onClick={() => handleFullScreen(false)}>
+          <ArrowX />
+        </button>
+      )}
+    </div>
+  );
+
   return isFullScreen ? (
     <ModalOverlay
       isVisibleCondition={isFullScreen}
       modalPosition="top"
-      customHandleClose={handleOpenFullScreen}
+      customHandleClose={() => setIsFullScreen(false)}
+      onInitClose={(fn) => (closeFullscreenRef.current = fn)}
     >
       <div className={s.modal}>{slider}</div>
     </ModalOverlay>
