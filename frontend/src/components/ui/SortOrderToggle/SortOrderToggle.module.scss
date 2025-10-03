@@ -4,11 +4,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  width: 100%;
   border: 1.5px solid $hover-color;
   padding: 0 12px;
   border-radius: 15px;
   min-height: 39px;
+  height: fit-content;
 
   .buttons {
     display: flex;

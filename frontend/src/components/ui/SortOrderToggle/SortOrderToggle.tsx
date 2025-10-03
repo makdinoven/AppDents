@@ -2,30 +2,42 @@ import s from "./SortOrderToggle.module.scss";
 import { BackArrow } from "../../../assets/icons";
 import { Trans } from "react-i18next";
 
+export type SortDirectionType = "asc" | "desc" | null;
+
 const SortOrderToggle = ({
-  activeBtn,
-  handleBtnClick,
+  sortOrder,
+  setSortOrder,
   transKey,
 }: {
-  transKey: string;
-  activeBtn: "asc" | "desc" | null;
-  handleBtnClick: (val: "asc" | "desc") => void;
+  transKey?: string;
+  sortOrder: SortDirectionType;
+  setSortOrder: (direction: SortDirectionType) => void;
 }) => {
+  const handleSortDirectionChange = (direction: SortDirectionType) => {
+    if (direction === sortOrder) {
+      setSortOrder(null);
+    } else {
+      setSortOrder(direction);
+    }
+  };
+
   return (
     <div className={s.sort_container}>
-      <span>
-        <Trans i18nKey={transKey} />
-      </span>
+      {transKey && (
+        <span>
+          <Trans i18nKey={transKey} />
+        </span>
+      )}
       <div className={s.buttons}>
         <button
-          onClick={() => handleBtnClick("asc")}
-          className={`${s.up_btn} ${activeBtn === "asc" ? s.active : ""}`}
+          onClick={() => handleSortDirectionChange("asc")}
+          className={`${s.up_btn} ${sortOrder === "asc" ? s.active : ""}`}
         >
           <BackArrow />
         </button>
         <button
-          onClick={() => handleBtnClick("desc")}
-          className={`${s.down_btn} ${activeBtn === "desc" ? s.active : ""}`}
+          onClick={() => handleSortDirectionChange("desc")}
+          className={`${s.down_btn} ${sortOrder === "desc" ? s.active : ""}`}
         >
           <BackArrow />
         </button>
