@@ -56,6 +56,10 @@
           max-width: 100px;
         }
       }
+
+      &.hidden {
+        visibility: hidden;
+      }
     }
 
     .prev {

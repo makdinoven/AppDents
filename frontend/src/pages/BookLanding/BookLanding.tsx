@@ -21,7 +21,6 @@ const BookLanding = () => {
         return response.json();
       })
       .then((data) => {
-        console.log(data);
         setData(data);
       })
       .catch((error) => {

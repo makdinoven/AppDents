@@ -27,8 +27,9 @@ const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
   const [isRefsReady, setIsRefsReady] = useState(false);
   const sliderRef = useRef<UniversalSliderRef>(null);
 
-  const prevIndex = activeIndex > 0 ? activeIndex - 1 : slides.length - 1;
-  const nextIndex = activeIndex < slides.length - 1 ? activeIndex + 1 : 0;
+  const prevIndex = activeIndex > 0 ? activeIndex - 1 : 0;
+  const nextIndex =
+    activeIndex < slides.length - 1 ? activeIndex + 1 : slides.length - 1;
 
   const prevSlide = slideRefs.current[prevIndex];
   const nextSlide = slideRefs.current[nextIndex];
@@ -53,7 +54,7 @@ const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
         <div className={s.custom_nav}>
           {prevSlide && (
             <button
-              className={s.prev}
+              className={`${s.prev} ${activeIndex > 0 && s.hidden}`}
               onClick={() => sliderRef.current?.slidePrev()}
             >
               <span className={s.label}>{prevSlide?.title}</span>
@@ -62,7 +63,7 @@ const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
           )}
           {nextSlide && (
             <button
-              className={s.next}
+              className={`${s.next} ${activeIndex < slides.length - 1 && s.hidden}`}
               onClick={() => sliderRef.current?.slideNext()}
             >
               <span className={s.label}>{nextSlide?.title}</span>
