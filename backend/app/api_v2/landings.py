@@ -811,10 +811,17 @@ def track_landing_visit(
     if not exists:
         raise HTTPException(status_code=404, detail="Landing not found")
 
+    # записываем визит
     db.add(LandingVisit(
         landing_id=landing_id,
         from_ad=(payload.from_ad if payload else False),
     ))
+
+    # если визит с рекламы — продлеваем TTL и при необходимости открываем период
+    if payload and payload.from_ad:
+        from ..services_v2.landing_service import _ensure_ad_on_and_extend_ttl
+        _ensure_ad_on_and_extend_ttl(db, landing_id, actor_user_id=None)
+
     db.commit()
     return {"ok": True}
 
