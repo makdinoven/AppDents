@@ -424,6 +424,11 @@
     "found": "Books found: {{count}}"
   },
 
+  "bookCard": {
+  "tags": "Tags",
+  "authors": "Authors"
+  },
+
   "admin": {
     "save": "Save changes",
     "update": "update",
