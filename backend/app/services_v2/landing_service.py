@@ -677,12 +677,39 @@ def _ensure_ad_on_and_extend_ttl(
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
     now = datetime.utcnow()
-    # 1) лог ad-визита
-    visit = AdVisit(landing_id=landing_id, fbp=fbp, fbc=fbc, ip_address=ip)
+
+    # 1) лог визита из рекламы
+    visit = AdVisit(
+        landing_id=landing_id,
+        fbp=fbp,
+        fbc=fbc,
+        ip_address=ip,
+    )
     db.add(visit)
-    # 2) включить/продлить рекламу и, если нужно, открыть период
-    _ensure_ad_on_and_extend_ttl(db, landing_id, actor_user_id=None, now=now)
-    # 3) один общий коммит
+
+    # 2) включить/продлить рекламу и открыть период
+    landing = (
+        db.query(Landing)
+          .filter(Landing.id == landing_id)
+          .with_for_update()
+          .first()
+    )
+    if not landing:
+        db.commit()  # сохраним хотя бы визит
+        return
+
+    if not landing.in_advertising:
+        landing.in_advertising = True
+        _open_ad_period_if_needed(db, landing_id, started_by=None)
+    else:
+        # даже если уже в рекламе, на всякий случай проверим, что открытый период есть
+        _open_ad_period_if_needed(db, landing_id, started_by=None)
+
+    # продлеваем TTL
+    new_ttl = now + AD_TTL
+    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+        landing.ad_flag_expires_at = new_ttl
+
     db.commit()
 
 def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
