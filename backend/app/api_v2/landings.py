@@ -19,7 +19,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
     track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
-    get_sales_totals
+    get_sales_totals, open_ad_period_if_needed, AD_TTL
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
@@ -811,19 +811,37 @@ def track_landing_visit(
     if not exists:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    # записываем визит
+    from_ad = bool(payload and payload.from_ad)
+
+    # 1) фиксируем визит
     db.add(LandingVisit(
         landing_id=landing_id,
-        from_ad=(payload.from_ad if payload else False),
+        from_ad=from_ad,
     ))
 
-    # если визит с рекламы — продлеваем TTL и при необходимости открываем период
-    if payload and payload.from_ad:
-        from ..services_v2.landing_service import _ensure_ad_on_and_extend_ttl
-        _ensure_ad_on_and_extend_ttl(db, landing_id, actor_user_id=None)
+    # 2) если визит рекламный — включаем/продлеваем флаг рекламы + открываем период
+    if from_ad:
+        now = datetime.utcnow()
+        landing = (
+            db.query(Landing)
+              .filter(Landing.id == landing_id)
+              .with_for_update()
+              .first()
+        )
+        if landing:
+            # если была выключена — включаем и открываем период
+            if not landing.in_advertising:
+                landing.in_advertising = True
+                open_ad_period_if_needed(db, landing_id, started_by=None)
+
+            # продлеваем TTL
+            new_ttl = now + AD_TTL
+            if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+                landing.ad_flag_expires_at = new_ttl
 
     db.commit()
     return {"ok": True}
+
 
 Granularity = Literal["hour", "day"]
 
