@@ -542,7 +542,7 @@ class StaffIn(BaseModel):
 
 @router.get("/ads/staff")
 def list_ad_staff(db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
-    rows = db.query(AdStaff).order_by(AdStaff.name.asc()).all()
+    rows = db.query(AdStaff).order_by(AdStaff.id.asc()).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
 @router.post("/ads/staff", status_code=201)
@@ -568,7 +568,7 @@ class AccountIn(BaseModel):
 
 @router.get("/ads/accounts")
 def list_ad_accounts(db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
-    rows = db.query(AdAccount).order_by(AdAccount.name.asc()).all()
+    rows = db.query(AdAccount).order_by(AdAccount.id.asc()).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
 @router.post("/ads/accounts", status_code=201)
