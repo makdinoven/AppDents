@@ -203,6 +203,19 @@ export const formatShortDate = (isoDate: string) => {
   });
 };
 
+export const transformIdNameArrToValueNameArr = (
+  arr: { id: number; name: string }[],
+  addAllParam?: boolean,
+) => {
+  return [
+    addAllParam && { value: "all", name: "All" },
+    ...arr.map((item) => ({
+      value: item.id,
+      name: item.name,
+    })),
+  ];
+};
+
 export const getBasePath = (pathname: string) => {
   const segments = pathname.replace(/^\/|\/$/g, "").split("/");
 

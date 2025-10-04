@@ -36,15 +36,7 @@ const Table = <T extends Record<string, any>>({
   const renderCell = (key: string, value: any, row: T) => {
     if (key === "landing_name") {
       if (landingLinkByIdPath) {
-        return (
-          <a
-            href={`${landingLinkByIdPath}/${row.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {value}
-          </a>
-        );
+        return <a href={`${landingLinkByIdPath}/${row.id}`}>{value}</a>;
       }
 
       const slug = row.slug || row.landing_slug;

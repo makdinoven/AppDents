@@ -5,10 +5,16 @@
 }
 
 .info_container {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   justify-items: center;
+}
+
+.multi_select_container {
+  position: relative;
+  width: 100%;
 }
 
 .created_at {

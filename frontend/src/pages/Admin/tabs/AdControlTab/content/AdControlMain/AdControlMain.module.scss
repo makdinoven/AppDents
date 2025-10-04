@@ -30,6 +30,12 @@
   }
 }
 
+.ad_control_list {
+  @include flex-column;
+  position: relative;
+  gap: 15px;
+}
+
 .sort_filters {
   display: grid;
   grid-template-columns: 3.5fr 1fr;
