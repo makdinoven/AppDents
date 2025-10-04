@@ -112,11 +112,14 @@ const AnalyticsPurchases = () => {
               handleClick={(val) => setChartMode(val)}
             />
           </div>
-          <PurchasesSourceChart
-            loading={loading}
-            data={chartData}
-            type={chartMode}
-          />
+          {chartData && (
+            <PurchasesSourceChart
+              loading={loading}
+              data={chartData}
+              type={chartMode}
+            />
+          )}
+
           <Table
             loading={loading}
             data={data.items}

@@ -230,4 +230,26 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getAdListQuarantine(params: any) {
+    return instance.get("ad_control/ads/quarantine", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdListObservation(params: any) {
+    return instance.get("ad_control/ads/observation", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdStaffList() {
+    return instance.get("ad_control/ads/staff", {
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdAccountsList() {
+    return instance.get("ad_control/ads/accounts", {
+      headers: getAuthHeaders(),
+    });
+  },
 };

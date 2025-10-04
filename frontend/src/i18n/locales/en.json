@@ -534,6 +534,9 @@
           "placeholder": "Enter answer format.."
         }
       }
+    },
+    "adControl": {
+      "adControl": "Ad control"
     }
   }
 }
