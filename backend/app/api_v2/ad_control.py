@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
+from pymysql import IntegrityError
 from sqlalchemy import func, text, and_
 from sqlalchemy.orm import Session
 
@@ -542,7 +543,7 @@ class StaffIn(BaseModel):
 
 @router.get("/ads/staff")
 def list_ad_staff(db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
-    rows = db.query(AdStaff).order_by(AdStaff.id.asc()).all()
+    rows = db.query(AdStaff).order_by(AdStaff.id.desc()).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
 @router.post("/ads/staff", status_code=201)
@@ -559,8 +560,24 @@ def update_ad_staff(staff_id: int, payload: StaffIn, db: Session = Depends(get_d
 @router.delete("/ads/staff/{staff_id}", status_code=204)
 def delete_ad_staff(staff_id: int, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     row = db.query(AdStaff).get(staff_id)
-    if not row: raise HTTPException(404, "Staff not found")
-    db.delete(row); db.commit(); return
+    if not row:
+        raise HTTPException(404, "Staff not found")
+
+    # 1) отвяжем все назначения этого сотрудника
+    db.query(LandingAdAssignment)\
+      .filter(LandingAdAssignment.staff_id == staff_id)\
+      .update({LandingAdAssignment.staff_id: None}, synchronize_session=False)
+
+    # 2) удаляем сотрудника
+    try:
+        db.delete(row)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # На случай, если есть другие таблицы с FK — сообщим аккуратно
+        raise HTTPException(409, "Cannot delete staff: still referenced elsewhere")
+    return
+
 
 # ---- ACCOUNTS ----
 class AccountIn(BaseModel):
@@ -568,7 +585,7 @@ class AccountIn(BaseModel):
 
 @router.get("/ads/accounts")
 def list_ad_accounts(db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
-    rows = db.query(AdAccount).order_by(AdAccount.id.asc()).all()
+    rows = db.query(AdAccount).order_by(AdAccount.id.desc()).all()
     return [{"id": r.id, "name": r.name} for r in rows]
 
 @router.post("/ads/accounts", status_code=201)
@@ -585,8 +602,22 @@ def update_ad_account(account_id: int, payload: AccountIn, db: Session = Depends
 @router.delete("/ads/accounts/{account_id}", status_code=204)
 def delete_ad_account(account_id: int, db: Session = Depends(get_db), current_admin: User = Depends(require_roles("admin"))):
     row = db.query(AdAccount).get(account_id)
-    if not row: raise HTTPException(404, "Account not found")
-    db.delete(row); db.commit(); return
+    if not row:
+        raise HTTPException(404, "Account not found")
+
+    # 1) отвяжем все назначения этого аккаунта
+    db.query(LandingAdAssignment)\
+      .filter(LandingAdAssignment.account_id == account_id)\
+      .update({LandingAdAssignment.account_id: None}, synchronize_session=False)
+
+    # 2) удаляем аккаунт
+    try:
+        db.delete(row)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Cannot delete account: still referenced elsewhere")
+    return
 
 # ---- ASSIGNMENT ----
 class AssignmentIn(BaseModel):
