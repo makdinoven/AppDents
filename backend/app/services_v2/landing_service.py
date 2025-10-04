@@ -617,15 +617,27 @@ def get_sales_totals(
 
 AD_TTL = timedelta(hours=14)
 
-def _open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None = None):
-    open_period = (
-        db.query(LandingAdPeriod)
-          .filter(LandingAdPeriod.landing_id == landing_id,
-                  LandingAdPeriod.ended_at.is_(None))
+def open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None):
+    # блокируем открытый период, чтобы избежать гонки
+    open_exists = (
+        db.query(LandingAdPeriod.id)
+          .filter(
+              LandingAdPeriod.landing_id == landing_id,
+              LandingAdPeriod.ended_at.is_(None),
+          )
+          .with_for_update()
           .first()
     )
-    if not open_period:
-        db.add(LandingAdPeriod(landing_id=landing_id, started_by=started_by))
+    if open_exists:
+        return
+
+    db.add(LandingAdPeriod(
+        landing_id=landing_id,
+        started_at=datetime.utcnow(),   # <-- обязательно!
+        ended_at=None,
+        started_by=started_by,
+        ended_by=None,
+    ))
 
 def _ensure_ad_on_and_extend_ttl(
     db: Session,
