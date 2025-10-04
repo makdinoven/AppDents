@@ -19,6 +19,7 @@ import { useDateRangeFilter } from "../../../../../../common/hooks/useDateRangeF
 import { adminApi } from "../../../../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../../../../../components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../../assets/icons";
+import { transformIdNameArrToValueNameArr } from "../../../../../../common/helpers/helpers.ts";
 
 const adControlSearch = "ad-control-q";
 
@@ -63,16 +64,6 @@ const AdControlMain = () => {
     selectedPreset,
     setPreset,
   } = useDateRangeFilter("custom");
-
-  const transformArr = (arr: { id: number; name: string }[]) => {
-    return [
-      { value: "all", name: "All" },
-      ...arr.map((item) => ({
-        value: item.id,
-        name: item.name,
-      })),
-    ];
-  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -184,7 +175,7 @@ const AdControlMain = () => {
   const fetchStaff = async () => {
     try {
       const res = await adminApi.getAdStaffList();
-      setStaffList(transformArr(res.data));
+      setStaffList(transformIdNameArrToValueNameArr(res.data, true));
     } catch (error) {
       console.error(error);
     }
@@ -193,7 +184,7 @@ const AdControlMain = () => {
   const fetchAccounts = async () => {
     try {
       const res = await adminApi.getAdAccountsList();
-      setAccountsList(transformArr(res.data));
+      setAccountsList(transformIdNameArrToValueNameArr(res.data, true));
     } catch (error) {
       console.error(error);
     }

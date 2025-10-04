@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   formatIsoToLocalDatetime,
   getFormattedDate,
+  transformIdNameArrToValueNameArr,
 } from "../../../../../../common/helpers/helpers.ts";
 import DateRangeFilter from "../../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../../../components/ui/Loader/Loader.tsx";
@@ -13,12 +14,21 @@ import s from "./LandingAnalytics.module.scss";
 import LandingAnalyticsChart from "../../Charts/LandingAnalyticsChart.tsx";
 import Table from "../../../../../../components/ui/Table/Table.tsx";
 import { useDateRangeFilter } from "../../../../../../common/hooks/useDateRangeFilter.ts";
+import MultiSelect from "../../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import LoaderOverlay from "../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const LandingAnalytics = () => {
   const { landingId } = useParams();
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
   const [chartMode, setChartMode] = useState<"hour" | "day">("day");
+  const [staffList, setStaffList] = useState<any>([]);
+  const [accountsList, setAccountsList] = useState<any>([]);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
+  const [assigned, setAssigned] = useState<{
+    staff: number | null;
+    account: number | null;
+  } | null>(null);
   const [landing, setLanding] = useState<{
     data: any;
     totals: { all: any; range: any };
@@ -70,9 +80,59 @@ const LandingAnalytics = () => {
     }
   };
 
+  const fetchStaff = async () => {
+    try {
+      const res = await adminApi.getAdStaffList();
+      setStaffList(transformIdNameArrToValueNameArr(res.data, false));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await adminApi.getAdAccountsList();
+      setAccountsList(transformIdNameArrToValueNameArr(res.data, false));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const fetchAssigned = async (id: string) => {
+    try {
+      const res = await adminApi.getAdLandingAssigned(id);
+      setAssigned({ account: res.data.account_id, staff: res.data.staff_id });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const postAssignment = async (data: {
+    staff_id: number | null;
+    account_id: number | null;
+  }) => {
+    setAssignmentLoading(true);
+    try {
+      await adminApi.putAdLandingAssigned(landingId!, data);
+      await fetchAssigned(landingId!);
+      setAssignmentLoading(false);
+    } catch (error) {
+      setAssignmentLoading(false);
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [dateRange, chartMode]);
+
+  useEffect(() => {
+    if (landingId) {
+      fetchStaff();
+      fetchAccounts();
+      fetchAssigned(landingId);
+    }
+  }, [landingId]);
 
   useEffect(() => {
     if (landing?.data?.created_at) {
@@ -85,10 +145,7 @@ const LandingAnalytics = () => {
 
   return (
     <div className={s.landing_analytics_container}>
-      <DetailHeader
-        link={"/admin?tab=analytics&content=listing"}
-        title={landing?.data.name}
-      />
+      <DetailHeader title={landing?.data.name} />
       {landing ? (
         <>
           <span className={s.created_at}>
@@ -109,6 +166,54 @@ const LandingAnalytics = () => {
               handleClick={(val) => setChartMode(val)}
             />
           </div>
+
+          {assigned && (
+            <div className={s.info_container}>
+              {assignmentLoading && <LoaderOverlay />}
+              {staffList && (
+                <div className={s.multi_select_container}>
+                  <MultiSelect
+                    isSearchable={false}
+                    label={"Staff"}
+                    id={"staff"}
+                    options={staffList}
+                    placeholder={"Assign staff member"}
+                    selectedValue={assigned.staff ? assigned.staff : ""}
+                    isMultiple={false}
+                    onChange={(val) =>
+                      postAssignment({
+                        staff_id: val.value as unknown as number,
+                        account_id: assigned.account,
+                      })
+                    }
+                    valueKey="value"
+                    labelKey="name"
+                  />
+                </div>
+              )}
+              {accountsList && (
+                <div className={s.multi_select_container}>
+                  <MultiSelect
+                    isSearchable={false}
+                    id={"accounts"}
+                    label={"Ad account"}
+                    options={accountsList}
+                    placeholder={"Assign ad account"}
+                    selectedValue={assigned.account ? assigned.account : ""}
+                    isMultiple={false}
+                    onChange={(val) =>
+                      postAssignment({
+                        staff_id: assigned.staff,
+                        account_id: val.value as unknown as number,
+                      })
+                    }
+                    valueKey="value"
+                    labelKey="name"
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {chartData && (
             <LandingAnalyticsChart

@@ -247,8 +247,61 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  updateAdStaff({ id, name }: { id: number; name: string }) {
+    return instance.put(
+      `ad_control/ads/staff/${id}`,
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
+  deleteAdStaff(id: number) {
+    return instance.delete(`ad_control/ads/staff/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createAdStaff(name: string) {
+    return instance.post(
+      "ad_control/ads/staff",
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
   getAdAccountsList() {
     return instance.get("ad_control/ads/accounts", {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateAdAccount({ id, name }: { id: number; name: string }) {
+    return instance.put(
+      `ad_control/ads/accounts/${id}`,
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
+  deleteAdAccount(id: number) {
+    return instance.delete(`ad_control/ads/accounts/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createAdAccount(name: string) {
+    return instance.post(
+      "ad_control/ads/accounts",
+      { name },
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+  getAdLandingAssigned(id: string) {
+    return instance.get(`ad_control/ads/landing/${id}/assignment`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  putAdLandingAssigned(
+    id: string,
+    data: { staff_id: number | null; account_id: number | null },
+  ) {
+    return instance.put(`ad_control/ads/landing/${id}/assignment`, data, {
       headers: getAuthHeaders(),
     });
   },
