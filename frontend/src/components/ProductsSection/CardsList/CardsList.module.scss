@@ -71,11 +71,3 @@
     grid-template-columns: 1fr;
   }
 }
-
-@media (max-width: 520px) {
-  .list {
-    &.books {
-      grid-template-columns: 1fr;
-    }
-  }
-}

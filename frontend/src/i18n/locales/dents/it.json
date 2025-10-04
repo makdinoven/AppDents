@@ -383,5 +383,10 @@
     "title": "tutti i libri",
     "search": "Cerca libri...",
     "found": "Libri trovati: {{count}}"
+  },
+
+  "bookCard": {
+    "tags": "Etichette",
+    "authors": "Autori"
   }
 }

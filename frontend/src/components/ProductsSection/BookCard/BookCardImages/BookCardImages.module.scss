@@ -46,7 +46,7 @@
 
 .img_wrapper {
   position: relative;
-  width: 173px;
+  width: 172px;
   height: 226px;
   border-radius: 18px;
   border: 1px solid $tertiary;
@@ -110,14 +110,14 @@
   .img_wrapper {
     width: 145px;
     height: 198px;
-    margin-left: -129px;
+    margin-left: -130px;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .img_wrapper {
-    width: 90px;
-    height: 143px;
+    width: 86px;
+    height: 142px;
     margin-left: -74px;
   }
 }
