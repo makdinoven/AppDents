@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef } from "react";
 import s from "./ContentOverview.module.scss";
-import UniversalSlider from "../../../../components/CommonComponents/UniversalSlider/UniversalSlider.tsx";
-import ContentOverviewSlide from "./modules/ContentOverviewSlide/ContentOverviewSlide.tsx";
+import ContentOverviewSlide, {
+  ContentOverviewSlideRef,
+} from "./modules/ContentOverviewSlide/ContentOverviewSlide.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { useTranslation } from "react-i18next";
+import ContentSliderWrapper from "./modules/ContentSliderWrapper/ContentSliderWrapper.tsx";
+import { t } from "i18next";
 
 interface ContentOverviewProps {
   books: any[];
@@ -14,38 +16,29 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   books,
   portalParentId,
 }: ContentOverviewProps) => {
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const TABLET = 768;
-
-  useEffect(() => {
-    const handleResize = () => {
-      setScreenWidth(window.innerWidth);
-    };
-
-    handleResize();
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [screenWidth]);
+  const slideRefs = useRef<ContentOverviewSlideRef[]>([]);
 
   const slides = books.map((book: any, index) => (
-    <ContentOverviewSlide book={book} index={index} parentId={portalParentId} />
+    <ContentOverviewSlide
+      key={index}
+      book={book}
+      parentId={portalParentId}
+      ref={(slide) => {
+        if (slide) slideRefs.current[index] = slide;
+      }}
+    />
   ));
 
-  const { t } = useTranslation();
+  const showLabels = slides.length > 1;
+
   return (
     <div className={s.content_overview}>
       <SectionHeader name={t("bookLanding.contentOverview")} />
-      <UniversalSlider
+      <ContentSliderWrapper
         slides={slides}
+        slideRefs={slideRefs}
         className={s.slider}
-        navigation={!(screenWidth < TABLET)}
-        navigationPosition="center"
-        pagination={screenWidth < TABLET}
-        paginationType="dots"
+        showLabels={showLabels}
       />
     </div>
   );

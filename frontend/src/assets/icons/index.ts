@@ -70,3 +70,5 @@ export { default as ItFlag } from "./it-flag.svg?react";
 export { default as ArFlag } from "./ar-flag.svg?react";
 export { default as NoResultsIcon } from "./no-result-icon.svg?react";
 export { default as SettingsIcon } from "./settings-icon.svg?react";
+export { default as Bookmark } from "./bookmark.svg?react";
+export { default as LongArrow } from "./long-arrow.svg?react";
