@@ -223,7 +223,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     stripe.api_key = stripe_keys["secret_key"]
     webhook_secret = stripe_keys["webhook_secret"]
 
-    # 1. Проверяем подпись
+    # 1) Верификация подписи Stripe
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         logging.info("Webhook verified: %s", event["type"])
@@ -233,65 +233,88 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     session_obj = event["data"]["object"]
     session_id = session_obj["id"]
-    logging.info("Получена сессия: %s", session_id)
     email = session_obj.get("customer_email")
     event_type = event["type"]
+    logging.info("Получена сессия: %s, event_type=%s", session_id, event_type)
 
-    # 2. Интересует только complete
+    # 2) Подтягиваем актуальное состояние сессии (иногда полезно при async-оплатах)
+    try:
+        session = stripe.checkout.Session.retrieve(
+            session_id,
+            expand=["payment_intent", "customer_details"]
+        )
+    except Exception as e:
+        logging.warning("Не удалось получить расширенную сессию %s: %s. Работаем с event.data.object", session_id, e)
+        session = session_obj
 
-    if event_type.startswith("checkout.session.") and event_type != "checkout.session.completed":
-        # unpaid / no_payment_required / paid
-        if session_obj.get("payment_status") != "paid":
-            _save_lead(db, session_obj, email, region)
-        return {"status": "non_paid_logged"}
+    payment_status = session.get("payment_status")
+    livemode = session.get("livemode")
+    logging.info("Stripe session: status=%s, livemode=%s, amount_total=%s %s",
+                 payment_status, livemode, session.get("amount_total"), session.get("currency"))
 
-    # 3. Проверяем, что деньги действительно списаны
-    if session_obj.get("payment_status") != "paid":
-            _save_lead(db, session_obj, email, region)
-            return {"status": "completed_unpaid"}
+    # 3) Интересуют оплаченные события. Учитываем и async-success.
+    allowed_types = {
+        "checkout.session.completed",
+        "checkout.session.async_payment_succeeded",
+    }
 
+    if event_type not in allowed_types:
+        # unpaid / no_payment_required / и т.д. → если не оплачено, пишем лид
+        if payment_status != "paid":
+            _save_lead(db, session, email, region)
+        return {"status": "ignored_event"}
 
+    # 4) Деньги действительно списаны?
+    if payment_status != "paid":
+        _save_lead(db, session, email, region)
+        return {"status": "completed_unpaid"}
+
+    # 5) Удаляем лиды по этому email (если были)
     deleted = (
         db.query(AbandonedCheckout)
-        .filter(AbandonedCheckout.email == email)  # email уже извлечён выше
+        .filter(AbandonedCheckout.email == email)
         .delete(synchronize_session=False)
     )
     if deleted:
         db.commit()
         logging.info("Removed %s abandoned leads for email %s", deleted, email)
 
+    # 6) Дедупликация по event.id
     stripe_event_id: str = event["id"]
     try:
         db.add(ProcessedStripeEvent(id=stripe_event_id))
-        db.flush()  # пытаемся вставить сразу
+        db.flush()
     except IntegrityError:
-        db.rollback()  # было уже в таблице → дубликат
+        db.rollback()
         logging.info("Duplicate webhook %s — skip", stripe_event_id)
         return {"status": "duplicate"}
 
+    # 7) Метаданные
+    metadata = session.get("metadata", {}) or {}
+    logging.info("Получены метаданные: %s", metadata)
 
-    metadata = session_obj.get("metadata", {}) or {}
     balance_used_cents = int(metadata.get("balance_used", "0") or 0)
     balance_used = balance_used_cents / 100
     logging.info("balance_used (из metadata) = %.2f USD", balance_used)
 
-    logging.info("Получены метаданные: %s", metadata)
-
-    # 4. Основные данные заказа
-
-    course_ids = [
-        int(cid) for cid in (metadata.get("course_ids") or "").split(",") if cid.strip()
-    ]
+    # 8) Основные данные заказа
+    try:
+        course_ids = [int(cid) for cid in (metadata.get("course_ids") or "").split(",") if cid.strip()]
+    except Exception:
+        course_ids = []
     logging.info("Преобразованные course_ids: %s", course_ids)
 
-    # разбираем landing_ids из metadata
+    # Разбираем landing_ids из metadata
     raw = metadata.get("landing_ids", "")
     try:
         landing_ids_list = json.loads(raw) or []
     except ValueError:
-        landing_ids_list = [int(x) for x in raw.split(",") if x.strip()]
+        try:
+            landing_ids_list = [int(x) for x in raw.split(",") if x.strip()]
+        except Exception:
+            landing_ids_list = []
 
-    # fallback: если landing_ids не пришёл или пустой — определяем лендинг по referer или первому курсу
+    # fallback: если landing_ids пуст — пытаемся определить по referer или по первому курсу
     if not landing_ids_list:
         referer = metadata.get("referer", "")
         landing_for_purchase = None
@@ -299,7 +322,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         # пробуем по slug из referer
         if referer:
             slug = urlparse(referer).path.strip("/").split("/")[-1]
-            landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
+            if slug:
+                landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
 
         # если по referer не нашли — первый лендинг первого курса
         if not landing_for_purchase and course_ids:
@@ -310,32 +334,36 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 .first()
             )
 
-        # сохраняем в список
         if landing_for_purchase:
             landing_ids_list = [landing_for_purchase.id]
-    logging.info("Landings: %s", landing_ids_list)
-    # 5. Точное время события
-    event_time = session_obj.get("created", int(datetime.utcnow().timestamp()))
 
-    raw_from_ad = metadata.get("from_ad", "false").lower()
+    # [CHANGE] окончательный фолбэк: даже если ничего не нашли — создадим Purchase с NULL-landing
+    if not landing_ids_list:
+        logging.warning("landing_ids_list is empty → will create Purchase with landing_id=NULL")
+        landing_ids_list = [None]
+
+    logging.info("Landings: %s", landing_ids_list)
+
+    # 9) Время события и атрибуция рекламы
+    event_time = session.get("created", int(datetime.utcnow().timestamp()))
+
+    raw_from_ad = (metadata.get("from_ad", "false") or "false").lower()
     from_ad = (raw_from_ad == "true")
     logging.info("from_ad (из metadata) = %s", from_ad)
 
-    # 6. Персональные данные
-    full_name = session_obj.get("customer_details", {}).get("name", "") or ""
+    # 10) Персональные/тех данные
+    full_name = (session.get("customer_details", {}) or {}).get("name", "") or ""
     parts = full_name.strip().split()
     first_name = parts[0] if parts else None
     last_name = parts[-1] if len(parts) > 1 else None
 
-    # 7. Технические данные клиента
     client_ip = metadata.get("client_ip", "0.0.0.0")
     user_agent = metadata.get("user_agent", "")
     external_id = metadata.get("external_id")
     fbp_value = metadata.get("fbp")
     fbc_value = metadata.get("fbc")
 
-
-    # 10. Пользователь
+    # 11) Пользователь
     user = get_user_by_email(db, email)
     new_user_created, random_pass = False, None
     if not user:
@@ -349,7 +377,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     else:
         logging.info("Найден существующий пользователь: %s", user.id)
 
-    #. Пользователь (user уже получен) создаем корзину для него.
+    # (опционально) перенос корзины
     if metadata.get("transfer_cart") == "true":
         cart_ids_raw = metadata.get("cart_landing_ids", "[]")
         try:
@@ -364,7 +392,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 logging.warning("Не удалось добавить лендинг %s в корзину пользователя %s: %s",
                                 lid, user.id, e)
 
-    # ───── Привязка реферального кода гостя ─────
+    # 12) Реферальный код
     ref_code = metadata.get("ref_code")
     if ref_code and user.invited_by_id is None:
         inviter = db.query(User).filter(User.referral_code == ref_code).first()
@@ -376,11 +404,11 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         else:
             logging.info("Ref-code %s невалиден или self-referral (user %s)",
                          ref_code, user.id)
-    # ─────────────────────────────────────────────
 
-    # 11. Курсы → пользователю
-    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all()
+    # 13) Выдача курсов пользователю (как у тебя было)
+    courses_db = db.query(Course).filter(Course.id.in_(course_ids)).all() if course_ids else []
     already_owned, new_full, new_partial = [], [], []
+
     raw_source = metadata.get("source", PurchaseSource.OTHER.value)
     try:
         purchase_source = PurchaseSource(raw_source)
@@ -408,46 +436,43 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             logging.info("Добавлен новый курс %s (ID=%s) пользователю %s",
                          course_obj.name, course_obj.id, user.id)
 
+    # Если в корзине были эти лендинги — почистим
     if user.cart and landing_ids_list:
         from ..services_v2 import cart_service as cs
         for lid in landing_ids_list:
-            cs.remove_silent(db, user, lid)
-
-        # если корзина опустела – почистим полностью (обнулим total_amount)
+            if lid is not None:
+                cs.remove_silent(db, user, lid)
         if not user.cart.items:
             cs.clear_cart(db, user)
 
-    # Запись Purchase с правильным landing_id
+    # 14) Инкрементируем sales_count только у валидных лендингов
     for lid in landing_ids_list:
-        ln = db.query(Landing).filter_by(id=lid).one_or_none()
-        if ln:
-            ln.sales_count = (ln.sales_count or 0) + 1
-            logging.info("sales_count++ для лендинга ID=%s → %s", ln.id, ln.sales_count)
+        if lid is not None:
+            ln = db.query(Landing).filter_by(id=lid).one_or_none()
+            if ln:
+                ln.sales_count = (ln.sales_count or 0) + 1
+                logging.info("sales_count++ для лендинга ID=%s → %s", ln.id, ln.sales_count)
+
+    # 15) [CHANGE] Создаём Purchase ВСЕГДА (финансовый факт), даже если нет новых курсов / landing_id = NULL
+    amount_total = (session.get("amount_total") or 0) / 100.0
     purchase = None
-    all_new_courses = new_full + new_partial
-    if all_new_courses:
-        # создаём Purchase: первую запись – с полной суммой, остальные – с amount=0
-        amount_total = session_obj["amount_total"] / 100.0
-        raw_source = metadata.get("source", PurchaseSource.OTHER.value)
-        try:
-            purchase_source = PurchaseSource(raw_source)
-        except ValueError:
-            purchase_source = PurchaseSource.OTHER
+    for idx, lid in enumerate(landing_ids_list):
+        p = Purchase(
+            user_id=user.id,
+            course_id=None,  # при желании можно связать с первым course_id
+            landing_id=lid,  # может быть None — у тебя nullable=True
+            from_ad=from_ad,
+            amount=amount_total if idx == 0 else 0.0,
+            source=purchase_source,
+        )
+        db.add(p)
+        if idx == 0:
+            purchase = p
 
-        for idx, lid in enumerate(landing_ids_list):
-            p = Purchase(
-                user_id=user.id,
-                course_id=None,
-                landing_id=lid,
-                from_ad=from_ad,
-                amount=amount_total if idx == 0 else 0.0,
-                source=purchase_source,
-            )
-            db.add(p)
-            if idx == 0:
-                purchase = p
     db.commit()
+    logging.info("Purchase(s) committed. first_purchase_id=%s, amount_total=%.2f", getattr(purchase, "id", None), amount_total)
 
+    # 16) Списываем баланс, если использовался
     if balance_used > 0:
         try:
             debit_balance(
@@ -459,32 +484,37 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                     "purchase_id": purchase.id if purchase else None,
                 },
             )
-            logging.info("С баланса пользователя %s списано %.2f USD (partial)",
-                         user.id, balance_used)
+            logging.info("С баланса пользователя %s списано %.2f USD (partial)", user.id, balance_used)
         except ValueError:
-            # на случай, если баланс внезапно меньше, просто логируем
-            logging.error("Не удалось снять %.2f USD с баланса user=%s",
-                          balance_used, user.id)
+            logging.error("Не удалось снять %.2f USD с баланса user=%s", balance_used, user.id)
 
-    # 9. Отправляем событие Purchase в FB
+    # 17) [CHANGE] Отправляем событие в FB ТОЛЬКО для рекламы (from_ad=True) и только после коммита
     purchase_lang = (metadata.get("purchase_lang") or region).upper()
-    send_facebook_events(
-        region=purchase_lang,
-        email=email,
-        amount=session_obj["amount_total"] / 100,
-        currency=session_obj["currency"],
-        course_ids=course_ids,
-        client_ip=client_ip,
-        user_agent=user_agent,
-        external_id=external_id,
-        fbp=fbp_value,
-        fbc=fbc_value,
-        first_name=first_name,
-        last_name=last_name,
-        event_time=event_time,
-        event_id=session_obj["id"]
-    )
+    if from_ad:
+        try:
+            send_facebook_events(
+                region=purchase_lang,
+                email=email,
+                amount=amount_total,
+                currency=session.get("currency"),
+                course_ids=course_ids,
+                client_ip=client_ip,
+                user_agent=user_agent,
+                external_id=external_id,
+                fbp=fbp_value,
+                fbc=fbc_value,
+                first_name=first_name,
+                last_name=last_name,
+                event_time=event_time,
+                event_id=session_id,  # используем ID сессии для дедупликации на стороне FB
+            )
+            logging.info("FB Purchase sent (from_ad=True)")
+        except Exception:
+            logging.exception("FB sending failed (from_ad=True)")
+    else:
+        logging.info("Skip FB sending (from_ad=False)")
 
+    # 18) Реферальный кэшбэк — как было
     if purchase and user.invited_by_id:
         percent = get_cashback_percent(db, user.id)
         if percent > 0:
@@ -501,12 +531,11 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 }
             )
             logging.info(
-                "Начислен кэшбэк %.2f USD (%s%%) пригласителю %s "
-                "за purchase_id=%s",
+                "Начислен кэшбэк %.2f USD (%s%%) пригласителю %s за purchase_id=%s",
                 reward, percent, user.invited_by_id, purchase.id
             )
 
-    # 13. Письма
+    # 19) Письма
     if already_owned:
         send_already_owned_course_email(
             recipient_email=email,
@@ -514,10 +543,10 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             region=region,
         )
 
-    if all_new_courses:
+    if (new_full + new_partial):
         send_successful_purchase_email(
             recipient_email=email,
-            course_names=[c.name for c in all_new_courses],
+            course_names=[c.name for c in (new_full + new_partial)],
             new_account=new_user_created,
             password=random_pass if new_user_created else None,
             region=region,
@@ -525,3 +554,4 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     logging.info("Обработка завершена успешно (session=%s)", session_id)
     return {"status": "ok"}
+
