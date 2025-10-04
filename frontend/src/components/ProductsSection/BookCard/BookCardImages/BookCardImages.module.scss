@@ -36,7 +36,7 @@
   @include transition;
   width: 8px;
   height: 8px;
-  background-color: $hover-color-dark;
+  background-color: $hover-color-darken;
   border-radius: 50%;
 
   &.active {

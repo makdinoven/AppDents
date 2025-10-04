@@ -3,11 +3,11 @@ import { BookCardType } from "../CardsList/CardsList.tsx";
 import LangLogo from "../../ui/LangLogo/LangLogo.tsx";
 import { BOOK_FORMATS } from "../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
-import AuthorsDesc from "../../ui/AuthorsDesc/AuthorsDesc.tsx";
 import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import BookCardImages from "./BookCardImages/BookCardImages.tsx";
+import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 
 const BookCard = ({ book }: { book: BookCardType }) => {
   const {
@@ -72,9 +72,16 @@ const BookCard = ({ book }: { book: BookCardType }) => {
             <Trans i18nKey={"tags"} />:
             <span className={s.book_info_value}> {tags}</span>
           </li>
+          <li>
+            <Trans i18nKey={"authors"} />:
+            <span className={s.book_info_value}>
+              {" "}
+              {formatAuthorsDesc(authors)}
+            </span>
+          </li>
         </ul>
 
-        <AuthorsDesc size={"small"} authors={authors} color={cardColor} />
+        {/*<AuthorsDesc size={"small"} authors={authors} color={cardColor} />*/}
       </div>
       <div className={s.buttons}>
         <button

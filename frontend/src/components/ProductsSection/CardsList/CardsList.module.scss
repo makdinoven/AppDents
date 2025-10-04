@@ -19,7 +19,7 @@
   &.books {
     margin-top: unset;
     column-gap: 15px;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -36,7 +36,8 @@
     margin-top: 45px;
 
     &.books {
-      grid-template-columns: 1fr 1fr 1fr;
+      column-gap: 15px;
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 }
@@ -44,6 +45,7 @@
 @media (max-width: $tablet-breakpoint) {
   .list {
     &.books {
+      column-gap: 10px;
       grid-template-columns: 1fr 1fr;
     }
   }
@@ -59,7 +61,21 @@
     flex-direction: column;
   }
 
+  .list {
+    &.books {
+      grid-template-rows: auto;
+    }
+  }
+
   .skeletons {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .list {
+    &.books {
+      grid-template-columns: 1fr;
+    }
   }
 }
