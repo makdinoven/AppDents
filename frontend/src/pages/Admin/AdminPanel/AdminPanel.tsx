@@ -9,6 +9,7 @@ import Analytics from "../tabs/Analytics/Analytics.tsx";
 import { useEffect } from "react";
 import { FILTER_PARAM_KEYS } from "../../../common/helpers/commonConstants.ts";
 import AdminTools from "../tabs/AdminTools/AdminTools.tsx";
+import AdControlTab from "../tabs/AdControlTab/AdControlTab.tsx";
 
 const AdminPanel = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -29,8 +30,13 @@ const AdminPanel = () => {
     newParams.delete(FILTER_PARAM_KEYS.language);
     newParams.delete(FILTER_PARAM_KEYS.size);
     if (value === "analytics") {
+      newParams.delete("ad-content");
+      newParams.delete("page");
+    } else if (value === "ad-control") {
+      newParams.delete("content");
       newParams.delete("page");
     } else {
+      newParams.delete("ad-content");
       newParams.delete("content");
       newParams.set("page", "1");
     }
@@ -63,6 +69,11 @@ const AdminPanel = () => {
       name: "admin.tools.tools",
       value: "tools",
       component: <AdminTools />,
+    },
+    {
+      name: "admin.adControl.adControl",
+      value: "ad-control",
+      component: <AdControlTab />,
     },
   ];
 
