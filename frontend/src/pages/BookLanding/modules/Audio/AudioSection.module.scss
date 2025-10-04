@@ -12,9 +12,9 @@
     .title {
       display: flex;
       flex-direction: row;
-      gap: 20px;
-      justify-items: flex-start;
-      align-items: center;
+      gap: 15px;
+      justify-content: flex-start;
+      align-items: flex-end;
 
       h3 {
         @include clamped-h3();
@@ -24,10 +24,15 @@
       svg {
         width: 35px;
         height: 35px;
-
+        transform: translateY(-5px);
         path {
           width: 100%;
           height: 100%;
+        }
+
+        @media (max-width: $mobile-breakpoint) {
+          width: 25px;
+          height: 25px;
         }
       }
     }
@@ -43,7 +48,7 @@
       }
 
       p {
-        @include clamped-p1();
+        @include clamped-p2();
         color: $accent-glass;
       }
 

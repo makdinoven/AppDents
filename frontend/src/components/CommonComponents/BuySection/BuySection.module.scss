@@ -1,18 +1,21 @@
 .section_wrapper {
   position: relative;
   width: 100%;
-  height: fit-content;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
 
   .buy_section {
     border: 2px solid $hover-color;
     border-radius: 20px;
     color: $accent-glass;
-    padding: 15px;
+    padding: 30px 15px;
     @include flex-column();
-    @include clamped-p1();
+    @include clamped-p2();
     justify-content: center;
     align-items: center;
-    height: 100%;
+    height: fit-content;
+    flex-grow: 1;
 
     &.full_width {
       position: relative;
@@ -26,11 +29,8 @@
       border: 1px solid rgba(255, 255, 255, 0.4);
       border-top: none;
       box-shadow:
-        0 0 5px rgba(0, 0, 0, 0.05),
-        inset 0 -5px 10px rgba(237, 248, 255, 1);
-
-      @include clamped-p1();
-
+        0 0 20px rgba(0, 0, 0, 0.05),
+        inset 0 -10px 10px rgba(237, 248, 255, 1);
       @media (max-width: $tablet-breakpoint) {
         height: fit-content;
       }
@@ -52,7 +52,6 @@
       width: 100%;
       display: block;
       margin-bottom: 10px;
-      @include clamped-p2();
 
       &.buy {
         text-align: left;
@@ -61,27 +60,29 @@
       .highlight {
         color: $primary;
       }
-
-      &.full_width {
-        @include clamped-p1();
-      }
     }
 
     .buy_button {
-      color: $tertiary;
+      color: $background-color;
       text-transform: unset;
-      padding: 5px;
-      width: 60%;
+      padding: 10px 20px;
+      width: 80%;
       border-radius: 40px;
-      margin-bottom: 6px;
+      margin-bottom: 20px;
       background-color: $primary;
-      border-radius: 40px;
-      @include clamped-p1();
+      border: 1px solid transparent;
 
       &.buy {
         padding: 10px;
         margin: 0;
       }
+
+      &:hover {
+        background-color: transparent;
+        border: 1px solid $accent;
+        color: $accent;
+      }
+      @include transition($duration: 0.3s);
 
       .prices {
         @include flex-center();
@@ -98,27 +99,77 @@
     }
 
     .format_buttons {
-      @include flex-center();
-      flex-direction: row;
-      gap: 15px;
-      @include clamped-p3;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      column-gap: 5px;
+      max-width: 100%;
+      min-width: 100%;
+
+      @media (min-width: $sm-breakpoint) {
+        column-gap: 12px;
+        max-width: 80%;
+        min-width: 80%;
+      }
+
+      @media (max-width: $sm-breakpoint) {
+        column-gap: 10px;
+        max-width: 80%;
+        min-width: 80%;
+      }
+
+      @media (max-width: $middle-breakpoint) {
+        column-gap: 5px;
+        max-width: 100%;
+        min-width: 100%;
+      }
+
+      @media (max-width: $tablet-breakpoint) {
+        column-gap: 10px;
+        max-width: 90%;
+        min-width: 90%;
+      }
+
+      @media (max-width: $mobile-breakpoint) {
+        column-gap: 5px;
+        max-width: 80%;
+        min-width: 80%;
+      }
+      @include clamped-p3();
+
+      button {
+        align-content: center;
+        text-align: center;
+        background-color: transparent;
+        border-radius: 40px;
+        height: fit-content;
+        min-width: 100%;
+        color: $accent;
+        border: 1px solid $accent;
+        width: fit-content;
+        padding: 10px 0;
+        @include transition();
+
+        &:hover {
+          background-color: $primary;
+          color: $background-color;
+          @include transition();
+          border: 1px solid transparent;
+        }
+      }
+
+      @media (max-width: $mobile-breakpoint) {
+        font-size: 10px;
+
+        .active {
+          font-size: 10px !important;
+        }
+      }
 
       .active {
-        @include flex-center();
         background-color: $primary;
-        border-radius: 50%;
-        aspect-ratio: 1/1;
-        width: 70px;
-        height: auto;
-        color: $tertiary;
-
-        @media (max-width: $tablet-breakpoint) {
-          width: 50px;
-        }
-
-        &.full_width {
-          @include clamped-p2();
-        }
+        color: $background-color;
+        @include transition();
+        border: 1px solid transparent;
       }
     }
   }
@@ -127,7 +178,7 @@
     position: absolute;
     top: -50%;
     right: 0;
-    z-index: 1;
+    z-index: -1;
 
     width: auto;
     height: 530px;
@@ -157,9 +208,5 @@
 @media (max-width: $tablet-breakpoint) {
   .buy_section {
     min-height: 200px;
-
-    .buy_text {
-      @include clamped-p1();
-    }
   }
 }

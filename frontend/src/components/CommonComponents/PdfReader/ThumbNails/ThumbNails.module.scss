@@ -44,6 +44,9 @@
 
         .thumb_nail {
           @include flex-center();
+          border-radius: 10px;
+          overflow: hidden;
+          @include transition();
 
           &.active {
             outline: 2px solid $primary;

@@ -34,9 +34,7 @@ const BuySection: React.FC<BuySectionProps> = ({
       <section
         className={`${s.buy_section} ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
       >
-        <p
-          className={`${s.buy_text}  ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
-        >
+        <p className={`${s.buy_text} ${s[buy]}`}>
           <Trans
             i18nKey={
               isDownload ? "bookLanding.chooseFormat" : "bookLanding.buyText"
@@ -62,11 +60,11 @@ const BuySection: React.FC<BuySectionProps> = ({
           <ul className={s.format_buttons}>
             {formats.map((format: string) => {
               return (
-                <li
-                  key={format}
-                  className={`${activeFormat === format ? s.active : ""}  ${isFullWidth ? s.full_width : ""}`}
-                >
-                  <button onClick={() => handleFormatChange(format)}>
+                <li key={format}>
+                  <button
+                    onClick={() => handleFormatChange(format)}
+                    className={activeFormat === format ? s.active : ""}
+                  >
                     {format}
                   </button>
                 </li>
