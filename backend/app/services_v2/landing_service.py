@@ -617,39 +617,60 @@ def get_sales_totals(
 
 AD_TTL = timedelta(hours=14)
 
-def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
-    now = datetime.utcnow()
-
-    # 1) лог ад-визита (как было)
-    visit = AdVisit(
-        landing_id=landing_id,
-        fbp=fbp,
-        fbc=fbc,
-        ip_address=ip,
+def _open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None = None):
+    open_period = (
+        db.query(LandingAdPeriod)
+          .filter(LandingAdPeriod.landing_id == landing_id,
+                  LandingAdPeriod.ended_at.is_(None))
+          .first()
     )
-    db.add(visit)
+    if not open_period:
+        db.add(LandingAdPeriod(landing_id=landing_id, started_by=started_by))
 
-    # 2) включить/продлить рекламу и ОТКРЫТЬ период при первом включении
+def _ensure_ad_on_and_extend_ttl(
+    db: Session,
+    landing_id: int,
+    *,
+    actor_user_id: int | None = None,
+    now: datetime | None = None
+) -> bool:
+    """
+    Делает включение рекламы (если она выключена) + открывает период,
+    и продлевает TTL до now + AD_TTL. Ничего не коммитит.
+    Возвращает False, если лендинг не найден.
+    """
+    now = now or datetime.utcnow()
+
     landing = (
         db.query(Landing)
           .filter(Landing.id == landing_id)
-          .with_for_update()      # чтобы избежать гонок при шквале визитов
+          .with_for_update()
           .first()
     )
     if not landing:
-        db.commit()               # зафиксируем сам визит, чтобы не потерять
-        return
+        return False
 
-    # если реклама была выключена — включаем и открываем период
     if not landing.in_advertising:
+        # включаем и открываем период
         landing.in_advertising = True
-        _open_ad_period_if_needed(db, landing.id, started_by=None)
+        _open_ad_period_if_needed(db, landing_id, started_by=actor_user_id)
 
-    # продлеваем TTL (монотонно вперёд)
-    new_ttl = now + AD_TTL
-    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
-        landing.ad_flag_expires_at = new_ttl
+    # монотонное продление TTL
+    new_exp = now + AD_TTL
+    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_exp:
+        landing.ad_flag_expires_at = new_exp
 
+    return True
+
+
+def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    now = datetime.utcnow()
+    # 1) лог ad-визита
+    visit = AdVisit(landing_id=landing_id, fbp=fbp, fbc=fbc, ip_address=ip)
+    db.add(visit)
+    # 2) включить/продлить рекламу и, если нужно, открыть период
+    _ensure_ad_on_and_extend_ttl(db, landing_id, actor_user_id=None, now=now)
+    # 3) один общий коммит
     db.commit()
 
 def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
