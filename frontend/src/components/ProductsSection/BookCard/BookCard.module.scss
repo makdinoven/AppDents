@@ -7,7 +7,7 @@
   cursor: pointer;
   background-color: $background-color;
   @include flex-column;
-  gap: 11px;
+  gap: 10px;
   justify-content: space-between;
   z-index: 2;
 
@@ -56,16 +56,16 @@
 }
 
 .book_name {
-  font-size: 22px;
+  @include clamped-p3();
   line-height: 22px;
   text-transform: uppercase;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3; // максимум 3 строки
+  -webkit-line-clamp: 3;
   overflow: hidden;
   text-overflow: ellipsis;
-  hyphens: auto; // переносы по слогам
-  word-break: break-word; // если нет пробелов, ломаем
+  hyphens: auto;
+  word-break: break-word;
 }
 
 .card_bottom {
@@ -76,18 +76,23 @@
 .formats_list {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
   justify-content: center;
+}
+
+.formats_list > * {
+  flex: 1 1 50px;
+  max-width: 65px;
 }
 
 .format_item {
   border: 1px solid $primary;
   border-radius: 15px;
   color: $primary;
-  width: 50px;
-  @include clamped-p6;
-  padding: 2px 5px;
+  @include clamped-p6();
+  padding: 2px 4px;
   text-align: center;
+  min-width: 50px;
 }
 
 .lang_logo {
@@ -100,8 +105,9 @@
 .book_info {
   li {
     @include clamped-p5;
-    display: flex;
+    display: block;
     gap: 3px;
+    text-transform: capitalize;
   }
 
   .book_info_value {
@@ -150,26 +156,29 @@
 }
 
 .buy_btn {
-  @include transition;
+  @include transition();
   color: $background-color;
   background-color: $accent;
   border-radius: 20px;
-  @include clamped-p3;
+  @include clamped-p3();
   padding: 5px;
   flex: 1;
-  outline: 1px solid $primary;
-  outline-offset: 1px;
-
-  &.blue {
-    outline: 1px solid $secondary-lighter;
-  }
+  box-shadow:
+    0 0 0 1px $background-color,
+    0 0 0 0 $accent;
 
   @media (hover: hover) {
     &:hover {
       background-color: $primary;
+      box-shadow:
+        0 0 0 1px $background-color,
+        0 0 0 2px $primary;
 
       &.blue {
         background-color: $secondary-lighter;
+        box-shadow:
+          0 0 0 1px $background-color,
+          0 0 0 2px $secondary-lighter;
       }
     }
   }
@@ -225,10 +234,17 @@
 
 @media (max-width: $mobile-breakpoint) {
   .card {
-    gap: 7px;
+    gap: 8px;
   }
 
   .book_name {
     font-size: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .card {
+    max-width: 300px;
+    justify-self: center;
   }
 }
