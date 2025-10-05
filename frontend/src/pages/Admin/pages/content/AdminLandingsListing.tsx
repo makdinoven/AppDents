@@ -1,37 +1,18 @@
 import { useDispatch, useSelector } from "react-redux";
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminLandingsList.tsx
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../../store/store.ts";
-import AdminList from "../../../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../../../routes/routes.ts";
-========
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../../routes/routes.ts";
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminLandingsListing.tsx
+import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { toggleLandingVisibility } from "../../../../store/slices/adminSlice.ts";
+import { ParamsType } from "../../../../api/adminApi/types.ts";
 import {
   createLanding,
   getLandings,
   searchLandings,
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminLandingsList.tsx
-} from "../../../../../store/actions/adminActions.ts";
-import { INITIAL_LANDING } from "../../../../../common/helpers/commonConstants.ts";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
-import { ParamsType } from "../../../../../api/adminApi/types.ts";
-import { toggleLandingVisibility } from "../../../../../store/slices/adminSlice.ts";
-
-const AdminLandingsList = () => {
-========
 } from "../../../../store/actions/adminActions.ts";
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
+import { Path } from "../../../../routes/routes.ts";
 import { INITIAL_LANDING } from "../../../../common/helpers/commonConstants.ts";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
-import { toggleLandingVisibility } from "../../../../store/slices/adminSlice.ts";
 
 const AdminLandingsListing = () => {
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminLandingsListing.tsx
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const landings = useSelector(
     (state: AppRootStateType) => state.admin.landings,
@@ -76,8 +57,4 @@ const AdminLandingsListing = () => {
   );
 };
 
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminLandingsList.tsx
-export default AdminLandingsList;
-========
 export default AdminLandingsListing;
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminLandingsListing.tsx

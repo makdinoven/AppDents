@@ -1,34 +1,16 @@
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminAuthorsList.tsx
-import { Path } from "../../../../../routes/routes.ts";
-import { useDispatch, useSelector } from "react-redux";
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../../store/store.ts";
-import AdminList from "../../../modules/common/AdminList/AdminList.tsx";
-========
-import { Path } from "../../../../routes/routes.ts";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import AdminList from "../modules/common/AdminList/AdminList.tsx";
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminAuthorsListing.tsx
+import { ParamsType } from "../../../../api/adminApi/types.ts";
 import {
   createAuthor,
   getAuthors,
   searchAuthors,
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminAuthorsList.tsx
-} from "../../../../../store/actions/adminActions.ts";
-import { INITIAL_AUTHOR } from "../../../../../common/helpers/commonConstants.ts";
-import { ParamsType } from "../../../../../api/adminApi/types.ts";
-
-const AdminAuthorsList = () => {
-========
 } from "../../../../store/actions/adminActions.ts";
+import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { INITIAL_AUTHOR } from "../../../../common/helpers/commonConstants.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
+import { Path } from "../../../../routes/routes.ts";
 
 const AdminAuthorsListing = () => {
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminAuthorsListing.tsx
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
   const authors = useSelector((state: AppRootStateType) => state.admin.authors);
   const dispatch = useDispatch<AppDispatchType>();
@@ -57,8 +39,4 @@ const AdminAuthorsListing = () => {
   );
 };
 
-<<<<<<<< HEAD:frontend/src/pages/Admin/tabs/AdminContent/content/AdminAuthorsList.tsx
-export default AdminAuthorsList;
-========
 export default AdminAuthorsListing;
->>>>>>>> main:frontend/src/pages/Admin/pages/content/AdminAuthorsListing.tsx

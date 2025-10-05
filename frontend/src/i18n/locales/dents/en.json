@@ -555,7 +555,7 @@
       "notFound": "No books found",
       "found": "Books found: {{count}}"
     },
-    "book-landings": {
+    "bookLandings": {
       "bookLandings": "book landings",
       "search": "Search book landings...",
       "create": "Create book landing",
