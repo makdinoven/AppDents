@@ -44,6 +44,7 @@ $quaternary: #5b6968;
 $quaternary-06: rgba(91, 105, 104, 0.6);
 $text-color: $background-color;
 $text-color-accent: $accent;
+$orange: #fe8802;
 $error-color: #fe0502;
 $green: #90e895;
 $yellow: #e8db90;
@@ -84,38 +85,47 @@ $font-sz-err-mob: 14px;
 
 @mixin clamped-h1 {
   font-size: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
+  //line-height: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
 }
 
 @mixin clamped-h2 {
   font-size: clamp($font-sz-h2-mob, 4vw, $font-sz-h2-desk);
+  //line-height: clamp($font-sz-h2-mob, 4vw, $font-sz-h2-desk);
 }
 
 @mixin clamped-h3 {
   font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+  //line-height: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
 }
 
 @mixin clamped-h4 {
   font-size: clamp($font-sz-h4-mob, 3vw, $font-sz-h4-desk);
+  //line-height: clamp($font-sz-h4-mob, 3vw, $font-sz-h4-desk);
 }
 
 @mixin clamped-p1 {
   font-size: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+  //line-height: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
 }
 
 @mixin clamped-p2 {
   font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+  //line-height: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
 }
 
 @mixin clamped-p3 {
   font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+  //line-height: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
 }
 
 @mixin clamped-p4 {
   font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
+  //line-height: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
 }
 
 @mixin clamped-p5 {
   font-size: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
+  //line-height: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
 }
 
 @mixin clamped-p6 {
@@ -124,6 +134,7 @@ $font-sz-err-mob: 14px;
 
 @mixin clamped-err {
   font-size: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
+  //line-height: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
 }
 
 @mixin accent-glass {

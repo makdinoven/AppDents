@@ -5,6 +5,8 @@
   align-items: flex-start;
   gap: 30px;
   width: 100%;
+  //flex: 1;
+  //min-width: 0;
 }
 
 .table_wrapper {
@@ -20,6 +22,14 @@
   overflow-x: auto;
 }
 
+.custom_cell {
+  @include flex-column;
+
+  span {
+    white-space: nowrap;
+  }
+}
+
 .table_title {
   width: 100%;
   text-align: center;
@@ -31,6 +41,52 @@
   width: 100%;
   border-collapse: collapse;
   @include clamped-p3;
+
+  th {
+    white-space: nowrap;
+  }
+
+  tr {
+    position: relative;
+
+    &::after {
+      content: "";
+      display: block;
+      position: absolute;
+      transform: translateY(-50%);
+      top: 50%;
+      left: 3px;
+      width: 3.5px;
+      height: 80%;
+      border-radius: 2px;
+      background-color: transparent;
+    }
+
+    &.red {
+      &::after {
+        background-color: $error-color;
+      }
+    }
+
+    &.orange {
+      &::after {
+        background-color: $orange;
+      }
+    }
+
+    &.green {
+      &::after {
+        background-color: $green;
+      }
+    }
+
+    &.white {
+      &::after {
+        background-color: $background-color;
+        outline: 1px solid $hover-color;
+      }
+    }
+  }
 
   th,
   td {

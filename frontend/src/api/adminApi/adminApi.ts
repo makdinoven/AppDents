@@ -1,7 +1,7 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "./types.ts";
-import { SummaryToolDataType } from "../../pages/Admin/tabs/AdminTools/tools/VideoSummaryTool/VideoSummaryTool.tsx";
+import { SummaryToolDataType } from "../../pages/Admin/pages/tools/VideoSummaryTool/VideoSummaryTool.tsx";
 
 export const adminApi = {
   getCoursesList(params: ParamsType) {
@@ -263,6 +263,87 @@ export const adminApi = {
   getLandingTraffic(params: any) {
     return instance.get("landings/analytics/landing-traffic", {
       params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getSiteTraffic(params: any) {
+    return instance.get("landings/analytics/site-traffic", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdListQuarantine(params: any) {
+    return instance.get("ad_control/ads/quarantine", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdListObservation(params: any) {
+    return instance.get("ad_control/ads/observation", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdStaffList() {
+    return instance.get("ad_control/ads/staff", {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateAdStaff({ id, name }: { id: number; name: string }) {
+    return instance.put(
+      `ad_control/ads/staff/${id}`,
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
+  deleteAdStaff(id: number) {
+    return instance.delete(`ad_control/ads/staff/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createAdStaff(name: string) {
+    return instance.post(
+      "ad_control/ads/staff",
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
+  getAdAccountsList() {
+    return instance.get("ad_control/ads/accounts", {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateAdAccount({ id, name }: { id: number; name: string }) {
+    return instance.put(
+      `ad_control/ads/accounts/${id}`,
+      { name },
+      { headers: getAuthHeaders() },
+    );
+  },
+  deleteAdAccount(id: number) {
+    return instance.delete(`ad_control/ads/accounts/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createAdAccount(name: string) {
+    return instance.post(
+      "ad_control/ads/accounts",
+      { name },
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+  getAdLandingAssigned(id: string) {
+    return instance.get(`ad_control/ads/landing/${id}/assignment`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  putAdLandingAssigned(
+    id: string,
+    data: { staff_id: number | null; account_id: number | null },
+  ) {
+    return instance.put(`ad_control/ads/landing/${id}/assignment`, data, {
       headers: getAuthHeaders(),
     });
   },

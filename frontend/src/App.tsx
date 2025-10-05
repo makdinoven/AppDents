@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import {
   initFacebookPixel,
   initLanguagePixel,
-  trackPageView,
 } from "./common/helpers/facebookPixel.ts";
 import { AppDispatchType } from "./store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,7 +25,6 @@ function App() {
 
   useEffect(() => {
     initLanguagePixel(language);
-    trackPageView();
   }, [location.pathname, language]);
 
   useEffect(() => {

@@ -1,0 +1,47 @@
+.admin_page {
+  @include transition();
+  position: relative;
+  display: flex;
+  max-width: inherit;
+  gap: 30px;
+  width: 100%;
+
+  &.minimized_sidebar {
+    position: relative;
+    gap: 0;
+
+    .admin_content {
+      width: 100%;
+    }
+  }
+
+  &_header {
+    display: flex;
+    justify-content: space-between;
+    padding-right: 60px;
+    h2 {
+      text-align: left;
+      @include clamped-h2;
+      text-transform: uppercase;
+    }
+  }
+
+  .admin_content {
+    @include flex-column;
+    @include transition();
+    gap: 10px;
+    width: calc(100% - 270px);
+    margin-left: auto;
+  }
+
+  @media (max-width: $middle-breakpoint) {
+    & {
+      display: flex;
+      flex-direction: column;
+
+      .admin_content {
+        width: 100%;
+      }
+    }
+  }
+}

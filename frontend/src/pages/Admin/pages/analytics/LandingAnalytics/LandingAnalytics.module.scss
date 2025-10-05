@@ -1,0 +1,82 @@
+.landing_analytics_container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.info_container {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  justify-items: center;
+}
+
+.multi_select_container {
+  position: relative;
+  width: 100%;
+}
+
+.created_at {
+  @include clamped-p2;
+  display: flex;
+  width: 100%;
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.filters {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-end;
+}
+
+.chart_container {
+  position: relative;
+  @include clamped-p3;
+  margin-left: -30px;
+}
+
+.tooltip {
+  @include clamped-p3;
+  background-color: $background-color;
+  border-radius: 10px;
+  border: 1px solid $hover-color;
+  padding: 10px;
+  text-transform: capitalize;
+
+  .purchases {
+    color: $green;
+  }
+
+  .ad_visits {
+    color: $secondary;
+  }
+
+  .ad_purchases {
+    color: $tertiary;
+  }
+}
+
+.tooltip_date {
+  text-align: center;
+  margin-bottom: 5px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .landing_analytics_container {
+    gap: 20px;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .info_container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+}

@@ -1,0 +1,50 @@
+.item {
+  border: 1px solid $hover-color-dark;
+  padding: 15px;
+  display: flex;
+  border-radius: 15px;
+  gap: 5px;
+  @include flex-column;
+  position: relative;
+}
+
+.type {
+  text-transform: uppercase;
+  display: flex;
+  @include clamped-p4;
+  color: $hover-color-dark;
+}
+
+.item_body {
+  @include clamped-p2;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.input {
+  width: 100%;
+}
+
+.buttons {
+  @include flex-column;
+  gap: 10px;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .item_body {
+    flex-direction: column;
+  }
+
+  .buttons {
+    margin-left: auto;
+    flex-direction: row;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .buttons {
+    margin: 0 auto;
+    flex-direction: column;
+  }
+}

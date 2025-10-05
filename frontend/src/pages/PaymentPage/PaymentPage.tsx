@@ -17,8 +17,10 @@ import Button from "../../components/ui/Button/Button.tsx";
 import DisabledPaymentWarn from "../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 import { getLandingDataForPayment } from "../../store/actions/paymentActions.ts";
+import { useLocation } from "react-router-dom";
 
 const PaymentPage = () => {
+  const location = useLocation();
   const dispatch = useDispatch<AppDispatchType>();
   const { isPaymentModalOpen, paymentModalType, closePaymentModal, slug } =
     usePaymentPageHandler();
@@ -31,6 +33,9 @@ const PaymentPage = () => {
   const isWebinar = paymentModalType === "webinar";
   const isFree = paymentModalType === "free";
   const isOffer = paymentModalType === "offer";
+  const isFromPromotionLanding =
+    location.pathname.includes(Path.landing) &&
+    !location.pathname.includes(Path.landingClient);
   const {
     loading,
     isBalanceUsed,
@@ -97,7 +102,9 @@ const PaymentPage = () => {
 
   const renderBody = () => (
     <div className={s.modal_body}>
-      <div className={`${s.total_container} ${!isLogged ? s.center : ""}`}>
+      <div
+        className={`${s.total_container} ${!isLogged || isFromPromotionLanding ? s.center : ""}`}
+      >
         {!isFree && (
           <div className={s.total_text}>
             <Trans i18nKey="cart.total" />:
@@ -111,7 +118,7 @@ const PaymentPage = () => {
             </div>
           </div>
         )}
-        {isLogged && !isFree && (
+        {isLogged && !isFree && !isFromPromotionLanding && (
           <UseBalanceOption
             onToggle={toggleBalance}
             isChecked={isBalanceUsed}
@@ -127,6 +134,10 @@ const PaymentPage = () => {
           isLogged={isLogged}
           isFree={isFree}
         />
+      )}
+
+      {isLogged && isFromPromotionLanding && (
+        <PaymentForm setEmail={setEmailValue} isLogged={isLogged} />
       )}
     </div>
   );

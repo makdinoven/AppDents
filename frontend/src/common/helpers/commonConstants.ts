@@ -212,3 +212,43 @@ export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
   AR: ArFlag,
   IT: ItFlag,
 };
+
+export const ADMIN_SIDEBAR_LINKS = [
+  {
+    label: "admin.content",
+    innerLinks: [
+      { label: "admin.landings.landings", link: Path.adminLandingListing },
+      { label: "admin.courses.courses", link: Path.adminCourseListing },
+      { label: "admin.authors.authors", link: Path.adminAuthorListing },
+      { label: "admin.users.users", link: Path.adminUserListing },
+      // { label: "books", link: Path.adminBooksListings  },
+    ],
+  },
+  {
+    label: "admin.analytics.analytics",
+    innerLinks: [
+      { label: "admin.analytics.purchases", link: Path.adminPurchases },
+      { label: "admin.analytics.languageStats", link: Path.adminLanguageStats },
+      { label: "admin.analytics.adListing", link: Path.adminAdListing },
+      { label: "admin.analytics.referrals", link: Path.adminReferrals },
+      { label: "admin.analytics.userGrowth", link: Path.adminUserGrowth },
+      { label: "admin.analytics.freewebs", link: Path.adminFreewebs },
+      { label: "admin.analytics.traffic", link: Path.adminTraffic },
+    ],
+  },
+  {
+    label: "admin.adControl.adControl",
+    innerLinks: [
+      { label: "admin.adControl.listing", link: Path.adminAdControlListing },
+      { label: "admin.adControl.accounts", link: Path.adminAdControlAccounts },
+      { label: "admin.adControl.staff", link: Path.adminAdControlStaff },
+    ],
+  },
+  {
+    label: "admin.tools.tools",
+    innerLinks: [
+      { label: "Video summary", link: Path.adminVideoSummaryTool },
+      { label: "Clip tool", link: Path.adminClipTool },
+    ],
+  },
+];
