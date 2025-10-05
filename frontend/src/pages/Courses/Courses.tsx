@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useEffect, useState } from "react";
 import { ParamsType } from "../../api/adminApi/types.ts";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
 import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
 import { mainApi } from "../../api/mainApi/mainApi.ts";

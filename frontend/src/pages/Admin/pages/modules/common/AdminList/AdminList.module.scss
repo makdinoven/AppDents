@@ -1,0 +1,42 @@
+.list_header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.multi_select_wrapper {
+  min-width: 150px;
+}
+
+.total_count {
+  @include clamped-p2;
+  text-align: right;
+}
+
+.list_container {
+  @include flex-column;
+  gap: 10px;
+}
+
+.list {
+  @include flex-column;
+  position: relative;
+  gap: 20px;
+}
+
+.not_found {
+  @include clamped-p2;
+  text-align: center;
+  opacity: 0.7;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .list_header {
+    button {
+      //min-width: unset;
+      //width: 100%;
+      padding: 5px 10px;
+    }
+  }
+}

@@ -27,6 +27,7 @@ const Table = <T extends Record<string, any>>({
     "referral_id",
     "course_id",
     "user_id",
+    "color",
   ];
   const headers = Object.keys(data[0]).filter(
     (key) => !excludedKeys.includes(key),
@@ -35,15 +36,7 @@ const Table = <T extends Record<string, any>>({
   const renderCell = (key: string, value: any, row: T) => {
     if (key === "landing_name") {
       if (landingLinkByIdPath) {
-        return (
-          <a
-            href={`${landingLinkByIdPath}/${row.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {value}
-          </a>
-        );
+        return <a href={`${landingLinkByIdPath}/${row.id}`}>{value}</a>;
       }
 
       const slug = row.slug || row.landing_slug;
@@ -81,7 +74,13 @@ const Table = <T extends Record<string, any>>({
       );
     }
 
-    if (key === "registered_at" || key === "created_at" || key === "paid_at") {
+    if (
+      key === "registered_at" ||
+      key === "created_at" ||
+      key === "paid_at" ||
+      key === "stage_started_at" ||
+      key === "quarantine_ends_at"
+    ) {
       return formatIsoToLocalDatetime(value, false);
     }
 
@@ -92,6 +91,18 @@ const Table = <T extends Record<string, any>>({
         <span className="error">No</span>
       );
     }
+
+    if (key === "assignee") {
+      return (
+        <div className={s.custom_cell}>
+          <span>Staff: {value.staff_name}</span>
+          {value.account_name && <span>Ad account: {value.account_name}</span>}
+        </div>
+      );
+    }
+
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return JSON.stringify(value);
 
     return value;
   };
@@ -112,8 +123,10 @@ const Table = <T extends Record<string, any>>({
           </thead>
           <tbody>
             {data.map((row, rowIdx) => (
-              <tr key={rowIdx}>
-                <td>{rowIdx + 1}</td>
+              <tr key={rowIdx} className={row.color ? s[row.color] : ""}>
+                <td style={{ paddingLeft: row.color ? "15px" : "" }}>
+                  {rowIdx + 1}
+                </td>
                 {headers.map((key) => (
                   <td key={key}>{renderCell(key, row[key], row)}</td>
                 ))}

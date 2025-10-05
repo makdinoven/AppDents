@@ -4,11 +4,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  width: 100%;
   border: 1.5px solid $hover-color;
   padding: 0 12px;
   border-radius: 15px;
   min-height: 39px;
+  height: fit-content;
+
+  &.center {
+    justify-content: center;
+  }
 
   .buttons {
     display: flex;
@@ -32,8 +36,10 @@
       }
     }
 
-    &:hover {
-      background-color: $hover-color;
+    @media (hover: hover) {
+      &:hover {
+        background-color: $hover-color;
+      }
     }
 
     &:active {
@@ -73,5 +79,14 @@
 
   span {
     @include clamped-p2();
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    button {
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
 import s from "./UniversalPage.module.scss";
 import { useParams } from "react-router-dom";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import { t } from "i18next";
 
 const UniversalPage = () => {

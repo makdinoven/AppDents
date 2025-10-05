@@ -37,6 +37,7 @@ import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 import {
   initLowPricePixel,
   trackLowPricePageView,
+  trackPageView,
 } from "../../common/helpers/facebookPixel.ts";
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
@@ -144,6 +145,7 @@ const Landing = () => {
 
   const trackFacebookAd = () => {
     mainApi.trackFacebookAd(landingPath!);
+    trackPageView();
   };
 
   const handleNavigateToPayment = (isButtonFree: boolean) => {
