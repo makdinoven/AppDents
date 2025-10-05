@@ -178,19 +178,19 @@ export const isBookLanding = (pathname: string): boolean => {
 
 export const isBookLandingPromotion = (pathname: string): boolean => {
   return (
-      pathname.includes(Path.bookLanding) &&
-      !pathname.includes(Path.bookLandingClient) &&
-      !pathname.includes(Path.books) &&
-      !pathname.includes(Path.bookDetail) &&
-      !pathname.includes(Path.bookLandingDetail)
+    pathname.includes(Path.bookLanding) &&
+    !pathname.includes(Path.bookLandingClient) &&
+    !pathname.includes(Path.books) &&
+    !pathname.includes(Path.bookDetail) &&
+    !pathname.includes(Path.bookLandingDetail) &&
+    !pathname.includes(Path.adminBookLandingListing) &&
+    !pathname.includes(Path.adminBookListing)
   );
 };
 
-
-
 export const formatIsoToLocalDatetime = (
-    isoString: string,
-    showTime?: boolean,
+  isoString: string,
+  showTime?: boolean,
 ): string => {
   const date = new Date(isoString);
 

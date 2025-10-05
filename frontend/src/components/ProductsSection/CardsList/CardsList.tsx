@@ -105,7 +105,7 @@ const CardsList: React.FC<CardsListProps> = ({
                       language: "EN",
                       landing_name:
                         "Art and Nature In Ceramic Restorations Nature In Ceramiс and art",
-                      slug: "///sdds",
+                      slug: "landing-643652",
                       old_price: 190,
                       new_price: 19,
                       publication_date: "09.02.1021",

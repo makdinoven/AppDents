@@ -63,10 +63,12 @@
     }
 
     .prev {
-      flex-direction: row-reverse;
+      margin-right: auto;
     }
 
     .next {
+      margin-left: auto;
+      //flex-direction: row-reverse;
       svg {
         transform: scaleX(-1);
       }

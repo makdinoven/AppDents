@@ -9,44 +9,87 @@ import Professors from "./modules/Professors/Professors.tsx";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
+import { mainApi } from "../../api/mainApi/mainApi.ts";
+import { setLanguage } from "../../store/slices/userSlice.ts";
+import { useDispatch } from "react-redux";
 
 const BookLanding = () => {
-  const [data, setData] = useState<any>(null);
-  const [loading] = useState(false);
-  const landingPath = useParams();
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
+  const [bookData, setBookData] = useState<any>(null);
+  const { landingPath } = useParams();
+
+  const fetchLandingData = async () => {
+    setLoading(true);
+    try {
+      const res = await mainApi.getBookLanding(landingPath);
+      setBookData(res.data);
+      dispatch(setLanguage(res.data.language));
+      // mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
+      // const paymentData = {
+      //     fromAd: isPromotionLanding,
+      //     landingIds: [res.data.id],
+      //     courseIds: res.data.course_ids,
+      //     priceCents: !isWebinar ? res.data.new_price * 100 : 100,
+      //     newPrice: !isWebinar ? res.data.new_price : 1,
+      //     oldPrice: !isWebinar ? res.data.old_price : 49,
+      //     region: res.data.language,
+      //     source: isWebinar
+      //         ? PAGE_SOURCES.webinarLanding
+      //         : isVideo
+      //             ? PAGE_SOURCES.videoLanding
+      //             : undefined,
+      //     courses: [
+      //         {
+      //             name: !isWebinar
+      //                 ? res.data.landing_name
+      //                 : normalizeLessons(res.data.lessons_info)[0].name,
+      //             newPrice: !isWebinar ? res.data.new_price : 1,
+      //             oldPrice: !isWebinar ? res.data.old_price : 49,
+      //             lessonsCount: res.data.lessons_count,
+      //             img: res.data.preview_photo,
+      //         },
+      //     ],
+      // };
+
+      // dispatch(setPaymentData(paymentData));
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetch(`https://test.dent-s.com/api/books/landing/slug/landing-643652`)
-      .then((response) => {
-        return response.json();
-      })
-      .then((data) => {
-        setData(data);
-      })
-      .catch((error) => {
-        console.error("There was a problem with the fetch operation:", error);
-      });
+    if (landingPath) {
+      fetchLandingData();
+    }
   }, [landingPath]);
 
   const renderSections = () => {
-    if (data) {
-      return (
-        <>
-          <BookLandingHero data={data} loading={loading} />
-          <ContentOverview books={data.books} portalParentId="portal_parent" />
-          <BuySection
-            type="download"
-            isFullWidth={true}
-            oldPrice={data.old_price}
-            newPrice={data.new_price}
-            formats={BOOK_FORMATS}
-          />
-          <AudioSection audioUrl="" title="NYSORA Nerve Block Manual" />
-          <Professors professors={data.authors} />
-          <Faq type={"book"} />
-        </>
-      );
-    }
+    return (
+      <>
+        <BookLandingHero data={bookData} loading={loading} />
+        {bookData && (
+          <>
+            <ContentOverview
+              books={bookData.books}
+              portalParentId="portal_parent"
+            />
+            <BuySection
+              type="download"
+              isFullWidth={true}
+              oldPrice={bookData.old_price}
+              newPrice={bookData.new_price}
+              formats={BOOK_FORMATS}
+            />
+            <AudioSection audioUrl="" title="NYSORA Nerve Block Manual" />
+            <Professors professors={bookData.authors} />
+            <Faq type={"book"} />
+          </>
+        )}
+      </>
+    );
   };
 
   return (

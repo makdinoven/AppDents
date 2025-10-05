@@ -7,6 +7,7 @@ import { Bookmark } from "../../../../../../assets/icons";
 interface ContentOverviewSlideProps {
   book: any;
   parentId: string;
+  isActive: boolean;
 }
 
 export interface ContentOverviewSlideRef {
@@ -16,7 +17,7 @@ export interface ContentOverviewSlideRef {
 const ContentOverviewSlide = forwardRef<
   ContentOverviewSlideRef,
   ContentOverviewSlideProps
->(({ book, parentId }, ref) => {
+>(({ book, parentId, isActive }, ref) => {
   useImperativeHandle(ref, () => ({
     title: book.title,
   }));
@@ -42,7 +43,11 @@ const ContentOverviewSlide = forwardRef<
         )}
       </div>
       <div className={s.content}>
-        <PdfReaderWrapper parentId={parentId} url={book.preview_pdf_url} />
+        <PdfReaderWrapper
+          isSlideActive={isActive}
+          parentId={parentId}
+          url={book.preview_pdf_url}
+        />
         <p className={s.description}>{book.description}</p>
       </div>
     </li>

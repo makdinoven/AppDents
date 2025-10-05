@@ -16,8 +16,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  const authors = data.authors?.map((author: any) => author.name);
-  return loading ? (
+  return !data && loading ? (
     <Loader />
   ) : (
     <section className={s.hero}>
@@ -37,7 +36,11 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
           <p>
             <Trans
               i18nKey={`${data.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
-              values={{ authors: authors!.join(", ") }}
+              values={{
+                authors: data.authors
+                  ?.map((author: any) => author.name)!
+                  .join(", "),
+              }}
               components={[<span className={s.highlight} />]}
             />
           </p>

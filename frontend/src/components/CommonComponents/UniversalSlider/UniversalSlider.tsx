@@ -12,6 +12,7 @@ export type UniversalSliderProps = {
   loop?: boolean;
   pagination?: boolean;
   navigation?: boolean;
+  allowTouchMove?: boolean;
   effect?: "slide" | "fade" | "cube" | "coverflow" | "flip";
   paginationType?: "story" | "dots";
   slidesPerView?: number | "auto";
@@ -31,6 +32,7 @@ const UniversalSlider = forwardRef<UniversalSliderRef, UniversalSliderProps>(
   (
     {
       slides,
+      allowTouchMove,
       autoplay = false,
       loop = true,
       pagination = true,
@@ -65,6 +67,7 @@ const UniversalSlider = forwardRef<UniversalSliderRef, UniversalSliderProps>(
       >
         <Swiper
           autoHeight={false}
+          allowTouchMove={allowTouchMove}
           className={className}
           modules={[Autoplay, Pagination, Navigation, EffectFade]}
           loop={loop}

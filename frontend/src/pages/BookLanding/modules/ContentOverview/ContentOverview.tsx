@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import s from "./ContentOverview.module.scss";
 import ContentOverviewSlide, {
   ContentOverviewSlideRef,
@@ -16,6 +16,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   books,
   portalParentId,
 }: ContentOverviewProps) => {
+  const [activeIndex, setActiveIndex] = useState(0);
   const slideRefs = useRef<ContentOverviewSlideRef[]>([]);
 
   const slides = books.map((book: any, index) => (
@@ -26,6 +27,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
       ref={(slide) => {
         if (slide) slideRefs.current[index] = slide;
       }}
+      isActive={activeIndex === index}
     />
   ));
 
@@ -35,6 +37,8 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
     <div className={s.content_overview}>
       <SectionHeader name={t("bookLanding.contentOverview")} />
       <ContentSliderWrapper
+        activeIndex={activeIndex}
+        setActiveIndex={setActiveIndex}
         slides={slides}
         slideRefs={slideRefs}
         className={s.slider}

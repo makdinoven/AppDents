@@ -1,77 +1,48 @@
-import { useEffect, useRef, useState } from "react";
-import ReactDOM from "react-dom";
 import PdfReader from "./PdfReader.tsx";
-import s from "./PdfReader.module.scss";
-import ModalOverlay from "../../Modals/ModalOverlay/ModalOverlay.tsx";
+import PdfReaderFullScreen from "./PdfReaderFullScreen.tsx";
+import { useSearchParams } from "react-router-dom";
+import { useState } from "react";
 
 interface PdfReaderWrapperProps {
   parentId: string;
   url: string;
+  isSlideActive: boolean;
 }
 
-const PdfReaderWrapper = ({ parentId, url }: PdfReaderWrapperProps) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const closeFullscreenRef = useRef<() => void>(null);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+export const PDF_READER_FULLSCREEN_KEY = "reader_fullscreen";
 
-  useEffect(() => {
-    const target =
-      (parentId && document.getElementById(parentId)) || document.body;
-
-    if (containerRef.current) {
-      target.appendChild(containerRef.current);
-    }
-
-    return () => {
-      if (containerRef.current && target.contains(containerRef.current)) {
-        target.removeChild(containerRef.current);
-        containerRef.current = null;
-      }
-    };
-  }, [parentId, isFullScreen]);
-
-  if (!containerRef.current && isFullScreen) {
-    const container = document.createElement("div");
-    container.className = s.portal_container;
-    containerRef.current = container;
-  }
-
-  const handleFullScreen = (state: boolean) => {
-    if (!state) {
-      closeFullscreenRef.current?.();
-    } else {
-      setIsFullScreen(state);
-    }
+const PdfReaderWrapper = ({
+  parentId,
+  url,
+  isSlideActive,
+}: PdfReaderWrapperProps) => {
+  const [currentPage, setCurrentPage] = useState<string>("1");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openFullScreen = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(PDF_READER_FULLSCREEN_KEY, "");
+    setSearchParams(newParams, { replace: true });
   };
 
-  const reader = (
-    <PdfReader
-      url={url}
-      fullScreen={isFullScreen}
-      setFullScreen={handleFullScreen}
-    />
-  );
-
-  return isFullScreen && containerRef.current ? (
-    ReactDOM.createPortal(
+  return (
+    isSlideActive && (
       <>
-        <ModalOverlay
-          isVisibleCondition={true}
-          modalPosition={"fullscreen"}
-          customHandleClose={() => setIsFullScreen(false)}
-          onInitClose={(fn) => (closeFullscreenRef.current = fn)}
-        >
-          {reader}
-        </ModalOverlay>
-      </>,
-      containerRef.current,
+        <PdfReaderFullScreen
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          parentId={parentId}
+          url={url}
+        />
+
+        <PdfReader
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          url={url}
+          fullScreen={false}
+          setFullScreen={openFullScreen}
+        />
+      </>
     )
-  ) : (
-    <PdfReader
-      url={url}
-      fullScreen={isFullScreen}
-      setFullScreen={handleFullScreen}
-    />
   );
 };
 export default PdfReaderWrapper;

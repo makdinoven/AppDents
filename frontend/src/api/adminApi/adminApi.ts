@@ -92,7 +92,7 @@ export const adminApi = {
     });
   },
   getBookLanding(id: any) {
-    return instance.get(`books/${id}/detail/`, {
+    return instance.get(`books/${id}/detail`, {
       headers: getAuthHeaders(),
     });
   },
