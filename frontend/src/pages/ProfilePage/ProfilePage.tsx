@@ -17,7 +17,7 @@ const ProfilePage = () => {
           <PrettyButton
             variant="primary"
             text={"Admin panel"}
-            onClick={() => navigate(Path.admin)}
+            onClick={() => navigate(Path.adminLandingListing)}
           />
         </div>
       )}

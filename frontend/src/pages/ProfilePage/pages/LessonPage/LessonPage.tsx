@@ -96,7 +96,11 @@ const LessonPage = () => {
             </p>
           ) : lesson.video_link?.length > 0 ? (
             <div className={s.video_container}>
-              <HlsVideo srcMp4={lesson.video_link} poster={lesson.preview} />
+              <HlsVideo
+                srcMp4={lesson.video_link}
+                muted={false}
+                poster={lesson.preview}
+              />
             </div>
           ) : (
             <p>

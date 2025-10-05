@@ -1,7 +1,7 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "./types.ts";
-import { SummaryToolDataType } from "../../pages/Admin/tabs/AdminTools/tools/VideoSummaryTool/VideoSummaryTool.tsx";
+import { SummaryToolDataType } from "../../pages/Admin/pages/tools/VideoSummaryTool/VideoSummaryTool.tsx";
 
 export const adminApi = {
   getCoursesList(params: ParamsType) {

@@ -22,9 +22,9 @@ const Layout = () => {
         <>
           <Footer />
           <ScrollToTopButton />
+          <MobileMenu />
         </>
       )}
-      <MobileMenu />
     </div>
   );
 };
