@@ -29,7 +29,7 @@ interface AdminListProps<T> {
     | "landings"
     | "courses"
     | "books"
-    | "book-landings"
+    | "bookLandings"
     | "authors"
     | "users";
 }

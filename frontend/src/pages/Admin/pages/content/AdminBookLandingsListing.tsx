@@ -46,7 +46,7 @@ const AdminBookLandingsListing = () => {
   return (
     <>
       <AdminList<any>
-        transKey={"book-landings"}
+        transKey={"bookLandings"}
         data={bookLandings}
         itemName={"landing_name"}
         itemLink={(book) => `${Path.bookLandingDetail}/${book.id}`}

@@ -1,16 +1,16 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import { pdfjs, Document, Page } from "react-pdf";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import s from "./PdfReader.module.scss";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
   Chevron,
+  ListIcon,
   MaximizeIcon,
   MinimizeIcon,
   ZoomIn,
   ZoomOut,
-  ListIcon,
 } from "../../../assets/icons";
 import { SingleValue } from "react-select";
 import MultiSelect from "../MultiSelect/MultiSelect.tsx";
@@ -18,6 +18,7 @@ import { Trans } from "react-i18next";
 import { t } from "i18next";
 import ThumbNails from "./ThumbNails/ThumbNails.tsx";
 import { useThrottle } from "../../../common/hooks/useThrottle.ts";
+import Loader from "../../ui/Loader/Loader.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -48,20 +49,24 @@ interface PdfReaderProps {
   url: string;
   fullScreen: boolean;
   setFullScreen: (state: boolean) => void;
+  currentPage: string;
+  setCurrentPage: (val: string) => void;
 }
 
 const DEFAULT_SCALE = 0.75;
 
-const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
+const PdfReader = ({
+  url,
+  fullScreen,
+  setFullScreen,
+  currentPage,
+  setCurrentPage,
+}: PdfReaderProps) => {
   const [totalPages, setTotalPages] = useState<number>();
   const [pageNumber, setPageNumber] = useState<number>(1);
   const documentRef = useRef<HTMLDivElement | null>(null);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
-  const [scale, setScale] = useState<number>(() => {
-    const stored = sessionStorage.getItem("pdfScale");
-    return stored ? JSON.parse(stored) : DEFAULT_SCALE;
-  });
-  const [inputValue, setInputValue] = useState<string>("1");
+  const [scale, setScale] = useState<number>(DEFAULT_SCALE);
   const [isThumbNailsOpen, setIsThumbNailsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -97,16 +102,6 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   );
 
   useEffect(() => {
-    if (!scale) {
-      setScale(0.75);
-    }
-  }, [scale]);
-
-  useEffect(() => {
-    sessionStorage.setItem("pdfScale", JSON.stringify(scale));
-  }, [scale]);
-
-  useEffect(() => {
     const container = documentRef.current;
     if (!container) return;
     container.addEventListener("scroll", throttledHandleScroll);
@@ -115,7 +110,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
 
   useEffect(() => {
     const id = setTimeout(() => {
-      setInputValue(pageNumber.toString());
+      setCurrentPage(pageNumber.toString());
     }, 300); // только конечное значение
 
     return () => clearTimeout(id);
@@ -171,7 +166,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   const handleScrollToPage = (newPage: number) => {
     if (!documentRef.current) return;
 
-    setInputValue(newPage.toString());
+    setCurrentPage(newPage.toString());
     setPageNumber(newPage);
 
     const pageElement = documentRef.current.querySelector(
@@ -200,8 +195,6 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handleCloseFullScreen = () => {
-    setScale(0.75);
-    sessionStorage.setItem("pdfScale", JSON.stringify(0.75));
     setFullScreen(false);
   };
 
@@ -232,18 +225,18 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handleGoToPage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
+    setCurrentPage(e.target.value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const newPage = getPageInputResults(inputValue);
+      const newPage = getPageInputResults(currentPage);
       handleScrollToPage(newPage);
     }
   };
 
   const getPageInputResults = (inputValue: string): number => {
-    setInputValue(inputValue.replace(/\D/g, ""));
+    setCurrentPage(inputValue.replace(/\D/g, ""));
     const newPage = parseInt(inputValue);
     if (isNaN(newPage) || newPage <= 0) {
       setPageNumber(1);
@@ -256,7 +249,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
   };
 
   const handlePageInputBlur = () => {
-    getPageInputResults(inputValue);
+    getPageInputResults(currentPage);
   };
 
   const handleThumbNailsClick = () => {
@@ -297,7 +290,7 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
           <p className={`${s.page_indicator} ${s.full_screen}`}>
             <input
               className={s.page_input}
-              value={inputValue === "" ? " " : inputValue}
+              value={currentPage === "" ? " " : currentPage}
               onChange={handleGoToPage}
               onKeyDown={handleKeyDown}
               onBlur={handlePageInputBlur}
@@ -384,10 +377,15 @@ const PdfReader = ({ url, fullScreen, setFullScreen }: PdfReaderProps) => {
         currentPage={pageNumber}
       />
       <div className={`${s.overlay} ${isThumbNailsOpen && s.open}`}></div>
-      <div className={s.document} ref={documentRef}>
+      <div
+        onClick={!fullScreen ? handleOpenFullScreen : undefined}
+        style={{ cursor: !fullScreen ? "pointer" : "auto" }}
+        className={s.document}
+        ref={documentRef}
+      >
         {loading ? (
           <div className={s.loading}>
-            <Trans i18nKey={"bookLanding.pdfReader.loading"} />
+            <Loader />
           </div>
         ) : (
           <Document

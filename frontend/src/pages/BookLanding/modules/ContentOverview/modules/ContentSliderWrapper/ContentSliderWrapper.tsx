@@ -1,4 +1,4 @@
-import React, { FC, useState, useRef, useEffect } from "react";
+import React, { FC, useEffect, useRef, useState } from "react";
 import UniversalSlider, {
   UniversalSliderProps,
   UniversalSliderRef,
@@ -6,6 +6,7 @@ import UniversalSlider, {
 import s from "./ContentSliderWrapper.module.scss";
 import { BackArrow } from "../../../../../../assets/icons";
 import { ContentOverviewSlideRef } from "../ContentOverviewSlide/ContentOverviewSlide.tsx";
+import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 
 interface ContentSliderWrapperProps
   extends Omit<
@@ -15,15 +16,19 @@ interface ContentSliderWrapperProps
   slides: React.ReactNode[];
   slideRefs: React.RefObject<ContentOverviewSlideRef[]>;
   showLabels?: boolean;
+  activeIndex: number;
+  setActiveIndex: (index: number) => void;
 }
 
 const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
   slides,
   slideRefs,
   showLabels = false,
+  activeIndex,
+  setActiveIndex,
   ...props
 }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const screenWidth = useScreenWidth();
   const [isRefsReady, setIsRefsReady] = useState(false);
   const sliderRef = useRef<UniversalSliderRef>(null);
 
@@ -49,25 +54,27 @@ const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
         onSlideChange={setActiveIndex}
         pagination={false}
         ref={sliderRef}
+        allowTouchMove={screenWidth <= 768}
       />
       {showLabels && isRefsReady && (
         <div className={s.custom_nav}>
-          {prevSlide && (
+          {prevSlide && activeIndex > 0 && (
             <button
-              className={`${s.prev} ${activeIndex > 0 && s.hidden}`}
+              className={s.prev}
               onClick={() => sliderRef.current?.slidePrev()}
             >
-              <span className={s.label}>{prevSlide?.title}</span>
               <BackArrow />
+              <span className={s.label}>{prevSlide?.title}</span>
             </button>
           )}
-          {nextSlide && (
+
+          {nextSlide && activeIndex < slides.length - 1 && (
             <button
-              className={`${s.next} ${activeIndex < slides.length - 1 && s.hidden}`}
+              className={s.next}
               onClick={() => sliderRef.current?.slideNext()}
             >
               <span className={s.label}>{nextSlide?.title}</span>
-              <BackArrow />
+              <BackArrow className={s.iconRotated} /> {/* или rotate: 180deg */}
             </button>
           )}
         </div>

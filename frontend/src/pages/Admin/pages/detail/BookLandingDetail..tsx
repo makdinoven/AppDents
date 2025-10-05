@@ -71,7 +71,7 @@ const BookLandingDetail = () => {
   ) : (
     bookLanding && (
       <div className={s.detail_container}>
-        <DetailHeader title={"admin.book-landings.edit"} />
+        <DetailHeader title={"admin.bookLandings.edit"} />
         <AdminField
           type="input"
           id="landing_name"
