@@ -31,13 +31,9 @@ import Courses from "../pages/Courses/Courses.tsx";
 import BookLanding from "../pages/BookLanding/BookLanding.tsx";
 import Books from "../pages/Books/Books.tsx";
 import SearchPage from "../pages/SearchPage/SearchPage.tsx";
-import BookLandingDetail from "../pages/Admin/pages/BookLandingDetail..tsx";
-import BookDetail from "../pages/Admin/pages/BookDetail.tsx";
+import BookLandingDetail from "../pages/Admin/pages/detail/BookLandingDetail..tsx";
+import BookDetail from "../pages/Admin/pages/detail/BookDetail.tsx";
 import LandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytics/LandingAnalytics.tsx";
-import AdminLandingsListing from "../pages/Admin/pages/content/AdminLandingsListing.tsx";
-import AdminCoursesListing from "../pages/Admin/pages/content/AdminCoursesListing.tsx";
-import AdminAuthorsListing from "../pages/Admin/pages/content/AdminAuthorsListing.tsx";
-import AdminUsersListing from "../pages/Admin/pages/content/AdminUsersListing.tsx";
 import AnalyticsPurchases from "../pages/Admin/pages/analytics/AnalyticsPurchases.tsx";
 import AnalyticsLanguageStats from "../pages/Admin/pages/analytics/AnalyticsLanguageStats.tsx";
 import AnalyticsAdListing from "../pages/Admin/pages/analytics/AnalyticsAdListing.tsx";
@@ -50,6 +46,12 @@ import ClipTool from "../pages/Admin/pages/tools/ClipTool/ClipTool.tsx";
 import AdControlStaff from "../pages/Admin/pages/ad-control/AdControlStaff.tsx";
 import AdControlAccounts from "../pages/Admin/pages/ad-control/AdControlAccounts.tsx";
 import AdControlListing from "../pages/Admin/pages/ad-control/AdControlListing/AdControlListing.tsx";
+import AdminLandingsListing from "../pages/Admin/pages/content/AdminLandingsListing.tsx";
+import AdminCoursesListing from "../pages/Admin/pages/content/AdminCoursesListing.tsx";
+import AdminAuthorsListing from "../pages/Admin/pages/content/AdminAuthorsListing.tsx";
+import AdminUsersListing from "../pages/Admin/pages/content/AdminUsersListing.tsx";
+import AdminBooksListing from "../pages/Admin/pages/content/AdminBooksListing.tsx";
+import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLandingsListing.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -143,6 +145,14 @@ export const AppRoutes: FC = () => {
             <Route
               path={`${Path.adminUserListing}`}
               element={<AdminUsersListing />}
+            />
+            <Route
+              path={`${Path.adminBookListing}`}
+              element={<AdminBooksListing />}
+            />
+            <Route
+              path={`${Path.adminBookLandingListing}`}
+              element={<AdminBookLandingsListing />}
             />
             <Route
               path={`${Path.adminPurchases}`}

@@ -2,13 +2,13 @@ import s from "./Professors.module.scss";
 import { useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import ProfessorsList from "../../components/CommonComponents/ProfessorsList/ProfessorsList.tsx";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
 import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
 import { ParamsType } from "../../api/adminApi/types.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import ProfessorCardSkeletons from "../../components/ui/Skeletons/ProfessorCardSkeletons/ProfessorCardSkeletons.tsx";
+import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 
 const SIZE = 12;
 

@@ -25,7 +25,13 @@ interface AdminListProps<T> {
   showLanguageFilter?: boolean;
   handleToggle?: (value: number, isHidden: boolean) => void;
   showToggle?: boolean;
-  transKey: "landings" | "courses" | "books" | "authors" | "users";
+  transKey:
+    | "landings"
+    | "courses"
+    | "books"
+    | "book-landings"
+    | "authors"
+    | "users";
 }
 
 const SIZE = 10;

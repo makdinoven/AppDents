@@ -1,16 +1,16 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { adminApi } from "../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../assets/icons";
+import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../assets/icons";
 import { useEffect, useState } from "react";
-import Loader from "../../../components/ui/Loader/Loader.tsx";
+import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import s from "./DetailPage.module.scss";
-import MultiSelect from "../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES } from "../../../common/helpers/commonConstants.ts";
+import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
 import { t } from "i18next";
-import DetailHeader from "./modules/common/DetailHeader/DetailHeader.tsx";
-import AdminField from "./modules/common/AdminField/AdminField.tsx";
-import DetailBottom from "./modules/common/DetailBottom/DetailBottom.tsx";
+import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
+import AdminField from "../modules/common/AdminField/AdminField.tsx";
+import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 
 const BookLandingDetail = () => {
   const { bookId } = useParams();

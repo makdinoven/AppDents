@@ -221,7 +221,11 @@ export const ADMIN_SIDEBAR_LINKS = [
       { label: "admin.courses.courses", link: Path.adminCourseListing },
       { label: "admin.authors.authors", link: Path.adminAuthorListing },
       { label: "admin.users.users", link: Path.adminUserListing },
-      // { label: "books", link: Path.adminBooksListings  },
+      { label: "admin.books.books", link: Path.adminBookListing },
+      {
+        label: "admin.bookLandings.bookLandings",
+        link: Path.adminBookLandingListing,
+      },
     ],
   },
   {
