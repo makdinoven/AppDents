@@ -389,6 +389,7 @@
     "view": "view",
     "open": "open",
     "promo": "promo link",
+    "content": "content",
     "courses": {
       "courses": "courses",
       "search": "Search courses...",
@@ -502,12 +503,12 @@
     "analytics": {
       "analytics": "Analytics",
       "size": "Size",
-      "landings": "Language stats",
-      "listing": "Ad listing",
+      "languageStats": "Language stats",
+      "adListing": "Ad listing",
       "referrals": "Referrals",
       "purchases": "Purchases",
       "userGrowth": "User growth",
-      "freeCourses": "Freewebs",
+      "freewebs": "Freewebs",
       "traffic": "Traffic"
     },
     "tools": {
@@ -536,7 +537,10 @@
       }
     },
     "adControl": {
-      "adControl": "Ad control"
+      "adControl": "Ad control",
+      "listing": "Main",
+      "staff": "staff",
+      "accounts": "accounts"
     }
   }
 }

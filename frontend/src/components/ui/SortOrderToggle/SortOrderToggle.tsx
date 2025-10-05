@@ -22,7 +22,7 @@ const SortOrderToggle = ({
   };
 
   return (
-    <div className={s.sort_container}>
+    <div className={`${s.sort_container} ${!transKey ? s.center : ""}`}>
       {transKey && (
         <span>
           <Trans i18nKey={transKey} />

@@ -2,7 +2,7 @@ import s from "./Professors.module.scss";
 import { useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import ProfessorsList from "../../components/CommonComponents/ProfessorsList/ProfessorsList.tsx";
-import DetailHeader from "../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import CoursesSection from "../../components/CommonComponents/CoursesSection/CoursesSection.tsx";
 import ListController from "../../components/ui/ListController/ListController.tsx";
 import { ParamsType } from "../../api/adminApi/types.ts";

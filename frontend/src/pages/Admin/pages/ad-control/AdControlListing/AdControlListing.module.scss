@@ -1,0 +1,103 @@
+.ad_control_main {
+  @include flex-column;
+  gap: 30px;
+  max-width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.create_btn {
+  margin-left: auto;
+}
+
+.page_header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.table_container {
+  @include flex-column;
+  gap: 20px;
+}
+
+.filters {
+  @include flex-column;
+  gap: 20px;
+}
+
+.clear_btn {
+  margin-left: auto;
+  @include clamped-p3;
+  border: 1px solid $error-color;
+  color: $error-color;
+  border-radius: 20px;
+  padding: 5px 10px;
+  text-align: center;
+  @include transition();
+
+  &:hover {
+    background-color: $error-color;
+    color: $text-color;
+  }
+}
+
+.ad_control_list {
+  @include flex-column;
+  position: relative;
+  gap: 15px;
+
+  .listing_title {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+.sort_filters {
+  display: grid;
+  grid-template-columns: 3.5fr 1fr;
+  align-items: flex-end;
+  gap: inherit;
+  border: 1.5px solid $hover-color;
+  border-radius: 15px;
+  padding: 10px;
+}
+
+.filters_row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.filters_col {
+  @include flex-column;
+  gap: 10px;
+}
+
+.min_max_filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: $sm-breakpoint) {
+  .sort_filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .ad_control_main,
+  .filters {
+    gap: 10px;
+  }
+
+  .sort_filters {
+    grid-template-columns: 3fr 1fr;
+  }
+
+  .min_max_filters,
+  .filters_row {
+    display: flex;
+    flex-direction: column;
+  }
+}

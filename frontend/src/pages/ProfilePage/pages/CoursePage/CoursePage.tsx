@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
-import DetailHeader from "../../../Admin/modules/common/DetailHeader/DetailHeader.tsx";
+import DetailHeader from "../../../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import LessonCard from "./LessonCard/LessonCard.tsx";
