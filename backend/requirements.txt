@@ -4,6 +4,7 @@ SQLAlchemy
 pymysql
 pydantic<2.0.0
 pydantic[email]
+python-dotenv
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
 python-jose[cryptography]
@@ -18,6 +19,7 @@ openpyxl
 rapidfuzz==3.12.1
 aiomysql==0.2.0
 jose
+rapidfuzz
 boto3
 botocore
 celery
@@ -27,4 +29,4 @@ requests
 aiohttp
 dnspython
 email_validator
-assemblyai
+Pillow
