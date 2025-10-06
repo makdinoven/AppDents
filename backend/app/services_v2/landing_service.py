@@ -676,19 +676,36 @@ def _ensure_ad_on_and_extend_ttl(
 
     return True
 
+MIN_UNIQUE_IPS = 3
+UNIQUE_IP_WINDOW = timedelta(hours=14)
+
+def _unique_ip_count_recent(db, landing_id: int, now: datetime) -> int:
+    win_start = now - UNIQUE_IP_WINDOW
+    q = (
+        db.query(func.count(func.distinct(AdVisit.ip_address)))
+          .filter(
+              AdVisit.landing_id == landing_id,
+              AdVisit.visited_at >= win_start,
+              AdVisit.ip_address.isnot(None),
+              AdVisit.ip_address != ""
+          )
+    )
+    return int(q.scalar() or 0)
+
+from sqlalchemy import func
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
     now = datetime.utcnow()
 
-    # 1) лог визита
+    # 1) лог визита (fbp/fbc оставляем для аналитики, но не используем в логике включения)
     visit = AdVisit(
         landing_id=landing_id,
         fbp=fbp,
         fbc=fbc,
-        ip_address=ip,
+        ip_address=(ip.strip() if ip else None),
     )
     db.add(visit)
-    db.flush()  # чтобы запись учлась в последующих запросах
+    db.flush()  # чтобы запись учлась в последующих запросах этой транзакции
 
     # 2) работаем с лендингом под блокировкой
     landing = (
@@ -701,22 +718,23 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
         db.commit()  # сохраним хотя бы визит
         return
 
-    # 3) считаем уникальные за окно (по COALESCE(fbc, fbp)), null-ы не считаем
+    # 3) считаем уникальные IP за окно
     window_start = now - UNIQUE_WINDOW
     uniq_count = (
-        db.query(func.count(func.distinct(func.coalesce(AdVisit.fbc, AdVisit.fbp))))
+        db.query(func.count(func.distinct(AdVisit.ip_address)))
           .filter(
               AdVisit.landing_id == landing_id,
               AdVisit.visited_at >= window_start,
-              or_(AdVisit.fbc.isnot(None), AdVisit.fbp.isnot(None)),
+              AdVisit.ip_address.isnot(None),
+              AdVisit.ip_address != ""
           )
           .scalar()
     ) or 0
 
     # 4) логика флага и периодов
     if not landing.in_advertising:
-        # зажигаем только после порога уникальных
-        if uniq_count >= UNIQUE_MIN:
+        # зажигаем только после порога уникальных IP
+        if uniq_count >= MIN_UNIQUE_IPS:
             landing.in_advertising = True
             _open_ad_period_if_needed(db, landing_id, started_by=None)
             landing.ad_flag_expires_at = now + AD_TTL
