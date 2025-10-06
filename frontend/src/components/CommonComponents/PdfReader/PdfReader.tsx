@@ -17,8 +17,9 @@ import MultiSelect from "../MultiSelect/MultiSelect.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import ThumbNails from "./ThumbNails/ThumbNails.tsx";
-import { useThrottle } from "../../../common/hooks/useThrottle.ts";
 import Loader from "../../ui/Loader/Loader.tsx";
+import { useThrottle } from "../../../common/hooks/useThrottle.ts";
+import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -32,6 +33,7 @@ type SelectType = {
 
 const screenResolutionMap = new Map([
   ["desktop", { width: 1440, pageWidth: 600 }],
+  ["middle", { width: 1024, pageWidth: 500 }],
   ["tablet", { width: 768, pageWidth: 450 }],
   ["mobile", { width: 576, pageWidth: 300 }],
 ]);
@@ -62,35 +64,15 @@ const PdfReader = ({
   currentPage,
   setCurrentPage,
 }: PdfReaderProps) => {
+  const isProgrammaticScroll = useRef(false);
+  const screenWidth = useScreenWidth();
   const [totalPages, setTotalPages] = useState<number>();
-  const [pageNumber, setPageNumber] = useState<number>(1);
+  const pageNum = Number(currentPage);
   const documentRef = useRef<HTMLDivElement | null>(null);
-  const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
-  const [scale, setScale] = useState<number>(DEFAULT_SCALE);
   const [isThumbNailsOpen, setIsThumbNailsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isLogicScroll, setIsLogicScroll] = useState(false);
-  const throttledHandleScroll = useThrottle(() => {
-    if (!documentRef.current || !totalPages) return;
-    if (isLogicScroll) {
-      setIsLogicScroll(false);
-      return;
-    }
-    const container = documentRef.current;
-    const { scrollTop, scrollHeight, clientHeight } = container;
-
-    const maxScrollTop = scrollHeight - clientHeight;
-
-    const progress = scrollTop / maxScrollTop;
-
-    const newPage = Math.min(
-      totalPages,
-      Math.max(1, Math.round(progress * (totalPages - 1) + 1)),
-    );
-
-    setPageNumber(newPage);
-  }, 100);
+  const [scale, setScale] = useState<number>(DEFAULT_SCALE);
 
   const options = useMemo(
     () => ({
@@ -101,92 +83,90 @@ const PdfReader = ({
     [],
   );
 
-  useEffect(() => {
+  const handleScroll = () => {
+    if (!documentRef.current || !totalPages) return;
     const container = documentRef.current;
-    if (!container) return;
-    container.addEventListener("scroll", throttledHandleScroll);
-    return () => container.removeEventListener("scroll", throttledHandleScroll);
-  }, [throttledHandleScroll]);
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      setCurrentPage(pageNumber.toString());
-    }, 300); // только конечное значение
-
-    return () => clearTimeout(id);
-  }, [pageNumber]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      const newScreenWidth = window.innerWidth;
-      setScreenWidth(newScreenWidth);
-    };
-
-    handleResize();
-
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [screenWidth]);
-
-  const handleResizePage = () => {
-    if (screenWidth > screenResolutionMap.get("tablet")!.width) {
-      const pageWidth = screenResolutionMap.get("desktop")?.pageWidth;
-      if (pageWidth) {
-        return pageWidth;
-      }
-    } else if (
-      screenWidth <= screenResolutionMap.get("tablet")!.width &&
-      screenWidth > screenResolutionMap.get("mobile")!.width
-    ) {
-      const pageWidth = screenResolutionMap.get("tablet")?.pageWidth;
-      if (pageWidth) {
-        return pageWidth;
-      }
-    } else if (screenWidth <= screenResolutionMap.get("mobile")!.width) {
-      const pageWidth = screenResolutionMap.get("mobile")?.pageWidth;
-      if (pageWidth) {
-        return pageWidth;
+    const containerTop = container.getBoundingClientRect().top;
+    const containerHeight = container.clientHeight;
+    let bestPage = 1;
+    let maxVisible = 0;
+    for (let i = 1; i <= totalPages; i++) {
+      const pageElement = container.querySelector(`[data-page="${i}"]`);
+      if (!pageElement) continue;
+      const rect = pageElement.getBoundingClientRect();
+      const visibleTop = Math.max(rect.top, containerTop);
+      const visibleBottom = Math.min(
+        rect.bottom,
+        containerTop + containerHeight,
+      );
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      if (visibleHeight > maxVisible) {
+        maxVisible = visibleHeight;
+        bestPage = i;
       }
     }
+    setCurrentPage(bestPage.toString());
   };
 
-  function onDocumentLoadSuccess({
+  const throttledHandleScroll = useThrottle(handleScroll, 100);
+
+  useEffect(() => {
+    const container = documentRef.current;
+    if (isThumbNailsOpen || !container || isProgrammaticScroll.current) return;
+    container.addEventListener("scroll", throttledHandleScroll);
+    return () => container.removeEventListener("scroll", throttledHandleScroll);
+  }, [isThumbNailsOpen, throttledHandleScroll, isProgrammaticScroll.current]);
+
+  const handleResizePage = () => {
+    const sorted = Array.from(screenResolutionMap.values()).sort(
+      (a, b) => b.width - a.width,
+    );
+
+    for (const bp of sorted) {
+      if (screenWidth >= bp.width) {
+        return bp.pageWidth;
+      }
+    }
+    return sorted[sorted.length - 1].pageWidth;
+  };
+
+  const onDocumentLoadSuccess = ({
     numPages: nextNumPages,
-  }: PDFDocumentProxy): void {
+  }: PDFDocumentProxy): void => {
     setTotalPages(nextNumPages);
     setLoading(false);
-  }
+  };
 
   const onDocumentLoadError = (error: any) => {
     setError(error.message);
   };
+
   const handleScrollToPage = (newPage: number) => {
     if (!documentRef.current) return;
-
     setCurrentPage(newPage.toString());
-    setPageNumber(newPage);
 
     const pageElement = documentRef.current.querySelector(
       `[data-page="${newPage}"]`,
     );
     if (pageElement) {
+      isProgrammaticScroll.current = true;
       const { top } = pageElement.getBoundingClientRect();
       const { top: docTop } = documentRef.current.getBoundingClientRect();
-      setIsLogicScroll(true);
       documentRef.current.scrollTop += top - docTop;
     }
+
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 0);
   };
 
   const goToPrevPage = () => {
-    const newPage = Math.max(1, pageNumber - 1);
+    const newPage = Math.max(1, pageNum - 1);
     handleScrollToPage(newPage);
   };
 
   const goToNextPage = () => {
-    const newPage = Math.min(totalPages || 1, pageNumber + 1);
+    const newPage = Math.min(totalPages || 1, pageNum + 1);
     handleScrollToPage(newPage);
   };
 
@@ -198,22 +178,19 @@ const PdfReader = ({
     setFullScreen(false);
   };
 
-  const handleZoomOut = () => {
+  const handleZoom = (direction: "in" | "out") => {
     setScale((prev) => {
       const currentIndex = scales.findIndex((option) => option.value === prev);
-      if (currentIndex > 0 && currentIndex <= scales.length - 1) {
-        return scales[currentIndex - 1].value;
-      }
-      return prev;
-    });
-  };
+      if (currentIndex === -1) return prev;
 
-  const handleZoomIn = () => {
-    setScale((prev) => {
-      const currentIndex = scales.findIndex((option) => option.value === prev);
-      if (currentIndex >= 0 && currentIndex < scales.length - 1) {
+      if (direction === "in" && currentIndex < scales.length - 1) {
         return scales[currentIndex + 1].value;
       }
+
+      if (direction === "out" && currentIndex > 0) {
+        return scales[currentIndex - 1].value;
+      }
+
       return prev;
     });
   };
@@ -224,41 +201,8 @@ const PdfReader = ({
     }
   };
 
-  const handleGoToPage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentPage(e.target.value);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      const newPage = getPageInputResults(currentPage);
-      handleScrollToPage(newPage);
-    }
-  };
-
-  const getPageInputResults = (inputValue: string): number => {
-    setCurrentPage(inputValue.replace(/\D/g, ""));
-    const newPage = parseInt(inputValue);
-    if (isNaN(newPage) || newPage <= 0) {
-      setPageNumber(1);
-      return 1;
-    } else {
-      const validatedPage = Math.max(1, Math.min(totalPages || 1, newPage));
-      setPageNumber(validatedPage);
-      return validatedPage;
-    }
-  };
-
-  const handlePageInputBlur = () => {
-    getPageInputResults(currentPage);
-  };
-
   const handleThumbNailsClick = () => {
     setIsThumbNailsOpen((prev) => !prev);
-  };
-
-  const handlePageChange = (currentPage: number) => {
-    setPageNumber(currentPage);
-    handleScrollToPage(currentPage);
   };
 
   const handleOverlayClick = () =>
@@ -279,6 +223,26 @@ const PdfReader = ({
 
   const findScale = scales.find((option) => option.value === scale);
 
+  const isFirstPage = Number(currentPage) === 1 || !totalPages;
+  const isLastPage = Number(currentPage) === Number(totalPages) || !totalPages;
+
+  const renderNextPrevButtons = (
+    <div className={s.arrows_wrapper}>
+      <button
+        onClick={goToPrevPage}
+        className={`${s.up} ${isFirstPage ? s.inactive : ""}`}
+      >
+        <Chevron />
+      </button>
+      <button
+        onClick={goToNextPage}
+        className={`${s.down} ${isLastPage ? s.inactive : ""}`}
+      >
+        <Chevron />
+      </button>
+    </div>
+  );
+
   const headerContent = new Map([
     [
       true,
@@ -289,14 +253,14 @@ const PdfReader = ({
           </button>
           <p className={`${s.page_indicator} ${s.full_screen}`}>
             <input
+              type={"number"}
+              max={totalPages ? totalPages : 99}
               className={s.page_input}
-              value={currentPage === "" ? " " : currentPage}
-              onChange={handleGoToPage}
-              onKeyDown={handleKeyDown}
-              onBlur={handlePageInputBlur}
+              value={currentPage === "" ? "" : currentPage}
+              onChange={(e) => handleScrollToPage(Number(e.target.value))}
             />
             {t("of")}
-            <span>{totalPages}</span>
+            <span>{totalPages ? totalPages : 0}</span>
           </p>
           <button className={s.expand_button} onClick={handleCloseFullScreen}>
             <MinimizeIcon />
@@ -304,10 +268,10 @@ const PdfReader = ({
         </div>
         <div className={s.right_side}>
           <div className={s.scales_wrapper}>
-            <button onClick={handleZoomOut}>
+            <button onClick={() => handleZoom("out")}>
               <ZoomOut />
             </button>
-            <button onClick={handleZoomIn}>
+            <button onClick={() => handleZoom("in")}>
               <ZoomIn />
             </button>
             {screenWidth > screenResolutionMap.get("mobile")!.width && (
@@ -322,16 +286,8 @@ const PdfReader = ({
               />
             )}
           </div>
-          {screenWidth > screenResolutionMap.get("mobile")!.width && (
-            <div className={s.arrows_wrapper}>
-              <button onClick={goToPrevPage} className={s.up}>
-                <Chevron />
-              </button>
-              <button onClick={goToNextPage} className={s.down}>
-                <Chevron />
-              </button>
-            </div>
-          )}
+          {screenWidth > screenResolutionMap.get("mobile")!.width &&
+            renderNextPrevButtons}
         </div>
       </>,
     ],
@@ -341,21 +297,14 @@ const PdfReader = ({
         <div className={s.left_side}>
           <p className={s.page_indicator}>
             <span>
-              {pageNumber}/{totalPages}
+              {currentPage}/{totalPages ? totalPages : 0}
             </span>
           </p>
           <button className={s.expand_button} onClick={handleOpenFullScreen}>
             <MaximizeIcon />
           </button>
         </div>
-        <div className={s.arrows_wrapper}>
-          <button onClick={goToPrevPage} className={s.up}>
-            <Chevron />
-          </button>
-          <button onClick={goToNextPage} className={s.down}>
-            <Chevron />
-          </button>
-        </div>
+        {renderNextPrevButtons}
       </>,
     ],
   ]);
@@ -372,14 +321,17 @@ const PdfReader = ({
         options={options}
         totalPages={totalPages}
         link={url}
-        handlePageChange={handlePageChange}
+        handlePageChange={(page) => handleScrollToPage(page)}
         onClick={handleThumbNailsAreaClick}
-        currentPage={pageNumber}
+        currentPage={pageNum}
       />
-      <div className={`${s.overlay} ${isThumbNailsOpen && s.open}`}></div>
+      <div className={`${s.overlay} ${isThumbNailsOpen ? s.open : ""}`}></div>
       <div
         onClick={!fullScreen ? handleOpenFullScreen : undefined}
-        style={{ cursor: !fullScreen ? "pointer" : "auto" }}
+        style={{
+          cursor: !fullScreen ? "pointer" : "auto",
+          overflow: isThumbNailsOpen ? "hidden" : "",
+        }}
         className={s.document}
         ref={documentRef}
       >
