@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta, time, date
 from decimal import Decimal, ROUND_HALF_UP
 
-from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
+from fastapi import APIRouter, Depends, Query, status, HTTPException, Request, Body
 from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, selectinload
@@ -22,7 +22,7 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     get_sales_totals, open_ad_period_if_needed, AD_TTL
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
-    LandingListPageResponse, LangEnum, FreeAccessRequest
+    LandingListPageResponse, LangEnum, FreeAccessRequest, TrackAdIn
 from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
@@ -617,22 +617,24 @@ def most_popular_landings(
         "items": items
     }
 
-
+def _client_ip(request: Request) -> str:
+    xfwd = request.headers.get("x-forwarded-for", "")
+    return (xfwd.split(",")[0].strip() if xfwd else request.client.host)
 
 @router.post("/track-ad/{slug}")
 def track_ad(slug: str,
              request: Request,
+            payload: Optional[TrackAdIn] = Body(None),
              db: Session = Depends(get_db)):
     landing = db.query(Landing).filter(Landing.page_name == slug).first()
     if not landing:
         raise HTTPException(404)
-    track_ad_visit(
-        db=db,
-        landing_id=landing.id,
-        fbp=request.cookies.get("_fbp"),
-        fbc=request.cookies.get("_fbc"),
-        ip=request.client.host
-    )
+    payload = payload or TrackAdIn()
+    # 1) собрать fbp/fbc максимально надёжно
+    fbp = payload.fbp or request.cookies.get("_fbp")
+    fbc = payload.fbc or request.cookies.get("_fbc")
+    ip = _client_ip(request)
+    track_ad_visit(db=db, landing_id=landing.id, fbp=fbp, fbc=fbc, ip=ip)
     return {"ok": True}
 
 @router.post("/free-access/{landing_id}")
@@ -801,6 +803,7 @@ def personalized_cards(
 class VisitIn(BaseModel):
     from_ad: bool = False
 
+
 @router.post("/{landing_id}/visit", status_code=201)
 def track_landing_visit(
     landing_id: int,
@@ -811,15 +814,16 @@ def track_landing_visit(
     if not exists:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    from_ad = bool(payload and payload.from_ad)
+    payload = payload or VisitIn()
+    from_ad = bool(payload.from_ad)
 
-    # 1) фиксируем визит
+    # 1) фиксируем визит (только в landing_visits)
     db.add(LandingVisit(
         landing_id=landing_id,
         from_ad=from_ad,
     ))
 
-    # 2) если визит рекламный — включаем/продлеваем флаг рекламы + открываем период
+    # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
     if from_ad:
         now = datetime.utcnow()
         landing = (
@@ -828,16 +832,16 @@ def track_landing_visit(
               .with_for_update()
               .first()
         )
-        if landing:
-            # если была выключена — включаем и открываем период
-            if not landing.in_advertising:
-                landing.in_advertising = True
-                open_ad_period_if_needed(db, landing_id, started_by=None)
+        if landing and landing.in_advertising:
+            # гарантируем открытый период, если вдруг его нет
+            open_ad_period_if_needed(db, landing_id, started_by=None)
 
             # продлеваем TTL
             new_ttl = now + AD_TTL
             if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
                 landing.ad_flag_expires_at = new_ttl
+
+        # ВАЖНО: если in_advertising == False, НИЧЕГО не включаем и не трогаем период/TTL
 
     db.commit()
     return {"ok": True}
