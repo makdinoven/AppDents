@@ -58,25 +58,27 @@ const ThumbNails = ({
         error=""
         options={options}
         className={s.thumb_nails_document}
+        onItemClick={() => null}
       >
         <ul className={s.thumb_nails_list}>
-          {Array.from({ length: totalPages as number }, (_, i) => {
-            const currentPage = i + 1;
-            return (
-              <li key={currentPage} className={s.thumb_nail_wrapper}>
-                <Thumbnail
-                  pageNumber={currentPage}
-                  width={100}
-                  canvasBackground="white"
-                  className={`${s.thumb_nail} ${activeThumbNail === currentPage && s.active}`}
-                  onClick={() => handleThumbNailClick(currentPage)}
-                  renderMode="canvas"
-                  loading="lazy"
-                />
-                <span className={s.page}>{currentPage}</span>
-              </li>
-            );
-          })}
+          {totalPages &&
+            Array.from({ length: totalPages as number }, (_, i) => {
+              const currentPage = i + 1;
+              return (
+                <li key={currentPage} className={s.thumb_nail_wrapper}>
+                  <Thumbnail
+                    pageNumber={currentPage}
+                    width={100}
+                    canvasBackground="white"
+                    className={`${s.thumb_nail} ${activeThumbNail === currentPage && s.active}`}
+                    onClick={() => handleThumbNailClick(currentPage)}
+                    renderMode="canvas"
+                    loading="lazy"
+                  />
+                  <span className={s.page}>{currentPage}</span>
+                </li>
+              );
+            })}
         </ul>
       </Document>
     </div>

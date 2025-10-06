@@ -158,15 +158,6 @@
   .expand_button {
     width: 30px;
     height: 30px;
-
-    &:hover {
-      svg {
-        path {
-          stroke: $primary;
-        }
-      }
-    }
-
     svg {
       width: 100%;
       height: 100%;
@@ -175,6 +166,24 @@
         stroke: $accent;
         stroke-width: 1.5px;
         @include transition();
+      }
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+    }
+
+    &:active {
+      svg {
+        path {
+          stroke: $tertiary;
+        }
       }
     }
 
@@ -205,12 +214,15 @@
       width: 35px;
       height: 35px;
 
-      &:hover {
+      &.inactive {
+        opacity: 0.8;
         svg {
           circle {
-            fill: $primary;
+            fill: $quaternary;
           }
         }
+        pointer-events: none;
+        cursor: auto;
       }
 
       svg {
@@ -220,6 +232,24 @@
         circle {
           @include transition();
           fill: $accent;
+        }
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          svg {
+            circle {
+              fill: $primary;
+            }
+          }
+        }
+      }
+
+      &:active {
+        svg {
+          circle {
+            fill: $tertiary;
+          }
         }
       }
 
