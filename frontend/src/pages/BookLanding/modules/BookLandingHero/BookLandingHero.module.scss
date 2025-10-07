@@ -30,6 +30,7 @@
       @include flex-center();
       flex-direction: row;
       gap: 15px;
+      height: fit-content;
 
       svg {
         width: 75px;
@@ -67,6 +68,7 @@
         transform: unset;
         bottom: 5px;
         align-items: flex-end;
+        top: unset;
 
         svg {
           width: 60px;

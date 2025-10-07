@@ -9,7 +9,7 @@ interface CourseCardSkeletonsProps {
   fade?: boolean;
 }
 
-const CourseCardSkeleton: React.FC<CourseCardSkeletonsProps> = ({
+const CourseCardSkeletons: React.FC<CourseCardSkeletonsProps> = ({
   shape = false,
   amount = 4,
   columns = 2,
@@ -61,4 +61,4 @@ const CourseCardSkeleton: React.FC<CourseCardSkeletonsProps> = ({
   );
 };
 
-export default CourseCardSkeleton;
+export default CourseCardSkeletons;

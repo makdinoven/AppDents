@@ -1,11 +1,11 @@
 import React from "react";
 import s from "./BookLandingHero.module.scss";
 import { Trans } from "react-i18next";
-import HeroSlider from "./modules/HeroSlider/HeroSlider.tsx";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
 import { Azw3, En, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
+import HeroSlider from "./modules/HeroSlider/HeroSlider.tsx";
 
 interface LandingHeroProps {
   data: any;
@@ -16,8 +16,8 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  return !data && loading ? (
-    <Loader />
+  return loading ? (
+    <BookHeroSkeleton />
   ) : (
     <section className={s.hero}>
       <div className={s.left_side}>

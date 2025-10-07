@@ -1,0 +1,106 @@
+.skeletons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  column-gap: 15px;
+  row-gap: 20px;
+
+  @media (max-width: $middle-breakpoint) {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 12px;
+  }
+
+  @media (max-width: $tablet-breakpoint) {
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: 10px;
+  }
+
+  .card {
+    background-color: $light-grey;
+    width: 100%;
+    height: fit-content;
+    border-radius: 20px;
+    padding: 20px;
+    @include flex-column();
+    gap: 10px;
+
+    @media (max-width: $middle-breakpoint) {
+      grid-template-columns: repeat(3, 1fr);
+      row-gap: 12px;
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      grid-template-columns: repeat(2, 1fr);
+      column-gap: 10px;
+    }
+
+    .card_header {
+      width: 100%;
+      height: 226px;
+
+      @media (max-width: $sm-breakpoint) {
+        height: 198px;
+      }
+
+      @media (max-width: $mobile-breakpoint) {
+        height: 142px;
+      }
+
+      .photo {
+        @include skeleton($pos: relative);
+        width: 100%;
+        position: relative;
+      }
+    }
+
+    .card_body {
+      width: 100%;
+      height: fit-content;
+      @include flex-column();
+      gap: 10px;
+
+      h4 {
+        @include skeleton($pos: relative, $h: 60px, $radius: 10px);
+      }
+
+      .formats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        justify-content: center;
+
+        li {
+          min-width: 50px;
+          @include skeleton($pos: relative, $radius: 15px, $h: 25px);
+        }
+      }
+
+      .formats > * {
+        flex: 1 1 50px;
+        max-width: 65px;
+      }
+
+      div {
+        @include skeleton($pos: relative, $h: 40px, $radius: 10px);
+      }
+    }
+
+    .card_bottom {
+      display: flex;
+      justify-content: space-between;
+      gap: 5px;
+
+      .buy {
+        flex: 1;
+        @include skeleton($pos: relative, $h: 40px, $radius: 40px);
+      }
+
+      .cart {
+        @include skeleton($pos: relative, $w: 90px, $h: 40px, $radius: 40px);
+
+        @media (max-width: $mobile-breakpoint) {
+          width: 50px;
+        }
+      }
+    }
+  }
+}
