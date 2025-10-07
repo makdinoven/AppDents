@@ -1,5 +1,5 @@
 import s from "./LangLogo.module.scss";
-import { LANGUAGE_FLAGS } from "../../../common/helpers/commonConstants.ts";
+// import { LANGUAGE_FLAGS } from "../../../common/helpers/commonConstants.ts";
 
 export type LanguagesType = "EN" | "RU" | "ES" | "PT" | "AR" | "IT";
 
@@ -19,14 +19,14 @@ const LangLogo = ({
   onClick?: () => void;
 }) => {
   // const label = LANGUAGES.find((item) => item.value === lang)?.label ?? null;
-  const Flag = LANGUAGE_FLAGS[lang];
+  // const Flag = LANGUAGE_FLAGS[lang];
 
   return (
     <span
       onClick={onClick}
       className={`${s.logo} ${className ? className : ""} ${isChecked ? s.checked : ""} ${isHoverable ? s.hoverable : ""}`}
     >
-      {<Flag />}
+      {lang}
 
       {/*{hasPopUp && <div className={s.popup}>{label}</div>}*/}
     </span>

@@ -195,10 +195,10 @@ export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
 export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
   EN: EnFlag,
   ES: EsFlag,
-  RU: RuFlag,
   PT: PtFlag,
   AR: ArFlag,
   IT: ItFlag,
+  RU: RuFlag,
 };
 
 export const ADMIN_SIDEBAR_LINKS = [
