@@ -279,3 +279,15 @@ export const mapCourseToResultLanding = (course: any): ResultLandingData => {
     language: "",
   };
 };
+
+export const getFbc = (): string | null => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const fbclid = urlParams.get("fbclid");
+  if (!fbclid) return null;
+  return `fb.1.${Date.now()}.${fbclid}`;
+};
+
+export const getFbp = (): string | null => {
+  const match = document.cookie.match(/_fbp=([^;]+)/);
+  return match ? match[1] : null;
+};

@@ -5,6 +5,8 @@ import { mainApi } from "../../api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
   getBasePath,
+  getFbc,
+  getFbp,
   getPaymentType,
   getPricesData,
   keepFirstTwoWithInsert,
@@ -144,7 +146,7 @@ const Landing = () => {
   };
 
   const trackFacebookAd = () => {
-    mainApi.trackFacebookAd(landingPath!);
+    mainApi.trackFacebookAd(landingPath!, getFbc(), getFbp());
     trackPageView();
   };
 
