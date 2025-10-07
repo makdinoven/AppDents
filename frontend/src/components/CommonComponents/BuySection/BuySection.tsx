@@ -63,7 +63,7 @@ const BuySection: React.FC<BuySectionProps> = ({
                 <li key={format}>
                   <button
                     onClick={() => handleFormatChange(format)}
-                    className={activeFormat === format ? s.active : ""}
+                    className={`${activeFormat === format ? s.active : ""} ${isFullWidth ? s.full_width : ""}`}
                   >
                     {format}
                   </button>

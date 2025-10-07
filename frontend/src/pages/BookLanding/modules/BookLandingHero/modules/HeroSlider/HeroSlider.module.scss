@@ -67,7 +67,7 @@
       &.full_screen {
         transform: translate(0, 50%) rotate(-180deg);
         top: unset;
-        bottom: (140px / 2);
+        bottom: calc(140px / 2);
         left: 10px;
       }
     }
@@ -75,7 +75,7 @@
     .arrow_down {
       &.full_screen {
         transform: translate(0, 50%) rotate(0deg);
-        bottom: (140px / 2);
+        bottom: calc(140px / 2);
         left: unset;
         right: 10px;
       }
@@ -164,6 +164,7 @@
     max-width: 100px;
     width: 95px;
     min-height: 122px;
+    max-height: 122px;
     overflow: hidden;
     @include transition();
     cursor: pointer;
@@ -193,6 +194,7 @@
       max-width: 100%;
       min-width: 100%;
       min-height: 220px;
+      border-radius: 15px;
     }
     @media (max-width: $sm-breakpoint) {
       min-width: 135px;
@@ -205,20 +207,6 @@
 
 .gallery::-webkit-scrollbar {
   display: none;
-}
-
-.photo_placeholder {
-  border-radius: 10px;
-  aspect-ratio: 9/16;
-  max-width: 100px;
-  min-width: 90px;
-  background-color: $darker-grey;
-
-  &.full_screen {
-    width: 100%;
-    max-width: 100%;
-    min-width: 100%;
-  }
 }
 
 .slide_indicators {
@@ -389,6 +377,7 @@
   width: 100%;
   gap: 55px;
   max-width: 700px;
+  cursor: pointer;
 
   @media (max-width: $middle-breakpoint) {
     max-width: unset;
@@ -419,7 +408,6 @@
       min-height: fit-content;
       z-index: 2;
       padding: 5px 0;
-      background-color: $background-color-08;
 
       li {
         border-radius: 10px;
@@ -465,7 +453,7 @@
         &.full_screen {
           img {
             height: 100%;
-            max-height: calc(100% - 45px);
+            max-height: calc(100% - 155px);
             width: 100%;
             max-width: 100%;
             min-width: 100%;

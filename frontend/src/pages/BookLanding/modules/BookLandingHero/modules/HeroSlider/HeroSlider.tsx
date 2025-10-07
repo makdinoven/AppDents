@@ -58,14 +58,6 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
           }))
         : [];
 
-    while (result.length < 4) {
-      result.push({
-        index: result.length,
-        url: undefined,
-        alt: undefined,
-      });
-    }
-
     setResultGallery(result);
   }, [gallery]);
 
@@ -75,30 +67,22 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
         className={`${s.gallery} ${isFullScreen && s.full_screen}`}
         ref={galleryRef}
       >
-        {resultGallery.map((item: any, index) =>
-          item.url ? (
-            <li
-              key={item.url + index}
-              onClick={() => handleSlideChange(item.index)}
-              className={activeSlideIndex === item.index ? s.active : ""}
-              ref={
-                index === 0
-                  ? firstItemRef
-                  : index === resultGallery.length - 1
-                    ? lastItemRef
-                    : null
-              }
-            >
-              <img src={item.url} alt={item.alt} />
-            </li>
-          ) : (
-            <li key={item.index}>
-              <div
-                className={`${s.photo_placeholder} ${isFullScreen && s.full_screen}`}
-              />
-            </li>
-          ),
-        )}
+        {resultGallery.map((item: any, index) => (
+          <li
+            key={item.url + index}
+            onClick={() => handleSlideChange(item.index)}
+            className={activeSlideIndex === item.index ? s.active : ""}
+            ref={
+              index === 0
+                ? firstItemRef
+                : index === resultGallery.length - 1
+                  ? lastItemRef
+                  : null
+            }
+          >
+            <img src={item.url} alt={item.alt} />
+          </li>
+        ))}
       </ul>
     );
   };
@@ -235,12 +219,11 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
   };
 
   const preview = (
-    <div className={`${s.preview_photo} ${isFullScreen && s.full_screen}`}>
-      <img
-        src={activeUrl}
-        alt="preview"
-        onClick={() => handleFullScreen(true)}
-      />
+    <div
+      className={`${s.preview_photo} ${isFullScreen && s.full_screen}`}
+      onClick={() => handleFullScreen(true)}
+    >
+      <img src={activeUrl} alt="preview" />
       <div className={`${s.slide_indicators} ${isFullScreen && s.full_screen}`}>
         {Array(gallery.length)
           .fill({ length: gallery.length })
@@ -269,17 +252,18 @@ const HeroSlider: FC<HeroSliderProps> = ({ gallery }) => {
     </div>
   );
 
-  return isFullScreen ? (
-    <ModalOverlay
-      isVisibleCondition={isFullScreen}
-      modalPosition="top"
-      customHandleClose={() => setIsFullScreen(false)}
-      onInitClose={(fn) => (closeFullscreenRef.current = fn)}
-    >
-      <div className={s.modal}>{slider}</div>
-    </ModalOverlay>
-  ) : (
-    <>{slider}</>
+  return (
+    <>
+      <ModalOverlay
+        isVisibleCondition={isFullScreen}
+        modalPosition="top"
+        customHandleClose={() => setIsFullScreen(false)}
+        onInitClose={(fn) => (closeFullscreenRef.current = fn)}
+      >
+        <div className={s.modal}>{slider}</div>
+      </ModalOverlay>
+      {slider}
+    </>
   );
 };
 
