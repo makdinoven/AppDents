@@ -4,7 +4,6 @@ import { AppRootStateType } from "../../store/store.ts";
 import { useState } from "react";
 import ListController from "../../components/ui/ListController/ListController.tsx";
 import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 import { ParamsType } from "../../api/adminApi/types.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import BookCardSkeletons from "../../components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
@@ -42,12 +41,12 @@ const Books = () => {
   const loadBooks = async (params: ParamsType) => {
     setLoading(true);
     try {
-      const paramsToSend = { ...params };
+      const paramsToSend = { ...params, mode: "page" };
       const res = await mainApi.getBookLandingCards(paramsToSend);
 
       setBooks(res.data.cards);
       setTotal(res.data.total);
-      setTotalPages(res.data.total_pages);
+      // setTotalPages(res.data.total_pages);
       setIsFirstLoad(false);
     } catch (error) {
       console.log(error);
@@ -79,15 +78,15 @@ const Books = () => {
           cardType={"book"}
         />
       </ListController>
-      {!isFirstLoad && (
-        <ProductsSection
-          showSort={true}
-          sectionTitle={"other.otherBooks"}
-          pageSize={4}
-          productCardFlags={{ isClient: true, isOffer: true }}
-          cardType={"book"}
-        />
-      )}
+      {/*{!isFirstLoad && (*/}
+      {/*  <ProductsSection*/}
+      {/*    showSort={true}*/}
+      {/*    sectionTitle={"other.otherBooks"}*/}
+      {/*    pageSize={4}*/}
+      {/*    productCardFlags={{ isClient: true, isOffer: true }}*/}
+      {/*    cardType={"book"}*/}
+      {/*  />*/}
+      {/*)}*/}
     </div>
   );
 };

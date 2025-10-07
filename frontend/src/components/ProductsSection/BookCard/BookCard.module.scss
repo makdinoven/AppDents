@@ -56,7 +56,7 @@
 }
 
 .book_name {
-  @include clamped-p3();
+  @include clamped-p3-line-height();
   line-height: 22px;
   text-transform: uppercase;
   display: -webkit-box;
@@ -82,7 +82,7 @@
 
 .formats_list > * {
   flex: 1 1 50px;
-  max-width: 65px;
+  max-width: 49px;
 }
 
 .format_item {
@@ -92,7 +92,7 @@
   @include clamped-p6();
   padding: 2px 4px;
   text-align: center;
-  min-width: 50px;
+  min-width: 40px;
 }
 
 .lang_logo {
@@ -112,6 +112,12 @@
 
   .book_info_value {
     color: $hover-color-dark;
+    //display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: auto;
   }
 }
 
@@ -234,14 +240,44 @@
 
 @media (max-width: $mobile-breakpoint) {
   .card {
-    gap: 8px;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .prices {
+    .new_price {
+      font-size: 20px;
+      line-height: 20px;
+    }
+
+    .old_price {
+      font-size: 12px;
+      line-height: 12px;
+    }
+  }
+
+  .formats_list {
+    flex-wrap: nowrap;
+    gap: unset;
+  }
+
+  .format_item {
+    min-width: unset;
+    border-left: unset;
+    border-right: unset;
+    border-radius: unset;
+    border-width: 0.5px;
+    padding: 2px 0;
+    line-height: 10px;
   }
 
   .book_name {
     font-size: 16px;
+    line-height: 16px;
   }
 
   .cart_btn {
+    padding: 5px 14px 5px 13px;
     width: fit-content;
   }
 }

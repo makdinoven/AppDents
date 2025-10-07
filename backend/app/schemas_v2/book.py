@@ -87,12 +87,14 @@ class BookResponse(BaseModel):
 
 
 class BookListResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     title: str
     slug: str
     language: str
     cover_url: str | None = None
+
+    class Config:
+        orm_mode = True
 
 class BookListPageResponse(BaseModel):
     total: int

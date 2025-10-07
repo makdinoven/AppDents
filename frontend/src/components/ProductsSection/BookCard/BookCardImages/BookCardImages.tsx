@@ -1,22 +1,25 @@
 import { useEffect, useState } from "react";
 import s from "./BookCardImages.module.scss";
 
-const INTERVAL = 1500;
+const INTERVAL = 1000;
 
 const BookCardImages = ({
   images,
   color,
+  single,
 }: {
   images: string[];
   color?: string;
+  single?: boolean;
 }) => {
   const safeImages = images ?? [];
   const [hover, setHover] = useState(false);
   const [shift, setShift] = useState(0);
   const realImages = safeImages.filter(Boolean).slice(0, 4);
-  // const [progress, setProgress] = useState(0);
 
   useEffect(() => {
+    if (single) return;
+
     let interval: NodeJS.Timeout;
     if (hover) {
       interval = setInterval(() => {
@@ -26,7 +29,22 @@ const BookCardImages = ({
       setShift(0);
     }
     return () => clearInterval(interval);
-  }, [hover]);
+  }, [hover, single]);
+
+  if (single) {
+    const mainImage = realImages[0];
+    return (
+      <div className={`${s.images_wrapper} ${color ? s[color] : ""}`}>
+        {mainImage ? (
+          <div className={`${s.img_wrapper} ${s.single} ${s.active}`}>
+            <img src={mainImage} alt="main-image" />
+          </div>
+        ) : (
+          <div className={`${s.img_wrapper} ${s.single} ${s.no_photo}`} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -41,7 +59,6 @@ const BookCardImages = ({
         const style = {
           zIndex,
           transform: `translateX(${offset}px)`,
-          bottom: `${-i}px`,
         };
         const isActive = i === shift;
 
@@ -56,7 +73,7 @@ const BookCardImages = ({
         ) : (
           <div
             key={i}
-            style={{ zIndex, bottom: `${-i}px`, opacity: 1 - 0.2 * i }}
+            style={{ zIndex, opacity: 1 - 0.2 * i }}
             className={`${s.img_wrapper} ${s.no_photo}`}
           />
         );
@@ -70,11 +87,10 @@ const BookCardImages = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-
                 setShift(i);
               }}
               className={`${s.bullet} ${i === shift ? s.active : ""}`}
-            ></div>
+            />
           ))}
         </div>
       )}

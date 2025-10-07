@@ -134,8 +134,8 @@ export const PAGE_SIZES = [
 export const PAGE_SIZES_ALTERNATE = [
   { name: "12", value: "12" },
   { name: "24", value: "24" },
-  { name: "58", value: "58" },
-  { name: "116", value: "116" },
+  { name: "60", value: "60" },
+  { name: "120", value: "120" },
 ];
 
 export const PAGE_SOURCES = {

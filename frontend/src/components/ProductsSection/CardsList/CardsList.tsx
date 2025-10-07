@@ -5,7 +5,6 @@ import PrettyButton from "../../ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 import BookCard from "../BookCard/BookCard.tsx";
-import BooksImg from "../../../assets/BOOK_IMG.png";
 import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
 
 type Course = {
@@ -26,15 +25,13 @@ export type BookCardType = {
   index: number;
   landing_name: string;
   language: LanguagesType;
-  publication_date: string;
   authors: any[];
   first_tag: string;
   slug: string;
-  images: string[];
+  gallery: { url: string }[];
   old_price: number;
   new_price: number;
   book_ids: number[];
-  tags: string[];
 };
 
 type CardsListProps =
@@ -99,49 +96,7 @@ const CardsList: React.FC<CardsListProps> = ({
                   />
                 ))
               : cards.map((book, index) => (
-                  <BookCard
-                    book={{
-                      id: book.id,
-                      language: "EN",
-                      landing_name:
-                        "Art and Nature In Ceramic Restorations Nature In Ceramiс and art",
-                      slug: "landing-643652",
-                      old_price: 190,
-                      new_price: 19,
-                      publication_date: "09.02.1021",
-                      index: index,
-                      tags: ["surgery", "orthopedics"],
-                      authors: [
-                        {
-                          id: 1621,
-                          name: "BILL DISCHINGER",
-                          photo:
-                            "https://dent-s.com/assets/img/preview_img/b9f23bdcad574a8bb3d16ec31901bb3a.png",
-                        },
-                        {
-                          id: 1622,
-                          name: "ALFREDO RIZZO",
-                          photo:
-                            "https://dent-s.com/assets/img/preview_img/e264710492764d09b55ea792b0723ab8.png",
-                        },
-                        {
-                          id: 1623,
-                          name: "Trevor Nichols",
-                          photo:
-                            "https://dent-s.com/assets/img/preview_img/4cfe995dd4ae45d89b28207cd1c22015.png",
-                        },
-                      ],
-                      book_ids: book.book_ids,
-                      images: [
-                        BooksImg,
-                        BooksImg,
-                        BooksImg,
-                        // BooksImg
-                      ],
-                      first_tag: book.first_tag,
-                    }}
-                    key={book.id}
-                  />
+                  <BookCard index={index} book={book} key={book.id} />
                 ))}
           </ul>
           {showSeeMore ? (
