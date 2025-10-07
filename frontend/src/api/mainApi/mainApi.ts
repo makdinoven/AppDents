@@ -81,7 +81,7 @@ export const mainApi = {
   },
 
   getBookLandingCards(params: any) {
-    return instance.get(`landings/v1/cards`, { params: params });
+    return instance.get(`books/landing/cards`, { params: params });
   },
 
   searchCourses(params: { q: string; language: string }) {

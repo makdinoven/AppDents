@@ -190,6 +190,7 @@
   },
 
   "tag": {
+    "tag": "Tag",
     "allCourses": "All",
     "surgery": "Surgery",
     "orthodontics": "Orthodontics",
