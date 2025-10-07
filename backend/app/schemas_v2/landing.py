@@ -170,3 +170,7 @@ class FreeAccessRequest(BaseModel):
     fbc: str | None = None  # _fbc cookie
     event_source_url: str | None = None
     first_name: str | None = None
+
+class TrackAdIn(BaseModel):
+    fbp: Optional[str] = None
+    fbc: Optional[str] = None

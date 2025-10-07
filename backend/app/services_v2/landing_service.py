@@ -616,6 +616,8 @@ def get_sales_totals(
     return {"sales_total": int(sales_total), "ad_sales_total": int(ad_sales_total)}
 
 AD_TTL = timedelta(hours=14)
+UNIQUE_MIN = 3                 # порог уникальных визитов для старта рекламы
+UNIQUE_WINDOW = AD_TTL
 
 def open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None):
     # блокируем открытый период, чтобы избежать гонки
@@ -674,20 +676,38 @@ def _ensure_ad_on_and_extend_ttl(
 
     return True
 
+MIN_UNIQUE_IPS = 3
+UNIQUE_IP_WINDOW = timedelta(hours=14)
+
+def _unique_ip_count_recent(db, landing_id: int, now: datetime) -> int:
+    win_start = now - UNIQUE_IP_WINDOW
+    q = (
+        db.query(func.count(func.distinct(AdVisit.ip_address)))
+          .filter(
+              AdVisit.landing_id == landing_id,
+              AdVisit.visited_at >= win_start,
+              AdVisit.ip_address.isnot(None),
+              AdVisit.ip_address != ""
+          )
+    )
+    return int(q.scalar() or 0)
+
+from sqlalchemy import func
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
     now = datetime.utcnow()
 
-    # 1) лог визита из рекламы
+    # 1) лог визита (fbp/fbc оставляем для аналитики, но не используем в логике включения)
     visit = AdVisit(
         landing_id=landing_id,
         fbp=fbp,
         fbc=fbc,
-        ip_address=ip,
+        ip_address=(ip.strip() if ip else None),
     )
     db.add(visit)
+    db.flush()  # чтобы запись учлась в последующих запросах этой транзакции
 
-    # 2) включить/продлить рекламу и открыть период
+    # 2) работаем с лендингом под блокировкой
     landing = (
         db.query(Landing)
           .filter(Landing.id == landing_id)
@@ -698,19 +718,36 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
         db.commit()  # сохраним хотя бы визит
         return
 
-    if not landing.in_advertising:
-        landing.in_advertising = True
-        _open_ad_period_if_needed(db, landing_id, started_by=None)
-    else:
-        # даже если уже в рекламе, на всякий случай проверим, что открытый период есть
-        _open_ad_period_if_needed(db, landing_id, started_by=None)
+    # 3) считаем уникальные IP за окно
+    window_start = now - UNIQUE_WINDOW
+    uniq_count = (
+        db.query(func.count(func.distinct(AdVisit.ip_address)))
+          .filter(
+              AdVisit.landing_id == landing_id,
+              AdVisit.visited_at >= window_start,
+              AdVisit.ip_address.isnot(None),
+              AdVisit.ip_address != ""
+          )
+          .scalar()
+    ) or 0
 
-    # продлеваем TTL
-    new_ttl = now + AD_TTL
-    if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
-        landing.ad_flag_expires_at = new_ttl
+    # 4) логика флага и периодов
+    if not landing.in_advertising:
+        # зажигаем только после порога уникальных IP
+        if uniq_count >= MIN_UNIQUE_IPS:
+            landing.in_advertising = True
+            _open_ad_period_if_needed(db, landing_id, started_by=None)
+            landing.ad_flag_expires_at = now + AD_TTL
+        # иначе — ничего не включаем, только записали визит
+    else:
+        # уже в рекламе: страховочно убедимся в открытом периоде и продлим TTL
+        _open_ad_period_if_needed(db, landing_id, started_by=None)
+        new_ttl = now + AD_TTL
+        if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+            landing.ad_flag_expires_at = new_ttl
 
     db.commit()
+
 
 def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
     """
