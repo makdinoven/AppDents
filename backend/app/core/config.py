@@ -71,6 +71,8 @@ class Settings(BaseSettings):
     FACEBOOK_PIXEL_ID_NEW_10: str
     FACEBOOK_ACCESS_TOKEN_NEW_12: str
     FACEBOOK_PIXEL_ID_NEW_12: str
+    FACEBOOK_ACCESS_TOKEN_NEW_13: str
+    FACEBOOK_PIXEL_ID_NEW_13: str
 
 
     class Config:
