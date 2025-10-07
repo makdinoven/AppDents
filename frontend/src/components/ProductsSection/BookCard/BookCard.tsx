@@ -1,15 +1,15 @@
 import s from "./BookCard.module.scss";
 import { BookCardType } from "../CardsList/CardsList.tsx";
-import LangLogo from "../../ui/LangLogo/LangLogo.tsx";
 import { BOOK_FORMATS } from "../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
 import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import BookCardImages from "./BookCardImages/BookCardImages.tsx";
+import LangLogo from "../../ui/LangLogo/LangLogo.tsx";
 import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
 
-const BookCard = ({ book }: { book: BookCardType }) => {
+const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
   const {
     language,
     landing_name,
@@ -17,11 +17,11 @@ const BookCard = ({ book }: { book: BookCardType }) => {
     old_price,
     new_price,
     authors,
-    tags,
-    index,
-    images,
+    first_tag,
+    gallery,
   } = book;
-  // const screenWidth = useScreenWidth();
+
+  console.log("book", language);
 
   const setCardColor = () => {
     const returnValue = "blue";
@@ -41,7 +41,11 @@ const BookCard = ({ book }: { book: BookCardType }) => {
     <Link to={link} className={`${s.card} ${s[cardColor]}`}>
       <div className={s.card_top}>
         <div className={s.images_container}>
-          <BookCardImages color={cardColor} images={images} />
+          <BookCardImages
+            color={cardColor}
+            single={gallery.length <= 1}
+            images={gallery.map((item: { url: string }) => item.url)}
+          />
           <LangLogo
             className={s.lang_logo}
             isHoverable={false}
@@ -56,9 +60,7 @@ const BookCard = ({ book }: { book: BookCardType }) => {
         <h4 lang={language.toLowerCase()} className={s.book_name}>
           {landing_name}
         </h4>
-      </div>
 
-      <div className={s.card_bottom}>
         <ul className={s.formats_list}>
           {BOOK_FORMATS.map((f) => (
             <li className={s.format_item} key={f}>
@@ -68,10 +70,12 @@ const BookCard = ({ book }: { book: BookCardType }) => {
         </ul>
 
         <ul className={s.book_info}>
-          <li>
-            <Trans i18nKey={"tags"} />:
-            <span className={s.book_info_value}> {tags}</span>
-          </li>
+          {first_tag && (
+            <li>
+              <Trans i18nKey={first_tag} />
+            </li>
+          )}
+
           <li>
             <Trans i18nKey={"authors"} />:
             <span className={s.book_info_value}>
@@ -80,9 +84,9 @@ const BookCard = ({ book }: { book: BookCardType }) => {
             </span>
           </li>
         </ul>
-
-        {/*<AuthorsDesc size={"small"} authors={authors} color={cardColor} />*/}
       </div>
+
+      <div className={s.card_bottom}></div>
       <div className={s.buttons}>
         <button
           onClick={(e) => handleBuyClick(e)}

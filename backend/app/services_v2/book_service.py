@@ -244,7 +244,6 @@ def serialize_book_landing_to_course_item(bl: BookLanding) -> dict:
         "language": bl.language,
         "is_hidden": bool(bl.is_hidden),
         "sales_count": bl.sales_count or 0,
-        "preview_photo": bl.preview_photo,
         "new_price": to_float(bl.new_price),
         "old_price": to_float(bl.old_price),
     }
