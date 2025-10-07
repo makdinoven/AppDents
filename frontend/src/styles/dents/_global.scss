@@ -118,6 +118,11 @@ $font-sz-err-mob: 14px;
   //line-height: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
 }
 
+@mixin clamped-p3-line-height {
+  font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+  line-height: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+}
+
 @mixin clamped-p4 {
   font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
   //line-height: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);

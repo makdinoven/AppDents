@@ -201,6 +201,21 @@ const PdfReader = ({
     }
   };
 
+  const handleInputChange = (newValue: string) => {
+    if (newValue === "") {
+      setCurrentPage("");
+      return;
+    }
+
+    let page = Number(newValue);
+    if (isNaN(page)) return;
+
+    if (page < 1) page = 1;
+    if (totalPages && page > totalPages) page = totalPages;
+    setCurrentPage(page.toString());
+    handleScrollToPage(page);
+  };
+
   const handleThumbNailsClick = () => {
     setIsThumbNailsOpen((prev) => !prev);
   };
@@ -254,10 +269,11 @@ const PdfReader = ({
           <p className={`${s.page_indicator} ${s.full_screen}`}>
             <input
               type={"number"}
-              max={totalPages ? totalPages : 99}
+              min={1}
+              max={totalPages || 1}
               className={s.page_input}
               value={currentPage === "" ? "" : currentPage}
-              onChange={(e) => handleScrollToPage(Number(e.target.value))}
+              onChange={(e) => handleInputChange(e.target.value)}
             />
             {t("of")}
             <span>{totalPages ? totalPages : 0}</span>
