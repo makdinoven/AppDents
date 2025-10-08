@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
 import {
+  LANGUAGES,
   LS_TOKEN_KEY,
   PAGE_SOURCES,
   PAYMENT_SOURCES,
@@ -294,4 +295,11 @@ export const mapCourseToResultLanding = (course: any): ResultLandingData => {
     course_ids: course.course_ids || [],
     language: "",
   };
+};
+
+export const formatLanguage = (
+  language: "EN" | "RU" | "ES" | "AR" | "PT" | "IT",
+) => {
+  const result = LANGUAGES.find((obj) => obj.value === language);
+  return result?.label;
 };

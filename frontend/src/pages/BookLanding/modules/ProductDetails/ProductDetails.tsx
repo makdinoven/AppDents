@@ -9,12 +9,12 @@ import { Calendar } from "../../../../assets/icons/index.ts";
 
 const ProductDetails = ({
   data: {
-    pages_count: pagesCount,
-    discount,
-    access,
+    pagesCount,
     publisher,
+    discount,
     savings,
-    publicationDate: publicationDate,
+    access,
+    publicationDate,
     language,
   },
 }: {

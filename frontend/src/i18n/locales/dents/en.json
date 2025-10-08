@@ -228,6 +228,13 @@
     "audio": "audio",
     "description": "Description",
     "productDetails": "Product details",
+    "publisher": "publisher: {{publisher}}",
+    "pagesCount": "{{count}} pages",
+    "discount": "discount {{count}}%",
+    "publicationDate": "publication date: {{date}}",
+    "access": "access is not limited in time",
+    "savings": "savings",
+    "lang": "language: {{lang}}",
     "pdfReader": {
       "error": "An error occurred while loading",
       "loading": "Loading..."
