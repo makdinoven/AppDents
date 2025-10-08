@@ -28,6 +28,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
         if (slide) slideRefs.current[index] = slide;
       }}
       isActive={activeIndex === index}
+      isSingle={!(books.length > 1)}
     />
   ));
 

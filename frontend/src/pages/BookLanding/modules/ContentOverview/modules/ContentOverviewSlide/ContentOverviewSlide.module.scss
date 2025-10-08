@@ -5,7 +5,9 @@
   width: 100%;
   justify-content: flex-start;
   align-items: center;
-  padding-top: 60px;
+  &.padding {
+    padding-top: 60px;
+  }
 
   .head {
     position: absolute;
@@ -82,12 +84,29 @@
     }
 
     .description {
-      text-align: justify;
-      @include clamped-p1();
+      text-align: left;
+      @include clamped-p3();
+      .heading {
+        margin-bottom: 20px;
+        display: block;
+        background-color: $primary;
+        width: 45%;
+        height: fit-content;
+        padding: 10px;
+        border-radius: 10px;
+        text-align: center;
+        color: $background-color;
+
+        @media (max-width: $tablet-breakpoint) {
+          width: 100%;
+        }
+      }
     }
   }
 
   @media (max-width: $tablet-breakpoint) {
-    padding-top: 85px;
+    &.padding {
+      padding-top: 85px;
+    }
   }
 }

@@ -34,6 +34,12 @@ const BuySection: React.FC<BuySectionProps> = ({
       <section
         className={`${s.buy_section} ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
       >
+        {!isFullWidth && (
+          <div className={s.price}>
+            <span className={s.new_price}>${newPrice}</span>
+            <span className={s.old_price}>${oldPrice}</span>
+          </div>
+        )}
         <p className={`${s.buy_text} ${s[buy]}`}>
           <Trans
             i18nKey={

@@ -8,6 +8,7 @@ interface ContentOverviewSlideProps {
   book: any;
   parentId: string;
   isActive: boolean;
+  isSingle: boolean;
 }
 
 export interface ContentOverviewSlideRef {
@@ -17,29 +18,19 @@ export interface ContentOverviewSlideRef {
 const ContentOverviewSlide = forwardRef<
   ContentOverviewSlideRef,
   ContentOverviewSlideProps
->(({ book, parentId, isActive }, ref) => {
+>(({ book, parentId, isActive, isSingle }, ref) => {
   useImperativeHandle(ref, () => ({
     title: book.title,
   }));
 
   return (
-    <li className={s.slide}>
+    <li className={`${s.slide} ${!isSingle && s.padding}`}>
       <div className={s.head}>
-        <h3>
-          <Bookmark />
-          <span>{book.title}</span>{" "}
-        </h3>
-        {book.title && (
-          <div className={s.date}>
-            <span>•</span>
-            <span>
-              <Trans
-                i18nKey="bookLanding.publishedDate"
-                values={{ date: book.publication_date }}
-                components={[<span className={s.highlight} />]}
-              />
-            </span>
-          </div>
+        {!isSingle && (
+          <h3>
+            <Bookmark />
+            <span>{book.title}</span>
+          </h3>
         )}
       </div>
       <div className={s.content}>
@@ -48,7 +39,12 @@ const ContentOverviewSlide = forwardRef<
           parentId={parentId}
           url={book.preview_pdf_url}
         />
-        <p className={s.description}>{book.description}</p>
+        <p className={s.description}>
+          <span className={s.heading}>
+            <Trans i18nKey="bookLanding.description" />
+          </span>
+          {book.description}
+        </p>
       </div>
     </li>
   );

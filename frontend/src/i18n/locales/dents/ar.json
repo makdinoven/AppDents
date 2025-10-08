@@ -184,6 +184,7 @@
     "publishedDate": "تاريخ النشر: <0>{{date}}</0>",
     "author": "المؤلف: <0>{{authors}}</0>",
     "authors": "المؤلفون: <0>{{authors}}</0>",
+    "language": "اللغة: <0>{{language}}</0>",
     "availableFormats": "الصيغ المتاحة:",
     "chooseFormat": "اختر صيغة وقم بالتنزيل على الفور",
     "buyText": "يمكنك شراء <0>النسخة الكاملة</0> بالسعر الجديد الآن - <0>${{newPrice}}</0>، بدلاً من السعر القديم - ${{oldPrice}}",
@@ -192,6 +193,8 @@
     "audioPreviewAvailable": "استمع إلى مقتطف صوتي",
     "audioText": "<0>الصوت</0> متاح ليعطيك لمحة سريعة عن الكتاب قبل الغوص في محتواه.",
     "audio": "صوت",
+    "description": "الوصف",
+    "productDetails": "تفاصيل المنتج",
     "pdfReader": {
       "error": "حدث خطأ أثناء التحميل",
       "loading": "جار التحميل..."

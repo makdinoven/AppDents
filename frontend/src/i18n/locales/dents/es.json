@@ -184,6 +184,7 @@
     "publishedDate": "Fecha de Publicación: <0>{{date}}</0>",
     "author": "Autor: <0>{{authors}}</0>",
     "authors": "Autores: <0>{{authors}}</0>",
+    "language": "Idioma: <0>{{language}}</0>",
     "availableFormats": "Formatos Disponibles:",
     "chooseFormat": "Elija un formato y descárguelo al instante",
     "buyText": "Puede comprar la <0>edición completa</0> al nuevo precio ahora - <0>${{newPrice}}</0>, en lugar del precio antiguo - ${{oldPrice}}",
@@ -192,6 +193,8 @@
     "audioPreviewAvailable": "Escucha el fragmento de audio",
     "audioText": "<0>Audio</0> está disponible para darte una breve visión del libro antes de sumergirte en su contenido.",
     "audio": "audio",
+    "description": "Descripción",
+    "productDetails": "Detalles del producto",
     "pdfReader": {
       "error": "Ocurrió un error al cargar",
       "loading": "Cargando..."
