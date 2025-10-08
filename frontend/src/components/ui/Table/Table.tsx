@@ -128,7 +128,16 @@ const Table = <T extends Record<string, any>>({
                   {rowIdx + 1}
                 </td>
                 {headers.map((key) => (
-                  <td key={key}>{renderCell(key, row[key], row)}</td>
+                  <td
+                    key={key}
+                    style={
+                      typeof row[key] === "number"
+                        ? { textAlign: "center" }
+                        : undefined
+                    }
+                  >
+                    {renderCell(key, row[key], row)}
+                  </td>
                 ))}
               </tr>
             ))}
