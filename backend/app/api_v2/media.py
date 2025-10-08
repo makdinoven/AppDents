@@ -151,6 +151,7 @@ async def upload_image(
             key,
             ExtraArgs={"ACL": "public-read", "ContentType": "image/webp"},
         )
+
         head = s3.head_object(Bucket=S3_BUCKET, Key=key)
     except ClientError as e:
         raise HTTPException(500, f"S3 upload failed: {e}")
