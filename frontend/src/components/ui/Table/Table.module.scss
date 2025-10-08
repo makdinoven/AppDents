@@ -80,6 +80,12 @@
       }
     }
 
+    &.blue {
+      &::after {
+        background-color: $secondary-lighter;
+      }
+    }
+
     &.white {
       &::after {
         background-color: $background-color;

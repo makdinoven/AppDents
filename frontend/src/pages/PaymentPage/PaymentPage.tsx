@@ -4,7 +4,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useEffect, useRef } from "react";
 import { Path } from "../../routes/routes.ts";
-import { CoursesIcon, PoweredByStripeLogo, Shield } from "../../assets/icons";
+import {
+  CoursesIcon,
+  Mail,
+  PoweredByStripeLogo,
+  Shield,
+} from "../../assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
 import PaymentCourseCard from "./content/PaymentCourseCard/PaymentCourseCard.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
@@ -28,7 +33,9 @@ const PaymentPage = () => {
     (state: AppRootStateType) => state.payment.data,
   );
   const closeModalRef = useRef<() => void>(null);
-  const { isLogged } = useSelector((state: AppRootStateType) => state.user);
+  const { isLogged, email } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
   const modalRef = useRef<HTMLDivElement | null>(null);
   const isWebinar = paymentModalType === "webinar";
   const isFree = paymentModalType === "free";
@@ -155,6 +162,15 @@ const PaymentPage = () => {
         </p>
       )}
       {IS_PAYMENT_DISABLED && <DisabledPaymentWarn />}
+      {isLogged && (
+        <p className={s.email_container}>
+          <Mail />
+          <span>
+            <Trans i18nKey="profile.referrals.email" />:
+          </span>
+          {email}
+        </p>
+      )}
       <Button
         onClick={handlePayment}
         disabled={IS_PAYMENT_DISABLED}

@@ -230,14 +230,8 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-  getAdListQuarantine(params: any) {
-    return instance.get("ad_control/ads/quarantine", {
-      params,
-      headers: getAuthHeaders(),
-    });
-  },
-  getAdListObservation(params: any) {
-    return instance.get("ad_control/ads/observation", {
+  getAdControlOverview(params: any) {
+    return instance.get("ad_control/ads/overview", {
       params,
       headers: getAuthHeaders(),
     });
