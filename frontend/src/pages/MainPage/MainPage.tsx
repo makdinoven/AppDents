@@ -13,7 +13,7 @@ const PAGE_SIZE = 14;
 const MainPage = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const isLogged = useSelector((state: any) => state.user.isLogged);
-  const tags = useSelector((state: any) => state.main.tags);
+  `  const tags = useSelector((state: any) => state.main.tags);`;
   const [searchParams, setSearchParams] = useSearchParams();
   const filterFromUrl = searchParams.get("filter");
   const sortFromUrl = searchParams.get("sort");

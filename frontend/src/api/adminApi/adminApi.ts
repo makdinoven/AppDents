@@ -107,7 +107,7 @@ export const adminApi = {
     });
   },
   updateBookLanding(id: any, data: any) {
-    return instance.put(`books/landings/${id}`, data, {
+    return instance.patch(`books/landing/${id}`, data, {
       headers: getAuthHeaders(),
     });
   },

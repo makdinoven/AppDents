@@ -442,7 +442,7 @@
 
   "admin": {
     "save": "Save changes",
-    "update": "update",
+    "update": "edit",
     "view": "view",
     "open": "open",
     "promo": "promo link",
@@ -558,7 +558,7 @@
       "found": "Authors found: {{count}}"
     },
     "books": {
-      "books": "books",
+      "books": "Books",
       "search": "Search books...",
       "create": "Create book",
       "delete": "Delete book",
@@ -573,7 +573,9 @@
       "delete": "Delete book landing",
       "edit": "Edit book landing",
       "notFound": "No book landings found",
-      "found": "Book landings found: {{count}}"
+      "found": "Book landings found: {{count}}",
+      "title": "Book landing name",
+      "title.placeholder": "Enter book landing name..."
     },
     "analytics": {
       "analytics": "Analytics",
