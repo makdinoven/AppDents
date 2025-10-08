@@ -195,6 +195,14 @@
     "audio": "аудио",
     "description": "Описание",
     "productDetails": "Подробнее о товаре",
+    "online": "онлайн",
+    "publisher": "издатель: {{publisher}}",
+    "pagesCount": "{{count}} страниц",
+    "discount": "скидка {{count}}%",
+    "publicationDate": "дата публикации: {{date}}",
+    "access": "доступ не ограничен по времени",
+    "savings": "экономия",
+    "lang": "язык: {{lang}}",
     "pdfReader": {
       "error": "Произошла ошибка загрузки",
       "loading": "Загрузка..."

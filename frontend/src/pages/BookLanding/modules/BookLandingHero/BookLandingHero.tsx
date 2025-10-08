@@ -5,8 +5,7 @@ import BuySection from "../../../../components/CommonComponents/BuySection/BuySe
 import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
-import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../store/store.ts";
+import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 
 interface LandingHeroProps {
   data: any;
@@ -17,7 +16,6 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  const { language } = useSelector((state: AppRootStateType) => state.user);
   return loading ? (
     <BookHeroSkeleton type="buy" />
   ) : (
@@ -25,7 +23,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
       <h3>{data.landing_name}</h3>
       <div className={s.content}>
         <div className={s.left_side}>
-          <img src={data.gallery[0].url} alt="preview" />
+          <img src={data.gallery?.[0]?.url} alt="preview" />
         </div>
         <div className={s.right_side}>
           <div className={s.info}>
@@ -33,7 +31,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
               <Trans
                 i18nKey={"bookLanding.language"}
                 values={{
-                  language: language.toLowerCase(),
+                  language: formatLanguage(data.language),
                 }}
                 components={[<span className={s.highlight} />]}
               />

@@ -195,6 +195,13 @@
     "audio": "áudio",
     "description": "Descrição",
     "productDetails": "Detalhes do produto",
+    "publisher": "editora: {{publisher}}",
+    "pagesCount": "{{count}} páginas",
+    "discount": "desconto de {{count}}%",
+    "publicationDate": "data de publicação: {{date}}",
+    "access": "acesso sem limite de tempo",
+    "savings": "economia",
+    "lang": "idioma: {{lang}}",
     "pdfReader": {
       "error": "Ocorreu um erro ao carregar",
       "loading": "Carregando..."

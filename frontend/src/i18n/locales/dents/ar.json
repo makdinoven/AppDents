@@ -195,6 +195,13 @@
     "audio": "صوت",
     "description": "الوصف",
     "productDetails": "تفاصيل المنتج",
+    "publisher": "الناشر: {{publisher}}",
+    "pagesCount": "{{count}} صفحات",
+    "discount": "خصم {{count}}٪",
+    "publicationDate": "تاريخ النشر: {{date}}",
+    "access": "الوصول غير محدود بالوقت",
+    "savings": "توفير",
+    "lang": "اللغة: {{lang}}",
     "pdfReader": {
       "error": "حدث خطأ أثناء التحميل",
       "loading": "جار التحميل..."
