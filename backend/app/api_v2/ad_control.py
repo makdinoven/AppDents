@@ -648,18 +648,6 @@ def set_assignment(landing_id: int, payload: AssignmentIn, db: Session = Depends
     db.commit()
     return {"ok": True}
 
-from typing import Optional, List, Literal
-from datetime import datetime, timedelta
-from fastapi import Query, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-
-from ..dependencies.role_checker import require_roles
-from ..db.database import get_db
-from ..models.models_v2 import (
-    User, Landing, LandingAdAssignment, AdAccount, AdStaff, Purchase, LandingAdPeriod
-)
-
 # добавили blue для особого случая
 OverviewColor = Literal["white", "orange", "red", "green", "blue"]
 
@@ -716,7 +704,6 @@ def ads_overview_list(
     # ── фильтры (совместимы по духу с карантин/наблюдение)
     q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
     staff_id: Optional[int] = Query(None),
-    account_id: Optional[int] = Query(None),
     colors: Optional[List[OverviewColor]] = Query(None, description="white|orange|red|green|blue"),
     cycle_min: Optional[int] = Query(None),
     cycle_max: Optional[int] = Query(None),
@@ -813,8 +800,6 @@ def ads_overview_list(
         if q and not _like(r["landing_name"], q):
             continue
         if staff_id is not None and r["staff_id"] != staff_id:
-            continue
-        if account_id is not None and r["account_id"] != account_id:
             continue
         if colors and r["color"] not in colors:
             continue
