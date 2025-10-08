@@ -53,62 +53,89 @@ jobs:
           script_stop: true
           command_timeout: 15m
           script: |
+            #!/usr/bin/env bash
             set -Eeuo pipefail
             set -x
-
-            cd var/www/AppDents
+            
+            # =========================
+            # 0) Базовая подготовка
+            # =========================
+            cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
-
-            # 1) Подготовка git к non-interactive pull
+            export COMPOSE_FILE=docker-compose.preprod.yaml
+            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            
+            # =========================
+            # 1) Обновляем репозиторий (ветка preprod)
+            # =========================
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
-            # на случай, если у сервера нет known_hosts для github.com (чтобы не застрять интерактивно)
-            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
-
-            # 2) Мягкая синхронизация кодовой базы (БЕЗ reset)
-            # --no-rebase — не включать rebase,
-            # --no-edit — не спрашивать сообщение для merge-commit,
-            # -s recursive -X theirs — при конфликте предпочесть изменения из origin/preprod
             git pull --no-rebase --no-edit -s recursive -X theirs origin preprod
-
-            # 3) Гарантируем .env (симлинк для препрода, иначе прерываем деплой)
+            
+            # =========================
+            # 2) .env обязателен (preprod → prod как запасной)
+            # =========================
             if [ ! -f .env ]; then
               if [ -f /etc/appdents/preprod.env ]; then
                 ln -sfn /etc/appdents/preprod.env .env
               elif [ -f /etc/appdents/prod.env ]; then
                 ln -sfn /etc/appdents/prod.env .env
               else
-                echo "[env] .env missing and no /etc/appdents/{preprod,prod}.env found"; exit 1
+                echo "[env] .env missing and no /etc/appdents/{preprod,prod}.env found"
+                exit 1
               fi
             fi
-
-            # 4) Строим только то, что изменилось (nginx — всегда)
-            CHANGED="$(echo "${{ needs.check-changes.outputs.changed_services }}" | xargs || true)"
-            if [ -z "$CHANGED" ]; then
-              echo "Нет изменений в сервисах — пересобираем только nginx"
-              docker compose -f docker-compose.preprod.yaml build nginx
+            
+            # =========================
+            # 3) Какие сервисы менялись (из job outputs)
+            # =========================
+            CHANGED_RAW="${{ needs.check-changes.outputs.changed_services }}"
+            CHANGED="$(echo "${CHANGED_RAW:-}" | xargs || true)"   # нормализуем пробелы
+            echo "[info] Changed services: '${CHANGED:-<none>}'"
+            
+            # =========================
+            # 4) Сборка образов
+            #    - всегда собираем nginx
+            #    - при наличии изменений — собираем их тоже
+            # =========================
+            docker compose build nginx
+            if [ -n "${CHANGED:-}" ]; then
+              docker compose build ${CHANGED}
+            fi
+            
+            # =========================
+            # 5) Обновляем контейнеры БЕЗ даунтайма
+            #    - не трогаем зависимости (Redis/DB) → сессии живут
+            #    - если изменений нет — обновим только nginx
+            # =========================
+            if [ -z "${CHANGED:-}" ]; then
+              echo "[deploy] No service changes. Touch nginx only."
+              docker compose up -d --no-deps nginx
             else
-              echo "Есть изменения в: $CHANGED"
-              docker compose -f docker-compose.preprod.yaml build $CHANGED nginx
+              echo "[deploy] Updating changed services: ${CHANGED}"
+              for svc in ${CHANGED}; do
+                echo "[deploy] Upgrading: ${svc}"
+                if ! docker compose up -d --no-deps --wait "${svc}"; then
+                  echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
+                  docker compose up -d --no-deps "${svc}"
+                fi
+              done
+              # Убедимся, что nginx поднят на последнем образе
+              docker compose up -d --no-deps nginx
             fi
-
-            # 5) Аккуратный рестарт стека с ретраями (лечит сетевые гонки Docker)
-            docker compose -f docker-compose.preprod.yaml down --remove-orphans || true
-            docker network prune -f || true
-
-            for i in 1 2 3; do
-              if docker compose -f docker-compose.preprod.yaml up -d; then
-                break
-              fi
-              echo "[retry] compose up failed, attempt $i"
-              docker compose -f docker-compose.preprod.yaml down --remove-orphans || true
-              docker network prune -f || true
-              sleep 3
-            done
-
-            # 6) Reload nginx (или restart при неудаче)
-            docker compose -f docker-compose.preprod.yaml exec nginx nginx -s reload || \
-              docker compose -f docker-compose.preprod.yaml restart nginx
-
-            # 7) Чистка билд-кэша (не обязательно, но полезно)
+            
+            # =========================
+            # 6) Бездаунтаймовый reload nginx
+            # =========================
+            if ! docker compose exec -T nginx nginx -s reload; then
+              echo "[warn] nginx reload failed — doing safe restart"
+              docker compose restart nginx
+            fi
+            
+            # =========================
+            # 7) Чистка билд-кэша (безопасно)
+            # =========================
             docker builder prune -f || true
+            
+            echo "[done] Preprod deploy complete."
+
