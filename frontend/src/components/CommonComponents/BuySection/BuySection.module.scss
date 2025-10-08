@@ -10,7 +10,7 @@
     color: $accent-glass;
     padding: 30px 15px;
     @include flex-column();
-    @include clamped-p3();
+    @include clamped-p2();
     justify-content: center;
     align-items: center;
     flex-grow: 1;
@@ -43,6 +43,10 @@
       }
     }
 
+    &.buy {
+      @include clamped-p3();
+    }
+
     .buy_text {
       text-align: center;
       width: 100%;
@@ -61,8 +65,9 @@
       width: 80%;
       border-radius: 40px;
       background-color: $primary;
-      height: 60px;
+      height: 50px;
       @include transition();
+      margin-bottom: 15px;
 
       @media (max-width: $middle-breakpoint) {
         width: 100%;
@@ -70,6 +75,11 @@
 
       @media (max-width: $tablet-breakpoint) {
         @include clamped-p1();
+      }
+
+      &.buy {
+        height: 60px;
+        margin-bottom: 0;
       }
 
       .prices {
