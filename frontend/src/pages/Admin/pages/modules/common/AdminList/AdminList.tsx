@@ -9,6 +9,7 @@ import { ParamsType } from "../../../../../../api/adminApi/types.ts";
 import Loader from "../../../../../../components/ui/Loader/Loader.tsx";
 import ListController from "../../../../../../components/ui/ListController/ListController.tsx";
 import {
+  BASE_URL,
   FILTER_PARAM_KEYS,
   FilterKeys,
 } from "../../../../../../common/helpers/commonConstants.ts";
@@ -51,6 +52,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const [searchParams, setSearchParams] = useSearchParams();
   const SEARCH_KEY = `admin.${transKey}`;
   const itemsList = data.list as T[];
+  const isBook = transKey.includes("bookL");
 
   const handleCreateItem = async () => {
     try {
@@ -107,7 +109,16 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                 name={item[itemName]}
                 landingPath={
                   item.page_name
-                    ? `/${Path.landingClient}/${item.page_name}`
+                    ? isBook
+                      ? `${Path.bookLandingClient}/${item.page_name}`
+                      : `/${Path.landingClient}/${item.page_name}`
+                    : undefined
+                }
+                promoLandingPath={
+                  item.page_name
+                    ? isBook
+                      ? `${BASE_URL}${Path.bookLanding}/${item.page_name}`
+                      : `${BASE_URL}${Path.landing}/${item.page_name}`
                     : undefined
                 }
                 key={item.id}
