@@ -115,16 +115,16 @@
   }
 }
 
-h3 {
-  @include clamped-h3();
-  text-transform: uppercase;
-  color: $accent;
-  font-weight: 500;
-}
-
 .hero {
   @include flex-column();
   gap: 30px;
+
+  h3 {
+    @include clamped-h3();
+    text-transform: uppercase;
+    color: $accent;
+    font-weight: 500;
+  }
 
   @media (max-width: $mobile-breakpoint) {
     gap: 25px;
