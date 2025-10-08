@@ -113,46 +113,6 @@
     @media (max-width: $mobile-breakpoint) {
       gap: 15px;
     }
-
-    .scales_wrapper {
-      display: flex;
-      flex-direction: row;
-      gap: 15px;
-      justify-content: center;
-      align-items: center;
-
-      button {
-        width: 35px;
-        height: 35px;
-        @include transition();
-
-        &:hover {
-          transform: scale(1.05);
-
-          svg {
-            path {
-              stroke: $primary;
-            }
-          }
-        }
-
-        svg {
-          width: 100%;
-          height: 100%;
-
-          path {
-            stroke: $accent;
-            stroke-width: 1.5px;
-            @include transition();
-          }
-        }
-
-        @media (max-width: $tablet-breakpoint) {
-          width: 30px;
-          height: 30px;
-        }
-      }
-    }
   }
 
   .expand_button {
@@ -191,16 +151,6 @@
       width: 25px;
       height: 25px;
     }
-  }
-
-  .pdf_name {
-    @include clamped-p3();
-    margin: 0px 10px;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: $accent;
   }
 
   .arrows_wrapper {
@@ -332,4 +282,44 @@
   align-self: center;
   text-align: center;
   @include clamped-p2();
+}
+
+.scales_wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+
+  button {
+    width: 35px;
+    height: 35px;
+    @include transition();
+
+    &:hover {
+      transform: scale(1.05);
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+
+      path {
+        stroke: $accent;
+        stroke-width: 1.5px;
+        @include transition();
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      width: 30px;
+      height: 30px;
+    }
+  }
 }

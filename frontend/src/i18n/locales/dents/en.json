@@ -217,6 +217,7 @@
     "publishedDate": "Published date: <0>{{date}}</0>",
     "author": "Author: <0>{{authors}}</0>",
     "authors": "Authors: <0>{{authors}}</0>",
+    "language": "Language: <0>{{language}}</0>",
     "availableFormats": "Available formats:",
     "chooseFormat": "Choose a format and download instantly",
     "buyText": "You can buy the <0>full edition</0> at the new price right now - <0>${{newPrice}}</0>, instead of the old price - ${{oldPrice}}",
@@ -225,6 +226,8 @@
     "audioPreviewAvailable": "Listen to the audio excerpt",
     "audioText": "<0>Audio</0> is available to give you a brief overview of the book before diving into its content.",
     "audio": "audio",
+    "description": "Description",
+    "productDetails": "Product details",
     "pdfReader": {
       "error": "An error occurred while loading",
       "loading": "Loading..."

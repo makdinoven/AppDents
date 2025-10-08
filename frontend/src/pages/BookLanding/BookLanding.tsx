@@ -12,6 +12,7 @@ import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import { useDispatch } from "react-redux";
+import ProductDetails from "./modules/ProductDetails/ProductDetails.tsx";
 
 const BookLanding = () => {
   const dispatch = useDispatch();
@@ -66,18 +67,21 @@ const BookLanding = () => {
     }
   }, [landingPath]);
 
+  console.log(bookData);
+
   const renderSections = () => {
     return (
       <>
         <BookLandingHero data={bookData} loading={loading} />
         {bookData && (
           <>
+            <ProductDetails data={bookData} />
             <ContentOverview
               books={bookData.books}
               portalParentId="portal_parent"
             />
             <BuySection
-              type="download"
+              type="buy"
               isFullWidth={true}
               oldPrice={bookData.old_price}
               newPrice={bookData.new_price}

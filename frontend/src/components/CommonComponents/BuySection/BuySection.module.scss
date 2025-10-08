@@ -6,16 +6,16 @@
   align-items: center;
 
   .buy_section {
-    border: 2px solid $hover-color;
     border-radius: 20px;
     color: $accent-glass;
     padding: 30px 15px;
     @include flex-column();
-    @include clamped-p2();
+    @include clamped-p3();
     justify-content: center;
     align-items: center;
-    height: fit-content;
     flex-grow: 1;
+    height: 100%;
+    background-color: $primary-02;
 
     @media (max-width: $mobile-breakpoint) {
       padding: 25px 10px;
@@ -43,25 +43,14 @@
       }
     }
 
-    &.buy {
-      align-items: flex-start;
-    }
-
-    &.download {
-    }
-
     .buy_text {
       text-align: center;
       width: 100%;
       display: block;
-      margin-bottom: 10px;
-
-      &.buy {
-        text-align: left;
-      }
+      margin-bottom: 20px;
 
       .highlight {
-        color: $primary;
+        color: $primary-accent;
       }
     }
 
@@ -71,21 +60,17 @@
       padding: 10px 20px;
       width: 80%;
       border-radius: 40px;
-      margin-bottom: 20px;
       background-color: $primary;
-      border: 1px solid transparent;
+      height: 60px;
+      @include transition();
 
-      &.buy {
-        padding: 10px;
-        margin: 0;
+      @media (max-width: $middle-breakpoint) {
+        width: 100%;
       }
 
-      &:hover {
-        background-color: transparent;
-        border: 1px solid $accent;
-        color: $accent;
+      @media (max-width: $tablet-breakpoint) {
+        @include clamped-p1();
       }
-      @include transition($duration: 0.3s);
 
       .prices {
         @include flex-center();
@@ -93,10 +78,23 @@
 
         .old_price {
           text-decoration: line-through;
+          color: $background-color;
         }
 
         .new_price {
-          color: $background-color;
+          color: $accent;
+          @include transition();
+        }
+      }
+
+      &:hover {
+        background-color: $accent;
+        color: $background-color;
+
+        .prices {
+          .new_price {
+            color: $primary;
+          }
         }
       }
     }
@@ -229,5 +227,24 @@
 @media (max-width: $tablet-breakpoint) {
   .buy_section {
     min-height: 200px;
+  }
+}
+
+.price {
+  @include flex-center();
+  gap: 10px;
+  flex-direction: row;
+  color: $accent;
+  margin-bottom: 20px;
+  @include clamped-h2();
+
+  .old_price {
+    color: $primary-accent;
+    text-decoration: line-through;
+  }
+
+  @media (max-width: $middle-breakpoint) {
+    @include clamped-h3();
+    margin-bottom: 10px;
   }
 }

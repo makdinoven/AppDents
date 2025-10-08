@@ -3,6 +3,10 @@
   gap: 40px;
   height: fit-content;
 
+  @media (max-width: $tablet-breakpoint) {
+    gap: 10px;
+  }
+
   .slider {
     width: 100%;
     height: fit-content;

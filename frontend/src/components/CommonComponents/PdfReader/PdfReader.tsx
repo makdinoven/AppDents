@@ -320,6 +320,16 @@ const PdfReader = ({
             <MaximizeIcon />
           </button>
         </div>
+        {screenWidth < screenResolutionMap.get("mobile")!.width && (
+          <div className={s.scales_wrapper}>
+            <button onClick={() => handleZoom("out")}>
+              <ZoomOut />
+            </button>
+            <button onClick={() => handleZoom("in")}>
+              <ZoomIn />
+            </button>
+          </div>
+        )}
         {renderNextPrevButtons}
       </>,
     ],
