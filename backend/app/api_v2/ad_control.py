@@ -647,3 +647,245 @@ def set_assignment(landing_id: int, payload: AssignmentIn, db: Session = Depends
         a.account_id = payload.account_id
     db.commit()
     return {"ok": True}
+
+from typing import Optional, List, Literal
+from datetime import datetime, timedelta
+from fastapi import Query, Depends, HTTPException
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+from ..dependencies.role_checker import require_roles
+from ..db.database import get_db
+from ..models.models_v2 import (
+    User, Landing, LandingAdAssignment, AdAccount, AdStaff, Purchase, LandingAdPeriod
+)
+
+# добавили blue для особого случая
+OverviewColor = Literal["white", "orange", "red", "green", "blue"]
+
+WHITE_DAYS_THRESHOLD = 5  # < 5 дней от старта => white
+
+def _ad_sales_lifetime_map(db: Session, landing_ids: list[int]) -> dict[int, int]:
+    if not landing_ids:
+        return {}
+    rows = (
+        db.query(Purchase.landing_id, func.count(Purchase.id))
+          .filter(
+              Purchase.landing_id.in_(landing_ids),
+              Purchase.from_ad.is_(True),
+          )
+          .group_by(Purchase.landing_id)
+          .all()
+    )
+    return {lid: int(cnt) for lid, cnt in rows}
+
+def _hours_left_map(db: Session, landing_ids: list[int], now: datetime) -> dict[int, Optional[int]]:
+    if not landing_ids:
+        return {}
+    rows = (
+        db.query(Landing.id, Landing.ad_flag_expires_at)
+          .filter(Landing.id.in_(landing_ids))
+          .all()
+    )
+    out: dict[int, Optional[int]] = {}
+    for lid, exp in rows:
+        if exp is None:
+            out[lid] = None
+        else:
+            diff = exp - now
+            # округляем в сторону нуля (как TIMESTAMPDIFF HOUR делает по целым границам)
+            out[lid] = int(diff.total_seconds() // 3600)
+    return out
+
+def _overview_color(now: datetime, stage_start: datetime, sales10: int, lifetime_sales: int) -> OverviewColor:
+    # приоритет белого — если эпизод начался < 5 дней назад
+    if (now - stage_start).days < WHITE_DAYS_THRESHOLD:
+        return "white"
+    if sales10 > 3:
+        return "green"
+    if 1 <= sales10 <= 3:
+        return "orange"
+    # sales10 == 0
+    if lifetime_sales > 3:
+        return "blue"
+    return "red"
+
+@router.get("/ads/overview")
+def ads_overview_list(
+    language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
+    # ── фильтры (совместимы по духу с карантин/наблюдение)
+    q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
+    staff_id: Optional[int] = Query(None),
+    account_id: Optional[int] = Query(None),
+    colors: Optional[List[OverviewColor]] = Query(None, description="white|orange|red|green|blue"),
+    cycle_min: Optional[int] = Query(None),
+    cycle_max: Optional[int] = Query(None),
+    days_min: Optional[int] = Query(None),
+    days_max: Optional[int] = Query(None),
+    sales10_min: Optional[int] = Query(None, description="Мин. ad-продаж за последние 10 дней"),
+    sales10_max: Optional[int] = Query(None, description="Макс. ad-продаж за последние 10 дней"),
+    stage_start_from: Optional[date] = Query(None, description="Не раньше этой даты (склеённый старт)"),
+    stage_start_to: Optional[date] = Query(None, description="Не позже этой даты (склеённый старт)"),
+    # ── сортировка
+    sort_by: Literal["hours_left", "sales10", "days", "cycle", "name", "language", "stage_start", "color"] = Query("hours_left"),
+    sort_dir: Literal["asc", "desc"] = Query("asc"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    now = datetime.utcnow()
+
+    # только те, кто сейчас помечен "в рекламе", как в вашем примере SQL
+    base = (
+        db.query(Landing, LandingAdPeriod.started_at)
+          .join(LandingAdPeriod, LandingAdPeriod.landing_id == Landing.id)
+          .filter(
+              Landing.in_advertising.is_(True),
+              LandingAdPeriod.ended_at.is_(None),
+          )
+    )
+    if language:
+        base = base.filter(Landing.language == language.upper().strip())
+
+    rows = base.all()  # [(Landing, started_at_of_open_period)]
+    if not rows:
+        return {"items": [], "as_of": now.isoformat() + "Z"}
+
+    landing_ids = [l.id for (l, _) in rows]
+
+    # 1) склеённое начало активного эпизода
+    episode_start_map = _active_episode_start_map(db, landing_ids)
+
+    # 2) корректное число циклов (по склеенным эпизодам)
+    cycles_map = _effective_cycle_count_map(db, landing_ids)
+
+    # 3) продажи: последние 10 дней + за всё время
+    sales10_map = _ad_sales_last10_map(db, landing_ids)
+    lifetime_map = _ad_sales_lifetime_map(db, landing_ids)
+
+    # 4) часы до окончания флага
+    hours_left = _hours_left_map(db, landing_ids, now)
+
+    # 5) назначения + имена
+    assign_rows = db.query(LandingAdAssignment).filter(LandingAdAssignment.landing_id.in_(landing_ids)).all()
+    assign_map = {a.landing_id: a for a in assign_rows}
+    staff_ids = [a.staff_id for a in assign_rows if a.staff_id is not None]
+    acc_ids = [a.account_id for a in assign_rows if a.account_id is not None]
+    staff_name_map = {s.id: s.name for s in db.query(AdStaff).filter(AdStaff.id.in_(staff_ids)).all()} if staff_ids else {}
+    acc_name_map = {a.id: a.name for a in db.query(AdAccount).filter(AdAccount.id.in_(acc_ids)).all()} if acc_ids else {}
+
+    # 6) собираем сырые строки
+    raw = []
+    for landing, _st_open in rows:
+        st = episode_start_map.get(landing.id)
+        if not st:
+            continue  # на всякий случай
+
+        days = (now - st).days
+        s10 = int(sales10_map.get(landing.id, 0))
+        life = int(lifetime_map.get(landing.id, 0))
+        color = _overview_color(now, st, s10, life)
+
+        assign = assign_map.get(landing.id)
+        cycle_no = int(cycles_map.get(landing.id, 0))
+        hl = hours_left.get(landing.id)
+
+        raw.append({
+            "id": landing.id,
+            "landing_name": landing.landing_name,
+            "language": landing.language,
+            "cycle_no": cycle_no,
+            "stage_started_dt": st,                 # Start date (склеённый старт активного окна)
+            "days_in_stage": int(days),
+            "ad_purchases_last_10_days": s10,       # продажи за 10 дней
+            "ad_purchases_lifetime": life,          # для цвета blue
+            "hours_left": hl,                        # до конца флага
+            "color": color,
+            "staff_id": getattr(assign, "staff_id", None),
+            "account_id": getattr(assign, "account_id", None),
+        })
+
+    # 7) фильтры
+    def _like(s: str, sub: str) -> bool:
+        return sub.lower() in (s or "").lower()
+
+    filtered = []
+    for r in raw:
+        if q and not _like(r["landing_name"], q):
+            continue
+        if staff_id is not None and r["staff_id"] != staff_id:
+            continue
+        if account_id is not None and r["account_id"] != account_id:
+            continue
+        if colors and r["color"] not in colors:
+            continue
+        if cycle_min is not None and r["cycle_no"] < int(cycle_min):
+            continue
+        if cycle_max is not None and r["cycle_no"] > int(cycle_max):
+            continue
+        if days_min is not None and r["days_in_stage"] < int(days_min):
+            continue
+        if days_max is not None and r["days_in_stage"] > int(days_max):
+            continue
+        if sales10_min is not None and r["ad_purchases_last_10_days"] < int(sales10_min):
+            continue
+        if sales10_max is not None and r["ad_purchases_last_10_days"] > int(sales10_max):
+            continue
+        if stage_start_from is not None and r["stage_started_dt"].date() < stage_start_from:
+            continue
+        if stage_start_to is not None and r["stage_started_dt"].date() > stage_start_to:
+            continue
+        filtered.append(r)
+
+    # 8) сортировка
+    def _color_rank(c: str) -> int:
+        # red > orange > blue > white > green (на ваше усмотрение — можно поменять)
+        order = {"red": 4, "orange": 3, "blue": 2, "white": 1, "green": 0}
+        return order.get(c, -1)
+
+    reverse = (sort_dir == "desc")
+    if sort_by == "hours_left":
+        keyfn = lambda x: (x["hours_left"] if x["hours_left"] is not None else 10**9)
+    elif sort_by == "sales10":
+        keyfn = lambda x: x["ad_purchases_last_10_days"]
+    elif sort_by == "days":
+        keyfn = lambda x: x["days_in_stage"]
+    elif sort_by == "cycle":
+        keyfn = lambda x: x["cycle_no"]
+    elif sort_by == "name":
+        keyfn = lambda x: (x["landing_name"] or "").lower()
+    elif sort_by == "language":
+        keyfn = lambda x: (x["language"] or "")
+    elif sort_by == "stage_start":
+        keyfn = lambda x: x["stage_started_dt"]
+    elif sort_by == "color":
+        keyfn = lambda x: _color_rank(x["color"])
+    else:
+        keyfn = lambda x: (x["hours_left"] if x["hours_left"] is not None else 10**9)
+
+    sorted_rows = sorted(filtered, key=keyfn, reverse=reverse)
+
+    # 9) финальный ответ
+    items = []
+    for r in sorted_rows:
+        sid = r["staff_id"]; aid = r["account_id"]
+        items.append({
+            "id": r["id"],
+            "landing_name": r["landing_name"],
+            "language": r["language"],
+            "cycle_no": r["cycle_no"],
+            "stage_started_at": r["stage_started_dt"].isoformat() + "Z",  # Start date
+            "days_in_stage": r["days_in_stage"],
+            "ad_purchases_last_10_days": r["ad_purchases_last_10_days"],
+            "ad_purchases_lifetime": r["ad_purchases_lifetime"],
+            "hours_left": r["hours_left"],  # End Date в часах до окончания флага
+            "color": r["color"],
+            "assignee": {
+                "staff_id": sid,
+                "staff_name": staff_name_map.get(sid, DEFAULT_STAFF_NAME) if sid is not None else DEFAULT_STAFF_NAME,
+                "account_id": aid,
+                "account_name": acc_name_map.get(aid, DEFAULT_ACCOUNT_NAME) if aid is not None else DEFAULT_ACCOUNT_NAME,
+            }
+        })
+
+    return {"items": items, "as_of": now.isoformat() + "Z"}
+
