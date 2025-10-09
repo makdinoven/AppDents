@@ -24,8 +24,14 @@
   "yourOrder": "Your order",
   "password": "Password...",
   "seeMore": "See more",
-  "endOfList": "These are all the courses for now. More coming soon!",
-  "endOfListFilter": "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
+  "endOfList": {
+    "course": "These are all the courses for now. More coming soon!",
+    "book":  "These are all the books for now. More coming soon!"
+  },
+  "endOfListFilter": {
+    "course": "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
+    "book": "Books filtered by «{{filter}}». That’s all for now. More are coming soon!"
+  },
   "open": "open",
   "view": "View",
   "watch": "Watch",
@@ -166,8 +172,14 @@
     "hero.bestPrices": "Best <1>prices</1>",
     "ourCurses": "Our courses",
     "viewCourse": "View course",
-    "noCourses": "No courses found",
-    "noCoursesFilter": "No courses found for the filter «{{filter}}»."
+    "noItems": {
+      "course": "No courses found",
+      "book": "No books found"
+    },
+    "noItemsFilter": {
+      "course": "No courses found for the filter «{{filter}}».",
+      "book": "No books found for the filter «{{filter}}»."
+    }
   },
 
   "footer": {

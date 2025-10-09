@@ -74,17 +74,18 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
             </li>
           )}
 
-          <li>
-            <Trans i18nKey={"authors"} />:
-            <span className={s.book_info_value}>
-              {" "}
-              {formatAuthorsDesc(authors)}
-            </span>
-          </li>
+          {!!authors.length && (
+            <li>
+              <Trans i18nKey={"authors"} />:
+              <span className={s.book_info_value}>
+                {" "}
+                {formatAuthorsDesc(authors)}
+              </span>
+            </li>
+          )}
         </ul>
       </div>
 
-      <div className={s.card_bottom}></div>
       <div className={s.buttons}>
         <button
           onClick={(e) => handleBuyClick(e)}

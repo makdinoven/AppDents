@@ -68,11 +68,6 @@
   word-break: break-word;
 }
 
-.card_bottom {
-  @include flex-column;
-  gap: inherit;
-}
-
 .formats_list {
   display: flex;
   flex-wrap: wrap;
