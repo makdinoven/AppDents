@@ -342,37 +342,35 @@ def update_user_full(db: Session, user_id: int, data: UserUpdateFull, region: st
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": {
-                "code": "USER_NOT_FOUND",
-                "message": "User not found",
-                "params": {"user_id": user_id}
-            }}
+            detail={"error": {"code": "USER_NOT_FOUND", "message": "User not found", "params": {"user_id": user_id}}}
         )
 
-    # Обновляем email, если значение передано, не пустое и отличается от текущего
+    # email
     if data.email is not None and data.email.strip() and data.email != user.email:
         user.email = data.email
 
-    # Обновляем роль, если значение передано, не пустое и отличается
+    # role
     if data.role is not None and data.role.strip() and data.role != user.role:
         user.role = data.role
 
-    # Обновляем пароль, если значение передано, не пустое и отличается от текущего
-    # Для проверки пароля нужно сравнить, например, через функцию verify_password
+    # password
     if data.password is not None and data.password.strip():
-        send_recovery_email(data.email, data.password, region)
-        # Если новый пароль не совпадает с текущим (в терминах верификации)
+        # отправим письмо и обновим, если пароль реально новый (по verify)
+        send_recovery_email(data.email or user.email, data.password, region)
         if not verify_password(data.password, user.password):
             user.password = hash_password(data.password)
 
-    # Обновляем список курсов, если course_ids переданы и отличаются от текущего списка
+    # courses
     if data.courses is not None:
-        # Получаем текущие course_ids
-        current_course_ids = {course.id for course in user.courses} if user.courses else set()
         new_course_ids = set(data.courses)
-        if new_course_ids != current_course_ids:
-            courses = db.query(Course).filter(Course.id.in_(data.courses)).all()
-            user.courses = courses
+        courses = db.query(Course).filter(Course.id.in_(new_course_ids)).all()
+        user.courses = courses
+
+    # books  ⟵ НОВОЕ
+    if data.books is not None:
+        new_book_ids = set(data.books)
+        books = db.query(Book).filter(Book.id.in_(new_book_ids)).all()
+        user.books = books
 
     db.commit()
     db.refresh(user)

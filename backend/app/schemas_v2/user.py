@@ -95,16 +95,11 @@ class UserDetailResponse(BaseModel):
         orm_mode = True
 
 class UserUpdateFull(BaseModel):
-    """
-    Схема для обновления пользователя одним запросом.
-    Можно расширять при необходимости.
-    """
     email: Optional[EmailStr] = None
     role: Optional[str] = None
-    # Если нужно менять пароль в этом же запросе, можно добавить:
     password: Optional[str] = None
-    # Чтобы полностью переопределять купленные курсы:
     courses: Optional[List[int]] = None
+    books: Optional[List[int]] = None
 
 class PurchaseResponse(BaseModel):
     id: int
@@ -140,6 +135,7 @@ class UserDetailedResponse(BaseModel):
     email: EmailStr
     role: str
     courses: List[int]
+    books: List[int]
     purchases: List[PurchaseResponse]
     balance : str
 
@@ -148,6 +144,12 @@ class UserDetailedResponse(BaseModel):
         if value is None:
             return []
         return [course.id for course in value]
+
+    @validator("books", pre=True)  # ⟵ конверсия в список ID
+    def convert_books_to_ids(cls, value):
+        if value is None:
+            return []
+        return [b.id for b in value]
 
     class Config:
         orm_mode = True

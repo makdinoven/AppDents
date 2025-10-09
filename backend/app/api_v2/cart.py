@@ -17,6 +17,10 @@ from ..schemas_v2.cart import (
     # Добавьте это в схемы (аналогично LandingInCart):
     # BookLandingInCart
 )
+from ..services_v2.cart_service import (
+    add_book_landing_to_cart as svc_add_book_landing,
+    remove_book_landing_from_cart as svc_remove_book_landing,
+)
 from ..services_v2.cart_service import get_or_create_cart, _safe_price
 from ..services_v2 import cart_service as cs
 
@@ -101,21 +105,20 @@ def my_cart(
     db: Session        = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # 1) Получаем/создаём корзину
     cart = get_or_create_cart(db, current_user)
 
-    # 2) Жадная загрузка ОБОИХ типов
     cart = (
         db.query(Cart)
           .options(
-              # курсовые лендинги
+              # обычные (курсовые) лендинги
               selectinload(Cart.items)
                 .selectinload(CartItem.landing)
                   .selectinload(Landing.authors),
               selectinload(Cart.items)
                 .selectinload(CartItem.landing)
                   .selectinload(Landing.courses),
-              # книжные лендинги
+
+              # ⟵ НОВОЕ: книжные лендинги + их книги + авторы книг
               selectinload(Cart.items)
                 .selectinload(CartItem.book_landing)
                   .selectinload(BookLanding.books)
@@ -125,40 +128,110 @@ def my_cart(
           .first()
     )
 
-    # 3) Сортировка по id убыв.
-    cart.items = sorted(cart.items or [], key=lambda it: it.id, reverse=True)
+    # отсортируем элементы
+    cart.items = sorted(cart.items, key=lambda it: it.id, reverse=True)
 
-    # 4) Тоталы по цене позиций (price)
-    total_new = sum(_item_price(item) for item in cart.items)
-    # Если нужна «старая» сумма — берём old_price из связей:
-    total_old = 0.0
-    for it in cart.items:
-        if it.item_type == CartItemType.LANDING and it.landing:
-            total_old += _safe_price(it.landing.old_price)
-        elif it.item_type == CartItemType.BOOK and it.book_landing:
-            total_old += _safe_price(it.book_landing.old_price)
+    # --- суммы: учитываем и LANDING, и BOOK-LANDING
+    def _price_of_item(it: CartItem) -> float:
+        if it.landing is not None:
+            return _safe_price(it.landing.new_price or 0)
+        if it.book_landing is not None:
+            return _safe_price(it.book_landing.new_price or 0)
+        # fallback: цена из строки item.price (если она у тебя хранится) — опционально
+        return _safe_price(it.price or 0)
 
-    count = len(cart.items or [])
+    total_new = sum(_price_of_item(it) for it in cart.items)
+    total_old = sum(
+        _safe_price(it.landing.old_price) if it.landing is not None
+        else _safe_price(it.book_landing.old_price) if it.book_landing is not None
+        else 0
+        for it in cart.items
+    )
+
+    count = len(cart.items)
     disc_curr = _calc_discount(count)
     disc_next = _calc_discount(count + 1)
     discounted = total_new * (1 - disc_curr)
-    final_with_balance = max(discounted - (current_user.balance or 0.0), 0.0)
+    pay_with_balance = max(discounted - current_user.balance, 0.0)
 
-    # 5) Сериализация items
-    items = [_serialize_cart_item(it) for it in cart.items]
+    # --- Соберём items руками, чтобы в ответе были нужные поля
+    def _landing_to_incart(l: Landing) -> dict:
+        # твой текущий LandingInCart.from_orm(l) и так ок; оставлю явную форму
+        return {
+            "id": l.id,
+            "page_name": l.page_name,
+            "landing_name": l.landing_name,
+            "preview_photo": l.preview_photo,
+            "course_ids": [c.id for c in (l.courses or [])],
+            "authors": [{"id": a.id, "name": a.name, "photo": a.photo} for a in (l.authors or [])],
+            "old_price": str(l.old_price) if l.old_price is not None else None,
+            "new_price": str(l.new_price) if l.new_price is not None else None,
+        }
+
+    def _book_landing_to_incart(bl: BookLanding) -> dict:
+        # авторы = уник. из всех книг
+        authors_map = {}
+        for b in bl.books or []:
+            for a in b.authors or []:
+                authors_map[a.id] = {"id": a.id, "name": a.name, "photo": a.photo}
+        authors = list(authors_map.values())
+
+        # главная картинка — обложка первой книги (если есть)
+        cover = None
+        if bl.books:
+            first = next((b for b in bl.books if getattr(b, "cover_url", None)), None)
+            if first:
+                cover = first.cover_url
+
+        return {
+            "id": bl.id,
+            "page_name": bl.page_name,         # slug
+            "landing_name": bl.landing_name,
+            "cover": cover,                    # ⟵ вместо галереи (как ты просил раньше)
+            "authors": authors,
+            "old_price": str(bl.old_price) if bl.old_price is not None else None,
+            "new_price": str(bl.new_price) if bl.new_price is not None else None,
+            # опционально можно добавить tags или language, если нужно в UI
+        }
+
+    items_serialized = []
+    for it in cart.items:
+        if it.landing is not None:
+            items_serialized.append({
+                "id": it.id,
+                "item_type": "LANDING",
+                "added_at": it.added_at,
+                "landing": _landing_to_incart(it.landing),
+                "book_landing": None,     # для единообразия
+            })
+        elif it.book_landing is not None:
+            items_serialized.append({
+                "id": it.id,
+                "item_type": "BOOK",
+                "added_at": it.added_at,
+                "landing": None,
+                "book_landing": _book_landing_to_incart(it.book_landing),
+            })
+        else:
+            # fallback на случай «битой» строки
+            items_serialized.append({
+                "id": it.id,
+                "item_type": it.item_type.value if hasattr(it.item_type, "value") else it.item_type,
+                "added_at": it.added_at,
+                "landing": None,
+                "book_landing": None,
+            })
 
     return {
         "total_amount": round(discounted, 2),
-        "total_old_amount": round(total_old, 2),
-        "total_new_amount": round(total_new, 2),
+        "total_old_amount": total_old,
+        "total_new_amount": total_new,
         "current_discount": round(disc_curr * 100, 2),
         "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": round(final_with_balance, 2),
+        "total_amount_with_balance_discount": round(pay_with_balance, 2),
         "updated_at": cart.updated_at,
-        "items": items,
+        "items": items_serialized,
     }
-
-# ─────────── КУРСОВЫЕ ЛЕНДИНГИ ───────────
 
 @router.post("/landing/{landing_id}", response_model=CartResponse)
 def add_landing(
@@ -187,12 +260,10 @@ def add_book_landing_to_cart(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    cs.add_book_landing(db, current_user, landing_id)
-    logger.info(
-        "[CART] POST add BOOK-LANDING user_id=%s book_landing_id=%s",
-        current_user.id, landing_id
-    )
-    return my_cart(db, current_user)
+    svc_add_book_landing(db, current_user, landing_id)
+    # Возвращаем полную корзину тем же форматом, что /api/cart
+    return my_cart(db=db, current_user=current_user)
+
 
 @router.delete("/book-landings/{landing_id}", response_model=CartResponse,
                summary="Удалить книжный лендинг из корзины")
@@ -201,14 +272,8 @@ def remove_book_landing_from_cart(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    cs.remove_book_landing(db, current_user, landing_id)
-    logger.info(
-        "[CART] DELETE BOOK-LANDING user_id=%s book_landing_id=%s",
-        current_user.id, landing_id
-    )
-    return my_cart(db, current_user)
-
-# ─────────── Предпросмотр (для гостей): пока оставим только курс-лендинги ───────────
+    svc_remove_book_landing(db, current_user, landing_id)
+    return my_cart(db=db, current_user=current_user)
 
 @router.post(
     "/preview",
