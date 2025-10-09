@@ -1,7 +1,6 @@
 import s from "./ProductsSection.module.scss";
 import SectionHeader from "../ui/SectionHeader/SectionHeader.tsx";
 import SelectableList from "../CommonComponents/SelectableList/SelectableList.tsx";
-import CardsList from "./CardsList/CardsList.tsx";
 import {
   LANGUAGES,
   SORT_FILTERS,
@@ -19,6 +18,7 @@ import CourseCardSkeletons from "../ui/Skeletons/CourseCardSkeletons/CourseCardS
 import FiltersSkeleton from "../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 import { ProductCardFlags } from "./CourseCard/CourseCard.tsx";
 import BookCardSkeletons from "../ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
+import CardsList from "./CardsList/CardsList.tsx";
 
 type props = {
   cardType?: ProductCardType;
@@ -31,14 +31,12 @@ type props = {
   showSort?: boolean;
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
-  ref?: React.RefObject<any>;
   productCardFlags: ProductCardFlags;
 };
 
 export type ProductCardType = "course" | "book";
 
 const ProductsSection = ({
-  ref,
   sectionTitle,
   pageSize,
   productCardFlags,
@@ -167,7 +165,7 @@ const ProductsSection = ({
   };
 
   return (
-    <section ref={ref} className={s.courses}>
+    <section className={s.courses}>
       <div className={s.courses_header}>
         {sectionTitle && <SectionHeader name={sectionTitle} />}
         {showFilters && (

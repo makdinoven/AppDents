@@ -8,6 +8,7 @@ import { ParamsType } from "../../api/adminApi/types.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import BookCardSkeletons from "../../components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
+import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 
 const Books = () => {
   // const navigate = useNavigate();
@@ -78,15 +79,15 @@ const Books = () => {
           cardType={"book"}
         />
       </ListController>
-      {/*{!isFirstLoad && (*/}
-      {/*  <ProductsSection*/}
-      {/*    showSort={true}*/}
-      {/*    sectionTitle={"other.otherBooks"}*/}
-      {/*    pageSize={4}*/}
-      {/*    productCardFlags={{ isClient: true, isOffer: true }}*/}
-      {/*    cardType={"book"}*/}
-      {/*  />*/}
-      {/*)}*/}
+      {!isFirstLoad && (
+        <ProductsSection
+          showSort={true}
+          sectionTitle={"other.otherBooks"}
+          pageSize={4}
+          productCardFlags={{ isClient: true, isOffer: true }}
+          cardType={"book"}
+        />
+      )}
     </div>
   );
 };
