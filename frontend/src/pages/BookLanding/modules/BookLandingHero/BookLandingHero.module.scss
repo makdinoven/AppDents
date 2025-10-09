@@ -16,6 +16,11 @@
     padding: 40px;
     @include flex-center();
 
+    &.no_picture {
+      background-color: $accent-glass;
+      border: 2px solid $accent-glass;
+    }
+
     img {
       width: auto;
       max-height: 100%;

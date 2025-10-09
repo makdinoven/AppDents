@@ -14,7 +14,6 @@ import {
 } from "../../../assets/icons";
 import { SingleValue } from "react-select";
 import MultiSelect from "../MultiSelect/MultiSelect.tsx";
-import { Trans } from "react-i18next";
 import { t } from "i18next";
 import ThumbNails from "./ThumbNails/ThumbNails.tsx";
 import Loader from "../../ui/Loader/Loader.tsx";
@@ -71,7 +70,7 @@ const PdfReader = ({
   const documentRef = useRef<HTMLDivElement | null>(null);
   const [isThumbNailsOpen, setIsThumbNailsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<any>(null);
   const [scale, setScale] = useState<number>(DEFAULT_SCALE);
 
   const options = useMemo(
@@ -139,6 +138,7 @@ const PdfReader = ({
 
   const onDocumentLoadError = (error: any) => {
     setError(error.message);
+    setLoading(false);
   };
 
   const handleScrollToPage = (newPage: number) => {
@@ -313,10 +313,14 @@ const PdfReader = ({
         <div className={s.left_side}>
           <p className={s.page_indicator}>
             <span>
-              {currentPage}/{totalPages ? totalPages : 0}
+              {totalPages ? currentPage : 0}/{totalPages ? totalPages : 0}
             </span>
           </p>
-          <button className={s.expand_button} onClick={handleOpenFullScreen}>
+          <button
+            className={s.expand_button}
+            onClick={handleOpenFullScreen}
+            disabled={!totalPages}
+          >
             <MaximizeIcon />
           </button>
         </div>
@@ -361,39 +365,30 @@ const PdfReader = ({
         className={s.document}
         ref={documentRef}
       >
-        {loading ? (
-          <div className={s.loading}>
-            <Loader />
-          </div>
-        ) : (
-          <Document
-            file={url}
-            onLoadSuccess={onDocumentLoadSuccess}
-            options={options}
-            className={s.pages_wrapper}
-            loading={false}
-            onLoadError={onDocumentLoadError}
-            error={false}
-          >
-            {Array.from(new Array(totalPages), (_el, index) => (
-              <div key={index + 1} data-page={index + 1}>
-                <Page
-                  pageNumber={index + 1}
-                  width={handleResizePage()}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  scale={scale}
-                  loading={false}
-                />
-              </div>
-            ))}
-          </Document>
-        )}
-        {error && (
-          <div className={s.error}>
-            <Trans i18nKey={"bookLanding.pdfReader.error"} />
-          </div>
-        )}
+        <Document
+          file={url}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          options={options}
+          className={s.pages_wrapper}
+          loading={false}
+          error={false}
+        >
+          {Array.from(new Array(totalPages), (_el, index) => (
+            <div key={index + 1} data-page={index + 1}>
+              <Page
+                pageNumber={index + 1}
+                width={handleResizePage()}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                scale={scale}
+                loading={false}
+              />
+            </div>
+          ))}
+        </Document>
+        {loading && <Loader className={s.loading} />}
+        {error && <p className={s.error}>{t("bookLanding.pdfReader.error")}</p>}
       </div>
     </div>
   );
