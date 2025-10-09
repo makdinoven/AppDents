@@ -26,6 +26,7 @@ export interface CartLandingType {
 
 export interface CartItemType {
   landing: CartLandingType;
+  item_type: "LANDING" | "BOOK";
 }
 
 export interface CartType {

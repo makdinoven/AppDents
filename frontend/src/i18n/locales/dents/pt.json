@@ -25,8 +25,14 @@
   "yourOrder": "Seu pedido",
   "seeMore": "Ver mais",
   "daysShort": "d",
-  "endOfList": "Estes são todos os cursos por agora. Mais em breve!",
-  "endOfListFilter": "Cursos filtrados por «{{filter}}». Isso é tudo por agora. Mais em breve!",
+  "endOfList": {
+    "course": "Esses são todos os cursos por enquanto. Mais em breve!",
+    "book": "Esses são todos os livros por enquanto. Mais em breve!"
+  },
+  "endOfListFilter": {
+    "course": "Cursos filtrados por «{{filter}}». Isso é tudo por enquanto. Mais em breve!",
+    "book": "Livros filtrados por «{{filter}}». Isso é tudo por enquanto. Mais em breve!"
+  },
   "password": "Senha...",
   "open": "abrir",
   "viewCourse": "Ver curso",
