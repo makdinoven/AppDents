@@ -31,12 +31,15 @@ const BookLandingDetail = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [landingRes, tagsRes, authorsRes] = await Promise.all([
+      const [landingRes, tagsRes, authorsRes, booksRes] = await Promise.all([
         adminApi.getBookLanding(bookId),
         mainApi.getTags(),
         adminApi.getAuthorsList({ size: 100000 }),
+        adminApi.getBooksList({ size: 100000 }),
       ]);
-      setTags(tagsRes);
+      console.log(booksRes.data, tagsRes.data);
+      setBooks(booksRes.data.items);
+      setTags(tagsRes.data);
       setBookLanding(landingRes.data);
       setAuthors(authorsRes.data.items);
     } catch (error: any) {
@@ -57,7 +60,7 @@ const BookLandingDetail = () => {
       Alert("Book landing deleted", <CheckMark />);
       navigate(-1);
     } catch (error) {
-      Alert(`Error deleting course: ${error}`, <ErrorIcon />);
+      Alert(`Error deleting book landing: ${error}`, <ErrorIcon />);
     }
   };
 
@@ -69,73 +72,130 @@ const BookLandingDetail = () => {
     });
   };
 
-  const handleSave = () => {};
+  const handleSave = async () => {
+    try {
+      await adminApi.updateBookLanding(bookId, bookLanding);
+      navigate(-1);
+    } catch (error) {
+      Alert(`Error updating book landing: ${error}`, <ErrorIcon />);
+    }
+  };
 
-  return loading ? (
-    <Loader />
-  ) : (
-    bookLanding && (
-      <div className={s.detail_container}>
-        <DetailHeader title={"admin.bookLandings.edit"} />
-        <AdminField
-          type="input"
-          id="landing_name"
-          placeholder={t("admin.bookLandings.title.placeholder")}
-          label={t("admin.bookLandings.title")}
-          value={bookLanding.landing_name}
-          onChange={handleChange}
-        />
-        <AdminField
-          type="input"
-          id="page_name"
-          placeholder={t("admin.landings.pageName.placeholder")}
-          label={t("admin.landings.pageName")}
-          value={bookLanding.page_name}
-          onChange={handleChange}
-        />
-        <MultiSelect
-          isSearchable={false}
-          id={"language"}
-          options={LANGUAGES}
-          placeholder={"Choose a language"}
-          label={t("admin.landings.language")}
-          selectedValue={bookLanding.language}
-          isMultiple={false}
-          onChange={handleChange}
-          valueKey="value"
-          labelKey="label"
-        />
-        {authors && (
-          <MultiSelect
-            id={"author_ids"}
-            options={authors}
-            placeholder={"Choose an author"}
-            label={t("admin.landings.authors")}
-            selectedValue={bookLanding.authors}
-            isMultiple={true}
-            onChange={handleChange}
-            valueKey="id"
-            labelKey="name"
-          />
-        )}
-        {/*<MultiSelect*/}
-        {/*  id={"tag_ids"}*/}
-        {/*  options={tags}*/}
-        {/*  placeholder={"Choose a tag"}*/}
-        {/*  label={t("admin.landings.tags")}*/}
-        {/*  selectedValue={bookLanding.tag_ids}*/}
-        {/*  isMultiple={true}*/}
-        {/*  onChange={handleChange}*/}
-        {/*  valueKey="id"*/}
-        {/*  labelKey="name"*/}
-        {/*/>*/}
-        <DetailBottom
-          deleteLabel={"admin.landings.delete"}
-          handleSave={handleSave}
-          handleDelete={handleDeleteBookLanding}
-        />
-      </div>
-    )
+  useEffect(() => {
+    console.log(bookLanding);
+  }, [bookLanding]);
+
+  return (
+    <div className={s.detail_container}>
+      <DetailHeader title={"admin.bookLandings.edit"} />
+
+      {loading ? (
+        <Loader />
+      ) : (
+        bookLanding && (
+          <div className={s.list}>
+            <AdminField
+              type="input"
+              id="landing_name"
+              placeholder={t("admin.bookLandings.title.placeholder")}
+              label={t("admin.bookLandings.title")}
+              value={bookLanding.landing_name}
+              onChange={handleChange}
+            />
+
+            <AdminField
+              type="input"
+              id="page_name"
+              placeholder={t("admin.landings.pageName.placeholder")}
+              label={t("admin.landings.pageName")}
+              value={bookLanding.page_name}
+              onChange={handleChange}
+            />
+
+            <div className={s.two_items}>
+              <AdminField
+                type="input"
+                inputType="number"
+                id="old_price"
+                label={t("admin.landings.oldPrice")}
+                placeholder="0"
+                value={bookLanding.old_price ?? ""}
+                onChange={handleChange}
+              />
+              <AdminField
+                type="input"
+                inputType="number"
+                id="new_price"
+                placeholder="0"
+                label={t("admin.landings.price")}
+                value={bookLanding.new_price ?? ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={s.two_items}>
+              {authors && (
+                <MultiSelect
+                  id={"authors"}
+                  options={authors}
+                  placeholder={"Choose an author"}
+                  label={t("admin.landings.authors")}
+                  selectedValue={bookLanding.authors}
+                  isMultiple={true}
+                  onChange={handleChange}
+                  valueKey="id"
+                  labelKey="name"
+                />
+              )}
+
+              <MultiSelect
+                isSearchable={false}
+                id={"language"}
+                options={LANGUAGES}
+                placeholder={"Choose a language"}
+                label={t("admin.landings.language")}
+                selectedValue={bookLanding.language}
+                isMultiple={false}
+                onChange={handleChange}
+                valueKey="value"
+                labelKey="label"
+              />
+            </div>
+
+            <div className={s.two_items}>
+              <MultiSelect
+                id={"tag_ids"}
+                options={tags}
+                placeholder={"Choose a tag"}
+                label={t("admin.landings.tags")}
+                selectedValue={bookLanding.tag_ids}
+                isMultiple={true}
+                onChange={handleChange}
+                valueKey="id"
+                labelKey="name"
+              />
+              <MultiSelect
+                id={"book_ids"}
+                options={books}
+                placeholder={"Add book"}
+                label={t("admin.books.books")}
+                selectedValue={bookLanding.book_ids}
+                isMultiple={true}
+                onChange={handleChange}
+                valueKey="id"
+                labelKey="title"
+              />
+            </div>
+
+            <DetailBottom
+              deleteLabel={"admin.landings.delete"}
+              handleSave={handleSave}
+              handleDelete={handleDeleteBookLanding}
+            />
+          </div>
+        )
+      )}
+    </div>
   );
 };
 

@@ -33,6 +33,10 @@
       column-gap: 10px;
     }
 
+    @media (max-width: $mobile-breakpoint) {
+      padding: 8px;
+    }
+
     .card_header {
       width: 100%;
       height: 226px;
@@ -67,6 +71,10 @@
         flex-wrap: wrap;
         gap: 5px;
         justify-content: center;
+
+        @media (max-width: $mobile-breakpoint) {
+          display: none;
+        }
 
         li {
           min-width: 50px;

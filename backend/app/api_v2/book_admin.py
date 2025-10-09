@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Book, BookFile, BookFileFormat, BookAudio, Tag
+from ..schemas_v2.book import BookAdminDetailResponse
 from ..services_v2.book_service import books_in_landing
 from ..tasks.book_formats import _k_job as fmt_k_job, _k_log as fmt_k_log, _k_fmt
 
@@ -563,3 +564,56 @@ def finalize_pdf_upload(
             "formats": "queued",
         }
     }
+
+@router.get("/admin/books/{book_id}/detail",
+            response_model=BookAdminDetailResponse,
+            summary="Админ: детали книги для редактирования")
+def admin_get_book_detail(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    book = (
+        db.query(Book)
+          .options(
+              selectinload(Book.authors),
+              selectinload(Book.tags),
+              selectinload(Book.files),
+              selectinload(Book.audio_files),
+          )
+          .filter(Book.id == book_id)
+          .first()
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    files = []
+    for f in (book.files or []):
+        fmt = getattr(f.file_format, "value", f.file_format)
+        files.append({"file_format": fmt, "s3_url": f.s3_url, "size_bytes": f.size_bytes})
+
+    audio_files = []
+    for a in (book.audio_files or []):
+        audio_files.append({
+            "id": a.id,
+            "chapter_index": a.chapter_index,
+            "title": a.title,
+            "duration_sec": a.duration_sec,
+            "s3_url": a.s3_url,
+        })
+
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description,
+        "cover_url": book.cover_url,
+        "language": book.language,
+        "publication_date": getattr(book, "publication_date", None),
+
+        "author_ids": [a.id for a in (book.authors or [])],
+        "tag_ids": [t.id for t in (book.tags or [])],
+
+        "files": files,
+        "audio_files": audio_files,
+    }
+
