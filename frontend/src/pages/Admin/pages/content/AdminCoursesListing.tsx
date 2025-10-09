@@ -3,9 +3,9 @@ import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import { ParamsType } from "../../../../api/adminApi/types.ts";
 import {
   createCourse,
+  getCourses,
   searchCourses,
 } from "../../../../store/actions/adminActions.ts";
-import { getCourses } from "../../../../store/actions/mainActions.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import { INITIAL_COURSE } from "../../../../common/helpers/commonConstants.ts";
