@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, \
-    PurchaseSource, FreeCourseAccess, AbandonedCheckout, FreeCourseSource
+    PurchaseSource, FreeCourseAccess, AbandonedCheckout, FreeCourseSource, Book
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
