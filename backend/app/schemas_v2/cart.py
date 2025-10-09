@@ -18,6 +18,7 @@ class LandingInCart(BaseModel):
         orm_mode = True
         allow_population_by_field_name = True
 
+
 class BookInCart(BaseModel):
     id: int
     page_name: str
