@@ -107,18 +107,51 @@ export const adminApi = {
     });
   },
   updateBookLanding(id: any, data: any) {
-    return instance.put(`books/landings/${id}`, data, {
+    return instance.patch(`books/landing/${id}`, data, {
       headers: getAuthHeaders(),
     });
   },
   toggleBookLandingVisibility(id: number, is_hidden: boolean) {
     return instance.patch(
-      `books/landings/set-hidden/${id}?is_hidden=${is_hidden}`,
+      `books/landing/set-hidden/${id}?is_hidden=${is_hidden}`,
       {},
       {
         headers: getAuthHeaders(),
       },
     );
+  },
+
+  getBooksList(params: ParamsType) {
+    return instance.get("books/books/list", {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  searchBooks(params: ParamsType) {
+    return instance.get("books/books/list/search", {
+      headers: getAuthHeaders(),
+      params: params,
+    });
+  },
+  getBook(id: any) {
+    return instance.get(`books/${id}/detail`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  createBook(data: any) {
+    return instance.post(`books/`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  deleteBook(id: any) {
+    return instance.delete(`books/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  updateBook(id: any, data: any) {
+    return instance.put(`books/${id}`, data, {
+      headers: getAuthHeaders(),
+    });
   },
 
   getAuthorsList(params: ParamsType) {

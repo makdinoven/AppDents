@@ -146,6 +146,54 @@ export const createBookLanding = createAppAsyncThunk(
   },
 );
 
+export const getBooks = createAppAsyncThunk(
+  "admin/getBooks",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.getBooksList(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const searchBooks = createAppAsyncThunk(
+  "admin/searchBooks",
+  async (params: ParamsType, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.searchBooks(params);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
+export const createBook = createAppAsyncThunk(
+  "admin/createBook",
+  async (data: any, { rejectWithValue }) => {
+    try {
+      const res = await adminApi.createBook(data);
+      if (res.data.error) {
+        return rejectWithValue(res.data.error);
+      }
+
+      return { res };
+    } catch (e: any) {
+      return rejectWithValue(e.response.data);
+    }
+  },
+);
+
 export const getAuthors = createAppAsyncThunk(
   "admin/getAuthors",
   async (params: ParamsType, { rejectWithValue }) => {

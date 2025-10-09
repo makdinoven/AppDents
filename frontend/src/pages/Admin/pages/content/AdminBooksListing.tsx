@@ -1,9 +1,14 @@
 import { useDispatch, useSelector } from "react-redux";
-import { createCourse } from "../../../../store/actions/adminActions.ts";
+import {
+  createBook,
+  getBooks,
+  searchBooks,
+} from "../../../../store/actions/adminActions.ts";
 import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
 import { Path } from "../../../../routes/routes.ts";
 import { ParamsType } from "../../../../api/adminApi/types.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
+import { generateId } from "../../../../common/helpers/helpers.ts";
 
 const AdminBooksListing = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -12,24 +17,30 @@ const AdminBooksListing = () => {
 
   const loadData = (params: ParamsType) => {
     if (params.q) {
-      // dispatch(searchBooks(params));
+      dispatch(searchBooks(params));
     } else {
-      // dispatch(getBooks(params));
+      dispatch(getBooks(params));
     }
   };
 
-  const INITIAL_BOOK = {};
+  const INITIAL_BOOK = {
+    title: `New Book-${generateId()}`,
+    slug: "asdassda",
+    cover_url:
+      "https://afkebooks.com/wp-content/uploads/2022/08/41czKxyUDzL.jpg",
+    files: [],
+  };
 
   return (
     <>
       <AdminList<any>
         data={books}
         transKey={"books"}
-        itemName={"name"}
+        itemName={"title"}
         itemLink={(book) => `${Path.bookDetail}/${book.id}`}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
-        onCreate={() => dispatch(createCourse(INITIAL_BOOK))}
+        onCreate={() => dispatch(createBook(INITIAL_BOOK))}
       />
     </>
   );

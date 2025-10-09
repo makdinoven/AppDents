@@ -2,11 +2,13 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   getAuthors,
   getBookLandings,
+  getBooks,
   getCourses,
   getLandings,
   getUsers,
   searchAuthors,
   searchBookLandings,
+  searchBooks,
   searchCourses,
   searchLandings,
   searchUsers,
@@ -160,7 +162,7 @@ const adminSlice = createSlice({
           state.bookLandings.total = action.payload.res.data.total;
         },
       )
-      .addCase(searchBookLandings.rejected, (state, action) => {
+      .addCase(getBookLandings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
@@ -178,7 +180,44 @@ const adminSlice = createSlice({
           state.bookLandings.total = action.payload.res.data.total;
         },
       )
-      .addCase(getBookLandings.rejected, (state, action) => {
+      .addCase(searchBookLandings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+
+    builder
+      .addCase(getBooks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        getBooks.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          state.books.list = action.payload.res.data.items;
+          state.books.total_pages = action.payload.res.data.total_pages;
+          state.books.total = action.payload.res.data.total;
+        },
+      )
+      .addCase(getBooks.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as any;
+      });
+    builder
+      .addCase(searchBooks.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        searchBooks.fulfilled,
+        (state, action: PayloadAction<{ res: any }>) => {
+          state.loading = false;
+          state.books.list = action.payload.res.data.items;
+          state.books.total_pages = action.payload.res.data.total_pages;
+          state.books.total = action.payload.res.data.total;
+        },
+      )
+      .addCase(searchBooks.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as any;
       });
