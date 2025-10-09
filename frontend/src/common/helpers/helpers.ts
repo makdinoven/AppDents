@@ -255,8 +255,8 @@ export const getPaymentType = (
 
 export const rewriteStorageLinkToCDN = (link: string) => {
   return link.replace(
-    /^https:\/\/[^/]+\.s3\.twcstorage\.ru(\/\S*)$/,
-    "https://cdn.dent-s.com$1",
+    /^https:\/\/[^/]+\.s3\.twcstorage\.ru/,
+    "https://cdn.dent-s.com",
   );
 };
 
