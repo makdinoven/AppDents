@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session, selectinload
 from ..models.models_v2 import Cart, CartItem, CartItemType, Landing, User, BookLanding, Book
 
@@ -218,4 +218,87 @@ def remove_book_silent(db: Session, user: User, book_landing_id: int) -> Cart:
         _recalc_total(cart)
         db.commit()
         db.refresh(cart)
+    return cart
+
+def add_book_landing_to_cart(db: Session, user: User, book_landing_id: int) -> Cart:
+    """
+    Добавить КНИЖНЫЙ ЛЕНДИНГ в корзину пользователя (тип позиции = BOOK).
+    Цена позиции берется из new_price BookLanding.
+    """
+    # 1) получить/создать корзину
+    from .cart_service import get_or_create_cart   # если функция в этом же файле — уберите импорт
+    cart = get_or_create_cart(db, user)
+
+    # 2) проверить, нет ли уже такого item
+    exists = (
+        db.query(CartItem)
+          .filter(
+              CartItem.cart_id == cart.id,
+              CartItem.item_type == CartItemType.BOOK,
+              CartItem.book_landing_id == book_landing_id,
+          )
+          .first()
+    )
+    if exists:
+        log.info("[CART][BOOK] already in cart: user=%s cart=%s book_landing=%s",
+                 user.id, cart.id, book_landing_id)
+        return cart
+
+    # 3) проверить наличие и валидность лендинга
+    bl = (
+        db.query(BookLanding)
+          .options(selectinload(BookLanding.books))
+          .get(book_landing_id)
+    )
+    if not bl or bl.is_hidden:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Book landing not found or hidden")
+    if bl.new_price is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Book landing has no price")
+
+    # 4) создать CartItem
+    item = CartItem(
+        cart_id=cart.id,
+        item_type=CartItemType.BOOK,
+        book_landing_id=bl.id,
+        price=float(bl.new_price),      # фиксируем текущую цену в позиции
+        added_at=datetime.utcnow(),
+    )
+    db.add(item)
+
+    # 5) обновим updated_at корзины (и при желании пересчет total, если храните)
+    cart.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(cart)
+    log.info("[CART][BOOK] added: user=%s cart=%s book_landing=%s price=%.2f",
+             user.id, cart.id, bl.id, float(bl.new_price))
+    return cart
+
+
+def remove_book_landing_from_cart(db: Session, user: User, book_landing_id: int) -> Cart:
+    """
+    Удалить КНИЖНЫЙ ЛЕНДИНГ из корзины пользователя (по book_landing_id).
+    """
+    from .cart_service import get_or_create_cart   # если функция в этом же файле — уберите импорт
+    cart = get_or_create_cart(db, user)
+
+    deleted = (
+        db.query(CartItem)
+          .filter(
+              CartItem.cart_id == cart.id,
+              CartItem.item_type == CartItemType.BOOK,
+              CartItem.book_landing_id == book_landing_id,
+          )
+          .delete(synchronize_session=False)
+    )
+
+    if deleted:
+        log.info("[CART][BOOK] removed: user=%s cart=%s book_landing=%s",
+                 user.id, cart.id, book_landing_id)
+
+    cart.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(cart)
     return cart
