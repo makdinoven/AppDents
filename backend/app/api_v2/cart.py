@@ -117,6 +117,8 @@ def _authors_from_book_landing(bl: BookLanding) -> list[dict]:
                 out.append({"id": a.id, "name": a.name, "photo": a.photo})
     return out
 
+def _book_ids(bl: BookLanding) -> list[int]:
+    return [b.id for b in (bl.books or [])]
 @router.get("", response_model=CartResponse)
 def my_cart(
     db: Session        = Depends(get_db),
@@ -211,52 +213,43 @@ def my_cart(
             # опционально можно добавить tags или language, если нужно в UI
         }
 
-    items = []
+    items_serialized = []
     for it in cart.items:
-        base = {
-            "id": it.id,
-            "item_type": str(getattr(it.item_type, "value", it.item_type)),  # "LANDING" | "BOOK"
-            "added_at": it.added_at,
-        }
-
-        if it.item_type == CartItemType.LANDING and it.landing:
-            # КУРСОВОЙ ЛЕНДИНГ — как было
-            l = it.landing
-            base["landing"] = {
-                "id": l.id,
-                "page_name": l.page_name,
-                "landing_name": l.landing_name,
-                "preview_photo": l.preview_photo,
-                "course_ids": [c.id for c in (l.courses or [])],
-                "authors": [{"id": a.id, "name": a.name, "photo": a.photo} for a in (l.authors or [])],
-                "old_price": (str(l.old_price) if l.old_price is not None else None),
-                "new_price": (str(l.new_price) if l.new_price is not None else None),
-            }
-            base["book"] = None  # для единообразия
-            items.append(base)
-            continue
-
-        if it.item_type == CartItemType.BOOK and it.book_landing:
-            # КНИЖНЫЙ ЛЕНДИНГ — добавляем нужные поля "как у курсов"
+        if it.landing is not None:
+            items_serialized.append({
+                "id": it.id,
+                "item_type": "LANDING",
+                "added_at": it.added_at,
+                "landing": _landing_to_incart(it.landing),
+                "book_landing": None,     # для единообразия
+            })
+        elif it.book_landing is not None:
             bl = it.book_landing
-            base["landing"] = None  # для единообразия
-            base["book"] = {
-                "id": bl.id,  # id лендинга книги
-                "page_name": bl.page_name,  # slug
-                "landing_name": bl.landing_name,  # название лендинга
-                "cover_url": _first_cover_from_book_landing(bl),  # главная картинка = обложка первой книги
-                "authors": _authors_from_book_landing(bl),  # авторы (уникальные)
-                "old_price": (str(bl.old_price) if bl.old_price is not None else None),
-                "new_price": (str(bl.new_price) if bl.new_price is not None else None),
-            }
-            items.append(base)
-            continue
-
-        # если по каким-то причинам связи нет — оставим None,
-        # но отдаём базовые поля (чтобы фронт не падал)
-        base.setdefault("landing", None)
-        base.setdefault("book", None)
-        items.append(base)
+            items_serialized.append({
+                "id": it.id,
+                "item_type": "BOOK",
+                "added_at": it.added_at,
+                "landing": None,  # для единообразия
+                "book": {
+                    "id": bl.id,
+                    "page_name": bl.page_name,  # slug
+                    "landing_name": bl.landing_name or "",  # название
+                    "preview_photo": _first_cover_from_book_landing(bl),  # как у курсов
+                    "book_ids": _book_ids(bl),  # ключ как ты просил
+                    "authors": _authors_from_book_landing(bl),
+                    "old_price": str(bl.old_price) if bl.old_price is not None else None,
+                    "new_price": str(bl.new_price) if bl.new_price is not None else None,
+                },
+            })
+        else:
+            # fallback на случай «битой» строки
+            items_serialized.append({
+                "id": it.id,
+                "item_type": it.item_type.value if hasattr(it.item_type, "value") else it.item_type,
+                "added_at": it.added_at,
+                "landing": None,
+                "book_landing": None,
+            })
 
     return {
         "total_amount": round(discounted, 2),
@@ -266,7 +259,7 @@ def my_cart(
         "next_discount": round(disc_next * 100, 2),
         "total_amount_with_balance_discount": round(pay_with_balance, 2),
         "updated_at": cart.updated_at,
-        "items": items,
+        "items": items_serialized,
     }
 
 @router.post("/landing/{landing_id}", response_model=CartResponse)

@@ -18,13 +18,6 @@ class LandingInCart(BaseModel):
         orm_mode = True
         allow_population_by_field_name = True
 
-class BookInCart(BaseModel):
-    id: int
-    title: str
-    slug: str
-    cover_url: Optional[str] = None
-    class Config:
-        orm_mode = True
 
 class CartItemOut(BaseModel):
     id         : int
