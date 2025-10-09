@@ -583,40 +583,44 @@ def _gallery_for_landings(db: Session, landing_ids: List[int]) -> Dict[int, List
         )
     return out
 
-def _serialize_book_card(bl: BookLanding, gallery: List[BookLandingGalleryItem]) -> BookLandingCardResponse:
-    # landing_name гарантируем (как у курсов — обязательное поле)
-    landing_name = bl.landing_name or bl.page_name or f"Book Landing #{bl.id}"
-
-    # авторы (уникально)
-    seen_authors: Dict[int, AuthorCardResponse] = {}
-    # теги лендинга = объединение тегов всех книг
-    seen_tags: Dict[int, TagResponse] = {}
-    first_tag: Optional[str] = None
-
+def _landing_main_image_from_books(bl: BookLanding) -> str | None:
+    # Берём обложку первой книги в списке
     for b in (bl.books or []):
-        # авторы
-        for a in (b.authors or []):
-            if a.id not in seen_authors:
-                seen_authors[a.id] = AuthorCardResponse(id=a.id, name=a.name, photo=getattr(a, "photo", None))
-        # теги
-        for t in (b.tags or []):
-            if t.id not in seen_tags:
-                seen_tags[t.id] = TagResponse(id=t.id, name=t.name)
-                if first_tag is None:
-                    first_tag = t.name
+        if b.cover_url:
+            return b.cover_url
+    return None
 
-    return BookLandingCardResponse(
-        id=bl.id,
-        landing_name=landing_name,
-        slug=bl.page_name,
-        language=bl.language,
-        old_price=(str(bl.old_price) if bl.old_price is not None else None),
-        new_price=(str(bl.new_price) if bl.new_price is not None else None),
-        authors=list(seen_authors.values()),
-        tags=list(seen_tags.values()),
-        first_tag=first_tag,
-        gallery=gallery,
-    )
+def _serialize_book_card(bl: BookLanding) -> dict:
+    # авторы — уникально из всех книг лендинга
+    authors_map = {}
+    for b in (bl.books or []):
+        for a in (b.authors or []):
+            if a.id not in authors_map:
+                authors_map[a.id] = {"id": a.id, "name": a.name, "photo": a.photo}
+    authors = list(authors_map.values())
+
+    # теги — агрегируем с книг (уникально)
+    tag_map = {}
+    for b in (bl.books or []):
+        for t in (b.tags or []):
+            tag_map[t.id] = {"id": t.id, "name": t.name}
+    tags = list(tag_map.values())
+    first_tag = tags[0]["name"] if tags else None
+
+    return {
+        "id": bl.id,
+        "landing_name": bl.landing_name or "",
+        "slug": bl.page_name,                 # у карточки «slug» = page_name лендинга
+        "language": bl.language,
+        "old_price": (str(bl.old_price) if bl.old_price is not None else None),
+        "new_price": (str(bl.new_price) if bl.new_price is not None else None),
+        "authors": authors,
+        "tags": tags,
+        "first_tag": first_tag,
+        "main_image": _landing_main_image_from_books(bl),  # ⟵ главная картинка из книги
+        # никаких gallery больше
+    }
+
 
 @router.get(
     "/landing/cards",
@@ -694,15 +698,15 @@ def book_landing_cards(
 
     if mode == "cursor":
         rows = base.offset(skip).limit(limit).all()
-        gal_map = _gallery_for_landings(db, [r.id for r in rows])
-        cards = [_serialize_book_card(r, gal_map.get(r.id, [])) for r in rows]
+        #gal_map = _gallery_for_landings(db, [r.id for r in rows])
+        cards = [_serialize_book_card(r) for r in rows]
         # ПОЛЯ ПАГИНАЦИИ КАК У КУРСОВ /recommend/cards:
         return {"total": total, "cards": cards}
 
     # mode == "page"
     rows = base.offset((page - 1) * size).limit(size).all()
-    gal_map = _gallery_for_landings(db, [r.id for r in rows])
-    cards = [_serialize_book_card(r, gal_map.get(r.id, [])) for r in rows]
+     #gal_map = _gallery_for_landings(db, [r.id for r in rows])
+    cards = [_serialize_book_card(r) for r in rows]
     # ПОЛЯ ПАГИНАЦИИ КАК У КУРСОВ /v1/cards:
     return {
         "total": total,

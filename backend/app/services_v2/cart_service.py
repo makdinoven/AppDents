@@ -135,19 +135,22 @@ def add_book_landing(db: Session, user: User, book_landing_id: int) -> Cart:
     # уже в корзине?
     exists = (
         db.query(CartItem)
-          .filter(CartItem.cart_id == cart.id,
-                  CartItem.item_type == CartItemType.BOOK,
-                  CartItem.book_landing_id == book_landing_id)
+          .filter(
+              CartItem.cart_id == cart.id,
+              CartItem.item_type == CartItemType.BOOK,
+              CartItem.book_landing_id == book_landing_id,
+          )
           .first()
     )
     if exists:
         log.info("[CART] BOOK landing %s already in cart %s", book_landing_id, cart.id)
         return cart
 
+    # ⟵ заменили books_bundle → books
     bl = (
         db.query(BookLanding)
-        .options(selectinload(BookLanding.books_bundle))
-        .get(book_landing_id)
+          .options(selectinload(BookLanding.books))
+          .get(book_landing_id)
     )
 
     if not bl or bl.is_hidden:
@@ -164,13 +167,15 @@ def add_book_landing(db: Session, user: User, book_landing_id: int) -> Cart:
     )
     db.add(item)
 
-    _recalc_total(cart)  # суммируем все позиции «как есть»
+    _recalc_total(cart)
     db.commit()
     db.refresh(cart)
 
-    log.info("[CART] user=%s added BOOK landing %s (price=%.2f, books=%s)",
-             user.id, bl.id, float(bl.new_price),
-             [b.id for b in (bl.books_bundle or [])])
+    # лог тоже на новые связи
+    log.info(
+        "[CART] user=%s added BOOK landing %s (price=%.2f, books=%s)",
+        user.id, bl.id, float(bl.new_price), [b.id for b in (bl.books or [])]
+    )
     return cart
 
 
