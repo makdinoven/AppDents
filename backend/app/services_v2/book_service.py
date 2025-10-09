@@ -84,24 +84,13 @@ def _user_owns_book(db: Session, user_id: int, book_id: int) -> bool:
         Purchase.book_id == book_id                   # поле появится вместе с оплатами книг
     ).first() is not None
 
-def _ensure_unique_slug(db: Session, slug: str, *, exclude_book_id: int | None = None) -> None:
-    q = db.query(Book).filter(Book.slug == slug)
-    if exclude_book_id:
-        q = q.filter(Book.id != exclude_book_id)
-    if db.query(q.exists()).scalar():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"slug '{slug}' already exists",
-        )
 
 def create_book(db: Session, payload: BookCreate) -> Book:
-    _ensure_unique_slug(db, payload.slug)
     log.info("[BOOK] Creating «%s»", payload.title)
     authors = _fetch_authors(db, payload.author_ids)
 
     book = Book(
         title       = payload.title,
-        slug=payload.slug,
         description = payload.description,
         cover_url   = str(payload.cover_url),
         language    = payload.language.upper(),
@@ -157,10 +146,6 @@ def update_book(db: Session, book_id: int, payload: BookUpdate) -> Book:
         book.publication_date = payload.publication_date
     if payload.author_ids is not None:
         book.authors = _fetch_authors(db, payload.author_ids)
-    if payload.slug is not None and payload.slug != book.slug:
-        _ensure_unique_slug(db, payload.slug,
-                            exclude_book_id=book.id)
-        book.slug = payload.slug
     if payload.tag_ids is not None:
         book.tags = _fetch_tags(db, payload.tag_ids)
     if payload.files is not None:

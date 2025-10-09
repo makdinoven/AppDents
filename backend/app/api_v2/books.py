@@ -12,6 +12,7 @@ from sqlalchemy import or_, desc, func
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
+from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import (
     User,
@@ -32,12 +33,13 @@ from ..schemas_v2.book import (
     PdfUploadInitRequest,
     BookLandingOut, BookListPageResponse, BookLandingCatalogPageResponse, CatalogGalleryImage, BookLandingCatalogItem,
     TagMini, BookLandingGalleryItem, BookLandingCardResponse, BookLandingCardsResponse,
-    BookLandingCardsResponsePaginations,
+    BookLandingCardsResponsePaginations, UserBookDetailResponse, BookAdminDetailResponse, BookPatch,
 )
 from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, AuthorCardResponse, \
     TagResponse
 from ..services_v2 import book_service
 from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
+from ..utils.s3 import generate_presigned_url
 
 # ─────────────────────────── S3 config ───────────────────────────
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
@@ -145,23 +147,18 @@ def update_book_landing(
     if not landing:
         raise HTTPException(404, "Landing not found")
 
-    for field in (
-        "language",
-        "page_name",
-        "landing_name",
-        "description",
-        "old_price",
-        "new_price",
-        "is_hidden",
-    ):
-        val = getattr(payload, field, None)
-        if val is not None:
-            setattr(landing, field, val)
+    data = payload.model_dump(exclude_unset=True)
 
-    if payload.book_ids is not None:
-        if payload.book_ids:
-            books = db.query(Book).filter(Book.id.in_(payload.book_ids)).all()
-            if not books or len(books) != len(set(payload.book_ids)):
+    for field in ("language", "page_name", "landing_name", "description",
+                  "old_price", "new_price", "is_hidden"):
+        if field in data:
+            setattr(landing, field, data[field])
+
+    if "book_ids" in data:
+        ids = data["book_ids"] or []
+        if ids:
+            books = db.query(Book).filter(Book.id.in_(ids)).all()
+            if len(books) != len(set(ids)):
                 raise HTTPException(400, "Some book_ids not found")
             landing.books = books
         else:
@@ -170,6 +167,7 @@ def update_book_landing(
     db.commit()
     db.refresh(landing)
     return landing
+
 
 
 @router.delete("/landing/{landing_id}", response_model=dict)
@@ -356,7 +354,6 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         {
             "id": b.id,
             "title": b.title,
-            "slug": b.slug,
             "cover_url": b.cover_url,
             "preview_pdf_url": preview_pdf_url_for_book(b),
             "publication_date": (b.publication_date.isoformat() if b.publication_date else None),
@@ -547,7 +544,6 @@ def search_book_listing(
     like = f"%{q.strip()}%"
     base = base.filter(or_(
         Book.title.ilike(like),
-        Book.slug.ilike(like),
     ))
 
     total = base.with_entities(func.count()).scalar()
@@ -715,3 +711,140 @@ def book_landing_cards(
         "size": size,
         "cards": cards,
     }
+
+from datetime import timedelta
+
+@router.get("/me/books/{book_id}", response_model=UserBookDetailResponse,
+            summary="Детали купленной книги для пользователя (форматы + ссылки на скачивание)")
+def get_my_book_detail(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # проверка владения: join к m2m user.books
+    book = (
+        db.query(Book)
+          .options(selectinload(Book.files), selectinload(Book.audio_files))
+          .join(User.books)
+          .filter(User.id == current_user.id, Book.id == book_id)
+          .first()
+    )
+
+    # при желании пускаем админа даже без покупки:
+    if not book:
+        is_admin = db.query(User).get(current_user.id).role == "admin" if getattr(current_user, "id", None) else False
+        if is_admin:
+            book = (
+                db.query(Book)
+                  .options(selectinload(Book.files), selectinload(Book.audio_files))
+                  .filter(Book.id == book_id)
+                  .first()
+            )
+        if not book:
+            raise HTTPException(status_code=403, detail="You don't own this book")
+
+    def _sign(url: str | None) -> str | None:
+        if not url:
+            return None
+        try:
+            return generate_presigned_url(url, expires=timedelta(hours=24))
+        except Exception:
+            return None
+
+    files_download = []
+    for f in (book.files or []):
+        fmt = getattr(f.file_format, "value", f.file_format)
+        files_download.append({
+            "file_format": fmt,
+            "download_url": _sign(f.s3_url),
+            "size_bytes": f.size_bytes,
+        })
+
+    audio_download = []
+    for a in (book.audio_files or []):
+        audio_download.append({
+            "chapter_index": a.chapter_index,
+            "title": a.title,
+            "duration_sec": a.duration_sec,
+            "download_url": _sign(a.s3_url),
+        })
+
+    return {
+        "id": book.id,
+        "title": book.title,
+        "cover_url": book.cover_url,
+        "description": book.description,
+        "publication_date": getattr(book, "publication_date", None),
+        "files_download": files_download,
+        "audio_download": audio_download,
+    }
+
+
+@router.patch("/admin/books/{book_id}",
+              response_model=BookAdminDetailResponse,
+              summary="Админ: частичное редактирование книги")
+def patch_book(
+    book_id: int,
+    payload: BookPatch,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    book = (
+        db.query(Book)
+          .options(
+              selectinload(Book.authors),
+              selectinload(Book.tags),
+              selectinload(Book.files),
+              selectinload(Book.audio_files),
+          )
+          .get(book_id)
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    data = payload.model_dump(exclude_unset=True)
+
+    # простые поля:
+    for field in ("title", "description", "cover_url", "language", "publication_date"):
+        if field in data:
+            setattr(book, field, data[field])
+
+    # авторы / теги
+    if "author_ids" in data and data["author_ids"] is not None:
+        book.authors = book_service._fetch_authors(db, data["author_ids"])
+    if "tag_ids" in data and data["tag_ids"] is not None:
+        book.tags = book_service._fetch_tags(db, data["tag_ids"])
+
+    db.commit()
+    db.refresh(book)
+
+    files = []
+    for f in (book.files or []):
+        fmt = getattr(f.file_format, "value", f.file_format)
+        files.append({"file_format": fmt, "s3_url": f.s3_url, "size_bytes": f.size_bytes})
+
+    audio_files = []
+    for a in (book.audio_files or []):
+        audio_files.append({
+            "id": a.id,
+            "chapter_index": a.chapter_index,
+            "title": a.title,
+            "duration_sec": a.duration_sec,
+            "s3_url": a.s3_url,
+        })
+
+    return {
+        "id": book.id,
+        "title": book.title,
+        "description": book.description,
+        "cover_url": book.cover_url,
+        "language": book.language,
+        "publication_date": getattr(book, "publication_date", None),
+
+        "author_ids": [a.id for a in (book.authors or [])],
+        "tag_ids": [t.id for t in (book.tags or [])],
+
+        "files": files,
+        "audio_files": audio_files,
+    }
+
