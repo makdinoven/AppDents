@@ -23,6 +23,7 @@ const UserDetail = () => {
   const [balance, setBalance] = useState<number>(0);
   const navigate = useNavigate();
   const [courses, setCourses] = useState<any>(null);
+  const [books, setBooks] = useState<any>(null);
   const { userId } = useParams();
 
   useEffect(() => {
@@ -34,11 +35,13 @@ const UserDetail = () => {
   const fetchAllData = async (userId: any) => {
     setLoading(true);
     try {
-      const [userRes, coursesRes] = await Promise.all([
+      const [userRes, coursesRes, booksRes] = await Promise.all([
         adminApi.getUser(userId),
         adminApi.getCoursesList({ size: 100000 }),
+        adminApi.getBooksList({ size: 100000 }),
       ]);
       setUser(userRes.data);
+      setBooks(booksRes.data.items);
       setCourses(coursesRes.data.items);
       setBalance(Number(userRes.data.balance));
       setLoading(false);
@@ -76,6 +79,10 @@ const UserDetail = () => {
       console.error("Error updating user:", error);
     }
   };
+
+  useEffect(() => {
+    console.log(user);
+  }, [user]);
 
   const handleChangeBalance = async () => {
     const amount = Number(amountToAdd);
@@ -182,6 +189,17 @@ const UserDetail = () => {
               onChange={handleChange}
               valueKey="id"
               labelKey="name"
+            />
+            <MultiSelect
+              id={"books"}
+              options={books}
+              placeholder={"Choose book"}
+              label={t("admin.books.books")}
+              selectedValue={user?.books ? user?.books : ""}
+              isMultiple={true}
+              onChange={handleChange}
+              valueKey="id"
+              labelKey="title"
             />
           </div>
 
