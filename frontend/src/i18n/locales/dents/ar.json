@@ -194,17 +194,10 @@
     "audioText": "<0>الصوت</0> متاح ليعطيك لمحة سريعة عن الكتاب قبل الغوص في محتواه.",
     "audio": "صوت",
     "description": "الوصف",
-    "productDetails": "تفاصيل المنتج",
+    "noDescription": "لا يوجد وصف",
     "publisher": "الناشر: {{publisher}}",
-    "pagesCount": "{{count}} صفحات",
-    "discount": "خصم {{count}}٪",
-    "publicationDate": "تاريخ النشر: {{date}}",
-    "access": "الوصول غير محدود بالوقت",
-    "savings": "توفير",
-    "lang": "اللغة: {{lang}}",
     "pdfReader": {
-      "error": "حدث خطأ أثناء التحميل",
-      "loading": "جار التحميل..."
+      "error": "حدث خطأ أثناء التحميل"
     },
     "pages": {
       "title": "صفحات",

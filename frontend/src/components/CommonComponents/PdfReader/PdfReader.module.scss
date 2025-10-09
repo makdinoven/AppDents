@@ -278,7 +278,7 @@
 
 .loading,
 .error {
-  height: fit-content;
+  max-height: fit-content;
   align-self: center;
   text-align: center;
   @include clamped-p2();
