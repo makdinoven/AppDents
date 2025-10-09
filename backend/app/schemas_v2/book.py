@@ -14,9 +14,6 @@ class HttpS3Url(AnyUrl):
     """
     allowed_schemes = {'http', 'https', 's3'}
 
-
-
-
 class BookLandingBase(BaseModel):
     language: str = Field(default="EN", pattern="^(EN|RU|ES|PT|AR|IT)$")
     page_name: str
