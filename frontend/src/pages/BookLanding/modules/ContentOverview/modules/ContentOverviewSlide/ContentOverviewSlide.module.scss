@@ -89,13 +89,8 @@
       .heading {
         margin-bottom: 20px;
         display: block;
-        background-color: $primary;
         width: 45%;
         height: fit-content;
-        padding: 10px;
-        border-radius: 10px;
-        text-align: center;
-        color: $background-color;
 
         @media (max-width: $tablet-breakpoint) {
           width: 100%;

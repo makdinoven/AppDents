@@ -78,7 +78,11 @@ const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
           <button disabled className={s.previous}>
             <Control />
           </button>
-          <button onClick={togglePlay} className={s.play_button}>
+          <button
+            onClick={togglePlay}
+            className={`${s.play_button} ${!audioUrl && s.disabled}`}
+            disabled={!audioUrl}
+          >
             {isPlaying ? <PauseCircle /> : <PlayCircle />}
           </button>
           <button disabled className={s.next}>

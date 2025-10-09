@@ -21,8 +21,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
     gallery,
   } = book;
 
-  console.log("book", language);
-
   const setCardColor = () => {
     const returnValue = "blue";
     return index % 2 === 0 ? returnValue : "";
