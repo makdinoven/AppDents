@@ -18,6 +18,16 @@ class LandingInCart(BaseModel):
         orm_mode = True
         allow_population_by_field_name = True
 
+class BookInCart(BaseModel):
+    id: int
+    page_name: str
+    landing_name: str
+    preview_photo: Optional[str] = None
+    book_ids: List[int] = []
+    authors: List[AuthorCardResponse] = []
+    old_price: Optional[str] = None
+    new_price: Optional[str] = None
+
 
 class CartItemOut(BaseModel):
     id         : int
