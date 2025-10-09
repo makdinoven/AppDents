@@ -48,7 +48,6 @@ class BookAudioPayload(BaseModel):
 
 class BookCreate(BaseModel):
     title:       str
-    slug: constr(regex=r"^[a-zA-Z0-9\-]+$")
     description: Optional[str]
     cover_url:   HttpUrl
     tag_ids: list[int] = Field(default_factory=list)
@@ -62,7 +61,7 @@ class BookCreate(BaseModel):
 class BookUpdate(BookCreate):
     """Все поля те же, все опциональные."""
     title:       Optional[str] = None
-    slug: Optional[constr(regex=r"^[a-zA-Z0-9\-]+$")] = None
+
     cover_url:   Optional[HttpUrl] = None
     files:       Optional[List[BookFilePayload]]
     audio_files: Optional[List[BookAudioPayload]]
@@ -89,7 +88,6 @@ class BookResponse(BaseModel):
 class BookListResponse(BaseModel):
     id: int
     title: str
-    slug: str
     language: str
     cover_url: str | None = None
 
@@ -118,7 +116,6 @@ class BookLandingUpdate(BaseModel):
 class BookMini(BaseModel):
     id: int
     title: str
-    slug: str
     cover_url: Optional[str] = None
     # Превью PDF берём вычисляемым полем на детальном GET (см. ниже)
 
@@ -136,14 +133,14 @@ class AuthorMini(BaseModel):
 from pydantic import BaseModel, ConfigDict
 
 class BookBrief(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     title: str
-    slug: str
     cover_url: str | None = None
 
+    class Config:
+        orm_mode = True
+
 class BookLandingOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
     id: int
     language: str
     page_name: str
@@ -172,7 +169,6 @@ class IncludedBookShort(BaseModel):
     """
     id: int
     title: str
-    slug: str
     cover_url: Optional[HttpUrl] = None
     preview_pdf: Optional[HttpS3Url] = None  # может быть http/https/s3
 
@@ -290,3 +286,57 @@ class BookLandingCardsResponsePaginations(BaseModel):
     page: int
     size: int
     cards: List[BookLandingCardResponse]
+
+class UserBookDetailResponse(BaseModel):
+    id: int
+    title: str
+    cover_url: Optional[str] = None
+    description: Optional[str] = None
+    publication_date: Optional[date] = None
+    files_download: List[BookFileDownload] = []
+    audio_download: List[BookAudioDownload] = []
+
+class AuthorRef(BaseModel):
+    id: int
+    name: str
+    photo: Optional[str] = None
+
+class TagRef(BaseModel):
+    id: int
+    name: str
+
+class BookFileAdmin(BaseModel):
+    file_format: str
+    s3_url: str
+    size_bytes: Optional[int] = None
+
+class BookAudioAdmin(BaseModel):
+    id: int
+    chapter_index: Optional[int] = None
+    title: Optional[str] = None
+    duration_sec: Optional[int] = None
+    s3_url: str
+
+class BookAdminDetailResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    cover_url: Optional[str] = None
+    language: str
+    publication_date: Optional[date] = None
+
+    author_ids: List[int] = []
+    tag_ids: List[int] = []
+
+
+    files: List[BookFileAdmin] = []
+    audio_files: List[BookAudioAdmin] = []
+
+class BookPatch(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cover_url: Optional[HttpUrl] = None
+    language: Optional[constr(to_upper=True, regex="^(EN|RU|ES|PT|AR|IT)$")] = None
+    publication_date: Optional[date] = None
+    author_ids: Optional[List[int]] = None
+    tag_ids: Optional[List[int]] = None
