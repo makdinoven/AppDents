@@ -194,17 +194,9 @@
     "audioText": "<0>Audio</0> está disponible para darte una breve visión del libro antes de sumergirte en su contenido.",
     "audio": "audio",
     "description": "Descripción",
-    "productDetails": "Detalles del producto",
-    "publisher": "editor: {{publisher}}",
-    "pagesCount": "{{count}} páginas",
-    "discount": "descuento del {{count}}%",
-    "publicationDate": "fecha de publicación: {{date}}",
-    "access": "acceso sin límite de tiempo",
-    "savings": "ahorro",
-    "lang": "idioma: {{lang}}",
+    "publisher": "Editor: <0>{{publisher}}</0>",
     "pdfReader": {
-      "error": "Ocurrió un error al cargar",
-      "loading": "Cargando..."
+      "error": "Ocurrió un error al cargar"
     },
     "pages": {
       "title": "Páginas",

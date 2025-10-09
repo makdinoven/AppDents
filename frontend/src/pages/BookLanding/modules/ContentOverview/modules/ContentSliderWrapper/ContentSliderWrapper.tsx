@@ -55,6 +55,7 @@ const ContentSliderWrapper: FC<ContentSliderWrapperProps> = ({
         pagination={false}
         ref={sliderRef}
         allowTouchMove={screenWidth <= 768}
+        loop={false}
       />
       {showLabels && isRefsReady && (
         <div className={s.custom_nav}>

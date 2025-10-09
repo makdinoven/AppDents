@@ -36,7 +36,9 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
 
   return (
     <div className={s.content_overview}>
-      <SectionHeader name={t("bookLanding.contentOverview")} />
+      {books.length > 1 && (
+        <SectionHeader name={t("bookLanding.contentOverview")} />
+      )}
       <ContentSliderWrapper
         activeIndex={activeIndex}
         setActiveIndex={setActiveIndex}

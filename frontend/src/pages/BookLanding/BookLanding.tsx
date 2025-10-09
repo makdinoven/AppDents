@@ -12,12 +12,6 @@ import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import { useDispatch } from "react-redux";
-import ProductDetails from "./modules/ProductDetails/ProductDetails.tsx";
-import { t } from "i18next";
-import {
-  calculateDiscount,
-  formatLanguage,
-} from "../../common/helpers/helpers.ts";
 
 const BookLanding = () => {
   const dispatch = useDispatch();
@@ -72,35 +66,12 @@ const BookLanding = () => {
     }
   }, [landingPath]);
 
-  console.log(bookData);
-
-  const productDetailsData = {
-    pagesCount: t("bookLanding.pagesCount", {
-      count: bookData?.pages_count,
-    }),
-    publisher: t("bookLanding.publisher", {
-      publisher: bookData?.authors[0].name,
-    }),
-    discount: t("bookLanding.discount", {
-      count: calculateDiscount(bookData?.old_price, bookData?.new_price),
-    }),
-    savings: `$${bookData?.old_price - bookData?.new_price} ${t("bookLanding.savings")}`,
-    access: t("bookLanding.access"),
-    publicationDate: t("bookLanding.publicationDate", {
-      date: bookData?.publication_date,
-    }),
-    language: t("bookLanding.lang", {
-      lang: formatLanguage(bookData?.language)?.toLowerCase(),
-    }),
-  };
-
   const renderSections = () => {
     return (
       <>
         <BookLandingHero data={bookData} loading={loading} />
         {bookData && (
           <>
-            <ProductDetails data={productDetailsData} />
             <ContentOverview
               books={bookData.books}
               portalParentId="portal_parent"

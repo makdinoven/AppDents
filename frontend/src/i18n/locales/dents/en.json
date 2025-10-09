@@ -227,17 +227,10 @@
     "audioText": "<0>Audio</0> is available to give you a brief overview of the book before diving into its content.",
     "audio": "audio",
     "description": "Description",
-    "productDetails": "Product details",
-    "publisher": "publisher: {{publisher}}",
-    "pagesCount": "{{count}} pages",
-    "discount": "discount {{count}}%",
-    "publicationDate": "publication date: {{date}}",
-    "access": "access is not limited in time",
-    "savings": "savings",
-    "lang": "language: {{lang}}",
+    "noDescription": "No description",
+    "publisher": "Publisher: <0>{{publisher}}</0>",
     "pdfReader": {
-      "error": "An error occurred while loading",
-      "loading": "Loading..."
+      "error": "An error occurred while loading"
     },
     "pages": {
       "title": "Pages",

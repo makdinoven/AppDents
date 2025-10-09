@@ -22,38 +22,60 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
     <section className={s.hero}>
       <h3>{data.landing_name}</h3>
       <div className={s.content}>
-        <div className={s.left_side}>
-          <img src={data.gallery?.[0]?.url} alt="preview" />
+        <div
+          className={`${s.left_side} ${!data.gallery?.[0]?.url && s.no_picture}`}
+        >
+          <img
+            src={data.gallery?.[0]?.url || "/src/assets/no-pictures.png"}
+            alt="preview"
+          />
         </div>
         <div className={s.right_side}>
           <div className={s.info}>
-            <p>
-              <Trans
-                i18nKey={"bookLanding.language"}
-                values={{
-                  language: formatLanguage(data.language),
-                }}
-                components={[<span className={s.highlight} />]}
-              />
-            </p>
-            <p>
-              <Trans
-                i18nKey={`${data.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
-                values={{
-                  authors: data.authors
-                    ?.map((author: any) => author.name)!
-                    .join(", "),
-                }}
-                components={[<span className={s.highlight} />]}
-              />
-            </p>
-            <p>
-              <Trans
-                i18nKey="bookLanding.publishedDate"
-                values={{ date: data?.publication_date }}
-                components={[<span className={s.highlight} />]}
-              />
-            </p>
+            {data.language && (
+              <p>
+                <Trans
+                  i18nKey={"bookLanding.language"}
+                  values={{
+                    language: formatLanguage(data.language),
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.authors?.length > 0 && (
+              <p>
+                <Trans
+                  i18nKey={`${data.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
+                  values={{
+                    authors: data.authors
+                      ?.map((author: any) => author.name)!
+                      .join(", "),
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.publication_date && (
+              <p>
+                <Trans
+                  i18nKey="bookLanding.publishedDate"
+                  values={{ date: data.publication_date }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.publisher && (
+              <p>
+                <Trans
+                  i18nKey={"bookLanding.publisher"}
+                  values={{
+                    publisher: data.publisher,
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
             <p className={s.formats_field}>
               <span>
                 <Trans i18nKey="bookLanding.availableFormats" />
