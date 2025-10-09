@@ -180,6 +180,7 @@ export const PAYMENT_SOURCES_OPTIONS = [
       ]),
     ).values(),
   ),
+  { value: "SPECIAL_OFFER", label: "SPECIAL_OFFER" },
 ];
 
 export const REF_CODE_PARAM = "rc";
