@@ -7,22 +7,24 @@ import { useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
 import { CheckMark, ErrorIcon } from "../../../../assets/icons";
+import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 
 const BookDetail = () => {
   const navigate = useNavigate();
   const { bookId } = useParams();
   const [loading, setLoading] = useState(true);
   const [book, setBook] = useState<any>(null);
+  const [tags, setTags] = useState<any>([]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [bookRes] = await Promise.all([
+      const [bookRes, tagsRes] = await Promise.all([
         adminApi.getBook(bookId),
-        // mainApi.getTags(),
+        mainApi.getTags(),
         // adminApi.getAuthorsList({ size: 100000 }),
       ]);
-      // setTags(tagsRes);
+      setTags(tagsRes);
       setBook(bookRes.data);
       // setAuthors(authorsRes.data.items);
     } catch (error: any) {
@@ -110,7 +112,7 @@ const BookDetail = () => {
             {/*  options={tags}*/}
             {/*  placeholder={"Choose a tag"}*/}
             {/*  label={t("admin.landings.tags")}*/}
-            {/*  selectedValue={bookLanding.tag_ids}*/}
+            {/*  selectedValue={book.tag_ids}*/}
             {/*  isMultiple={true}*/}
             {/*  onChange={handleChange}*/}
             {/*  valueKey="id"*/}

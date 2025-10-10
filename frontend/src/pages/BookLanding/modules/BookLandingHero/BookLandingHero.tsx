@@ -26,7 +26,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
           className={`${s.left_side} ${!data.gallery?.[0]?.url && s.no_picture}`}
         >
           <img
-            src={data.gallery?.[0]?.url || "/src/assets/no-pictures.png"}
+            src={data.books?.[0]?.cover_url || "/src/assets/no-pictures.png"}
             alt="preview"
           />
         </div>
