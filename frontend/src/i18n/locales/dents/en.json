@@ -569,7 +569,13 @@
       "delete": "Delete book",
       "edit": "Edit book",
       "notFound": "No books found",
-      "found": "Books found: {{count}}"
+      "found": "Books found: {{count}}",
+      "title": "Book title",
+      "title.placeholder": "Enter book title...",
+      "description": "Description",
+      "description.placeholder": "Enter book description...",
+      "publicationDate": "Publication date",
+      "publicationDate.placeholder": "Enter publication date..."
     },
     "bookLandings": {
       "bookLandings": "book landings",

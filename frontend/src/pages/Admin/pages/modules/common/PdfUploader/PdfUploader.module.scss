@@ -1,0 +1,151 @@
+.pdf_uploader_container {
+  position: relative;
+  padding: 40px 10px 10px;
+  border: 1px solid $hover-color;
+  border-radius: 20px;
+  @include flex-column;
+  gap: 20px;
+}
+
+.input_wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.hidden_input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  pointer-events: none;
+}
+
+.statuses {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: flex;
+  gap: 5px;
+
+  p {
+    @include transition();
+    padding: 1px 10px;
+    border-radius: 15px;
+    @include clamped-p4;
+    color: $background-color;
+
+    &.pending {
+      background-color: $yellow;
+    }
+
+    &.running {
+      background-color: $secondary-lighter;
+    }
+
+    &.success {
+      background-color: $green;
+    }
+
+    &.failed {
+      background-color: $error-color;
+    }
+
+    &.skipped {
+      background-color: $orange;
+    }
+  }
+}
+
+.uploader_middle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom_button {
+  @include clamped-p3;
+  @include transition;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 30px;
+  border-radius: 20px;
+  background-color: $primary;
+  border: 1px solid $primary;
+  color: $background-color;
+  font-weight: 500;
+  cursor: pointer;
+
+  input {
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      color: $primary;
+    }
+  }
+
+  &:active {
+    background-color: $tertiary;
+  }
+}
+
+.view_link {
+  max-width: unset;
+  margin-right: 20px;
+  @include clamped-p3;
+  margin-left: auto;
+}
+
+.files_list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+
+  li {
+    flex: 1;
+
+    a {
+      @include transition;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      @include clamped-p3;
+      color: $primary;
+      border: 1px solid $hover-color;
+      border-radius: 20px;
+
+      span {
+        font-weight: bold;
+        font-size: 10px;
+        color: $accent;
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          background-color: $primary;
+          color: $background-color;
+        }
+      }
+
+      &:active {
+        background-color: $tertiary;
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .files_list {
+    gap: 5px;
+  }
+
+  .custom_button {
+    padding: 4px 8px;
+    border-radius: 10px;
+  }
+}
