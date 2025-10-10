@@ -12,6 +12,7 @@ import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { setLanguage } from "../../store/slices/userSlice.ts";
 import { useDispatch } from "react-redux";
+import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 
 const BookLanding = () => {
   const dispatch = useDispatch();
@@ -99,6 +100,15 @@ const BookLanding = () => {
       </div>
       <div className={s.landing} id="portal_parent">
         {renderSections()}
+        {!loading && (
+          <ProductsSection
+            showSort={true}
+            sectionTitle={"other.otherBooks"}
+            pageSize={4}
+            productCardFlags={{ isClient: true, isOffer: true }}
+            cardType={"book"}
+          />
+        )}
       </div>
     </>
   );

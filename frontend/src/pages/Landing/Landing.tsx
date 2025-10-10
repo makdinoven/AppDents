@@ -347,6 +347,7 @@ const Landing = () => {
           <>
             <Faq type={"course"} />
             <ProductsSection
+              cardType={"course"}
               productCardFlags={{
                 isFree: isFree,
                 isOffer: true,

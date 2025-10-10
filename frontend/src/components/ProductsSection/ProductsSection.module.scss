@@ -11,6 +11,11 @@
   @include flex-column;
   gap: 40px;
 }
+.title_switchBtns_container {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
 
 .line {
   height: 2px;
@@ -30,7 +35,12 @@
 
 @media (max-width: $mobile-breakpoint) {
   .courses_header {
+    gap: 20px;
+  }
+
+  .title_switchBtns_container {
     gap: 10px;
+    flex-direction: column;
   }
 
   .courses {
