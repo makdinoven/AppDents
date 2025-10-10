@@ -7,9 +7,10 @@
   border: 1px solid $hover-color;
   min-width: 200px;
   height: fit-content;
+  flex-shrink: 0;
 
   button {
-    padding: 5px 10px;
+    padding: 5px 30px;
     border-radius: 7px;
     flex: 1;
     @include transition();
@@ -25,6 +26,14 @@
     &.active {
       background-color: $background-color;
       color: $primary;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .toggle_btns_container {
+    button {
+      padding: 5px 20px;
     }
   }
 }
