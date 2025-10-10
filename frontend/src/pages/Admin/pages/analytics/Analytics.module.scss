@@ -14,7 +14,7 @@
 .two_items {
   gap: 10px;
   display: grid;
-  grid-template-columns: 3fr 1fr;
+  grid-template-columns: 2fr 1fr;
   align-items: flex-end;
 }
 
@@ -31,7 +31,7 @@
 .analytics_options {
   height: fit-content;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1.3fr;
   align-items: flex-end;
   gap: 20px;
 

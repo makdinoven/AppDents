@@ -171,15 +171,32 @@ const Cart = () => {
         {!isCartEmpty ? (
           <>
             <ul className={s.cart_items}>
-              {items.map((item) => (
-                <CartItem
-                  language={language}
-                  key={item.landing.id}
-                  item={item.landing}
-                  type={"LANDING"}
-                  onDelete={handleDeleteCartItem}
-                />
-              ))}
+              {items.map((item) => {
+                if (item.item_type === "LANDING") {
+                  return (
+                    <CartItem
+                      key={item.id}
+                      language={language}
+                      item={item.landing}
+                      type="LANDING"
+                      onDelete={handleDeleteCartItem}
+                    />
+                  );
+                }
+
+                if (item.item_type === "BOOK") {
+                  return (
+                    <CartItem
+                      key={item.id}
+                      language={language}
+                      item={item.book!}
+                      type="BOOK"
+                      onDelete={handleDeleteCartItem}
+                    />
+                  );
+                }
+                return null;
+              })}
             </ul>
             <CartFooter
               cartPreviewLoading={cartPreviewLoading}
