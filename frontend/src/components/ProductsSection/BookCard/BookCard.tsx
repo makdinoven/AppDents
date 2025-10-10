@@ -6,8 +6,10 @@ import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import BookCardImages from "./BookCardImages/BookCardImages.tsx";
-import LangLogo from "../../ui/LangLogo/LangLogo.tsx";
-import { formatAuthorsDesc } from "../../../common/helpers/helpers.ts";
+import {
+  formatAuthorsDesc,
+  formatLanguage,
+} from "../../../common/helpers/helpers.ts";
 
 const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
   const {
@@ -44,11 +46,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
             single={gallery.length <= 1}
             images={gallery.map((item: { url: string }) => item.url)}
           />
-          <LangLogo
-            className={s.lang_logo}
-            isHoverable={false}
-            lang={language}
-          />
           <div className={s.prices}>
             <span className={s.new_price}>${new_price}</span>
             <span className={s.old_price}>${old_price}</span>
@@ -73,12 +70,18 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
               <Trans i18nKey={first_tag} />
             </li>
           )}
-
           <li>
             <Trans i18nKey={"authors"} />:
             <span className={s.book_info_value}>
               {" "}
               {formatAuthorsDesc(authors)}
+            </span>
+          </li>
+          <li>
+            <Trans i18nKey={"language"} />:
+            <span className={s.book_info_value}>
+              {" "}
+              {formatLanguage(language)}
             </span>
           </li>
         </ul>

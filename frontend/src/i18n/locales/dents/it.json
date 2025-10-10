@@ -193,6 +193,7 @@
     "audioText": "<0>Audio</0> è disponibile per darti una breve panoramica del libro prima di approfondire il suo contenuto.",
     "audio": "audio",
     "description": "Descrizione",
+    "noDescription": "Nessuna descrizione",
     "productDetails": "Dettagli del prodotto",
     "publisher": "Editore: <0>{{publisher}}</0>",
     "pdfReader": {
