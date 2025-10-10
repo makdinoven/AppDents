@@ -29,6 +29,7 @@ export type BookCardType = {
   first_tag: string;
   slug: string;
   gallery: { url: string }[];
+  main_image: string;
   old_price: number;
   new_price: number;
   book_ids: number[];
