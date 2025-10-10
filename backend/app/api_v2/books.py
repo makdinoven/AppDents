@@ -356,7 +356,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
             "title": b.title,
             "cover_url": b.cover_url,
             "preview_pdf_url": preview_pdf_url_for_book(b),
-            "publication_date": (b.publication_date.isoformat() if b.publication_date else None),
+            "publication_date": (b.publication_date if b.publication_date else None),
             "description": b.description,
         }
         for b in landing.books

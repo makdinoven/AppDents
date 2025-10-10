@@ -21,17 +21,20 @@ router = APIRouter()
 
 
 class CheckoutRequest(BaseModel):
-    course_ids: list[int]  # Список ID курсов для покупки
-    price_cents: int  # Итоговая цена в центах (одна сумма для всех курсов)
-    region: str  # "RU", "EN", "ES"
-    user_email: str | None = None  # Если пользователь не авторизован, email обязателен
+    course_ids: list[int] = []         # оставим по умолчанию список
+    book_landing_ids: list[int] = []   # НОВОЕ: покупаем книжные лендинги
+    book_ids: list[int] = []           # НОВОЕ: прямые покупки книг (если нужно)
+    price_cents: int
+    region: str
+    user_email: str | None = None
     success_url: str = "https://example.com/payment-success"
     cancel_url: str = "https://example.com/payment-cancel"
-    fbp: str | None = None  # Из cookie _fbp
-    fbc: str | None = None  # Из cookie _fbc
+    fbp: str | None = None
+    fbc: str | None = None
     use_balance: bool = False
-    transfer_cart: bool = False  # ←
-    cart_landing_ids: list[int] | None = None
+    transfer_cart: bool = False
+    cart_landing_ids: list[int] | None = None  # курсовые id (как и раньше)
+    cart_book_landing_ids: list[int] | None = None  # НОВОЕ: книжные id
     ref_code: str | None = None
     source: PurchaseSource | None = None
     from_ad: bool | None = None
@@ -198,6 +201,13 @@ def stripe_checkout(
     if data.ref_code:
         extra["ref_code"] = data.ref_code
     extra["source"] = purchase_source.value
+
+    if data.book_landing_ids:
+        extra["book_landing_ids"] = json.dumps(list(dict.fromkeys(data.book_landing_ids)))
+    if data.book_ids:
+        extra["book_ids"] = json.dumps(list(dict.fromkeys(data.book_ids)))
+    if data.cart_book_landing_ids:
+        extra["cart_book_landing_ids"] = json.dumps(list(dict.fromkeys(data.cart_book_landing_ids)))
 
     # 4. Вызываем функцию для создания сессии Stripe
     checkout_url = create_checkout_session(

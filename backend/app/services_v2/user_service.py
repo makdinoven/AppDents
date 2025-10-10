@@ -889,3 +889,20 @@ def get_purchases_by_source_timeseries(
         "total": total_cnt,
         "total_amount": f"{total_amt:.2f} $",
     }
+
+def add_book_to_user(db: Session, user_id: int, book_id: int) -> None:
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": {
+            "code": "USER_NOT_FOUND", "message": "User not found", "params": {"user_id": user_id}
+        }})
+
+    book = db.query(Book).filter(Book.id == book_id).first()
+    if not book:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": {
+            "code": "BOOK_NOT_FOUND", "message": "Book not found", "params": {"book_id": book_id}
+        }})
+
+    if book not in user.books:
+        user.books.append(book)
+        db.commit()
