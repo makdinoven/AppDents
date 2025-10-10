@@ -19,6 +19,7 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
     authors,
     first_tag,
     gallery,
+    main_image,
   } = book;
 
   const setCardColor = () => {
@@ -42,7 +43,11 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
           <BookCardImages
             color={cardColor}
             single={gallery.length <= 1}
-            images={gallery.map((item: { url: string }) => item.url)}
+            images={
+              gallery.length <= 1
+                ? [main_image]
+                : gallery.map((item: { url: string }) => item.url)
+            }
           />
           <LangLogo
             className={s.lang_logo}
