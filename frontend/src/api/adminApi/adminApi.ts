@@ -133,8 +133,8 @@ export const adminApi = {
       params: params,
     });
   },
-  getBook(id: any) {
-    return instance.get(`books/${id}/detail`, {
+  getBookDetail(id: any) {
+    return instance.get(`book_admin/admin/books/${id}/detail`, {
       headers: getAuthHeaders(),
     });
   },
@@ -149,7 +149,34 @@ export const adminApi = {
     });
   },
   updateBook(id: any, data: any) {
-    return instance.put(`books/${id}`, data, {
+    return instance.patch(`books/admin/books/${id}`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  generatePreSignedPostForPdf(id: any, data: any) {
+    return instance.post(`books/admin/books/${id}/upload-pdf-url`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  finalizeBookUploading(id: any, data: { key: string }) {
+    return instance.post(
+      `book_admin/admin/books/${id}/upload-pdf-finalize`,
+      data,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+
+  getBookPreviewStatus(id: any) {
+    return instance.get(`book_admin/${id}/format-status`, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  getBookFormatStatus(id: any) {
+    return instance.get(`book_admin/${id}/preview-status`, {
       headers: getAuthHeaders(),
     });
   },
@@ -219,6 +246,12 @@ export const adminApi = {
 
   uploadPhoto(file: any) {
     return instance.post("photo/photo", file, { headers: getAuthHeaders() });
+  },
+
+  uploadImageNew(data: any) {
+    return instance.post("media/upload-image", data, {
+      headers: getAuthHeaders(),
+    });
   },
 
   getMostPopularLandings(params: any) {
