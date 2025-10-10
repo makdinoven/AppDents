@@ -194,6 +194,7 @@
     "audioText": "<0>Áudio</0> está disponível para lhe dar uma breve visão do livro antes de se aprofundar em seu conteúdo.",
     "audio": "áudio",
     "description": "Descrição",
+    "noDescription": "Sem descrição",
     "publisher": "Editora: <0>{{publisher}}</0>",
     "pdfReader": {
       "error": "Ocorreu um erro ao carregar",
