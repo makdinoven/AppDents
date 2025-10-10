@@ -75,7 +75,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
               <Trans i18nKey={first_tag} />
             </li>
           )}
-
           {!!authors.length && (
             <li>
               <Trans i18nKey={"authors"} />:
@@ -85,13 +84,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
               </span>
             </li>
           )}
-          <li>
-            <Trans i18nKey={"authors"} />:
-            <span className={s.book_info_value}>
-              {" "}
-              {formatAuthorsDesc(authors)}
-            </span>
-          </li>
           <li>
             <Trans i18nKey={"language"} />:
             <span className={s.book_info_value}>
