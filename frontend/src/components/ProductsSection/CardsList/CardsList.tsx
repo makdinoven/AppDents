@@ -29,6 +29,7 @@ export type BookCardType = {
   first_tag: string;
   slug: string;
   gallery: { url: string }[];
+  main_image: string;
   old_price: number;
   new_price: number;
   book_ids: number[];
@@ -111,14 +112,14 @@ const CardsList: React.FC<CardsListProps> = ({
             (filter && filter !== "all" ? (
               <p className={s.no_courses}>
                 <Trans
-                  i18nKey={t(`endOfListFilter`)}
+                  i18nKey={t(`endOfListFilter.${cardType}`)}
                   values={{ filter: filterName }}
                 />
               </p>
             ) : (
               showEndOfList && (
                 <p className={s.no_courses}>
-                  <Trans i18nKey={t(`endOfList`)} />{" "}
+                  <Trans i18nKey={t(`endOfList.${cardType}`)} />{" "}
                 </p>
               )
             ))
@@ -129,11 +130,11 @@ const CardsList: React.FC<CardsListProps> = ({
           <div className={s.no_courses}>
             {filter && filter !== "all" ? (
               <Trans
-                i18nKey={t(`main.noCoursesFilter`)}
+                i18nKey={t(`main.noItemsFilter.${cardType}`)}
                 values={{ filter: filterName }}
               />
             ) : (
-              <Trans i18nKey={`main.noCourses`} />
+              <Trans i18nKey={`main.noItems.${cardType}`} />
             )}
           </div>
         )

@@ -73,7 +73,10 @@ export const getBooks = createAppAsyncThunk(
   "main/getBooks",
   async (params: any, { rejectWithValue }) => {
     try {
-      const res = await mainApi.getBookCards(params);
+      const res = await mainApi.getBookLandingCards({
+        ...params,
+        mode: "cursor",
+      });
 
       if (res.data.error) {
         return rejectWithValue(res.data.error);
@@ -90,7 +93,7 @@ export const getBooksRecommend = createAppAsyncThunk(
   "main/getBooksRecommend",
   async (params: any, { rejectWithValue }) => {
     try {
-      const res = await mainApi.getBookCardsRecommend(params);
+      const res = await mainApi.getBookLandingCards(params); // НЕ РЕКОММЕНД ЗАПРОС
 
       if (res.data.error) {
         return rejectWithValue(res.data.error);

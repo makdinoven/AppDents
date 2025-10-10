@@ -489,20 +489,22 @@ def remove_user_course(
 def get_user_details(
     user_id: int,
     db: Session = Depends(get_db),
-    current_admin: User = Depends(require_roles("admin"))
+    current_admin: User = Depends(require_roles("admin")),
 ):
     """
     Возвращает полную информацию о пользователе, включая роль,
-    купленные курсы и все покупки с полями landing_slug и landing_name.
+    купленные курсы, книги (по ID) и покупки с полями лендинга.
     """
     user = (
         db.query(User)
-        .options(
-            joinedload(User.courses),
-            joinedload(User.purchases).joinedload(Purchase.landing)
-        )
-        .filter(User.id == user_id)
-        .first()
+          .options(
+              joinedload(User.courses),                 # курсы для списка ID
+              joinedload(User.books),                   # ⟵ книги для списка ID
+              joinedload(User.purchases)
+                .joinedload(Purchase.landing)           # покупки (курсовые)
+          )
+          .filter(User.id == user_id)
+          .first()
     )
     if not user:
         raise HTTPException(
@@ -512,9 +514,9 @@ def get_user_details(
                     "code": "USER_NOT_FOUND",
                     "message": "User not found",
                     "translation_key": "error.user_not_found",
-                    "params": {"user_id": user_id}
+                    "params": {"user_id": user_id},
                 }
-            }
+            },
         )
     return user
 

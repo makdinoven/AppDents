@@ -2,6 +2,8 @@ import s from "./PhotoUploader.module.scss";
 import initialPhoto from "../../../assets/no-pictures.png";
 import { useState } from "react";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../assets/icons";
 
 const PhotoUploader = ({
   id,
@@ -9,10 +11,14 @@ const PhotoUploader = ({
   label,
   url,
   onUpload,
+  type = "default",
+  dataId,
 }: {
+  type?: "default" | "book";
   id: string;
   title: string;
   label: string;
+  dataId?: number;
   url: string | undefined;
   onUpload: any;
 }) => {
@@ -22,15 +28,26 @@ const PhotoUploader = ({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const formData = new FormData();
-        formData.append("file", file);
+        let res;
 
-        const res = await adminApi.uploadPhoto(formData);
+        if (type === "book") {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("entity_type", "book_cover");
+          formData.append("entity_id", String(dataId!));
+
+          res = await adminApi.uploadImageNew(formData);
+        } else {
+          const formData = new FormData();
+          formData.append("file", file);
+          res = await adminApi.uploadPhoto(formData);
+        }
+
         const uploadedUrl = res.data.url;
         setPreview(uploadedUrl);
         onUpload(uploadedUrl);
       } catch (error) {
-        console.error("Ошибка загрузки фото:", error);
+        Alert(`Error loading image: ${error}`, <ErrorIcon />);
       }
     }
   };

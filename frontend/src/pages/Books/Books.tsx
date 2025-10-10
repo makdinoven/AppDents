@@ -8,35 +8,15 @@ import { ParamsType } from "../../api/adminApi/types.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import BookCardSkeletons from "../../components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
+import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 
 const Books = () => {
-  // const navigate = useNavigate();
-  // const dispatch = useDispatch<AppDispatchType>();
-  const {
-    language,
-    // , isLogged, role
-  } = useSelector((state: AppRootStateType) => state.user);
-  // const userBooks = useSelector(
-  //   (state: AppRootStateType) => state.user.books,
-  // );
+  const { language } = useSelector((state: AppRootStateType) => state.user);
   const [books, setBooks] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  // const isAdmin = role === "admin";
-
-  // useEffect(() => {
-  //   if (isLogged && !isAdmin) {
-  //     dispatch(getBooks());
-  //   }
-  // }, [isLogged]);
-
-  // useEffect(() => {
-  //   if (userBooks.length > 0 && !isAdmin) {
-  //     navigate(Path.books);
-  //   }
-  // }, [userBooks]);
 
   const loadBooks = async (params: ParamsType) => {
     setLoading(true);
@@ -46,7 +26,7 @@ const Books = () => {
 
       setBooks(res.data.cards);
       setTotal(res.data.total);
-      // setTotalPages(res.data.total_pages);
+      setTotalPages(res.data.total_pages);
       setIsFirstLoad(false);
     } catch (error) {
       console.log(error);
@@ -78,15 +58,15 @@ const Books = () => {
           cardType={"book"}
         />
       </ListController>
-      {/*{!isFirstLoad && (*/}
-      {/*  <ProductsSection*/}
-      {/*    showSort={true}*/}
-      {/*    sectionTitle={"other.otherBooks"}*/}
-      {/*    pageSize={4}*/}
-      {/*    productCardFlags={{ isClient: true, isOffer: true }}*/}
-      {/*    cardType={"book"}*/}
-      {/*  />*/}
-      {/*)}*/}
+      {!isFirstLoad && (
+        <ProductsSection
+          showSort={true}
+          sectionTitle={"other.otherBooks"}
+          pageSize={4}
+          productCardFlags={{ isClient: true, isOffer: true }}
+          cardType={"book"}
+        />
+      )}
     </div>
   );
 };

@@ -10,14 +10,12 @@ import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
 import { t } from "i18next";
 import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 
 const BookLandingDetail = () => {
   const { bookId } = useParams();
   const [loading, setLoading] = useState(false);
   const [bookLanding, setBookLanding] = useState<any>(null);
-  const [tags, setTags] = useState<any | null>(null);
   const [books, setBooks] = useState<any | null>(null);
   const [authors, setAuthors] = useState<any>(null);
   const navigate = useNavigate();
@@ -31,15 +29,12 @@ const BookLandingDetail = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [landingRes, tagsRes, authorsRes, booksRes] = await Promise.all([
+      const [landingRes, authorsRes, booksRes] = await Promise.all([
         adminApi.getBookLanding(bookId),
-        mainApi.getTags(),
         adminApi.getAuthorsList({ size: 100000 }),
         adminApi.getBooksList({ size: 100000 }),
       ]);
-      console.log(booksRes.data, tagsRes.data);
       setBooks(booksRes.data.items);
-      setTags(tagsRes.data);
       setBookLanding(landingRes.data);
       setAuthors(authorsRes.data.items);
     } catch (error: any) {
@@ -80,10 +75,6 @@ const BookLandingDetail = () => {
       Alert(`Error updating book landing: ${error}`, <ErrorIcon />);
     }
   };
-
-  useEffect(() => {
-    console.log(bookLanding);
-  }, [bookLanding]);
 
   return (
     <div className={s.detail_container}>
@@ -163,17 +154,6 @@ const BookLandingDetail = () => {
             </div>
 
             <div className={s.two_items}>
-              <MultiSelect
-                id={"tag_ids"}
-                options={tags}
-                placeholder={"Choose a tag"}
-                label={t("admin.landings.tags")}
-                selectedValue={bookLanding.tag_ids}
-                isMultiple={true}
-                onChange={handleChange}
-                valueKey="id"
-                labelKey="name"
-              />
               <MultiSelect
                 id={"book_ids"}
                 options={books}

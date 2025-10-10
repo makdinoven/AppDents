@@ -85,6 +85,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
       {!isFirstLoad && (
         <ProductsSection
           showSort={true}
+          cardType={"course"}
           productCardFlags={{ isFree: isFree, isOffer: true, isClient: true }}
           sectionTitle={"other.otherCourses"}
           pageSize={4}
