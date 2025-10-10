@@ -607,6 +607,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
     tags = list(tag_map.values())
     first_tag = tags[0]["name"] if tags else None
 
+    book_ids = [b.id for b in (bl.books or [])]
+
     return {
         "id": bl.id,
         "landing_name": bl.landing_name or "",
@@ -617,8 +619,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "authors": authors,
         "tags": tags,
         "first_tag": first_tag,
-        "main_image": _landing_main_image_from_books(bl),  # ⟵ главная картинка из книги
-        # никаких gallery больше
+        "main_image": _landing_main_image_from_books(bl),
+        "book_ids": book_ids,
     }
 
 
