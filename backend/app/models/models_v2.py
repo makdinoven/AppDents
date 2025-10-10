@@ -506,7 +506,7 @@ class Book(Base):
     language    = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT',
                               name='book_language'), nullable=False,
                           server_default='EN')
-    publication_date = Column(Date, nullable=True, comment="Дата публикации книги")
+    publication_date = Column(String(12), nullable=True, comment="Дата публикации книги")
     created_at  = Column(DateTime, server_default=func.utc_timestamp(),
                          nullable=False)
     updated_at  = Column(DateTime, server_default=func.utc_timestamp(),
