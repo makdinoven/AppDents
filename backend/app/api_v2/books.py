@@ -147,7 +147,7 @@ def update_book_landing(
     if not landing:
         raise HTTPException(404, "Landing not found")
 
-    data = payload.model_dump(exclude_unset=True)
+    data = payload.dict(exclude_unset=True)
 
     for field in ("language", "page_name", "landing_name", "description",
                   "old_price", "new_price", "is_hidden"):
@@ -808,7 +808,7 @@ def patch_book(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    data = payload.model_dump(exclude_unset=True)
+    data = payload.dict(exclude_unset=True)
 
     # простые поля:
     for field in ("title", "description", "cover_url", "language", "publication_date"):
