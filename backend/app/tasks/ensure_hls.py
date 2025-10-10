@@ -94,15 +94,57 @@ def _each_mp4_objects():
             if key.lower().endswith(".mp4"):
                 yield key
 
-def _slug(name: str) -> str:
-    stem = Path(name).stem
-    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii", "ignore").decode()
-    ascii_name = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-").lower()
-    return (ascii_name or hashlib.sha1(stem.encode()).hexdigest())[:60]
+SLUG_MAX = 60
 
-def hls_prefix_for(key: str) -> str:
+def legacy_slug(name: str) -> str:
+    """Старый способ (для совместимости с фронтом): просто обрезать до 60."""
+    stem = Path(name).stem
+    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii","ignore").decode()
+    base = re.sub(r"[^A-Za-z0-9]+","-", ascii_name).strip("-").lower()
+    if not base:
+        return hashlib.sha1(stem.encode()).hexdigest()[:SLUG_MAX]
+    return base[:SLUG_MAX]
+
+def stable_slug(name: str) -> str:
+    """Новый устойчивый слуг: truncate + короткий sha1-хвост (без коллизий)."""
+    stem = Path(name).stem
+    ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii","ignore").decode()
+    base = re.sub(r"[^A-Za-z0-9]+","-", ascii_name).strip("-").lower()
+    if not base:
+        return hashlib.sha1(stem.encode()).hexdigest()[:SLUG_MAX]
+    if len(base) <= SLUG_MAX:
+        return base
+    suffix = hashlib.sha1(stem.encode()).hexdigest()[:8]
+    keep = SLUG_MAX - 1 - len(suffix)  # место под "-{suffix}"
+    return f"{base[:keep]}-{suffix}"
+
+
+def hls_prefixes_for(key: str) -> tuple[str, str]:
     base, fname = os.path.split(key)
-    return f"{base}/.hls/{_slug(fname)}/".lstrip("/")
+    leg = f"{base}/.hls/{legacy_slug(fname)}/".lstrip("/")
+    new = f"{base}/.hls/{stable_slug(fname)}/".lstrip("/")
+    return leg, new
+
+def put_alias_master(legacy_playlist_key: str, canonical_m3u8_url: str) -> None:
+    """
+    Кладём маленький master.m3u8 по legacy-пути, который указывает на канонический media-плейлист.
+    """
+    body = (
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:3\n"
+        "#EXT-X-INDEPENDENT-SEGMENTS\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=2000000\n"
+        f"{canonical_m3u8_url}\n"
+    ).encode("utf-8")
+    s3.put_object(
+        Bucket=S3_BUCKET,
+        Key=legacy_playlist_key,
+        Body=body,
+        ACL="public-read",
+        ContentType="application/vnd.apple.mpegurl",
+        CacheControl="public, max-age=60",
+    )
+
 
 # ─────────────────────── ffmpeg (copy→fallback) ──────────────────────────────
 
@@ -205,37 +247,36 @@ def ensure_hls() -> None:
     for key in _each_mp4_objects():
         if "/.hls/" in key or key.endswith("_hls/"):
             continue
-
-        # ===  пропускаем, если файл уже готов / плохой / в очереди  ===
-        if (rds.sismember(R_SET_READY,  key) or       # готов
-            rds.sismember(R_SET_BAD,    key) or       # повреждён
-            rds.sismember(R_SET_QUEUED, key)):        # уже стоит в ETA
+        if rds.sismember(R_SET_READY, key) or rds.sismember(R_SET_QUEUED, key) or rds.sismember(R_SET_BAD, key):
             continue
 
-        # meta hls=true → считаем готовым
-        try:
-            head = s3.head_object(Bucket=S3_BUCKET, Key=key)
-            if head.get("Metadata", {}).get("hls") == "true":
-                rds.sadd(R_SET_READY, key)
-                continue
-        except ClientError:
-            continue
+        legacy_prefix, new_prefix = hls_prefixes_for(key)
+        legacy_pl = f"{legacy_prefix}playlist.m3u8"
+        new_pl    = f"{new_prefix}playlist.m3u8"
 
-        # если плейлист уже лежит в бакете — тоже считаем готовым
-        playlist_key = f"{hls_prefix_for(key)}playlist.m3u8"
+        # 1) Канонический существует? → готово.
         try:
-            s3.head_object(Bucket=S3_BUCKET, Key=playlist_key)
+            s3.head_object(Bucket=S3_BUCKET, Key=new_pl)
             _mark_hls_ready(key)
             continue
         except ClientError:
             pass
 
-        # ставим heavy‑таску c равномерным ETA
+        # 2) Если в метадате уже hls=true — всё равно проверяем new_pl.
+        #    Если его нет — надо мигрировать (ставим задачу), НЕ считаем готовым.
+        try:
+            head = s3.head_object(Bucket=S3_BUCKET, Key=key)
+            if head.get("Metadata", {}).get("hls") == "true":
+                # не выходим — идём ставить задачу на миграцию
+                pass
+        except ClientError:
+            continue
+
+        # 3) Legacy найден, а canonical отсутствует → миграция требуется.
+        #    (Если и legacy нет — это просто новая генерация.)
+        #    В обоих случаях — ставим heavy-таску.
         eta = start_ts + queued_now * SPACING
-        process_hls_video.apply_async(
-            (key,), queue="special_hls",
-            eta=datetime.utcfromtimestamp(eta),
-        )
+        process_hls_video.apply_async((key,), queue="special_hls", eta=datetime.utcfromtimestamp(eta))
         rds.sadd(R_SET_QUEUED, key)
         logger.info("[HLS] queued #%02d  %s  eta=%s",
                     queued_now + 1, key,
@@ -250,53 +291,57 @@ def ensure_hls() -> None:
 
 @shared_task(name="app.tasks.process_hls_video", rate_limit=RATE_LIMIT_HLS)
 def process_hls_video(key: str) -> None:
-    """
-    heavy‑task: MP4 → HLS; единственный worker с concurrency=1.
-    При любом исходе снимает ключ из Redis queued.
-    """
     try:
-        hls_prefix = hls_prefix_for(key)
-        playlist_key = f"{hls_prefix}playlist.m3u8"
-        playlist_url = f"{S3_PUBLIC_HOST}/{playlist_key}"
+        legacy_prefix, new_prefix = hls_prefixes_for(key)
+        legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+        new_pl_key    = f"{new_prefix}playlist.m3u8"
+        new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
 
-        # уже есть плейлист — фиксим мету и выходим
+        # Ранний выход — ТОЛЬКО если есть канонический
         try:
-            s3.head_object(Bucket=S3_BUCKET, Key=playlist_key)
+            s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
             _mark_hls_ready(key)
-            logger.info("[HLS] already exists for %s", key)
+            logger.info("[HLS] already exists (canonical) for %s", key)
             return
         except ClientError:
-            pass
+            pass  # нет canonical → строим
 
         with tempfile.TemporaryDirectory() as tmp:
-            in_mp4 = os.path.join(tmp, "in.mp4")
-            s3.download_file(S3_BUCKET, key, in_mp4)
-
+            in_mp4   = os.path.join(tmp, "in.mp4")
             seg_pat  = os.path.join(tmp, "segment_%03d.ts")
             playlist = os.path.join(tmp, "playlist.m3u8")
+
+            s3.download_file(S3_BUCKET, key, in_mp4)
 
             ok = _make_hls(in_mp4, playlist, seg_pat)
             if not ok:
                 _mark_hls_error(key, "ffmpeg_failed")
+                logger.error("[HLS] ffmpeg failed for %s", key)
                 return
 
-            # upload playlist + segments
+            # выгружаем в КАНОНИЧЕСКИЙ префикс
             for fname in os.listdir(tmp):
                 if fname == "in.mp4":
                     continue
                 src = os.path.join(tmp, fname)
-                dst = f"{hls_prefix}{fname}"
-                ct = ("application/vnd.apple.mpegurl"
-                      if fname.endswith(".m3u8") else "video/MP2T")
-                s3.upload_file(src, S3_BUCKET, dst,
-                               ExtraArgs={"ACL": "public-read",
-                                          "ContentType": ct})
+                dst = f"{new_prefix}{fname}"
+                ct = "application/vnd.apple.mpegurl" if fname.endswith(".m3u8") else "video/MP2T"
+                s3.upload_file(src, S3_BUCKET, dst, ExtraArgs={"ACL": "public-read", "ContentType": ct})
 
         _mark_hls_ready(key)
-        logger.info("[HLS] ready → %s", playlist_url)
+
+        # Перезаписываем legacy на alias-master → укажет на canonical
+        if legacy_pl_key != new_pl_key:
+            try:
+                put_alias_master(legacy_pl_key, new_pl_url)
+            except ClientError as e:
+                logger.warning("[HLS] put alias failed for %s → %s: %s", key, legacy_pl_key, e)
+
+        logger.info("[HLS] ready → %s", new_pl_url)
 
     finally:
         rds.srem(R_SET_QUEUED, key)
+
 
 # Клиент только для листинга — V4
 s3v4 = boto3.client(
