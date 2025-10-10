@@ -272,6 +272,8 @@ class BookLandingCardResponse(BaseModel):
     tags: List[TagResponse] = []
     first_tag: Optional[str] = None
     gallery: List[BookLandingGalleryItem] = []
+    main_image: str | None = None
+    book_ids: list[int] | None = None
 
 class BookLandingCardsResponse(BaseModel):
     total: int
