@@ -4,12 +4,12 @@ import ViewLink from "../../../components/ui/ViewLink/ViewLink.tsx";
 import { Path } from "../../../routes/routes.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import FormattedAuthorsDesc from "../../../common/helpers/FormattedAuthorsDesc.tsx";
-import { CartLandingType } from "../../../api/cartApi/types.ts";
+import { CartBookType, CartLandingType } from "../../../api/cartApi/types.ts";
 
 interface CartItemProps {
   loading?: boolean;
   language: string;
-  item: CartLandingType;
+  item: CartLandingType | CartBookType;
   type: string;
   onDelete: (value: number) => void;
 }
@@ -24,6 +24,7 @@ const CartItem = ({
   const visibleAuthors = item?.authors
     ?.slice(0, 3)
     .filter((author) => author.photo);
+  const isBook = type === "BOOK";
 
   return (
     <li className={s.item}>
@@ -61,7 +62,11 @@ const CartItem = ({
       <div className={s.item_bottom}>
         <ViewLink
           className={s.link}
-          link={`${Path.landingClient}/${item.page_name}`}
+          link={
+            isBook
+              ? `${Path.bookLandingClient}/${item.page_name}`
+              : `${Path.landingClient}/${item.page_name}`
+          }
           text={`view${type.toLowerCase() === "landing" ? "Course" : type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}`}
         />
         <div className={s.prices}>

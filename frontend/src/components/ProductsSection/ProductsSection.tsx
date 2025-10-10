@@ -1,7 +1,6 @@
 import s from "./ProductsSection.module.scss";
 import SectionHeader from "../ui/SectionHeader/SectionHeader.tsx";
 import SelectableList from "../CommonComponents/SelectableList/SelectableList.tsx";
-import CardsList from "./CardsList/CardsList.tsx";
 import {
   LANGUAGES,
   SORT_FILTERS,
@@ -19,8 +18,11 @@ import CourseCardSkeletons from "../ui/Skeletons/CourseCardSkeletons/CourseCardS
 import FiltersSkeleton from "../ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 import { ProductCardFlags } from "./CourseCard/CourseCard.tsx";
 import BookCardSkeletons from "../ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
+import CardsList from "./CardsList/CardsList.tsx";
+import SwitchButtons from "../ui/SwitchButtons/SwitchButtons.tsx";
 
 type props = {
+  ref?: React.RefObject<any>;
   cardType?: ProductCardType;
   sectionTitle?: string;
   pageSize: number;
@@ -31,7 +33,6 @@ type props = {
   showSort?: boolean;
   handleSetActiveFilter?: any;
   handleSetActiveSort?: any;
-  ref?: React.RefObject<any>;
   productCardFlags: ProductCardFlags;
 };
 
@@ -43,7 +44,7 @@ const ProductsSection = ({
   pageSize,
   productCardFlags,
   tags,
-  cardType = "course",
+  cardType: externalCardType,
   showFilters = false,
   showSort = false,
   activeFilter: externalFilter,
@@ -52,6 +53,8 @@ const ProductsSection = ({
   handleSetActiveSort,
 }: props) => {
   const dispatch = useDispatch<AppDispatchType>();
+  const [localCardType, setLocalCardType] = useState<ProductCardType>("course");
+  const cardType = externalCardType ?? localCardType;
   const isCourse = cardType === "course";
   const cards = useSelector((state: AppRootStateType) =>
     isCourse ? state.main.courses : state.main.books,
@@ -141,7 +144,7 @@ const ProductsSection = ({
         }
       }
     }
-  }, [isReady, language, skip, filter, sort, userLoading, isLogged]);
+  }, [isReady, language, skip, filter, sort, userLoading, isLogged, cardType]);
 
   const handleSeeMore = () => {
     setSkip((prev) => prev + pageSize);
@@ -169,7 +172,19 @@ const ProductsSection = ({
   return (
     <section ref={ref} className={s.courses}>
       <div className={s.courses_header}>
-        {sectionTitle && <SectionHeader name={sectionTitle} />}
+        <div className={s.title_switchBtns_container}>
+          {sectionTitle && <SectionHeader name={sectionTitle} />}
+          {!externalCardType && (
+            <SwitchButtons
+              buttonsArr={["nav.courses", "nav.books"]}
+              activeValue={cardType === "course" ? "nav.courses" : "nav.books"}
+              handleClick={(mode) =>
+                setLocalCardType(mode === "nav.courses" ? "course" : "book")
+              }
+            />
+          )}
+        </div>
+
         {showFilters && (
           <>
             {tags && tags.length > 0 ? (

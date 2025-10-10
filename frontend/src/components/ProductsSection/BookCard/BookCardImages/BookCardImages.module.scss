@@ -62,6 +62,11 @@
     margin: 0 auto !important;
   }
 
+  &.single:not(.no_photo) {
+    border-color: transparent !important;
+    border-radius: unset;
+  }
+
   &.blue {
     border-color: $secondary;
   }

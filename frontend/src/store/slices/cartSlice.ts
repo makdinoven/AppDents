@@ -83,7 +83,9 @@ const cartSlice = createSlice({
 });
 
 export const selectIsInCart = (id: number) => (state: AppRootStateType) =>
-  state.cart.items.some((item) => item.landing.id === id);
+  state.cart.items.some(
+    (item) => item.item_type === "LANDING" && item.landing.id === id,
+  );
 
 export const { clearCart, syncCartFromStorage } = cartSlice.actions;
 

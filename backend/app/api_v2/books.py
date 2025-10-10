@@ -147,7 +147,7 @@ def update_book_landing(
     if not landing:
         raise HTTPException(404, "Landing not found")
 
-    data = payload.model_dump(exclude_unset=True)
+    data = payload.dict(exclude_unset=True)
 
     for field in ("language", "page_name", "landing_name", "description",
                   "old_price", "new_price", "is_hidden"):
@@ -356,7 +356,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
             "title": b.title,
             "cover_url": b.cover_url,
             "preview_pdf_url": preview_pdf_url_for_book(b),
-            "publication_date": (b.publication_date.isoformat() if b.publication_date else None),
+            "publication_date": (b.publication_date if b.publication_date else None),
             "description": b.description,
         }
         for b in landing.books
@@ -607,6 +607,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
     tags = list(tag_map.values())
     first_tag = tags[0]["name"] if tags else None
 
+    book_ids = [b.id for b in (bl.books or [])]
+
     return {
         "id": bl.id,
         "landing_name": bl.landing_name or "",
@@ -617,8 +619,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "authors": authors,
         "tags": tags,
         "first_tag": first_tag,
-        "main_image": _landing_main_image_from_books(bl),  # ⟵ главная картинка из книги
-        # никаких gallery больше
+        "main_image": _landing_main_image_from_books(bl),
+        "book_ids": book_ids,
     }
 
 
@@ -806,7 +808,7 @@ def patch_book(
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    data = payload.model_dump(exclude_unset=True)
+    data = payload.dict(exclude_unset=True)
 
     # простые поля:
     for field in ("title", "description", "cover_url", "language", "publication_date"):

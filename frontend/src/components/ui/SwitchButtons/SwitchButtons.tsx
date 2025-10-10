@@ -1,4 +1,5 @@
 import s from "./SwitchButtons.module.scss";
+import { Trans } from "react-i18next";
 
 type Props<T extends string> = {
   buttonsArr: readonly T[];
@@ -19,7 +20,7 @@ const SwitchButtons = <T extends string>({
           className={`${activeValue === mode ? s.active : ""}`}
           onClick={() => handleClick(mode)}
         >
-          {mode}
+          <Trans i18nKey={mode} />
         </button>
       ))}
     </div>

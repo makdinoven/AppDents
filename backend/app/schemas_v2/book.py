@@ -53,7 +53,7 @@ class BookCreate(BaseModel):
     author_ids:  List[int] = Field(default_factory=list)
     files:       List[BookFilePayload]
     audio_files: List[BookAudioPayload] = Field(default_factory=list)
-    publication_date: Optional[date] = None
+    publication_date: Optional[str] = None
 
 class BookUpdate(BookCreate):
     """Все поля те же, все опциональные."""
@@ -76,7 +76,7 @@ class BookResponse(BaseModel):
     audio_files: List[Dict[str, Any]]
     created_at:  datetime
     updated_at:  datetime
-    publication_date: Optional[date] = None
+    publication_date: Optional[str] = None
 
     class Config:
         orm_mode = True
@@ -272,6 +272,8 @@ class BookLandingCardResponse(BaseModel):
     tags: List[TagResponse] = []
     first_tag: Optional[str] = None
     gallery: List[BookLandingGalleryItem] = []
+    main_image: str | None = None
+    book_ids: list[int] | None = None
 
 class BookLandingCardsResponse(BaseModel):
     total: int
@@ -289,7 +291,7 @@ class UserBookDetailResponse(BaseModel):
     title: str
     cover_url: Optional[str] = None
     description: Optional[str] = None
-    publication_date: Optional[date] = None
+    publication_date: Optional[str] = None
     files_download: List[BookFileDownload] = []
     audio_download: List[BookAudioDownload] = []
 
@@ -320,7 +322,7 @@ class BookAdminDetailResponse(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[str] = None
     language: str
-    publication_date: Optional[date] = None
+    publication_date: Optional[str] = None
 
     author_ids: List[int] = []
     tag_ids: List[int] = []
@@ -334,6 +336,6 @@ class BookPatch(BaseModel):
     description: Optional[str] = None
     cover_url: Optional[HttpUrl] = None
     language: Optional[constr(to_upper=True, regex="^(EN|RU|ES|PT|AR|IT)$")] = None
-    publication_date: Optional[date] = None
+    publication_date: Optional[str] = None
     author_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None

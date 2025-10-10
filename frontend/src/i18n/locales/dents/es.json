@@ -24,8 +24,14 @@
   "yourName": "Su nombre...",
   "yourOrder": "Su pedido",
   "seeMore": "Ver más",
-  "endOfList": "Estos son todos los cursos por ahora. ¡Pronto habrá más!",
-  "endOfListFilter": "Cursos filtrados por «{{filter}}». Eso es todo por ahora. ¡Pronto habrá más!",
+  "endOfList": {
+    "course": "Estos son todos los cursos por ahora. ¡Pronto habrá más!",
+    "book": "Estos son todos los libros por ahora. ¡Pronto habrá más!"
+  },
+  "endOfListFilter": {
+    "course": "Cursos filtrados por «{{filter}}». Eso es todo por ahora. ¡Pronto habrá más!",
+    "book": "Libros filtrados por «{{filter}}». Eso es todo por ahora. ¡Pronto habrá más!"
+  },
   "password": "Contraseña...",
   "open": "abrir",
   "viewCourse": "Ver curso",
@@ -140,8 +146,14 @@
     "hero.chooseCourse": "Elige tu curso",
     "ourCurses": "Nuestros cursos",
     "viewCourse": "Ver curso",
-    "noCourses": "No se encontraron cursos",
-    "noCoursesFilter": "No se encontraron cursos para el filtro «{{filter}}»."
+    "noItems": {
+      "course": "No se encontraron cursos",
+      "book": "No se encontraron libros"
+    },
+    "noItemsFilter": {
+      "course": "No se encontraron cursos para el filtro «{{filter}}».",
+      "book": "No se encontraron libros para el filtro «{{filter}}»."
+    }
   },
 
   "footer": {

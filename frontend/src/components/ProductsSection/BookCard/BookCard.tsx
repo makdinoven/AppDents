@@ -21,6 +21,7 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
     authors,
     first_tag,
     gallery,
+    main_image,
   } = book;
 
   const setCardColor = () => {
@@ -44,7 +45,11 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
           <BookCardImages
             color={cardColor}
             single={gallery.length <= 1}
-            images={gallery.map((item: { url: string }) => item.url)}
+            images={
+              gallery.length <= 1
+                ? [main_image]
+                : gallery.map((item: { url: string }) => item.url)
+            }
           />
           <div className={s.prices}>
             <span className={s.new_price}>${new_price}</span>
@@ -70,6 +75,16 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
               <Trans i18nKey={first_tag} />
             </li>
           )}
+
+          {!!authors.length && (
+            <li>
+              <Trans i18nKey={"authors"} />:
+              <span className={s.book_info_value}>
+                {" "}
+                {formatAuthorsDesc(authors)}
+              </span>
+            </li>
+          )}
           <li>
             <Trans i18nKey={"authors"} />:
             <span className={s.book_info_value}>
@@ -87,7 +102,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
         </ul>
       </div>
 
-      <div className={s.card_bottom}></div>
       <div className={s.buttons}>
         <button
           onClick={(e) => handleBuyClick(e)}

@@ -67,6 +67,7 @@ const MainPage = () => {
         tags={tags}
         showFilters={true}
         showSort={true}
+        cardType={"course"}
         productCardFlags={{ isClient: true }}
         handleSetActiveFilter={(filter: string) =>
           handleSetActiveParam("filter", filter)

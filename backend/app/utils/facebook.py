@@ -39,7 +39,8 @@ def _build_fb_event(
     email: str,
     amount: float,
     currency: str,
-    course_ids: list[int],
+    course_ids: list[int] | None = None,  # ← стало опционально
+    book_ids: list[int] | None = None,
     client_ip: str,
     user_agent: str,
     event_time: int,
@@ -55,9 +56,19 @@ def _build_fb_event(
     Формирует payload для Facebook Conversions API.
     ``event_name`` — "Purchase" или "Donate".
     """
+    courses = [str(cid) for cid in (course_ids or [])]
+    books = [str(bid) for bid in (book_ids or [])]
 
     if not email:
         raise ValueError("Empty email for Facebook event")
+
+    if books and not courses:
+        content_type = "book"
+    elif courses and not books:
+        content_type = "course"
+    else:
+        # смешанная покупка (курсы+книги) — безопасно использовать "product"
+        content_type = "product"
 
     # ---------- 1. user_data ----------
     user_data: dict = {
@@ -79,28 +90,34 @@ def _build_fb_event(
         user_data["fn"] = [_hash_plain(first_name)]
     if last_name and last_name != first_name:
         user_data["ln"] = [_hash_plain(last_name)]
+    content_ids = courses + books
+    contents = [{"id": x, "quantity": 1} for x in content_ids]
 
     # ---------- 2. финальный event ----------
     event = {
         "data": [
             {
-                "event_name": event_name,          # <-- главное отличие
+                "event_name": event_name,
                 "event_time": event_time,
                 "event_id": event_id,
+                "action_source": "website",  # небольшой апгрейд: явный источник
                 "user_data": user_data,
                 "custom_data": {
                     "currency": currency,
                     "value": amount,
-                    "content_ids": [str(cid) for cid in course_ids],
-                    "content_type": "course",
+                    "content_type": content_type,
+                    "content_ids": content_ids,
+                    "contents": contents,
+                    # при желании можно добавить:
+                    # "content_category": "books" if books else "courses"
                 },
             }
         ]
     }
 
     logging.info(
-        "FB event built → %s | %s | amount=%s %s | courses=%s",
-        email, event_name, amount, currency.upper(), course_ids,
+        "FB event built → %s | %s | amount=%s %s | courses=%s | books=%s",
+        email, event_name, amount, currency.upper(), course_ids or [], book_ids or []
     )
     return event
 
@@ -111,7 +128,8 @@ def send_facebook_events(
     email: str,
     amount: float,
     currency: str,
-    course_ids: list[int],
+    course_ids: list[int] | None = None,
+    book_ids: list[int] | None = None,
     client_ip: str,
     user_agent: str,
     event_time: int,
@@ -138,6 +156,7 @@ def send_facebook_events(
         amount=amount,
         currency=currency,
         course_ids=course_ids,
+        book_ids=book_ids,
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
@@ -154,6 +173,7 @@ def send_facebook_events(
         amount=amount,
         currency=currency,
         course_ids=course_ids,
+        book_ids=book_ids,
         client_ip=client_ip,
         user_agent=user_agent,
         event_time=event_time,
@@ -184,6 +204,12 @@ def send_facebook_events(
         pixels_purchase: list[dict] = [
             {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
             {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_4, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_4},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_5, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_5},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_11, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_11},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_10, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_10},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_12, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_12},
+            {"id": settings.FACEBOOK_PIXEL_ID_NEW_13, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_13},
         ]
 
         # ─ регион-специфичный пиксель (если сконфигурирован) ─
