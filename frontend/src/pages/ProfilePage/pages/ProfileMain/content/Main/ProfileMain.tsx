@@ -20,6 +20,7 @@ import ResetPasswordModal from "../../../../../../components/Modals/ResetPasswor
 import { Path } from "../../../../../../routes/routes.ts";
 import {
   getCourses,
+  getBooks,
   logoutAsync,
 } from "../../../../../../store/actions/userActions.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
@@ -28,6 +29,7 @@ import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
 import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
 import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import MyBooks from "../../../../modules/MyBooks/MyBooks.tsx";
 
 const QUERY_KEY = "content";
 
@@ -35,6 +37,7 @@ const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
+  const books = useSelector((state: AppRootStateType) => state.user.books);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
   const [searchParams] = useSearchParams();
@@ -43,6 +46,7 @@ const ProfileMain = () => {
 
   useEffect(() => {
     if (!courses.length) dispatch(getCourses());
+    if (!books.length) dispatch(getBooks());
   }, []);
 
   const handleLogout = () => {
@@ -114,6 +118,11 @@ const ProfileMain = () => {
       name: "profile.yourCourses",
       value: "your_courses",
       component: <MyCourses courses={courses} />,
+    },
+    {
+      name: "profile.yourBooks",
+      value: "your_books",
+      component: <MyBooks books={books} />,
     },
     {
       name: "profile.purchaseHistory.purchases",
