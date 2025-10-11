@@ -275,6 +275,8 @@
   "profile": {
     "yourCourses": "Seus cursos",
     "noCourses": "Nenhum curso",
+    "yourBooks": "Seus livros",
+    "noBooks": "Ainda não há livros",
     "nextLesson": "Próxima lição",
     "prevLesson": "Lição anterior",
     "pdfText": "Esta aula contém materiais em PDF em vez de um vídeo. Clique no link abaixo para abrir o arquivo.",

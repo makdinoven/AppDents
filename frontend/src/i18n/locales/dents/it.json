@@ -282,6 +282,8 @@
   "profile": {
     "yourCourses": "I tuoi corsi",
     "noCourses": "Nessun corso",
+    "yourBooks": "I tuoi libri",
+    "noBooks": "Nessun libro ancora",
     "nextLesson": "Lezione successiva",
     "prevLesson": "Lezione precedente",
     "pdfText": "Questa lezione contiene materiali in formato PDF invece di un video. Clicca sul link qui sotto per aprire il file.",
