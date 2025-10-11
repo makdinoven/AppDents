@@ -167,7 +167,7 @@ services:
 # ───────────────────────── Networks & Volumes ───────────────────────
 networks:
   pub:  {driver: bridge}
-  priv: {driver: bridge, internal: true}
+  priv: {driver: bridge}
 
 volumes:
   mysql_data_preprod:
