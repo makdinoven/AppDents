@@ -1,16 +1,17 @@
 .hero {
   @include flex-column();
   gap: 30px;
+
+  h2 {
+    @include skeleton(
+      $pos: relative,
+      $h: 100px,
+      $radius: 15px,
+      $color: $light-grey
+    );
+  }
 }
 
-h2 {
-  @include skeleton(
-    $pos: relative,
-    $h: 100px,
-    $radius: 15px,
-    $color: $light-grey
-  );
-}
 .content {
   display: flex;
   flex-direction: row;
@@ -190,10 +191,10 @@ h2 {
 
   .hero {
     gap: 25px;
-  }
 
-  h2 {
-    height: 80px;
+    h2 {
+      height: 80px;
+    }
   }
 
   .content {
