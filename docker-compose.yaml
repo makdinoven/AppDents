@@ -128,7 +128,7 @@ services:
     env_file:
       - .env
     ports:
-      - "0.0.0.0:8000:8000"
+      - "8000:8000"
     depends_on:
       mysql:
         condition: service_healthy
@@ -150,7 +150,7 @@ services:
     container_name: frontend_prod
     restart: always
     ports:
-      - "0.0.0.0:3002:80"
+      - "3002:80"
     networks:
       - pub
 
@@ -159,7 +159,7 @@ services:
     container_name: adminer_prod
     restart: always
     ports:
-      - "0.0.0.0:8080:8080"
+      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -178,8 +178,8 @@ services:
       - frontend
       - adminer
     ports:
-      - "0.0.0.0:80:80"
-      - "0.0.0.0:443:443"
+      - "80:80"
+      - "443:443"
     networks:
       - pub
       - priv
