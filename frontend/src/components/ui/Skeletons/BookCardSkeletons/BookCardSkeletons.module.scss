@@ -19,7 +19,7 @@
     width: 100%;
     height: fit-content;
     border-radius: 20px;
-    padding: 20px;
+    padding: 15px;
     @include flex-column();
     gap: 10px;
 
@@ -83,14 +83,14 @@
         }
 
         li {
-          min-width: 50px;
+          min-width: 49px;
           @include skeleton($pos: relative, $radius: 15px, $h: 25px);
         }
       }
 
       .formats > * {
         flex: 1 1 50px;
-        max-width: 65px;
+        max-width: 49px;
       }
 
       div {

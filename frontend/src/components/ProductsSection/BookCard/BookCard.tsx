@@ -55,6 +55,12 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
             <span className={s.new_price}>${new_price}</span>
             <span className={s.old_price}>${old_price}</span>
           </div>
+
+          {first_tag && (
+            <div className={s.tag}>
+              <Trans i18nKey={first_tag} />
+            </div>
+          )}
         </div>
 
         <h4 lang={language.toLowerCase()} className={s.book_name}>
@@ -70,11 +76,6 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
         </ul>
 
         <ul className={s.book_info}>
-          {first_tag && (
-            <li>
-              <Trans i18nKey={first_tag} />
-            </li>
-          )}
           {!!authors.length && (
             <li>
               <Trans i18nKey={"authors"} />:
