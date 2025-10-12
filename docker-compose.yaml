@@ -187,7 +187,6 @@ services:
       - ./assets:/assets
       - certs_data:/etc/letsencrypt
       - ./webroot:/var/www/certbot
-      - /etc/docker/gai.conf:/etc/gai.conf:ro
     logging:
       driver: json-file
       options:
@@ -207,11 +206,11 @@ services:
 networks:
   pub:
     driver: bridge
-    enable_ipv6: false
+    enable_ipv6: true
   priv:
     driver: bridge
     internal: true
-    enable_ipv6: false
+    enable_ipv6: true
 
 volumes:
   mysql_data_prod:
