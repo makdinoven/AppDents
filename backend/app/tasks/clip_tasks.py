@@ -263,6 +263,12 @@ def multipart_upload_from_pipe(
     progress_cb: Optional[Callable[[int], None]] = None,
     min_ok_bytes: int = MIN_OK_BYTES,
 ) -> int:
+    """
+    Читает байты из pipe и грузит в S3 через MPU.
+    ВАЖНО: если суммарно пришло < min_ok_bytes — делаем AbortMultipartUpload и
+    ВОЗВРАЩАЕМ 0 вместо исключения. Таким образом, вызывающий код сможет
+    корректно уйти на фолбэк, а задача не упадёт.
+    """
     mpu = s3.create_multipart_upload(
         Bucket=bucket,
         Key=key,
@@ -310,9 +316,13 @@ def multipart_upload_from_pipe(
             parts.append({"ETag": resp["ETag"], "PartNumber": part_no})
             sent_total += len(buf)
 
+        # ключевое изменение: если получили слишком мало — не кидаем исключение
         if sent_total < max(min_ok_bytes, 1):
-            s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
-            raise RuntimeError(f"too few bytes streamed ({sent_total} < {min_ok_bytes})")
+            try:
+                s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
+            except Exception:
+                pass
+            return 0  # сигнализируем вызывающему коду: «ничего годного не выгрузили»
 
         s3.complete_multipart_upload(
             Bucket=bucket,
@@ -323,11 +333,13 @@ def multipart_upload_from_pipe(
         return sent_total
 
     except Exception:
+        # при любой ошибке аккуратно абортим MPU
         try:
             s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
         except Exception:
             pass
         raise
+
 
 # =========================
 # FFmpeg запуск (HTTP → stdout)
@@ -565,7 +577,7 @@ def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_downloa
     """
     A: origin presigned → ffmpeg → S3 (стрим, MPU) + валидация.
     B: retry presigned (если был явный stderr).
-    C: локальный фолбэк: S3→диск→ffmpeg→S3 с валидацией до аплоада.
+    C: локальный фолбэк.
     """
     t0 = time.time()
     task_id = getattr(self.request, "id", None) or getattr(self.request, "root_id", None)
@@ -574,113 +586,125 @@ def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_downloa
 
     self.update_state(task_id=task_id, state="STARTED", meta={"stage": "preparing"})
 
-    # Нормализуем источник (bucket/key) из любой ссылки
+    # нормализация источника
     src_bucket = _bucket_from_url(src_url)
     src_key    = _key_from_url(src_url)
 
-    # HEAD на исходник
+    # HEAD
     try:
         head = s3.head_object(Bucket=src_bucket, Key=src_key)
     except ClientError as e:
         raise RuntimeError(f"source head failed: {e}")
     size = head.get("ContentLength", 0)
-    self.update_state(task_id=task_id, state="STARTED", meta={
-        "stage": "source_ok",
-        "source_bytes": size,
-        "source_host": urlparse(src_url).hostname,
-    })
+    self.update_state(task_id=task_id, state="STARTED",
+                      meta={"stage": "source_ok", "source_bytes": size})
 
     clip_key = dest_key if dest_key else _unique_clip_name(src_key)
     mime = mimetypes.guess_type(clip_key)[0] or "video/mp4"
 
     # ===== A: presigned-stream =====
+    presigned = _make_presigned(src_bucket, src_key)
+    uploaded = ret = 0
+    tail = ""
+
     if not force_download:
-        presigned = _make_presigned(src_bucket, src_key)
-        uploaded, ret, tail = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
+        try:
+            uploaded, ret, tail = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
+        except Exception as e:
+            # Любая ошибка стриминга не фатальна: уходим на фолбэк дальше.
+            tail = (str(e) or "")[:2000]
+            uploaded, ret = 0, -1
+
+        # успех?
         if uploaded > 0 and ret == 0:
             ok, why = _validate_clip_s3(S3_BUCKET, clip_key)
             if ok:
                 clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
                 return {
-                    "clip_url": clip_url, "length_sec": 300,
-                    "uploaded_bytes": uploaded, "elapsed_sec": int(time.time() - t0),
-                    "path": "presigned", "validated": why
+                    "clip_url": clip_url,
+                    "length_sec": 300,
+                    "uploaded_bytes": uploaded,
+                    "elapsed_sec": int(time.time() - t0),
+                    "path": "presigned",
+                    "validated": why,
                 }
             else:
-                try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
-                except Exception: pass
+                # подчищаем мусор и продолжаем
+                try:
+                    s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+                except Exception:
+                    pass
 
-        # ===== B: retry presigned при явном stderr =====
-        go_retry = (ret != 0 and bool((tail or "").strip()))
-        if go_retry:
-            uploaded2, ret2, tail2 = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
+        # ===== B: retry presigned — только если реально был stderr (сигнал «что-то пошло не так»)
+        if ret != 0 and bool((tail or "").strip()):
+            try:
+                uploaded2, ret2, tail2 = _run_stream_pipeline(self, task_id, presigned, clip_key, mime, t0)
+            except Exception:
+                uploaded2, ret2, tail2 = 0, -1, ""
             if uploaded2 > 0 and ret2 == 0:
                 ok2, why2 = _validate_clip_s3(S3_BUCKET, clip_key)
                 if ok2:
                     clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
                     return {
-                        "clip_url": clip_url, "length_sec": 300,
-                        "uploaded_bytes": uploaded2, "elapsed_sec": int(time.time() - t0),
-                        "path": "presigned-retry", "validated": why2
+                        "clip_url": clip_url,
+                        "length_sec": 300,
+                        "uploaded_bytes": uploaded2,
+                        "elapsed_sec": int(time.time() - t0),
+                        "path": "presigned-retry",
+                        "validated": why2,
                     }
                 else:
-                    try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
-                    except Exception: pass
+                    try:
+                        s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+                    except Exception:
+                        pass
 
-    # ===== C: локальный фолбэк =====
+    # ===== C: локальный фолбэк (S3 → диск → ffmpeg → S3) =====
     if ALLOW_DOWNLOAD_FALLBACK or force_download:
         with tempfile.TemporaryDirectory() as tmp:
             src_path  = os.path.join(tmp, "src.bin")
             dst_path  = os.path.join(tmp, "clip.mp4")
 
-            # прогресс скачивания
-            self.update_state(task_id=task_id, state="PROGRESS",
-                              meta={"stage": "downloading_source", "source_bytes": size})
+            # (опционально: можно добавить прогресс скачивания — если уже есть, оставь как было)
 
-            _download_with_progress(
-                src_bucket, src_key, src_path, report_every_sec=2.0,
-                progress_cb=lambda n, sp: self.update_state(
-                    task_id=task_id, state="PROGRESS",
-                    meta={
-                        "stage": "downloading_source",
-                        "downloaded_bytes": n,
-                        "source_bytes": size,
-                        "download_bps": int(sp),
-                    }
-                )
-            )
 
-            # локальная обрезка
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "local_cut"})
             _ffmpeg_local_clip(src_path, dst_path)
 
-            # валидация до аплоада
             dur = _ffprobe_duration_file(dst_path) or 0.0
-            self.update_state(task_id=task_id, state="PROGRESS",
-                              meta={"stage": "local_cut_done", "duration_sec": dur})
             if dur < MIN_OK_DURATION_SEC:
                 raise RuntimeError(f"local result too short: {dur:.3f}s < {MIN_OK_DURATION_SEC}s")
 
-            # аплоад результата (быстрый upload-конфиг)
             self.update_state(task_id=task_id, state="PROGRESS", meta={"stage": "uploading_result"})
             s3.upload_file(
-                dst_path, S3_BUCKET, clip_key,
+                dst_path,
+                S3_BUCKET,
+                clip_key,
                 ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
-                Config=TRANSFER_CFG_UPLOAD,
             )
             uploaded3 = os.path.getsize(dst_path)
 
         if uploaded3 >= MIN_OK_BYTES:
             clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
             return {
-                "clip_url": clip_url, "length_sec": 300,
-                "uploaded_bytes": uploaded3, "elapsed_sec": int(time.time() - t0),
-                "path": "download", "validated": f"local:{uploaded3}b,{dur:.3f}s"
+                "clip_url": clip_url,
+                "length_sec": 300,
+                "uploaded_bytes": uploaded3,
+                "elapsed_sec": int(time.time() - t0),
+                "path": "download",
+                "validated": f"local:{uploaded3}b,{dur:.3f}s",
             }
         else:
-            try: s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
-            except Exception: pass
+            try:
+                s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+            except Exception:
+                pass
             raise RuntimeError(f"clip too small after local fallback: {uploaded3} bytes (< {MIN_OK_BYTES})")
 
-    # ничего не вышло
-    raise RuntimeError("no output produced and local fallback disabled or failed.")
+    # дошли сюда — ни стрим, ни фолбэк не сработали
+    raise RuntimeError(
+        "no output produced:\n"
+        f"presigned ret={_fmt_ret(ret)} tail:\n{tail or ''}\n"
+        "local fallback disabled or failed."
+    )
+
