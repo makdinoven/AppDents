@@ -5,6 +5,8 @@ import os
 import re
 import tempfile
 import subprocess
+import urllib
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Optional, List, Dict, Tuple
@@ -307,6 +309,69 @@ def fix_mark_ready(db_session, video_id: int) -> None:
 
 
 # ---------- Planner ----------
+HLS_DIR_RE_LEGACY = re.compile(r"/\.hls/([^/]+)/playlist\.m3u8$", re.I)
+HLS_DIR_RE_NEW    = re.compile(r"/\.hls/([^/]+-[0-9a-f]{8})/playlist\.m3u8$", re.I)
+
+def key_from_url(url: str) -> str:
+    """
+    Превращаем публичный URL CDN в S3 key.
+    Пример:
+      https://cdn.dent-s.com/Es Okeson full/dir/file.mp4
+      -> Es Okeson full/dir/file.mp4
+    """
+    prefix = S3_PUBLIC_HOST.rstrip("/") + "/"
+    if url.startswith(prefix):
+        key = url[len(prefix):]
+    else:
+        # если прислали прямой S3 endpoint URL — вырежем host и leading '/'
+        parsed = urllib.parse.urlparse(url)
+        key = parsed.path.lstrip("/")
+    # Не декодируем пробелы намеренно (у тебя в ключах реальные пробелы).
+    return key
+
+def discover_hls_for_src(src_mp4_key: str) -> HLSPaths:
+    """
+    По ключу исходного MP4 ищем существующие HLS плейлисты.
+    Логика:
+      - Берём базовую папку: <dir of mp4>/.hls/
+      - Ищем все playlist.m3u8 внутри.
+      - Классифицируем: legacy (без суффикса -hash) и new (с суффиксом -[0-9a-f]{8})
+      - Если ничего нет — предложим new-путь автоматически.
+    """
+    base_dir = src_mp4_key.rsplit("/", 1)[0] if "/" in src_mp4_key else ""
+    hls_prefix = f"{base_dir}/.hls/"
+    legacy_pl_key = None
+    new_pl_key = None
+
+    paginator = s3.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.endswith("playlist.m3u8"):
+                if HLS_DIR_RE_NEW.search(key):
+                    # выбираем самый «свежий» new (по времени последнего модификатора)
+                    if not new_pl_key:
+                        new_pl_key = key
+                elif HLS_DIR_RE_LEGACY.search(key):
+                    if not legacy_pl_key:
+                        legacy_pl_key = key
+
+    # Если не нашли new — предлагаем новый каталог с суффиксом
+    if not new_pl_key:
+        # slug делаем из имени родительской папки или имени mp4
+        base_name = os.path.splitext(os.path.basename(src_mp4_key))[0]
+        # лёгкий "slug"
+        slug = re.sub(r"[^a-z0-9\-]+", "-", base_name.lower().replace(" ", "-")).strip("-")
+        suffix = uuid.uuid4().hex[:8]
+        new_dir = f"{hls_prefix}{slug}-{suffix}"
+        new_pl_key = f"{new_dir}/playlist.m3u8"
+
+    return HLSPaths(
+        legacy_pl_key=legacy_pl_key,
+        new_pl_key=new_pl_key,
+        legacy_pl_url=url_from_key(legacy_pl_key) if legacy_pl_key else None,
+        new_pl_url=url_from_key(new_pl_key) if new_pl_key else None,
+    )
 
 def build_fix_plan(
     paths: HLSPaths,

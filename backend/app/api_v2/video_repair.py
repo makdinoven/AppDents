@@ -2,15 +2,14 @@ from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, Query, Body
 from celery.result import AsyncResult
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from ..tasks.ensure_hls import validate_and_fix_hls
 
 router = APIRouter()
 
+
 class HLSValidateFixIn(BaseModel):
-    src_mp4_key: str
-    legacy_pl_key: Optional[str] = None
-    new_pl_key: Optional[str] = None
+    video_url: HttpUrl
     prefer_new: bool = True
     sync: bool = False
 

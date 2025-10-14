@@ -22,7 +22,8 @@ from celery import shared_task
 from sqlalchemy.orm import Session
 
 from ..services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
-    fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json
+    fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json, key_from_url, \
+    discover_hls_for_src
 
 # ──────────────────────────── ENV / CONST ────────────────────────────────────
 logger = logging.getLogger(__name__)
@@ -611,22 +612,26 @@ def _delete_prefix(prefix: str) -> None:
 
 @shared_task(bind=True, soft_time_limit=60 * 30)
 def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-    src_mp4_key: str = payload["src_mp4_key"]
-    legacy_pl_key: Optional[str] = payload.get("legacy_pl_key")
-    new_pl_key: Optional[str] = payload.get("new_pl_key")
+    """
+    payload:
+      {
+        "video_url": "https://cdn.dent-s.com/Es Okeson full/...-original.mp4",
+        "prefer_new": true
+      }
+    """
+    video_url: str = payload["video_url"]
     prefer_new: bool = bool(payload.get("prefer_new", True))
 
-    paths = HLSPaths(
-        legacy_pl_key=legacy_pl_key,
-        new_pl_key=new_pl_key,
-        legacy_pl_url=url_from_key(legacy_pl_key) if legacy_pl_key else None,
-        new_pl_url=url_from_key(new_pl_key) if new_pl_key else None,
-    )
+    # 1) Вычисляем ключ исходника
+    src_mp4_key = key_from_url(video_url)
 
+    # 2) Авто-дискавер плейлистов (legacy/new) по расположению MP4
+    paths: HLSPaths = discover_hls_for_src(src_mp4_key)
+
+    # 3) План и проверки
     plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
 
     applied, errors = [], []
-
     chosen_master = plan.notes.get("chosen_master")
     hls_dir_key = chosen_master.rsplit("/", 1)[0] if chosen_master and "/" in chosen_master else None
 
@@ -639,12 +644,12 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             fix_force_audio_reencode(src_mp4_key, hls_dir_key)
             applied.append("FORCE_AUDIO_REENCODE")
 
-        if legacy_pl_key and new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
-            if s3_exists(new_pl_key):
-                fix_write_alias_master(new_pl_key, legacy_pl_key)
+        if paths.legacy_pl_key and paths.new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
+            if s3_exists(paths.new_pl_key):
+                fix_write_alias_master(paths.new_pl_key, paths.legacy_pl_key)
                 applied.append("WRITE_ALIAS_MASTER")
 
-        # Пишем status.json
+        # status.json рядом с выбранным master
         if hls_dir_key and any(f.name == "WRITE_STATUS" for f in plan.to_apply):
             status = {
                 "problems": {
@@ -662,7 +667,8 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
                     "new_pl_key": paths.new_pl_key,
                     "legacy_pl_url": paths.legacy_pl_url,
                     "new_pl_url": paths.new_pl_url
-                }
+                },
+                "src_mp4_key": src_mp4_key
             }
             write_status_json(hls_dir_key, status)
             applied.append("WRITE_STATUS")
@@ -678,7 +684,7 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             k: {
                 "problems": [p.name for p in v.problems],
                 "details": v.details
-            } for k, v in {k: v for k, v in checks.items()}.items()
+            } for k, v in checks.items()
         },
         "plan": {"to_apply": [f.name for f in plan.to_apply], "notes": plan.notes},
         "paths": {
@@ -686,6 +692,6 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             "new_pl_key": paths.new_pl_key,
             "legacy_pl_url": paths.legacy_pl_url,
             "new_pl_url": paths.new_pl_url
-        }
+        },
+        "src_mp4_key": src_mp4_key
     }
-
