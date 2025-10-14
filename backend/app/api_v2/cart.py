@@ -167,7 +167,7 @@ def my_cart(
         for it in cart.items
     )
 
-    count = len(cart.items)
+    count = sum(1 for it in cart.items if it.landing is not None)
     disc_curr = _calc_discount(count)
     disc_next = _calc_discount(count + 1)
     discounted = total_new * (1 - disc_curr)
