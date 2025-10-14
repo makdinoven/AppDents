@@ -611,6 +611,8 @@ def repair_hls_for_key(
     force_rebuild: bool = False,
     purge_legacy_trash: bool = True,
 ) -> dict:
+    logger.info("[HLS][REPAIR] received key_or_url=%s force=%s purge=%s",
+               key_or_url, force_rebuild, purge_legacy_trash)
     started_at = int(time.time())
     actions: list[str] = []
     warnings: list[str] = []
