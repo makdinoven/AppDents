@@ -1,5 +1,5 @@
 export interface CartApiResponse {
-  items: CartItemType[];
+  items: CartApiItemResponse[];
   current_discount: number;
   next_discount: number;
   total_amount: number;
@@ -8,12 +8,14 @@ export interface CartApiResponse {
   total_old_amount: number;
 }
 
-export interface CartTypeExtended extends CartApiResponse {
-  quantity: number;
-  loading: boolean;
+export interface CartApiItemResponse {
+  id: number;
+  item_type: CartItemKind;
+  landing: CartItemCourseType | null;
+  book: CartItemBookType | null;
 }
 
-export interface CartLandingType {
+export interface CartItemCourseType {
   id: number;
   landing_name: string;
   authors: any[];
@@ -22,9 +24,10 @@ export interface CartLandingType {
   new_price: number;
   preview_photo: string;
   course_ids: number[];
+  lessons_count?: string;
 }
 
-export interface CartBookType {
+export interface CartItemBookType {
   id: number;
   landing_name: string;
   authors: any[];
@@ -35,15 +38,21 @@ export interface CartBookType {
   book_ids: number[];
 }
 
+export type CartItemKind = "LANDING" | "BOOK";
+
 export interface CartItemType {
-  landing: CartLandingType;
-  book?: CartBookType;
-  item_type: "LANDING" | "BOOK";
-  id: number;
+  data: CartItemBookType | CartItemCourseType;
+  item_type: CartItemKind;
 }
 
 export interface CartType {
   items: CartItemType[];
   quantity: number;
   loading?: boolean;
+  current_discount: number;
+  next_discount: number;
+  total_amount: number;
+  total_amount_with_balance_discount: number;
+  total_new_amount: number;
+  total_old_amount: number;
 }

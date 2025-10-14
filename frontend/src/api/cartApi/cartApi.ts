@@ -5,7 +5,7 @@ export const cartApi = {
   getCart() {
     return instance.get("cart", { headers: getAuthHeaders() });
   },
-  addCartItem(id: number) {
+  addCartItemCourse(id: number) {
     try {
       return instance.post(
         `cart/landing/${id}`,
@@ -16,11 +16,32 @@ export const cartApi = {
       console.log(error);
     }
   },
-  removeCartItem(id: number) {
+
+  addCartItemBook(id: number) {
+    try {
+      return instance.post(
+        `cart/book-landings/${id}`,
+        {},
+        { headers: getAuthHeaders() },
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  },
+  removeCartItemCourse(id: number) {
     return instance.delete(`cart/landing/${id}`, { headers: getAuthHeaders() });
   },
 
-  previewCart(landing_ids: number[]) {
-    return instance.post(`cart/preview`, { landing_ids });
+  removeCartItemBook(id: number) {
+    return instance.delete(`cart/book-landings/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  previewCart(landingIds: {
+    cart_landing_ids: number[];
+    cart_book_landing_ids: number[];
+  }) {
+    return instance.post(`cart/preview`, landingIds);
   },
 };

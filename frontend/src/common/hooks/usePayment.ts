@@ -68,7 +68,7 @@ export const usePayment = ({ paymentData, isFree, isOffer }: any) => {
         course_ids: paymentData.courseIds,
         use_balance: isBalanceUsed,
         user_email: isLogged ? email : emailValue,
-        transfer_cart: !isLogged && cartLandingIds.length > 0,
+        transfer_cart: !isLogged,
         cart_landing_ids: cartLandingIds,
         source: paymentData.source || getPaymentSource(isOffer),
         success_url: `${BASE_URL}${Path.successPayment}`,

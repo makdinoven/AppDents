@@ -107,19 +107,19 @@
 .book_info {
   li {
     @include clamped-p5;
-    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    hyphens: auto;
+    word-break: break-word;
     gap: 3px;
     text-transform: capitalize;
   }
 
   .book_info_value {
     color: $hover-color-dark;
-    //display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    hyphens: auto;
   }
 }
 
@@ -219,11 +219,37 @@
 }
 
 .cart_btn {
+  position: relative;
+  border-radius: 16px;
   cursor: pointer;
   border: 1px solid $accent;
   @include transition;
-  padding: 5px 20px;
-  width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 5px;
+  width: 92px;
+  max-height: 36px;
+
+  &.active {
+    border-color: $primary;
+    background-color: $primary;
+
+    &.blue {
+      background-color: $secondary-lighter;
+      border-color: $secondary-lighter;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      path {
+        @include transition;
+        stroke: $background-color;
+      }
+    }
+  }
 
   svg {
     width: 20px;
@@ -233,16 +259,28 @@
   @media (hover: hover) {
     &:hover {
       border-color: $primary;
-      background-color: $primary !important;
+      background-color: $primary;
 
       &.blue {
-        border-color: $secondary-lighter !important;
-        background-color: $secondary-lighter !important;
+        border-color: $secondary-lighter;
+        background-color: $secondary-lighter;
       }
 
       svg {
         path {
-          stroke: $background-color !important;
+          stroke: $background-color;
+        }
+      }
+
+      &.active {
+        border-color: $error-color;
+        background-color: $background-color;
+        color: $accent;
+
+        svg {
+          path {
+            stroke: $error-color;
+          }
         }
       }
     }
@@ -306,7 +344,17 @@
   }
 
   .cart_btn {
-    padding: 5px 14px 5px 13px;
+    min-width: 50px;
+    padding: 3px;
     width: fit-content;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn_text {
+      display: none;
+    }
   }
 }

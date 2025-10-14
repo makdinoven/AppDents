@@ -12,6 +12,7 @@ import { setPaymentData } from "../../../store/slices/paymentSlice.ts";
 import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 import { getPaymentType } from "../../../common/helpers/helpers.ts";
 import { Path } from "../../../routes/routes.ts";
+import { useCart } from "../../../common/hooks/useCart.ts";
 
 export type ProductCardFlags = {
   isFree?: boolean;
@@ -56,6 +57,20 @@ const CourseCard = ({
   const dispatch = useDispatch<AppDispatchType>();
   const screenWidth = useScreenWidth();
   const { isFree, isVideo, isClient, isOffer } = flags;
+
+  const { isInCart, cartItemLoading, toggleCartItem } = useCart(
+    {
+      id,
+      landing_name: name,
+      authors,
+      page_name: slug,
+      old_price,
+      new_price,
+      course_ids: [id],
+      preview_photo: photo,
+    },
+    "LANDING",
+  );
 
   const link = isFree
     ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${slug}`
@@ -150,18 +165,9 @@ const CourseCard = ({
                 </button>
                 {isClient && (
                   <AddToCartButton
-                    item={{
-                      landing: {
-                        id: id,
-                        landing_name: name,
-                        authors: authors,
-                        page_name: slug,
-                        old_price: old_price,
-                        new_price: new_price,
-                        preview_photo: photo,
-                        course_ids: course_ids,
-                      },
-                    }}
+                    toggleCartItem={toggleCartItem}
+                    isInCart={isInCart}
+                    loading={cartItemLoading}
                     className={s.cart_btn}
                   />
                 )}
