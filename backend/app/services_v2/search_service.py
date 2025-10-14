@@ -313,7 +313,7 @@ def search_everything(
             "id": bl.id,
             "landing_name": bl.landing_name,
             "page_name": bl.page_name,
-            "preview_photo": bl.preview_photo,
+            "preview_photo": b.cover_url,
             "old_price": bl.old_price,
             "new_price": bl.new_price,
             "language": bl.language,
