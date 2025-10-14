@@ -238,6 +238,7 @@ export const ADMIN_SIDEBAR_LINKS = [
     innerLinks: [
       { label: "Video summary", link: Path.adminVideoSummaryTool },
       { label: "Clip tool", link: Path.adminClipTool },
+      { label: "Magic video fix", link: Path.adminMagicVideoTool },
     ],
   },
 ];
