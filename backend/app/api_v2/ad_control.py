@@ -648,8 +648,8 @@ def set_assignment(landing_id: int, payload: AssignmentIn, db: Session = Depends
     db.commit()
     return {"ok": True}
 
-# добавили blue для особого случая
-OverviewColor = Literal["white", "orange", "red", "green", "blue"]
+# добавили black для особого случая
+OverviewColor = Literal["white", "orange", "red", "green", "black"]
 
 WHITE_DAYS_THRESHOLD = 5  # < 5 дней от старта => white
 
@@ -695,7 +695,7 @@ def _overview_color(now: datetime, stage_start: datetime, sales10: int, lifetime
         return "orange"
     # sales10 == 0
     if lifetime_sales > 3:
-        return "blue"
+        return "black"
     return "red"
 
 @router.get("/ads/overview")
@@ -704,7 +704,7 @@ def ads_overview_list(
     # ── фильтры (совместимы по духу с карантин/наблюдение)
     q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
     staff_id: Optional[int] = Query(None),
-    colors: Optional[List[OverviewColor]] = Query(None, description="white|orange|red|green|blue"),
+    colors: Optional[List[OverviewColor]] = Query(None, description="white|orange|red|green|black"),
     cycle_min: Optional[int] = Query(None),
     cycle_max: Optional[int] = Query(None),
     days_min: Optional[int] = Query(None),
@@ -823,8 +823,8 @@ def ads_overview_list(
 
     # 8) сортировка
     def _color_rank(c: str) -> int:
-        # red > orange > blue > white > green (на ваше усмотрение — можно поменять)
-        order = {"red": 4, "orange": 3, "blue": 2, "white": 1, "green": 0}
+        # red > orange > black > white > green (на ваше усмотрение — можно поменять)
+        order = {"red": 4, "orange": 3, "black": 2, "white": 1, "green": 0}
         return order.get(c, -1)
 
     reverse = (sort_dir == "desc")
