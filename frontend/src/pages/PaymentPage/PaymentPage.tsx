@@ -42,7 +42,8 @@ const PaymentPage = () => {
   const isOffer = paymentModalType === "offer";
   const isFromPromotionLanding =
     location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient);
+    !location.pathname.includes(Path.landingClient) &&
+    !location.pathname.includes(Path.courses);
   const {
     loading,
     isBalanceUsed,
