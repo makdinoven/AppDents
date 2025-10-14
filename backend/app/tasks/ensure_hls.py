@@ -21,7 +21,7 @@ from botocore.exceptions import ClientError
 from celery import shared_task
 from sqlalchemy.orm import Session
 
-from AppDents.backend.app.services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
+from ..services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
     fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json
 
 # ──────────────────────────── ENV / CONST ────────────────────────────────────
