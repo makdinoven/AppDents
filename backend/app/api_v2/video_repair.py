@@ -13,9 +13,14 @@ class HLSValidateFixIn(BaseModel):
     prefer_new: bool = True
     sync: bool = False
 
+def _model_to_dict(m: BaseModel) -> Dict[str, Any]:
+    # совместимость Pydantic v1/v2
+    if hasattr(m, "model_dump"):   # v2
+        return m.model_dump()
+    return m.dict()                # v1
 @router.post("/validate-fix")
 def validate_fix_hls(data: HLSValidateFixIn = Body(...)) -> Dict[str, Any]:
-    payload = data.model_dump()
+    payload = _model_to_dict(data)
     if data.sync:
         result = validate_and_fix_hls.apply(args=[payload]).get()
         return {"mode": "sync", "result": result}
