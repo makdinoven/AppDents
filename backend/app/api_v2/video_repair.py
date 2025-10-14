@@ -23,9 +23,18 @@ def repair_hls(
 @router.get("/repair/{task_id}")
 def repair_status(task_id: str):
     ar = AsyncResult(task_id)
-    return {
+    payload = {
         "task_id": task_id,
         "state": ar.state,
-        "result": (ar.result if ar.ready() else None),
-        "traceback": (ar.traceback if ar.failed() else None),
+        "result": None,
+        "traceback": None,
     }
+    # если уже готова — это твой финальный dict
+    if ar.ready():
+        payload["result"] = ar.result
+    else:
+        # промежуточная мета (если будет)
+        payload["result"] = getattr(ar, "info", None)
+    if ar.failed():
+        payload["traceback"] = ar.traceback
+    return payload

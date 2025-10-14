@@ -589,21 +589,19 @@ def recount_hls_counters():
 def _key_from_url(url: str) -> str:
     return unquote(urlparse(url).path.lstrip("/"))
 
-def _delete_prefix(prefix: str) -> dict:
-    """Удаляет все объекты с данным префиксом (batch-ом). Возвращает счётчик."""
-    deleted = 0
+def _delete_prefix(prefix: str) -> None:
+    # prefix типа "path/.hls/slug/"
     s3v4 = _s3_v4()
     paginator = s3v4.get_paginator("list_objects_v2")
+    to_delete = []
     for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix):
-        keys = [{"Key": obj["Key"]} for obj in page.get("Contents", [])]
-        if not keys:
-            continue
-        # батчами по 1000
-        for i in range(0, len(keys), 1000):
-            chunk = {"Objects": keys[i:i+1000]}
-            resp = s3.delete_objects(Bucket=S3_BUCKET, Delete=chunk)
-            deleted += len(resp.get("Deleted", []))
-    return {"deleted": deleted, "prefix": prefix}
+        for obj in page.get("Contents", []):
+            to_delete.append({"Key": obj["Key"]})
+            if len(to_delete) >= 1000:
+                s3.delete_objects(Bucket=S3_BUCKET, Delete={"Objects": to_delete})
+                to_delete.clear()
+    if to_delete:
+        s3.delete_objects(Bucket=S3_BUCKET, Delete={"Objects": to_delete})
 
 
 @shared_task(name="app.tasks.repair_hls_for_key", rate_limit="20/m")
@@ -615,6 +613,7 @@ def repair_hls_for_key(
 ) -> dict:
     started_at = int(time.time())
     actions: list[str] = []
+    warnings: list[str] = []
 
     def ok(**extra):
         return {
@@ -721,9 +720,7 @@ def repair_hls_for_key(
                 put_alias_master(legacy_pl_key, new_pl_url)
                 actions.append("write_alias_master")
             except Exception as e:
-                # не критично — но вернём предупреждение
-                return err("write_alias_master", e)
-
+                warnings.append(f"put_alias_master: {e}")
 
         return ok(
             key=key,
@@ -732,6 +729,7 @@ def repair_hls_for_key(
             legacy_pl_url=legacy_pl_url,
             new_pl_url=new_pl_url,
             rebuilt=bool(need_rebuild),
+            warnings=warnings,
         )
 
     except Exception as e:
