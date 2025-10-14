@@ -45,6 +45,7 @@ import ClipTool from "../pages/Admin/pages/tools/ClipTool/ClipTool.tsx";
 import AdControlStaff from "../pages/Admin/pages/ad-control/AdControlStaff.tsx";
 import AdControlAccounts from "../pages/Admin/pages/ad-control/AdControlAccounts.tsx";
 import AdControlListing from "../pages/Admin/pages/ad-control/AdControlListing/AdControlListing.tsx";
+import MagicVideoTool from "../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -175,6 +176,10 @@ export const AppRoutes: FC = () => {
               element={<VideoSummaryTool />}
             />
             <Route path={`${Path.adminClipTool}`} element={<ClipTool />} />
+            <Route
+              path={`${Path.adminMagicVideoTool}`}
+              element={<MagicVideoTool />}
+            />
 
             <Route
               path={`${Path.courseDetail}/:courseId?`}

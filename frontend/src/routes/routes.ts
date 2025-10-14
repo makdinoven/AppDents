@@ -49,4 +49,5 @@ export const Path = {
   adminAdControlStaff: "/admin/ad-control/staff-listing",
   adminVideoSummaryTool: "/admin/tools/video-summary",
   adminClipTool: "/admin/tools/clip",
+  adminMagicVideoTool: "/admin/tools/magic-video",
 };

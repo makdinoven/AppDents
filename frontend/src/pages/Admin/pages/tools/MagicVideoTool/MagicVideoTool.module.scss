@@ -1,0 +1,25 @@
+.magic_tool {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+
+  .input {
+    width: 100%;
+  }
+
+  .pending {
+    background-color: $yellow;
+  }
+
+  .success {
+    background-color: $green;
+  }
+
+  .error {
+    background-color: $error-color;
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    flex-direction: column;
+  }
+}
