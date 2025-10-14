@@ -1,5 +1,6 @@
 
 import hashlib
+import json
 import logging
 import os
 import re
@@ -9,7 +10,7 @@ import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import unquote, quote
+from urllib.parse import unquote, quote, urlparse
 
 import boto3
 import redis
@@ -149,26 +150,76 @@ def put_alias_master(legacy_playlist_key: str, canonical_m3u8_url: str) -> None:
 # ─────────────────────── ffmpeg (copy→fallback) ──────────────────────────────
 
 def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
-    """True  → HLS готов; False → ffmpeg окончательно упал."""
-    copy_cmd = [
+    """
+    Делает HLS, выбирая стратегию:
+      1) v=h264 & a=aac → remux (быстро)
+      2) v=h264 & a!=aac → перекодируем ТОЛЬКО аудио в AAC, видео копируем
+      3) иначе → перекодируем и видео (h264) и аудио (aac)
+    Возвращает True/False.
+    """
+    try:
+        info = _ffprobe_streams(in_mp4)
+    except Exception as e:
+        logger.warning("[HLS] ffprobe failed (%s) — fallback to full encode", e)
+        info = {"vcodec": "", "acodec": ""}
+
+    v_ok = _is_h264(info["vcodec"])
+    a_ok = _is_aac(info["acodec"])
+
+    # Общие параметры HLS
+    common = [
         "ffmpeg", "-v", "error", "-y", "-threads", "1",
         "-i", in_mp4,
-        "-c", "copy",
-        "-bsf:v", "h264_mp4toannexb",
         "-movflags", "+faststart",
         "-hls_time", "8", "-hls_list_size", "0",
         "-hls_flags", "independent_segments",
         "-hls_segment_filename", seg_pat,
         playlist,
     ]
-    try:
-        subprocess.run(copy_cmd, check=True)
-        return True                      # ← успешный fast‑remux
-    except subprocess.CalledProcessError as e:
-        logger.warning("[HLS] copy‑mux failed (%s) — fallback to re‑encode", e)
 
-    # fallback: re‑encode
-    encode_cmd = [
+    if v_ok and a_ok:
+        # чистый remux
+        cmd = [
+            "ffmpeg", "-v", "error", "-y", "-threads", "1",
+            "-i", in_mp4,
+            "-c:v", "copy",
+            "-bsf:v", "h264_mp4toannexb",
+            "-c:a", "copy",
+            "-movflags", "+faststart",
+            "-hls_time", "8", "-hls_list_size", "0",
+            "-hls_flags", "independent_segments",
+            "-hls_segment_filename", seg_pat,
+            playlist,
+        ]
+        try:
+            subprocess.run(cmd, check=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.warning("[HLS] pure remux failed (%s) — will try audio-only transcode if possible", e)
+            # падаем ниже на стратегию 2/3
+
+    if v_ok and not a_ok:
+        # копируем видео, перекодируем только аудио → AAC
+        cmd = [
+            "ffmpeg", "-v", "error", "-y", "-threads", "1",
+            "-i", in_mp4,
+            "-c:v", "copy",
+            "-bsf:v", "h264_mp4toannexb",
+            "-c:a", "aac", "-b:a", "192k",
+            "-movflags", "+faststart",
+            "-hls_time", "8", "-hls_list_size", "0",
+            "-hls_flags", "independent_segments",
+            "-hls_segment_filename", seg_pat,
+            playlist,
+        ]
+        try:
+            subprocess.run(cmd, check=True, timeout=3600)
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.warning("[HLS] audio-only transcode failed (%s) — fallback to full encode", e)
+
+    # Полная перекодировка: H.264 + AAC
+    cmd = [
         "ffmpeg", "-v", "error", "-y", "-threads", "1",
         "-i", in_mp4,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
@@ -181,10 +232,10 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
         playlist,
     ]
     try:
-        subprocess.run(encode_cmd, check=True, timeout=3600)
-        return True                      # ← перекодирование прошло
+        subprocess.run(cmd, check=True, timeout=5400)
+        return True
     except subprocess.CalledProcessError as e:
-        logger.error("[HLS] re‑encode failed: %s", e)
+        logger.error("[HLS] full encode failed: %s", e)
         return False
 
 # ───────────────────────────── METADATA FIX ──────────────────────────────────
@@ -235,6 +286,42 @@ def _mark_hls_error(key: str, note: str) -> None:
         if e.response["Error"]["Code"] not in _NO_KEY:
             raise
 
+def _ffprobe_streams(path: str) -> dict:
+    """Возвращает {'vcodec': 'h264'|'hevc'|..., 'acodec': 'aac'|'mp3'|...}."""
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "v:0", "-show_entries", "stream=codec_name",
+        "-of", "json", path
+    ]
+    out_v = subprocess.check_output(cmd).decode("utf-8", "ignore")
+    vcodec = None
+    try:
+        data = json.loads(out_v)
+        vcodec = (data.get("streams") or [{}])[0].get("codec_name")
+    except Exception:
+        pass
+
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-select_streams", "a:0", "-show_entries", "stream=codec_name",
+        "-of", "json", path
+    ]
+    out_a = subprocess.check_output(cmd).decode("utf-8", "ignore")
+    acodec = None
+    try:
+        data = json.loads(out_a)
+        acodec = (data.get("streams") or [{}])[0].get("codec_name")
+    except Exception:
+        pass
+
+    return {"vcodec": (vcodec or "").lower(), "acodec": (acodec or "").lower()}
+
+
+def _is_h264(codec: str) -> bool:
+    return codec in ("h264", "avc1")
+
+def _is_aac(codec: str) -> bool:
+    return codec in ("aac", "mp4a")
 
 
 # ────────────────────────────── TASKS ────────────────────────────────────────
@@ -497,3 +584,129 @@ def recount_hls_counters():
         "[HLS][RECOUNT] total_mp4=%d playlists=%d recovered=%d collisions=%d unmatched_playlists=%d ready_now=%d",
         total_mp4, len(playlists), len(recovered), collisions, unmatched, rds.scard(R_SET_READY)
     )
+
+
+def _key_from_url(url: str) -> str:
+    return unquote(urlparse(url).path.lstrip("/"))
+
+def _delete_prefix(prefix: str) -> dict:
+    """Удаляет все объекты с данным префиксом (batch-ом). Возвращает счётчик."""
+    deleted = 0
+    s3v4 = _s3_v4()
+    paginator = s3v4.get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix):
+        keys = [{"Key": obj["Key"]} for obj in page.get("Contents", [])]
+        if not keys:
+            continue
+        # батчами по 1000
+        for i in range(0, len(keys), 1000):
+            chunk = {"Objects": keys[i:i+1000]}
+            resp = s3.delete_objects(Bucket=S3_BUCKET, Delete=chunk)
+            deleted += len(resp.get("Deleted", []))
+    return {"deleted": deleted, "prefix": prefix}
+
+
+@shared_task(name="app.tasks.repair_hls_for_key", rate_limit="20/m")
+def repair_hls_for_key(
+    key_or_url: str,
+    *,
+    force_rebuild: bool = False,
+    purge_legacy_trash: bool = True,
+    purge_cdn: bool = True,
+) -> dict:
+    """
+    Универсальный «ремонт»:
+      • принимает S3-key ИЛИ публичный URL на MP4,
+      • создаёт/пересоздаёт КАНОНИЧЕСКИЙ HLS (AAC-аудио гарантируется _make_hls),
+      • пишет alias-master по legacy-пути,
+      • ставит meta hls=true,
+      • опционально чистит legacy-каталог (старые segment*.ts, старые playlist.m3u8),
+      • опционально дергает CDN purge на m3u8.
+    """
+    # нормализуем key
+    key = key_or_url
+    if key_or_url.startswith("http://") or key_or_url.startswith("https://"):
+        key = _key_from_url(key_or_url)
+
+    # sanity
+    if not key.lower().endswith(".mp4"):
+        raise RuntimeError(f"not an mp4 key: {key}")
+
+    # проверим, что исходник существует
+    try:
+        head_src = s3.head_object(Bucket=S3_BUCKET, Key=key)
+    except ClientError as e:
+        raise RuntimeError(f"source not found: {key} ({e})")
+
+    legacy_prefix, new_prefix = hls_prefixes_for(key)
+    legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+    new_pl_key    = f"{new_prefix}playlist.m3u8"
+    legacy_pl_url = f"{S3_PUBLIC_HOST}/{legacy_pl_key}"
+    new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
+
+    actions: list[str] = []
+    result = {
+        "key": key,
+        "legacy_pl_key": legacy_pl_key,
+        "new_pl_key": new_pl_key,
+        "legacy_pl_url": legacy_pl_url,
+        "new_pl_url": new_pl_url,
+        "actions": actions,
+    }
+
+    # нужно ли пересобрать?
+    need_rebuild = force_rebuild
+    if not need_rebuild:
+        try:
+            s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
+            result["canonical_exists"] = True
+        except ClientError:
+            result["canonical_exists"] = False
+            need_rebuild = True
+
+    # если пересборка — удалим КАНОНИЧЕСКИЙ каталог, чтобы не смешивать сегменты
+    if need_rebuild:
+        actions.append("delete_canonical_prefix")
+        result["deleted_canonical"] = _delete_prefix(new_prefix)
+
+        # и на всякий случай — старый legacy-каталог (если будем делать alias-master, он перезапишется)
+        if purge_legacy_trash:
+            actions.append("delete_legacy_prefix")
+            result["deleted_legacy"] = _delete_prefix(legacy_prefix)
+
+        # строим HLS в КАНОНИЧЕСКИЙ путь
+        with tempfile.TemporaryDirectory() as tmp:
+            in_mp4   = os.path.join(tmp, "in.mp4")
+            seg_pat  = os.path.join(tmp, "segment_%03d.ts")
+            playlist = os.path.join(tmp, "playlist.m3u8")
+
+            s3.download_file(S3_BUCKET, key, in_mp4)
+
+            ok = _make_hls(in_mp4, playlist, seg_pat)
+            if not ok:
+                _mark_hls_error(key, "ffmpeg_failed")
+                actions.append("mark_error")
+                result["status"] = "failed_ffmpeg"
+                return result
+
+            # аплоад в canonical
+            for fname in os.listdir(tmp):
+                if fname == "in.mp4":
+                    continue
+                src = os.path.join(tmp, fname)
+                dst = f"{new_prefix}{fname}"
+                ct = "application/vnd.apple.mpegurl" if fname.endswith(".m3u8") else "video/MP2T"
+                s3.upload_file(src, S3_BUCKET, dst, ExtraArgs={"ACL": "public-read", "ContentType": ct})
+            actions.append("upload_canonical_hls")
+
+    # проставляем метадату hls=true
+    _mark_hls_ready(key)
+    actions.append("mark_ready")
+
+    # alias-master по legacy-пути (всегда перезаписываем, если пути отличаются)
+    if legacy_pl_key != new_pl_key:
+        put_alias_master(legacy_pl_key, new_pl_url)
+        actions.append("write_alias_master")
+
+    result["status"] = "ok"
+    return result
