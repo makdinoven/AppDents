@@ -10,6 +10,7 @@ import time
 import unicodedata
 from datetime import datetime
 from pathlib import Path
+from typing import Dict, Any, Optional
 from urllib.parse import unquote, quote, urlparse
 
 import boto3
@@ -18,6 +19,10 @@ import requests
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task
+from sqlalchemy.orm import Session
+
+from AppDents.backend.app.services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
+    fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json
 
 # ──────────────────────────── ENV / CONST ────────────────────────────────────
 logger = logging.getLogger(__name__)
@@ -604,137 +609,83 @@ def _delete_prefix(prefix: str) -> None:
         s3.delete_objects(Bucket=S3_BUCKET, Delete={"Objects": to_delete})
 
 
-@shared_task(name="app.tasks.repair_hls_for_key", rate_limit="20/m")
-def repair_hls_for_key(
-    key_or_url: str,
-    *,
-    force_rebuild: bool = False,
-    purge_legacy_trash: bool = True,
-) -> dict:
-    logger.info("[HLS][REPAIR] received key_or_url=%s force=%s purge=%s",
-               key_or_url, force_rebuild, purge_legacy_trash)
-    started_at = int(time.time())
-    actions: list[str] = []
-    warnings: list[str] = []
+@shared_task(bind=True, soft_time_limit=60 * 30)
+def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    src_mp4_key: str = payload["src_mp4_key"]
+    legacy_pl_key: Optional[str] = payload.get("legacy_pl_key")
+    new_pl_key: Optional[str] = payload.get("new_pl_key")
+    prefer_new: bool = bool(payload.get("prefer_new", True))
 
-    def ok(**extra):
-        return {
-            "status": "ok",
-            "actions": actions,
-            "duration_sec": int(time.time() - started_at),
-            **extra,
-        }
+    paths = HLSPaths(
+        legacy_pl_key=legacy_pl_key,
+        new_pl_key=new_pl_key,
+        legacy_pl_url=url_from_key(legacy_pl_key) if legacy_pl_key else None,
+        new_pl_url=url_from_key(new_pl_key) if new_pl_key else None,
+    )
 
-    def err(where: str, exc: Exception | str):
-        msg = str(exc)
-        logger.error("[HLS][REPAIR] %s: %s", where, msg)
-        return {
-            "status": "error",
-            "where": where,
-            "error": msg[:2000],
-            "actions": actions,
-            "duration_sec": int(time.time() - started_at),
-        }
+    plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
+
+    applied, errors = [], []
+
+    chosen_master = plan.notes.get("chosen_master")
+    hls_dir_key = chosen_master.rsplit("/", 1)[0] if chosen_master and "/" in chosen_master else None
 
     try:
-        # 1) нормализуем key
-        try:
-            key = key_or_url
-            if key_or_url.startswith(("http://", "https://")):
-                key = _key_from_url(key_or_url)
-            if not key.lower().endswith(".mp4"):
-                return err("validate", f"not an mp4: {key}")
-        except Exception as e:
-            return err("normalize_key", e)
+        if hls_dir_key and any(f.name == "REBUILD_HLS" for f in plan.to_apply):
+            fix_rebuild_hls(src_mp4_key, hls_dir_key)
+            applied.append("REBUILD_HLS")
 
-        # 2) есть ли исходник
-        try:
-            s3.head_object(Bucket=S3_BUCKET, Key=key)
-        except Exception as e:
-            return err("head_source", e)
+        if hls_dir_key and any(f.name == "FORCE_AUDIO_REENCODE" for f in plan.to_apply):
+            fix_force_audio_reencode(src_mp4_key, hls_dir_key)
+            applied.append("FORCE_AUDIO_REENCODE")
 
-        legacy_prefix, new_prefix = hls_prefixes_for(key)
-        legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
-        new_pl_key    = f"{new_prefix}playlist.m3u8"
-        legacy_pl_url = f"{S3_PUBLIC_HOST}/{legacy_pl_key}"
-        new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
+        if legacy_pl_key and new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
+            if s3_exists(new_pl_key):
+                fix_write_alias_master(new_pl_key, legacy_pl_key)
+                applied.append("WRITE_ALIAS_MASTER")
 
-        # 3) нужно ли пересобирать
-        canonical_exists = False
-        try:
-            s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
-            canonical_exists = True
-        except ClientError:
-            canonical_exists = False
-
-        need_rebuild = force_rebuild or not canonical_exists
-
-        # 4) пересборка (с удалением каталогов перед этим)
-        if need_rebuild:
-            try:
-                actions.append("delete_canonical_prefix")
-                _delete_prefix(new_prefix)
-            except Exception as e:
-                return err("delete_canonical_prefix", e)
-
-            if purge_legacy_trash:
-                try:
-                    actions.append("delete_legacy_prefix")
-                    _delete_prefix(legacy_prefix)
-                except Exception as e:
-                    return err("delete_legacy_prefix", e)
-
-            try:
-                with tempfile.TemporaryDirectory() as tmp:
-                    in_mp4   = os.path.join(tmp, "in.mp4")
-                    seg_pat  = os.path.join(tmp, "segment_%03d.ts")
-                    playlist = os.path.join(tmp, "playlist.m3u8")
-
-                    s3.download_file(S3_BUCKET, key, in_mp4)
-                    if not _make_hls(in_mp4, playlist, seg_pat):
-                        _mark_hls_error(key, "ffmpeg_failed")
-                        actions.append("mark_error")
-                        return err("ffmpeg", "ffmpeg_failed")
-
-                    # upload в canonical
-                    for fname in os.listdir(tmp):
-                        if fname == "in.mp4":
-                            continue
-                        src = os.path.join(tmp, fname)
-                        dst = f"{new_prefix}{fname}"
-                        ct = "application/vnd.apple.mpegurl" if fname.endswith(".m3u8") else "video/MP2T"
-                        s3.upload_file(src, S3_BUCKET, dst,
-                                       ExtraArgs={"ACL": "public-read", "ContentType": ct})
-                    actions.append("upload_canonical_hls")
-            except Exception as e:
-                return err("build_upload", e)
-
-        # 5) метадата hls=true
-        try:
-            _mark_hls_ready(key)
-            actions.append("mark_ready")
-        except Exception as e:
-            return err("mark_ready", e)
-
-        # 6) alias master для legacy → canonical (если пути отличаются)
-        if legacy_pl_key != new_pl_key:
-            try:
-                put_alias_master(legacy_pl_key, new_pl_url)
-                actions.append("write_alias_master")
-            except Exception as e:
-                warnings.append(f"put_alias_master: {e}")
-
-        return ok(
-            key=key,
-            legacy_pl_key=legacy_pl_key,
-            new_pl_key=new_pl_key,
-            legacy_pl_url=legacy_pl_url,
-            new_pl_url=new_pl_url,
-            rebuilt=bool(need_rebuild),
-            warnings=warnings,
-        )
+        # Пишем status.json
+        if hls_dir_key and any(f.name == "WRITE_STATUS" for f in plan.to_apply):
+            status = {
+                "problems": {
+                    k: [p for p in v["problems"]]
+                    for k, v in {
+                        k: {"problems": [p.name for p in r.problems], "details": r.details}
+                        for k, r in checks.items()
+                    }.items()
+                },
+                "details": {k: r.details for k, r in checks.items()},
+                "plan": [f.name for f in plan.to_apply],
+                "applied": applied,
+                "paths": {
+                    "legacy_pl_key": paths.legacy_pl_key,
+                    "new_pl_key": paths.new_pl_key,
+                    "legacy_pl_url": paths.legacy_pl_url,
+                    "new_pl_url": paths.new_pl_url
+                }
+            }
+            write_status_json(hls_dir_key, status)
+            applied.append("WRITE_STATUS")
 
     except Exception as e:
-        # last-resort, чтобы никогда не получить пустой result
-        return err("unexpected", e)
+        errors.append(str(e))
+
+    return {
+        "status": "ok" if not errors else "error",
+        "applied": applied,
+        "errors": errors,
+        "checks": {
+            k: {
+                "problems": [p.name for p in v.problems],
+                "details": v.details
+            } for k, v in {k: v for k, v in checks.items()}.items()
+        },
+        "plan": {"to_apply": [f.name for f in plan.to_apply], "notes": plan.notes},
+        "paths": {
+            "legacy_pl_key": paths.legacy_pl_key,
+            "new_pl_key": paths.new_pl_key,
+            "legacy_pl_url": paths.legacy_pl_url,
+            "new_pl_url": paths.new_pl_url
+        }
+    }
 
