@@ -22,7 +22,7 @@ import { transformIdNameArrToValueNameArr } from "../../../../../common/helpers/
 
 const adControlSearch = "ad-control-q";
 
-type ColorType = "green" | "orange" | "red" | "white" | "blue";
+type ColorType = "green" | "orange" | "red" | "white" | "black";
 
 const AdControlListing = () => {
   const [searchParams] = useSearchParams();
@@ -296,7 +296,7 @@ const AdControlListing = () => {
               { name: "Red", value: "red" },
               { name: "Orange", value: "orange" },
               { name: "Green", value: "green" },
-              { name: "Blue", value: "blue" },
+              { name: "Black", value: "black" },
             ]}
             placeholder={"Choose a color"}
             selectedValue={colors}

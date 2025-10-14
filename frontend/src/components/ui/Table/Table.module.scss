@@ -80,9 +80,9 @@
       }
     }
 
-    &.blue {
+    &.black {
       &::after {
-        background-color: $secondary-lighter;
+        background-color: $accent;
       }
     }
 
