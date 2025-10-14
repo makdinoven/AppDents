@@ -9,7 +9,6 @@ def repair_hls(
     url: str = Query(..., description="Публичная ссылка на MP4 в CDN (или S3-key)"),
     force_rebuild: bool = Query(False, description="Пересобирать даже если canonical уже есть"),
     purge_legacy_trash: bool = Query(True, description="Удалить старые legacy-сегменты/плейлисты перед сборкой"),
-    purge_cdn: bool = Query(True, description="Почистить кэш CDN для плейлистов"),
 ):
     task = repair_hls_for_key.apply_async(
         (url,),
@@ -27,5 +26,6 @@ def repair_status(task_id: str):
     return {
         "task_id": task_id,
         "state": ar.state,
-        "result": ar.result if ar.ready() else None,
+        "result": (ar.result if ar.ready() else None),
+        "traceback": (ar.traceback if ar.failed() else None),
     }
