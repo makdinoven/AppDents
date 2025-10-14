@@ -612,101 +612,129 @@ def repair_hls_for_key(
     *,
     force_rebuild: bool = False,
     purge_legacy_trash: bool = True,
-    purge_cdn: bool = True,
 ) -> dict:
-    """
-    Универсальный «ремонт»:
-      • принимает S3-key ИЛИ публичный URL на MP4,
-      • создаёт/пересоздаёт КАНОНИЧЕСКИЙ HLS (AAC-аудио гарантируется _make_hls),
-      • пишет alias-master по legacy-пути,
-      • ставит meta hls=true,
-      • опционально чистит legacy-каталог (старые segment*.ts, старые playlist.m3u8),
-      • опционально дергает CDN purge на m3u8.
-    """
-    # нормализуем key
-    key = key_or_url
-    if key_or_url.startswith("http://") or key_or_url.startswith("https://"):
-        key = _key_from_url(key_or_url)
-
-    # sanity
-    if not key.lower().endswith(".mp4"):
-        raise RuntimeError(f"not an mp4 key: {key}")
-
-    # проверим, что исходник существует
-    try:
-        head_src = s3.head_object(Bucket=S3_BUCKET, Key=key)
-    except ClientError as e:
-        raise RuntimeError(f"source not found: {key} ({e})")
-
-    legacy_prefix, new_prefix = hls_prefixes_for(key)
-    legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
-    new_pl_key    = f"{new_prefix}playlist.m3u8"
-    legacy_pl_url = f"{S3_PUBLIC_HOST}/{legacy_pl_key}"
-    new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
-
+    started_at = int(time.time())
     actions: list[str] = []
-    result = {
-        "key": key,
-        "legacy_pl_key": legacy_pl_key,
-        "new_pl_key": new_pl_key,
-        "legacy_pl_url": legacy_pl_url,
-        "new_pl_url": new_pl_url,
-        "actions": actions,
-    }
 
-    # нужно ли пересобрать?
-    need_rebuild = force_rebuild
-    if not need_rebuild:
+    def ok(**extra):
+        return {
+            "status": "ok",
+            "actions": actions,
+            "duration_sec": int(time.time() - started_at),
+            **extra,
+        }
+
+    def err(where: str, exc: Exception | str):
+        msg = str(exc)
+        logger.error("[HLS][REPAIR] %s: %s", where, msg)
+        return {
+            "status": "error",
+            "where": where,
+            "error": msg[:2000],
+            "actions": actions,
+            "duration_sec": int(time.time() - started_at),
+        }
+
+    try:
+        # 1) нормализуем key
+        try:
+            key = key_or_url
+            if key_or_url.startswith(("http://", "https://")):
+                key = _key_from_url(key_or_url)
+            if not key.lower().endswith(".mp4"):
+                return err("validate", f"not an mp4: {key}")
+        except Exception as e:
+            return err("normalize_key", e)
+
+        # 2) есть ли исходник
+        try:
+            s3.head_object(Bucket=S3_BUCKET, Key=key)
+        except Exception as e:
+            return err("head_source", e)
+
+        legacy_prefix, new_prefix = hls_prefixes_for(key)
+        legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+        new_pl_key    = f"{new_prefix}playlist.m3u8"
+        legacy_pl_url = f"{S3_PUBLIC_HOST}/{legacy_pl_key}"
+        new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
+
+        # 3) нужно ли пересобирать
+        canonical_exists = False
         try:
             s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
-            result["canonical_exists"] = True
+            canonical_exists = True
         except ClientError:
-            result["canonical_exists"] = False
-            need_rebuild = True
+            canonical_exists = False
 
-    # если пересборка — удалим КАНОНИЧЕСКИЙ каталог, чтобы не смешивать сегменты
-    if need_rebuild:
-        actions.append("delete_canonical_prefix")
-        result["deleted_canonical"] = _delete_prefix(new_prefix)
+        need_rebuild = force_rebuild or not canonical_exists
 
-        # и на всякий случай — старый legacy-каталог (если будем делать alias-master, он перезапишется)
-        if purge_legacy_trash:
-            actions.append("delete_legacy_prefix")
-            result["deleted_legacy"] = _delete_prefix(legacy_prefix)
+        # 4) пересборка (с удалением каталогов перед этим)
+        if need_rebuild:
+            try:
+                actions.append("delete_canonical_prefix")
+                _delete_prefix(new_prefix)
+            except Exception as e:
+                return err("delete_canonical_prefix", e)
 
-        # строим HLS в КАНОНИЧЕСКИЙ путь
-        with tempfile.TemporaryDirectory() as tmp:
-            in_mp4   = os.path.join(tmp, "in.mp4")
-            seg_pat  = os.path.join(tmp, "segment_%03d.ts")
-            playlist = os.path.join(tmp, "playlist.m3u8")
+            if purge_legacy_trash:
+                try:
+                    actions.append("delete_legacy_prefix")
+                    _delete_prefix(legacy_prefix)
+                except Exception as e:
+                    return err("delete_legacy_prefix", e)
 
-            s3.download_file(S3_BUCKET, key, in_mp4)
+            try:
+                with tempfile.TemporaryDirectory() as tmp:
+                    in_mp4   = os.path.join(tmp, "in.mp4")
+                    seg_pat  = os.path.join(tmp, "segment_%03d.ts")
+                    playlist = os.path.join(tmp, "playlist.m3u8")
 
-            ok = _make_hls(in_mp4, playlist, seg_pat)
-            if not ok:
-                _mark_hls_error(key, "ffmpeg_failed")
-                actions.append("mark_error")
-                result["status"] = "failed_ffmpeg"
-                return result
+                    s3.download_file(S3_BUCKET, key, in_mp4)
+                    if not _make_hls(in_mp4, playlist, seg_pat):
+                        _mark_hls_error(key, "ffmpeg_failed")
+                        actions.append("mark_error")
+                        return err("ffmpeg", "ffmpeg_failed")
 
-            # аплоад в canonical
-            for fname in os.listdir(tmp):
-                if fname == "in.mp4":
-                    continue
-                src = os.path.join(tmp, fname)
-                dst = f"{new_prefix}{fname}"
-                ct = "application/vnd.apple.mpegurl" if fname.endswith(".m3u8") else "video/MP2T"
-                s3.upload_file(src, S3_BUCKET, dst, ExtraArgs={"ACL": "public-read", "ContentType": ct})
-            actions.append("upload_canonical_hls")
+                    # upload в canonical
+                    for fname in os.listdir(tmp):
+                        if fname == "in.mp4":
+                            continue
+                        src = os.path.join(tmp, fname)
+                        dst = f"{new_prefix}{fname}"
+                        ct = "application/vnd.apple.mpegurl" if fname.endswith(".m3u8") else "video/MP2T"
+                        s3.upload_file(src, S3_BUCKET, dst,
+                                       ExtraArgs={"ACL": "public-read", "ContentType": ct})
+                    actions.append("upload_canonical_hls")
+            except Exception as e:
+                return err("build_upload", e)
 
-    # проставляем метадату hls=true
-    _mark_hls_ready(key)
-    actions.append("mark_ready")
+        # 5) метадата hls=true
+        try:
+            _mark_hls_ready(key)
+            actions.append("mark_ready")
+        except Exception as e:
+            return err("mark_ready", e)
 
-    # alias-master по legacy-пути (всегда перезаписываем, если пути отличаются)
-    if legacy_pl_key != new_pl_key:
-        put_alias_master(legacy_pl_key, new_pl_url)
-        actions.append("write_alias_master")
+        # 6) alias master для legacy → canonical (если пути отличаются)
+        if legacy_pl_key != new_pl_key:
+            try:
+                put_alias_master(legacy_pl_key, new_pl_url)
+                actions.append("write_alias_master")
+            except Exception as e:
+                # не критично — но вернём предупреждение
+                return err("write_alias_master", e)
 
-    result["status"] = "ok"
-    return result
+
+        return ok(
+            key=key,
+            legacy_pl_key=legacy_pl_key,
+            new_pl_key=new_pl_key,
+            legacy_pl_url=legacy_pl_url,
+            new_pl_url=new_pl_url,
+            rebuilt=bool(need_rebuild),
+        )
+
+    except Exception as e:
+        # last-resort, чтобы никогда не получить пустой result
+        return err("unexpected", e)
+
