@@ -1,24 +1,28 @@
-from fastapi import APIRouter, Query
+from typing import Optional, Dict, Any
+
+from fastapi import APIRouter, Query, Body
 from celery.result import AsyncResult
-from ..tasks.ensure_hls import repair_hls_for_key
+from pydantic import BaseModel
+from ..tasks.ensure_hls import validate_and_fix_hls
 
 router = APIRouter()
 
-@router.post("/repair")
-def repair_hls(
-    url: str = Query(..., description="Публичная ссылка на MP4 в CDN (или S3-key)"),
-    force_rebuild: bool = Query(False, description="Пересобирать даже если canonical уже есть"),
-    purge_legacy_trash: bool = Query(True, description="Удалить старые legacy-сегменты/плейлисты перед сборкой"),
-):
-    task = repair_hls_for_key.apply_async(
-        (url,),
-        kwargs={
-            "force_rebuild": force_rebuild,
-            "purge_legacy_trash": purge_legacy_trash,
-        },
-        queue="special_hls",  # тот же heavy-воркер, что и конверсия
-    )
-    return {"task_id": task.id, "message": "Repair enqueued"}
+class HLSValidateFixIn(BaseModel):
+    src_mp4_key: str
+    legacy_pl_key: Optional[str] = None
+    new_pl_key: Optional[str] = None
+    prefer_new: bool = True
+    sync: bool = False
+
+@router.post("/validate-fix")
+def validate_fix_hls(data: HLSValidateFixIn = Body(...)) -> Dict[str, Any]:
+    payload = data.model_dump()
+    if data.sync:
+        result = validate_and_fix_hls.apply(args=[payload]).get()
+        return {"mode": "sync", "result": result}
+    else:
+        task = validate_and_fix_hls.apply_async(args=[payload], queue="special_hls")
+        return {"mode": "async", "task_id": task.id}
 
 @router.get("/repair/{task_id}")
 def repair_status(task_id: str):
