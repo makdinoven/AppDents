@@ -31,9 +31,10 @@ export const userApi = {
       params: {
         region: language,
         ...(rcCode && { ref: rcCode }),
-        ...(cartLandingIds.length > 0 && {
+        ...(cartLandingIds && {
           transfer_cart: true,
-          cart_landing_ids: cartLandingIds.join(","),
+          cart_landing_ids: cartLandingIds.cart_landing_ids.join(","),
+          cart_book_landing_ids: cartLandingIds.cart_book_landing_ids.join(","),
         }),
       },
     });
@@ -54,9 +55,16 @@ export const userApi = {
 
     const cartLandingIds = cartStorage.getLandingIds();
 
-    if (cartLandingIds.length > 0) {
+    if (cartLandingIds) {
       params.append("transfer_cart", "true");
-      params.append("cart_landing_ids", cartLandingIds.join(","));
+      params.append(
+        "cart_landing_ids",
+        cartLandingIds.cart_landing_ids.join(","),
+      );
+      params.append(
+        "cart_book_landing_ids",
+        cartLandingIds.cart_book_landing_ids.join(","),
+      );
     }
 
     return instance.post("users/login", params, {

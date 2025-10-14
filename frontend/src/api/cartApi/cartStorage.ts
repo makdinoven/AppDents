@@ -1,8 +1,8 @@
-import { CartItemType, CartTypeExtended } from "./types";
+import { CartItemKind, CartItemType, CartType } from "./types";
 
 const CART_KEY = "DENTS_CART";
 
-export function getInitialCart(): CartTypeExtended {
+export function getInitialCart(): CartType {
   return {
     items: [],
     quantity: 0,
@@ -17,7 +17,7 @@ export function getInitialCart(): CartTypeExtended {
 }
 
 export const cartStorage = {
-  getCart(): CartTypeExtended {
+  getCart(): CartType {
     if (typeof window === "undefined") return getInitialCart();
 
     try {
@@ -44,12 +44,34 @@ export const cartStorage = {
     }
   },
 
-  getLandingIds(): number[] {
+  getLandingIds(): {
+    cart_landing_ids: number[];
+    cart_book_landing_ids: number[];
+  } | null {
     const cart = this.getCart();
-    return cart.items.map((item) => item.landing.id);
+    const result = {
+      cart_landing_ids: [] as number[],
+      cart_book_landing_ids: [] as number[],
+    };
+    for (const item of cart.items) {
+      if (item.item_type === "LANDING") {
+        result.cart_landing_ids.push(item.data.id);
+      } else if (item.item_type === "BOOK") {
+        result.cart_book_landing_ids.push(item.data.id);
+      }
+    }
+
+    if (
+      result.cart_landing_ids.length === 0 &&
+      result.cart_book_landing_ids.length === 0
+    ) {
+      return null;
+    }
+
+    return result;
   },
 
-  setCart(cart: CartTypeExtended): void {
+  setCart(cart: CartType): void {
     try {
       localStorage.setItem(CART_KEY, JSON.stringify(cart));
     } catch (err) {
@@ -63,7 +85,7 @@ export const cartStorage = {
 
   addItem(item: CartItemType): void {
     const cart = this.getCart();
-    if (cart.items.find((i) => i.landing.id === item.landing.id)) return;
+    if (cart.items.find((i) => i.data.id === item.data.id)) return;
     const updatedItems = [...cart.items, item];
 
     this.setCart({
@@ -73,11 +95,11 @@ export const cartStorage = {
     });
   },
 
-  removeItem(itemId: number): void {
+  removeItem(item_type: CartItemKind, itemId: number): void {
     const cart = this.getCart();
 
     const updatedItems = cart.items.filter(
-      (item) => item.landing.id !== itemId,
+      (item) => !(item.item_type === item_type && item.data.id === itemId),
     );
 
     this.setCart({
