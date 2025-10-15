@@ -6,26 +6,34 @@ import { useEffect, useRef } from "react";
 import { Path } from "../../routes/routes.ts";
 import { CoursesIcon, PoweredByStripeLogo, Shield } from "../../assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
-import PaymentCourseCard from "./content/PaymentCourseCard/PaymentCourseCard.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
-import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import UseBalanceOption from "../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
 import { usePayment } from "../../common/hooks/usePayment.ts";
 import PaymentForm from "./content/PaymentForm/PaymentForm.tsx";
 import Button from "../../components/ui/Button/Button.tsx";
 import DisabledPaymentWarn from "../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
-import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
+import {
+  PaymentDataModeType,
+  usePaymentPageHandler,
+} from "../../common/hooks/usePaymentPageHandler.ts";
 import { getLandingDataForPayment } from "../../store/actions/paymentActions.ts";
 import { useLocation } from "react-router-dom";
+import PaymentItemCard from "./content/PaymentItemCard/PaymentItemCard.tsx";
+import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 
 const PaymentPage = () => {
   const location = useLocation();
   const dispatch = useDispatch<AppDispatchType>();
-  const { isPaymentModalOpen, paymentModalType, closePaymentModal, slug } =
-    usePaymentPageHandler();
-  const paymentData = useSelector(
-    (state: AppRootStateType) => state.payment.data,
+  const {
+    isPaymentModalOpen,
+    paymentModalType,
+    closePaymentModal,
+    slug,
+    paymentModalMode,
+  } = usePaymentPageHandler();
+  const { data: hookPaymentData, render: renderPaymentData } = useSelector(
+    (state: AppRootStateType) => state.payment,
   );
   const closeModalRef = useRef<() => void>(null);
   const { isLogged } = useSelector((state: AppRootStateType) => state.user);
@@ -35,7 +43,9 @@ const PaymentPage = () => {
   const isOffer = paymentModalType === "offer";
   const isFromPromotionLanding =
     location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient);
+    !location.pathname.includes(Path.landingClient) &&
+    !location.pathname.includes(Path.courses);
+
   const {
     loading,
     isBalanceUsed,
@@ -47,7 +57,7 @@ const PaymentPage = () => {
     language,
     IS_PAYMENT_DISABLED,
   } = usePayment({
-    paymentData,
+    paymentData: hookPaymentData!,
     isFree,
     isOffer,
   });
@@ -57,17 +67,24 @@ const PaymentPage = () => {
   });
 
   useEffect(() => {
-    if (!paymentData && slug && isPaymentModalOpen) {
-      dispatch(getLandingDataForPayment(slug));
+    if (!hookPaymentData && slug && isPaymentModalOpen) {
+      dispatch(
+        getLandingDataForPayment({
+          slug: slug,
+          mode: paymentModalMode as PaymentDataModeType,
+        }),
+      );
     }
-  }, [slug, paymentData, isPaymentModalOpen]);
+  }, [slug, hookPaymentData, isPaymentModalOpen]);
 
   const closeModal = () => {
     closePaymentModal();
     closeModalRef.current?.();
   };
 
-  if (!paymentData) return null;
+  if (!hookPaymentData || !renderPaymentData) return null;
+
+  const paymentItemsLength = renderPaymentData.items.length;
 
   const renderHeader = () => (
     <div className={s.modal_header}>
@@ -79,8 +96,8 @@ const PaymentPage = () => {
       </h2>
       <div className={s.courses_icon_wrapper}>
         <CoursesIcon />
-        {paymentData.courses.length > 0 && (
-          <span className={s.circle}>{paymentData.courses.length}</span>
+        {paymentItemsLength > 0 && (
+          <span className={s.circle}>{paymentItemsLength}</span>
         )}
       </div>
     </div>
@@ -88,11 +105,12 @@ const PaymentPage = () => {
 
   const renderCourses = () => (
     <div className={s.courses}>
-      {paymentData.courses.map((course, index: number) => (
-        <PaymentCourseCard
+      {renderPaymentData.items.map((item, index: number) => (
+        <PaymentItemCard
           language={language}
           key={index}
-          course={course}
+          item={item.data}
+          itemType={item.item_type}
           isWebinar={isWebinar}
           isFree={isFree}
         />
@@ -110,10 +128,10 @@ const PaymentPage = () => {
             <Trans i18nKey="cart.total" />:
             <div>
               <span className={"highlight"}>
-                ${isBalanceUsed ? balancePrice : paymentData.newPrice}
+                ${isBalanceUsed ? balancePrice : renderPaymentData.new_price}
               </span>
               <span className={`${s.old_price} crossed`}>
-                ${paymentData.oldPrice}
+                ${renderPaymentData.old_price}
               </span>
             </div>
           </div>

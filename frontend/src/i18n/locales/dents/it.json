@@ -333,7 +333,10 @@
     "about": "Dettagliato",
     "specialization": "Specializzazione:",
     "coursesCount_one": "{{count}} corso",
-    "coursesCount_other": "{{count}} corsi"
+    "coursesCount_other": "{{count}} corsi",
+    "booksCount_one": "{{count}} libro",
+    "booksCount_other": "{{count}} libri"
+
   },
   "other": {
     "otherCourses": "Altri corsi",

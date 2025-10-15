@@ -336,7 +336,10 @@
     "coursesCount_one": "{{count}} курс",
     "coursesCount_few": "{{count}} курса",
     "coursesCount_many": "{{count}} курсов",
-    "coursesCount_other": "{{count}} курса"
+    "coursesCount_other": "{{count}} курса",
+    "booksCount_one": "{{count}} книга",
+    "booksCount_few": "{{count}} книги",
+    "booksCount_many": "{{count}} книг"
   },
   "other": {
     "otherCourses": "Другие курсы",

@@ -13,6 +13,36 @@
   z-index: 10;
   flex-shrink: 0;
 
+  &.book {
+    background-color: $secondary-lighter-08;
+
+    .course_prices {
+      .old_price {
+        color: $secondary;
+      }
+    }
+
+    img,
+    .no_photo {
+      aspect-ratio: unset;
+      max-width: unset;
+      max-height: unset;
+      width: fit-content;
+      height: 120px;
+    }
+
+    img {
+      background-color: transparent;
+      border-radius: unset;
+    }
+
+    .no_photo {
+      background-color: $hover-color;
+      border-radius: 15px;
+      width: 85px;
+    }
+  }
+
   &.free {
     padding-bottom: 35px;
   }
@@ -26,7 +56,6 @@
     object-fit: cover;
     background-color: $background-color-05;
   }
-
 }
 
 .course_info {
@@ -61,6 +90,7 @@
     color: $tertiary;
     text-decoration: line-through;
     text-decoration-thickness: 2px;
+    opacity: 0.8;
   }
 }
 
@@ -81,6 +111,17 @@
     padding: 7px;
     gap: 7px;
     min-height: 80px;
+
+    &.book {
+      img {
+        width: 55px;
+        height: 80px;
+      }
+
+      .course_prices {
+        position: relative;
+      }
+    }
 
     img {
       width: 73px;
