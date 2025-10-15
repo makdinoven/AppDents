@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 
 from ..services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
     fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json, key_from_url, \
-    discover_hls_for_src
+    discover_hls_for_src, Fix
 
 # ──────────────────────────── ENV / CONST ────────────────────────────────────
 logger = logging.getLogger(__name__)
@@ -48,6 +48,8 @@ BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 40))     # задач з�
 RATE_LIMIT_HLS      = "15/m"                                     # Celery annotation
 
 R_SET_BAD = "hls:bad"
+FFMPEG_TIMEOUT_S = int(os.getenv("FFMPEG_TIMEOUT_S", "1800"))   # 30 мин
+
 
 # основной S3‑клиент (V2 signature)
 s3 = boto3.client(
@@ -621,126 +623,153 @@ def _master_dir_from(paths, plan) -> str | None:
     return None
 
 
-@shared_task(bind=True, soft_time_limit=60 * 30)
+def _auto_prefer(paths: HLSPaths) -> bool:
+    """
+    Автовыбор «какого master придерживаться».
+    Логика простая и быстрая:
+    - если существует new_pl_key → придерживаемся NEW
+    - иначе, если существует legacy_pl_key → придерживаемся LEGACY
+    - если нет ничего → будем генерировать NEW
+    """
+    if paths.new_pl_key and s3_exists(paths.new_pl_key):
+        return True
+    if paths.legacy_pl_key and s3_exists(paths.legacy_pl_key):
+        return False
+    return True  # ничего нет → создадим new
+
+
+def _chosen_master_dir(paths: HLSPaths, plan) -> str | None:
+    """Папка, где будет лежать выбранный master.m3u8."""
+    cm = (plan.notes.get("chosen_master") if getattr(plan, "notes", None) else None) or None
+    for candidate in (cm, paths.new_pl_key, paths.legacy_pl_key):
+        if isinstance(candidate, str) and candidate.endswith("playlist.m3u8") and "/" in candidate:
+            return candidate.rsplit("/", 1)[0]
+    return None
+
+
+@shared_task(
+    name="app.tasks.ensure_hls.validate_and_fix_hls",
+    bind=True,
+    soft_time_limit=60 * 30,   # 30 минут
+    time_limit=60 * 35,        # жёсткий лимит — на 5 минут больше
+    rate_limit="6/m"           # не душим сервер частыми тяжёлыми задачами
+)
 def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
-    payload:
-      {
-        "video_url": "https://cdn.dent-s.com/Es Okeson full/...-original.mp4" | "Es Okeson full/...-original.mp4",
-        "prefer_new": true
-      }
+    Новый интерфейс: payload = {"video_url": "<http(s)://...mp4> | <s3-path>"}
+    Никаких prefer/sync — всё выбираем автоматически.
     """
-    started = time.time()
-    video_url: str = payload["video_url"]
-    prefer_new: bool = bool(payload.get("prefer_new", True))
-
+    t0 = time.time()
     applied: list[str] = []
-    errors: list[str] = []
+    errors: list[str]  = []
 
-    # 1) Нормализуем исходный ключ (без %20 и т.п.)
-    src_mp4_key = _normalize_src_key(video_url)
+    # 1) нормализуем ключ исходника
+    video_url: str = str(payload["video_url"])
+    src_mp4_key = key_from_url(video_url)  # оставляет пробелы как в ключах
 
+    # 2) быстрый autodiscover путей
+    self.update_state(state="PROGRESS", meta={"step": "discover"})
+    paths: HLSPaths = discover_hls_for_src(src_mp4_key)
+
+    # 3) автоматический выбор prefer_new
+    prefer_new: bool = True
+
+    # 4) строим план фиксов/проверок
+    self.update_state(state="PROGRESS", meta={"step": "plan"})
+    plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
+
+    # где писать/проверять master
+    hls_dir_key = _chosen_master_dir(paths, plan)
+
+    # 5) применяем план — «бережно» к CPU
     try:
-        # 2) Автодискавер путей
-        paths: HLSPaths = discover_hls_for_src(src_mp4_key)
+        # REBUILD_HLS (лёгкий: видео copy, аудио → AAC; чтение MP4 напрямую по URL)
+        if hls_dir_key and any(f is Fix.REBUILD_HLS for f in plan.to_apply):
+            self.update_state(state="PROGRESS", meta={"step": "rebuild_hls"})
+            fix_rebuild_hls(
+                src_mp4_key=src_mp4_key,
+                hls_dir_key=hls_dir_key,
+                ffmpeg_timeout=FFMPEG_TIMEOUT_S,
+                prefer_in_url=True,            # читаем из CDN/S3 по HTTP(S)
+                forbid_full_reencode=True,     # не трогаем видео, только аудио/HLS
+            )
+            applied.append("REBUILD_HLS")
 
-        # 3) План и проверки
-        plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
+        # FORCE_AUDIO_REENCODE (если обнаружен NO_AUDIO или «плохое» аудио)
+        if hls_dir_key and any(f is Fix.FORCE_AUDIO_REENCODE for f in plan.to_apply):
+            self.update_state(state="PROGRESS", meta={"step": "force_audio"})
+            # быстрый принудительный прогон аудио в AAC поверх существующего master
+            fix_force_audio_reencode(
+                src_mp4_key=src_mp4_key,
+                hls_dir_key=hls_dir_key,
+                ffmpeg_timeout=FFMPEG_TIMEOUT_S,
+                prefer_in_url=True,
+                forbid_full_reencode=True,
+            )
+            applied.append("FORCE_AUDIO_REENCODE")
 
-        # директория, куда писать/проверять master.m3u8
-        hls_dir_key = _master_dir_from(paths, plan)
-
-        # ── Применение плана ────────────────────────────────────────────────
-        # Порядок важен: сначала rebuild (если требуется), потом — форс-аудио.
-        try:
-            if hls_dir_key and any(f.name == "REBUILD_HLS" for f in plan.to_apply):
-                fix_rebuild_hls(src_mp4_key, hls_dir_key)
-                applied.append("REBUILD_HLS")
-
-            if hls_dir_key and any(f.name == "FORCE_AUDIO_REENCODE" for f in plan.to_apply):
-                # даже если делали rebuild, делаем форс-аудио, если он есть в плане
-                fix_force_audio_reencode(src_mp4_key, hls_dir_key)
-                applied.append("FORCE_AUDIO_REENCODE")
-
-            # alias master (legacy → canonical), только если оба пути известны и canonical реально есть
-            if paths.legacy_pl_key and paths.new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
-                if s3_exists(paths.new_pl_key):
+        # стало — всегда делаем alias, если оба пути известны и new реально есть
+        if paths.legacy_pl_key and paths.new_pl_key:
+            self.update_state(state="PROGRESS", meta={"step": "alias"})
+            if s3_exists(paths.new_pl_key):
+                try:
                     fix_write_alias_master(paths.new_pl_key, paths.legacy_pl_key)
-                    applied.append("WRITE_ALIAS_MASTER")
+                    if "WRITE_ALIAS_MASTER" not in applied:
+                        applied.append("WRITE_ALIAS_MASTER")
+                except Exception as e:
+                    logger.exception("[HLS] alias write failed: %s", e)
+                    errors.append(f"ALIAS: {type(e).__name__}: {e}")
 
-        except Exception as step_exc:
-            # не прерываем таску — фиксируем, что упало, пойдём писать статус
-            err_txt = f"{type(step_exc).__name__}: {step_exc}"
-            logger.error("[HLS][FIX] step failed: %s\n%s", err_txt, _tb.format_exc())
-            errors.append(err_txt)
-
-        # ── Финальная быстрая верификация + status.json ─────────────────────
-        # Соберём человекочитаемый объект checks для status.json
-        checks_dict = {
-            k: {
-                "problems": [p.name for p in v.problems],
-                "details": v.details
-            } for k, v in checks.items()
-        }
-
-        # Статус и пути
-        paths_dict = {
-            "legacy_pl_key": paths.legacy_pl_key,
-            "new_pl_key": paths.new_pl_key,
-            "legacy_pl_url": paths.legacy_pl_url,
-            "new_pl_url": paths.new_pl_url
-        }
-
-        # Пишем status.json рядом с выбранным master — даже если были ошибки выше.
-        try:
-            if hls_dir_key:
-                status_payload = {
-                    "problems": {k: checks_dict[k]["problems"] for k in checks_dict},
-                    "details":  {k: checks_dict[k]["details"]  for k in checks_dict},
-                    "plan":     [f.name for f in plan.to_apply],
-                    "applied":  applied,
-                    "paths":    paths_dict,
-                    "src_mp4_key": src_mp4_key,
-                }
-                write_status_json(hls_dir_key, status_payload)
-                applied.append("WRITE_STATUS")
-        except Exception as status_exc:
-            err_txt = f"{type(status_exc).__name__}: {status_exc}"
-            logger.error("[HLS][FIX] write_status failed: %s\n%s", err_txt, _tb.format_exc())
-            errors.append(err_txt)
-
-        # Быстрая пост-проверка: существует ли теперь выбранный master?
-        # (берём из плана notes.chosen_master или canonical/legacy)
-        chosen_master = plan.notes.get("chosen_master") if getattr(plan, "notes", None) else None
-        probe_keys = [k for k in (chosen_master, paths.new_pl_key, paths.legacy_pl_key) if k]
-        master_ok = any(s3_exists(k) for k in probe_keys)
-
-        return {
-            "status": "ok" if not errors and master_ok else "error",
-            "applied": applied,
-            "errors": errors,
-            "checks": checks_dict,
-            "plan": {
-                "to_apply": [f.name for f in plan.to_apply],
-                "notes": plan.notes
-            },
-            "paths": paths_dict,
-            "src_mp4_key": src_mp4_key,
-            "duration_sec": int(time.time() - started),
-            "master_exists": bool(master_ok),
-        }
 
     except Exception as e:
-        err_txt = f"{type(e).__name__}: {e}"
-        logger.error("[HLS][FIX] unexpected: %s\n%s", err_txt, _tb.format_exc())
-        return {
-            "status": "error",
-            "applied": applied,
-            "errors": [err_txt],
-            "checks": {},
-            "plan": {"to_apply": [], "notes": {}},
-            "paths": {},
-            "src_mp4_key": src_mp4_key,
-            "duration_sec": int(time.time() - started),
-            "master_exists": False,
-        }
+        logger.exception("[HLS] fix step failed: %s", e)
+        errors.append(f"{type(e).__name__}: {e}")
+
+    # 6) быстрый пост-чек + status.json (в любую погоду)
+    self.update_state(state="PROGRESS", meta={"step": "status"})
+    checks_dict = {
+        k: {"problems": [p.name for p in v.problems], "details": v.details}
+        for k, v in checks.items()
+    }
+    paths_dict = {
+        "legacy_pl_key": paths.legacy_pl_key,
+        "new_pl_key":    paths.new_pl_key,
+        "legacy_pl_url": paths.legacy_pl_url,
+        "new_pl_url":    paths.new_pl_url,
+    }
+
+    try:
+        if hls_dir_key:
+            status_payload = {
+                "problems": {k: checks_dict[k]["problems"] for k in checks_dict},
+                "details":  {k: checks_dict[k]["details"]  for k in checks_dict},
+                "plan":     [f.name for f in plan.to_apply],
+                "applied":  applied,
+                "paths":    paths_dict,
+                "src_mp4_key": src_mp4_key,
+            }
+            write_status_json(hls_dir_key, status_payload)
+            applied.append("WRITE_STATUS")
+    except Exception as e:
+        logger.exception("[HLS] write_status failed: %s", e)
+        errors.append(f"{type(e).__name__}: {e}")
+
+    # 7) финально: существует ли выбранный master?
+    chosen_master = plan.notes.get("chosen_master") if getattr(plan, "notes", None) else None
+    probe_keys = [k for k in (chosen_master, paths.new_pl_key, paths.legacy_pl_key) if k]
+    master_ok = any(s3_exists(k) for k in probe_keys)
+
+    elapsed = int(time.time() - t0)
+    result = {
+        "status": "ok" if master_ok and not errors else "error",
+        "applied": applied,
+        "errors": errors,
+        "checks": checks_dict,
+        "plan": {"to_apply": [f.name for f in plan.to_apply], "notes": plan.notes},
+        "paths": paths_dict,
+        "src_mp4_key": src_mp4_key,
+        "master_exists": bool(master_ok),
+        "duration_sec": elapsed,
+    }
+    self.update_state(state="SUCCESS" if result["status"] == "ok" else "FAILURE", meta=result)
+    return result

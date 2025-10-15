@@ -232,61 +232,6 @@ def check_audio_present(master_key: str) -> CheckResult:
     return res
 
 
-# ---------- Fixes (стабы с понятной реализацией) ----------
-
-def fix_rebuild_hls(src_mp4_key: str, hls_dir_key: str) -> None:
-    """
-    Пересборка HLS «с нуля».
-    Реальная реализация может вызывать твой существующий task конвейера.
-    Здесь — пример локально через ffmpeg в tmp и заливка в S3.
-    """
-    # 1) скачать исходник
-    obj = s3.get_object(Bucket=S3_BUCKET, Key=src_mp4_key)
-    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp_in:
-        tmp_in.write(obj["Body"].read())
-        tmp_in.flush()
-        in_path = tmp_in.name
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        master_path = os.path.join(tmpdir, "master.m3u8")
-        # простой одно-рендитный HLS с AAC
-        cmd = [
-            "ffmpeg", "-y", "-i", in_path,
-            "-c:v", "h264", "-c:a", "aac", "-b:a", "128k",
-            "-start_number", "0",
-            "-hls_time", "6", "-hls_list_size", "0",
-            "-f", "hls", master_path
-        ]
-        proc = subprocess.run(cmd, capture_output=True, text=True)
-        if proc.returncode != 0:
-            raise RuntimeError(f"ffmpeg failed: {proc.stderr[:4000]}")
-
-        # 3) залить всё содержимое каталога tmpdir в hls_dir_key
-        for root, _, files in os.walk(tmpdir):
-            for f in files:
-                local = os.path.join(root, f)
-                rel = os.path.relpath(local, tmpdir).replace("\\", "/")
-                key = f"{hls_dir_key}/{rel}"
-                content_type = "video/MP2T" if f.endswith(".ts") or f.endswith(".m4s") else "application/vnd.apple.mpegurl"
-                with open(local, "rb") as fp:
-                    s3.put_object(Bucket=S3_BUCKET, Key=key, Body=fp.read(), ContentType=content_type)
-
-def fix_force_audio_reencode(src_mp4_key: str, hls_dir_key: str) -> None:
-    """
-    Принудительно гарантируем AAC-аудио в HLS (если исходник «тихий»/без аудио).
-    """
-    fix_rebuild_hls(src_mp4_key, hls_dir_key)
-
-def write_status_json(hls_dir_key: str, data: dict) -> None:
-    key = f"{hls_dir_key.rstrip('/')}/status.json"
-    s3_put_object = s3.put_object  # кратко
-    s3_put_object(
-        Bucket=S3_BUCKET,
-        Key=key,
-        Body=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
-        ContentType="application/json"
-    )
-
 def fix_write_alias_master(from_master_key: str, alias_master_key: str) -> None:
     """
     «Алиас» на master: копируем плейлист (и, при необходимости, правим относительные пути).
@@ -424,3 +369,185 @@ def build_fix_plan(
     plan.notes["problems"] = ", ".join(p.name for p in all_problems) or "none"
 
     return plan, checks
+
+def _lower_prio():
+    """Снижаем приоритет процесса (Linux)."""
+    try:
+        os.nice(10)
+    except Exception:
+        pass
+
+def _run_ffmpeg(cmd: list[str], timeout: int) -> None:
+    """
+    Запускаем ffmpeg «бережно»: без чтения stdin, с 1 потоком, с таймаутом.
+    Логируем stderr для диагностики.
+    """
+    proc = subprocess.run(
+        cmd,
+        check=True,
+        timeout=timeout,
+        capture_output=True,
+        text=True,
+        preexec_fn=_lower_prio,   # снижает CPU приоритет
+    )
+    if proc.stderr:
+        # не «error» — у ffmpeg многое в stderr как обычный лог
+        print(proc.stderr[:4000])
+
+
+def _make_hls_copy_aac(in_url: str, out_dir: str, timeout: int) -> None:
+    """
+    Быстрый HLS: видео копируем как есть, аудио → AAC (если есть),
+    гарантируем сегментацию и совместимость.
+    """
+    master = os.path.join(out_dir, "playlist.m3u8")
+    segpat = os.path.join(out_dir, "segment_%05d.ts")
+
+    cmd = [
+        "ffmpeg", "-v", "error", "-nostdin", "-y",
+        "-threads", "1",
+        "-i", in_url,
+        "-map", "0:v:0",
+        "-map", "0:a:0?",
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000",
+        "-movflags", "+faststart",
+        "-fflags", "+genpts",
+        "-max_muxing_queue_size", "2048",
+        "-hls_time", "8", "-hls_list_size", "0",
+        "-hls_flags", "independent_segments",
+        "-hls_segment_filename", segpat,
+        master,
+    ]
+    _run_ffmpeg(cmd, timeout)
+
+def _make_hls_full_reencode(in_url: str, out_dir: str, timeout: int) -> None:
+    """
+    Крайняя мера (если видео не h264 или источник «битый»):
+    используем ultrafast + CRF 25, чтобы не грузить CPU.
+    """
+    master = os.path.join(out_dir, "playlist.m3u8")
+    segpat = os.path.join(out_dir, "segment_%05d.ts")
+
+    cmd = [
+        "ffmpeg", "-v", "error", "-nostdin", "-y",
+        "-threads", "1",
+        "-i", in_url,
+        "-map", "0:v:0",
+        "-map", "0:a:0?",
+        "-c:v", "libx264", "-preset", "ultrafast", "-crf", "25",
+        "-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000",
+        "-movflags", "+faststart",
+        "-max_muxing_queue_size", "4096",
+        "-hls_time", "8", "-hls_list_size", "0",
+        "-hls_flags", "independent_segments",
+        "-hls_segment_filename", segpat,
+        master,
+    ]
+    _run_ffmpeg(cmd, timeout)
+
+
+def _upload_dir_to_s3(local_dir: str, s3_dir_key: str) -> None:
+    for root, _, files in os.walk(local_dir):
+        for f in files:
+            if f == ".DS_Store":
+                continue
+            local = os.path.join(root, f)
+            rel   = os.path.relpath(local, local_dir).replace("\\", "/")
+            key   = f"{s3_dir_key.rstrip('/')}/{rel}"
+            ct    = "application/vnd.apple.mpegurl" if f.endswith(".m3u8") else "video/MP2T"
+            with open(local, "rb") as fp:
+                s3.put_object(Bucket=S3_BUCKET, Key=key, Body=fp.read(), ContentType=ct)
+
+
+# ───────────── «умные» фиксы ─────────────
+
+def _probe_codecs_from_url(in_url: str) -> tuple[str | None, str | None]:
+    """
+    Быстрый пробник кодеков по исходному MP4 (без скачивания):
+    возвращает (vcodec, acodec) в нижнем регистре.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".url.txt", delete=False) as tmp:
+        # ffprobe умеет читать по http(s), так что путь — это просто URL
+        tmp.flush()
+    try:
+        meta = ffprobe_json_path(in_url)
+    finally:
+        try: os.unlink(tmp.name)
+        except: pass
+
+    vcodec = None
+    acodec = None
+    if meta and "streams" in meta:
+        for s in meta["streams"]:
+            if s.get("codec_type") == "video" and not vcodec:
+                vcodec = (s.get("codec_name") or "").lower()
+            if s.get("codec_type") == "audio" and not acodec:
+                acodec = (s.get("codec_name") or "").lower()
+    return vcodec, acodec
+
+
+def fix_rebuild_hls(
+    src_mp4_key: str,
+    hls_dir_key: str,
+    ffmpeg_timeout: int = 1800,
+    prefer_in_url: bool = True,
+    forbid_full_reencode: bool = True,
+) -> None:
+    """
+    Пересборка HLS из исходного MP4.
+    - Читаем источник напрямую по URL (если prefer_in_url=True).
+    - По умолчанию НЕ делаем полный ре-энкод видео (copy), аудио → AAC.
+    - Если видео не h264/avc1 и forbid_full_reencode=False — сделаем «лёгкий» полный ре-энкод.
+    """
+    in_url = url_from_key(src_mp4_key) if prefer_in_url else None
+    if not in_url:
+        in_url = url_from_key(src_mp4_key)
+
+    # Быстрый «интеллект»: если видео уже h264 — полного ре-энкода не требуется.
+    vcodec, _acodec = _probe_codecs_from_url(in_url)
+    allow_full = (vcodec not in ("h264", "avc1")) and (not forbid_full_reencode)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        try:
+            _make_hls_copy_aac(in_url, tmpdir, ffmpeg_timeout)
+        except Exception as fast_err:
+            if allow_full:
+                # Последняя надежда — лёгкий полный ре-энкод
+                _make_hls_full_reencode(in_url, tmpdir, ffmpeg_timeout)
+            else:
+                # Отдаём ошибку «как есть»
+                raise fast_err
+
+        _upload_dir_to_s3(tmpdir, hls_dir_key)
+
+
+def fix_force_audio_reencode(
+    src_mp4_key: str,
+    hls_dir_key: str,
+    ffmpeg_timeout: int = 1800,
+    prefer_in_url: bool = True,
+    forbid_full_reencode: bool = True,
+) -> None:
+    """
+    Принудительно гарантируем корректное AAC-аудио.
+    Реализовано тем же путём, что и rebuild (copy видео + AAC аудио).
+    """
+    fix_rebuild_hls(
+        src_mp4_key=src_mp4_key,
+        hls_dir_key=hls_dir_key,
+        ffmpeg_timeout=ffmpeg_timeout,
+        prefer_in_url=prefer_in_url,
+        forbid_full_reencode=forbid_full_reencode,
+    )
+
+
+def write_status_json(hls_dir_key: str, data: dict) -> None:
+    key = f"{hls_dir_key.rstrip('/')}/status.json"
+    s3.put_object(
+        Bucket=S3_BUCKET,
+        Key=key,
+        Body=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
+        ContentType="application/json",
+        CacheControl="public, max-age=60",
+    )

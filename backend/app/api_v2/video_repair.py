@@ -1,33 +1,26 @@
-from typing import Optional, Dict, Any
-
-from fastapi import APIRouter, Query, Body
+# app/api_v2/video_repair.py (или где у тебя роут)
+from typing import Dict, Any
+from fastapi import APIRouter, Body
+from pydantic import BaseModel
 from celery.result import AsyncResult
-from pydantic import BaseModel, HttpUrl
-from ..tasks.ensure_hls import validate_and_fix_hls
+
 from ..celery_app import celery as celery_app
+from ..tasks.ensure_hls import validate_and_fix_hls
 
 router = APIRouter()
 
-
 class HLSValidateFixIn(BaseModel):
-    video_url: str
-    prefer_new: bool = True
-    sync: bool = False
+    video_url: str  # только строка; пробелы допустимы (как в ключах)
 
 def _model_to_dict(m: BaseModel) -> Dict[str, Any]:
-    # совместимость Pydantic v1/v2
-    if hasattr(m, "model_dump"):   # v2
-        return m.model_dump()
-    return m.dict()                # v1
+    return m.model_dump() if hasattr(m, "model_dump") else m.dict()
+
 @router.post("/validate-fix")
 def validate_fix_hls(data: HLSValidateFixIn = Body(...)) -> Dict[str, Any]:
     payload = _model_to_dict(data)
-    if data.sync:
-        result = validate_and_fix_hls.apply(args=[payload]).get()
-        return {"mode": "sync", "result": result}
-    else:
-        task = validate_and_fix_hls.apply_async(args=[payload], queue="special_hls")
-        return {"mode": "async", "task_id": task.id}
+    # всегда асинхронно; очередь «hls»
+    task = validate_and_fix_hls.apply_async(args=[payload], queue="special_hls")
+    return {"mode": "async", "task_id": task.id}
 
 @router.get("/repair/{task_id}")
 def repair_status(task_id: str):
@@ -35,15 +28,7 @@ def repair_status(task_id: str):
     payload = {
         "task_id": task_id,
         "state": ar.state,
-        "result": None,
-        "traceback": None,
+        "result": ar.result if ar.ready() else getattr(ar, "info", None),
+        "traceback": ar.traceback if ar.failed() else None,
     }
-    # если уже готова — это твой финальный dict
-    if ar.ready():
-        payload["result"] = ar.result
-    else:
-        # промежуточная мета (если будет)
-        payload["result"] = getattr(ar, "info", None)
-    if ar.failed():
-        payload["traceback"] = ar.traceback
     return payload

@@ -84,6 +84,12 @@ celery.conf.update(
     },
 )
 
+celery.conf.update(
+    task_track_started=True,
+    task_ignore_result=False,
+    result_expires=86400,
+)
+
 default_exc = Exchange("celery", type="direct")
 
 celery.conf.task_queues = (
