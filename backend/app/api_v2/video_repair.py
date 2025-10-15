@@ -4,12 +4,13 @@ from fastapi import APIRouter, Query, Body
 from celery.result import AsyncResult
 from pydantic import BaseModel, HttpUrl
 from ..tasks.ensure_hls import validate_and_fix_hls
+from ..celery_app import celery as celery_app
 
 router = APIRouter()
 
 
 class HLSValidateFixIn(BaseModel):
-    video_url: HttpUrl
+    video_url: str
     prefer_new: bool = True
     sync: bool = False
 
@@ -30,7 +31,7 @@ def validate_fix_hls(data: HLSValidateFixIn = Body(...)) -> Dict[str, Any]:
 
 @router.get("/repair/{task_id}")
 def repair_status(task_id: str):
-    ar = AsyncResult(task_id)
+    ar = AsyncResult(task_id, app=celery_app)
     payload = {
         "task_id": task_id,
         "state": ar.state,
