@@ -157,79 +157,47 @@ def put_alias_master(legacy_playlist_key: str, canonical_m3u8_url: str) -> None:
 
 def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
     """
-    Делает HLS, выбирая стратегию:
-      1) v=h264 & a=aac → remux (быстро)
-      2) v=h264 & a!=aac → перекодируем ТОЛЬКО аудио в AAC, видео копируем
-      3) иначе → перекодируем и видео (h264) и аудио (aac)
-    Возвращает True/False.
+    HLS c гарантированным аудио:
+      A) быстрый путь: копируем видео, АУДИО -> AAC (стерео, 48кГц)
+      B) фолбэк: полная перекодировка (x264 + AAC)
     """
-    try:
-        info = _ffprobe_streams(in_mp4)
-    except Exception as e:
-        logger.warning("[HLS] ffprobe failed (%s) — fallback to full encode", e)
-        info = {"vcodec": "", "acodec": ""}
-
-    v_ok = _is_h264(info["vcodec"])
-    a_ok = _is_aac(info["acodec"])
-
-    # Общие параметры HLS
-    common = [
-        "ffmpeg", "-v", "error", "-y", "-threads", "1",
+    fast_cmd = [
+        "ffmpeg", "-v", "error", "-y",
+        "-threads", "1",
         "-i", in_mp4,
+
+        # включаем ровно 1 дорожку видео и 1 аудио (если есть)
+        "-map", "0:v:0",
+        "-map", "0:a:0?",
+
+        # видео быстро копируем, аудио всегда в AAC
+        "-c:v", "copy",
+        "-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000",
+
+        # разумные флаги для HLS
         "-movflags", "+faststart",
         "-hls_time", "8", "-hls_list_size", "0",
         "-hls_flags", "independent_segments",
         "-hls_segment_filename", seg_pat,
         playlist,
     ]
+    try:
+        subprocess.run(fast_cmd, check=True)
+        return True
+    except subprocess.CalledProcessError as e:
+        logger.warning("[HLS] fast path (vcopy+aac) failed (%s) — fallback to full re-encode", e)
 
-    if v_ok and a_ok:
-        # чистый remux
-        cmd = [
-            "ffmpeg", "-v", "error", "-y", "-threads", "1",
-            "-i", in_mp4,
-            "-c:v", "copy",
-            "-bsf:v", "h264_mp4toannexb",
-            "-c:a", "copy",
-            "-movflags", "+faststart",
-            "-hls_time", "8", "-hls_list_size", "0",
-            "-hls_flags", "independent_segments",
-            "-hls_segment_filename", seg_pat,
-            playlist,
-        ]
-        try:
-            subprocess.run(cmd, check=True)
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.warning("[HLS] pure remux failed (%s) — will try audio-only transcode if possible", e)
-            # падаем ниже на стратегию 2/3
-
-    if v_ok and not a_ok:
-        # копируем видео, перекодируем только аудио → AAC
-        cmd = [
-            "ffmpeg", "-v", "error", "-y", "-threads", "1",
-            "-i", in_mp4,
-            "-c:v", "copy",
-            "-bsf:v", "h264_mp4toannexb",
-            "-c:a", "aac", "-b:a", "192k",
-            "-movflags", "+faststart",
-            "-hls_time", "8", "-hls_list_size", "0",
-            "-hls_flags", "independent_segments",
-            "-hls_segment_filename", seg_pat,
-            playlist,
-        ]
-        try:
-            subprocess.run(cmd, check=True, timeout=3600)
-            return True
-        except subprocess.CalledProcessError as e:
-            logger.warning("[HLS] audio-only transcode failed (%s) — fallback to full encode", e)
-
-    # Полная перекодировка: H.264 + AAC
-    cmd = [
-        "ffmpeg", "-v", "error", "-y", "-threads", "1",
+    full_cmd = [
+        "ffmpeg", "-v", "error", "-y",
+        "-threads", "1",
         "-i", in_mp4,
+
+        "-map", "0:v:0",
+        "-map", "0:a:0?",
+
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
-        "-c:a", "aac", "-b:a", "192k",
+        "-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000",
+
         "-movflags", "+faststart",
         "-max_muxing_queue_size", "1024",
         "-hls_time", "8", "-hls_list_size", "0",
@@ -238,10 +206,10 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
         playlist,
     ]
     try:
-        subprocess.run(cmd, check=True, timeout=5400)
+        subprocess.run(full_cmd, check=True, timeout=3600)
         return True
     except subprocess.CalledProcessError as e:
-        logger.error("[HLS] full encode failed: %s", e)
+        logger.error("[HLS] full re-encode failed: %s", e)
         return False
 
 # ───────────────────────────── METADATA FIX ──────────────────────────────────
