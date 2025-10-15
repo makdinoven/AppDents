@@ -115,8 +115,9 @@ def create_checkout_session(
     *,
     db: Session,
     email: str,
-    course_ids: List[int],
-    product_name: str,
+    course_ids: List[int] | None = None,
+    book_ids: List[int] | None = None,
+    product_name: str | None = None,
     price_cents: int,
     region: str,
     success_url: str,
@@ -125,10 +126,50 @@ def create_checkout_session(
     fbp: str | None = None,
     fbc: str | None = None,
     landing_ids: list[int] | None = None,
+    book_landing_ids: List[int] | None = None,
     from_ad : bool | None = None,
     extra_metadata: dict | None = None,
 ) -> str:
     """Создаёт Stripe Checkout Session и возвращает URL оплаты."""
+    course_ids = course_ids or []
+    book_ids = book_ids or []
+    book_landing_ids = book_landing_ids or []
+
+    course_names: list[str] = []
+    if course_ids:
+        course_names = [
+            c.name for c in db.query(Course).filter(Course.id.in_(course_ids)).all()
+        ]
+
+    book_titles: list[str] = []
+    if book_ids:
+        book_titles += [b.title for b in db.query(Book).filter(Book.id.in_(book_ids)).all()]
+
+    if book_landing_ids:
+        bl_list = db.query(BookLanding).filter(BookLanding.id.in_(book_landing_ids)).all()
+        for bl in bl_list:
+            for b in books_in_landing(db, bl):
+                book_titles.append(b.title)
+
+    # уберём дубликаты, сохраняя порядок
+    seen = set()
+    book_titles = [t for t in book_titles if not (t in seen or seen.add(t))]
+
+    # Если product_name не передали – формируем:
+    if not product_name:
+        parts = []
+        if course_names:
+            parts.append(", ".join(course_names))
+        if book_titles:
+            parts.append(", ".join(book_titles))
+        if not parts:
+            # ни курсов, ни книг — нечего чек-аутить
+            raise HTTPException(status_code=400, detail="Nothing to checkout")
+
+        product_name = "Purchase: " + " | ".join(parts)
+
+
+
 
     stripe_keys = get_stripe_keys_by_region(region)
     stripe.api_key = stripe_keys["secret_key"]
@@ -177,6 +218,14 @@ def create_checkout_session(
 
     if extra_metadata:
         metadata.update(extra_metadata)
+
+        # На всякий случай докинем книги в metadata, если роут не положил
+    if book_ids and "book_ids" not in metadata:
+        metadata["book_ids"] = json.dumps(book_ids)
+    if book_landing_ids and "book_landing_ids" not in metadata:
+        metadata["book_landing_ids"] = json.dumps(book_landing_ids)
+
+    logging.info("Checkout product_name → %s", product_name)
 
 
     logging.info("Metadata for Stripe session: %s", metadata)
@@ -340,8 +389,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # [CHANGE] окончательный фолбэк: даже если ничего не нашли — создадим Purchase с NULL-landing
     if not landing_ids_list:
-        logging.warning("landing_ids_list is empty → will create Purchase with landing_id=NULL")
-        landing_ids_list = [None]
+        # если нет курсовых лендингов, но есть книжные — финансовый факт пойдёт в книжные
+        if metadata.get("book_landing_ids"):
+            landing_ids_list = []
+        else:
+            logging.warning("landing_ids_list is empty → will create Purchase with landing_id=NULL")
+            landing_ids_list = [None]
 
     logging.info("Landings: %s", landing_ids_list)
 
@@ -545,18 +598,43 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # 15) [CHANGE] Создаём Purchase ВСЕГДА (финансовый факт), даже если нет новых курсов / landing_id = NULL
     amount_total = (session.get("amount_total") or 0) / 100.0
     purchase = None
-    for idx, lid in enumerate(landing_ids_list):
+    if landing_ids_list:
+        for idx, lid in enumerate(landing_ids_list):
+            p = Purchase(
+                user_id=user.id,
+                landing_id=lid,
+                from_ad=from_ad,
+                amount=amount_total if idx == 0 else 0.0,
+                source=purchase_source,
+            )
+            db.add(p)
+            if idx == 0:
+                purchase = p
+
+    elif book_landing_ids_list:
+        for idx, blid in enumerate(book_landing_ids_list):
+            p = Purchase(
+                user_id=user.id,
+                book_landing_id=blid,
+                from_ad=from_ad,
+                amount=amount_total if idx == 0 else 0.0,
+                source=purchase_source,
+            )
+            db.add(p)
+            if idx == 0:
+                purchase = p
+
+    else:
+        # крайний фолбэк
         p = Purchase(
             user_id=user.id,
-            course_id=None,  # при желании можно связать с первым course_id
-            landing_id=lid,  # может быть None — у тебя nullable=True
+            landing_id=None,
             from_ad=from_ad,
-            amount=amount_total if idx == 0 else 0.0,
+            amount=amount_total,
             source=purchase_source,
         )
         db.add(p)
-        if idx == 0:
-            purchase = p
+        purchase = p
 
     db.commit()
     logging.info("Purchase(s) committed. first_purchase_id=%s, amount_total=%.2f", getattr(purchase, "id", None), amount_total)
