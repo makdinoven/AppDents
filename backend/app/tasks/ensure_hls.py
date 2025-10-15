@@ -708,17 +708,38 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             )
             applied.append("FORCE_AUDIO_REENCODE")
 
-        # стало — всегда делаем alias, если оба пути известны и new реально есть
-        if paths.legacy_pl_key and paths.new_pl_key:
+        try:
             self.update_state(state="PROGRESS", meta={"step": "alias"})
-            if s3_exists(paths.new_pl_key):
+
+            # 1) если legacy ещё не известен — посчитаем его из src_mp4_key
+            legacy_pl_key = paths.legacy_pl_key
+            if not legacy_pl_key:
+                legacy_prefix, _ = hls_prefixes_for(src_mp4_key)  # у тебя уже есть эта функция
+                legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+
+            # 2) alias пишем ТОЛЬКО когда canonical реально появился
+            if paths.new_pl_key and s3_exists(paths.new_pl_key):
+                new_pl_url = url_from_key(paths.new_pl_key)  # абсолютный CDN-URL
+                put_alias_master(legacy_pl_key, new_pl_url)
+
+                # для status.json красиво подсветим, что legacy теперь есть
+                if not getattr(paths, "legacy_pl_key", None):
+                    # объект paths может быть dataclass — безопасно просто пересоберём dict ниже
+                    pass
+
+                if "WRITE_ALIAS_MASTER" not in applied:
+                    applied.append("WRITE_ALIAS_MASTER")
+
+                # Обновим локальные значения для status.json
+                paths.legacy_pl_key = legacy_pl_key
                 try:
-                    fix_write_alias_master(paths.new_pl_key, paths.legacy_pl_key)
-                    if "WRITE_ALIAS_MASTER" not in applied:
-                        applied.append("WRITE_ALIAS_MASTER")
-                except Exception as e:
-                    logger.exception("[HLS] alias write failed: %s", e)
-                    errors.append(f"ALIAS: {type(e).__name__}: {e}")
+                    paths.legacy_pl_url = url_from_key(legacy_pl_key)
+                except Exception:
+                    pass
+
+        except Exception as e:
+            logger.exception("[HLS] alias ensure failed: %s", e)
+            errors.append(f"ALIAS: {type(e).__name__}: {e}")
 
 
     except Exception as e:
