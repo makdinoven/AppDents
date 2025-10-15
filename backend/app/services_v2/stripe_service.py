@@ -142,9 +142,6 @@ def create_checkout_session(
         ]
 
     book_titles: list[str] = []
-    if book_ids:
-        book_titles += [b.title for b in db.query(Book).filter(Book.id.in_(book_ids)).all()]
-
     if book_landing_ids:
         bl_list = db.query(BookLanding).filter(BookLanding.id.in_(book_landing_ids)).all()
         for bl in bl_list:
@@ -220,14 +217,10 @@ def create_checkout_session(
         metadata.update(extra_metadata)
 
         # На всякий случай докинем книги в metadata, если роут не положил
-    if book_ids and "book_ids" not in metadata:
-        metadata["book_ids"] = json.dumps(book_ids)
     if book_landing_ids and "book_landing_ids" not in metadata:
         metadata["book_landing_ids"] = json.dumps(book_landing_ids)
 
     logging.info("Checkout product_name → %s", product_name)
-
-
     logging.info("Metadata for Stripe session: %s", metadata)
 
     pmc_id = get_stripe_pmc_by_region(region)
@@ -526,16 +519,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # 12.1) Выдаём книги, купленные напрямую
     new_books = []
     already_owned_books = []
-    for bid in book_ids_list:
-        b = db.query(Book).filter(Book.id == bid).one_or_none()
-        if not b:
-            logging.warning("Book %s from metadata not found", bid)
-            continue
-        if b in user.books:
-            already_owned_books.append(b)
-        else:
-            add_book_to_user(db, user.id, b.id)
-            new_books.append(b)
 
     # 12.2) Обрабатываем книжные ЛЕНДИНГИ: выдаём книги из лендинга, инкрементим sales_count
     purchased_book_ids = set(book_ids_list)
@@ -575,15 +558,6 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # 12.4) Создаём Purchase записи по книгам и книжным лендингам
     # Сумму уже положили в первую Purchase выше (курсовую). Для книг распределяем 0.0,
     # чтобы просто зафиксировать состав покупки (финансовый факт уже есть).
-    for bid in book_ids_list:
-        db.add(Purchase(
-            user_id=user.id,
-            book_id=bid,
-            book_landing_id=None,
-            from_ad=from_ad,
-            amount=0.0,
-            source=purchase_source,
-        ))
 
     for blid in book_landing_ids_list:
         db.add(Purchase(
