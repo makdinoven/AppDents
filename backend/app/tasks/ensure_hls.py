@@ -129,7 +129,8 @@ def stable_slug(name: str) -> str:
 
 
 def hls_prefixes_for(key: str) -> tuple[str, str]:
-    base, fname = os.path.split(key)
+    # было: base, fname = os.path.split(key)
+    base, fname = os.path.split(unquote(key))  # ← важно: снимаем %20
     leg = f"{base}/.hls/{legacy_slug(fname)}/".lstrip("/")
     new = f"{base}/.hls/{stable_slug(fname)}/".lstrip("/")
     return leg, new
@@ -714,13 +715,14 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             # 1) если legacy ещё не известен — посчитаем его из src_mp4_key
             legacy_pl_key = paths.legacy_pl_key
             if not legacy_pl_key:
-                legacy_prefix, _ = hls_prefixes_for(src_mp4_key)  # у тебя уже есть эта функция
+                legacy_prefix, _ = hls_prefixes_for(src_mp4_key)
                 legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
 
             # 2) alias пишем ТОЛЬКО когда canonical реально появился
             if paths.new_pl_key and s3_exists(paths.new_pl_key):
-                new_pl_url = url_from_key(paths.new_pl_key)  # абсолютный CDN-URL
+                new_pl_url = url_from_key(paths.new_pl_key)
                 put_alias_master(legacy_pl_key, new_pl_url)
+                applied.append("WRITE_ALIAS_MASTER")
 
                 # для status.json красиво подсветим, что legacy теперь есть
                 if not getattr(paths, "legacy_pl_key", None):
@@ -732,6 +734,7 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
 
                 # Обновим локальные значения для status.json
                 paths.legacy_pl_key = legacy_pl_key
+                paths.legacy_pl_url = url_from_key(legacy_pl_key)
                 try:
                     paths.legacy_pl_url = url_from_key(legacy_pl_key)
                 except Exception:
