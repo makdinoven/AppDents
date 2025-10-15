@@ -4,11 +4,15 @@ import ProfessorsList from "../../../../components/CommonComponents/ProfessorsLi
 
 interface ProfessorsProps {
   professors: any[];
+  type?: "course" | "book";
 }
 
-const Professors = ({ professors }: ProfessorsProps) => {
+const Professors = ({ professors, type = "course" }: ProfessorsProps) => {
   return (
-    <div id={"course-professors"} className={s.professors_container}>
+    <div
+      id={type === "book" ? "book-authors" : "course-professors"}
+      className={s.professors_container}
+    >
       <SectionHeader name={"professors"} />
       <ProfessorsList source={"landing"} professors={professors} />
     </div>

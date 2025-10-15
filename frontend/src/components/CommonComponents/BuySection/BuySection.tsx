@@ -9,6 +9,7 @@ interface BuySectionProps {
   isFullWidth?: boolean;
   oldPrice: string;
   newPrice: string;
+  openPayment: () => void;
 }
 
 const BuySection: React.FC<BuySectionProps> = ({
@@ -17,6 +18,7 @@ const BuySection: React.FC<BuySectionProps> = ({
   isFullWidth = false,
   oldPrice,
   newPrice,
+  openPayment,
 }: BuySectionProps) => {
   const [activeFormat, setActiveFormat] = useState(formats[0]);
   const { t } = useTranslation();
@@ -49,7 +51,7 @@ const BuySection: React.FC<BuySectionProps> = ({
             components={[<span className={s.highlight} />]}
           />
         </p>
-        <button className={`${s.buy_button} ${s[buy]}`} onClick={() => {}}>
+        <button onClick={openPayment} className={`${s.buy_button} ${s[buy]}`}>
           {isDownload ? (
             <p>
               {t("bookLanding.download")}

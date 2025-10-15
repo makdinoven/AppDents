@@ -14,6 +14,8 @@ import { setPaymentData } from "../../../../store/slices/paymentSlice.ts";
 import { PAGE_SOURCES } from "../../../../common/helpers/commonConstants.ts";
 import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
 import DetailHeaderSkeleton from "../../../../components/ui/Skeletons/DetailHeaderSkeleton/DetailHeaderSkeleton.tsx";
+import { LanguagesType } from "../../../../components/ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../../../api/cartApi/types.ts";
 
 const CoursePage = () => {
   const { openPaymentModal } = usePaymentPageHandler();
@@ -32,30 +34,45 @@ const CoursePage = () => {
 
   useEffect(() => {
     if (course) {
-      const paymentData = {
-        landingIds: [course?.landing?.id],
-        courseIds: [course?.id],
-        priceCents: Math.ceil(course?.landing?.new_price * 100),
-        newPrice: course?.landing?.new_price,
-        oldPrice: course?.landing?.old_price,
-        region: course?.landing?.region,
-        fromAd: false,
-        source:
-          course?.access_level === "special_offer"
-            ? PAGE_SOURCES.specialOffer
-            : PAGE_SOURCES.cabinetFree,
-        courses: [
-          {
-            name: course?.landing?.landing_name,
-            newPrice: course?.landing?.new_price,
-            oldPrice: course?.landing?.old_price,
-            lessonsCount: course?.landing?.lessons_count,
-            img: course?.landing?.preview_photo,
+      dispatch(
+        setPaymentData({
+          data: {
+            course_ids: [course.id],
+            landing_ids: [course.landing.id],
+            book_ids: [],
+            book_landing_ids: [],
+            price_cents: Math.ceil(course.landing.new_price * 100),
+            new_price: course.landing.new_price,
+            old_price: course.landing.old_price,
+            from_ad: false,
+            region: course.landing.region as LanguagesType,
+            source:
+              course.access_level === "special_offer"
+                ? PAGE_SOURCES.specialOffer
+                : PAGE_SOURCES.cabinetFree,
           },
-        ],
-      };
-
-      dispatch(setPaymentData(paymentData));
+          render: {
+            new_price: course.landing.new_price,
+            old_price: course.landing.new_price,
+            items: [
+              {
+                item_type: "LANDING" as CartItemKind,
+                data: {
+                  id: course.id,
+                  authors: [],
+                  landing_name: course.landing.landing_name,
+                  page_name: "",
+                  new_price: course.landing.new_price,
+                  old_price: course.landing.old_price,
+                  lessons_count: course.landing.lessons_count,
+                  course_ids: [course.id],
+                  preview_photo: course.landing.preview_photo,
+                },
+              },
+            ],
+          },
+        }),
+      );
     }
   }, [course]);
 

@@ -17,8 +17,19 @@ import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandl
 import { setPaymentData } from "../../../store/slices/paymentSlice.ts";
 import { useDispatch } from "react-redux";
 import { AppDispatchType } from "../../../store/store.ts";
+import { ProductCardFlags } from "../CourseCard/CourseCard.tsx";
+import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../../api/cartApi/types.ts";
 
-const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
+const BookCard = ({
+  book,
+  index,
+  flags,
+}: {
+  book: BookCardType;
+  index: number;
+  flags: ProductCardFlags;
+}) => {
   const { openPaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const {
@@ -48,6 +59,8 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
     "BOOK",
   );
 
+  const { isOffer } = flags;
+
   const handleAddToCart = (e: any) => {
     e.preventDefault();
     e.stopPropagation();
@@ -70,27 +83,41 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
   };
 
   const openPayment = () => {
-    const paymentData = {
-      boookLandingIds: [id],
-      bookIds: book_ids,
-      priceCents: new_price * 100,
-      newPrice: new_price,
-      oldPrice: old_price,
-      region: language,
-      fromAd: false,
-      itemType: "BOOK",
-      books: [
-        {
-          name: landing_name,
-          newPrice: new_price,
-          oldPrice: old_price,
-          img: main_image,
+    dispatch(
+      setPaymentData({
+        data: {
+          new_price,
+          old_price,
+          course_ids: [],
+          landing_ids: [],
+          book_ids,
+          book_landing_ids: [id],
+          price_cents: new_price * 100,
+          from_ad: false,
+          region: language as LanguagesType,
         },
-      ],
-    };
-
-    dispatch(setPaymentData(paymentData));
-    openPaymentModal(slug, getPaymentType());
+        render: {
+          new_price,
+          old_price,
+          items: [
+            {
+              item_type: "BOOK" as CartItemKind,
+              data: {
+                id,
+                landing_name,
+                authors,
+                page_name: slug,
+                old_price,
+                new_price,
+                preview_photo: main_image,
+                book_ids: [id],
+              },
+            },
+          ],
+        },
+      }),
+    );
+    openPaymentModal(slug, getPaymentType(false, isOffer), "BOOKS");
   };
 
   return (

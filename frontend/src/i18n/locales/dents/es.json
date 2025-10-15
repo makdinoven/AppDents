@@ -332,7 +332,10 @@
     "about": "Detallado",
     "specialization": "Especialización:",
     "coursesCount_one": "{{count}} curso",
-    "coursesCount_other": "{{count}} cursos"
+    "coursesCount_other": "{{count}} cursos",
+    "booksCount_one": "{{count}} libro",
+    "booksCount_other": "{{count}} libros"
+
   },
   "other": {
     "otherCourses": "Otros cursos",

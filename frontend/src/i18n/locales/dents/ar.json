@@ -343,7 +343,13 @@
     "coursesCount_two": "دورتان",
     "coursesCount_few": "{{count}} دورات",
     "coursesCount_many": "{{count}} دورة",
-    "coursesCount_other": "{{count}} دورة"
+    "coursesCount_other": "{{count}} دورة",
+    "booksCount_zero": "لا كتب",
+    "booksCount_one": "كتاب واحد",
+    "booksCount_two": "كتابان",
+    "booksCount_few": "{{count}} كتب",
+    "booksCount_many": "{{count}} كتاب",
+    "booksCount_other": "{{count}} كتاب"
   },
   "other": {
     "otherCourses": "دورات أخرى",

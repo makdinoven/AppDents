@@ -97,7 +97,12 @@ const CardsList: React.FC<CardsListProps> = ({
                   />
                 ))
               : cards.map((book, index) => (
-                  <BookCard index={index} book={book} key={book.id} />
+                  <BookCard
+                    index={index}
+                    book={book}
+                    key={book.id}
+                    flags={productCardFlags}
+                  />
                 ))}
           </ul>
           {showSeeMore ? (

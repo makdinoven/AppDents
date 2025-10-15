@@ -41,6 +41,8 @@ import {
 } from "../../common/helpers/facebookPixel.ts";
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../api/cartApi/types.ts";
 
 const Landing = () => {
   const { openPaymentModal } = usePaymentPageHandler();
@@ -109,33 +111,63 @@ const Landing = () => {
       });
       dispatch(setLanguage(res.data.language));
       mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
-      const paymentData = {
-        fromAd: isPromotionLanding,
-        landingIds: [res.data.id],
-        courseIds: res.data.course_ids,
-        priceCents: !isWebinar ? res.data.new_price * 100 : 100,
-        newPrice: !isWebinar ? res.data.new_price : 1,
-        oldPrice: !isWebinar ? res.data.old_price : 49,
-        region: res.data.language,
-        source: isWebinar
-          ? PAGE_SOURCES.webinarLanding
-          : isVideo
-            ? PAGE_SOURCES.videoLanding
-            : undefined,
-        courses: [
-          {
-            name: !isWebinar
-              ? res.data.landing_name
-              : normalizeLessons(res.data.lessons_info)[0].name,
-            newPrice: !isWebinar ? res.data.new_price : 1,
-            oldPrice: !isWebinar ? res.data.old_price : 49,
-            lessonsCount: res.data.lessons_count,
-            img: res.data.preview_photo,
-          },
-        ],
-      };
+      const {
+        old_price,
+        new_price,
+        language,
+        course_ids,
+        id,
+        preview_photo,
+        landing_name,
+        authors,
+        lessons_count,
+      } = res.data;
 
-      dispatch(setPaymentData(paymentData));
+      const newPrice = !isWebinar ? new_price : 1;
+      const oldPrice = !isWebinar ? old_price : 1;
+
+      dispatch(
+        setPaymentData({
+          data: {
+            course_ids,
+            landing_ids: [id],
+            book_ids: [],
+            book_landing_ids: [],
+            price_cents: !isWebinar ? newPrice * 100 : 100,
+            new_price: newPrice,
+            old_price: oldPrice,
+            from_ad: isPromotionLanding,
+            region: language as LanguagesType,
+            source: isWebinar
+              ? PAGE_SOURCES.webinarLanding
+              : isVideo
+                ? PAGE_SOURCES.videoLanding
+                : undefined,
+          },
+          render: {
+            new_price: newPrice,
+            old_price: oldPrice,
+            items: [
+              {
+                item_type: "LANDING" as CartItemKind,
+                data: {
+                  id,
+                  authors,
+                  landing_name: !isWebinar
+                    ? landing_name
+                    : normalizeLessons(res.data.lessons_info)[0].name,
+                  page_name: landingPath as string,
+                  new_price: newPrice,
+                  old_price: oldPrice,
+                  course_ids: [id],
+                  lessons_count,
+                  preview_photo,
+                },
+              },
+            ],
+          },
+        }),
+      );
       setLoading(false);
     } catch (error) {
       console.error(error);

@@ -1,5 +1,4 @@
 .card_wrapper {
-  @include fadeIn;
   @include transition($property: transform);
   @include flex-column;
   height: 100%;
@@ -101,15 +100,23 @@
   hyphens: auto;
 }
 
+.books_count,
 .courses_count {
-  width: fit-content;
-  background-color: $secondary-lighter;
   color: $text-color;
   padding: 1px 10px;
   border-radius: 20px;
   @include clamped-p3;
   align-self: center;
   flex-shrink: 0;
+  width: fit-content;
+}
+
+.courses_count {
+  background-color: $primary;
+}
+
+.books_count {
+  background-color: $secondary-lighter;
 }
 
 .card_content {

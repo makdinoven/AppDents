@@ -47,7 +47,7 @@ export const cartStorage = {
   getLandingIds(): {
     cart_landing_ids: number[];
     cart_book_landing_ids: number[];
-  } | null {
+  } {
     const cart = this.getCart();
     const result = {
       cart_landing_ids: [] as number[],
@@ -65,7 +65,7 @@ export const cartStorage = {
       result.cart_landing_ids.length === 0 &&
       result.cart_book_landing_ids.length === 0
     ) {
-      return null;
+      return { cart_landing_ids: [], cart_book_landing_ids: [] };
     }
 
     return result;

@@ -16,16 +16,20 @@ import ProfessorPageSkeleton from "../../components/ui/Skeletons/ProfessorPageSk
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { AppDispatchType } from "../../store/store.ts";
 import {
+  PaymentDataModeType,
+  usePaymentPageHandler,
+} from "../../common/hooks/usePaymentPageHandler.ts";
+import {
   PAGE_SOURCES,
-  PAYMENT_PAGE_KEY,
+  PAYMENT_MODE_KEY,
 } from "../../common/helpers/commonConstants.ts";
-import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
+import { CartItemType } from "../../api/cartApi/types.ts";
 
 const ProfessorPage = () => {
   const { openPaymentModal } = usePaymentPageHandler();
-  const dispatch = useDispatch<AppDispatchType>();
-  const [localPaymentData, setLocalPaymentData] = useState<any>(null);
   const [searchParams] = useSearchParams();
+  const dispatch = useDispatch<AppDispatchType>();
+  const paymentModalMode = searchParams.get(PAYMENT_MODE_KEY);
   const { professorId } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -34,44 +38,6 @@ const ProfessorPage = () => {
   useEffect(() => {
     fetchProfessorData();
   }, [professorId]);
-
-  useEffect(() => {
-    if (professor) {
-      const paymentData = {
-        landingIds: professor?.landings.map(
-          (landing: { id: number }) => landing.id,
-        ),
-        courseIds: professor?.course_ids,
-        priceCents: professor?.total_new_price * 100,
-        newPrice: professor?.total_new_price,
-        oldPrice: professor?.total_old_price,
-        source: PAGE_SOURCES.professor,
-        fromAd: false,
-        courses: professor?.landings.map(
-          (item: {
-            landing_name: string;
-            new_price: number;
-            old_price: number;
-            lessons_count: string;
-            main_image: string;
-          }) => ({
-            name: item.landing_name,
-            newPrice: item.new_price,
-            oldPrice: item.old_price,
-            lessonsCount: item.lessons_count,
-            img: item.main_image,
-          }),
-        ),
-      };
-      setLocalPaymentData(paymentData);
-    }
-  }, [professor]);
-
-  useEffect(() => {
-    if (localPaymentData && !searchParams.get(PAYMENT_PAGE_KEY)) {
-      dispatch(setPaymentData(localPaymentData));
-    }
-  }, [localPaymentData]);
 
   const fetchProfessorData = async () => {
     setLoading(true);
@@ -84,12 +50,88 @@ const ProfessorPage = () => {
     }
   };
 
-  const handleOpenModal = () => {
-    dispatch(setPaymentData(localPaymentData));
-    openPaymentModal();
+  useEffect(() => {
+    if (professor && paymentModalMode) {
+      setPaymentDataCustom(paymentModalMode as PaymentDataModeType);
+    }
+  }, [professor, paymentModalMode]);
+
+  const setPaymentDataCustom = (mode: PaymentDataModeType) => {
+    const transformedCourses = professor.landings.map(
+      (l: any): CartItemType => ({
+        item_type: "LANDING",
+        data: {
+          id: l.id,
+          landing_name: l.landing_name,
+          authors: l.authors,
+          page_name: l.slug,
+          old_price: Number(l.old_price),
+          new_price: Number(l.new_price),
+          preview_photo: l.main_image,
+          course_ids: l.course_ids,
+          lessons_count: l.lessons_count,
+        },
+      }),
+    );
+
+    const transformedBooks = professor.books.map(
+      (b: any): CartItemType => ({
+        item_type: "BOOK",
+        data: {
+          id: b.id,
+          landing_name: b.title,
+          authors: b?.authors, //TODO настоящих авторов запихнуть когда будет бэк
+          page_name: b.slug,
+          old_price: b?.old_price, //TODO настоящую цену запихнуть когда будет бэк
+          new_price: b?.new_price, //TODO настоящую цену запихнуть когда будет бэк
+          preview_photo: b.cover_url,
+          book_ids: [b.id],
+        },
+      }),
+    );
+
+    let paymentItems;
+
+    switch (mode) {
+      case "COURSES":
+        paymentItems = transformedCourses;
+        break;
+      case "BOOKS":
+        paymentItems = transformedBooks;
+        break;
+      case "BOTH":
+        paymentItems = [...transformedBooks, ...transformedCourses];
+        break;
+    }
+
+    dispatch(
+      setPaymentData({
+        data: {
+          landing_ids: professor.landings.map((l: { id: number }) => l.id),
+          book_landing_ids: professor.books.map((b: { id: number }) => b.id),
+          course_ids: professor.course_ids,
+          book_ids: professor.book_ids ? professor.book_ids : [],
+          price_cents: professor.total_new_price * 100,
+          new_price: professor.total_new_price,
+          old_price: professor.total_old_price,
+          source: PAGE_SOURCES.professor,
+          from_ad: false,
+        },
+        render: {
+          new_price: professor.total_new_price,
+          old_price: professor.total_old_price,
+          items: paymentItems,
+        },
+      }),
+    );
   };
 
-  const renderBuySection = () => {
+  const handleOpenModal = (paymentDataMode: PaymentDataModeType) => {
+    setPaymentDataCustom(paymentDataMode);
+    openPaymentModal(undefined, undefined, paymentDataMode);
+  };
+
+  const renderBuySection = (paymentDataMode: PaymentDataModeType) => {
     if (professor.landings.length <= 0) return null;
     return (
       <section className={s.buy_section}>
@@ -112,7 +154,7 @@ const ProfessorPage = () => {
             }}
           />
         </p>
-        <ArrowButton onClick={handleOpenModal}>
+        <ArrowButton onClick={() => handleOpenModal(paymentDataMode)}>
           <Trans
             i18nKey={"professor.getAllCourses"}
             values={{
@@ -165,7 +207,7 @@ const ProfessorPage = () => {
                 </div>
               )}
             </section>
-            {renderBuySection()}
+            {renderBuySection("COURSES")}
           </>
         )}
         {professor && (
@@ -182,7 +224,11 @@ const ProfessorPage = () => {
                 showEndOfList={false}
               />
             </div>
-            {renderBuySection()}
+            {renderBuySection("COURSES")}
+
+            {renderBuySection("BOOKS")}
+
+            {renderBuySection("BOTH")}
             <ProductsSection
               productCardFlags={{ isClient: true, isOffer: true }}
               showSort={true}
