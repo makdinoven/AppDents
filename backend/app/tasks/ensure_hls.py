@@ -578,88 +578,169 @@ def _delete_prefix(prefix: str) -> None:
         s3.delete_objects(Bucket=S3_BUCKET, Delete={"Objects": to_delete})
 
 
+from typing import Dict, Any
+from urllib.parse import unquote, urlparse
+import traceback as _tb
+import time
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _normalize_src_key(video_url_or_key: str) -> str:
+    """
+    Приводим к «сырому» S3 key (без %XX).
+    Если пришёл http(s) — берём path и unquote().
+    Если пришёл «ключ» — тоже делаем unquote на случай закодированных сегментов.
+    """
+    try:
+        p = urlparse(video_url_or_key)
+        if p.scheme in ("http", "https"):
+            return unquote(p.path.lstrip("/"))
+        # «ключ» без схемы
+        return unquote(video_url_or_key.lstrip("/"))
+    except Exception:
+        # последний шанс — вернуть как есть
+        return video_url_or_key.lstrip("/")
+
+
+def _master_dir_from(paths, plan) -> str | None:
+    """
+    Возвращает директорию, где должен лежать выбранный master.m3u8.
+    Сначала пытаемся взять chosen_master из плана,
+    иначе — new_pl_key, иначе — legacy_pl_key.
+    """
+    cm = (plan.notes.get("chosen_master") if getattr(plan, "notes", None) else None) or None
+    if isinstance(cm, str) and "/" in cm:
+        return cm.rsplit("/", 1)[0]
+
+    for k in ("new_pl_key", "legacy_pl_key"):
+        v = getattr(paths, k, None)
+        if isinstance(v, str) and v and v.endswith("playlist.m3u8") and "/" in v:
+            return v.rsplit("/", 1)[0]
+
+    return None
+
+
 @shared_task(bind=True, soft_time_limit=60 * 30)
 def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     payload:
       {
-        "video_url": "https://cdn.dent-s.com/Es Okeson full/...-original.mp4",
+        "video_url": "https://cdn.dent-s.com/Es Okeson full/...-original.mp4" | "Es Okeson full/...-original.mp4",
         "prefer_new": true
       }
     """
+    started = time.time()
     video_url: str = payload["video_url"]
     prefer_new: bool = bool(payload.get("prefer_new", True))
 
-    # 1) Вычисляем ключ исходника
-    src_mp4_key = key_from_url(video_url)
+    applied: list[str] = []
+    errors: list[str] = []
 
-    # 2) Авто-дискавер плейлистов (legacy/new) по расположению MP4
-    paths: HLSPaths = discover_hls_for_src(src_mp4_key)
-
-    # 3) План и проверки
-    plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
-
-    applied, errors = [], []
-    chosen_master = plan.notes.get("chosen_master")
-    hls_dir_key = chosen_master.rsplit("/", 1)[0] if chosen_master and "/" in chosen_master else None
+    # 1) Нормализуем исходный ключ (без %20 и т.п.)
+    src_mp4_key = _normalize_src_key(video_url)
 
     try:
-        if hls_dir_key and any(f.name == "REBUILD_HLS" for f in plan.to_apply):
-            fix_rebuild_hls(src_mp4_key, hls_dir_key)
-            applied.append("REBUILD_HLS")
+        # 2) Автодискавер путей
+        paths: HLSPaths = discover_hls_for_src(src_mp4_key)
 
-        if hls_dir_key and any(f.name == "FORCE_AUDIO_REENCODE" for f in plan.to_apply):
-            fix_force_audio_reencode(src_mp4_key, hls_dir_key)
-            applied.append("FORCE_AUDIO_REENCODE")
+        # 3) План и проверки
+        plan, checks = build_fix_plan(paths, src_mp4_key, prefer_new=prefer_new)
 
-        if paths.legacy_pl_key and paths.new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
-            if s3_exists(paths.new_pl_key):
-                fix_write_alias_master(paths.new_pl_key, paths.legacy_pl_key)
-                applied.append("WRITE_ALIAS_MASTER")
+        # директория, куда писать/проверять master.m3u8
+        hls_dir_key = _master_dir_from(paths, plan)
 
-        # status.json рядом с выбранным master
-        if hls_dir_key and any(f.name == "WRITE_STATUS" for f in plan.to_apply):
-            status = {
-                "problems": {
-                    k: [p for p in v["problems"]]
-                    for k, v in {
-                        k: {"problems": [p.name for p in r.problems], "details": r.details}
-                        for k, r in checks.items()
-                    }.items()
-                },
-                "details": {k: r.details for k, r in checks.items()},
-                "plan": [f.name for f in plan.to_apply],
-                "applied": applied,
-                "paths": {
-                    "legacy_pl_key": paths.legacy_pl_key,
-                    "new_pl_key": paths.new_pl_key,
-                    "legacy_pl_url": paths.legacy_pl_url,
-                    "new_pl_url": paths.new_pl_url
-                },
-                "src_mp4_key": src_mp4_key
-            }
-            write_status_json(hls_dir_key, status)
-            applied.append("WRITE_STATUS")
+        # ── Применение плана ────────────────────────────────────────────────
+        # Порядок важен: сначала rebuild (если требуется), потом — форс-аудио.
+        try:
+            if hls_dir_key and any(f.name == "REBUILD_HLS" for f in plan.to_apply):
+                fix_rebuild_hls(src_mp4_key, hls_dir_key)
+                applied.append("REBUILD_HLS")
 
-    except Exception as e:
-        errors.append(str(e))
+            if hls_dir_key and any(f.name == "FORCE_AUDIO_REENCODE" for f in plan.to_apply):
+                # даже если делали rebuild, делаем форс-аудио, если он есть в плане
+                fix_force_audio_reencode(src_mp4_key, hls_dir_key)
+                applied.append("FORCE_AUDIO_REENCODE")
 
-    return {
-        "status": "ok" if not errors else "error",
-        "applied": applied,
-        "errors": errors,
-        "checks": {
+            # alias master (legacy → canonical), только если оба пути известны и canonical реально есть
+            if paths.legacy_pl_key and paths.new_pl_key and any(f.name == "WRITE_ALIAS_MASTER" for f in plan.to_apply):
+                if s3_exists(paths.new_pl_key):
+                    fix_write_alias_master(paths.new_pl_key, paths.legacy_pl_key)
+                    applied.append("WRITE_ALIAS_MASTER")
+
+        except Exception as step_exc:
+            # не прерываем таску — фиксируем, что упало, пойдём писать статус
+            err_txt = f"{type(step_exc).__name__}: {step_exc}"
+            logger.error("[HLS][FIX] step failed: %s\n%s", err_txt, _tb.format_exc())
+            errors.append(err_txt)
+
+        # ── Финальная быстрая верификация + status.json ─────────────────────
+        # Соберём человекочитаемый объект checks для status.json
+        checks_dict = {
             k: {
                 "problems": [p.name for p in v.problems],
                 "details": v.details
             } for k, v in checks.items()
-        },
-        "plan": {"to_apply": [f.name for f in plan.to_apply], "notes": plan.notes},
-        "paths": {
+        }
+
+        # Статус и пути
+        paths_dict = {
             "legacy_pl_key": paths.legacy_pl_key,
             "new_pl_key": paths.new_pl_key,
             "legacy_pl_url": paths.legacy_pl_url,
             "new_pl_url": paths.new_pl_url
-        },
-        "src_mp4_key": src_mp4_key
-    }
+        }
+
+        # Пишем status.json рядом с выбранным master — даже если были ошибки выше.
+        try:
+            if hls_dir_key:
+                status_payload = {
+                    "problems": {k: checks_dict[k]["problems"] for k in checks_dict},
+                    "details":  {k: checks_dict[k]["details"]  for k in checks_dict},
+                    "plan":     [f.name for f in plan.to_apply],
+                    "applied":  applied,
+                    "paths":    paths_dict,
+                    "src_mp4_key": src_mp4_key,
+                }
+                write_status_json(hls_dir_key, status_payload)
+                applied.append("WRITE_STATUS")
+        except Exception as status_exc:
+            err_txt = f"{type(status_exc).__name__}: {status_exc}"
+            logger.error("[HLS][FIX] write_status failed: %s\n%s", err_txt, _tb.format_exc())
+            errors.append(err_txt)
+
+        # Быстрая пост-проверка: существует ли теперь выбранный master?
+        # (берём из плана notes.chosen_master или canonical/legacy)
+        chosen_master = plan.notes.get("chosen_master") if getattr(plan, "notes", None) else None
+        probe_keys = [k for k in (chosen_master, paths.new_pl_key, paths.legacy_pl_key) if k]
+        master_ok = any(s3_exists(k) for k in probe_keys)
+
+        return {
+            "status": "ok" if not errors and master_ok else "error",
+            "applied": applied,
+            "errors": errors,
+            "checks": checks_dict,
+            "plan": {
+                "to_apply": [f.name for f in plan.to_apply],
+                "notes": plan.notes
+            },
+            "paths": paths_dict,
+            "src_mp4_key": src_mp4_key,
+            "duration_sec": int(time.time() - started),
+            "master_exists": bool(master_ok),
+        }
+
+    except Exception as e:
+        err_txt = f"{type(e).__name__}: {e}"
+        logger.error("[HLS][FIX] unexpected: %s\n%s", err_txt, _tb.format_exc())
+        return {
+            "status": "error",
+            "applied": applied,
+            "errors": [err_txt],
+            "checks": {},
+            "plan": {"to_apply": [], "notes": {}},
+            "paths": {},
+            "src_mp4_key": src_mp4_key,
+            "duration_sec": int(time.time() - started),
+            "master_exists": False,
+        }
