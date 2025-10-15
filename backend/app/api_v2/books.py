@@ -363,11 +363,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     ]
 
     # Теги лендинга = объединение тегов всех книг (уникально)
-    tag_map: dict[int, dict] = {}
-    for b in landing.books:
-        for t in b.tags:
-            tag_map[t.id] = {"id": t.id, "name": t.name}
-    tags = list(tag_map.values())
+    tags: list[str] = list({t.name for b in landing.books for t in b.tags})
 
     # Авторы с описанием и «их» тегами (теги автора = теги книг этого автора на данном лендинге)
     authors_map: dict[int, dict] = {}
