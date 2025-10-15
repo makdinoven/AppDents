@@ -300,7 +300,53 @@ def _is_h264(codec: str) -> bool:
 def _is_aac(codec: str) -> bool:
     return codec in ("aac", "mp4a")
 
+HLS_DIR_RE_NEW  = re.compile(r"/\.hls/[^/]+-[0-9a-f]{8}/playlist\.m3u8$", re.I)  # canonical с -hash
+HLS_DIR_RE_LEG  = re.compile(r"/\.hls/[^/]+/playlist\.m3u8$", re.I)              # любой legacy
 
+def _list_hls_playlists_under(base_dir: str) -> list[str]:
+    """Собираем ВСЕ playlist.m3u8 под base_dir/.hls/ (и legacy, и new)."""
+    out = []
+    paginator = _s3_v4().get_paginator("list_objects_v2")
+    prefix = f"{base_dir.rstrip('/')}/.hls/"
+    for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix):
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.endswith("playlist.m3u8"):
+                out.append(key)
+    return out
+
+def ensure_aliases_to_canonical(src_mp4_key: str, new_pl_key: str) -> list[str]:
+    """
+    Перезаписываем ВСЕ legacy playlist.m3u8 в каталоге исходника так,
+    чтобы они указывали на canonical new_pl_key.
+    Возвращаем список legacy-ключей, которые переписали.
+    """
+    base_dir = os.path.dirname(unquote(src_mp4_key))
+    all_playlists = _list_hls_playlists_under(base_dir)
+    new_url = url_from_key(new_pl_key)
+    updated = []
+
+    for pl_key in all_playlists:
+        # пропускаем сам canonical (с -hash) — его не трогаем
+        if HLS_DIR_RE_NEW.search(pl_key):
+            continue
+        try:
+            put_alias_master(pl_key, new_url)
+            updated.append(pl_key)
+        except ClientError as e:
+            logger.warning("[HLS] alias write failed for %s: %s", pl_key, e)
+
+    # Если legacy вообще не было — создадим его по «правильному» слугу:
+    if not any(HLS_DIR_RE_LEG.search(k) and not HLS_DIR_RE_NEW.search(k) for k in all_playlists):
+        leg_prefix, _ = hls_prefixes_for(src_mp4_key)
+        legacy_pl_key = f"{leg_prefix}playlist.m3u8"
+        try:
+            put_alias_master(legacy_pl_key, new_url)
+            updated.append(legacy_pl_key)
+        except ClientError as e:
+            logger.warning("[HLS] alias create failed for %s: %s", legacy_pl_key, e)
+
+    return updated
 # ────────────────────────────── TASKS ────────────────────────────────────────
 
 @shared_task(name="app.tasks.ensure_hls")
@@ -719,26 +765,20 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
                 legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
 
             # 2) alias пишем ТОЛЬКО когда canonical реально появился
+            # ── после успешной сборки canonical new_pl ──
             if paths.new_pl_key and s3_exists(paths.new_pl_key):
-                new_pl_url = url_from_key(paths.new_pl_key)
-                put_alias_master(legacy_pl_key, new_pl_url)
-                applied.append("WRITE_ALIAS_MASTER")
-
-                # для status.json красиво подсветим, что legacy теперь есть
-                if not getattr(paths, "legacy_pl_key", None):
-                    # объект paths может быть dataclass — безопасно просто пересоберём dict ниже
-                    pass
-
-                if "WRITE_ALIAS_MASTER" not in applied:
+                self.update_state(state="PROGRESS", meta={"step": "alias"})
+                updated = ensure_aliases_to_canonical(src_mp4_key, paths.new_pl_key)
+                if updated:
                     applied.append("WRITE_ALIAS_MASTER")
+                    # для status.json заполним самый «правильный» legacy
+                    try:
+                        leg_prefix, _ = hls_prefixes_for(src_mp4_key)
+                        paths.legacy_pl_key = f"{leg_prefix}playlist.m3u8"
+                        paths.legacy_pl_url = url_from_key(paths.legacy_pl_key)
+                    except Exception:
+                        pass
 
-                # Обновим локальные значения для status.json
-                paths.legacy_pl_key = legacy_pl_key
-                paths.legacy_pl_url = url_from_key(legacy_pl_key)
-                try:
-                    paths.legacy_pl_url = url_from_key(legacy_pl_key)
-                except Exception:
-                    pass
 
         except Exception as e:
             logger.exception("[HLS] alias ensure failed: %s", e)
