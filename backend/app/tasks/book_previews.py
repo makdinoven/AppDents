@@ -14,8 +14,8 @@ from botocore.exceptions import ClientError
 from celery import shared_task
 from sqlalchemy.orm import Session
 
-from app.db.database import SessionLocal
-from app.models.models_v2 import Book, BookFile, BookFileFormat
+from ..db.database import SessionLocal
+from ..models.models_v2 import Book, BookFile, BookFileFormat
 
 logger = logging.getLogger(__name__)
 
