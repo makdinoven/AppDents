@@ -27,11 +27,11 @@ const PaymentItemCard = ({
     <div
       className={`${s.course} ${isFree ? s.free : ""} ${itemType === "BOOK" ? s.book : ""}`}
     >
-      {preview_photo ? (
-        <img src={preview_photo} alt="" />
-      ) : (
-        <div className={s.no_photo}></div>
-      )}
+      <div
+        className={`${s.img_wrapper} ${!preview_photo ? s.no_photo : ""} ${s[itemType.toLowerCase()]}`}
+      >
+        {preview_photo && <img src={preview_photo} alt={`${itemType} photo`} />}
+      </div>
 
       <div className={s.course_info}>
         {!isWebinar && lessons_count && (

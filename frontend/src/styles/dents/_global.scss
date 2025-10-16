@@ -110,9 +110,19 @@ $font-sz-err-mob: 14px;
   //line-height: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
 }
 
+@mixin clamped-p1-line-height {
+  font-size: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+  line-height: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+}
+
 @mixin clamped-p2 {
   font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
   //line-height: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+}
+
+@mixin clamped-p2-line-height {
+  font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+  line-height: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
 }
 
 @mixin clamped-p3 {

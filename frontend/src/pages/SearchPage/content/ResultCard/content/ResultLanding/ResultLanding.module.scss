@@ -37,9 +37,11 @@
   background-color: $hover-color;
 
   &.book {
-    aspect-ratio: 9 / 16;
-    height: 180px;
-    width: 110px;
+    background-color: unset;
+    border-radius: unset;
+    border: none;
+    height: 160px;
+    width: 120px;
     min-width: unset;
   }
 }
@@ -91,8 +93,8 @@
 
     &.book {
       min-height: unset;
-      max-height: 140px;
-      width: 85px;
+      max-height: 130px;
+      width: 95px;
     }
   }
 }
@@ -104,7 +106,7 @@
     height: 55px;
 
     &.book {
-      max-height: 90px;
+      max-height: 80px;
       width: 55px;
     }
   }
