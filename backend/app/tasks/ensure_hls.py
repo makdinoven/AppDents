@@ -44,8 +44,8 @@ S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 _NO_KEY = ("NoSuchKey", "404")
 
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
-BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 40))     # задач за один проход
-RATE_LIMIT_HLS      = "15/m"                                     # Celery annotation
+BATCH_LIMIT         = int(os.getenv("HLS_BATCH_LIMIT", 30))     # задач за один проход
+RATE_LIMIT_HLS      = "10/m"                                     # Celery annotation
 
 R_SET_BAD = "hls:bad"
 FFMPEG_TIMEOUT_S = int(os.getenv("FFMPEG_TIMEOUT_S", "1800"))   # 30 мин
@@ -699,7 +699,7 @@ def _chosen_master_dir(paths: HLSPaths, plan) -> str | None:
     bind=True,
     soft_time_limit=60 * 30,   # 30 минут
     time_limit=60 * 35,        # жёсткий лимит — на 5 минут больше
-    rate_limit="6/m"           # не душим сервер частыми тяжёлыми задачами
+    rate_limit="4/m"           # не душим сервер частыми тяжёлыми задачами
 )
 def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     """
