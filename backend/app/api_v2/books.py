@@ -35,8 +35,9 @@ from ..schemas_v2.book import (
     TagMini, BookLandingGalleryItem, BookLandingCardResponse, BookLandingCardsResponse,
     BookLandingCardsResponsePaginations, UserBookDetailResponse, BookAdminDetailResponse, BookPatch,
 )
-from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, AuthorCardResponse, \
+from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, \
     TagResponse
+from ..schemas_v2.common import AuthorCardResponse
 from ..services_v2 import book_service
 from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
 from ..utils.s3 import generate_presigned_url
