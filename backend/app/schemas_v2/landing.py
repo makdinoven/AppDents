@@ -4,7 +4,7 @@ from pydantic import BaseModel, validator
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
-from .common import AuthorCardResponse
+from .common import AuthorCardResponse, TagResponse
 from ..utils.relink import convert_storage_url
 
 
