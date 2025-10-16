@@ -5,7 +5,8 @@ from datetime import datetime, date
 from pydantic import AnyUrl
 from pydantic.v1 import ConfigDict
 
-from ..schemas_v2.landing import AuthorCardResponse, TagResponse
+
+from ..schemas_v2.common import AuthorCardResponse, TagResponse
 
 
 class HttpS3Url(AnyUrl):

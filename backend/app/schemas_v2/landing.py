@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 from typing import Optional, List, Dict, Any
 
 from .author import AuthorResponse
+from .common import AuthorCardResponse
 from ..utils.relink import convert_storage_url
 
 
@@ -16,12 +17,7 @@ class LangEnum(str, Enum):
     PT = "PT"
 
 
-class TagResponse(BaseModel):
-    id: int
-    name: str
 
-    class Config:
-        orm_mode = True
 
 class LessonInfoItem(BaseModel):
     link: Optional[str] = ""
@@ -105,13 +101,7 @@ class LandingUpdate(BaseModel):
     class Config:
         orm_mode = True
 
-class AuthorCardResponse(BaseModel):
-    id: int
-    name: str
-    photo: Optional[str] = None  # добавили фото
 
-    class Config:
-        orm_mode = True
 
 class LandingCardResponse(BaseModel):
     id : int
