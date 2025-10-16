@@ -1,6 +1,6 @@
 import { CartItemKind, CartItemType, CartType } from "./types";
 
-const CART_KEY = "DENTS_CART";
+const CART_KEY = "DENTS_CART_NEW";
 
 export function getInitialCart(): CartType {
   return {
