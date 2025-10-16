@@ -280,7 +280,7 @@ class StatsOut(BaseModel):
 # ============================================================================
 
 try:
-    from app.celery_app import celery  # noqa
+    from ..celery_app import celery  # noqa
 except Exception:  # pragma: no cover
     celery = None
 

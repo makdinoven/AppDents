@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
-from AppDents.backend.app.schemas_v2.book import BookLandingCardResponse
+from ..schemas_v2.book import BookLandingCardResponse
 
 
 class AuthorSimpleResponse(BaseModel):
