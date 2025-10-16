@@ -155,6 +155,7 @@ class Author(Base):
 
     # Лендинги, к которым привязан автор
     landings = relationship("Landing", secondary=landing_authors, back_populates="authors")
+    books = relationship("Book", secondary="book_authors", back_populates="authors")
 
 class User(Base):
     __tablename__ = 'users'

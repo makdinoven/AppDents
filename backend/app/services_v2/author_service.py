@@ -4,7 +4,9 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 from sqlalchemy import func, literal_column
-from ..models.models_v2 import Author, Landing, Book
+
+from .book_service import books_in_landing
+from ..models.models_v2 import Author, Landing, Book, BookLanding
 from ..schemas_v2.author import AuthorCreate, AuthorUpdate, AuthorResponsePage, AuthorResponse
 
 DISCOUNT_COURSES         = float(os.getenv("DISCOUNT_COURSES",         0.80))  # 20 %
@@ -161,16 +163,18 @@ def delete_author(db: Session, author_id: int) -> None:
 from sqlalchemy.orm import Session, selectinload
 from typing import Dict, Tuple, Set, List
 
+from sqlalchemy.orm import selectinload
+from typing import Dict, List, Optional, Set
+
 def get_author_full_detail(db: Session, author_id: int) -> dict | None:
-    # 1. Грузим автора и его связи
     author = (
         db.query(Author)
           .options(
               selectinload(Author.landings).selectinload(Landing.courses),
               selectinload(Author.landings).selectinload(Landing.tags),
               selectinload(Author.landings).selectinload(Landing.authors),
-            selectinload(Author.books)  # ← книги
-            .selectinload(Book.landings)
+              selectinload(Author.books).selectinload(Book.landings)
+                                        .selectinload(Book.landings, BookLanding.tags)
           )
           .filter(Author.id == author_id)
           .first()
@@ -178,10 +182,10 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     if not author:
         return None
 
-    # 2. Удаляем скрытые лендинги
+    # 1) Курсовые лендинги: фильтруем скрытые
     author.landings = [l for l in author.landings if not l.is_hidden]
 
-    # 3. Минимальная цена по каждому курсу
+    # 2) Минимальная new-цена по каждому курсу
     min_price_by_course: Dict[int, float] = {}
     for l in author.landings:
         price = safe_price(l.new_price)
@@ -189,49 +193,28 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
             cid = c.id
             min_price_by_course[cid] = min(min_price_by_course.get(cid, float("inf")), price)
 
-    # 4. Оставляем только самые дешёвые лендинги по каждому курсу
-    kept_landings = []
+    # 3) Оставляем самые дешёвые лендинги по курсам
+    kept_landings: List[Landing] = []
     for l in author.landings:
         price = safe_price(l.new_price)
         if not any(price > min_price_by_course[c.id] for c in l.courses):
             kept_landings.append(l)
 
-    # 5. Агрегация
+    # 4) Собираем карточки курсовых лендингов
     landings_data, all_course_ids = [], set()
-    total_new_price = total_old_price = 0.0
-    # ---------- КНИГИ автора ------------------------------------------------
-    books_data, total_books_raw = [], 0.0
-
-    for b in author.books:
-        # данные книги отправляем ВСЕГДА
-        books_data.append({
-            "id": b.id,
-            "title": b.title,
-            "slug": b.slug,
-            "cover_url": b.cover_url,
-        })
-
-        # ищем минимальную цену среди видимых лендингов
-        price_candidates = [
-            safe_price(l.new_price)
-            for l in b.landings
-            if not l.is_hidden
-        ]
-        price_candidates = [p for p in price_candidates if p != float("inf")]
-
-        if price_candidates:  # цена есть → учитываем
-            total_books_raw += min(price_candidates)
-
-    books_count = len(books_data)
+    total_new_price_courses = total_old_price_courses = 0.0
+    landing_ids: List[int] = []
 
     for l in kept_landings:
         p_new = safe_price(l.new_price)
         p_old = safe_price(l.old_price)
-        total_new_price += p_new
-        total_old_price += p_old
+
+        total_new_price_courses += p_new
+        total_old_price_courses += p_old
 
         course_ids = [c.id for c in l.courses]
         all_course_ids.update(course_ids)
+        landing_ids.append(l.id)
 
         landings_data.append({
             "id": l.id,
@@ -251,37 +234,140 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
 
     landings_data.sort(key=lambda x: x["id"])
 
-    courses_price_discounted = round(total_new_price * DISCOUNT_COURSES, 2)
+    # 5) КНИГИ автора → минимальные цены по видимым книжным лендингам каждой книги
+    books_data: List[dict] = []
+    total_books_new_raw = 0.0
+    total_books_old_raw = 0.0
+    all_book_landings: dict[int, BookLanding] = {}  # id → объект
+    book_landing_ids: List[int] = []
+
+    for b in author.books:
+        books_data.append({
+            "id": b.id,
+            "title": b.title,
+            "slug": b.slug,
+            "cover_url": b.cover_url,
+        })
+
+        visible_bl = [bl for bl in (b.landings or []) if not bl.is_hidden]
+        # накапливаем все видимые book-лендинги автора (для карточек)
+        for bl in visible_bl:
+            if bl.id not in all_book_landings:
+                all_book_landings[bl.id] = bl
+
+        # минимальные цены по этой книге
+        new_candidates = [safe_price(bl.new_price) for bl in visible_bl]
+        old_candidates = [safe_price(bl.old_price) for bl in visible_bl]
+
+        new_candidates = [p for p in new_candidates if p != float("inf")]
+        old_candidates = [p for p in old_candidates if p != float("inf")]
+
+        if new_candidates:
+            total_books_new_raw += min(new_candidates)
+        if old_candidates:
+            total_books_old_raw += min(old_candidates)
+
+    # подготовим список ids для ответа
+    book_landing_ids = sorted(all_book_landings.keys())
+
+    # 6) Карточки книжных лендингов
+    def _landing_authors(bl: BookLanding):
+        return [{"id": a.id, "name": a.name, "photo": a.photo or ""} for a in (b.authors or [])]
+
+    def _landing_tags(bl: BookLanding):
+        return [{"id": t.id, "name": t.name, "slug": getattr(t, "slug", None)} for t in (b.tags or [])]
+
+    # если у BookLanding есть галерея — адаптируй под свою модель;
+    # здесь предполагается, что у тебя есть bl.gallery (список объектов/диктов)
+    def _landing_gallery(bl: BookLanding):
+        return getattr(bl, "gallery", []) or []
+
+    book_landings_cards: List[dict] = []
+    for bl_id in book_landing_ids:
+        bl = all_book_landings[bl_id]
+        book_ids_for_bl = [bk.id for bk in books_in_landing(db, bl)]
+        books_for_bl = books_in_landing(db, bl)
+        main_image = None
+        if books_for_bl and getattr(books_for_bl[0], "cover_url", None):
+            main_image = books_for_bl[0].cover_url
+        else:
+            # фолбэк на превью лендинга
+            main_image = getattr(bl, "preview_photo", None)
+
+        book_landings_cards.append({
+            "id": bl.id,
+            "landing_name": bl.landing_name,
+            "slug": bl.page_name,
+            "language": bl.language,
+            "old_price": bl.old_price,
+            "new_price": bl.new_price,
+            "authors": _landing_authors(bl),
+            "tags": _landing_tags(bl),
+            "first_tag": bl.tags[0].name if getattr(bl, "tags", None) else None,
+            "gallery": _landing_gallery(bl),
+            "main_image": main_image,
+            "book_ids": book_ids_for_bl,
+        })
+
+    # 7) Скидки (как было для new), + «old» суммы по сценариям
+    courses_price_discounted = round(total_new_price_courses * DISCOUNT_COURSES, 2)
+
     books_price_discounted = (
-        round(total_books_raw * DISCOUNT_BOOKS, 2) if total_books_raw else None
+        round(total_books_new_raw * DISCOUNT_BOOKS, 2) if total_books_new_raw else None
     )
     combo_price_discounted = (
-        round((total_new_price + total_books_raw) * DISCOUNT_COURSES_BOOKS, 2)
-        if total_books_raw else None
+        round((total_new_price_courses + total_books_new_raw) * DISCOUNT_COURSES_BOOKS, 2)
+        if total_books_new_raw else None
     )
 
+    total_books_old_price = round(total_books_old_raw, 2) if total_books_old_raw else None
+    total_courses_books_old_price = (
+        round(total_old_price_courses + total_books_old_raw, 2)
+        if total_books_old_raw else None
+    )
+
+    # 8) Теги
     tags_from_landings = {t.name for l in kept_landings for t in l.tags}
-    tags_from_books    = {t.name for b in author.books for t in b.tags}
+    tags_from_books    = {t.name for b in author.books for t in getattr(b, "tags", [])}
     all_tags = tags_from_landings | tags_from_books
 
-    response = {
+    # 9) Ответ
+    return {
         "id": author.id,
         "name": author.name,
         "description": author.description,
         "photo": author.photo,
         "language": author.language,
+
+        # курсовые лендинги
         "landings": landings_data,
+        "landing_ids": landing_ids,
+
+        # книжные лендинги
+        "book_landings": book_landings_cards,
+        "book_landing_ids": book_landing_ids,
+
         "course_ids": list(all_course_ids),
+
+        # книги (простые карточки книг — как было)
         "books": books_data or None,
-        "books_count": books_count or None,
-        "total_new_price": courses_price_discounted,  # курсы
-        "total_books_price": books_price_discounted,  # книги
-        "total_courses_books_price": combo_price_discounted,  # курсы+книги
-        "total_old_price": total_old_price,
+        "books_count": len(books_data) or None,
+
+        # new (discounted)
+        "total_new_price": courses_price_discounted,
+        "total_books_price": books_price_discounted,
+        "total_courses_books_price": combo_price_discounted,
+
+        # old (без скидок)
+        "total_old_price": round(total_old_price_courses, 2),
+        "total_books_old_price": total_books_old_price,
+        "total_courses_books_old_price": total_courses_books_old_price,
+
+        "total_old_price_raw": round(total_old_price_courses, 2),  # если старое поле где-то используется
         "landing_count": len(landings_data),
         "tags": sorted(all_tags),
     }
-    return response
+
 def safe_price(v) -> float:
         try:
             return float(v)
