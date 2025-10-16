@@ -42,14 +42,16 @@
 
 @media (max-width: $mobile-breakpoint) {
   .overlay {
-    padding: 10px 10px 90px;
+    width: 100vw;
+    height: 100dvh;
+    padding: 10px 10px calc(90px + env(safe-area-inset-bottom));
     justify-content: center;
 
     @supports (-webkit-overflow-scrolling: touch) {
       &.top {
-        padding: 10px 10px 40px;
+        padding: 10px 10px calc(40px + env(safe-area-inset-bottom));
       }
-      padding: 10px 10px 40px;
+      padding: 10px 10px calc(40px + env(safe-area-inset-bottom));
       background-color: unset;
       backdrop-filter: unset;
       &::before {
