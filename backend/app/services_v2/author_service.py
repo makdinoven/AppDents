@@ -319,6 +319,9 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         })
 
     # 7) Скидки (как было для new), + «old» суммы по сценариям
+    courses_old_sum = 0.0
+    books_old_sum = 0.0
+
     courses_price_discounted = round(total_new_price_courses * DISCOUNT_COURSES, 2)
 
     books_price_discounted = (
@@ -334,6 +337,17 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         round(total_old_price_courses + total_books_old_raw, 2)
         if total_books_old_raw else None
     )
+
+    books_old_raw = 0.0
+    for b in author.books:
+        old_candidates = [
+            safe_price(l.old_price)
+            for l in b.landings
+            if not l.is_hidden
+        ]
+        old_candidates = [p for p in old_candidates if p != float("inf")]
+        if old_candidates:
+            books_old_raw += min(old_candidates)
 
     # 8) Теги
     tags_from_landings = {t.name for l in kept_landings for t in l.tags}
@@ -370,7 +384,9 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         # old (без скидок)
         "total_old_price": round(total_old_price_courses, 2),
         "total_books_old_price": total_books_old_price,
-        "total_courses_books_old_price": total_courses_books_old_price,
+        "total_courses_books_old_price": (
+        courses_old_sum + books_old_raw if books_old_raw else None
+    ),
 
         "total_old_price_raw": round(total_old_price_courses, 2),  # если старое поле где-то используется
         "landing_count": len(landings_data),
