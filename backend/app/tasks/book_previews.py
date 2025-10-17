@@ -103,12 +103,7 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
             _set_job_times(book_id, finished=True)
             return {"ok": False, "error": "book_not_found"}
 
-        # Уже есть превью — повторная генерация не требуется
-        if getattr(book, "preview_pdf", None):
-            _set_job_status(book_id, "success")
-            _log(book_id, "preview already exists → skip")
-            _set_job_times(book_id, finished=True)
-            return {"ok": True, "url": book.preview_pdf, "skipped": True}
+        # Проверка на существование превью уже в S3 убрана — всегда генерируем заново при запросе
 
         # Ищем исходный PDF
         pdf = (
@@ -157,11 +152,8 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
                 return {"ok": False, "error": "s3_upload_failed"}
 
             cdn_url = _cdn_url_for_key(key)
-        # Обновляем книгу
-        book.preview_pdf = cdn_url
-        book.preview_generated_at = datetime.utcnow()
-        db.commit()
-
+        
+        # БД не обновляем — URL генерируется динамически по slug
         _set_job_status(book_id, "success")
         _set_job_times(book_id, finished=True)
         _log(book_id, f"done → {cdn_url}")

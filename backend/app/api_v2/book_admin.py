@@ -44,6 +44,15 @@ log = logging.getLogger(__name__)
 def _pdf_key(book: Book) -> str:
     return f"books/{book.slug}/{book.slug}.pdf"
 
+def _preview_pdf_url(book_slug: str) -> str:
+    """
+    Генерирует CDN-URL превью PDF (15 страниц) по slug книги.
+    Путь соответствует логике в book_previews.py: books/<slug>/preview/preview_15p.pdf
+    """
+    from urllib.parse import quote
+    key = f"books/{book_slug}/preview/preview_15p.pdf"
+    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+
 def _cdn_url(key: str) -> str:
     # кодируем path, чтобы URL был валидным (пробелы → %20 и т.д.)
     safe_key = quote(key.lstrip('/'), safe="/-._~()")
@@ -394,11 +403,19 @@ def start_book_preview(
 @router.get("/{book_id}/preview-status", summary="Статус генерации превью (Redis)")
 def book_preview_status(
     book_id: int,
+    db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
     job = rds.hgetall(prev_k_job(book_id)) or {}
     logs = rds.lrange(prev_k_log(book_id), 0, 100)
-    return {"job": job, "logs": logs}
+    
+    # Генерируем URL превью по slug книги
+    preview_url = None
+    book = db.query(Book).get(book_id)
+    if book:
+        preview_url = _preview_pdf_url(book.slug)
+    
+    return {"job": job, "logs": logs, "preview_url": preview_url}
 
 
 @router.get("/{book_id}/cover-candidates", summary="Кандидаты обложки (индексы и ссылки API)")
@@ -686,6 +703,7 @@ def admin_get_book_detail(
         "cover_url": book.cover_url,
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
+        "preview_pdf_url": _preview_pdf_url(book.slug),
 
         "author_ids": [a.id for a in (book.authors or [])],
         "tag_ids": [t.id for t in (book.tags or [])],
