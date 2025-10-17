@@ -47,45 +47,6 @@ $card-bottom-width: $card-width - 190px;
   }
 }
 
-.buy_section {
-  @include flex-column;
-  gap: 30px;
-  align-items: center;
-  border-radius: 30px;
-  padding: 30px;
-  border: 1px solid $secondary-lighter;
-  p {
-    @include clamped-p1;
-  }
-}
-
-.buy_section_desc {
-  width: 100%;
-  text-align: center;
-  @include clamped-p1;
-}
-
-.professor_access {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-
-  svg {
-    min-width: 60px;
-  }
-
-  p {
-    vertical-align: center;
-    text-align: center;
-    color: $secondary;
-    text-transform: uppercase;
-    @include clamped-h2;
-  }
-}
-
-.card_wrapper {
-}
-
 .card {
   @include flex-column;
   height: $card-height;
@@ -189,10 +150,6 @@ $card-bottom-width: $card-width - 190px;
     order: 1;
   }
 
-  .buy_section {
-    padding: 30px 15px;
-  }
-
   .professor_hero {
     flex-direction: column;
     gap: 20px;
@@ -215,15 +172,5 @@ $card-bottom-width: $card-width - 190px;
 
   .card_wrapper {
     order: 2;
-  }
-
-  .professor_access {
-    flex-direction: column;
-
-    svg {
-      min-width: 40px;
-      width: 40px;
-      height: 40px;
-    }
   }
 }

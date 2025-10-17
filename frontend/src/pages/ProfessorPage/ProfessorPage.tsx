@@ -7,26 +7,20 @@ import { mainApi } from "../../api/mainApi/mainApi.ts";
 import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
 import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
 import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import { Trans } from "react-i18next";
-import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
-import { Clock } from "../../assets/icons/index.ts";
 import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
 import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
 import ProfessorPageSkeleton from "../../components/ui/Skeletons/ProfessorPageSkeleton/ProfessorPageSkeleton.tsx";
 import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { AppDispatchType } from "../../store/store.ts";
-import {
-  PaymentDataModeType,
-  usePaymentPageHandler,
-} from "../../common/hooks/usePaymentPageHandler.ts";
+import { PaymentDataModeType } from "../../common/hooks/usePaymentPageHandler.ts";
 import {
   PAGE_SOURCES,
   PAYMENT_MODE_KEY,
 } from "../../common/helpers/commonConstants.ts";
 import { CartItemType } from "../../api/cartApi/types.ts";
+import SimpleBuySection from "./modules/SimpleBuySection/SimpleBuySection.tsx";
 
 const ProfessorPage = () => {
-  const { openPaymentModal } = usePaymentPageHandler();
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatchType>();
   const paymentModalMode = searchParams.get(PAYMENT_MODE_KEY);
@@ -74,98 +68,84 @@ const ProfessorPage = () => {
       }),
     );
 
-    const transformedBooks = professor.books.map(
+    const transformedBooks = professor.book_landings.map(
       (b: any): CartItemType => ({
         item_type: "BOOK",
         data: {
           id: b.id,
-          landing_name: b.title,
-          authors: b?.authors, //TODO настоящих авторов запихнуть когда будет бэк
+          landing_name: b.landing_name,
+          authors: b?.authors,
           page_name: b.slug,
-          old_price: b?.old_price, //TODO настоящую цену запихнуть когда будет бэк
-          new_price: b?.new_price, //TODO настоящую цену запихнуть когда будет бэк
-          preview_photo: b.cover_url,
-          book_ids: [b.id],
+          old_price: b?.old_price,
+          new_price: b?.new_price,
+          preview_photo: b.main_image,
+          book_ids: b.book_ids,
         },
       }),
     );
 
     let paymentItems;
+    const data = {
+      landing_ids: [],
+      book_landing_ids: [],
+      course_ids: [],
+      book_ids: [],
+      price_cents: 0,
+      new_price: 0,
+      old_price: 0,
+      source: PAGE_SOURCES.professor,
+      from_ad: false,
+    };
+
+    const {
+      course_ids,
+      landing_ids,
+      total_new_price,
+      total_old_price,
+      book_ids,
+      book_landing_ids,
+      total_books_price,
+      total_books_old_price,
+      total_courses_books_old_price,
+      total_courses_books_price,
+    } = professor;
 
     switch (mode) {
       case "COURSES":
+        data.course_ids = course_ids;
+        data.landing_ids = landing_ids;
+        data.price_cents = total_new_price * 100;
+        data.new_price = total_new_price;
+        data.old_price = total_old_price;
         paymentItems = transformedCourses;
         break;
       case "BOOKS":
+        data.book_ids = book_ids;
+        data.book_landing_ids = book_landing_ids;
+        data.price_cents = total_books_price * 100;
+        data.new_price = total_books_price;
+        data.old_price = total_books_old_price;
         paymentItems = transformedBooks;
         break;
       case "BOTH":
+        data.book_ids = book_ids;
+        data.book_landing_ids = book_landing_ids;
+        data.price_cents = total_courses_books_price * 100;
+        data.new_price = total_courses_books_price;
+        data.old_price = total_courses_books_old_price;
         paymentItems = [...transformedBooks, ...transformedCourses];
         break;
     }
 
     dispatch(
       setPaymentData({
-        data: {
-          landing_ids: professor.landings.map((l: { id: number }) => l.id),
-          book_landing_ids: professor.books.map((b: { id: number }) => b.id),
-          course_ids: professor.course_ids,
-          book_ids: professor.book_ids ? professor.book_ids : [],
-          price_cents: professor.total_new_price * 100,
-          new_price: professor.total_new_price,
-          old_price: professor.total_old_price,
-          source: PAGE_SOURCES.professor,
-          from_ad: false,
-        },
+        data,
         render: {
-          new_price: professor.total_new_price,
-          old_price: professor.total_old_price,
+          new_price: data.new_price,
+          old_price: data.old_price,
           items: paymentItems,
         },
       }),
-    );
-  };
-
-  const handleOpenModal = (paymentDataMode: PaymentDataModeType) => {
-    setPaymentDataCustom(paymentDataMode);
-    openPaymentModal(undefined, undefined, paymentDataMode);
-  };
-
-  const renderBuySection = (paymentDataMode: PaymentDataModeType) => {
-    if (professor.landings.length <= 0) return null;
-    return (
-      <section className={s.buy_section}>
-        <div className={s.professor_access}>
-          <Clock />
-          <p>
-            <Trans i18nKey="professor.accessToAllCourses" />
-          </p>
-        </div>
-        <p className={s.buy_section_desc}>
-          <Trans
-            i18nKey="professor.youCanBuyAllCourses"
-            values={{
-              new_price: professor.total_new_price,
-              old_price: professor.total_old_price,
-            }}
-            components={{
-              1: <span className="highlight" />,
-              2: <span className="crossed" />,
-            }}
-          />
-        </p>
-        <ArrowButton onClick={() => handleOpenModal(paymentDataMode)}>
-          <Trans
-            i18nKey={"professor.getAllCourses"}
-            values={{
-              new_price: professor.total_new_price,
-            }}
-            components={{
-              1: <span className="highlight" />,
-            }}
-          />
-        </ArrowButton>
-      </section>
     );
   };
 
@@ -207,7 +187,6 @@ const ProfessorPage = () => {
                 </div>
               )}
             </section>
-            {renderBuySection("COURSES")}
           </>
         )}
         {professor && (
@@ -224,11 +203,27 @@ const ProfessorPage = () => {
                 showEndOfList={false}
               />
             </div>
-            {renderBuySection("COURSES")}
 
-            {renderBuySection("BOOKS")}
+            <SimpleBuySection
+              paymentMode={"COURSES"}
+              setPaymentDataCustom={setPaymentDataCustom}
+              new_price={professor.total_new_price}
+              old_price={professor.total_old_price}
+            />
 
-            {renderBuySection("BOTH")}
+            <SimpleBuySection
+              paymentMode={"BOOKS"}
+              setPaymentDataCustom={setPaymentDataCustom}
+              new_price={professor.total_books_price}
+              old_price={professor.total_books_old_price}
+            />
+
+            <SimpleBuySection
+              paymentMode={"BOTH"}
+              setPaymentDataCustom={setPaymentDataCustom}
+              new_price={professor.total_courses_books_price}
+              old_price={professor.total_courses_books_old_price}
+            />
             <ProductsSection
               productCardFlags={{ isClient: true, isOffer: true }}
               showSort={true}

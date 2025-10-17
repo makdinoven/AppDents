@@ -321,9 +321,21 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "¡Obtén todos los cursos de este profesor con un <1>20%</1> de descuento por solo <1>${{new_price}}</1> — en lugar de <2>${{old_price}}</2>!",
-    "getAllCourses": "Todos los cursos por <1>${{new_price}}</1>",
-    "accessToAllCourses": "¡Acceso ilimitado a los cursos, para siempre!",
+    "youCanBuyAll": {
+      "courses": "Accede a todos los cursos de este profesor con un descuento exclusivo del <1>20%</1> — obtén acceso completo por solo <1>${{new_price}}</1> en lugar de <2>${{old_price}}</2>!",
+      "books": "Consigue la colección completa de libros de este profesor con un descuento del <1>20%</1> — solo <1>${{new_price}}</1> en lugar de <2>${{old_price}}</2>!",
+      "both": "Obtén el paquete completo — todos los cursos y libros del profesor — con un descuento especial del <1>20%</1> por solo <1>${{new_price}}</1> en lugar de <2>${{old_price}}</2>!"
+    },
+    "getAll": {
+      "courses": "Obtener todos los cursos por <1>${{new_price}}</1>",
+      "books": "Obtener todos los libros por <1>${{new_price}}</1>",
+      "both": "Obtener todos los cursos y libros por <1>${{new_price}}</1>"
+    },
+    "accessToAll": {
+      "courses": "Acceso de por vida a todos los cursos — aprende a tu propio ritmo!",
+      "books": "Acceso de por vida a todos los libros — estudia cuando y donde quieras!",
+      "both": "Acceso de por vida a todos los libros y cursos!"
+    },
     "professorsCourses": "Cursos de este profesor",
     "professors.title": "Nuestros profesores",
     "search": "Buscar profesores...",

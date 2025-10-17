@@ -1,6 +1,6 @@
 import s from "./PhotoUploader.module.scss";
 import initialPhoto from "../../../assets/no-pictures.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../assets/icons";
@@ -23,6 +23,12 @@ const PhotoUploader = ({
   onUpload: any;
 }) => {
   const [preview, setPreview] = useState(url || initialPhoto);
+
+  useEffect(() => {
+    if (url) {
+      setPreview(url);
+    }
+  }, [url]);
 
   const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
