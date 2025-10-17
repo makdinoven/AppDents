@@ -40,7 +40,7 @@ def list_authors_by_page(
             .selectinload(Landing.courses),
             selectinload(Author.landings)
             .selectinload(Landing.tags),
-            selectinload(Author.books),
+            selectinload(Author.books).selectinload(Book.landings),
         )
         .order_by(
             popularity_sub.c.popularity.desc(),  # ← сортировка
@@ -67,10 +67,9 @@ def list_authors_by_page(
         except Exception:
             return float("inf")  # некорректная цена → бесконечность
 
-
-    items : List[AuthorResponse] = []
+    items: List[AuthorResponse] = []
     for a in authors:
-        # ---- 1. минимальная цена по каждому course_id ----
+        # 1) минимальная цена по каждому course_id
         min_price_by_course: Dict[int, float] = {}
         for l in a.landings:
             price = safe_price(l.new_price)
@@ -79,23 +78,28 @@ def list_authors_by_page(
                 if price < min_price_by_course.get(cid, float("inf")):
                     min_price_by_course[cid] = price
 
-        # ---- 2. оставляем только «дешёвые» лендинги ----
+        # 2) оставляем только «дешёвые» лендинги
         kept_landings: List[Landing] = []
         for l in a.landings:
             price = safe_price(l.new_price)
             has_cheaper_alt = any(
-                price > min_price_by_course.get(c.id, price)  # хотя бы один дешевле?
+                price > min_price_by_course.get(c.id, price)
                 for c in l.courses
             )
             if not has_cheaper_alt:
                 kept_landings.append(l)
 
-        # ---- 3. уникальные курсы по отфильтрованным лендингам ----
+        # 3) уникальные курсы и теги
         unique_course_ids: Set[int] = {c.id for l in kept_landings for c in l.courses}
-        unique_tags: Set[str] = {
-            t.name for l in kept_landings for t in l.tags
-        }
-        books_cnt = len(a.books)
+        unique_tags: Set[str] = {t.name for l in kept_landings for t in l.tags}
+
+        # 4) КНИГИ: считаем только те, у которых есть хотя бы один видимый BookLanding
+        visible_books_count = len({
+            b.id
+            for b in a.books
+            if any(not bl.is_hidden for bl in b.landings)
+        })
+
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -104,11 +108,10 @@ def list_authors_by_page(
                 language=a.language,
                 photo=a.photo,
                 courses_count=len(unique_course_ids),
-                books_count=books_cnt or None,
-                tags=sorted(unique_tags)
+                books_count=visible_books_count or None,
+                tags=sorted(unique_tags),
             )
         )
-
     return {
         "total": total,
         "total_pages": total_pages,
@@ -376,11 +379,11 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         "book_landing_ids": book_landing_ids,
 
         "course_ids": list(all_course_ids),
-        "book_ids": all_book_ids,
+        "book_ids": sorted(all_book_ids),
 
         # книги (простые карточки книг — как было)
         "books": books_data or None,
-        "books_count": len(books_data) or None,
+        "books_count": len(all_book_ids) or None,
 
         # new (discounted)
         "total_new_price": courses_price_discounted,
@@ -430,7 +433,7 @@ def list_authors_search_paginated(
                 .selectinload(Landing.courses),
               selectinload(Author.landings)
                 .selectinload(Landing.tags),
-                selectinload(Author.books),
+                selectinload(Author.books).selectinload(Author.landings),
           )
           .filter(Author.name.ilike(f"%{search}%"))
           .order_by(
@@ -475,7 +478,12 @@ def list_authors_search_paginated(
         unique_tags: Set[str] = {
             t.name for l in kept_landings for t in l.tags
         }
-        books_cnt = len(a.books)
+        visible_books_count = len({
+            b.id
+            for b in a.books
+            if any(not bl.is_hidden for bl in b.landings)
+        })
+
         items.append(
             AuthorResponse(
                 id=a.id,
@@ -484,7 +492,7 @@ def list_authors_search_paginated(
                 language=a.language,
                 photo=a.photo,
                 courses_count=len(unique_course_ids),
-                books_count=books_cnt or None,
+                books_count=visible_books_count or None,
                 tags = sorted(unique_tags)
         )
         )
