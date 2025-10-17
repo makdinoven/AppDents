@@ -169,15 +169,24 @@ from typing import Dict, List, Optional, Set
 def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     author = (
         db.query(Author)
-          .options(
-              selectinload(Author.landings).selectinload(Landing.courses),
-              selectinload(Author.landings).selectinload(Landing.tags),
-              selectinload(Author.landings).selectinload(Landing.authors),
-              selectinload(Author.books).selectinload(Book.landings)
-                                        .selectinload(Book.landings, BookLanding.tags)
-          )
-          .filter(Author.id == author_id)
-          .first()
+        .options(
+            # лендинги курсов
+            selectinload(Author.landings).selectinload(Landing.courses),
+            selectinload(Author.landings).selectinload(Landing.tags),
+            selectinload(Author.landings).selectinload(Landing.authors),
+
+            # книги автора + их связи
+            selectinload(Author.books),  # сами книги
+            selectinload(Author.books).selectinload(Book.landings),  # их книжные лендинги
+            selectinload(Author.books).selectinload(Book.tags),  # теги книги
+
+            # теги у книжных лендингов
+            selectinload(Author.books)
+            .selectinload(Book.landings)
+            .selectinload(BookLanding.tags),
+        )
+        .filter(Author.id == author_id)
+        .first()
     )
     if not author:
         return None
