@@ -99,7 +99,7 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     total_courses_books_price: float | None = None    # ← НОВОЕ
     total_old_price: float
     total_books_old_price: float | None = None
-    total_courses_old_price: float | None = None
+    total_courses_books_old_price: float | None = None
     landing_count: int
     lessons_count: Optional[str] = ""
     tags: List[str]
