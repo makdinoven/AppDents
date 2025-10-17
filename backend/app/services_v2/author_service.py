@@ -194,6 +194,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     # 1) Курсовые лендинги: фильтруем скрытые
     author.landings = [l for l in author.landings if not l.is_hidden]
 
+
     # 2) Минимальная new-цена по каждому курсу
     min_price_by_course: Dict[int, float] = {}
     for l in author.landings:
@@ -249,6 +250,10 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
     total_books_old_raw = 0.0
     all_book_landings: dict[int, BookLanding] = {}  # id → объект
     book_landing_ids: List[int] = []
+    all_book_ids: set[int] = set()
+    for b in author.books:
+        if any(not bl.is_hidden for bl in b.landings):
+            all_book_ids.add(b.id)
 
     for b in author.books:
         books_data.append({
@@ -371,6 +376,7 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         "book_landing_ids": book_landing_ids,
 
         "course_ids": list(all_course_ids),
+        "book_ids": all_book_ids,
 
         # книги (простые карточки книг — как было)
         "books": books_data or None,

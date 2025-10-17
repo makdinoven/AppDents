@@ -92,7 +92,8 @@ class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landing_ids: List[int] | None = None
     book_landing_ids: List[int] | None = None
     book_landings: List[BookLandingCardResponse] | None = None
-    course_ids: List[int]
+    course_ids: List[int] | None = None
+    book_ids: List[int] | None = None
     books_count: int | None = None                    # ← НОВОЕ
     total_new_price: float            # только курсы (как было)
     total_books_price: float | None = None            # ← НОВОЕ
