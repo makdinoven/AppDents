@@ -109,6 +109,7 @@ const ProfileMain = () => {
               <ReferralSection />
             </div>
           </div>
+          <MyContent key="books" items={books} type="book" />
           <MyContent key="courses" items={courses} />
         </>
       ),

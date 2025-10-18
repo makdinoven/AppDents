@@ -21,11 +21,6 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-  getBook(id: any) {
-    return instance.get(`books/me/books/${id}`, {
-      headers: getAuthHeaders(),
-    });
-  },
   createCourse(data: any) {
     return instance.post(`courses/`, data, {
       headers: getAuthHeaders(),

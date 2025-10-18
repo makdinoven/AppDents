@@ -44,7 +44,7 @@ const ProfileEntityCard = ({
   };
 
   const renderCover = () => {
-    return type === "book" ? (
+    return !isCourse ? (
       <div className={s.cover_container}>
         <img src={previewPhoto} alt="Book image" />
       </div>
@@ -69,7 +69,7 @@ const ProfileEntityCard = ({
           </div>
         </div>
       )}
-      <div className={s.card_content}>
+      <div className={`${s.card_content} ${!isCourse ? s.book : ""}`}>
         <div
           // style={{ backgroundImage: `url('${previewPhoto}')` }}
           className={s.card_content_bg}
@@ -85,7 +85,7 @@ const ProfileEntityCard = ({
           />
         )}
       </div>
-      <div className={s.card_bottom}>
+      <div className={`${s.card_bottom} ${!isCourse ? s.book : ""}`}>
         {isCourse && (
           <div
             className={`${s.status} ${isPartial ? s.partial : ""} ${isOffer ? s.special : ""}`}

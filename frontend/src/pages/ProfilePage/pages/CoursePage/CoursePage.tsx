@@ -76,8 +76,6 @@ const CoursePage = () => {
     }
   }, [course]);
 
-  console.log(course);
-
   const fetchCourseData = async () => {
     try {
       const res = await adminApi.getCourse(courseId);

@@ -29,5 +29,10 @@
     display: flex;
     gap: 10px;
     flex-direction: column;
+
+    &.book {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
   }
 }
