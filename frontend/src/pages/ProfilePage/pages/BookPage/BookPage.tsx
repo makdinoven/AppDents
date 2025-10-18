@@ -1,7 +1,6 @@
 import s from "./BookPage.module.scss";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
@@ -12,6 +11,9 @@ import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader
 import { t } from "i18next";
 import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
 import ModalOverlay from "../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
+import { Path } from "../../../../routes/routes.ts";
+import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 
 export const PDF_READER_FULLSCREEN_KEY = "reader_fullscreen";
 
@@ -37,7 +39,7 @@ const BookPage = () => {
 
   const fetchBookData = useCallback(async () => {
     try {
-      const res = await adminApi.getBook(bookId);
+      const res = await mainApi.getBook(bookId);
       setBook(res.data);
       setLoading(false);
       console.log("Called");
@@ -70,6 +72,7 @@ const BookPage = () => {
         ) : (
           <>
             <section className={s.hero}>
+              <BackButton link={Path.profile} />
               <h3>{book.title}</h3>
               <div className={s.content}>
                 <div
@@ -82,42 +85,50 @@ const BookPage = () => {
                 </div>
                 <div className={s.right_side}>
                   <div className={s.info}>
-                    <p>
-                      <Trans
-                        i18nKey={"bookLanding.language"}
-                        values={{
-                          language: formatLanguage(book.language),
-                        }}
-                        components={[<span className={s.highlight} />]}
-                      />
-                    </p>
-                    <p>
-                      <Trans
-                        i18nKey={`${book.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
-                        values={{
-                          authors: book.authors
-                            ?.map((author: any) => author.name)!
-                            .join(", "),
-                        }}
-                        components={[<span className={s.highlight} />]}
-                      />
-                    </p>
-                    <p>
-                      <Trans
-                        i18nKey="bookLanding.publishedDate"
-                        values={{ date: book.publication_date }}
-                        components={[<span className={s.highlight} />]}
-                      />
-                    </p>
-                    <p>
-                      <Trans
-                        i18nKey={"bookLanding.publisher"}
-                        values={{
-                          publisher: book.publisher || "John Pork",
-                        }}
-                        components={[<span className={s.highlight} />]}
-                      />
-                    </p>
+                    {book.language && (
+                      <p>
+                        <Trans
+                          i18nKey={"bookLanding.language"}
+                          values={{
+                            language: formatLanguage(book.language),
+                          }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
+                    {book.authors?.length > 0 && (
+                      <p>
+                        <Trans
+                          i18nKey={`${book.authors?.length > 1 ? "bookLanding.authors" : "bookLanding.author"}`}
+                          values={{
+                            authors: book.authors
+                              ?.map((author: any) => author.name)!
+                              .join(", "),
+                          }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
+                    {book.publication_date && (
+                      <p>
+                        <Trans
+                          i18nKey="bookLanding.publishedDate"
+                          values={{ date: book.publication_date }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
+                    {book.publisher && (
+                      <p>
+                        <Trans
+                          i18nKey={"bookLanding.publisher"}
+                          values={{
+                            publisher: book.publisher,
+                          }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
                     <p className={s.formats_field}>
                       <span>
                         <Trans i18nKey="bookLanding.availableFormats" />
