@@ -15,6 +15,10 @@
   width: 100%;
   height: fit-content;
 
+  &.default {
+    background-color: $accent;
+  }
+
   @media (max-width: $tablet-breakpoint) {
     padding: 25px 20px;
     gap: 25px;
@@ -38,17 +42,84 @@
     flex-direction: row;
     gap: 15px;
 
-    @media (max-width: $tablet-breakpoint) {
-      gap: 10px;
-      .play_button {
-        svg {
-          width: 50px;
-          height: 50px;
+    .play_button {
+      cursor: default;
+      padding: 0;
+      margin: 0;
+
+      .play,
+      .pause {
+        cursor: pointer;
+      }
+      &.blue {
+        .play {
+          path {
+            fill: $secondary-lighter;
+          }
+
+          path:nth-child(2) {
+            fill: $accent;
+          }
         }
 
-        &.disabled {
-          opacity: 0.6;
+        .pause {
+          path {
+            fill: $secondary-lighter;
+          }
+
+          path:nth-child(3),
+          path:nth-child(4) {
+            stroke: $accent;
+          }
         }
+      }
+
+      &.primary {
+        .play {
+          path {
+            fill: $primary;
+          }
+
+          path:nth-child(2) {
+            fill: $accent;
+          }
+        }
+
+        .pause {
+          path {
+            fill: $primary;
+            padding: 0;
+            margin: 0;
+          }
+
+          path:nth-child(3),
+          path:nth-child(4) {
+            stroke: $accent;
+          }
+        }
+      }
+    }
+
+    .previous,
+    .next {
+      &.blue {
+        path {
+          fill: $secondary-lighter;
+        }
+      }
+
+      &.primary {
+        path {
+          fill: $primary;
+        }
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      gap: 10px;
+
+      &.disabled {
+        opacity: 0.6;
       }
 
       .previous,
@@ -104,6 +175,14 @@
     @include clamped-p3();
     text-align: center;
     color: $background-color;
+
+    &.primary {
+      color: $primary;
+    }
+
+    &.blue {
+      color: $secondary-lighter;
+    }
   }
 }
 
@@ -114,10 +193,7 @@
   border-radius: 40px;
   background: $background-color-06;
   cursor: pointer;
-
-  @media (max-width: $tablet-breakpoint) {
-    max-height: 8px;
-  }
+  transition: background 0.2s linear;
 
   &::-webkit-slider-thumb {
     appearance: none;
@@ -126,7 +202,10 @@
     border-radius: 50%;
     background: $background-color;
     cursor: pointer;
-    transition: background 0.2s ease;
+    @include transition();
+  }
+  &::-webkit-slider-thumb:hover {
+    transform: scale(1.05);
   }
 
   &::-moz-range-thumb {
@@ -136,5 +215,26 @@
     background: $background-color;
     cursor: pointer;
     border: none;
+    @include transition();
+  }
+
+  &.primary {
+    &::-webkit-slider-thumb {
+      background: $primary;
+    }
+
+    &::-moz-range-thumb {
+      background: $primary;
+    }
+  }
+
+  &.blue {
+    &::-webkit-slider-thumb {
+      background: $secondary-lighter;
+    }
+
+    &::-moz-range-thumb {
+      background: $secondary-lighter;
+    }
   }
 }

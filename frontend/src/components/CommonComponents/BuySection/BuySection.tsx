@@ -5,10 +5,11 @@ import { ToothPatch } from "../../../assets";
 
 interface BuySectionProps {
   type: "download" | "buy";
-  formats: string[];
+  formats?: string[];
   isFullWidth?: boolean;
-  oldPrice: string;
-  newPrice: string;
+  oldPrice?: string;
+  newPrice?: string;
+  provideUrl: (format: string) => string;
 }
 
 const BuySection: React.FC<BuySectionProps> = ({
@@ -17,8 +18,9 @@ const BuySection: React.FC<BuySectionProps> = ({
   isFullWidth = false,
   oldPrice,
   newPrice,
+  provideUrl,
 }: BuySectionProps) => {
-  const [activeFormat, setActiveFormat] = useState(formats[0]);
+  const [activeFormat, setActiveFormat] = useState(formats?.[0] || "PDF");
   const { t } = useTranslation();
 
   const isBuy = type === "buy";
@@ -34,7 +36,7 @@ const BuySection: React.FC<BuySectionProps> = ({
       <section
         className={`${s.buy_section} ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
       >
-        {!isFullWidth && (
+        {!isFullWidth && newPrice && oldPrice && (
           <div className={s.price}>
             <span className={s.new_price}>${newPrice}</span>
             <span className={s.old_price}>${oldPrice}</span>
@@ -49,22 +51,24 @@ const BuySection: React.FC<BuySectionProps> = ({
             components={[<span className={s.highlight} />]}
           />
         </p>
-        <button className={`${s.buy_button} ${s[buy]}`} onClick={() => {}}>
-          {isDownload ? (
-            <p>
-              {t("bookLanding.download")}
-              <span style={{ marginLeft: "10px" }}>{activeFormat}</span>
-            </p>
-          ) : (
+        {isBuy ? (
+          <button className={`${s.buy_button} ${s[buy]}`}>
             <p className={s.prices}>
               {t("buyFor")} <span className={s.old_price}>${oldPrice}</span>
               <span className={s.new_price}>${newPrice}</span>
             </p>
-          )}
-        </button>
+          </button>
+        ) : (
+          <a href={provideUrl(activeFormat)} className={s.buy_button}>
+            <p>
+              {t("bookLanding.download")}
+              <span style={{ marginLeft: "10px" }}>{activeFormat}</span>
+            </p>
+          </a>
+        )}
         {isDownload && (
           <ul className={s.format_buttons}>
-            {formats.map((format: string) => {
+            {formats?.map((format: string) => {
               return (
                 <li key={format}>
                   <button

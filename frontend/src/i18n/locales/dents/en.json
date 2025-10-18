@@ -332,6 +332,16 @@
       "step_3": "3. Your friend buys any course — for example, one that costs <1>$19</1>.",
       "step_4": "4. You receive <1>50%</1> of their payment (e.g. <1>$9.50</1>) as credit in your wallet."
     },
+    "bookPage": {
+      "readOnline": "Read online",
+      "listenInAudioVerse": "Listen in audio verse",
+      "openPdfText": "Click the <0>button</0> to access <0>online reading</0>. You can read books at any time with our web application!",
+      "openPdf": "Open online PDF reader",
+      "audioCard": {
+        "chapter": "Chapter",
+        "downloadButton": "Download instantly in MP3"
+      }
+      },
     "main": "Main",
     "user": "User:",
     "referrals": {

@@ -71,7 +71,7 @@ export const userApi = {
   },
 
   getBooks() {
-    return instance.get("users/me/courses", {
+    return instance.get("users/me/books", {
       headers: getAuthHeaders(),
     });
   },

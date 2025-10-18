@@ -141,6 +141,23 @@ $border-radius: 20px;
     background-color: $background-color-05;
   }
 
+  .cover_container {
+    border-radius: $border-radius;
+    width: 100%;
+    z-index: 2;
+    background-color: $background-color-05;
+    height: 210px;
+    padding: 10px;
+
+    img {
+      aspect-ratio: 9/12;
+      height: 100%;
+      width: auto;
+      border-radius: 0;
+      justify-self: center;
+    }
+  }
+
   .no_photo {
     background-color: $accent-glass;
     object-fit: contain;
@@ -312,6 +329,21 @@ $border-radius: 20px;
       height: auto;
       max-height: 75px;
       border-radius: 10px;
+    }
+
+    .cover_container {
+      border-radius: 15px;
+      height: 150px;
+      @include flex-center();
+      aspect-ratio: 1/1;
+      width: auto;
+
+      img {
+        aspect-ratio: 9/12;
+        height: 100%;
+        max-height: unset;
+        width: auto;
+      }
     }
   }
 

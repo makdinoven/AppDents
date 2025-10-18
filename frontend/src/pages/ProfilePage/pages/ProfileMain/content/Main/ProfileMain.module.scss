@@ -176,6 +176,15 @@
     width: 60px;
     height: 60px;
   }
+
+  .back_btn_tabs_container {
+    margin-bottom: 20px;
+    @include flex-column();
+    justify-content: center;
+    align-items: stretch;
+    //display: grid;
+    //grid-template-columns: 60px 1fr 30px ;
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
@@ -227,8 +236,6 @@
 
   .back_btn_tabs_container {
     margin-bottom: 20px;
-    justify-content: center;
-    align-items: center;
     //display: grid;
     //grid-template-columns: 60px 1fr 30px ;
   }
