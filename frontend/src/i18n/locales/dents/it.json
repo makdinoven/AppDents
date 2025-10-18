@@ -324,9 +324,21 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "Ottieni tutti i corsi di questo professore con uno sconto del <1>20%</1> a soli <1>${{new_price}}</1> — invece di <2>${{old_price}}</2>!",
-    "getAllCourses": "Tutti i corsi a <1>${{new_price}}</1>",
-    "accessToAllCourses": "Accesso illimitato ai corsi, per sempre!",
+    "youCanBuyAll": {
+      "courses": "Sblocca tutti i corsi di questo professore con uno sconto esclusivo del <1>20%</1> — accesso completo per soli <1>${{new_price}}</1> invece di <2>${{old_price}}</2>!",
+      "books": "Ottieni la collezione completa di libri di questo professore con uno sconto del <1>20%</1> — solo <1>${{new_price}}</1> invece di <2>${{old_price}}</2>!",
+      "both": "Ottieni il pacchetto completo — tutti i corsi e i libri del professore — con uno sconto speciale del <1>20%</1> per soli <1>${{new_price}}</1> invece di <2>${{old_price}}</2>!"
+    },
+    "getAll": {
+      "courses": "Ottieni tutti i corsi per <1>${{new_price}}</1>",
+      "books": "Ottieni tutti i libri per <1>${{new_price}}</1>",
+      "both": "Ottieni tutti i corsi e libri per <1>${{new_price}}</1>"
+    },
+    "accessToAll": {
+      "courses": "Accesso illimitato a tutti i corsi — impara al tuo ritmo!",
+      "books": "Accesso illimitato a tutti i libri — studia quando e dove vuoi!",
+      "both": "Accesso illimitato a tutti i libri e corsi!"
+    },
     "professorsCourses": "I corsi di questo professore",
     "professors.title": "I nostri professori",
     "search": "Cerca professori...",
@@ -335,7 +347,10 @@
     "about": "Dettagliato",
     "specialization": "Specializzazione:",
     "coursesCount_one": "{{count}} corso",
-    "coursesCount_other": "{{count}} corsi"
+    "coursesCount_other": "{{count}} corsi",
+    "booksCount_one": "{{count}} libro",
+    "booksCount_other": "{{count}} libri"
+
   },
   "other": {
     "otherCourses": "Altri corsi",

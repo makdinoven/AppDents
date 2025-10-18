@@ -31,7 +31,7 @@ import Loader from "../../components/ui/Loader/Loader.tsx";
 const RESULT_KEYS: SearchResultKeysType[] = [
   "landings",
   "authors",
-  // "book_landings",
+  "book_landings",
 ];
 
 const LANGS_URL_KEY = "langs";

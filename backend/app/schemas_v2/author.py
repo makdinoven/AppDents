@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
+from ..schemas_v2.book import BookLandingCardResponse
+
 
 class AuthorSimpleResponse(BaseModel):
     id: int
@@ -86,13 +88,19 @@ class LandingForAuthor(BaseModel):
 
 class AuthorFullDetailResponse(AuthorResponseForFullDetails):
     landings: List[LandingForAuthor]
-    books: List[BookSimpleResponse] | None = None     # ← НОВОЕ
-    course_ids: List[int]
+    books: List[BookSimpleResponse] | None = None
+    landing_ids: List[int] | None = None
+    book_landing_ids: List[int] | None = None
+    book_landings: List[BookLandingCardResponse] | None = None
+    course_ids: List[int] | None = None
+    book_ids: List[int] | None = None
     books_count: int | None = None                    # ← НОВОЕ
     total_new_price: float            # только курсы (как было)
     total_books_price: float | None = None            # ← НОВОЕ
     total_courses_books_price: float | None = None    # ← НОВОЕ
     total_old_price: float
+    total_books_old_price: float | None = None
+    total_courses_books_old_price: float | None = None
     landing_count: int
     lessons_count: Optional[str] = ""
     tags: List[str]

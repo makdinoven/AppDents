@@ -12,39 +12,26 @@ import { Percent } from "../../../assets/icons/index.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import EmailInput from "../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
 import UseBalanceOption from "../../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
-//import DisabledPaymentWarn from "../../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 
 type props = {
-  cartPreviewLoading?: boolean;
-  loading: boolean;
+  paymentLoading?: boolean;
   balance: number;
   setIsBalanceUsed: (val: boolean) => void;
   isBalanceUsed: boolean;
   quantity: number;
-  total_new_amount: number;
-  total_old_amount: number;
   isLogged: boolean;
-  total_amount_with_balance_discount: number;
-  total_amount: number;
-  next_discount: number;
-  current_discount: number;
   handlePay: (form: any) => void;
 };
 
 const CartFooter = ({
-  cartPreviewLoading,
-  loading,
+  paymentLoading,
   balance,
   setIsBalanceUsed,
   isBalanceUsed,
   quantity,
-  total_new_amount,
-  total_old_amount,
   isLogged,
-  total_amount_with_balance_discount,
-  total_amount,
-  next_discount,
-  current_discount,
   handlePay,
 }: props) => {
   const {
@@ -57,6 +44,16 @@ const CartFooter = ({
     resolver: isLogged ? undefined : joiResolver(emailSchema),
     mode: "onChange",
   });
+
+  const {
+    loading: previewLoading,
+    current_discount,
+    next_discount,
+    total_amount,
+    total_amount_with_balance_discount,
+    total_new_amount,
+    total_old_amount,
+  } = useSelector((state: AppRootStateType) => state.cart);
 
   const email = watch("email");
   const isPayDisabled = !isLogged && (!email || !!errors.email);
@@ -176,7 +173,7 @@ const CartFooter = ({
 
   return (
     <div className={s.cart_footer}>
-      {cartPreviewLoading && <LoaderOverlay />}
+      {previewLoading && <LoaderOverlay />}
       <CartProgressBar
         current_discount={current_discount}
         next_discount={next_discount}
@@ -215,14 +212,12 @@ const CartFooter = ({
           />
         )}
 
-        {/*isPayDisabled && <DisabledPaymentWarn />*/}
-
         <button
           type="submit"
           disabled={isPayDisabled}
           className={`${s.btn} ${s.pay_btn} ${isPayDisabled ? s.disabled : ""} `}
         >
-          {loading && <LoaderOverlay />}
+          {paymentLoading && <LoaderOverlay />}
           <Trans i18nKey={"pay"} />
         </button>
 

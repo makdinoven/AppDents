@@ -4,8 +4,8 @@ import shlex
 import subprocess
 import tempfile
 from datetime import datetime
-from pathlib import PurePosixPath
-from urllib.parse import urlparse, unquote, quote
+from urllib.parse import quote, urlparse, unquote
+import base64
 
 import boto3
 import redis
@@ -33,17 +33,21 @@ s3  = boto3.client(
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
 )
 
 # Redis-ключи
-def _k_job(book_id: int) -> str:        return f"bookprev:{book_id}"          # hash: status, started_at, finished_at
-def _k_log(book_id: int) -> str:        return f"bookprev:{book_id}:log"      # list of log lines
+def _k_job(book_id: int) -> str:        return f"bookcover:{book_id}"       # hash: status, started_at, finished_at, candidates_count
+def _k_log(book_id: int) -> str:        return f"bookcover:{book_id}:log"   # list of log lines
+def _k_cand(book_id: int, idx: int) -> str: return f"bookcover:{book_id}:cand:{idx}"  # string (base64 JPEG)
+
+# TTL для кандидатов (секунд)
+DEFAULT_TTL_SECONDS = int(os.getenv("BOOK_COVER_CANDIDATE_TTL", "6000"))  # 10 часа
 
 def _log(book_id: int, msg: str) -> None:
     line = f"{datetime.utcnow().isoformat()}Z | {msg}"
     rds.lpush(_k_log(book_id), line)
-    logger.info("[BOOK-PREVIEW][%s] %s", book_id, msg)
+    logger.info("[BOOK-COVER][%s] %s", book_id, msg)
 
 def _set_job_status(book_id: int, status: str) -> None:
     rds.hset(_k_job(book_id), mapping={"status": status, "updated_at": datetime.utcnow().isoformat() + "Z"})
@@ -55,9 +59,6 @@ def _set_job_times(book_id: int, started=False, finished=False) -> None:
         rds.hset(_k_job(book_id), "finished_at", datetime.utcnow().isoformat() + "Z")
 
 def _key_from_url(url: str) -> str:
-    """
-    Принимаем CDN-URL или s3:// и возвращаем S3 key.
-    """
     if url.startswith("s3://"):
         return urlparse(url).path.lstrip("/")
     p = urlparse(url)
@@ -66,35 +67,30 @@ def _key_from_url(url: str) -> str:
         return path[len(S3_BUCKET) + 1 :]
     return path
 
-def _target_key_for(book: Book) -> str:
-    # Схема хранения превью: books/<slug>/preview/preview_15p.pdf
-    return f"books/{book.slug}/preview/preview_15p.pdf"
+def _cdn_url_for_key(key: str) -> str:
+    key = key.lstrip("/")
+    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
 
 def _run(cmd: str) -> tuple[int, str, str]:
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     out, err = proc.communicate()
     return proc.returncode, out, err
 
-def _cdn_url_for_key(key: str) -> str:
-    key = key.lstrip("/")
-    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+def _covers_dir_for(book: Book) -> str:
+    return f"books/{book.slug}/covers/"
 
-def _preview_key_from_src(src_key: str, pages: int) -> str:
-    p = PurePosixPath(src_key)          # books/<ID>/original/<File.pdf>
-    base = p.parent.parent              # → books/<ID>
-    return str(base / "preview" / f"preview_{pages}p.pdf")
-
-@shared_task(name="app.tasks.book_previews.generate_book_preview", rate_limit="20/m")
-def generate_book_preview(book_id: int, pages: int = 15) -> dict:
+@shared_task(name="app.tasks.book_covers.generate_cover_candidates", rate_limit="20/m")
+def generate_cover_candidates(book_id: int, pages: int = 3, dpi: int = 150, jpeg_quality: int = 90) -> dict:
     """
-    Вырезает первые `pages` страниц из PDF книги, загружает превью на CDN,
-    пишет URL в books.preview_pdf (+ отметку времени) и статусы/логи в Redis.
+    Рендерит первые `pages` страниц PDF в JPEG и загружает как кандидаты обложки:
+      books/<slug>/covers/candidate_1.jpg, candidate_2.jpg, candidate_3.jpg
+    Сохраняет список URL'ов и статус в Redis.
     """
     db: Session = SessionLocal()
     try:
         _set_job_status(book_id, "running")
         _set_job_times(book_id, started=True)
-        _log(book_id, f"start (pages={pages})")
+        _log(book_id, f"start (pages={pages}, dpi={dpi}, q={jpeg_quality})")
 
         book = db.query(Book).get(book_id)
         if not book:
@@ -102,8 +98,6 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
             _log(book_id, "book not found")
             _set_job_times(book_id, finished=True)
             return {"ok": False, "error": "book_not_found"}
-
-        # Проверка на существование превью уже в S3 убрана — всегда генерируем заново при запросе
 
         # Ищем исходный PDF
         pdf = (
@@ -120,10 +114,9 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
         src_key = _key_from_url(pdf.s3_url)
         _log(book_id, f"source key: {src_key}")
 
-        with tempfile.TemporaryDirectory(prefix=f"book-prev-{book.id}-") as tmp:
+        produced = 0
+        with tempfile.TemporaryDirectory(prefix=f"book-covers-{book.id}-") as tmp:
             in_pdf  = os.path.join(tmp, "in.pdf")
-            out_pdf = os.path.join(tmp, "preview.pdf")
-
             try:
                 s3.download_file(S3_BUCKET, src_key, in_pdf)
             except ClientError as e:
@@ -132,36 +125,46 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
                 _set_job_times(book_id, finished=True)
                 return {"ok": False, "error": "s3_download_failed"}
 
-            # Ghostscript: первые N страниц → out.pdf
-            cmd = f'gs -q -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dFirstPage=1 -dLastPage={pages} -sOutputFile="{out_pdf}" "{in_pdf}"'
+            # Ghostscript: JPEG рендер первых N страниц
+            # -o out_%d.jpg создаст файлы 1..N
+            out_mask = os.path.join(tmp, "out_%d.jpg")
+            cmd = f'gs -q -dNOPAUSE -dBATCH -sDEVICE=jpeg -r{dpi} -dJPEGQ={jpeg_quality} -dFirstPage=1 -dLastPage={pages} -o "{out_mask}" "{in_pdf}"'
             rc, out, err = _run(cmd)
-            if rc != 0 or not os.path.exists(out_pdf) or os.path.getsize(out_pdf) == 0:
+            if rc != 0:
                 _set_job_status(book_id, "failed")
                 _log(book_id, f"ghostscript failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
                 _set_job_times(book_id, finished=True)
                 return {"ok": False, "error": "gs_failed"}
 
-            # Загрузка превью на CDN
-            key = _preview_key_from_src(src_key, pages)
-            try:
-                s3.upload_file(out_pdf, S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "application/pdf"})
-            except ClientError as e:
-                _set_job_status(book_id, "failed")
-                _log(book_id, f"s3 upload failed: {e}")
-                _set_job_times(book_id, finished=True)
-                return {"ok": False, "error": "s3_upload_failed"}
+            # Сохраняем кандидатов в Redis (base64 JPEG)
+            for i in range(1, pages + 1):
+                local_img = os.path.join(tmp, f"out_{i}.jpg")
+                if not os.path.exists(local_img):
+                    continue
+                try:
+                    with open(local_img, "rb") as fh:
+                        b64 = base64.b64encode(fh.read()).decode("ascii")
+                    rds.set(_k_cand(book.id, i), b64, ex=DEFAULT_TTL_SECONDS)
+                    produced += 1
+                except Exception as e:
+                    _log(book_id, f"store candidate {i} failed: {e}")
 
-            cdn_url = _cdn_url_for_key(key)
-        
-        # БД не обновляем — URL генерируется динамически по slug
-        _set_job_status(book_id, "success")
+        # Сохраняем счётчик и TTL на джобу/логи
+        if produced:
+            rds.hset(_k_job(book.id), mapping={"candidates_count": str(produced)})
+            rds.expire(_k_job(book.id), DEFAULT_TTL_SECONDS)
+            rds.expire(_k_log(book.id), DEFAULT_TTL_SECONDS)
+            _set_job_status(book_id, "success")
+            _log(book_id, f"done → {produced} candidates (TTL {DEFAULT_TTL_SECONDS}s)")
+        else:
+            _set_job_status(book_id, "failed")
+            _log(book_id, "no candidates produced")
+
         _set_job_times(book_id, finished=True)
-        _log(book_id, f"done → {cdn_url}")
-
-        return {"ok": True, "url": cdn_url}
+        return {"ok": produced > 0, "count": produced, "ttl": DEFAULT_TTL_SECONDS}
 
     except Exception as exc:
-        logger.exception("[BOOK-PREVIEW] unhandled")
+        logger.exception("[BOOK-COVER] unhandled")
         try:
             _set_job_status(book_id, "failed")
             _set_job_times(book_id, finished=True)
@@ -171,3 +174,5 @@ def generate_book_preview(book_id: int, pages: int = 15) -> dict:
         return {"ok": False, "error": str(exc)}
     finally:
         db.close()
+
+

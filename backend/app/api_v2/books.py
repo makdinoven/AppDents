@@ -35,8 +35,9 @@ from ..schemas_v2.book import (
     TagMini, BookLandingGalleryItem, BookLandingCardResponse, BookLandingCardsResponse,
     BookLandingCardsResponsePaginations, UserBookDetailResponse, BookAdminDetailResponse, BookPatch,
 )
-from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, AuthorCardResponse, \
+from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, \
     TagResponse
+from ..schemas_v2.common import AuthorCardResponse
 from ..services_v2 import book_service
 from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
 from ..utils.s3 import generate_presigned_url
@@ -363,11 +364,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     ]
 
     # Теги лендинга = объединение тегов всех книг (уникально)
-    tag_map: dict[int, dict] = {}
-    for b in landing.books:
-        for t in b.tags:
-            tag_map[t.id] = {"id": t.id, "name": t.name}
-    tags = list(tag_map.values())
+    tags: list[str] = list({t.name for b in landing.books for t in b.tags})
 
     # Авторы с описанием и «их» тегами (теги автора = теги книг этого автора на данном лендинге)
     authors_map: dict[int, dict] = {}

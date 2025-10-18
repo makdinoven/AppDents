@@ -167,7 +167,7 @@ def my_cart(
         for it in cart.items
     )
 
-    count = len(cart.items)
+    count = sum(1 for it in cart.items if it.landing is not None)
     disc_curr = _calc_discount(count)
     disc_next = _calc_discount(count + 1)
     discounted = total_new * (1 - disc_curr)
@@ -307,52 +307,150 @@ def remove_book_landing_from_cart(
 @router.post(
     "/preview",
     response_model=CartResponse,
-    summary="Предпросмотр корзины (без сохранения в БД, пока только курсовые лендинги)",
+    summary="Предпросмотр корзины (без сохранения в БД). Поддерживает курсовые и книжные лендинги.",
 )
 def cart_preview(
-    landing_ids: List[int] = Body(..., embed=True, example=[101, 102, 103]),
+    cart_landing_ids: List[int] = Body(default=[], embed=True, description="ID курсовых лендингов"),
+    cart_book_landing_ids: List[int] = Body(default=[], embed=True, description="ID книжных лендингов"),
     db: Session = Depends(get_db),
 ):
-    uniq_ids, seen = [], set()
-    for lid in landing_ids:
-        if lid not in seen:
-            uniq_ids.append(lid)
-            seen.add(lid)
-    if not uniq_ids:
-        raise HTTPException(400, "landing_ids array is empty")
+    """
+    Возвращает тот же формат, что /api/cart, но:
+      • ничего не создаётся в БД;
+      • added_at = now;
+      • скидка считается ТОЛЬКО по количеству курсовых лендингов.
+    """
 
-    landings = (
-        db.query(Landing)
-          .options(
-              selectinload(Landing.authors),
-              selectinload(Landing.courses),
-          )
-          .filter(Landing.id.in_(uniq_ids))
-          .all()
-    )
-    if len(landings) != len(uniq_ids):
-        missing = set(uniq_ids) - {l.id for l in landings}
-        raise HTTPException(404, f"Landing(s) not found: {sorted(missing)}")
+    # --- нормализуем вход, убираем дубликаты с сохранением порядка
+    def _uniq(seq: List[int]) -> List[int]:
+        seen = set()
+        out = []
+        for x in seq or []:
+            if x not in seen:
+                seen.add(x)
+                out.append(x)
+        return out
 
-    landing_by_id = {l.id: l for l in landings}
-    ordered = [landing_by_id[lid] for lid in uniq_ids]
+    landing_ids = _uniq(cart_landing_ids)
+    book_landing_ids = _uniq(cart_book_landing_ids)
 
-    total_new = sum(_safe_price(l.new_price) for l in ordered)
-    total_old = sum(_safe_price(l.old_price) for l in ordered)
+    if not landing_ids and not book_landing_ids:
+        raise HTTPException(400, "Provide at least one of landing_ids or book_landing_ids")
 
-    count = len(ordered)
-    disc_curr = _calc_discount(count)
-    disc_next = _calc_discount(count + 1)
+    # --- тащим сущности одним махом
+    landings: List[Landing] = []
+    if landing_ids:
+        landings = (
+            db.query(Landing)
+              .options(
+                  selectinload(Landing.authors),
+                  selectinload(Landing.courses),
+              )
+              .filter(Landing.id.in_(landing_ids))
+              .all()
+        )
+        found = {l.id for l in landings}
+        missing = [x for x in landing_ids if x not in found]
+        if missing:
+            raise HTTPException(404, f"Course landing(s) not found: {missing}")
+
+    book_landings: List[BookLanding] = []
+    if book_landing_ids:
+        book_landings = (
+            db.query(BookLanding)
+              .options(
+                  selectinload(BookLanding.books).selectinload(Book.authors),
+              )
+              .filter(BookLanding.id.in_(book_landing_ids))
+              .all()
+        )
+        found = {b.id for b in book_landings}
+        missing = [x for x in book_landing_ids if x not in found]
+        if missing:
+            raise HTTPException(404, f"Book landing(s) not found: {missing}")
+
+    # --- упорядочим как пришло с фронта
+    by_landing_id = {l.id: l for l in landings}
+    ordered_landings = [by_landing_id[x] for x in landing_ids]
+
+    by_book_landing_id = {b.id: b for b in book_landings}
+    ordered_book_landings = [by_book_landing_id[x] for x in book_landing_ids]
+
+    # --- суммы
+    def _safe_str_price(x):  # локально, если _safe_price уже есть — лучше его
+        return _safe_price(x) if x is not None else 0.0
+
+    total_new = sum(_safe_str_price(l.new_price) for l in ordered_landings) + \
+                sum(_safe_str_price(b.new_price) for b in ordered_book_landings)
+    total_old = sum(_safe_str_price(l.old_price) for l in ordered_landings) + \
+                sum(_safe_str_price(b.old_price) for b in ordered_book_landings)
+
+    # скидка — только по курсовым
+    count_courses = len(ordered_landings)
+    disc_curr = _calc_discount(count_courses)
+    disc_next = _calc_discount(count_courses + 1)
+
     discounted = total_new * (1 - disc_curr)
 
+    # --- сборка items в том же формате, что /api/cart
     now = datetime.utcnow()
     items: List[Dict[str, Any]] = []
-    for l in ordered:
+
+    # КУРСОВЫЕ ЛЕНДИНГИ
+    for l in ordered_landings:
         items.append({
             "id": 0,
             "item_type": "LANDING",
             "added_at": now,
-            "landing": LandingInCart.from_orm(l),
+            "landing": {
+                "id": l.id,
+                "page_name": l.page_name,
+                "landing_name": l.landing_name,
+                "preview_photo": l.preview_photo,
+                "course_ids": [c.id for c in (l.courses or [])],
+                "authors": [{"id": a.id, "name": a.name, "photo": a.photo} for a in (l.authors or [])],
+                "old_price": str(l.old_price) if l.old_price is not None else None,
+                "new_price": str(l.new_price) if l.new_price is not None else None,
+            },
+            "book": None,
+        })
+
+    # КНИЖНЫЕ ЛЕНДИНГИ (делаем как в /api/cart → в поле "book")
+    def _authors_from_book_landing(bl: BookLanding) -> list[dict]:
+        seen = set()
+        out = []
+        for b in bl.books or []:
+            for a in b.authors or []:
+                if a.id not in seen:
+                    seen.add(a.id)
+                    out.append({"id": a.id, "name": a.name, "photo": a.photo})
+        return out
+
+    def _first_cover_from_book_landing(bl: BookLanding) -> str | None:
+        for b in bl.books or []:
+            if b.cover_url:
+                return b.cover_url
+        return None
+
+    def _book_ids(bl: BookLanding) -> list[int]:
+        return [b.id for b in (bl.books or [])]
+
+    for bl in ordered_book_landings:
+        items.append({
+            "id": 0,
+            "item_type": "BOOK",
+            "added_at": now,
+            "landing": None,
+            "book": {
+                "id": bl.id,
+                "page_name": bl.page_name,             # slug
+                "landing_name": bl.landing_name or "",
+                "preview_photo": _first_cover_from_book_landing(bl),
+                "book_ids": _book_ids(bl),
+                "authors": _authors_from_book_landing(bl),
+                "old_price": str(bl.old_price) if bl.old_price is not None else None,
+                "new_price": str(bl.new_price) if bl.new_price is not None else None,
+            },
         })
 
     return {
@@ -361,7 +459,8 @@ def cart_preview(
         "total_new_amount": round(total_new, 2),
         "current_discount": round(disc_curr * 100, 2),
         "next_discount": round(disc_next * 100, 2),
-        "total_amount_with_balance_discount": 0,
+        "total_amount_with_balance_discount": 0,  # превью без баланса
         "updated_at": now,
         "items": items,
     }
+

@@ -5,6 +5,7 @@ import LangLogo, {
 import AddToCartButton from "../../../../../../components/ui/AddToCartButton/AddToCartButton.tsx";
 import { formatAuthorsDesc } from "../../../../../../common/helpers/helpers.ts";
 import { ResultLandingData } from "../../../../../../store/slices/mainSlice.ts";
+import { useCart } from "../../../../../../common/hooks/useCart.ts";
 
 const ResultLanding = ({
   type,
@@ -24,6 +25,25 @@ const ResultLanding = ({
   data: ResultLandingData;
 }) => {
   const isBookLanding = type === "book_landing";
+
+  const { isInCart, cartItemLoading, toggleCartItem } = useCart(
+    {
+      id,
+      landing_name,
+      authors,
+      page_name,
+      old_price,
+      new_price,
+      ...(isBookLanding ? { book_ids: course_ids } : { course_ids }),
+      preview_photo,
+    },
+    isBookLanding ? "BOOK" : "LANDING",
+  );
+
+  const handleAddToCart = () => {
+    toggleCartItem();
+  };
+
   return (
     <>
       {preview_photo ? (
@@ -48,18 +68,9 @@ const ResultLanding = ({
             <span className={s.old_price}>${old_price}</span>
           </div>
           <AddToCartButton
-            item={{
-              landing: {
-                id: id,
-                landing_name: landing_name,
-                authors: authors,
-                page_name: page_name,
-                old_price: old_price,
-                new_price: new_price,
-                preview_photo: preview_photo,
-                course_ids: course_ids,
-              },
-            }}
+            isInCart={isInCart}
+            loading={cartItemLoading}
+            toggleCartItem={handleAddToCart}
             className={s.cart_btn}
             variant={"primary"}
           />

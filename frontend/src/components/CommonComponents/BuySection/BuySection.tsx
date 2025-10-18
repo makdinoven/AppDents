@@ -10,6 +10,7 @@ interface BuySectionProps {
   oldPrice?: string;
   newPrice?: string;
   provideUrl: (format: string) => string;
+  openPayment: () => void;
 }
 
 const BuySection: React.FC<BuySectionProps> = ({
@@ -19,6 +20,7 @@ const BuySection: React.FC<BuySectionProps> = ({
   oldPrice,
   newPrice,
   provideUrl,
+  openPayment,
 }: BuySectionProps) => {
   const [activeFormat, setActiveFormat] = useState(formats?.[0] || "PDF");
   const { t } = useTranslation();
@@ -52,7 +54,7 @@ const BuySection: React.FC<BuySectionProps> = ({
           />
         </p>
         {isBuy ? (
-          <button className={`${s.buy_button} ${s[buy]}`}>
+          <button onClick={openPayment} className={`${s.buy_button} ${s[buy]}`}>
             <p className={s.prices}>
               {t("buyFor")} <span className={s.old_price}>${oldPrice}</span>
               <span className={s.new_price}>${newPrice}</span>

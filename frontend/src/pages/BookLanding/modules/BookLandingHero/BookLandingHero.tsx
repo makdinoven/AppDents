@@ -10,11 +10,13 @@ import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 interface LandingHeroProps {
   data: any;
   loading: boolean;
+  openPayment: () => void;
 }
 
 const BookLandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
+  openPayment,
 }: LandingHeroProps) => {
   return loading ? (
     <BookHeroSkeleton type="buy" />
@@ -90,6 +92,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
             </p>
           </div>
           <BuySection
+            openPayment={openPayment}
             type="buy"
             formats={BOOK_FORMATS}
             oldPrice={data?.old_price}

@@ -1,5 +1,7 @@
 import { createAppAsyncThunk } from "../createAppAsynkThunk.ts";
 import { cartApi } from "../../api/cartApi/cartApi.ts";
+import { CartItemKind } from "../../api/cartApi/types.ts";
+import { cartStorage } from "../../api/cartApi/cartStorage.ts";
 
 export const getCart = createAppAsyncThunk(
   "cart/get",
@@ -19,9 +21,15 @@ export const getCart = createAppAsyncThunk(
 
 export const addCartItem = createAppAsyncThunk(
   "cart/addItem",
-  async (id: number, { rejectWithValue }) => {
+  async (data: { id: number; type: CartItemKind }, { rejectWithValue }) => {
     try {
-      const res = await cartApi.addCartItem(id);
+      let res;
+      if (data.type === "BOOK") {
+        res = await cartApi.addCartItemBook(data.id);
+      } else {
+        res = await cartApi.addCartItemCourse(data.id);
+      }
+
       if (res?.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -35,9 +43,15 @@ export const addCartItem = createAppAsyncThunk(
 
 export const removeCartItem = createAppAsyncThunk(
   "cart/removeItem",
-  async (id: number, { rejectWithValue }) => {
+  async (data: { id: number; type: CartItemKind }, { rejectWithValue }) => {
     try {
-      const res = await cartApi.removeCartItem(id);
+      let res;
+      if (data.type === "BOOK") {
+        res = await cartApi.removeCartItemBook(data.id);
+      } else {
+        res = await cartApi.removeCartItemCourse(data.id);
+      }
+
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }
@@ -51,9 +65,10 @@ export const removeCartItem = createAppAsyncThunk(
 
 export const getCartPreview = createAppAsyncThunk(
   "cart/getCartPreview",
-  async (landing_ids: number[], { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await cartApi.previewCart(landing_ids);
+      const cartLandingIds = cartStorage.getLandingIds();
+      const res = await cartApi.previewCart(cartLandingIds!);
       if (res.data.error) {
         return rejectWithValue(res.data.error);
       }

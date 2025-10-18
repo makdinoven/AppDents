@@ -12,6 +12,9 @@ import { setPaymentData } from "../../../store/slices/paymentSlice.ts";
 import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 import { getPaymentType } from "../../../common/helpers/helpers.ts";
 import { Path } from "../../../routes/routes.ts";
+import { useCart } from "../../../common/hooks/useCart.ts";
+import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../../api/cartApi/types.ts";
 
 export type ProductCardFlags = {
   isFree?: boolean;
@@ -57,6 +60,20 @@ const CourseCard = ({
   const screenWidth = useScreenWidth();
   const { isFree, isVideo, isClient, isOffer } = flags;
 
+  const { isInCart, cartItemLoading, toggleCartItem } = useCart(
+    {
+      id,
+      landing_name: name,
+      authors,
+      page_name: slug,
+      old_price,
+      new_price,
+      course_ids: [id],
+      preview_photo: photo,
+    },
+    "LANDING",
+  );
+
   const link = isFree
     ? `/${isClient ? Path.freeLandingClient : Path.freeLanding}/${slug}`
     : isVideo
@@ -80,26 +97,41 @@ const CourseCard = ({
   };
 
   const openPayment = () => {
-    const paymentData = {
-      landingIds: [id],
-      courseIds: course_ids,
-      priceCents: new_price * 100,
-      newPrice: new_price,
-      oldPrice: old_price,
-      region: language,
-      fromAd: !isClient,
-      courses: [
-        {
-          name: name,
-          newPrice: new_price,
-          oldPrice: old_price,
-          lessonsCount: lessons_count,
-          img: photo,
+    dispatch(
+      setPaymentData({
+        data: {
+          new_price,
+          old_price,
+          course_ids,
+          landing_ids: [id],
+          book_ids: [],
+          book_landing_ids: [],
+          price_cents: new_price * 100,
+          from_ad: !isClient,
+          region: language as LanguagesType,
         },
-      ],
-    };
-
-    dispatch(setPaymentData(paymentData));
+        render: {
+          new_price,
+          old_price,
+          items: [
+            {
+              item_type: "LANDING" as CartItemKind,
+              data: {
+                id,
+                landing_name: name,
+                authors,
+                page_name: slug,
+                old_price,
+                new_price,
+                lessons_count,
+                course_ids: [id],
+                preview_photo: photo,
+              },
+            },
+          ],
+        },
+      }),
+    );
     openPaymentModal(slug, getPaymentType(isFree, isOffer));
   };
 
@@ -150,18 +182,9 @@ const CourseCard = ({
                 </button>
                 {isClient && (
                   <AddToCartButton
-                    item={{
-                      landing: {
-                        id: id,
-                        landing_name: name,
-                        authors: authors,
-                        page_name: slug,
-                        old_price: old_price,
-                        new_price: new_price,
-                        preview_photo: photo,
-                        course_ids: course_ids,
-                      },
-                    }}
+                    toggleCartItem={toggleCartItem}
+                    isInCart={isInCart}
+                    loading={cartItemLoading}
                     className={s.cart_btn}
                   />
                 )}

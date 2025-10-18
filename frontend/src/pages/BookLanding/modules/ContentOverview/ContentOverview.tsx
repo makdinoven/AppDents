@@ -35,7 +35,7 @@ const ContentOverview: React.FC<ContentOverviewProps> = ({
   const showLabels = slides.length > 1;
 
   return (
-    <div className={s.content_overview}>
+    <div id={"book-pages"} className={s.content_overview}>
       {books.length > 1 && (
         <SectionHeader name={t("bookLanding.contentOverview")} />
       )}

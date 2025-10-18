@@ -2,17 +2,39 @@ import s from "./BookCard.module.scss";
 import { BookCardType } from "../CardsList/CardsList.tsx";
 import { BOOK_FORMATS } from "../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
-import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
 import BookCardImages from "./BookCardImages/BookCardImages.tsx";
 import {
   formatAuthorsDesc,
   formatLanguage,
+  getPaymentType,
 } from "../../../common/helpers/helpers.ts";
+import { useCart } from "../../../common/hooks/useCart.ts";
+import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
+import { CartIcon, CheckMarkIcon } from "../../../assets/icons";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
+import { setPaymentData } from "../../../store/slices/paymentSlice.ts";
+import { useDispatch } from "react-redux";
+import { AppDispatchType } from "../../../store/store.ts";
+import { ProductCardFlags } from "../CourseCard/CourseCard.tsx";
+import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../../api/cartApi/types.ts";
 
-const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
+const BookCard = ({
+  book,
+  index,
+  flags,
+}: {
+  book: BookCardType;
+  index: number;
+  flags: ProductCardFlags;
+}) => {
+  const { openPaymentModal } = usePaymentPageHandler();
+  const dispatch = useDispatch<AppDispatchType>();
   const {
+    id,
+    book_ids,
     language,
     landing_name,
     slug,
@@ -23,6 +45,27 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
     gallery,
     main_image,
   } = book;
+  const { isInCart, cartItemLoading, toggleCartItem } = useCart(
+    {
+      id,
+      landing_name,
+      authors,
+      page_name: slug,
+      old_price,
+      new_price,
+      book_ids: [id],
+      preview_photo: main_image,
+    },
+    "BOOK",
+  );
+
+  const { isOffer } = flags;
+
+  const handleAddToCart = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleCartItem();
+  };
 
   const setCardColor = () => {
     const returnValue = "blue";
@@ -33,9 +76,48 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
 
   const link = `${Path.bookLandingClient}/${slug}`;
 
-  const handleBuyClick = (e: any) => {
+  const handleBuyClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    openPayment();
+  };
+
+  const openPayment = () => {
+    dispatch(
+      setPaymentData({
+        data: {
+          new_price,
+          old_price,
+          course_ids: [],
+          landing_ids: [],
+          book_ids,
+          book_landing_ids: [id],
+          price_cents: new_price * 100,
+          from_ad: false,
+          region: language as LanguagesType,
+        },
+        render: {
+          new_price,
+          old_price,
+          items: [
+            {
+              item_type: "BOOK" as CartItemKind,
+              data: {
+                id,
+                landing_name,
+                authors,
+                page_name: slug,
+                old_price,
+                new_price,
+                preview_photo: main_image,
+                book_ids: [id],
+              },
+            },
+          ],
+        },
+      }),
+    );
+    openPaymentModal(slug, getPaymentType(false, isOffer), "BOOKS");
   };
 
   return (
@@ -78,7 +160,7 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
         <ul className={s.book_info}>
           {!!authors.length && (
             <li>
-              <Trans i18nKey={"authors"} />:
+              <Trans i18nKey={"bookCard.authors"} />:
               <span className={s.book_info_value}>
                 {" "}
                 {formatAuthorsDesc(authors)}
@@ -86,23 +168,37 @@ const BookCard = ({ book, index }: { book: BookCardType; index: number }) => {
             </li>
           )}
           <li>
-            <Trans i18nKey={"language"} />:
-            <span className={s.book_info_value}>
-              {" "}
-              {formatLanguage(language)}
-            </span>
+            <Trans
+              i18nKey={"bookLanding.language"}
+              values={{
+                language: formatLanguage(language),
+              }}
+              components={[<span className={s.book_info_value} />]}
+            />
           </li>
         </ul>
       </div>
 
       <div className={s.buttons}>
         <button
-          onClick={(e) => handleBuyClick(e)}
+          onClick={handleBuyClick}
           className={`${s.buy_btn} ${s[cardColor]}`}
         >
           {<Trans i18nKey={"buy"} />}
         </button>
-        <AddToCartButton className={`${s.cart_btn} ${s[cardColor]}`} />
+        <button
+          onClick={handleAddToCart}
+          className={`${s.cart_btn} ${s[cardColor]} ${isInCart ? s.active : ""}`}
+        >
+          {isInCart ? (
+            <>
+              <CheckMarkIcon />
+            </>
+          ) : (
+            <CartIcon />
+          )}
+          {cartItemLoading && <LoaderOverlay />}
+        </button>
       </div>
     </Link>
   );

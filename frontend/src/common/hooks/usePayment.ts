@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { usePaymentPageHandler } from "./usePaymentPageHandler.ts";
 import {
   BASE_URL,
   LS_TOKEN_KEY,
@@ -11,14 +12,23 @@ import {
 import { cartStorage } from "../../api/cartApi/cartStorage.ts";
 import { getPaymentSource } from "../helpers/helpers.ts";
 import { Path } from "../../routes/routes.ts";
+import { clearUserCourses } from "../../store/slices/userSlice.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { getMe } from "../../store/actions/userActions.ts";
-import { usePaymentPageHandler } from "./usePaymentPageHandler.ts";
-import { clearUserCourses } from "../../store/slices/userSlice.ts";
+import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
+import { PaymentHookDataPayload } from "../../store/slices/paymentSlice.ts";
 
 const IS_PAYMENT_DISABLED = false;
 
-export const usePayment = ({ paymentData, isFree, isOffer }: any) => {
+export const usePayment = ({
+  paymentData,
+  isFree = false,
+  isOffer = false,
+}: {
+  paymentData: PaymentHookDataPayload;
+  isFree?: boolean;
+  isOffer?: boolean;
+}) => {
   const { closePaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
@@ -48,88 +58,87 @@ export const usePayment = ({ paymentData, isFree, isOffer }: any) => {
   };
 
   const balancePrice = isBalanceUsed
-    ? Math.round(Math.max(paymentData.newPrice - balance!, 0) * 100) / 100
-    : paymentData.newPrice;
+    ? Math.round(Math.max(paymentData.new_price! - balance!, 0) * 100) / 100
+    : paymentData.new_price;
 
   const handlePayment = async () => {
     setLoading(true);
 
-    if (!isFree) {
-      const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
-      const cartLandingIds = cartStorage.getLandingIds();
+    try {
+      if (isFree) {
+        await handleFreePayment();
+      } else {
+        await handlePaidPayment();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const dataToSend = {
-        total_old_price: paymentData.oldPrice,
-        total_new_price: paymentData.newPrice,
-        from_ad: paymentData.fromAd,
-        price_cents: paymentData.priceCents,
+  const handlePaidPayment = async () => {
+    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
+    const cartLandingIds = cartStorage.getLandingIds();
+
+    const dataToSend = {
+      book_ids: paymentData.book_ids,
+      book_landing_ids: paymentData.book_landing_ids,
+      from_ad: paymentData.from_ad,
+      price_cents: paymentData.price_cents,
+      region: paymentData.region || (language as LanguagesType),
+      landing_ids: paymentData.landing_ids,
+      course_ids: paymentData.course_ids,
+      use_balance: isBalanceUsed,
+      user_email: isLogged ? (email as string) : emailValue,
+      transfer_cart: !isLogged,
+      cart_landing_ids: cartLandingIds.cart_landing_ids,
+      cart_book_landing_ids: cartLandingIds.cart_book_landing_ids,
+      source: paymentData.source || getPaymentSource(isOffer),
+      success_url: `${BASE_URL}${Path.successPayment}`,
+      ...(rcCode && { ref_code: rcCode }),
+      cancel_url:
+        !isLogged && rcCode
+          ? window.location.href + `?${REF_CODE_PARAM}=${rcCode}`
+          : window.location.href,
+    };
+
+    const res = await mainApi.buyCourse(dataToSend, isLogged);
+    const { checkout_url, balance_left } = res.data;
+
+    localStorage.removeItem(REF_CODE_LS_KEY);
+
+    if (checkout_url) {
+      const newTab = window.open(checkout_url, "_blank");
+      if (!newTab || newTab.closed || typeof newTab.closed === "undefined") {
+        window.location.href = checkout_url;
+      }
+    }
+
+    if (balance_left) {
+      await dispatch(getMe());
+      dispatch(clearUserCourses());
+      navigate(Path.profile);
+    }
+  };
+
+  const handleFreePayment = async () => {
+    const res = await mainApi.getFreeCourse(
+      {
+        id: paymentData.landing_ids[0],
+        email: isLogged ? email : emailValue,
         region: paymentData.region || language,
-        landing_ids: paymentData.landingIds,
-        course_ids: paymentData.courseIds,
-        use_balance: isBalanceUsed,
-        user_email: isLogged ? email : emailValue,
-        transfer_cart: !isLogged && cartLandingIds.length > 0,
-        cart_landing_ids: cartLandingIds,
-        source: paymentData.source || getPaymentSource(isOffer),
-        success_url: `${BASE_URL}${Path.successPayment}`,
-        courses: paymentData.courses,
-        cancel_url:
-          !isLogged && rcCode
-            ? window.location.href + `?${REF_CODE_PARAM}=${rcCode}`
-            : window.location.href,
-      };
+      },
+      isLogged,
+    );
 
-      try {
-        const res = await mainApi.buyCourse(dataToSend, isLogged);
-        const { checkout_url, balance_left } = res.data;
-
-        localStorage.removeItem(REF_CODE_LS_KEY);
-
-        if (checkout_url) {
-          const newTab = window.open(checkout_url, "_blank");
-          if (
-            !newTab ||
-            newTab.closed ||
-            typeof newTab.closed === "undefined"
-          ) {
-            window.location.href = checkout_url;
-          }
-        }
-
-        if (balance_left) {
-          await dispatch(getMe());
-          dispatch(clearUserCourses());
-          navigate(Path.profile);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    if (isLogged) {
+      navigate(Path.profile);
     } else {
-      try {
-        const res = await mainApi.getFreeCourse(
-          {
-            id: paymentData.landingIds[0],
-            email: isLogged ? email : emailValue,
-            region: paymentData.region || language,
-          },
-          isLogged,
-        );
-
-        if (isLogged) {
-          navigate(Path.profile);
-        } else {
-          closePaymentModal();
-          localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
-          await dispatch(getMe());
-          navigate(Path.profile);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+      closePaymentModal();
+      localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
+      await dispatch(getMe());
+      navigate(Path.profile);
     }
   };
 
