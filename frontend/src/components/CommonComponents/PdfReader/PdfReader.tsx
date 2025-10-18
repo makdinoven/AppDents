@@ -343,7 +343,7 @@ const PdfReader = ({
 
   return (
     <div
-      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : fromProfile ? s.from_profile : ""}`}
+      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : ""} ${fromProfile ? s.from_profile : ""}`}
       onClick={handleOverlayClick}
     >
       <div className={s.header}>{headerContent.get(fullScreen)}</div>

@@ -1,6 +1,6 @@
 import s from "./BookPage.module.scss";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
@@ -35,30 +35,31 @@ const BookPage = () => {
     setSearchParams(newParams, { replace: true });
   };
 
-  useEffect(() => {
-    if (bookId) {
-      fetchBookData();
-    }
-  }, [bookId]);
-
-  const fetchBookData = async () => {
+  const fetchBookData = useCallback(async () => {
     try {
       const res = await adminApi.getBook(bookId);
       setBook(res.data);
       setLoading(false);
+      console.log("Called");
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [bookId]);
 
-  const handleProvideDownloadLink = (currentFormat: string): string => {
+  useEffect(() => {
+    if (bookId) {
+      fetchBookData();
+    }
+  }, [bookId, fetchBookData]);
+
+  const handleProvideDownloadInfo = (
+    currentFormat: string,
+  ): { url: string; name: string } => {
     const file = book?.files_download?.find(
       (format: any) => format.file_format === currentFormat,
     );
 
-    console.log(file?.download_url);
-
-    return file?.download_url || "#";
+    return { url: file?.download_url, name: book.title };
   };
 
   return (
@@ -133,7 +134,7 @@ const BookPage = () => {
                   <BuySection
                     type="download"
                     formats={BOOK_FORMATS}
-                    provideUrl={handleProvideDownloadLink}
+                    downloadInfo={handleProvideDownloadInfo}
                   />
                 </div>
               </div>
@@ -149,7 +150,7 @@ const BookPage = () => {
                 <PdfReader
                   currentPage={currentPage}
                   setCurrentPage={setCurrentPage}
-                  url={book.pdf_url}
+                  url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url}
                   fullScreen={true}
                   setFullScreen={() => closeFullScreenRef.current?.()}
                 />
@@ -157,7 +158,7 @@ const BookPage = () => {
               <PdfReader
                 currentPage={currentPage}
                 setCurrentPage={setCurrentPage}
-                url={book.pdf_url}
+                url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url}
                 fullScreen={true}
                 setFullScreen={openFullScreen}
                 fromProfile

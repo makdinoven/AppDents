@@ -26,7 +26,8 @@
 
   &.from_profile {
     width: 100%;
-    height: calc(100vh - 80px);
+    max-height: calc(100vh - 80px);
+    min-height: calc(100vh - 80px);
   }
 }
 
@@ -274,7 +275,8 @@
 @media (max-width: $middle-breakpoint) {
   .pdf_reader {
     &.from_profile {
-      height: calc(100vh - 60px);
+      max-height: calc(100vh - 60px);
+      min-height: calc(100vh - 60px);
     }
   }
 }
@@ -290,7 +292,8 @@
 @media (max-width: $mobile-breakpoint) {
   .pdf_reader {
     &.from_profile {
-      height: 100vh;
+      max-height: calc(100vh - 200px);
+      min-height: calc(100vh - 200px);
     }
   }
 }
