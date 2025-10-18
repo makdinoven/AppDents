@@ -1,0 +1,92 @@
+.audio_card {
+  background-color: $primary;
+  padding: 20px;
+  border-radius: 20px;
+  @include flex-column();
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 20px;
+  height: fit-content;
+
+  .headphones {
+    width: 30px;
+    height: 30px;
+    margin-top: 2px;
+    margin-right: 10px;
+    transform: translateY(2px);
+
+    path {
+      stroke: $accent;
+    }
+  }
+
+  .chapter_name {
+    display: block;
+    //flex-direction: row;
+    //justify-content: flex-start;
+    //align-items: flex-start;
+    text-transform: uppercase;
+    @include clamped-p2();
+
+    span {
+      text-transform: none;
+      margin-right: 8px;
+      flex-shrink: 0;
+      height: fit-content;
+    }
+  }
+
+  &.blue {
+    background-color: $secondary-lighter;
+  }
+
+  .controls {
+    display: grid;
+    max-width: 100%;
+    width: 100%;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+  }
+
+  .download_audio {
+    width: fit-content;
+    flex-shrink: 0;
+    @include clamped-p2();
+    padding: 5px 15px;
+    border: 1px solid $accent;
+    height: fit-content;
+    border-radius: 40px;
+    align-self: center;
+    text-wrap: nowrap;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .audio_card {
+    .headphones {
+      width: 20px;
+      height: 20px;
+    }
+
+    .chapter_name {
+      span {
+        margin-right: 6px;
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .audio_card {
+    padding: 10px;
+    gap: 15px;
+    .headphones {
+      width: 15px;
+      height: 15px;
+    }
+
+    .controls {
+      gap: 15px;
+    }
+  }
+}

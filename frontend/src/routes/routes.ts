@@ -19,6 +19,8 @@ export const Path = {
   payment: "/buy",
   profile: "/profile",
   myCourse: "course",
+  myBook: "my-book",
+  pdfReader: "pdf-reader",
   lesson: "lesson",
   admin: "/admin",
   info: "/info",

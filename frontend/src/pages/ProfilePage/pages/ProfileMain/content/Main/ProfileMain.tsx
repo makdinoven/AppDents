@@ -14,7 +14,6 @@ import {
   User,
 } from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
-import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import ResetPasswordModal from "../../../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../../../routes/routes.ts";
@@ -29,7 +28,7 @@ import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
 import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
 import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import MyBooks from "../../../../modules/MyBooks/MyBooks.tsx";
+import MyContent from "../../../../modules/MyContent/MyContent.tsx";
 
 const QUERY_KEY = "content";
 
@@ -110,19 +109,19 @@ const ProfileMain = () => {
               <ReferralSection />
             </div>
           </div>
-          <MyCourses courses={courses} />
+          <MyContent key="courses" items={courses} />
         </>
       ),
     },
     {
       name: "profile.yourCourses",
       value: "your_courses",
-      component: <MyCourses courses={courses} />,
+      component: <MyContent key="courses" items={courses} />,
     },
     {
       name: "profile.yourBooks",
       value: "your_books",
-      component: <MyBooks books={books} />,
+      component: <MyContent key="books" items={books} type="book" />,
     },
     {
       name: "profile.purchaseHistory.purchases",
@@ -147,7 +146,9 @@ const ProfileMain = () => {
         />
       </div>
 
-      <div className={s.profile_page_content}>{activeTab?.component}</div>
+      <div key={activeTab?.value} className={s.profile_page_content}>
+        {activeTab?.component}
+      </div>
 
       {showResetPasswordModal && (
         <ModalWrapper

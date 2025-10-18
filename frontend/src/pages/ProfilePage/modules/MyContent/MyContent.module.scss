@@ -1,31 +1,31 @@
-.courses {
+.content {
   @include flex-column;
   gap: 40px;
 }
 
-.courses_list {
+.content_list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
-.no_courses {
+.no_content {
   @include flex-center;
   @include clamped-p2;
 }
 
 @media (max-width: $middle-breakpoint) {
-  .courses_list {
+  .content_list {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .courses {
+  .content {
     gap: 20px;
   }
 
-  .courses_list {
+  .content_list {
     display: flex;
     gap: 10px;
     flex-direction: column;

@@ -52,6 +52,7 @@ import AdminAuthorsListing from "../pages/Admin/pages/content/AdminAuthorsListin
 import AdminUsersListing from "../pages/Admin/pages/content/AdminUsersListing.tsx";
 import AdminBooksListing from "../pages/Admin/pages/content/AdminBooksListing.tsx";
 import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLandingsListing.tsx";
+import BookPage from "../pages/ProfilePage/pages/BookPage/BookPage.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -120,6 +121,7 @@ export const AppRoutes: FC = () => {
                 element={<LessonPage />}
               />
             </Route>
+            <Route path={`${Path.myBook}/:bookId?`} element={<BookPage />} />
           </Route>
 
           <Route

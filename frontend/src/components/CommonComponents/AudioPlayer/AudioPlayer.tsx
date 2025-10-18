@@ -1,17 +1,35 @@
-import s from "./AudioPlayer.module.scss";
 import { useRef, useState, useEffect } from "react";
+import s from "./AudioPlayer.module.scss";
 import { Control, PauseCircle, PlayCircle } from "../../../assets/icons";
 
 interface AudioPlayerProps {
   audioUrl: string;
+  type?: "default" | "landing";
+  index?: number;
 }
 
-const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
+const AudioPlayer = ({
+  audioUrl,
+  type = "landing",
+  index,
+}: AudioPlayerProps) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(180);
   const [currentTime, setCurrentTime] = useState(0);
+
+  const isDefault = type === "default";
+  const isBlue = index !== undefined && index % 2 !== 0;
+
+  const colorClass = isDefault ? (isBlue ? s.blue : s.primary) : "";
+
+  const getColorValue = (opacity = 1) => {
+    if (type === "landing") return `rgb(237, 248, 255, ${opacity})`;
+    return isBlue
+      ? `rgba(121, 206, 231, ${opacity})`
+      : `rgba(127, 223, 213, ${opacity})`;
+  };
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -27,21 +45,30 @@ const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    let animationFrameId: number;
+
     const updateProgress = () => {
       setCurrentTime(audio.currentTime);
       setProgress((audio.currentTime / audio.duration) * 100);
+      animationFrameId = requestAnimationFrame(updateProgress);
     };
 
-    const setAudioData = () => {
-      setDuration(audio.duration);
+    const handlePlay = () => {
+      animationFrameId = requestAnimationFrame(updateProgress);
     };
 
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("loadedmetadata", setAudioData);
+    const handlePause = () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("loadedmetadata", () => setDuration(audio.duration));
 
     return () => {
-      audio.removeEventListener("timeupdate", updateProgress);
-      audio.removeEventListener("loadedmetadata", setAudioData);
+      cancelAnimationFrame(animationFrameId);
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
     };
   }, []);
 
@@ -72,23 +99,31 @@ const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
     <>
       <audio ref={audioRef} src={audioUrl} className={s.hidden} />
 
-      <div className={s.custom_player}>
-        <p className={s.mp3}>mp3</p>
-        <div className={s.controls}>
-          <button disabled className={s.previous}>
+      <div className={`${s.custom_player} ${s[type]}`}>
+        {type === "landing" && <p className={s.mp3}>mp3</p>}
+
+        <div className={`${s.controls} ${s.default}`}>
+          <button disabled className={`${s.previous} ${colorClass}`}>
             <Control />
           </button>
+
           <button
             onClick={togglePlay}
-            className={`${s.play_button} ${!audioUrl && s.disabled}`}
+            className={`${s.play_button} ${!audioUrl && s.disabled} ${colorClass}`}
             disabled={!audioUrl}
           >
-            {isPlaying ? <PauseCircle /> : <PlayCircle />}
+            {isPlaying ? (
+              <PauseCircle className={s.pause} />
+            ) : (
+              <PlayCircle className={s.play} />
+            )}
           </button>
-          <button disabled className={s.next}>
+
+          <button disabled className={`${s.next} ${colorClass}`}>
             <Control />
           </button>
         </div>
+
         <div className={s.progress_wrapper}>
           <input
             type="range"
@@ -96,14 +131,19 @@ const AudioPlayer = ({ audioUrl }: AudioPlayerProps) => {
             max="100"
             value={progress}
             onChange={handleSeek}
-            className={s.progress}
+            className={`${s.progress} ${colorClass}`}
             style={{
-              background: `linear-gradient(to right, rgb(237, 248, 255) ${progress}%, rgba(237, 248, 255, 0.6) ${progress}%)`,
+              background: `linear-gradient(to right, ${getColorValue()} ${progress}%, ${getColorValue(0.6)} ${progress}%)`,
             }}
           />
+
           <div className={s.time_info}>
-            <span className={s.time}>{formatTime(currentTime)}</span>
-            <span className={s.time}>{formatTime(currentTime, duration)}</span>
+            <span className={`${s.time} ${colorClass}`}>
+              {formatTime(currentTime)}
+            </span>
+            <span className={`${s.time} ${colorClass}`}>
+              {formatTime(currentTime, duration)}
+            </span>
           </div>
         </div>
       </div>
