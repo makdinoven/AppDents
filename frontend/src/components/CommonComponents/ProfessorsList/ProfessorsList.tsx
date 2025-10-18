@@ -10,6 +10,7 @@ type Professor = {
   description: string;
   tags: string[];
   courses_count: number;
+  books_count: number;
 };
 
 type props = {
@@ -44,6 +45,7 @@ const ProfessorsList = ({ professors, loading, source }: props) => {
                 photo={professor.photo}
                 description={professor.description}
                 tags={professor.tags}
+                books_count={professor.books_count}
                 courses_count={professor.courses_count}
                 link={`${Path.professor}/${professor.id}`}
               />

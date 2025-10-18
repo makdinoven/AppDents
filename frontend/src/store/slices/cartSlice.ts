@@ -3,13 +3,31 @@ import { cartStorage, getInitialCart } from "../../api/cartApi/cartStorage.ts";
 import {
   addCartItem,
   getCart,
+  getCartPreview,
   removeCartItem,
 } from "../actions/cartActions.ts";
-import { CartApiResponse, CartTypeExtended } from "../../api/cartApi/types.ts";
+import { CartApiResponse, CartType } from "../../api/cartApi/types.ts";
 import { AppRootStateType } from "../store.ts";
 
-const initialState: CartTypeExtended =
-  cartStorage.getCart() ?? getInitialCart();
+const normalizeCartResponse = (data: CartApiResponse): CartType => {
+  const items = data.items.map((item) => ({
+    data: item.landing ?? item.book!,
+    item_type: item.item_type,
+  }));
+
+  return {
+    items,
+    quantity: items.length,
+    current_discount: data.current_discount,
+    next_discount: data.next_discount,
+    total_amount: data.total_amount,
+    total_amount_with_balance_discount: data.total_amount_with_balance_discount,
+    total_new_amount: data.total_new_amount,
+    total_old_amount: data.total_old_amount,
+  };
+};
+
+const initialState: CartType = cartStorage.getCart() ?? getInitialCart();
 
 const cartSlice = createSlice({
   name: "cart",
@@ -42,11 +60,9 @@ const cartSlice = createSlice({
         getCart.fulfilled,
         (state, action: PayloadAction<{ res: { data: CartApiResponse } }>) => {
           state.loading = false;
-          Object.assign(state, {
-            ...action.payload.res.data,
-            quantity: action.payload.res.data.items.length,
-          });
-          cartStorage.setCart(state);
+          const normalized = normalizeCartResponse(action.payload.res.data);
+          Object.assign(state, normalized);
+          cartStorage.setCart(normalized);
         },
       );
     builder
@@ -57,11 +73,9 @@ const cartSlice = createSlice({
         addCartItem.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
           state.loading = false;
-          Object.assign(state, {
-            ...action.payload.res.data,
-            quantity: action.payload.res.data.items.length,
-          });
-          cartStorage.setCart(state);
+          const normalized = normalizeCartResponse(action.payload.res.data);
+          Object.assign(state, normalized);
+          cartStorage.setCart(normalized);
         },
       );
     builder
@@ -72,20 +86,29 @@ const cartSlice = createSlice({
         removeCartItem.fulfilled,
         (state, action: PayloadAction<{ res: { data: CartApiResponse } }>) => {
           state.loading = false;
-          Object.assign(state, {
-            ...action.payload.res.data,
-            quantity: action.payload.res.data.items.length,
-          });
-          cartStorage.setCart(state);
+          const normalized = normalizeCartResponse(action.payload.res.data);
+          Object.assign(state, normalized);
+          cartStorage.setCart(normalized);
+        },
+      );
+    builder
+      .addCase(getCartPreview.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(
+        getCartPreview.fulfilled,
+        (state, action: PayloadAction<{ res: { data: CartApiResponse } }>) => {
+          state.loading = false;
+          const normalized = normalizeCartResponse(action.payload.res.data);
+          Object.assign(state, normalized);
+          cartStorage.setCart(normalized);
         },
       );
   },
 });
 
 export const selectIsInCart = (id: number) => (state: AppRootStateType) =>
-  state.cart.items.some(
-    (item) => item.item_type === "LANDING" && item.landing.id === id,
-  );
+  state.cart?.items.some((item) => item.data.id === id);
 
 export const { clearCart, syncCartFromStorage } = cartSlice.actions;
 

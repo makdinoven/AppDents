@@ -16,7 +16,7 @@ const PromoBookHeaderContent = () => {
       text: "nav.promote.bookAuthors",
       targetId: "book-authors",
     },
-    { icon: QuestionMark, text: "nav.promote.faq", targetId: "course-faq" },
+    { icon: QuestionMark, text: "nav.promote.faq", targetId: "book-faq" },
   ].map((button) => ({
     ...button,
     onClick: () => scrollToElementById(button.targetId),

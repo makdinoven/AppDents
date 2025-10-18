@@ -16,15 +16,15 @@ const ProfessorPageSkeleton = () => {
     };
   }, [screenWidth]);
 
-  const renderBuySection = () => {
-    return (
-      <section className={s.buy_section}>
-        <div className={s.professor_access}></div>
-        <p className={s.buy_section_desc}></p>
-        <div className={s.buy_button}></div>
-      </section>
-    );
-  };
+  // const renderBuySection = () => {
+  //   return (
+  //     <section className={s.buy_section}>
+  //       <div className={s.professor_access}></div>
+  //       <p className={s.buy_section_desc}></p>
+  //       <div className={s.buy_button}></div>
+  //     </section>
+  //   );
+  // };
 
   return (
     <>
@@ -44,7 +44,7 @@ const ProfessorPageSkeleton = () => {
           </div>
         </div>
       </section>
-      {renderBuySection()}
+      {/*{renderBuySection()}*/}
     </>
   );
 };

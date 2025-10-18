@@ -13,12 +13,14 @@ const ProfessorCard = ({
   description,
   tags,
   courses_count,
+  books_count,
   link,
 }: {
   variant: "vertical" | "horizontal";
   name: string;
   photo: string;
   courses_count: number;
+  books_count: number;
   tags: string[];
   description: string;
   link: string;
@@ -47,6 +49,17 @@ const ProfessorCard = ({
                 className={s.courses_count}
               >
                 <Trans i18nKey="professor.coursesCount" count={courses_count} />
+              </span>
+            )}
+
+            {books_count > 0 && (
+              <span
+                style={{
+                  alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
+                }}
+                className={s.books_count}
+              >
+                <Trans i18nKey="professor.booksCount" count={books_count} />
               </span>
             )}
             <p className={s.description}>{description}</p>

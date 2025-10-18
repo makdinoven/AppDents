@@ -5,7 +5,8 @@ from datetime import datetime, date
 from pydantic import AnyUrl
 from pydantic.v1 import ConfigDict
 
-from ..schemas_v2.landing import AuthorCardResponse, TagResponse
+
+from ..schemas_v2.common import AuthorCardResponse, TagResponse
 
 
 class HttpS3Url(AnyUrl):
@@ -323,6 +324,7 @@ class BookAdminDetailResponse(BaseModel):
     cover_url: Optional[str] = None
     language: str
     publication_date: Optional[str] = None
+    preview_pdf_url: Optional[str] = None
 
     author_ids: List[int] = []
     tag_ids: List[int] = []

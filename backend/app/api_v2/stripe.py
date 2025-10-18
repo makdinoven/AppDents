@@ -12,10 +12,11 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess
-from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user
+from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding
+from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user, add_book_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import send_successful_purchase_email
+from ..services_v2 import cart_service as cs
 
 router = APIRouter()
 
@@ -72,25 +73,19 @@ def stripe_checkout(
         raise HTTPException(400, "cart_landing_ids required when transfer_cart=true")
 
     unique_course_ids = list(dict.fromkeys(data.course_ids))
+    courses = []
     logging.info("Уникальные course_ids → %s", unique_course_ids)
 
-    #      2. Проверяем курсы в БД
-    courses = db.query(Course).filter(Course.id.in_(unique_course_ids)).all()
-    found_ids = [c.id for c in courses]
-    logging.info("Найдено в БД: %s", found_ids)
+    # Валидируем ТОЛЬКО если курсы переданы
+    if unique_course_ids:
+        courses = db.query(Course).filter(Course.id.in_(unique_course_ids)).all()
+        found_ids = [c.id for c in courses]
+        if set(found_ids) != set(unique_course_ids):
+            logging.error("Не найдены все курсы. Передано: %s, найдено: %s", unique_course_ids, found_ids)
+            raise HTTPException(status_code=404, detail="One or more courses not found")
 
-    if not courses or set(found_ids) != set(unique_course_ids):
-        logging.error(
-            "Не найдены все курсы. Передано: %s, найдено: %s",
-            unique_course_ids, found_ids
-        )
-        raise HTTPException(status_code=404, detail="One or more courses not found")
-
-    logging.info("Найдены курсы: %s", found_ids)
-
-    #      3. Формируем название продукта
-    course_names = [course.name for course in courses]
-    product_name = "Purchase: " + ", ".join(course_names)
+    # product_name собираем в сервисе (передадим None)
+    product_name = None
     logging.info("Сформировано название продукта: %s", product_name)
     logging.info("Регион: %s", data.region)
 
@@ -130,7 +125,7 @@ def stripe_checkout(
                 db,
                 user_id=current_user.id,
                 amount=total_price_usd,
-                meta={"reason": "full_purchase", "courses": unique_course_ids},
+                meta={"reason": "full_purchase", "courses": unique_course_ids,"books": list(dict.fromkeys(data.book_ids or [])),},
             )
             if partial_mode:
                 # выдаём частичный доступ
@@ -146,10 +141,14 @@ def stripe_checkout(
                 # выдаём полный доступ
                 for c in courses:
                     add_course_to_user(db, current_user.id, c.id)
+            if data.book_landing_ids:
+                bl_list = db.query(BookLanding).filter(BookLanding.id.in_(data.book_landing_ids)).all()
+                for bl in bl_list:
+                    for b in (bl.books or []):
+                        add_book_to_user(db, current_user.id, b.id)
             db.commit()
 
             # ---- 2. синхронизируем корзину --------------------------------
-            from ..services_v2 import cart_service as cs
 
             # набор купленных course_id
             purchased = set(unique_course_ids)
@@ -159,6 +158,10 @@ def stripe_checkout(
                 landing_course_ids = {cr.id for cr in item.landing.courses}
                 if landing_course_ids and landing_course_ids.issubset(purchased):
                     cs.remove_silent(db, current_user, item.landing_id)
+            if data.book_landing_ids:
+                for blid in data.book_landing_ids:
+                    cs.remove_book_silent(db, current_user, blid)
+
 
             if not current_user.cart.items:  # корзина опустела
                 cs.clear_cart(db, current_user)
@@ -213,8 +216,10 @@ def stripe_checkout(
     checkout_url = create_checkout_session(
         db=db,
         email=email,
-        course_ids=unique_course_ids,
-        product_name=product_name,
+        course_ids=unique_course_ids or None,
+        book_ids=(data.book_ids or None),  # ← ДОБАВЬ
+        book_landing_ids=(data.book_landing_ids or None),  # ← ДОБАВЬ
+        product_name=product_name,  # None → автоимя
         price_cents=stripe_amount_cents,
         region=data.region,
         success_url=data.success_url,
@@ -223,8 +228,9 @@ def stripe_checkout(
         fbp=data.fbp,
         fbc=data.fbc,
         extra_metadata=extra,
-        from_ad=data.from_ad
+        from_ad=data.from_ad,
     )
+
     logging.info("Stripe сессия успешно создана, URL: %s", checkout_url)
 
     return {"checkout_url": checkout_url}

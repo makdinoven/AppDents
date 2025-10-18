@@ -67,7 +67,10 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
   };
 
   return (
-    <section id="course-faq" className={s.faq_container}>
+    <section
+      id={type === "book" ? "book-faq" : "course-faq"}
+      className={s.faq_container}
+    >
       <SectionHeader name="landing.faq.faq" />
 
       <ul className={s.faq_list}>

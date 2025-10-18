@@ -44,6 +44,15 @@ log = logging.getLogger(__name__)
 def _pdf_key(book: Book) -> str:
     return f"books/{book.slug}/{book.slug}.pdf"
 
+def _preview_pdf_url(book_slug: str) -> str:
+    """
+    Генерирует CDN-URL превью PDF (15 страниц) по slug книги.
+    Путь соответствует логике в book_previews.py: books/<slug>/preview/preview_15p.pdf
+    """
+    from urllib.parse import quote
+    key = f"books/{book_slug}/preview/preview_15p.pdf"
+    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+
 def _cdn_url(key: str) -> str:
     # кодируем path, чтобы URL был валидным (пробелы → %20 и т.д.)
     safe_key = quote(key.lstrip('/'), safe="/-._~()")
@@ -371,6 +380,7 @@ def remove_book_tag(
 from ..celery_app import celery
 # ключи статусов для превью (первые 10–15 страниц)
 from ..tasks.book_previews import _k_job as prev_k_job, _k_log as prev_k_log
+from ..tasks.book_covers import _k_job as cover_k_job, _k_log as cover_k_log, _k_cand as cover_k_cand, DEFAULT_TTL_SECONDS
 
 
 @router.post("/{book_id}/generate-preview", summary="Сгенерировать превью PDF (первые 15 страниц)")
@@ -393,11 +403,91 @@ def start_book_preview(
 @router.get("/{book_id}/preview-status", summary="Статус генерации превью (Redis)")
 def book_preview_status(
     book_id: int,
+    db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
     job = rds.hgetall(prev_k_job(book_id)) or {}
     logs = rds.lrange(prev_k_log(book_id), 0, 100)
-    return {"job": job, "logs": logs}
+    
+    # Генерируем URL превью по slug книги
+    preview_url = None
+    book = db.query(Book).get(book_id)
+    if book:
+        preview_url = _preview_pdf_url(book.slug)
+    
+    return {"job": job, "logs": logs, "preview_url": preview_url}
+
+
+@router.get("/{book_id}/cover-candidates", summary="Кандидаты обложки (индексы и ссылки API)")
+def get_cover_candidates(
+    book_id: int,
+    current_admin: User = Depends(require_roles("admin")),
+):
+    job = rds.hgetall(cover_k_job(book_id)) or {}
+    count = int(job.get("candidates_count") or 0)
+    candidates = [
+        {
+            "index": i,
+            "url": f"/api/books-admin/{book_id}/cover-candidates/{i}",
+        }
+        for i in range(1, count + 1)
+    ]
+    logs = rds.lrange(cover_k_log(book_id), 0, 100)
+    return {"job": {k: v for k, v in job.items()}, "candidates": candidates, "logs": logs}
+
+
+@router.get("/{book_id}/cover-candidates/{index}", summary="Отдать изображение кандидата (image/jpeg)")
+def get_cover_candidate_image(
+    book_id: int,
+    index: int,
+    current_admin: User = Depends(require_roles("admin")),
+):
+    b64 = rds.get(cover_k_cand(book_id, index))
+    if not b64:
+        raise HTTPException(status_code=404, detail="Candidate not found or expired")
+    import base64
+    data = base64.b64decode(b64)
+    from fastapi import Response
+    return Response(content=data, media_type="image/jpeg")
+
+
+@router.post("/{book_id}/cover", summary="Выбрать обложку по индексу и сохранить в книге")
+def select_cover(
+    book_id: int,
+    index: int = Form(..., description="Индекс кандидата (1..N)"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    b64 = rds.get(cover_k_cand(book_id, index))
+    if not b64:
+        raise HTTPException(status_code=404, detail="Candidate not found or expired")
+
+    # Заливаем выбранную обложку в S3 и сохраняем URL
+    import base64, uuid, io
+    data = base64.b64decode(b64)
+    key = f"books/{book.slug}/covers/cover.jpg"  # единый путь обложки
+    try:
+        s3.upload_fileobj(io.BytesIO(data), S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "image/jpeg"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"S3 upload failed: {e}")
+
+    from urllib.parse import quote as _q
+    cdn_url = f"{S3_PUBLIC_HOST}/{_q(key, safe='/-._~()')}"
+    book.cover_url = cdn_url
+    db.commit()
+    db.refresh(book)
+    # Очистим кандидаты (необязательно, но экономим память)
+    job = rds.hgetall(cover_k_job(book_id)) or {}
+    count = int(job.get("candidates_count") or 0)
+    for i in range(1, count + 1):
+        rds.delete(cover_k_cand(book_id, i))
+    rds.delete(cover_k_job(book_id))
+    rds.delete(cover_k_log(book_id))
+    return {"message": "Cover updated", "book_id": book.id, "cover_url": book.cover_url}
 
 
 @router.post("/book-landings/{landing_id}/generate-previews", summary="Сгенерировать превью для всех книг лендинга")
@@ -552,6 +642,9 @@ def finalize_pdf_upload(
                      args=[book.id], queue="book")
     celery.send_task("app.tasks.book_formats.generate_book_formats",
                      args=[book.id], queue="book")
+    # Запускаем генерацию кандидатов обложек (первые 3 страницы в JPEG)
+    celery.send_task("app.tasks.book_covers.generate_cover_candidates",
+                     args=[book.id], queue="book")
 
     log.info("[BOOK][FINALIZE] book_id=%s key=%s size=%sB → tasks queued", book.id, key, size_bytes)
     return {
@@ -562,6 +655,7 @@ def finalize_pdf_upload(
         "tasks": {
             "preview": "queued",
             "formats": "queued",
+            "cover_candidates": "queued",
         }
     }
 
@@ -609,6 +703,7 @@ def admin_get_book_detail(
         "cover_url": book.cover_url,
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
+        "preview_pdf_url": _preview_pdf_url(book.slug),
 
         "author_ids": [a.id for a in (book.authors or [])],
         "tag_ids": [t.id for t in (book.tags or [])],

@@ -85,6 +85,10 @@ class PurchaseSource(str, PyEnum):
     SPECIAL_OFFER = "SPECIAL_OFFER"
     VIDEO_LANDING = "VIDEO_LANDING"
     LANDING_WEBINAR = "LANDING_WEBINAR"
+    BOOKS_PAGE = "BOOKS_PAGE"
+    BOOKS_OFFER = "BOOKS_OFFER"
+    BOOKS_LANDING = "BOOKS_LANDING"
+    BOOKS_LANDING_OFFER = "BOOKS_LANDING_OFFER"
     OTHER                     = "OTHER"
 
 class FreeCourseSource(str, PyEnum):
@@ -151,6 +155,7 @@ class Author(Base):
 
     # Лендинги, к которым привязан автор
     landings = relationship("Landing", secondary=landing_authors, back_populates="authors")
+    books = relationship("Book", secondary="book_authors", back_populates="authors")
 
 class User(Base):
     __tablename__ = 'users'

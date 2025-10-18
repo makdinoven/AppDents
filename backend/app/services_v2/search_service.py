@@ -30,6 +30,13 @@ def clip(text: str | None, limit: int = 100, keep_words: bool = True, ellipsis: 
     # жёсткая обрезка посимвольно
     return text[: limit - len(ellipsis)] + ellipsis
 
+def _first_book(bl):
+    """Вернёт первую связанную книгу у BookLanding, либо None."""
+    try:
+        bs = getattr(bl, "books", None) or []
+        return bs[0] if bs else None
+    except Exception:
+        return None
 
 def safe_price(v) -> float:
     """Парсинг цены в float; нечисловые значения -> +inf."""
@@ -194,18 +201,18 @@ def search_everything(
 
     book_landings_q = (
         db.query(BookLanding)
-          .join(BookLanding.book)
-          .outerjoin(Book.authors)
-          .filter(BookLanding.is_hidden.is_(False))
-          .filter(
-              or_(
-                  BookLanding.landing_name.ilike(q_like),
-                  BookLanding.page_name.ilike(q_like),
-                  Book.title.ilike(q_like),
-                  Author.name.ilike(q_like),
-              )
-          )
-          .distinct()
+        .join(BookLanding.books)  # <-- books (многие-к-многим / один-ко-многим)
+        .outerjoin(Book.authors)
+        .filter(BookLanding.is_hidden.is_(False))
+        .filter(
+            or_(
+                BookLanding.landing_name.ilike(q_like),
+                BookLanding.page_name.ilike(q_like),
+                Book.title.ilike(q_like),  # по названию книги
+                Author.name.ilike(q_like),  # по авторам книги
+            )
+        )
+        .distinct()
     )
     if langs:
         book_landings_q = book_landings_q.filter(BookLanding.language.in_(langs))
@@ -227,10 +234,10 @@ def search_everything(
 
         extra_book_landings_q = (
             db.query(BookLanding)
-              .join(BookLanding.book)
-              .join(Book.authors)
-              .filter(BookLanding.is_hidden.is_(False), Author.id.in_(author_ids))
-              .distinct()
+            .join(BookLanding.books)
+            .join(Book.authors)
+            .filter(BookLanding.is_hidden.is_(False), Author.id.in_(author_ids))
+            .distinct()
         )
         if langs:
             extra_book_landings_q = extra_book_landings_q.filter(BookLanding.language.in_(langs))
@@ -293,24 +300,27 @@ def search_everything(
 
     # Книжные лендинги — пониженный вес slug, приоритет видимых названий
     for bl in book_landings:
-        title_s      = _text_score(bl.landing_name, qn, tokens)
-        book_title_s = _text_score(bl.book.title if bl.book else None, qn, tokens)
-        slug_s       = _text_score(bl.page_name, qn, tokens)
-        score        = max(title_s, book_title_s) + int(SLUG_WEIGHT * slug_s)
-        book_authors = list((bl.book.authors if bl.book else []) or [])
-        score       += _authors_score(book_authors, qn, tokens, scale=0.8)
+        b = _first_book(bl)
+
+        title_s = _text_score(bl.landing_name, qn, tokens)
+        book_title_s = _text_score(b.title if b else None, qn, tokens)
+        slug_s = _text_score(bl.page_name, qn, tokens)
+        score = max(title_s, book_title_s) + int(SLUG_WEIGHT * slug_s)
+
+        book_authors = list((b.authors if b else []) or [])
         scored_items.append({
             "type": "book_landing",
             "id": bl.id,
             "landing_name": bl.landing_name,
             "page_name": bl.page_name,
-            "preview_photo": bl.preview_photo,
+            "preview_photo": b.cover_url,
             "old_price": bl.old_price,
             "new_price": bl.new_price,
             "language": bl.language,
-            "book_title": bl.book.title if bl.book else None,
-            "cover_url": bl.book.cover_url if bl.book else None,
-            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in book_authors],
+            "book_title": b.title if b else None,
+            "cover_url": b.cover_url if b else None,
+            "authors": [{"id": au.id, "name": au.name, "photo": au.photo, "language": au.language} for au in
+                        book_authors],
             "_score": score,
             "_tie": (2, bl.id),
         })

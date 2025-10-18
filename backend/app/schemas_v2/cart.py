@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 
-from ..schemas_v2.landing import AuthorCardResponse
+from ..schemas_v2.common import AuthorCardResponse
 
 class LandingInCart(BaseModel):
     id            : int

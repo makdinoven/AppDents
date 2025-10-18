@@ -190,14 +190,55 @@ def delete_book_landing(db: Session, landing_id: int) -> None:
 
 def books_in_landing(db: Session, bl: BookLanding) -> list[Book]:
     """
-    Возвращает список книг, которые покупатель получит при покупке этого книжного лендинга.
-    Если M2M-бандл задан — он приоритетен. Иначе — одиночная книга из bl.book.
+    Возвращает список книг для книжного лендинга `bl`, читая из M2M-таблицы `book_landing_books`.
+    - Если relationship `bl.books` настроен, используем его.
+    - Иначе явно джойним через таблицу-связку.
+    - Дубликаты удаляем, порядок сохраняем.
     """
-    if bl.books_bundle:
-        return list(bl.books_bundle)
+    # 1) Если у модели уже настроен relationship на книги — используем
+    try:
+        if hasattr(bl, "books") and bl.books:
+            # удалим дубликаты, сохраняя порядок
+            seen, out = set(), []
+            for b in bl.books:
+                if b.id not in seen:
+                    seen.add(b.id)
+                    out.append(b)
+            return out
+    except Exception:
+        pass
+
+    # 2) Явный запрос через таблицу-связку
+    try:
+        # Импортируем саму таблицу-связку (SQLAlchemy Table)
+        from ..models.models_v2 import book_landing_books  # Table с колонками: book_landing_id, book_id
+
+        books = (
+            db.query(Book)
+              .join(book_landing_books, book_landing_books.c.book_id == Book.id)
+              .filter(book_landing_books.c.book_landing_id == bl.id)
+              .all()
+        )
+
+        # Дедупликат, сохранение порядка
+        seen, out = set(), []
+        for b in books:
+            if b.id not in seen:
+                seen.add(b.id)
+                out.append(b)
+
+        if not out:
+            log.warning("[BOOKS] Landing %s: no rows in book_landing_books", getattr(bl, "id", "?"))
+        return out
+
+    except Exception as e:
+        log.exception("[BOOKS] Failed to read books for landing %s via book_landing_books: %s", getattr(bl, "id", "?"), e)
+
+    # 3) Фолбэк (на случай старых схем)
     if getattr(bl, "book", None):
         return [bl.book]
-    log.warning("[BOOKS] Landing %s has no books bound", bl.id)
+
+    log.warning("[BOOKS] Landing %s has no bound books", getattr(bl, "id", "?"))
     return []
 
 def paginate_like_courses(query, page: int, size: int, serializer) -> dict:

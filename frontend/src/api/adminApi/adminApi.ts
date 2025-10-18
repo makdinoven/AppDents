@@ -163,6 +163,12 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getBookCoverCandidate(id: any, index: number) {
+    return instance.get(`book_admin/${id}/cover-candidates/${index}`, {
+      headers: getAuthHeaders(),
+      responseType: "blob",
+    });
+  },
 
   finalizeBookUploading(id: any, data: { key: string }) {
     return instance.post(

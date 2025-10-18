@@ -4,14 +4,18 @@ import ViewLink from "../../../components/ui/ViewLink/ViewLink.tsx";
 import { Path } from "../../../routes/routes.ts";
 import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import FormattedAuthorsDesc from "../../../common/helpers/FormattedAuthorsDesc.tsx";
-import { CartBookType, CartLandingType } from "../../../api/cartApi/types.ts";
+import {
+  CartItemBookType,
+  CartItemCourseType,
+  CartItemKind,
+} from "../../../api/cartApi/types.ts";
 
 interface CartItemProps {
   loading?: boolean;
   language: string;
-  item: CartLandingType | CartBookType;
-  type: string;
-  onDelete: (value: number) => void;
+  item: CartItemCourseType | CartItemBookType;
+  type: CartItemKind;
+  onDelete: (value: number, type: CartItemKind) => void;
 }
 
 const CartItem = ({
@@ -27,14 +31,16 @@ const CartItem = ({
   const isBook = type === "BOOK";
 
   return (
-    <li className={s.item}>
+    <li className={`${s.item} ${isBook ? s.book : ""}`}>
       {loading && <LoaderOverlay />}
-      <button onClick={() => onDelete(item.id)} className={s.delete_btn}>
+      <button onClick={() => onDelete(item.id, type)} className={s.delete_btn}>
         <TrashCan />
       </button>
 
       <div className={s.item_middle}>
-        <div className={`${s.img_wrapper} ${s[type.toLowerCase()]}`}>
+        <div
+          className={`${s.img_wrapper} ${!item.preview_photo ? s.no_photo : ""} ${s[type.toLowerCase()]}`}
+        >
           {item?.preview_photo && (
             <img src={item.preview_photo} alt={`${type} photo`} />
           )}

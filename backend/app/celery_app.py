@@ -19,6 +19,7 @@ celery = Celery(
             "app.tasks.abandoned_checkouts",
             "app.tasks.book_previews",
             "app.tasks.book_formats",
+            "app.tasks.book_covers",
         ],
 )
 
@@ -100,4 +101,5 @@ celery.conf.task_routes = {
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
     "app.tasks.book_formats.*": {"queue": "book"},
     "app.tasks.book_previews.*": {"queue": "book"},
+    "app.tasks.book_covers.*": {"queue": "book"},
 }

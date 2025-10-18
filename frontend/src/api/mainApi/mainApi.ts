@@ -1,10 +1,8 @@
 import { instance } from "../api-instance.ts";
-import {
-  getAuthHeaders,
-  getFacebookData,
-} from "../../common/helpers/helpers.ts";
+import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
+import { PaymentApiPayload } from "../../store/slices/paymentSlice.ts";
 
 export const mainApi = {
   getTags() {
@@ -23,19 +21,10 @@ export const mainApi = {
     return instance.post(`landings/${id}/visit`, { from_ad: ad });
   },
 
-  buyCourse(data: any, isLogged: boolean) {
-    const { fbp, fbc } = getFacebookData();
-    const rcCode = localStorage.getItem(REF_CODE_LS_KEY);
-    return instance.post(
-      `stripe/checkout`,
-      {
-        ...data,
-        fbp,
-        fbc,
-        ...(rcCode && { ref_code: rcCode }),
-      },
-      { headers: isLogged ? getAuthHeaders() : undefined },
-    );
+  buyCourse(data: PaymentApiPayload, isLogged: boolean) {
+    return instance.post(`stripe/checkout`, data, {
+      headers: isLogged ? getAuthHeaders() : undefined,
+    });
   },
 
   getFreeCourse(data: any, isLogged: boolean) {

@@ -365,9 +365,21 @@
   },
 
   "professor": {
-    "youCanBuyAllCourses": "Get all the courses from this professor with a <1>20%</1> discount for only <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!",
-    "getAllCourses": "Get All Courses for <1>${{new_price}}</1>",
-    "accessToAllCourses": "Access to the courses is not limited in time!",
+    "youCanBuyAll": {
+      "courses": "Unlock all the professor’s courses with an exclusive <1>20%</1> discount — get full access for just <1>${{new_price}}</1> instead of <2>${{old_price}}</2>!",
+      "books": "Get the complete collection of this professor’s books with an exclusive <1>20%</1> discount — only <1>${{new_price}}</1> instead of <2>${{old_price}}</2>!",
+      "both": "Get the ultimate bundle — all the professor’s courses and books — with a special <1>20%</1> discount for just <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!"
+    },
+    "getAll": {
+      "courses": "Get All Courses for <1>${{new_price}}</1>",
+      "books": "Get All Books for <1>${{new_price}}</1>",
+      "both": "Get All Courses & Books for <1>${{new_price}}</1>"
+    },
+    "accessToAll": {
+      "courses": "Enjoy lifetime access to all courses — learn at your own pace!",
+      "books": "Enjoy lifetime access to all books — study anytime, anywhere!",
+      "both": "Lifetime access to all books and courses!"
+    },
     "professorsCourses": "This professor's courses",
     "professors.title": "Our professors",
     "search": "Search professors...",

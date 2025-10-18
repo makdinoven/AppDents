@@ -99,6 +99,8 @@ export const PAYMENT_PAGE_KEY = "BUY";
 
 export const PAYMENT_TYPE_KEY = "PT";
 
+export const PAYMENT_MODE_KEY = "PM";
+
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },
   { name: "tag.common.popular", value: "popular" },
@@ -152,6 +154,10 @@ export const PAGE_SOURCES = {
   cabinetFree: "CABINET_FREE",
   courses: "COURSES_PAGE",
   coursesOffer: "COURSES_OFFER",
+  books: "BOOKS_PAGE",
+  booksOffer: "BOOKS_OFFER",
+  booksLanding: "BOOKS_LANDING",
+  booksLandingOffer: "BOOKS_LANDING_OFFER",
   specialOffer: "SPECIAL_OFFER",
   other: "OTHER",
 } as const;
@@ -172,6 +178,12 @@ export const PAYMENT_SOURCES = [
   { name: PAGE_SOURCES.landingOffer, path: `/${Path.landingClient}` },
   { name: PAGE_SOURCES.courses, path: Path.courses },
   { name: PAGE_SOURCES.coursesOffer, path: Path.courses },
+  { name: PAGE_SOURCES.books, path: Path.books },
+  { name: PAGE_SOURCES.booksOffer, path: Path.books },
+  { name: PAGE_SOURCES.booksLanding, path: Path.bookLandingClient },
+  { name: PAGE_SOURCES.booksLanding, path: Path.bookLanding },
+  { name: PAGE_SOURCES.booksLandingOffer, path: Path.bookLandingClient },
+  { name: PAGE_SOURCES.booksLandingOffer, path: Path.bookLanding },
 ];
 
 export const PAYMENT_TYPES = {
