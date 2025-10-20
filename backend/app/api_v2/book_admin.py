@@ -641,13 +641,14 @@ def finalize_pdf_upload(
         rds.delete(_k_fmt(book.id, fmt))
 
     # 4) Ставим Celery-таски (queue="special" как в конфиге)
+    celery.send_task("app.tasks.book_covers.generate_cover_candidates",
+                     args=[book.id], queue="book")
     celery.send_task("app.tasks.book_previews.generate_book_preview",
                      args=[book.id], queue="book")
     celery.send_task("app.tasks.book_formats.generate_book_formats",
                      args=[book.id], queue="book")
     # Запускаем генерацию кандидатов обложек (первые 3 страницы в JPEG)
-    celery.send_task("app.tasks.book_covers.generate_cover_candidates",
-                     args=[book.id], queue="book")
+
 
     log.info("[BOOK][FINALIZE] book_id=%s key=%s size=%sB → tasks queued", book.id, key, size_bytes)
     return {
