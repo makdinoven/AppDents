@@ -47,7 +47,7 @@ export const scales = [
 ];
 
 interface PdfReaderProps {
-  url: string;
+  url: string | null;
   fullScreen: boolean;
   setFullScreen: (state: boolean) => void;
   currentPage: string;
@@ -347,16 +347,18 @@ const PdfReader = ({
       onClick={handleOverlayClick}
     >
       <div className={s.header}>{headerContent.get(fullScreen)}</div>
-      <ThumbNails
-        isOpen={isThumbNailsOpen}
-        onLoadSuccess={onDocumentLoadSuccess}
-        options={options}
-        totalPages={totalPages}
-        link={url}
-        handlePageChange={(page) => handleScrollToPage(page)}
-        onClick={handleThumbNailsAreaClick}
-        currentPage={pageNum}
-      />
+      {url && (
+        <ThumbNails
+          isOpen={isThumbNailsOpen}
+          onLoadSuccess={onDocumentLoadSuccess}
+          options={options}
+          totalPages={totalPages}
+          link={url}
+          handlePageChange={(page) => handleScrollToPage(page)}
+          onClick={handleThumbNailsAreaClick}
+          currentPage={pageNum}
+        />
+      )}
       <div className={`${s.overlay} ${isThumbNailsOpen ? s.open : ""}`}></div>
       <div
         onClick={!fullScreen ? handleOpenFullScreen : undefined}
@@ -367,30 +369,35 @@ const PdfReader = ({
         className={s.document}
         ref={documentRef}
       >
-        <Document
-          file={url}
-          onLoadSuccess={onDocumentLoadSuccess}
-          onLoadError={onDocumentLoadError}
-          options={options}
-          className={s.pages_wrapper}
-          loading={false}
-          error={false}
-        >
-          {Array.from(new Array(totalPages), (_el, index) => (
-            <div key={index + 1} data-page={index + 1}>
-              <Page
-                pageNumber={index + 1}
-                width={handleResizePage()}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                scale={scale}
-                loading={false}
-              />
-            </div>
-          ))}
-        </Document>
+        {url && (
+          <Document
+            file={url}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            options={options}
+            className={s.pages_wrapper}
+            loading={false}
+            error={false}
+          >
+            {Array.from(new Array(totalPages), (_el, index) => (
+              <div key={index + 1} data-page={index + 1}>
+                <Page
+                  pageNumber={index + 1}
+                  width={handleResizePage()}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                  scale={scale}
+                  loading={false}
+                />
+              </div>
+            ))}
+          </Document>
+        )}
         {url && loading && <Loader className={s.loading} />}
-        {error && <p className={s.error}>{t("bookLanding.pdfReader.error")}</p>}
+        {!url ||
+          (error && (
+            <p className={s.error}>{t("bookLanding.pdfReader.error")}</p>
+          ))}
       </div>
     </div>
   );

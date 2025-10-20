@@ -10,7 +10,10 @@ interface BuySectionProps {
   isFullWidth?: boolean;
   oldPrice?: string;
   newPrice?: string;
-  downloadInfo?: (format: string) => { url: string; name: string };
+  downloadInfo?: (format: string) => {
+    url: string | null;
+    name: string | null;
+  };
   openPayment?: () => void;
 }
 
