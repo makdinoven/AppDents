@@ -64,6 +64,8 @@ const BookPage = () => {
     return { url: file?.download_url, name: book.title };
   };
 
+  console.log(handleProvideDownloadInfo(BOOK_FORMATS[0]).url);
+
   return (
     <>
       <div className={s.book_page}>
