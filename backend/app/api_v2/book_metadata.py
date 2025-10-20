@@ -207,7 +207,7 @@ def apply_book_metadata(
     """
     Применяет выбранные админом метаданные к книге:
     - page_count — сохраняется напрямую
-    - publisher — либо связывает с существующим (publisher_id), либо создаёт нового (new_publisher_name)
+    - publisher_name — fuzzy match с существующими (порог 75%) или создание нового
     - publication_year — сохраняется в publication_date
     """
     book = db.query(Book).get(book_id)
@@ -221,32 +221,45 @@ def apply_book_metadata(
         book.page_count = payload.page_count
         changes.append(f"page_count={payload.page_count}")
     
-    # 2. Publisher
-    if payload.publisher_id is not None:
-        publisher = db.query(Publisher).get(payload.publisher_id)
-        if not publisher:
-            raise HTTPException(400, f"Publisher with id={payload.publisher_id} not found")
+    # 2. Publisher (с fuzzy matching)
+    if payload.publisher_name:
+        name = payload.publisher_name.strip()
         
-        # Добавляем издателя (если ещё не добавлен)
-        if publisher not in book.publishers:
-            book.publishers.append(publisher)
-            changes.append(f"added publisher '{publisher.name}'")
-    
-    elif payload.new_publisher_name:
-        # Создаём нового издателя (или используем существующего с таким именем)
-        name = payload.new_publisher_name.strip()
-        existing = db.query(Publisher).filter(Publisher.name == name).first()
+        # Получаем всех существующих издателей
+        existing_publishers = db.query(Publisher).all()
         
-        if existing:
-            if existing not in book.publishers:
-                book.publishers.append(existing)
-                changes.append(f"linked to existing publisher '{existing.name}'")
+        # Fuzzy matching
+        from fuzzywuzzy import fuzz
+        best_match = None
+        best_score = 0
+        
+        for pub in existing_publishers:
+            score = fuzz.ratio(name.lower(), pub.name.lower())
+            if score > best_score:
+                best_score = score
+                best_match = pub
+        
+        # Порог 75%
+        if best_match and best_score >= 75:
+            # Используем существующего издателя
+            if best_match not in book.publishers:
+                book.publishers.append(best_match)
+                if best_score == 100:
+                    changes.append(f"linked to publisher '{best_match.name}' (exact match)")
+                else:
+                    changes.append(f"linked to publisher '{best_match.name}' (fuzzy match: {best_score}% similar to '{name}')")
+            else:
+                changes.append(f"publisher '{best_match.name}' already linked")
         else:
+            # Создаём нового издателя
             new_pub = Publisher(name=name)
             db.add(new_pub)
             db.flush()  # получить ID
             book.publishers.append(new_pub)
-            changes.append(f"created new publisher '{name}'")
+            if best_match:
+                changes.append(f"created new publisher '{name}' (best match was '{best_match.name}' at {best_score}%, below 75% threshold)")
+            else:
+                changes.append(f"created new publisher '{name}' (no existing publishers)")
     
     # 3. Publication year
     if payload.publication_year:

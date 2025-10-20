@@ -677,6 +677,7 @@ def admin_get_book_detail(
               selectinload(Book.tags),
               selectinload(Book.files),
               selectinload(Book.audio_files),
+              selectinload(Book.publishers),
           )
           .filter(Book.id == book_id)
           .first()
@@ -707,6 +708,8 @@ def admin_get_book_detail(
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
         "preview_pdf_url": _preview_pdf_url(book.slug),
+        "page_count": getattr(book, "page_count", None),
+        "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
 
         "author_ids": [a.id for a in (book.authors or [])],
         "tag_ids": [t.id for t in (book.tags or [])],

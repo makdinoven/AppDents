@@ -501,7 +501,7 @@ def get_book_listing(
 ) -> dict:
     total = db.query(func.count(Book.id)).scalar()
     offset = (page - 1) * size
-    q = db.query(Book)
+    q = db.query(Book).options(selectinload(Book.publishers))
     if language:
         q = q.filter(Book.language == language.upper())
     books = (
@@ -534,7 +534,7 @@ def search_book_listing(
 ) -> dict:
     offset = (page - 1) * size
 
-    base = db.query(Book)
+    base = db.query(Book).options(selectinload(Book.publishers))
     if language:
         base = base.filter(Book.language == language.upper())
 
@@ -739,7 +739,7 @@ def get_my_book_detail(
         if is_admin:
             book = (
                 db.query(Book)
-                  .options(selectinload(Book.files), selectinload(Book.audio_files))
+                  .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.publishers))
                   .filter(Book.id == book_id)
                   .first()
             )
@@ -778,6 +778,8 @@ def get_my_book_detail(
         "cover_url": book.cover_url,
         "description": book.description,
         "publication_date": getattr(book, "publication_date", None),
+        "page_count": getattr(book, "page_count", None),
+        "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
         "files_download": files_download,
         "audio_download": audio_download,
     }
@@ -799,6 +801,7 @@ def patch_book(
               selectinload(Book.tags),
               selectinload(Book.files),
               selectinload(Book.audio_files),
+              selectinload(Book.publishers),
           )
           .get(book_id)
     )
@@ -843,6 +846,8 @@ def patch_book(
         "cover_url": book.cover_url,
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
+        "page_count": getattr(book, "page_count", None),
+        "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
 
         "author_ids": [a.id for a in (book.authors or [])],
         "tag_ids": [t.id for t in (book.tags or [])],
