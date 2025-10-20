@@ -15,7 +15,7 @@ class AuthorSimpleResponse(BaseModel):
 class BookSimpleResponse(BaseModel):
     id: int
     title: str
-    slug: str
+    slug: str | None = None
     cover_url: str | None = ""
 
     class Config:
