@@ -341,3 +341,47 @@ class BookPatch(BaseModel):
     publication_date: Optional[str] = None
     author_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
+
+
+# ═══════════════════ Metadata Extraction ═══════════════════
+
+class PublisherCandidate(BaseModel):
+    """Кандидат издателя из метаданных PDF"""
+    value: str
+    source: str  # "Creator", "Author", "Producer", etc
+    confidence: str  # "high", "medium", "low"
+
+class DateCandidate(BaseModel):
+    """Кандидат даты публикации из метаданных PDF"""
+    value: str  # год или полная дата
+    source: str  # "CreationDate", "ModDate", "XMP", etc
+    confidence: str
+
+class PDFMetadataExtracted(BaseModel):
+    """Результат извлечения метаданных из PDF"""
+    page_count: Optional[int] = None
+    publisher_candidates: List[PublisherCandidate] = []
+    date_candidates: List[DateCandidate] = []
+    
+    # Дополнительная информация
+    raw_metadata: dict = {}  # сырые метаданные для отладки
+    
+class PublisherCreate(BaseModel):
+    """Создание нового издателя"""
+    name: str = Field(..., min_length=1, max_length=255)
+
+class PublisherResponse(BaseModel):
+    """Ответ с издателем"""
+    id: int
+    name: str
+    created_at: datetime
+    
+    class Config:
+        orm_mode = True
+
+class ApplyMetadataPayload(BaseModel):
+    """Применение выбранных метаданных к книге"""
+    page_count: Optional[int] = None
+    publisher_id: Optional[int] = Field(None, description="ID существующего издателя")
+    new_publisher_name: Optional[str] = Field(None, description="Имя нового издателя (если не найден)")
+    publication_year: Optional[str] = Field(None, pattern=r"^\d{4}$", description="Год публикации (YYYY)")

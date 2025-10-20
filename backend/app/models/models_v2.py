@@ -486,6 +486,13 @@ book_authors = Table(
     Column("author_id", Integer, ForeignKey("authors.id"), primary_key=True),
 )
 
+book_publishers = Table(
+    "book_publishers",
+    Base.metadata,
+    Column("book_id",      Integer, ForeignKey("books.id"),      primary_key=True),
+    Column("publisher_id", Integer, ForeignKey("publishers.id"), primary_key=True),
+)
+
 class BookFileFormat(str, PyEnum):
     PDF  = "PDF"
     EPUB = "EPUB"
@@ -512,6 +519,7 @@ class Book(Base):
                               name='book_language'), nullable=False,
                           server_default='EN')
     publication_date = Column(String(12), nullable=True, comment="Дата публикации книги")
+    page_count = Column(Integer, nullable=True, comment="Количество страниц в книге")
     created_at  = Column(DateTime, server_default=func.utc_timestamp(),
                          nullable=False)
     updated_at  = Column(DateTime, server_default=func.utc_timestamp(),
@@ -532,6 +540,12 @@ class Book(Base):
     tags = relationship(
         "Tag",
         secondary=book_tags,
+        back_populates="books",
+        lazy="selectin",
+    )
+    publishers = relationship(
+        "Publisher",
+        secondary=book_publishers,
         back_populates="books",
         lazy="selectin",
     )
@@ -570,6 +584,27 @@ class BookAudio(Base):
     duration_sec  = Column(Integer)
     s3_url        = Column(String(700), nullable=False)
     book = relationship("Book", back_populates="audio_files")
+
+# ───────────────── Publisher ─────────────────
+class Publisher(Base):
+    """
+    Издательство книг.
+    Many-to-many с книгами (одна книга может быть от нескольких издательств,
+    например, co-publishing или разные издания).
+    """
+    __tablename__ = "publishers"
+
+    id   = Column(Integer, primary_key=True)
+    name = Column(String(255), unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    books = relationship(
+        "Book",
+        secondary=book_publishers,
+        back_populates="publishers",
+        lazy="selectin",
+    )
+
 
 # ───────────────── BookLandingImage ─────────────────
 class BookLandingImage(Base):

@@ -11,8 +11,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Book, BookFile, BookFileFormat, BookAudio, Tag
-from ..schemas_v2.book import BookAdminDetailResponse
+from ..models.models_v2 import User, Book, BookFile, BookFileFormat, BookAudio, Tag, Publisher
+from ..schemas_v2.book import (
+    BookAdminDetailResponse, PDFMetadataExtracted, PublisherCandidate, 
+    DateCandidate, ApplyMetadataPayload, PublisherResponse
+)
 from ..services_v2.book_service import books_in_landing
 from ..tasks.book_formats import _k_job as fmt_k_job, _k_log as fmt_k_log, _k_fmt
 
