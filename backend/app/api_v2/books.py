@@ -462,13 +462,16 @@ def get_presigned_pdf_upload_url(
         {"bucket": S3_BUCKET},
         ["starts-with", "$key", f"books/{book_id}/original/"],
         {"acl": "public-read"},
-        {"Content-Type": payload.content_type},
+        {"Content-Type": "application/pdf"},
         ["content-length-range", 1, max_size],
+        {"Cache-Control": "public, max-age=14400, immutable, no-transform"},
+        {"Content-Disposition": "inline"},
     ]
     fields = {
         "acl": "public-read",
-        "Content-Type": payload.content_type,
-        # можно добавить x-amz-meta-*, если нужно
+        "Content-Type": "application/pdf",
+        "Cache-Control": "public, max-age=14400, immutable, no-transform",
+        "Content-Disposition": "inline",
     }
 
     post = s3v4.generate_presigned_post(
