@@ -511,12 +511,26 @@ def get_book_listing(
          .all()
     )
     total_pages = ceil(total / size) if total else 0
+    
+    # Сериализуем publishers вручную
+    items = []
+    for b in books:
+        items.append({
+            "id": b.id,
+            "title": b.title,
+            "language": b.language,
+            "cover_url": b.cover_url,
+            "publication_date": b.publication_date,
+            "page_count": b.page_count,
+            "publishers": [{"id": p.id, "name": p.name} for p in (b.publishers or [])],
+        })
+    
     return {
         "total": total,
         "total_pages": total_pages,
         "page": page,
         "size": size,
-        "items": books,  # благодаря orm_mode/from_attributes схеме, можно отдавать ORM
+        "items": items,
     }
 
 
@@ -544,13 +558,26 @@ def search_book_listing(
     ))
 
     total = base.with_entities(func.count()).scalar()
-    items = (
+    books = (
         base.order_by(desc(Book.id))
             .offset(offset)
             .limit(size)
             .all()
     )
     total_pages = ceil(total / size) if total else 0
+    
+    # Сериализуем publishers вручную
+    items = []
+    for b in books:
+        items.append({
+            "id": b.id,
+            "title": b.title,
+            "language": b.language,
+            "cover_url": b.cover_url,
+            "publication_date": b.publication_date,
+            "page_count": b.page_count,
+            "publishers": [{"id": p.id, "name": p.name} for p in (b.publishers or [])],
+        })
 
     return {
         "total": total,
