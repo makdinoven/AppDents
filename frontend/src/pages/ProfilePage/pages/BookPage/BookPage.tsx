@@ -56,12 +56,16 @@ const BookPage = () => {
 
   const handleProvideDownloadInfo = (
     currentFormat: string,
-  ): { url: string; name: string } => {
-    const file = book?.files_download?.find(
-      (format: any) => format.file_format === currentFormat,
-    );
+  ): { url: string | null; name: string | null } => {
+    if (book) {
+      const file = book.files_download?.find(
+        (format: any) => format.file_format === currentFormat,
+      );
 
-    return { url: file?.download_url, name: book.title };
+      return { url: file?.download_url, name: book.title };
+    }
+
+    return { url: null, name: null };
   };
 
   console.log(handleProvideDownloadInfo(BOOK_FORMATS[0]).url);
@@ -69,7 +73,7 @@ const BookPage = () => {
   return (
     <>
       <div className={s.book_page}>
-        {loading ? (
+        {loading && !book ? (
           <Loader />
         ) : (
           <>
