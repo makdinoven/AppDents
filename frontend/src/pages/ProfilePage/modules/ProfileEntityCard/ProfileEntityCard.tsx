@@ -1,4 +1,4 @@
-import s from "./ProfileCourseCard.module.scss";
+import s from "./ProfileEntityCard.module.scss";
 import initialPhoto from "../../../../assets/no-pictures.png";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
@@ -10,7 +10,7 @@ import { Clock } from "../../../../assets/icons/index.ts";
 import { Dollar } from "../../../../assets/icons/index.ts";
 import { Percent } from "../../../../assets/icons/index.ts";
 
-const ProfileCourseCard = ({
+const ProfileEntityCard = ({
   isPartial = false,
   isOffer = false,
   name,
@@ -18,6 +18,7 @@ const ProfileCourseCard = ({
   index,
   previewPhoto,
   expires_at,
+  type = "course",
 }: {
   isPartial?: boolean;
   isOffer?: boolean;
@@ -27,8 +28,10 @@ const ProfileCourseCard = ({
   index: number;
   previewPhoto: string;
   expires_at?: string;
+  type?: "book" | "course";
 }) => {
   const screenWidth = useScreenWidth();
+  const isCourse = type === "course";
 
   const setCardColor = () => {
     if (screenWidth < 577) {
@@ -40,12 +43,22 @@ const ProfileCourseCard = ({
     }
   };
 
+  const renderCover = () => {
+    return !isCourse ? (
+      <div className={s.cover_container}>
+        <img src={previewPhoto} alt="Book image" />
+      </div>
+    ) : (
+      <img src={previewPhoto} alt="Course image" />
+    );
+  };
+
   return (
     <Link
       to={link}
       className={`${s.card} ${setCardColor()} ${isOffer ? s.offer : ""}`}
     >
-      {isOffer && (
+      {isCourse && isOffer && (
         <div className={s.offer_items}>
           <div className={s.timer}>
             <Clock />
@@ -56,36 +69,42 @@ const ProfileCourseCard = ({
           </div>
         </div>
       )}
-      <div className={s.card_content}>
+      <div className={`${s.card_content} ${!isCourse ? s.book : ""}`}>
         <div
           // style={{ backgroundImage: `url('${previewPhoto}')` }}
           className={s.card_content_bg}
         ></div>
         <h3>{name}</h3>
         {previewPhoto ? (
-          <img src={previewPhoto} alt="Course image" />
+          renderCover()
         ) : (
-          <img className={s.no_photo} src={initialPhoto} alt="Course image" />
+          <img
+            className={s.no_photo}
+            src={initialPhoto}
+            alt={isCourse ? "Course image" : "Book image"}
+          />
         )}
       </div>
-      <div className={s.card_bottom}>
-        <div
-          className={`${s.status} ${isPartial ? s.partial : ""} ${isOffer ? s.special : ""}`}
-        >
-          {isPartial && <Dollar />}
-          {!isPartial && !isOffer && <CheckMarkIcon />}
-          {isOffer && <Percent />}
-          <Trans
-            values={{ discount: 15 }}
-            i18nKey={
-              isPartial
-                ? "freeCourse.access.partial"
-                : isOffer
-                  ? "freeCourse.discount"
-                  : "freeCourse.access.full"
-            }
-          />
-        </div>
+      <div className={`${s.card_bottom} ${!isCourse ? s.book : ""}`}>
+        {isCourse && (
+          <div
+            className={`${s.status} ${isPartial ? s.partial : ""} ${isOffer ? s.special : ""}`}
+          >
+            {isPartial && <Dollar />}
+            {!isPartial && !isOffer && <CheckMarkIcon />}
+            {isOffer && <Percent />}
+            <Trans
+              values={{ discount: 15 }}
+              i18nKey={
+                isPartial
+                  ? "freeCourse.access.partial"
+                  : isOffer
+                    ? "freeCourse.discount"
+                    : "freeCourse.access.full"
+              }
+            />
+          </div>
+        )}
         <button className={s.watch}>
           <Arrow />
         </button>
@@ -94,4 +113,4 @@ const ProfileCourseCard = ({
   );
 };
 
-export default ProfileCourseCard;
+export default ProfileEntityCard;

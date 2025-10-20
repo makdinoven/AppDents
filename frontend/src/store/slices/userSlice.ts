@@ -163,7 +163,7 @@ const userSlice = createSlice({
       .addCase(
         getBooks.fulfilled,
         (state, action: PayloadAction<{ res: any }>) => {
-          state.books = action.payload.res.data;
+          state.books = action.payload.res.data.items;
           state.loadingBooks = false;
         },
       )

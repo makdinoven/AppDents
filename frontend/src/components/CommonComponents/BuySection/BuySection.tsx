@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import s from "./BuySection.module.scss";
 import { Trans, useTranslation } from "react-i18next";
 import { ToothPatch } from "../../../assets";
+import { Alert } from "../../ui/Alert/Alert.tsx";
 
 interface BuySectionProps {
   type: "download" | "buy";
-  formats: string[];
+  formats?: string[];
   isFullWidth?: boolean;
-  oldPrice: string;
-  newPrice: string;
-  openPayment: () => void;
+  oldPrice?: string;
+  newPrice?: string;
+  downloadInfo?: (format: string) => { url: string; name: string };
+  openPayment?: () => void;
 }
 
 const BuySection: React.FC<BuySectionProps> = ({
@@ -18,9 +20,10 @@ const BuySection: React.FC<BuySectionProps> = ({
   isFullWidth = false,
   oldPrice,
   newPrice,
+  downloadInfo,
   openPayment,
 }: BuySectionProps) => {
-  const [activeFormat, setActiveFormat] = useState(formats[0]);
+  const [activeFormat, setActiveFormat] = useState(formats?.[0] || "PDF");
   const { t } = useTranslation();
 
   const isBuy = type === "buy";
@@ -31,12 +34,42 @@ const BuySection: React.FC<BuySectionProps> = ({
     setActiveFormat(format);
   };
 
+  const handleDownload = async (format: string) => {
+    if (!downloadInfo) {
+      return;
+    }
+    const { url, name } = downloadInfo(format);
+
+    if (!url || url === "#") {
+      return;
+    }
+
+    try {
+      const file = await fetch(url);
+      const blob = await file.blob();
+
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = `${name}.${format.toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      window.URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error("Download error: ", error);
+      Alert(t("downloadError"));
+    }
+  };
+
+  const onClick = isBuy ? openPayment : () => handleDownload(activeFormat);
+
   return (
     <div className={s.section_wrapper}>
       <section
         className={`${s.buy_section} ${isFullWidth ? s.full_width : ""} ${s[buy]}`}
       >
-        {!isFullWidth && (
+        {!isFullWidth && newPrice && oldPrice && (
           <div className={s.price}>
             <span className={s.new_price}>${newPrice}</span>
             <span className={s.old_price}>${oldPrice}</span>
@@ -51,7 +84,7 @@ const BuySection: React.FC<BuySectionProps> = ({
             components={[<span className={s.highlight} />]}
           />
         </p>
-        <button onClick={openPayment} className={`${s.buy_button} ${s[buy]}`}>
+        <button onClick={onClick} className={`${s.buy_button} ${s[buy]}`}>
           {isDownload ? (
             <p>
               {t("bookLanding.download")}
@@ -66,7 +99,7 @@ const BuySection: React.FC<BuySectionProps> = ({
         </button>
         {isDownload && (
           <ul className={s.format_buttons}>
-            {formats.map((format: string) => {
+            {formats?.map((format: string) => {
               return (
                 <li key={format}>
                   <button

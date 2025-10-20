@@ -14,12 +14,12 @@ import {
   User,
 } from "../../../../../../assets/icons";
 import { Trans } from "react-i18next";
-import MyCourses from "../../../../modules/MyCourses/MyCourses.tsx";
 import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
 import ResetPasswordModal from "../../../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../../../routes/routes.ts";
 import {
   getCourses,
+  getBooks,
   logoutAsync,
 } from "../../../../../../store/actions/userActions.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
@@ -28,6 +28,7 @@ import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
 import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
 import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import MyContent from "../../../../modules/MyContent/MyContent.tsx";
 
 const QUERY_KEY = "content";
 
@@ -35,6 +36,7 @@ const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
+  const books = useSelector((state: AppRootStateType) => state.user.books);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
   const [searchParams] = useSearchParams();
@@ -43,6 +45,7 @@ const ProfileMain = () => {
 
   useEffect(() => {
     if (!courses.length) dispatch(getCourses());
+    if (!books.length) dispatch(getBooks());
   }, []);
 
   const handleLogout = () => {
@@ -106,14 +109,20 @@ const ProfileMain = () => {
               <ReferralSection />
             </div>
           </div>
-          <MyCourses courses={courses} />
+          <MyContent key="books" items={books} type="book" />
+          <MyContent key="courses" items={courses} />
         </>
       ),
     },
     {
       name: "profile.yourCourses",
       value: "your_courses",
-      component: <MyCourses courses={courses} />,
+      component: <MyContent key="courses" items={courses} />,
+    },
+    {
+      name: "profile.yourBooks",
+      value: "your_books",
+      component: <MyContent key="books" items={books} type="book" />,
     },
     {
       name: "profile.purchaseHistory.purchases",
@@ -138,7 +147,9 @@ const ProfileMain = () => {
         />
       </div>
 
-      <div className={s.profile_page_content}>{activeTab?.component}</div>
+      <div key={activeTab?.value} className={s.profile_page_content}>
+        {activeTab?.component}
+      </div>
 
       {showResetPasswordModal && (
         <ModalWrapper

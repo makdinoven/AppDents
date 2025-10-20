@@ -11,8 +11,10 @@ type JobStatus = "pending" | "running" | "success" | "failed" | "skipped";
 const PdfUploader = ({
   itemId,
   files,
+  getCovers,
 }: {
   itemId: number;
+  getCovers: () => void;
   files: {
     file_format: "PDF" | "EPUB" | "MOBI" | "AZW3" | "FB2";
     size_bytes: number;
@@ -66,6 +68,7 @@ const PdfUploader = ({
       }
 
       const finalizeRes = await adminApi.finalizeBookUploading(itemId, { key });
+      getCovers();
       fetchStatuses();
       setBookUrl(finalizeRes.data.pdf_cdn_url);
     } catch (e) {

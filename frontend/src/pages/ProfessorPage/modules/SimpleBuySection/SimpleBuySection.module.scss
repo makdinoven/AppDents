@@ -1,0 +1,172 @@
+.buy_section {
+  @include flex-column;
+  gap: 15px;
+  position: relative;
+  align-items: center;
+  border-radius: 60px;
+  padding: 45px 80px 20px;
+  margin-top: 35px;
+  border: 1px solid $primary;
+  background-color: $primary-02;
+
+  button {
+    min-width: unset;
+  }
+
+  &.books {
+    border-color: $secondary-lighter;
+    background-color: $secondary-lighter-02;
+
+    .professor_access {
+      color: $secondary;
+    }
+
+    .new_price {
+      color: $secondary-lighter;
+    }
+
+    .clock_icon {
+      path {
+        fill: $secondary-lighter;
+      }
+    }
+
+    .icons {
+      path {
+        stroke: $secondary-lighter;
+      }
+    }
+  }
+
+  &.both {
+    border-color: $green;
+    background-color: $green-02;
+
+    .professor_access {
+      color: $tertiary;
+    }
+
+    .new_price {
+      color: $green;
+    }
+
+    .clock_icon {
+      path {
+        fill: $green;
+      }
+    }
+
+    .icons {
+      path {
+        stroke: $green;
+      }
+    }
+  }
+}
+
+.new_price {
+  color: $primary;
+}
+
+.clock_icon {
+  position: absolute;
+  left: 20px;
+  path {
+    fill: $primary;
+    stroke-width: 0.5;
+  }
+}
+
+.icons {
+  height: 70px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -35px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-color: inherit;
+
+  .icon {
+    height: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: $background-color-04;
+    border-radius: 50%;
+    border: 1px solid;
+    border-color: inherit;
+    backdrop-filter: blur(1px);
+
+    &.courses {
+      padding-left: 15px;
+    }
+
+    &.both:first-child {
+      padding-left: 15px;
+    }
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 45px;
+    height: 45px;
+
+    path {
+      stroke: $primary;
+      stroke-width: 1.5px;
+    }
+  }
+}
+
+.buy_section_desc {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 10px;
+  @include clamped-p1-line-height;
+}
+
+.professor_access {
+  text-align: center;
+  gap: 10px;
+  color: $tertiary;
+  text-transform: uppercase;
+  @include clamped-h3;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .buy_section {
+    border-radius: 40px;
+    padding: 30px 15px 10px;
+    gap: 10px;
+  }
+
+  .icons {
+    top: -25px;
+    height: 50px;
+
+    .icon {
+      width: 50px;
+      padding: 5px;
+
+      &.courses {
+        padding-left: 5px;
+      }
+
+      &.both:first-child {
+        padding-left: 5px;
+      }
+    }
+
+    svg {
+      height: 25px;
+    }
+  }
+
+  .buy_section_desc {
+    font-size: 16px;
+    margin-bottom: 5px;
+  }
+}

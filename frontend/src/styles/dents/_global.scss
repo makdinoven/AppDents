@@ -37,6 +37,7 @@ $accent-glass: rgba(1, 67, 61, 0.8);
 $secondary: #006d8d;
 $secondary-08: rgba(0, 109, 141, 0.8);
 $secondary-lighter: #79cee7;
+$secondary-lighter-02: rgba(121, 206, 231, 0.2);
 $secondary-lighter-04: rgba(121, 206, 231, 0.4);
 $secondary-lighter-06: rgba(121, 206, 231, 0.6);
 $secondary-lighter-08: rgba(121, 206, 231, 0.8);
@@ -50,6 +51,8 @@ $orange: #fe8802;
 $error-color: #fe0502;
 $green: #90e895;
 $yellow: #e8db90;
+$green-02: rgba(144, 232, 149, 0.2);
+$green-04: rgba(144, 232, 149, 0.4);
 $green-06: rgba(144, 232, 149, 0.6);
 $green-08: rgba(144, 232, 149, 0.8);
 $error-color-lighten: #ffbebf;
@@ -98,6 +101,11 @@ $font-sz-err-mob: 14px;
 @mixin clamped-h3 {
   font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
   //line-height: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+}
+
+@mixin clamped-h3-line-height {
+  font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+  line-height: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
 }
 
 @mixin clamped-h4 {

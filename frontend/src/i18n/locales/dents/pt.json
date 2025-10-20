@@ -275,6 +275,8 @@
   "profile": {
     "yourCourses": "Seus cursos",
     "noCourses": "Nenhum curso",
+    "yourBooks": "Seus livros",
+    "noBooks": "Ainda não há livros",
     "nextLesson": "Próxima lição",
     "prevLesson": "Lição anterior",
     "pdfText": "Esta aula contém materiais em PDF em vez de um vídeo. Clique no link abaixo para abrir o arquivo.",
@@ -314,9 +316,21 @@
     }
   },
   "professor": {
-    "youCanBuyAllCourses": "Adquira todos os cursos deste professor com um <1>20%</1> de desconto por apenas <1>${{new_price}}</1> — em vez de <2>${{old_price}}</2>!",
-    "getAllCourses": "Todos os cursos por <1>${{new_price}}</1>",
-    "accessToAllCourses": "Acesso vitalício aos cursos!",
+    "youCanBuyAll": {
+      "courses": "Desbloqueie todos os cursos deste professor com um desconto exclusivo de <1>20%</1> — acesso total por apenas <1>${{new_price}}</1> em vez de <2>${{old_price}}</2>!",
+      "books": "Obtenha a coleção completa de livros deste professor com um desconto de <1>20%</1> — apenas <1>${{new_price}}</1> em vez de <2>${{old_price}}</2>!",
+      "both": "Obtenha o pacote completo — todos os cursos e livros do professor — com um desconto especial de <1>20%</1> por apenas <1>${{new_price}}</1> em vez de <2>${{old_price}}</2>!"
+    },
+    "getAll": {
+      "courses": "Obter todos os cursos por <1>${{new_price}}</1>",
+      "books": "Obter todos os livros por <1>${{new_price}}</1>",
+      "both": "Obter todos os cursos e livros por <1>${{new_price}}</1>"
+    },
+    "accessToAll": {
+      "courses": "Acesso vitalício a todos os cursos — aprenda no seu próprio ritmo!",
+      "books": "Acesso vitalício a todos os livros — estude quando e onde quiser!",
+      "both": "Acesso vitalício a todos os livros e cursos!"
+    },
     "professorsCourses": "Cursos deste professor",
     "professors.title": "Nossos professores",
     "search": "Procurar professores...",
