@@ -48,6 +48,8 @@ def _book_to_response(book: Book) -> BookResponse:
         created_at=book.created_at,
         updated_at=book.updated_at,
         publication_date=book.publication_date,
+        page_count=book.page_count,
+        publishers=[{"id": p.id, "name": p.name} for p in (book.publishers or [])],
     )
 
 # ─────────────────────────── КНИГИ ───────────────────────────────────────────

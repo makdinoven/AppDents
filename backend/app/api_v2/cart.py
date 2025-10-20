@@ -119,6 +119,31 @@ def _authors_from_book_landing(bl: BookLanding) -> list[dict]:
 
 def _book_ids(bl: BookLanding) -> list[int]:
     return [b.id for b in (bl.books or [])]
+
+def _book_extra_info(bl: BookLanding) -> dict:
+    """Собирает дополнительную информацию о книгах: страницы, издатели, года"""
+    total_pages = 0
+    publishers_set = set()
+    years_set = set()
+    
+    for b in bl.books or []:
+        if hasattr(b, "page_count") and b.page_count:
+            total_pages += b.page_count
+        if hasattr(b, "publishers"):
+            for p in b.publishers or []:
+                publishers_set.add(p.name)
+        if hasattr(b, "publication_date") and b.publication_date:
+            # извлекаем год из строки формата "YYYY-MM-DD" или просто "YYYY"
+            year = b.publication_date[:4] if len(b.publication_date) >= 4 else b.publication_date
+            if year:
+                years_set.add(year)
+    
+    return {
+        "total_pages": total_pages if total_pages > 0 else None,
+        "publishers": sorted(list(publishers_set)),
+        "publication_years": sorted(list(years_set)),
+    }
+
 @router.get("", response_model=CartResponse)
 def my_cart(
     db: Session        = Depends(get_db),
@@ -142,6 +167,11 @@ def my_cart(
             .selectinload(CartItem.book_landing)
             .selectinload(BookLanding.books)
             .selectinload(Book.authors),
+            # Подгружаем также publishers для книг
+            selectinload(Cart.items)
+            .selectinload(CartItem.book_landing)
+            .selectinload(BookLanding.books)
+            .selectinload(Book.publishers),
         )
         .filter(Cart.id == cart.id)
         .first()
@@ -239,6 +269,7 @@ def my_cart(
                     "authors": _authors_from_book_landing(bl),
                     "old_price": str(bl.old_price) if bl.old_price is not None else None,
                     "new_price": str(bl.new_price) if bl.new_price is not None else None,
+                    **_book_extra_info(bl),  # добавляем доп. инфо о книгах
                 },
             })
         else:
@@ -360,6 +391,7 @@ def cart_preview(
             db.query(BookLanding)
               .options(
                   selectinload(BookLanding.books).selectinload(Book.authors),
+                  selectinload(BookLanding.books).selectinload(Book.publishers),
               )
               .filter(BookLanding.id.in_(book_landing_ids))
               .all()
@@ -434,6 +466,29 @@ def cart_preview(
 
     def _book_ids(bl: BookLanding) -> list[int]:
         return [b.id for b in (bl.books or [])]
+    
+    def _book_extra_info_local(bl: BookLanding) -> dict:
+        """Локальная версия для cart_preview"""
+        total_pages = 0
+        publishers_set = set()
+        years_set = set()
+        
+        for b in bl.books or []:
+            if hasattr(b, "page_count") and b.page_count:
+                total_pages += b.page_count
+            if hasattr(b, "publishers"):
+                for p in b.publishers or []:
+                    publishers_set.add(p.name)
+            if hasattr(b, "publication_date") and b.publication_date:
+                year = b.publication_date[:4] if len(b.publication_date) >= 4 else b.publication_date
+                if year:
+                    years_set.add(year)
+        
+        return {
+            "total_pages": total_pages if total_pages > 0 else None,
+            "publishers": sorted(list(publishers_set)),
+            "publication_years": sorted(list(years_set)),
+        }
 
     for bl in ordered_book_landings:
         items.append({
@@ -450,6 +505,7 @@ def cart_preview(
                 "authors": _authors_from_book_landing(bl),
                 "old_price": str(bl.old_price) if bl.old_price is not None else None,
                 "new_price": str(bl.new_price) if bl.new_price is not None else None,
+                **_book_extra_info_local(bl),
             },
         })
 

@@ -78,6 +78,8 @@ class BookResponse(BaseModel):
     created_at:  datetime
     updated_at:  datetime
     publication_date: Optional[str] = None
+    page_count: Optional[int] = None
+    publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
 
     class Config:
         orm_mode = True
@@ -88,6 +90,9 @@ class BookListResponse(BaseModel):
     title: str
     language: str
     cover_url: str | None = None
+    publication_date: Optional[str] = None
+    page_count: Optional[int] = None
+    publishers: List[Dict[str, Any]] = []
 
     class Config:
         orm_mode = True
@@ -293,6 +298,8 @@ class UserBookDetailResponse(BaseModel):
     cover_url: Optional[str] = None
     description: Optional[str] = None
     publication_date: Optional[str] = None
+    page_count: Optional[int] = None
+    publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
     files_download: List[BookFileDownload] = []
     audio_download: List[BookAudioDownload] = []
 
@@ -325,6 +332,8 @@ class BookAdminDetailResponse(BaseModel):
     language: str
     publication_date: Optional[str] = None
     preview_pdf_url: Optional[str] = None
+    page_count: Optional[int] = None
+    publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
 
     author_ids: List[int] = []
     tag_ids: List[int] = []
@@ -382,6 +391,5 @@ class PublisherResponse(BaseModel):
 class ApplyMetadataPayload(BaseModel):
     """Применение выбранных метаданных к книге"""
     page_count: Optional[int] = None
-    publisher_id: Optional[int] = Field(None, description="ID существующего издателя")
-    new_publisher_name: Optional[str] = Field(None, description="Имя нового издателя (если не найден)")
+    publisher_name: Optional[str] = Field(None, description="Название издателя (автоматически сопоставится с существующими или создастся новый)")
     publication_year: Optional[str] = Field(None, pattern=r"^\d{4}$", description="Год публикации (YYYY)")

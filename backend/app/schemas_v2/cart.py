@@ -28,6 +28,10 @@ class BookInCart(BaseModel):
     authors: List[AuthorCardResponse] = []
     old_price: Optional[str] = None
     new_price: Optional[str] = None
+    # Дополнительная информация о книгах (агрегируется из всех книг лендинга)
+    total_pages: Optional[int] = None  # сумма страниц всех книг
+    publishers: List[str] = []  # уникальные издатели
+    publication_years: List[str] = []  # года публикаций
 
 
 class CartItemOut(BaseModel):
