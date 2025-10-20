@@ -68,6 +68,7 @@
       height: 50px;
       @include transition();
       margin-bottom: 15px;
+      @include flex-center();
 
       @media (max-width: $middle-breakpoint) {
         width: 100%;

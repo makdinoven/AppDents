@@ -52,6 +52,7 @@ interface PdfReaderProps {
   setFullScreen: (state: boolean) => void;
   currentPage: string;
   setCurrentPage: (val: string) => void;
+  fromProfile?: boolean;
 }
 
 const DEFAULT_SCALE = 0.75;
@@ -62,6 +63,7 @@ const PdfReader = ({
   setFullScreen,
   currentPage,
   setCurrentPage,
+  fromProfile = false,
 }: PdfReaderProps) => {
   const isProgrammaticScroll = useRef(false);
   const screenWidth = useScreenWidth();
@@ -279,7 +281,7 @@ const PdfReader = ({
             <span>{totalPages ? totalPages : 0}</span>
           </p>
           <button className={s.expand_button} onClick={handleCloseFullScreen}>
-            <MinimizeIcon />
+            {fromProfile ? <MaximizeIcon /> : <MinimizeIcon />}
           </button>
         </div>
         <div className={s.right_side}>
@@ -341,7 +343,7 @@ const PdfReader = ({
 
   return (
     <div
-      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : ""}`}
+      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : ""} ${fromProfile ? s.from_profile : ""}`}
       onClick={handleOverlayClick}
     >
       <div className={s.header}>{headerContent.get(fullScreen)}</div>
@@ -387,7 +389,7 @@ const PdfReader = ({
             </div>
           ))}
         </Document>
-        {loading && <Loader className={s.loading} />}
+        {url && loading && <Loader className={s.loading} />}
         {error && <p className={s.error}>{t("bookLanding.pdfReader.error")}</p>}
       </div>
     </div>

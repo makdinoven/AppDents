@@ -14,6 +14,15 @@ import MultiSelect from "../../../../components/CommonComponents/MultiSelect/Mul
 import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
 import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
 import PdfUploader from "../modules/common/PdfUploader/PdfUploader.tsx";
+import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
+import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+
+type CoverCandidate = {
+  id: number;
+  blob: Blob;
+  url: string;
+  formData: FormData;
+};
 
 const BookDetail = () => {
   const navigate = useNavigate();
@@ -22,6 +31,9 @@ const BookDetail = () => {
   const [book, setBook] = useState<any>(null);
   const [tags, setTags] = useState<any>([]);
   const [authors, setAuthors] = useState<any>([]);
+  const [coverCandidates, setCoverCandidates] = useState<CoverCandidate[]>([]);
+  const [selectedBookCover, setSelectedBookCover] =
+    useState<CoverCandidate | null>(null);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -86,6 +98,75 @@ const BookDetail = () => {
     }
   };
 
+  const handleGetBookCoverCandidates = async () => {
+    try {
+      const fetchWithRetry = async (
+        bookId: string,
+        index: number,
+        retries = 5,
+      ): Promise<Blob> => {
+        for (let attempt = 1; attempt <= retries; attempt++) {
+          try {
+            const res = await adminApi.getBookCoverCandidate(bookId, index);
+            return res.data;
+          } catch (err: any) {
+            if (err?.response?.status === 404 && attempt < retries) {
+              console.warn(
+                `Attempt ${attempt} for candidate ${index} failed with 404, retrying...`,
+              );
+              await new Promise((r) => setTimeout(r, 500));
+              continue;
+            }
+            throw err;
+          }
+        }
+        throw new Error(
+          `Failed to fetch candidate ${index} after ${retries} retries`,
+        );
+      };
+
+      const requests = [1, 2, 3].map((i) => fetchWithRetry(bookId!, i));
+      const blobs = await Promise.all(requests);
+
+      const candidates = blobs.map((blob, i) => {
+        const formData = new FormData();
+        formData.append("file", blob);
+        formData.append("entity_type", "book_cover");
+        formData.append("entity_id", String(bookId));
+
+        return {
+          id: i,
+          blob,
+          url: URL.createObjectURL(blob),
+          formData,
+        };
+      });
+
+      setCoverCandidates(candidates);
+    } catch (error) {
+      Alert(`Error getting candidates after retries: ${error}`, <ErrorIcon />);
+    }
+  };
+
+  const handleSelectBookCover = async (data: CoverCandidate) => {
+    setSelectedBookCover(data);
+  };
+
+  const handleSetCover = async () => {
+    if (!selectedBookCover) {
+      Alert(`Please, select book cover`, <ErrorIcon />);
+      return;
+    }
+    try {
+      const res = await adminApi.uploadImageNew(selectedBookCover.formData);
+      Alert(`Book cover changed`, <CheckMark />);
+      setBook({ ...book, cover_url: res.data.url });
+      setCoverCandidates([]);
+    } catch (e) {
+      Alert(`Error loading book cover image: ${e}`, <ErrorIcon />);
+    }
+  };
+
   return (
     <div className={s.detail_container}>
       <DetailHeader title={"admin.books.edit"} />
@@ -110,8 +191,6 @@ const BookDetail = () => {
               value={book.description ? book.description : ""}
               onChange={handleChange}
             />
-
-            <PdfUploader itemId={book.id} files={book.files} />
 
             <div className={s.two_items}>
               <AdminField
@@ -164,6 +243,39 @@ const BookDetail = () => {
                 />
               )}
             </div>
+
+            <PdfUploader
+              itemId={book.id}
+              files={book.files}
+              getCovers={handleGetBookCoverCandidates}
+            />
+            {coverCandidates.length > 0 && (
+              <ModalWrapper
+                title={"Select book cover"}
+                cutoutPosition={"none"}
+                isOpen={coverCandidates.length > 0}
+                onClose={() => setCoverCandidates([])}
+              >
+                <div className={s.candidates_modal}>
+                  <div className={s.images}>
+                    {coverCandidates.map((c, i: number) => (
+                      <img
+                        className={`${c.id === selectedBookCover?.id ? s.active : ""}`}
+                        onClick={() => handleSelectBookCover(c)}
+                        key={i}
+                        src={c.url}
+                        alt=""
+                      />
+                    ))}
+                  </div>
+
+                  <PrettyButton
+                    text={"Set cover img"}
+                    onClick={handleSetCover}
+                  />
+                </div>
+              </ModalWrapper>
+            )}
 
             <PhotoUploader
               onUpload={handleUploadPhoto}

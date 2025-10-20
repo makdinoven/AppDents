@@ -16,7 +16,11 @@ export const mainApi = {
   getBookLanding(pageName: any) {
     return instance.get(`books/landing/slug/${pageName}`);
   },
-
+  getBook(id: any) {
+    return instance.get(`books/me/books/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
   trackLandingVisit(id: number, ad: boolean) {
     return instance.post(`landings/${id}/visit`, { from_ad: ad });
   },

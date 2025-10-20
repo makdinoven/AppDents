@@ -12,37 +12,50 @@ $middle-breakpoint: 1024px;
 $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
-$background-color: rgb(237, 248, 255);
-$background-color-06: rgba(237, 248, 255, 0.6);
-$background-color-08: rgba(237, 248, 255, 0.8);
-$cart-background: #edf8ff66;
-$background-color-05: rgba(237, 248, 255, 0.5);
-$background-color-08: rgba(237, 248, 255, 0.8);
-$primary: orange;
-$primary-04: rgba(127, 169, 223, 0.4);
-$primary-06: rgba(127, 169, 223, 0.6);
-$primary-light: #abe9e6;
-$primary-08: rgba(127, 169, 223, 0.8);
-$primary-glass: rgba(127, 169, 223, 0.8);
-$primary-accent: #7f95df;
-$accent: #050143;
-$accent-03: rgba(5, 1, 67, 0.3);
-$accent-06: rgba(5, 1, 67, 0.6);
-$accent-glass: rgba(5, 1, 67, 0.8);
-$secondary: #006d8d;
-$secondary-lighter: #79cee7;
-$secondary-lighter-04: rgba(121, 206, 231, 0.4);
-$secondary-lighter-06: rgba(121, 206, 231, 0.6);
-$tertiary: #017f74;
-$quaternary: #5b6968;
+$background-color: rgb(236, 247, 251);
+$background-color-01: rgba(236, 247, 251, 0.1);
+$background-color-02: rgba(236, 247, 251, 0.2);
+$background-color-04: rgba(236, 247, 251, 0.4);
+$background-color-06: rgba(236, 247, 251, 0.6);
+$background-color-08: rgba(236, 247, 251, 0.8);
+$background-color-09: rgba(236, 247, 251, 0.9);
+$cart-background: rgba(236, 247, 251, 0.4);
+$background-color-05: rgba(236, 247, 251, 0.5);
+$background-color-08: rgba(236, 247, 251, 0.8);
+$primary: rgb(136, 208, 232);
+$primary-02: rgba(136, 208, 232, 0.2);
+$primary-04: rgba(136, 208, 232, 0.4);
+$primary-06: rgba(136, 208, 232, 0.6);
+$primary-light: #d2eff9;
+$primary-08: rgba(136, 208, 232, 0.8);
+$primary-glass: rgba(136, 208, 232, 0.8);
+$primary-accent: #a0c8ea;
+$accent: rgb(34, 66, 95);
+$accent-03: rgba(34, 66, 95, 0.3);
+$accent-06: rgba(34, 66, 95, 0.6);
+$accent-glass: rgba(34, 66, 95, 0.8);
+$secondary: rgb(47, 116, 106);
+$secondary-08: rgba(47, 116, 106, 0.8);
+$secondary-lighter: #97dbbe;
+$secondary-lighter-02: rgba(153, 205, 163, 0.2);
+$secondary-lighter-04: rgba(153, 205, 163, 0.4);
+$secondary-lighter-06: rgba(153, 205, 163, 0.6);
+$secondary-lighter-08: rgba(153, 205, 163, 0.8);
+$tertiary: rgb(78, 102, 83);
+$tertiary-08: rgba(78, 102, 83, 0.8);
+$quaternary: rgb(91, 100, 105);
+$quaternary-06: rgba(91, 100, 105, 0.6);
 $text-color: $background-color;
 $text-color-accent: $accent;
-$error-color: #fe0502;
-$green: #90e895;
-$yellow: #e8db90;
-$green-06: rgba(144, 232, 149, 0.6);
-$green-08: rgba(144, 232, 149, 0.8);
-$error-color-lighten: #ffbebf;
+$orange: #f9652f;
+$error-color: #f92f2f;
+$green: rgb(132, 237, 192);
+$yellow: #f4f59c;
+$green-02: rgba(132, 237, 192, 0.2);
+$green-04: rgba(132, 237, 192, 0.4);
+$green-06: rgba(132, 237, 192, 0.6);
+$green-08: rgba(132, 237, 192, 0.8);
+$error-color-lighten: #fdc8c8;
 $hover-color-darken: rgba(100, 116, 139, 0.25);
 $hover-color-dark: rgba(100, 116, 139, 0.4);
 $hover-color-darken-analogue: #c9d7e1;
@@ -70,47 +83,83 @@ $font-sz-p4-desk: 18px;
 $font-sz-p4-mob: 12px;
 $font-sz-p5-desk: 16px;
 $font-sz-p5-mob: 12px;
+$font-sz-p6-desk: 14px;
+$font-sz-p6-mob: 10px;
 $font-sz-err-desk: 20px;
 $font-sz-err-mob: 14px;
 
 @mixin clamped-h1 {
   font-size: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
+  //line-height: clamp($font-sz-h1-mob, 8vw, $font-sz-h1-desk);
 }
 
 @mixin clamped-h2 {
   font-size: clamp($font-sz-h2-mob, 4vw, $font-sz-h2-desk);
+  //line-height: clamp($font-sz-h2-mob, 4vw, $font-sz-h2-desk);
 }
 
 @mixin clamped-h3 {
   font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+  //line-height: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+}
+
+@mixin clamped-h3-line-height {
+  font-size: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
+  line-height: clamp($font-sz-h3-mob, 4vw, $font-sz-h3-desk);
 }
 
 @mixin clamped-h4 {
   font-size: clamp($font-sz-h4-mob, 3vw, $font-sz-h4-desk);
+  //line-height: clamp($font-sz-h4-mob, 3vw, $font-sz-h4-desk);
 }
 
 @mixin clamped-p1 {
   font-size: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+  //line-height: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+}
+
+@mixin clamped-p1-line-height {
+  font-size: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
+  line-height: clamp($font-sz-p1-mob, 2.5vw, $font-sz-p1-desk);
 }
 
 @mixin clamped-p2 {
   font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+  //line-height: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+}
+
+@mixin clamped-p2-line-height {
+  font-size: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
+  line-height: clamp($font-sz-p2-mob, 2.5vw, $font-sz-p2-desk);
 }
 
 @mixin clamped-p3 {
   font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+  //line-height: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+}
+
+@mixin clamped-p3-line-height {
+  font-size: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
+  line-height: clamp($font-sz-p3-mob, 2vw, $font-sz-p3-desk);
 }
 
 @mixin clamped-p4 {
   font-size: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
+  //line-height: clamp($font-sz-p4-mob, 2vw, $font-sz-p4-desk);
 }
 
 @mixin clamped-p5 {
   font-size: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
+  //line-height: clamp($font-sz-p5-mob, 1.5vw, $font-sz-p5-desk);
+}
+
+@mixin clamped-p6 {
+  font-size: clamp($font-sz-p6-mob, 1.5vw, $font-sz-p6-desk);
 }
 
 @mixin clamped-err {
   font-size: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
+  //line-height: clamp($font-sz-err-mob, 1vw, $font-sz-err-desk);
 }
 
 @mixin accent-glass {
@@ -127,6 +176,10 @@ $font-sz-err-mob: 14px;
 @mixin flex-column {
   display: flex;
   flex-direction: column;
+}
+
+@mixin box-shadow {
+  box-shadow: 0 4px 8px rgba(1, 67, 61, 0.1);
 }
 
 @mixin container {
@@ -155,7 +208,8 @@ $font-sz-err-mob: 14px;
   $right: null,
   $bottom: null,
   $transform: null,
-  $z: 1
+  $z: 1,
+  $events: on
 ) {
   &::after {
     content: "";
@@ -182,6 +236,10 @@ $font-sz-err-mob: 14px;
       @if $transform == x50 {
         transform: translateX(-50%);
       }
+    }
+
+    @if $events == off {
+      pointer-events: none;
     }
 
     width: $width;
