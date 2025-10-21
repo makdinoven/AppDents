@@ -13,9 +13,9 @@ import AdminField from "../../modules/common/AdminField/AdminField.tsx";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
 import PhotoUploader from "../../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
-import PdfUploader from "../../modules/common/PdfUploader/PdfUploader.tsx";
 import CoverCandidatesSelector from "./modules/CoverCandidatesSelector/CoverCandidatesSelector.tsx";
 import BookMetadataSelector from "./modules/BookMetadataSelector/BookMetadataSelector.tsx";
+import BookUploader from "./modules/BookUploader/BookUploader.tsx";
 
 export type CoverCandidate = {
   id: number;
@@ -149,10 +149,6 @@ const BookDetail = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(book);
-  }, [book]);
-
   return (
     <div className={s.detail_container}>
       <DetailHeader title={"admin.books.edit"} />
@@ -255,12 +251,14 @@ const BookDetail = () => {
                 />
               )}
             </div>
+            {book.files.length > 0 && (
+              <BookUploader
+                itemId={book.id}
+                files={book.files}
+                getCovers={handleGetBookCoverCandidates}
+              />
+            )}
 
-            <PdfUploader
-              itemId={book.id}
-              files={book.files}
-              getCovers={handleGetBookCoverCandidates}
-            />
             {coverCandidates.length > 0 && (
               <CoverCandidatesSelector
                 setCoverCandidates={setCoverCandidates}

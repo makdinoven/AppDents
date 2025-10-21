@@ -1,14 +1,14 @@
-import s from "./PdfUploader.module.scss";
-import { Alert } from "../../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../../assets/icons";
-import { adminApi } from "../../../../../../api/adminApi/adminApi.ts";
+import s from "./BookUploader.module.scss";
+import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../../../assets/icons";
+import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
-import LoaderOverlay from "../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import ViewLink from "../../../../../../components/ui/ViewLink/ViewLink.tsx";
+import LoaderOverlay from "../../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import ViewLink from "../../../../../../../components/ui/ViewLink/ViewLink.tsx";
 
 type JobStatus = "pending" | "running" | "success" | "failed" | "skipped";
 
-const PdfUploader = ({
+const BookUploader = ({
   itemId,
   files,
   getCovers,
@@ -143,7 +143,7 @@ const PdfUploader = ({
         <div className={s.input_wrapper}>
           {loading && <LoaderOverlay />}
           <label className={s.custom_button}>
-            Upload PDF
+            Upload Book
             <input
               type="file"
               accept="application/pdf"
@@ -166,4 +166,4 @@ const PdfUploader = ({
   );
 };
 
-export default PdfUploader;
+export default BookUploader;
