@@ -32,7 +32,7 @@ import BookLanding from "../pages/BookLanding/BookLanding.tsx";
 import Books from "../pages/Books/Books.tsx";
 import SearchPage from "../pages/SearchPage/SearchPage.tsx";
 import BookLandingDetail from "../pages/Admin/pages/detail/BookLandingDetail..tsx";
-import BookDetail from "../pages/Admin/pages/detail/BookDetail.tsx";
+import BookDetail from "../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
 import LandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytics/LandingAnalytics.tsx";
 import AnalyticsPurchases from "../pages/Admin/pages/analytics/AnalyticsPurchases.tsx";
 import AnalyticsLanguageStats from "../pages/Admin/pages/analytics/AnalyticsLanguageStats.tsx";

@@ -1,0 +1,31 @@
+.candidates_modal {
+  @include flex-column;
+  gap: 20px;
+
+  .images {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+  }
+
+  img {
+    @include transition();
+    cursor: pointer;
+    padding: 20px;
+    border-radius: 20px;
+    background-color: transparent;
+    //max-width: 200px;
+    border: 1px solid $background-color;
+
+    @media (hover: hover) {
+      &:hover {
+        background-color: $background-color;
+      }
+    }
+
+    &.active {
+      background-color: $background-color;
+    }
+  }
+}

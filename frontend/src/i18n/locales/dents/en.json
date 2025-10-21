@@ -381,6 +381,10 @@
       "both": "Lifetime access to all books and courses!"
     },
     "professorsCourses": "This professor's courses",
+    "professorsBooks": "This professor's books",
+    "allCourses": "All courses",
+    "allBooks": "All books",
+    "allCoursesAndBooks": "All courses & books",
     "professors.title": "Our professors",
     "search": "Search professors...",
     "found": "Professors found: {{count}}",

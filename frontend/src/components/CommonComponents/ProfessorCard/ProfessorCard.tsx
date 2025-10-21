@@ -41,27 +41,35 @@ const ProfessorCard = ({
             <img src={photo ? photo : INITIAL_PHOTO} alt="professor photo" />
           </div>
           <div className={s.description_wrapper}>
-            {courses_count > 0 && (
-              <span
-                style={{
-                  alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
-                }}
-                className={s.courses_count}
-              >
-                <Trans i18nKey="professor.coursesCount" count={courses_count} />
-              </span>
+            {courses_count > 0 && books_count > 0 && (
+              <div className={s.counts}>
+                {courses_count > 0 && (
+                  <span
+                    style={{
+                      alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
+                    }}
+                    className={s.courses_count}
+                  >
+                    <Trans
+                      i18nKey="professor.coursesCount"
+                      count={courses_count}
+                    />
+                  </span>
+                )}
+
+                {books_count > 0 && (
+                  <span
+                    style={{
+                      alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
+                    }}
+                    className={s.books_count}
+                  >
+                    <Trans i18nKey="professor.booksCount" count={books_count} />
+                  </span>
+                )}
+              </div>
             )}
 
-            {books_count > 0 && (
-              <span
-                style={{
-                  alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
-                }}
-                className={s.books_count}
-              >
-                <Trans i18nKey="professor.booksCount" count={books_count} />
-              </span>
-            )}
             <p className={s.description}>{description}</p>
             {tags.length > 0 && (
               <span className={s.tags}>

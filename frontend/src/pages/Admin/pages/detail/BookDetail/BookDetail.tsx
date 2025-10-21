@@ -1,23 +1,23 @@
 import { useNavigate, useParams } from "react-router-dom";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import s from "./DetailPage.module.scss";
-import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
-import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
+import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import s from "../DetailPage.module.scss";
+import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
+import DetailBottom from "../../modules/common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../assets/icons";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../assets/icons";
+import { mainApi } from "../../../../../api/mainApi/mainApi.ts";
 import { t } from "i18next";
-import AdminField from "../modules/common/AdminField/AdminField.tsx";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
-import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
-import PdfUploader from "../modules/common/PdfUploader/PdfUploader.tsx";
-import ModalWrapper from "../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import AdminField from "../../modules/common/AdminField/AdminField.tsx";
+import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
+import PhotoUploader from "../../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
+import PdfUploader from "../../modules/common/PdfUploader/PdfUploader.tsx";
+import CoverCandidatesSelector from "./modules/CoverCandidatesSelector/CoverCandidatesSelector.tsx";
+import BookMetadataSelector from "./modules/BookMetadataSelector/BookMetadataSelector.tsx";
 
-type CoverCandidate = {
+export type CoverCandidate = {
   id: number;
   blob: Blob;
   url: string;
@@ -30,22 +30,23 @@ const BookDetail = () => {
   const [loading, setLoading] = useState(true);
   const [book, setBook] = useState<any>(null);
   const [tags, setTags] = useState<any>([]);
+  const [publishers, setPublishers] = useState<any>(null);
   const [authors, setAuthors] = useState<any>([]);
   const [coverCandidates, setCoverCandidates] = useState<CoverCandidate[]>([]);
-  const [selectedBookCover, setSelectedBookCover] =
-    useState<CoverCandidate | null>(null);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [bookRes, tagsRes, authorsRes] = await Promise.all([
+      const [bookRes, tagsRes, authorsRes, publishersRes] = await Promise.all([
         adminApi.getBookDetail(bookId),
         mainApi.getTags(),
         adminApi.getAuthorsList({ size: 100000 }),
+        adminApi.getPublishers(),
       ]);
       setTags(tagsRes.data);
       setBook(bookRes.data);
       setAuthors(authorsRes.data.items);
+      setPublishers(publishersRes.data);
     } catch (error: any) {
       Alert(
         `Error fetching landing data, error message: ${error.message}`,
@@ -148,24 +149,9 @@ const BookDetail = () => {
     }
   };
 
-  const handleSelectBookCover = async (data: CoverCandidate) => {
-    setSelectedBookCover(data);
-  };
-
-  const handleSetCover = async () => {
-    if (!selectedBookCover) {
-      Alert(`Please, select book cover`, <ErrorIcon />);
-      return;
-    }
-    try {
-      const res = await adminApi.uploadImageNew(selectedBookCover.formData);
-      Alert(`Book cover changed`, <CheckMark />);
-      setBook({ ...book, cover_url: res.data.url });
-      setCoverCandidates([]);
-    } catch (e) {
-      Alert(`Error loading book cover image: ${e}`, <ErrorIcon />);
-    }
-  };
+  useEffect(() => {
+    console.log(book);
+  }, [book]);
 
   return (
     <div className={s.detail_container}>
@@ -192,6 +178,8 @@ const BookDetail = () => {
               onChange={handleChange}
             />
 
+            {book && <BookMetadataSelector book={book} setBook={setBook} />}
+
             <div className={s.two_items}>
               <AdminField
                 type="input"
@@ -201,6 +189,17 @@ const BookDetail = () => {
                 value={book.publication_date ? book.publication_date : ""}
                 onChange={handleChange}
               />
+              <AdminField
+                type="input"
+                id="page_count"
+                placeholder={"Enter page count..."}
+                label={"Page count"}
+                value={book.page_count ? book.page_count : ""}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div className={s.two_items}>
               <MultiSelect
                 isSearchable={false}
                 id={"language"}
@@ -213,22 +212,6 @@ const BookDetail = () => {
                 valueKey="value"
                 labelKey="label"
               />
-            </div>
-
-            <div className={s.two_items}>
-              {authors && (
-                <MultiSelect
-                  id={"author_ids"}
-                  options={authors}
-                  placeholder={"Choose an author"}
-                  label={t("admin.landings.authors")}
-                  selectedValue={book.author_ids}
-                  isMultiple={true}
-                  onChange={handleChange}
-                  valueKey="id"
-                  labelKey="name"
-                />
-              )}
               {tags && (
                 <MultiSelect
                   id={"tag_ids"}
@@ -244,39 +227,48 @@ const BookDetail = () => {
               )}
             </div>
 
+            <div className={s.two_items}>
+              {publishers && (
+                <MultiSelect
+                  id={"publishers"}
+                  options={publishers}
+                  placeholder={"Choose publishers"}
+                  label={"Publishers"}
+                  selectedValue={book.publishers}
+                  isMultiple={true}
+                  onChange={handleChange}
+                  valueKey="id"
+                  labelKey="name"
+                />
+              )}
+              {authors && (
+                <MultiSelect
+                  id={"author_ids"}
+                  options={authors}
+                  placeholder={"Choose an author"}
+                  label={t("admin.landings.authors")}
+                  selectedValue={book.author_ids}
+                  isMultiple={true}
+                  onChange={handleChange}
+                  valueKey="id"
+                  labelKey="name"
+                />
+              )}
+            </div>
+
             <PdfUploader
               itemId={book.id}
               files={book.files}
               getCovers={handleGetBookCoverCandidates}
             />
             {coverCandidates.length > 0 && (
-              <ModalWrapper
-                title={"Select book cover"}
-                cutoutPosition={"none"}
-                isOpen={coverCandidates.length > 0}
-                onClose={() => setCoverCandidates([])}
-              >
-                <div className={s.candidates_modal}>
-                  <div className={s.images}>
-                    {coverCandidates.map((c, i: number) => (
-                      <img
-                        className={`${c.id === selectedBookCover?.id ? s.active : ""}`}
-                        onClick={() => handleSelectBookCover(c)}
-                        key={i}
-                        src={c.url}
-                        alt=""
-                      />
-                    ))}
-                  </div>
-
-                  <PrettyButton
-                    text={"Set cover img"}
-                    onClick={handleSetCover}
-                  />
-                </div>
-              </ModalWrapper>
+              <CoverCandidatesSelector
+                setCoverCandidates={setCoverCandidates}
+                coverCandidates={coverCandidates}
+                book={book}
+                setBook={setBook}
+              />
             )}
-
             <PhotoUploader
               onUpload={handleUploadPhoto}
               url={book.cover_url}

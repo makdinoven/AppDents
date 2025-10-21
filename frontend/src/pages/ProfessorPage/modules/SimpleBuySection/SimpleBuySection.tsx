@@ -3,9 +3,9 @@ import {
   PaymentDataModeType,
   usePaymentPageHandler,
 } from "../../../../common/hooks/usePaymentPageHandler.ts";
-import { BooksIcon, CoursesIcon } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
 import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
+import BuySectionIcons from "../BuySectionIcons/BuySectionIcons.tsx";
 
 const SimpleBuySection = ({
   paymentMode,
@@ -25,25 +25,13 @@ const SimpleBuySection = ({
     openPaymentModal(undefined, undefined, paymentDataMode);
   };
 
-  const modeIcons = {
-    COURSES: [<CoursesIcon />],
-    BOOKS: [<BooksIcon />],
-    BOTH: [<CoursesIcon />, <BooksIcon />],
-  };
-
   return (
     <section
       onClick={() => handleOpenModal(paymentMode)}
       className={`${s.buy_section} ${s[paymentMode.toLowerCase()]}`}
     >
       {/*<Clock className={s.clock_icon} />*/}
-      <div className={s.icons}>
-        {modeIcons[paymentMode].map((icon) => (
-          <div className={`${s.icon} ${s[paymentMode.toLowerCase()]}`}>
-            {icon}
-          </div>
-        ))}
-      </div>
+      <BuySectionIcons paymentMode={paymentMode} />
       <p className={s.professor_access}>
         <Trans i18nKey={`professor.accessToAll.${paymentMode.toLowerCase()}`} />
       </p>

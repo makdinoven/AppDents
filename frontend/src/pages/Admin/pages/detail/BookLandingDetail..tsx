@@ -17,7 +17,6 @@ const BookLandingDetail = () => {
   const [loading, setLoading] = useState(false);
   const [bookLanding, setBookLanding] = useState<any>(null);
   const [books, setBooks] = useState<any | null>(null);
-  const [authors, setAuthors] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,14 +28,12 @@ const BookLandingDetail = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [landingRes, authorsRes, booksRes] = await Promise.all([
+      const [landingRes, booksRes] = await Promise.all([
         adminApi.getBookLanding(bookId),
-        adminApi.getAuthorsList({ size: 100000 }),
         adminApi.getBooksList({ size: 100000 }),
       ]);
       setBooks(booksRes.data.items);
       setBookLanding(landingRes.data);
-      setAuthors(authorsRes.data.items);
     } catch (error: any) {
       Alert(
         `Error fetching landing data, error message: ${error.message}`,
@@ -125,20 +122,6 @@ const BookLandingDetail = () => {
             </div>
 
             <div className={s.two_items}>
-              {authors && (
-                <MultiSelect
-                  id={"authors"}
-                  options={authors}
-                  placeholder={"Choose an author"}
-                  label={t("admin.landings.authors")}
-                  selectedValue={bookLanding.authors}
-                  isMultiple={true}
-                  onChange={handleChange}
-                  valueKey="id"
-                  labelKey="name"
-                />
-              )}
-
               <MultiSelect
                 isSearchable={false}
                 id={"language"}
@@ -151,9 +134,6 @@ const BookLandingDetail = () => {
                 valueKey="value"
                 labelKey="label"
               />
-            </div>
-
-            <div className={s.two_items}>
               <MultiSelect
                 id={"book_ids"}
                 options={books}

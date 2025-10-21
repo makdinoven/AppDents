@@ -68,7 +68,6 @@ const PdfUploader = ({
       }
 
       const finalizeRes = await adminApi.finalizeBookUploading(itemId, { key });
-      getCovers();
       fetchStatuses();
       setBookUrl(finalizeRes.data.pdf_cdn_url);
     } catch (e) {
@@ -92,7 +91,10 @@ const PdfUploader = ({
 
   useEffect(() => {
     if (!previewStatus && !formatStatus) return;
-    if (previewStatus === "success" && formatStatus === "success") return;
+    if (previewStatus === "success" && formatStatus === "success") {
+      getCovers();
+      return;
+    }
     if (previewStatus === "failed" || formatStatus === "failed") return;
 
     const interval = setInterval(fetchStatuses, 3000);
@@ -101,6 +103,29 @@ const PdfUploader = ({
 
   return (
     <div className={s.pdf_uploader_container}>
+      <div className={s.uploader_header}>
+        <h3>Book Uploader</h3>
+
+        {(previewStatus || formatStatus) && (
+          <div className={s.statuses}>
+            {previewStatus && (
+              <p className={s[previewStatus]}>
+                {previewStatus === "success"
+                  ? "Preview generated"
+                  : `Generating preview... ${previewStatus}`}
+              </p>
+            )}
+            {formatStatus && (
+              <p className={s[formatStatus]}>
+                {formatStatus === "success"
+                  ? "Formats generated"
+                  : `Generating formats... ${formatStatus}`}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       {files && (
         <ul className={s.files_list}>
           {files.map((file) => (
@@ -137,25 +162,6 @@ const PdfUploader = ({
           />
         )}
       </div>
-
-      {(previewStatus || formatStatus) && (
-        <div className={s.statuses}>
-          {previewStatus && (
-            <p className={s[previewStatus]}>
-              {previewStatus === "success"
-                ? "Preview generated"
-                : `Generating preview... ${previewStatus}`}
-            </p>
-          )}
-          {formatStatus && (
-            <p className={s[formatStatus]}>
-              {formatStatus === "success"
-                ? "Formats generated"
-                : `Generating formats... ${formatStatus}`}
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 };
