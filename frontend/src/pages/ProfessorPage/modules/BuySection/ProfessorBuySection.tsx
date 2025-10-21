@@ -75,10 +75,18 @@ const ProfessorBuySection = ({
     },
   ];
 
+  const openModal = (mode: PaymentDataModeType) => {
+    handleOpenModal(mode);
+  };
+
   return (
     <div className={s.buy_section}>
       {buyOptions.map(({ mode, btn_label, className, prices, label }) => (
-        <div key={mode} className={`${s.buy_variant} ${className}`}>
+        <div
+          key={mode}
+          onClick={() => openModal(mode)}
+          className={`${s.buy_variant} ${className}`}
+        >
           <BuySectionIcons paymentMode={mode} />
 
           <div className={s.top_section}>
@@ -114,7 +122,7 @@ const ProfessorBuySection = ({
             {/*  ))}*/}
             {/*</ul>*/}
 
-            <button className={s.buy_btn} onClick={() => handleOpenModal(mode)}>
+            <button className={s.buy_btn} onClick={() => openModal(mode)}>
               {btn_label}
             </button>
             <div className={s.savings}>

@@ -4,7 +4,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
 import { useEffect, useRef } from "react";
 import { Path } from "../../routes/routes.ts";
-import { CoursesIcon, PoweredByStripeLogo, Shield } from "../../assets/icons";
+import {
+  BooksIcon,
+  CoursesIcon,
+  PoweredByStripeLogo,
+  Shield,
+} from "../../assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
@@ -45,6 +50,27 @@ const PaymentPage = () => {
     location.pathname.includes(Path.landing) &&
     !location.pathname.includes(Path.landingClient) &&
     !location.pathname.includes(Path.courses);
+
+  let paymentModeIcon;
+
+  switch (paymentModalMode) {
+    case "COURSES":
+      paymentModeIcon = <CoursesIcon />;
+      break;
+    case "BOOKS":
+      paymentModeIcon = <BooksIcon />;
+      break;
+    case "BOTH":
+      paymentModeIcon = (
+        <div className={s.both_icons}>
+          <BooksIcon />
+          <CoursesIcon />
+        </div>
+      );
+      break;
+    default:
+      paymentModeIcon = <CoursesIcon />;
+  }
 
   const {
     loading,
@@ -95,7 +121,8 @@ const PaymentPage = () => {
         />
       </h2>
       <div className={s.courses_icon_wrapper}>
-        <CoursesIcon />
+        {paymentModeIcon}
+
         {paymentItemsLength > 0 && (
           <span className={s.circle}>{paymentItemsLength}</span>
         )}
