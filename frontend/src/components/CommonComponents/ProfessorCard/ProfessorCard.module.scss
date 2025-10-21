@@ -111,6 +111,13 @@
   width: fit-content;
 }
 
+.counts {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
 .courses_count {
   background-color: $primary;
 }
@@ -167,16 +174,35 @@
     gap: 5px;
   }
 
+  .counts {
+    justify-content: flex-start;
+  }
+
+  .books_count,
+  .courses_count {
+    background-color: unset;
+    padding: unset;
+  }
+
+  .books_count {
+    color: $secondary-lighter;
+  }
+
+  .courses_count {
+    color: $primary;
+  }
+
   .photo_wrapper {
-    width: 60px;
-    height: 60px;
-    border-radius: 15px;
+    width: 61px;
+    height: 61px;
+    border-radius: 50%;
+    outline: 1px solid $secondary-lighter;
+    outline-offset: 1px;
   }
 
   .description_wrapper {
     justify-content: flex-end;
     gap: 3px;
-    padding-bottom: 20px;
   }
 
   .description {
@@ -185,16 +211,24 @@
 
   .professor_link {
     position: absolute;
-    bottom: 0;
+    top: -24px;
     right: 0;
     margin-right: 0;
-  }
+    background-color: $secondary-lighter;
+    padding: 2.5px 8px;
+    color: $text-color;
+    border-radius: 10px;
+    margin-bottom: 0;
 
-  .courses_count {
-    order: 1;
-    padding: 0 5px;
-    border-radius: 5px;
-    align-self: flex-start !important;
+    svg {
+      path {
+        fill: $text-color;
+      }
+    }
+
+    &::after {
+      display: none;
+    }
   }
 
   .tags {
@@ -204,7 +238,8 @@
   .card_header {
     outline: none;
     width: 100%;
-    padding: 0;
+    max-width: 260px;
+    padding: 0 0 0 5px;
     justify-content: flex-start;
 
     &::before {

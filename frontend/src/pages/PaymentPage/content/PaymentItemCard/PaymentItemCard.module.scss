@@ -23,8 +23,8 @@
       border-radius: unset;
       border: unset;
       aspect-ratio: unset;
-      max-width: 70px;
-      max-height: 100px;
+      width: 70px;
+      height: 100px;
     }
 
     .course_prices {
@@ -134,8 +134,8 @@
 
     &.book {
       .img_wrapper {
-        max-width: 40px;
-        max-height: 60px;
+        width: 40px;
+        height: 60px;
       }
     }
   }

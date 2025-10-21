@@ -1,10 +1,18 @@
 .pdf_uploader_container {
   position: relative;
-  padding: 40px 10px 10px;
+  padding: 15px;
   border: 1px solid $hover-color;
-  border-radius: 20px;
+  border-radius: 30px;
   @include flex-column;
   gap: 20px;
+}
+
+.uploader_header {
+  display: flex;
+  justify-content: space-between;
+  h3 {
+    @include clamped-p2;
+  }
 }
 
 .input_wrapper {
@@ -21,16 +29,16 @@
 }
 
 .statuses {
-  position: absolute;
-  top: 5px;
-  right: 5px;
   display: flex;
   gap: 5px;
 
   p {
     @include transition();
-    padding: 1px 10px;
-    border-radius: 15px;
+    padding: 0 10px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     @include clamped-p4;
     color: $background-color;
 
@@ -142,6 +150,13 @@
 @media (max-width: $mobile-breakpoint) {
   .files_list {
     gap: 5px;
+  }
+
+  .statuses {
+    flex-direction: column;
+    p {
+      padding: 2px 7px;
+    }
   }
 
   .custom_button {

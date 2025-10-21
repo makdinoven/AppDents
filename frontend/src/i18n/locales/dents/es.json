@@ -339,6 +339,10 @@
       "both": "Acceso de por vida a todos los libros y cursos!"
     },
     "professorsCourses": "Cursos de este profesor",
+    "professorsBooks": "Libros de este profesor",
+    "allCourses": "Todos los cursos",
+    "allBooks": "Todos los libros",
+    "allCoursesAndBooks": "Todos los cursos y libros",
     "professors.title": "Nuestros profesores",
     "search": "Buscar profesores...",
     "found": "Profesores encontrados: {{count}}",

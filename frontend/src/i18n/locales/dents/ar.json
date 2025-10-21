@@ -346,6 +346,10 @@
       "both": "وصول مدى الحياة إلى جميع الكتب والدورات!"
     },
     "professorsCourses": "دورات هذا المحاضر",
+    "professorsBooks": "كتب هذا الأستاذ",
+    "allCourses": "جميع الدورات",
+    "allBooks": "جميع الكتب",
+    "allCoursesAndBooks": "جميع الدورات والكتب",
     "professors.title": "أساتذتنا",
     "search": "ابحث عن الأساتذة...",
     "found": "تم العثور على أساتذة: {{count}}",

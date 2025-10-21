@@ -1,0 +1,79 @@
+.icons {
+  height: 70px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -35px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-color: inherit;
+
+  .icon {
+    height: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: $background-color-04;
+    border-radius: 50%;
+    border: 1px solid;
+    border-color: inherit;
+    backdrop-filter: blur(1px);
+
+    &.courses {
+      padding-left: 15px;
+    }
+
+    &.both:first-child {
+      padding-left: 15px;
+    }
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 45px;
+    height: 45px;
+
+    path {
+      stroke: $primary;
+      stroke-width: 1.5px;
+    }
+  }
+
+  &.books {
+    path {
+      stroke: $secondary-lighter;
+    }
+  }
+
+  &.both {
+    path {
+      stroke: $green;
+    }
+  }
+
+  @media (max-width: $mobile-breakpoint) {
+    & {
+      top: -25px;
+      height: 50px;
+
+      .icon {
+        width: 50px;
+        padding: 5px;
+
+        &.courses {
+          padding-left: 5px;
+        }
+
+        &.both:first-child {
+          padding-left: 5px;
+        }
+      }
+
+      svg {
+        height: 25px;
+      }
+    }
+  }
+}

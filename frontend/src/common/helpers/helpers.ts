@@ -91,6 +91,15 @@ export const calculateDiscount = (oldPrice: number, newPrice: number) => {
   return Math.round(((oldPrice - newPrice) / oldPrice) * 100);
 };
 
+export const getDiscountPercent = (
+  oldPrice: number,
+  newPrice: number,
+): number => {
+  if (!oldPrice || oldPrice <= 0 || newPrice >= oldPrice) return 0;
+  const discount = ((oldPrice - newPrice) / oldPrice) * 100;
+  return Math.round(discount);
+};
+
 export const capitalizeText = (text: string) => {
   return text
     .split(" ")

@@ -419,4 +419,26 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getPublishers() {
+    return instance.get("book-metadata/publishers", {
+      headers: getAuthHeaders(),
+    });
+  },
+  extractBookMetadata(id: number) {
+    return instance.get(`book-metadata/${id}/extract-metadata`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  applyBookMetadata(
+    id: number,
+    data: {
+      page_count: number;
+      publisher_name?: string;
+      publication_year?: number;
+    },
+  ) {
+    return instance.post(`book-metadata/${id}/apply-metadata`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
 };
