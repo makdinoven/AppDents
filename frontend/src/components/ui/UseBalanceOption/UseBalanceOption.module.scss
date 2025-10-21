@@ -40,7 +40,6 @@
     }
   }
 
-
   span {
     color: $secondary-lighter;
   }
@@ -58,6 +57,8 @@
 
 @media (max-width: $mobile-breakpoint) {
   .balance_container {
+    flex-wrap: wrap-reverse;
+    justify-content: flex-end;
     gap: 5px;
     font-size: 12px;
   }

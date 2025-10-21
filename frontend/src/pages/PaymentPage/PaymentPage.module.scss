@@ -56,6 +56,19 @@
     }
   }
 
+  .both_icons {
+    height: 35px;
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    bottom: 0;
+    left: -45px;
+  }
+
   .courses_icon_wrapper {
     display: flex;
     width: 42px;
@@ -238,6 +251,10 @@
     flex-direction: column;
     gap: 5px;
   }
+
+  .total_container {
+    padding: 0;
+  }
 }
 
 @media (max-width: $mobile-breakpoint) {
@@ -271,6 +288,11 @@
         font-size: 12px;
       }
     }
+
+    .both_icons {
+      height: 25px;
+      left: -30px;
+    }
   }
 
   .modal_body {
@@ -297,10 +319,6 @@
     &::after {
       border-bottom-right-radius: 20px;
     }
-  }
-
-  .total_container {
-    padding: 0;
   }
 
   .total_text {

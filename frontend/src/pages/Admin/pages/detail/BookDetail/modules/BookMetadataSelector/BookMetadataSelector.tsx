@@ -97,6 +97,44 @@ const BookMetadataSelector = ({
     }
   };
 
+  const renderSelector = <T extends string | number>({
+    title,
+    candidates,
+    selected,
+    onSelect,
+  }: {
+    title: string;
+    candidates: { value: T; source: string; confidence: string }[];
+    selected: { value: T; source: string } | null;
+    onSelect: (candidate: { value: T; source: string }) => void;
+  }) => {
+    if (!candidates.length) return null;
+
+    return (
+      <div className={s.selector_container}>
+        <h4>{title}</h4>
+        <div className={s.buttons}>
+          {candidates.map((item, i) => (
+            <button
+              key={i}
+              className={
+                selected?.value === item.value &&
+                selected?.source === item.source
+                  ? s.active
+                  : ""
+              }
+              onClick={() =>
+                onSelect({ value: item.value, source: item.source })
+              }
+            >
+              {item.value}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <PrettyButton
@@ -114,49 +152,19 @@ const BookMetadataSelector = ({
           onClose={() => setBookMetadata(null)}
         >
           <div className={s.book_metadata_modal}>
-            {useDateCandidates && (
-              <div className={s.selector_container}>
-                <h4>Select publication year</h4>
-                <div className={s.buttons}>
-                  {bookMetadata!.date_candidates.map((year, i) => (
-                    <button
-                      key={i}
-                      className={`${selectedPublicationYear?.value === year.value && selectedPublicationYear?.source === year.source ? s.active : ""}`}
-                      onClick={() =>
-                        setSelectedPublicationYear({
-                          value: year.value,
-                          source: year.source,
-                        })
-                      }
-                    >
-                      {year.value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {renderSelector({
+              title: "Select publication year",
+              candidates: bookMetadata!.date_candidates,
+              selected: selectedPublicationYear,
+              onSelect: setSelectedPublicationYear,
+            })}
 
-            {usePublisherCandidates && (
-              <div className={s.selector_container}>
-                <h4>Select publisher</h4>
-                <div className={s.buttons}>
-                  {bookMetadata!.publisher_candidates.map((publisher, i) => (
-                    <button
-                      key={i}
-                      className={`${selectedPublisher?.value === publisher.value && selectedPublisher?.source === publisher.source ? s.active : ""}`}
-                      onClick={() =>
-                        setSelectedPublisher({
-                          value: publisher.value,
-                          source: publisher.source,
-                        })
-                      }
-                    >
-                      {publisher.value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {renderSelector({
+              title: "Select publisher",
+              candidates: bookMetadata!.publisher_candidates,
+              selected: selectedPublisher,
+              onSelect: setSelectedPublisher,
+            })}
 
             <PrettyButton
               loading={applyLoading}
