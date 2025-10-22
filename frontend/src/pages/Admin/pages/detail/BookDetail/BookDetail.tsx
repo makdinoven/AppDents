@@ -174,7 +174,9 @@ const BookDetail = () => {
               onChange={handleChange}
             />
 
-            {book && <BookMetadataSelector book={book} setBook={setBook} />}
+            {book.files.length > 0 && (
+              <BookMetadataSelector book={book} setBook={setBook} />
+            )}
 
             <div className={s.two_items}>
               <AdminField
@@ -251,13 +253,12 @@ const BookDetail = () => {
                 />
               )}
             </div>
-            {book.files.length > 0 && (
-              <BookUploader
-                itemId={book.id}
-                files={book.files}
-                getCovers={handleGetBookCoverCandidates}
-              />
-            )}
+
+            <BookUploader
+              itemId={book.id}
+              files={book.files}
+              getCovers={handleGetBookCoverCandidates}
+            />
 
             {coverCandidates.length > 0 && (
               <CoverCandidatesSelector
