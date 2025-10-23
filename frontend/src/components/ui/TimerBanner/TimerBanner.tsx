@@ -18,13 +18,14 @@ const TimerBanner = () => {
   const [discount, setDiscount] = useState(0);
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.old_price,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.newPrice,
+    (state: AppRootStateType) => state.payment.data?.old_price,
   );
   const basePath = getBasePath(location.pathname);
   const isWebinar = basePath === Path.webinarLanding;
+  const isBook = basePath === "book";
 
   useEffect(() => {
     if (oldPrice && newPrice) {
@@ -62,6 +63,7 @@ const TimerBanner = () => {
         openPaymentModal(
           undefined,
           getPaymentType(undefined, undefined, isWebinar),
+          isBook ? "BOOKS" : "COURSES",
         )
       }
       className={`${s.banner} ${isSticky ? s.sticky : ""} ${isHiding ? s.hiding : ""}`}

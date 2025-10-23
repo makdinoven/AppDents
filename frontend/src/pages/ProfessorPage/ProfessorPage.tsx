@@ -192,7 +192,7 @@ const ProfessorPage = () => {
         )}
         {professor && (
           <>
-            {professor.landings.length > 0 &&
+            {professor.landings.length > 0 ? (
               professor.book_landings.length > 0 && (
                 <ProfessorBuySection
                   setPaymentDataCustom={setPaymentDataCustom}
@@ -211,7 +211,15 @@ const ProfessorPage = () => {
                     },
                   }}
                 />
-              )}
+              )
+            ) : (
+              <SimpleBuySection
+                paymentMode={"COURSES"}
+                setPaymentDataCustom={setPaymentDataCustom}
+                new_price={professor.total_new_price}
+                old_price={professor.total_old_price}
+              />
+            )}
 
             <div className={s.professor_cards}>
               <SectionHeader name={"professor.professorsCourses"} />
@@ -233,25 +241,30 @@ const ProfessorPage = () => {
               old_price={professor.total_old_price}
             />
 
-            <div className={s.professor_cards}>
-              <SectionHeader name={"professor.professorsBooks"} />
-              <CardsList
-                productCardFlags={{ isClient: true }}
-                cardType={"book"}
-                filter={"all"}
-                loading={false}
-                cards={professor.book_landings}
-                showSeeMore={false}
-                showEndOfList={false}
-              />
-            </div>
+            {professor.landings.length > 0 && (
+              <>
+                <div className={s.professor_cards}>
+                  <SectionHeader name={"professor.professorsBooks"} />
+                  <CardsList
+                    productCardFlags={{ isClient: true }}
+                    cardType={"book"}
+                    filter={"all"}
+                    loading={false}
+                    cards={professor.book_landings}
+                    showSeeMore={false}
+                    showEndOfList={false}
+                  />
+                </div>
 
-            <SimpleBuySection
-              paymentMode={"BOOKS"}
-              setPaymentDataCustom={setPaymentDataCustom}
-              new_price={professor.total_books_price}
-              old_price={professor.total_books_old_price}
-            />
+                <SimpleBuySection
+                  paymentMode={"BOOKS"}
+                  setPaymentDataCustom={setPaymentDataCustom}
+                  new_price={professor.total_books_price}
+                  old_price={professor.total_books_old_price}
+                />
+              </>
+            )}
+
             <ProductsSection
               productCardFlags={{ isClient: true, isOffer: true }}
               showSort={true}

@@ -174,10 +174,6 @@ const BookDetail = () => {
               onChange={handleChange}
             />
 
-            {book.files.length > 0 && (
-              <BookMetadataSelector book={book} setBook={setBook} />
-            )}
-
             <div className={s.two_items}>
               <AdminField
                 type="input"
@@ -228,11 +224,11 @@ const BookDetail = () => {
             <div className={s.two_items}>
               {publishers && (
                 <MultiSelect
-                  id={"publishers"}
+                  id={"publisher_ids"}
                   options={publishers}
                   placeholder={"Choose publishers"}
                   label={"Publishers"}
-                  selectedValue={book.publishers}
+                  selectedValue={book.publisher_ids}
                   isMultiple={true}
                   onChange={handleChange}
                   valueKey="id"
@@ -253,6 +249,10 @@ const BookDetail = () => {
                 />
               )}
             </div>
+
+            {book.files.length > 0 && (
+              <BookMetadataSelector book={book} setBook={setBook} />
+            )}
 
             <BookUploader
               itemId={book.id}

@@ -22,10 +22,10 @@ const PromoHeaderContent = () => {
   const location = useLocation();
   const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.old_price,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.newPrice,
+    (state: AppRootStateType) => state.payment.data?.new_price,
   );
   const basePath = getBasePath(location.pathname);
   const isWebinar = basePath === Path.webinarLanding;

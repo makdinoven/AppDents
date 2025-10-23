@@ -3,8 +3,20 @@ import NavButton from "../modules/NavButton/NavButton.tsx";
 import BurgerMenu from "../../ui/BurgerMenu/BurgerMenu.tsx";
 import { scrollToElementById } from "../../../common/helpers/helpers.ts";
 import { BooksIcon, ProfessorsIcon, QuestionMark } from "../../../assets/icons";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import { Trans } from "react-i18next";
+import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandler.ts";
 
 const PromoBookHeaderContent = () => {
+  const oldPrice = useSelector(
+    (state: AppRootStateType) => state.payment.data?.old_price,
+  );
+  const newPrice = useSelector(
+    (state: AppRootStateType) => state.payment.data?.new_price,
+  );
+  const { openPaymentModal } = usePaymentPageHandler();
+
   const NAV_BUTTONS_PROMOTE = [
     {
       icon: BooksIcon,
@@ -35,21 +47,24 @@ const PromoBookHeaderContent = () => {
         ))}
       </div>
       <BurgerMenu buttons={NAV_BUTTONS_PROMOTE} />
-      {/*{!!oldPrice && !!newPrice && (*/}
-      {/*  <button onClick={() => dispatch(openModal())} className={s.buy_btn}>*/}
-      {/*    <Trans*/}
-      {/*      i18nKey={"landing.buyFor"}*/}
-      {/*      values={{*/}
-      {/*        old_price: oldPrice,*/}
-      {/*        new_price: newPrice,*/}
-      {/*      }}*/}
-      {/*      components={{*/}
-      {/*        1: <span className="crossed-15" />,*/}
-      {/*        2: <span className="highlight" />,*/}
-      {/*      }}*/}
-      {/*    />*/}
-      {/*  </button>*/}
-      {/*)}*/}
+      {!!oldPrice && !!newPrice && (
+        <button
+          onClick={() => openPaymentModal(undefined, undefined, "BOOKS")}
+          className={s.buy_btn}
+        >
+          <Trans
+            i18nKey={"landing.buyFor"}
+            values={{
+              old_price: oldPrice,
+              new_price: newPrice,
+            }}
+            components={{
+              1: <span className="crossed-15" />,
+              2: <span className="highlight" />,
+            }}
+          />
+        </button>
+      )}
     </>
   );
 };

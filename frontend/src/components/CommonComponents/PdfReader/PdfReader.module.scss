@@ -128,6 +128,18 @@
       width: 100%;
       height: 100%;
 
+      &.close_icon {
+        path {
+          fill: $accent;
+        }
+      }
+
+      circle {
+        @include transition();
+        stroke: $accent;
+        stroke-width: 2.5;
+      }
+
       path {
         stroke: $accent;
         stroke-width: 1.5px;
@@ -138,6 +150,16 @@
     @media (hover: hover) {
       &:hover {
         svg {
+          circle {
+            stroke: $primary;
+          }
+
+          &.close_icon {
+            path {
+              fill: $primary;
+            }
+          }
+
           path {
             stroke: $primary;
           }

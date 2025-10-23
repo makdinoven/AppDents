@@ -175,7 +175,12 @@ export const denormalizeLessons = (lessons: any) => {
 };
 
 export const isPromotionLanding = (pathname: string): boolean => {
-  return pathname === Path.landing || pathname.startsWith(`${Path.landing}/`);
+  return (
+    pathname === Path.landing ||
+    pathname.startsWith(`${Path.landing}/`) ||
+    pathname === Path.bookLanding ||
+    pathname.startsWith(`${Path.bookLanding}/`)
+  );
 };
 
 export const isVideoLanding = (pathname: string): boolean => {
