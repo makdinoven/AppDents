@@ -30,10 +30,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 25px;
+
+  &.main {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+  }
 }
 
 .nav_side {
-  @include flex-center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   gap: 20px;
 }
 
@@ -41,7 +48,7 @@
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: inherit;
 }
 
@@ -84,6 +91,7 @@
 }
 
 .login_btn {
+  white-space: nowrap;
   color: $text-color;
   border-radius: 20px;
   font-size: 20px;
@@ -218,6 +226,10 @@
     position: relative;
     justify-content: space-between;
     gap: 10px;
+
+    &.main {
+      display: flex;
+    }
   }
 }
 
