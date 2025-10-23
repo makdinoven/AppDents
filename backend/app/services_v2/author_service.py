@@ -289,10 +289,22 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
 
     # 6) Карточки книжных лендингов
     def _landing_authors(bl: BookLanding):
-        return [{"id": a.id, "name": a.name, "photo": a.photo or ""} for a in (b.authors or [])]
+        # собираем авторов из всех книг лендинга
+        authors_map = {}
+        for book in (bl.books or []):
+            for a in (book.authors or []):
+                if a.id not in authors_map:
+                    authors_map[a.id] = {"id": a.id, "name": a.name, "photo": a.photo or ""}
+        return list(authors_map.values())
 
     def _landing_tags(bl: BookLanding):
-        return [{"id": t.id, "name": t.name, "slug": getattr(t, "slug", None)} for t in (b.tags or [])]
+        # собираем теги из всех книг лендинга
+        tags_map = {}
+        for book in (bl.books or []):
+            for t in (book.tags or []):
+                if t.id not in tags_map:
+                    tags_map[t.id] = {"id": t.id, "name": t.name, "slug": getattr(t, "slug", None)}
+        return list(tags_map.values())
 
     # если у BookLanding есть галерея — адаптируй под свою модель;
     # здесь предполагается, что у тебя есть bl.gallery (список объектов/диктов)
