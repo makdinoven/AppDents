@@ -4,9 +4,10 @@ import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 
 interface PdfReaderWrapperProps {
-  parentId: string;
+  parentId?: string;
   url: string;
   isSlideActive: boolean;
+  fromProfile?: boolean;
 }
 
 export const PDF_READER_FULLSCREEN_KEY = "reader_fullscreen";
@@ -15,6 +16,7 @@ const PdfReaderWrapper = ({
   parentId,
   url,
   isSlideActive,
+  fromProfile,
 }: PdfReaderWrapperProps) => {
   const [currentPage, setCurrentPage] = useState<string>("1");
   const [searchParams, setSearchParams] = useSearchParams();
@@ -28,13 +30,16 @@ const PdfReaderWrapper = ({
     isSlideActive && (
       <>
         <PdfReaderFullScreen
+          usePortal={!fromProfile}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           parentId={parentId}
           url={url}
+          fromProfile={fromProfile}
         />
 
         <PdfReader
+          fromProfile={fromProfile}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
           url={url}
