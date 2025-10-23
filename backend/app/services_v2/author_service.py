@@ -405,7 +405,10 @@ def get_author_full_detail(db: Session, author_id: int) -> dict | None:
         # old (без скидок)
         "total_old_price": round(total_old_price_courses, 2),
         "total_books_old_price": total_books_old_price,
-        "total_courses_books_old_price": round(total_books_old_price + total_old_price_courses,2),
+        "total_courses_books_old_price": (
+            round(total_books_old_price + total_old_price_courses, 2) 
+            if total_books_old_price is not None else None
+        ),
         "landing_count": len(landings_data),
         "tags": sorted(all_tags),
     }
