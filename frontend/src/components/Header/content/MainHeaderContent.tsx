@@ -25,6 +25,7 @@ const MainHeaderContent = () => {
   );
   const accessToken = localStorage.getItem(LS_TOKEN_KEY);
   const screenWidth = useScreenWidth();
+  const showLabels = !(screenWidth > 768 && screenWidth < 1045);
   const quantity = useSelector(
     (state: AppRootStateType) => state.cart.quantity,
   );
@@ -76,7 +77,7 @@ const MainHeaderContent = () => {
               <NavButton
                 key={btn.text}
                 icon={btn.icon}
-                // text={btn.text}
+                text={showLabels ? btn.text : ""}
                 quantity={quantity}
                 onClick={() =>
                   navigate(Path.cart, {
@@ -92,7 +93,7 @@ const MainHeaderContent = () => {
             <NavButton
               key={btn.text}
               icon={btn.icon}
-              text={btn.text}
+              text={showLabels ? btn.text : ""}
               link={btn.link}
               isActive={location.pathname === btn.link}
             />

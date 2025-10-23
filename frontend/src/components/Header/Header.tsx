@@ -37,7 +37,7 @@ const Header = () => {
       {showTimer && <TimerBanner />}
       <header className={`${s.header} ${isScrolled ? s.scrolled : ""}`}>
         <div className={`${s.content} ${isVideo ? s.video : ""}`}>
-          <nav className={s.nav}>
+          <nav className={`${s.nav} ${isPromotion ? "" : s.main}`}>
             {!isVideo && (
               <Link
                 className={`${s.logo} ${isPromotion ? s.logoPromo : ""}`}
