@@ -274,6 +274,8 @@ class BookLandingCardResponse(BaseModel):
     language: str             # регион/язык
     old_price: Optional[str] = None
     new_price: Optional[str] = None
+    total_pages: Optional[int] = None  # сумма страниц всех книг лендинга
+    publishers: List[Dict[str, Any]] = []  # издатели всех книг лендинга
     authors: List[AuthorCardResponse] = []
     tags: List[TagResponse] = []
     first_tag: Optional[str] = None
