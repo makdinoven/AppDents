@@ -21,6 +21,7 @@ from ..models.models_v2 import (
     Tag,
     BookLanding,
     BookLandingImage,
+    Landing,
 )
 from ..schemas_v2.book import (
     BookCreate,
@@ -323,8 +324,12 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     landing = (
         db.query(BookLanding)
         .options(
-            selectinload(BookLanding.books).selectinload(Book.authors),
+            selectinload(BookLanding.books).selectinload(Book.authors)
+                .selectinload(Author.landings).selectinload(Landing.courses),
+            selectinload(BookLanding.books).selectinload(Book.authors)
+                .selectinload(Author.books).selectinload(Book.landings),
             selectinload(BookLanding.books).selectinload(Book.tags),
+            selectinload(BookLanding.books).selectinload(Book.publishers),
         )
         .filter(BookLanding.page_name == page_name, BookLanding.is_hidden.is_(False))
         .first()
@@ -350,6 +355,9 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         for g in gallery_rows
     ]
 
+    # Подсчёт общего количества страниц
+    total_pages = sum(getattr(b, "page_count", 0) or 0 for b in landing.books)
+    
     # Книги (только превью)
     books = [
         {
@@ -359,7 +367,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
             "preview_pdf_url": preview_pdf_url_for_book(b),
             "publication_date": (b.publication_date if b.publication_date else None),
             "description": b.description,
-            "page_count": getattr(b, "page_count", None),
+            "publishers": [{"id": p.id, "name": p.name} for p in (b.publishers or [])],
         }
         for b in landing.books
     ]
@@ -367,27 +375,79 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
     # Теги лендинга = объединение тегов всех книг (уникально)
     tags: list[str] = list({t.name for b in landing.books for t in b.tags})
 
-    # Авторы с описанием и «их» тегами (теги автора = теги книг этого автора на данном лендинге)
-    authors_map: dict[int, dict] = {}
-    author_tags_map: dict[int, dict[int, dict]] = {}
+    # Авторы с полной информацией (как в детальном роуте)
+    def safe_price(val) -> float:
+        try:
+            return float(val) if val is not None else float("inf")
+        except (ValueError, TypeError):
+            return float("inf")
+    
+    authors_map: dict[int, Author] = {}
+    author_tags_set: dict[int, set[str]] = {}  # теги автора из его курсов и книг
+    
     for b in landing.books:
         for a in b.authors:
             if a.id not in authors_map:
-                authors_map[a.id] = {
-                    "id": a.id,
-                    "name": a.name,
-                    "photo": a.photo,
-                    "description": getattr(a, "description", None),
-                }
-                author_tags_map[a.id] = {}
-            for t in b.tags:
-                author_tags_map[a.id][t.id] = {"id": t.id, "name": t.name}
+                authors_map[a.id] = a
+                author_tags_set[a.id] = set()
+            # собираем теги из книг автора
+            for book in (a.books or []):
+                for tag in (book.tags or []):
+                    author_tags_set[a.id].add(tag.name)
+            # собираем теги из курсов автора
+            for landing_item in (a.landings or []):
+                for tag in (getattr(landing_item, 'tags', []) or []):
+                    author_tags_set[a.id].add(tag.name)
 
     authors = []
-    for aid, ainfo in authors_map.items():
-        ainfo = dict(ainfo)
-        ainfo["tags"] = list(author_tags_map.get(aid, {}).values())
-        authors.append(ainfo)
+    lang_filter = [landing.language.upper()] if landing.language else None
+    
+    for aid, author in authors_map.items():
+        # Подсчёт courses_count и books_count
+        visible_landings = [l for l in (author.landings or []) 
+                           if not l.is_hidden and (not lang_filter or l.language.upper() in lang_filter)]
+        
+        min_price_by_course = {}
+        for l in visible_landings:
+            price = safe_price(l.new_price)
+            for c in (l.courses or []):
+                cid = c.id
+                if cid not in min_price_by_course or price < min_price_by_course[cid]:
+                    min_price_by_course[cid] = price
+        
+        kept_landings = []
+        for l in visible_landings:
+            price = safe_price(l.new_price)
+            if not any(price > min_price_by_course.get(c.id, float("inf")) for c in (l.courses or [])):
+                kept_landings.append(l)
+        
+        course_ids = set()
+        for l in kept_landings:
+            for c in (l.courses or []):
+                if c.id:
+                    course_ids.add(c.id)
+        courses_count = len(course_ids)
+        
+        # Подсчёт books_count
+        books_count = 0
+        for book in (author.books or []):
+            visible_bl = [bl for bl in (book.landings or []) 
+                         if not bl.is_hidden and (not lang_filter or bl.language.upper() in lang_filter)]
+            if visible_bl:
+                price_min = min(safe_price(bl.new_price) for bl in visible_bl)
+                if price_min != float("inf"):
+                    books_count += 1
+        
+        authors.append({
+            "id": author.id,
+            "name": author.name,
+            "description": author.description or None,
+            "photo": author.photo,
+            "language": author.language or None,
+            "courses_count": courses_count,
+            "books_count": books_count,
+            "tags": sorted(list(author_tags_set.get(aid, set()))),
+        })
 
     return {
         "id": landing.id,
@@ -397,6 +457,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         "description": landing.description,
         "old_price": str(landing.old_price) if landing.old_price is not None else None,
         "new_price": str(landing.new_price) if landing.new_price is not None else None,
+        "total_pages": total_pages if total_pages > 0 else None,
         "gallery": gallery,
         "books": books,
         "authors": authors,
@@ -636,6 +697,17 @@ def _serialize_book_card(bl: BookLanding) -> dict:
     first_tag = tags[0]["name"] if tags else None
 
     book_ids = [b.id for b in (bl.books or [])]
+    
+    # Подсчёт общего количества страниц
+    total_pages = sum(getattr(b, "page_count", 0) or 0 for b in (bl.books or []))
+    
+    # publishers — уникально из всех книг лендинга
+    publishers_map = {}
+    for b in (bl.books or []):
+        for p in (getattr(b, "publishers", []) or []):
+            if p.id not in publishers_map:
+                publishers_map[p.id] = {"id": p.id, "name": p.name}
+    publishers = list(publishers_map.values())
 
     return {
         "id": bl.id,
@@ -644,6 +716,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "language": bl.language,
         "old_price": (str(bl.old_price) if bl.old_price is not None else None),
         "new_price": (str(bl.new_price) if bl.new_price is not None else None),
+        "total_pages": total_pages if total_pages > 0 else None,
+        "publishers": publishers,
         "authors": authors,
         "tags": tags,
         "first_tag": first_tag,
@@ -677,6 +751,7 @@ def book_landing_cards(
           .options(
               selectinload(BookLanding.books).selectinload(Book.authors),
               selectinload(BookLanding.books).selectinload(Book.tags),
+              selectinload(BookLanding.books).selectinload(Book.publishers),
           )
           .filter(BookLanding.is_hidden.is_(False))
     )
