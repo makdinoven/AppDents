@@ -19,6 +19,7 @@ import ThumbNails from "./ThumbNails/ThumbNails.tsx";
 import Loader from "../../ui/Loader/Loader.tsx";
 import { useThrottle } from "../../../common/hooks/useThrottle.ts";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
+import { DEFAULT_SCALE, scales, screenResolutionMap } from "./constants.ts";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -30,22 +31,6 @@ type SelectType = {
   name: string;
 };
 
-const screenResolutionMap = new Map([
-  ["desktop", { width: 1440, pageWidth: 600 }],
-  ["middle", { width: 1024, pageWidth: 500 }],
-  ["tablet", { width: 768, pageWidth: 450 }],
-  ["mobile", { width: 576, pageWidth: 300 }],
-]);
-
-export const scales = [
-  { value: 0.5, label: "50%" },
-  { value: 0.75, label: "75%" },
-  { value: 1, label: "100%" },
-  { value: 1.25, label: "125%" },
-  { value: 1.5, label: "150%" },
-  { value: 2, label: "200%" },
-];
-
 interface PdfReaderProps {
   url: string | null;
   fullScreen: boolean;
@@ -54,8 +39,6 @@ interface PdfReaderProps {
   setCurrentPage: (val: string) => void;
   fromProfile?: boolean;
 }
-
-const DEFAULT_SCALE = 0.75;
 
 const PdfReader = ({
   url,

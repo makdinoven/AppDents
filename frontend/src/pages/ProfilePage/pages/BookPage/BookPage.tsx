@@ -1,6 +1,6 @@
 import s from "./BookPage.module.scss";
-import { useParams, useSearchParams } from "react-router-dom";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import Loader from "../../../../components/ui/Loader/Loader.tsx";
@@ -9,40 +9,21 @@ import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { t } from "i18next";
-import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
-import ModalOverlay from "../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-
-export const PDF_READER_FULLSCREEN_KEY = "reader_fullscreen";
+import PdfReaderWrapper from "../../../../components/CommonComponents/PdfReader/PdfReaderWrapper.tsx";
 
 const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<string>("1");
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const openFullScreen = () => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set(PDF_READER_FULLSCREEN_KEY, "");
-    setSearchParams(newParams, { replace: true });
-  };
-  const closeFullScreenRef = useRef<() => void>(null);
-
-  const closeFullScreen = () => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete(PDF_READER_FULLSCREEN_KEY);
-    setSearchParams(newParams, { replace: true });
-  };
 
   const fetchBookData = useCallback(async () => {
     try {
       const res = await mainApi.getBook(bookId);
       setBook(res.data);
       setLoading(false);
-      console.log("Called");
     } catch (error) {
       console.error(error);
     }
@@ -67,8 +48,6 @@ const BookPage = () => {
 
     return { url: null, name: null };
   };
-
-  console.log(handleProvideDownloadInfo(BOOK_FORMATS[0]).url);
 
   return (
     <>
@@ -156,29 +135,13 @@ const BookPage = () => {
                 </div>
               </div>
             </section>
-            <section className={s.section_wrapper}>
+            <section id={"book-page-reader"} className={s.section_wrapper}>
               <SectionHeader name={t("profile.bookPage.readOnline")} />
-              <ModalOverlay
-                isVisibleCondition={searchParams.has(PDF_READER_FULLSCREEN_KEY)}
-                modalPosition={"fullscreen"}
-                customHandleClose={closeFullScreen}
-                onInitClose={(fn) => (closeFullScreenRef.current = fn)}
-              >
-                <PdfReader
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url}
-                  fullScreen={true}
-                  setFullScreen={() => closeFullScreenRef.current?.()}
-                />
-              </ModalOverlay>
-              <PdfReader
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url}
-                fullScreen={true}
-                setFullScreen={openFullScreen}
+
+              <PdfReaderWrapper
                 fromProfile
+                url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url ?? ""}
+                isSlideActive={true}
               />
             </section>
             {/*<section className={s.section_wrapper}>*/}
