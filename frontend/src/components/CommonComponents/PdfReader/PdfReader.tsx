@@ -8,7 +8,7 @@ import {
   Chevron,
   ListIcon,
   MaximizeIcon,
-  MinimizeIcon,
+  ModalClose,
   ZoomIn,
   ZoomOut,
 } from "../../../assets/icons";
@@ -280,9 +280,6 @@ const PdfReader = ({
             {t("of")}
             <span>{totalPages ? totalPages : 0}</span>
           </p>
-          <button className={s.expand_button} onClick={handleCloseFullScreen}>
-            {fromProfile ? <MaximizeIcon /> : <MinimizeIcon />}
-          </button>
         </div>
         <div className={s.right_side}>
           <div className={s.scales_wrapper}>
@@ -306,6 +303,9 @@ const PdfReader = ({
           </div>
           {screenWidth > screenResolutionMap.get("mobile")!.width &&
             renderNextPrevButtons}
+          <button className={s.expand_button} onClick={handleCloseFullScreen}>
+            {fromProfile ? <MaximizeIcon /> : <ModalClose />}
+          </button>
         </div>
       </>,
     ],

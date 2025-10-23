@@ -58,6 +58,9 @@
     }
 
     .info {
+      //border: 1px solid $hover-color;
+      //border-radius: 30px;
+      //padding: 20px;
       @include clamped-p3();
       color: $accent-glass;
       @include flex-column();

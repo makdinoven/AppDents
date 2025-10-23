@@ -6,7 +6,7 @@
   align-items: center;
 
   .buy_section {
-    border-radius: 20px;
+    border-radius: 40px;
     color: $accent-glass;
     padding: 30px 15px;
     @include flex-column();
@@ -243,13 +243,15 @@
 
 .price {
   @include flex-center();
-  gap: 10px;
+  gap: 5px;
   flex-direction: row;
   color: $accent;
   margin-bottom: 20px;
   @include clamped-h2();
 
   .old_price {
+    opacity: 0.5;
+    @include clamped-p2;
     color: $primary-accent;
     text-decoration: line-through;
   }
