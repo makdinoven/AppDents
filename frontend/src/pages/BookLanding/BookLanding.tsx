@@ -41,7 +41,7 @@ const BookLanding = () => {
         landing_name,
         authors,
         page_name,
-        gallery,
+        books,
       } = res.data;
 
       dispatch(
@@ -70,7 +70,7 @@ const BookLanding = () => {
                   page_name,
                   old_price,
                   new_price,
-                  preview_photo: gallery[0].url,
+                  preview_photo: books?.[0]?.cover_url,
                   book_ids: book_ids,
                 },
               },
