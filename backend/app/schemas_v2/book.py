@@ -333,7 +333,7 @@ class BookAdminDetailResponse(BaseModel):
     publication_date: Optional[str] = None
     preview_pdf_url: Optional[str] = None
     page_count: Optional[int] = None
-    publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
+    publisher_ids: List[int] = []  # только ID издателей
 
     author_ids: List[int] = []
     tag_ids: List[int] = []
