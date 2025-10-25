@@ -502,7 +502,39 @@ def get_top_landings_by_sales(
 
 AD_TTL = timedelta(hours=3)
 
+def open_ad_period_if_needed(db: Session, landing_id: int, started_by: int | None):
+    """
+    Открывает новый рекламный период если нет открытого.
+    Использует блокировку для избежания гонки.
+    """
+    from ..models.models_v2 import LandingAdPeriod
+    
+    # блокируем открытый период, чтобы избежать гонки
+    open_exists = (
+        db.query(LandingAdPeriod.id)
+          .filter(
+              LandingAdPeriod.landing_id == landing_id,
+              LandingAdPeriod.ended_at.is_(None),
+          )
+          .with_for_update()
+          .first()
+    )
+    if open_exists:
+        return
+
+    db.add(LandingAdPeriod(
+        landing_id=landing_id,
+        started_at=datetime.utcnow(),
+        ended_at=None,
+        started_by=started_by,
+        ended_by=None,
+    ))
+
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    """
+    Отслеживает визит с рекламы с метаданными (fbp, fbc, ip).
+    Устанавливает флаг in_advertising и TTL.
+    """
     visit = AdVisit(
         landing_id=landing_id,
         fbp=fbp,

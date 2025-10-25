@@ -1,12 +1,13 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import List
 from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
-    BookFileFormat, Author, BookLanding, User, Tag
+    BookFileFormat, Author, BookLanding, User, Tag,
+    BookAdVisit, BookLandingAdPeriod
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
@@ -15,6 +16,9 @@ from ..schemas_v2.book import (
 from ..utils.s3 import generate_presigned_url
 
 log = logging.getLogger(__name__)
+
+# TTL для флага рекламы (3 часа)
+BOOK_AD_TTL = timedelta(hours=3)
 
 def _serialize_book_file(bf: BookFile) -> dict:
     return {
@@ -275,3 +279,86 @@ def serialize_book_landing_to_course_item(bl: BookLanding) -> dict:
         "new_price": to_float(bl.new_price),
         "old_price": to_float(bl.old_price),
     }
+
+
+# ============================================================================
+# Функции для аналитики рекламы книжных лендингов
+# ============================================================================
+
+def open_book_ad_period_if_needed(db: Session, book_landing_id: int, started_by: int | None):
+    """
+    Открывает новый рекламный период для книжного лендинга если нет открытого.
+    Использует блокировку для избежания гонки.
+    """
+    # блокируем открытый период, чтобы избежать гонки
+    open_exists = (
+        db.query(BookLandingAdPeriod.id)
+          .filter(
+              BookLandingAdPeriod.book_landing_id == book_landing_id,
+              BookLandingAdPeriod.ended_at.is_(None),
+          )
+          .with_for_update()
+          .first()
+    )
+    if open_exists:
+        return
+
+    db.add(BookLandingAdPeriod(
+        book_landing_id=book_landing_id,
+        started_at=datetime.utcnow(),
+        ended_at=None,
+        started_by=started_by,
+        ended_by=None,
+    ))
+
+
+def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    """
+    Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
+    Устанавливает флаг in_advertising и TTL.
+    """
+    visit = BookAdVisit(
+        book_landing_id=book_landing_id,
+        fbp=fbp,
+        fbc=fbc,
+        ip_address=ip,
+    )
+    db.add(visit)
+
+    book_landing = db.query(BookLanding).filter(BookLanding.id == book_landing_id).first()
+    if book_landing:
+        book_landing.in_advertising = True
+        book_landing.ad_flag_expires_at = datetime.utcnow() + BOOK_AD_TTL
+    db.commit()
+
+
+def check_and_reset_book_ad_flag(book_landing: BookLanding, db: Session):
+    """
+    Если у книжного лендинга in_advertising=True, но ad_flag_expires_at < now,
+    сбрасываем in_advertising в False.
+    """
+    if book_landing.in_advertising and book_landing.ad_flag_expires_at:
+        now = datetime.utcnow()
+        if book_landing.ad_flag_expires_at < now:
+            book_landing.in_advertising = False
+            book_landing.ad_flag_expires_at = None
+
+
+def reset_expired_book_ad_flags(db: Session):
+    """
+    Массовый сброс истекших флагов рекламы для книжных лендингов.
+    """
+    from sqlalchemy import func
+    updated = (
+        db.query(BookLanding)
+        .filter(
+            BookLanding.in_advertising.is_(True),
+            BookLanding.ad_flag_expires_at < func.utc_timestamp(),
+        )
+        .update(
+            {BookLanding.in_advertising: False, BookLanding.ad_flag_expires_at: None},
+            synchronize_session=False,
+        )
+    )
+    if updated:
+        db.commit()
