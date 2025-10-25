@@ -213,10 +213,12 @@
       "loading": "Caricamento..."
     },
     "pages": {
+      "count": "Pagine: {{count}}",
       "title": "Pagine",
       "readFirstPages": "Leggi le prime pagine del libro!",
       "fullBook": "La versione completa del libro sarà disponibile dopo il pagamento."
-    }
+    },
+    "salesCount": "Vendite: {{count}}"
   },
 
 
