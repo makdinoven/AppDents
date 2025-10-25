@@ -245,10 +245,12 @@
       "error": "An error occurred while loading"
     },
     "pages": {
+      "count": "Pages: {{count}}",
       "title": "Pages",
       "readFirstPages": "Read the first pages of the book!",
       "fullBook": "The full version of the book will be available after payment."
-    }
+    },
+    "salesCount": "Sales: {{count}}"
   },
 
   "landing": {

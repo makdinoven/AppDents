@@ -91,14 +91,25 @@ const BookLandingDetail = () => {
               onChange={handleChange}
             />
 
-            <AdminField
-              type="input"
-              id="page_name"
-              placeholder={t("admin.landings.pageName.placeholder")}
-              label={t("admin.landings.pageName")}
-              value={bookLanding.page_name}
-              onChange={handleChange}
-            />
+            <div className={s.two_items}>
+              <AdminField
+                type="input"
+                id="page_name"
+                placeholder={t("admin.landings.pageName.placeholder")}
+                label={t("admin.landings.pageName")}
+                value={bookLanding.page_name}
+                onChange={handleChange}
+              />
+              <AdminField
+                type="input"
+                inputType="number"
+                id="sales_count"
+                label={"Sales count"}
+                placeholder="0"
+                value={bookLanding.Sales ?? ""}
+                onChange={handleChange}
+              />
+            </div>
 
             <div className={s.two_items}>
               <AdminField
