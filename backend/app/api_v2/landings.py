@@ -10,16 +10,18 @@ from typing import List, Optional, Dict
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing, Author
+from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
-    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day
+    track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
+    open_ad_period_if_needed, AD_TTL
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
+from pydantic import BaseModel
 from ..schemas_v2.common import TagResponse
 from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
@@ -616,6 +618,58 @@ def track_ad(slug: str,
         ip=request.client.host
     )
     return {"ok": True}
+
+
+class VisitIn(BaseModel):
+    from_ad: bool = False
+
+
+@router.post("/{landing_id}/visit", status_code=201)
+def track_landing_visit(
+    landing_id: int,
+    payload: VisitIn | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Отслеживает визит на курсовой лендинг.
+    Если from_ad=True и реклама включена, продлевает TTL и открывает период.
+    """
+    exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    payload = payload or VisitIn()
+    from_ad = bool(payload.from_ad)
+
+    # 1) фиксируем визит (только в landing_visits)
+    db.add(LandingVisit(
+        landing_id=landing_id,
+        from_ad=from_ad,
+    ))
+
+    # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
+    if from_ad:
+        now = datetime.utcnow()
+        landing = (
+            db.query(Landing)
+              .filter(Landing.id == landing_id)
+              .with_for_update()
+              .first()
+        )
+        if landing and landing.in_advertising:
+            # гарантируем открытый период, если вдруг его нет
+            open_ad_period_if_needed(db, landing_id, started_by=None)
+
+            # продлеваем TTL
+            new_ttl = now + AD_TTL
+            if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+                landing.ad_flag_expires_at = new_ttl
+
+        # ВАЖНО: если in_advertising == False, НИЧЕГО не включаем и не трогаем период/TTL
+
+    db.commit()
+    return {"ok": True}
+
 
 @router.post("/free-access/{landing_id}")
 def grant_free_access(

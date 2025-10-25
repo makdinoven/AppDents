@@ -4,12 +4,14 @@ import os
 import logging
 from math import ceil
 from typing import Optional, List, Dict, Union
+from datetime import datetime
 
 import boto3
 from botocore.config import Config
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy import or_, desc, func
 from sqlalchemy.orm import Session, selectinload
+from pydantic import BaseModel
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
@@ -22,6 +24,7 @@ from ..models.models_v2 import (
     BookLanding,
     BookLandingImage,
     Landing,
+    BookLandingVisit,
 )
 from ..schemas_v2.book import (
     BookCreate,
@@ -180,6 +183,83 @@ def delete_book_landing_route(
 ):
     book_service.delete_book_landing(db, landing_id)
     return {"detail": "Book landing deleted successfully"}
+
+
+@router.post("/track-ad/{slug}")
+def track_book_ad(slug: str,
+                  request: Request,
+                  db: Session = Depends(get_db)):
+    """
+    Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
+    Устанавливает флаг in_advertising и TTL.
+    """
+    from ..services_v2.book_service import track_book_ad_visit
+    
+    book_landing = db.query(BookLanding).filter(BookLanding.page_name == slug).first()
+    if not book_landing:
+        raise HTTPException(404, "Book landing not found")
+    track_book_ad_visit(
+        db=db,
+        book_landing_id=book_landing.id,
+        fbp=request.cookies.get("_fbp"),
+        fbc=request.cookies.get("_fbc"),
+        ip=request.client.host
+    )
+    return {"ok": True}
+
+
+class BookVisitIn(BaseModel):
+    from_ad: bool = False
+
+
+@router.post("/landing/{book_landing_id}/visit", status_code=201)
+def track_book_landing_visit(
+    book_landing_id: int,
+    payload: BookVisitIn | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Отслеживает визит на книжный лендинг.
+    Если from_ad=True и реклама включена, продлевает TTL и открывает период.
+    """
+    from ..services_v2.book_service import open_book_ad_period_if_needed, BOOK_AD_TTL
+    
+    exists = db.query(BookLanding.id).filter(BookLanding.id == book_landing_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Book landing not found")
+
+    payload = payload or BookVisitIn()
+    from_ad = bool(payload.from_ad)
+
+    # 1) фиксируем визит в book_landing_visits
+    db.add(BookLandingVisit(
+        book_landing_id=book_landing_id,
+        from_ad=from_ad,
+    ))
+
+    # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
+    if from_ad:
+        now = datetime.utcnow()
+        book_landing = (
+            db.query(BookLanding)
+              .filter(BookLanding.id == book_landing_id)
+              .with_for_update()
+              .first()
+        )
+        if book_landing and book_landing.in_advertising:
+            # гарантируем открытый период, если вдруг его нет
+            open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
+
+            # продлеваем TTL
+            new_ttl = now + BOOK_AD_TTL
+            if not book_landing.ad_flag_expires_at or book_landing.ad_flag_expires_at < new_ttl:
+                book_landing.ad_flag_expires_at = new_ttl
+
+        # ВАЖНО: если in_advertising == False, НИЧЕГО не включаем и не трогаем период/TTL
+
+    db.commit()
+    return {"ok": True}
+
 
 @router.get(
     "/landing/list",
