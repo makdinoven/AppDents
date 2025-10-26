@@ -110,4 +110,7 @@ export const mainApi = {
       params,
     });
   },
+  getPageInfo(pageType: string, language: string) {
+    return instance.get(`/policy/${pageType}?language=${language}`);
+  },
 };
