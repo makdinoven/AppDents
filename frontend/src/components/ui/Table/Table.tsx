@@ -9,6 +9,7 @@ interface TableProps<T extends Record<string, any>> {
   data: T[];
   columnLabels?: Partial<Record<keyof T, string>>;
   landingLinkByIdPath?: string;
+  structured?: boolean;
 }
 
 const Table = <T extends Record<string, any>>({
@@ -17,6 +18,7 @@ const Table = <T extends Record<string, any>>({
   data,
   columnLabels = {},
   landingLinkByIdPath,
+  structured = true,
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
@@ -29,6 +31,16 @@ const Table = <T extends Record<string, any>>({
     "user_id",
     "color",
   ];
+
+  const colors = new Map([
+    [0, s.green],
+    [1, `${s.green} ${s.pale}`],
+    [2, s.blue],
+    [3, `${s.blue} ${s.pale}`],
+    [4, s.purple],
+    [5, `${s.purple} ${s.pale}`],
+  ]);
+
   const headers = Object.keys(data[0]).filter(
     (key) => !excludedKeys.includes(key),
   );
@@ -107,6 +119,18 @@ const Table = <T extends Record<string, any>>({
     return value;
   };
 
+  const paintCell = (index: number): string => {
+    if (!structured || index < 3) return "";
+    const color = colors.get(index % colors.size);
+    if (color) {
+      return color;
+    } else return "";
+  };
+
+  for (let i = 3; i < 16; i++) {
+    paintCell(i);
+  }
+
   return (
     <div className={s.table_component}>
       {title && <h4 className={s.table_title}>{title}</h4>}
@@ -127,8 +151,10 @@ const Table = <T extends Record<string, any>>({
                 <td style={{ paddingLeft: row.color ? "15px" : "" }}>
                   {rowIdx + 1}
                 </td>
-                {headers.map((key) => (
-                  <td key={key}>{renderCell(key, row[key], row)}</td>
+                {headers.map((key, index) => (
+                  <td key={key} className={paintCell(index)}>
+                    {renderCell(key, row[key], row)}
+                  </td>
                 ))}
               </tr>
             ))}

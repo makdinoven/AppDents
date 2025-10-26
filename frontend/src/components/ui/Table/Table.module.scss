@@ -153,3 +153,26 @@
     gap: 10px;
   }
 }
+.green {
+  background-color: $primary-06;
+
+  &.pale {
+    background-color: $primary-04;
+  }
+}
+
+.blue {
+  background-color: $secondary-lighter-06;
+
+  &.pale {
+    background-color: $secondary-lighter-04;
+  }
+}
+
+.purple {
+  background-color: rgba(160, 186, 234, 0.6);
+
+  &.pale {
+    background-color: rgba(160, 186, 234, 0.4);
+  }
+}

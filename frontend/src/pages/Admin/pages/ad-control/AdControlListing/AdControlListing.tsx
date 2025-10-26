@@ -402,6 +402,7 @@ const AdControlListing = () => {
           ad_purchases_last_10_days: "Purchases(10d)",
           assignee: "Assignee",
         }}
+        structured
       />
     </div>
   );
