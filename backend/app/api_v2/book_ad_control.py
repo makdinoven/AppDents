@@ -491,3 +491,4 @@ def set_book_assignment(
     db.commit()
     return {"ok": True}
 
+
