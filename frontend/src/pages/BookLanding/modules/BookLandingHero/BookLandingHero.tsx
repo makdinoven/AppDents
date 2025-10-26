@@ -78,11 +78,25 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            {/*{data.books[0].page_count && (*/}
-            {/*  <p>*/}
-            {/*    <Trans i18nKey={"bookLanding.pages.title"} />:{" "}*/}
-            {/*    <span className={s.highlight}>{data.books[0].page_count}</span>*/}
-            {/*  </p>*/}
+            {data.total_pages && (
+              <p>
+                <Trans
+                  i18nKey={"bookLanding.pages.count"}
+                  values={{
+                    count: data.total_pages,
+                  }}
+                />
+              </p>
+            )}
+            {/*{!!data.sales_count && (*/}
+            <p>
+              <Trans
+                i18nKey={"bookLanding.salesCount"}
+                values={{
+                  count: data.sales_count,
+                }}
+              />
+            </p>
             {/*)}*/}
             <p className={s.formats_field}>
               <span>
