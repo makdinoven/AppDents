@@ -212,10 +212,12 @@
       "error": "Ocurrió un error al cargar"
     },
     "pages": {
+      "count": "Páginas: {{count}}",
       "title": "Páginas",
       "readFirstPages": "¡Lee las primeras páginas del libro!",
       "fullBook": "La versión completa del libro estará disponible después del pago."
-    }
+    },
+    "salesCount": "Ventas: {{count}}"
   },
 
 
