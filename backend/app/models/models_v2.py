@@ -803,3 +803,39 @@ class BookLandingAdAssignment(Base):
     book_landing = relationship("BookLanding", backref=backref("ad_assignment", uselist=False))
     staff        = relationship("AdStaff")
     account      = relationship("AdAccount")
+
+
+class TermsOfUse(Base):
+    """Условия использования."""
+    __tablename__ = "terms_of_use"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    language   = Column(String(10), nullable=False, unique=True)
+    title      = Column(String(255), nullable=False)
+    content    = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+
+class PrivacyPolicy(Base):
+    """Политика конфиденциальности."""
+    __tablename__ = "privacy_policy"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    language   = Column(String(10), nullable=False, unique=True)
+    title      = Column(String(255), nullable=False)
+    content    = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+
+class CookiePolicy(Base):
+    """Политика использования файлов cookie."""
+    __tablename__ = "cookie_policy"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    language   = Column(String(10), nullable=False, unique=True)
+    title      = Column(String(255), nullable=False)
+    content    = Column(Text, nullable=False)
+    created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
