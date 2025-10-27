@@ -16,8 +16,10 @@ import Table from "../../../../../components/ui/Table/Table.tsx";
 import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../assets/icons";
 
-const LandingAnalytics = () => {
+const LandingAnalytics = ({ isBook }: { isBook: boolean }) => {
   const { landingId } = useParams();
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
@@ -61,7 +63,13 @@ const LandingAnalytics = () => {
       params.end_date = dateRange.endDate;
     }
     try {
-      const res = await adminApi.getLandingTraffic(params);
+      let res;
+      if (isBook) {
+        res = await adminApi.getBookLandingTraffic(params);
+      } else {
+        res = await adminApi.getLandingTraffic(params);
+      }
+
       setChartData(res.data.series);
       setLanding({
         data: res.data.landing,
@@ -74,8 +82,8 @@ const LandingAnalytics = () => {
         ),
       });
       setLoading(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      Alert(`Error loading landing data`, <ErrorIcon />);
       setLoading(false);
     }
   };
@@ -100,7 +108,12 @@ const LandingAnalytics = () => {
 
   const fetchAssigned = async (id: string) => {
     try {
-      const res = await adminApi.getAdLandingAssigned(id);
+      let res;
+      if (isBook) {
+        res = await adminApi.getAdBookLandingAssigned(id);
+      } else {
+        res = await adminApi.getAdLandingAssigned(id);
+      }
       setAssigned({ account: res.data.account_id, staff: res.data.staff_id });
     } catch (error) {
       console.error(error);
@@ -113,7 +126,12 @@ const LandingAnalytics = () => {
   }) => {
     setAssignmentLoading(true);
     try {
-      await adminApi.putAdLandingAssigned(landingId!, data);
+      if (isBook) {
+        await adminApi.putAdBookLandingAssigned(landingId!, data);
+      } else {
+        await adminApi.putAdLandingAssigned(landingId!, data);
+      }
+
       await fetchAssigned(landingId!);
       setAssignmentLoading(false);
     } catch (error) {
