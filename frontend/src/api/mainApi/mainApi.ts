@@ -25,6 +25,10 @@ export const mainApi = {
     return instance.post(`landings/${id}/visit`, { from_ad: ad });
   },
 
+  trackBookLandingVisit(id: number, ad: boolean) {
+    return instance.post(`books/landing/${id}/visit`, { from_ad: ad });
+  },
+
   buyCourse(data: PaymentApiPayload, isLogged: boolean) {
     return instance.post(`stripe/checkout`, data, {
       headers: isLogged ? getAuthHeaders() : undefined,
@@ -99,6 +103,10 @@ export const mainApi = {
 
   trackFacebookAd(slug: string, fbc: any, fbp: any) {
     return instance.post(`/landings/track-ad/${slug}`, { fbc, fbp });
+  },
+
+  trackFacebookAdBook(slug: string, fbc: any, fbp: any) {
+    return instance.post(`/books/track-ad/${slug}`, { fbc, fbp });
   },
   globalSearch(params: {
     q: string;

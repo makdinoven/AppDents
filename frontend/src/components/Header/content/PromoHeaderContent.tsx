@@ -49,7 +49,7 @@ const PromoHeaderContent = () => {
 
   return (
     <>
-      <div className={s.nav_center}>
+      <div className={`${s.nav_center} ${s.promo}`}>
         {NAV_BUTTONS_PROMOTE.map((btn) => (
           <NavButton
             key={btn.text}

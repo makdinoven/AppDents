@@ -5,7 +5,7 @@ import BookLandingHero from "./modules/BookLandingHero/BookLandingHero.tsx";
 import ContentOverview from "./modules/ContentOverview/ContentOverview.tsx";
 import BuySection from "../../components/CommonComponents/BuySection/BuySection.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
@@ -16,6 +16,9 @@ import { setPaymentData } from "../../store/slices/paymentSlice.ts";
 import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 import { CartItemKind } from "../../api/cartApi/types.ts";
+import { Path } from "../../routes/routes.ts";
+import { getFbc, getFbp } from "../../common/helpers/helpers.ts";
+import { trackPageView } from "../../common/helpers/facebookPixel.ts";
 
 const BookLanding = () => {
   const { openPaymentModal } = usePaymentPageHandler();
@@ -23,6 +26,18 @@ const BookLanding = () => {
   const [loading, setLoading] = useState(true);
   const [bookData, setBookData] = useState<any>(null);
   const { landingPath } = useParams();
+  const isPromotionLanding =
+    location.pathname.includes(Path.bookLanding) &&
+    !location.pathname.includes(Path.bookLandingClient);
+  const isFromFacebook = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.has("fbclid") || isPromotionLanding;
+  }, [location.search]);
+
+  const trackFacebookAd = () => {
+    mainApi.trackFacebookAdBook(landingPath!, getFbc(), getFbp());
+    trackPageView();
+  };
 
   const fetchLandingData = async () => {
     setLoading(true);
@@ -30,7 +45,7 @@ const BookLanding = () => {
       const res = await mainApi.getBookLanding(landingPath);
       setBookData(res.data);
       dispatch(setLanguage(res.data.language));
-      // mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
+      mainApi.trackBookLandingVisit(res.data.id, isPromotionLanding);
 
       const {
         new_price,
@@ -87,6 +102,9 @@ const BookLanding = () => {
 
   useEffect(() => {
     if (landingPath) {
+      if (isFromFacebook) {
+        trackFacebookAd();
+      }
       fetchLandingData();
     }
   }, [landingPath]);

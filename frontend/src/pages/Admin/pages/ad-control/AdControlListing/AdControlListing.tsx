@@ -429,6 +429,7 @@ const AdControlListing = () => {
         landingLinkByIdPath={
           mode === "courses" ? Path.landingAnalytics : Path.bookLandingAnalytics
         }
+        showIndex={false}
         data={data}
         columnLabels={{
           id: "ID",
@@ -442,7 +443,7 @@ const AdControlListing = () => {
           ad_purchases_last_10_days: "AP(10d)",
           ad_visits_last_10_days: "AV(10d)",
           assignee: "Assignee",
-          ad_purchases_lifetime: "Lifetime",
+          ad_purchases_lifetime: "AP(full)",
           total_purchases_lifetime: "P(full)",
           hours_left: "Hours left",
         }}
