@@ -29,7 +29,7 @@ const AdControlListing = () => {
   const [mode, setMode] = useState<"courses" | "books">("courses");
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
-  const [language, setLanguage] = useState<string>("EN");
+  const [language, setLanguage] = useState<string>("all");
   const [data, setData] = useState<any>(null);
   const searchQuery = searchParams.get(adControlSearch)?.toLowerCase() || "";
   const debauncedSearchQuery = useDebounce(searchQuery, 300);
