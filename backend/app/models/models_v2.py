@@ -712,21 +712,6 @@ except NameError:
 
 # ── Модели для аналитики рекламы ─────────────────────────────────────────────
 
-class LandingAdPeriod(Base):
-    """Периоды нахождения лендинга в рекламе."""
-    __tablename__ = "landing_ad_periods"
-
-    id         = Column(Integer, primary_key=True, autoincrement=True)
-    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
-    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    from_ad = Column(Boolean, nullable=False, server_default="0")
-
-    book_landing = relationship("BookLanding", backref="visits")
-
-    __table_args__ = (
-        Index("ix_book_landing_visits_landing_visited", "book_landing_id", "visited_at"),
-    )
-
 class LandingVisit(Base):
     __tablename__ = "landing_visits"
 
