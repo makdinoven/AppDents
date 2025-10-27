@@ -348,6 +348,12 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getBookLandingTraffic(params: any) {
+    return instance.get("landings/analytics/landing-traffic", { //TODO ПОМЕНЯТЬ УРЛ
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
   getSiteTraffic(params: any) {
     return instance.get("landings/analytics/site-traffic", {
       params,
@@ -356,6 +362,12 @@ export const adminApi = {
   },
   getAdControlOverview(params: any) {
     return instance.get("ad_control/ads/overview", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getAdControlOverviewBooks(params: any) {
+    return instance.get("book_ad_control/ads/books/overview", {
       params,
       headers: getAuthHeaders(),
     });
@@ -423,7 +435,20 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-      getPublishers() {
+  getAdBookLandingAssigned(id: string) {
+    return instance.get(`book_ad_control/ads/books/landing/${id}/assignment`, {
+      headers: getAuthHeaders(),
+    });
+  },
+  putAdBookLandingAssigned(
+      id: string,
+      data: { staff_id: number | null; account_id: number | null },
+  ) {
+    return instance.put(`book_ad_control/ads/books/landing/${id}/assignment`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  getPublishers() {
     return instance.get("book-metadata/publishers", {
       headers: getAuthHeaders(),
     });

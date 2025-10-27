@@ -19,12 +19,14 @@ import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../assets/icons";
 import { transformIdNameArrToValueNameArr } from "../../../../../common/helpers/helpers.ts";
+import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const adControlSearch = "ad-control-q";
 
 type ColorType = "green" | "orange" | "red" | "white" | "black";
 
 const AdControlListing = () => {
+  const [mode, setMode] = useState<"courses" | "books">("courses");
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("EN");
@@ -42,6 +44,18 @@ const AdControlListing = () => {
     max: string;
   } | null>(null);
   const [purchases10Range, setPurchases10Range] = useState<{
+    min: string;
+    max: string;
+  } | null>(null);
+  const [adVisitsRange, setAdVisitsRange] = useState<{
+    min: string;
+    max: string;
+  } | null>(null);
+  const [totalPurchasesRange, setTotalPurchasesRange] = useState<{
+    min: string;
+    max: string;
+  } | null>(null);
+  const [totalAdPurchasesRange, setTotalAdPurchasesRange] = useState<{
     min: string;
     max: string;
   } | null>(null);
@@ -73,6 +87,12 @@ const AdControlListing = () => {
       first5_max?: number;
       sales10_min?: number;
       sales10_max?: number;
+      av10d_min?: number;
+      av10d_max?: number;
+      tp10d_min?: number;
+      tp10d_max?: number;
+      apall_min?: number;
+      apall_max?: number;
       days_min?: number;
       days_max?: number;
       sort_by?: string;
@@ -124,6 +144,33 @@ const AdControlListing = () => {
       }
     }
 
+    if (adVisitsRange) {
+      if (adVisitsRange.min) {
+        params.av10d_min = Number(adVisitsRange.min);
+      }
+      if (adVisitsRange.max) {
+        params.av10d_max = Number(adVisitsRange.max);
+      }
+    }
+
+    if (totalPurchasesRange) {
+      if (totalPurchasesRange.min) {
+        params.tp10d_min = Number(totalPurchasesRange.min);
+      }
+      if (totalPurchasesRange.max) {
+        params.tp10d_max = Number(totalPurchasesRange.max);
+      }
+    }
+
+    if (totalAdPurchasesRange) {
+      if (totalAdPurchasesRange.min) {
+        params.apall_min = Number(totalAdPurchasesRange.min);
+      }
+      if (totalAdPurchasesRange.max) {
+        params.apall_max = Number(totalAdPurchasesRange.max);
+      }
+    }
+
     if (sortBy && sortBy !== "all") {
       params.sort_by = sortBy;
     }
@@ -134,11 +181,17 @@ const AdControlListing = () => {
       params.account_id = selectedAccount;
     }
     try {
-      const res = await adminApi.getAdControlOverview(params);
+      let res;
+      if (mode === "courses") {
+        res = await adminApi.getAdControlOverview(params);
+      } else {
+        res = await adminApi.getAdControlOverviewBooks(params);
+      }
+
       setData(res.data.items);
 
       setLoading(false);
-    } catch (err) {
+    } catch {
       Alert("Error fetching data", <ErrorIcon />);
       setLoading(false);
     }
@@ -176,9 +229,16 @@ const AdControlListing = () => {
     daysRange?.max,
     purchases10Range?.min,
     purchases10Range?.max,
+    adVisitsRange?.min,
+    adVisitsRange?.max,
+    totalPurchasesRange?.min,
+    totalPurchasesRange?.max,
+    totalAdPurchasesRange?.min,
+    totalAdPurchasesRange?.max,
     sortBy,
     selectedStaff,
     selectedAccount,
+    mode,
   ]);
 
   useEffect(() => {
@@ -206,6 +266,12 @@ const AdControlListing = () => {
     <Loader />
   ) : (
     <div className={s.ad_control_main}>
+      <SwitchButtons
+        useTranslation={false}
+        buttonsArr={["courses", "books"]}
+        activeValue={mode}
+        handleClick={(mode) => setMode(mode)}
+      />
       <div className={s.filters}>
         <div className={s.filters_row}>
           <DateRangeFilter
@@ -308,29 +374,6 @@ const AdControlListing = () => {
         </div>
 
         <div className={s.filters_row}>
-          {staffList && (
-            <MultiSelect
-              isSearchable={false}
-              label={"Staff"}
-              id={"staff"}
-              options={staffList}
-              placeholder={"Choose staff members"}
-              selectedValue={selectedStaff !== "all" ? selectedStaff : ""}
-              isMultiple={false}
-              onChange={(val) => setSelectedStaff(Number(val.value))}
-              valueKey="value"
-              labelKey="name"
-            />
-          )}
-          <MinMaxFilter
-            label="Purchases 10d"
-            min={purchases10Range ? purchases10Range.min : ""}
-            max={purchases10Range ? purchases10Range.max : ""}
-            onChange={(values) => setPurchases10Range(values)}
-          />
-        </div>
-
-        <div className={s.filters_row}>
           <MinMaxFilter
             label="Cycle"
             min={cycleRange ? cycleRange.min : ""}
@@ -345,6 +388,36 @@ const AdControlListing = () => {
           />
         </div>
 
+        <div className={s.filters_row}>
+          <MinMaxFilter
+            label="Total purchases (10d)"
+            min={totalPurchasesRange ? totalPurchasesRange.min : ""}
+            max={totalPurchasesRange ? totalPurchasesRange.max : ""}
+            onChange={(values) => setTotalPurchasesRange(values)}
+          />
+          <MinMaxFilter
+            label="Purchases 10d"
+            min={purchases10Range ? purchases10Range.min : ""}
+            max={purchases10Range ? purchases10Range.max : ""}
+            onChange={(values) => setPurchases10Range(values)}
+          />
+        </div>
+
+        <div className={s.filters_row}>
+          <MinMaxFilter
+            label="Ad visits (10d)"
+            min={adVisitsRange ? adVisitsRange.min : ""}
+            max={adVisitsRange ? adVisitsRange.max : ""}
+            onChange={(values) => setAdVisitsRange(values)}
+          />
+          <MinMaxFilter
+            label="Ad purchases (10d)"
+            min={totalAdPurchasesRange ? totalAdPurchasesRange.min : ""}
+            max={totalAdPurchasesRange ? totalAdPurchasesRange.max : ""}
+            onChange={(values) => setTotalAdPurchasesRange(values)}
+          />
+        </div>
+
         <button className={s.clear_btn} onClick={handleClearFilters}>
           Clear Filters
         </button>
@@ -353,7 +426,9 @@ const AdControlListing = () => {
       <Search id={adControlSearch} placeholder={t("admin.landings.search")} />
       <Table
         loading={loading}
-        landingLinkByIdPath={Path.landingAnalytics}
+        landingLinkByIdPath={
+          mode === "courses" ? Path.landingAnalytics : Path.bookLandingAnalytics
+        }
         data={data}
         columnLabels={{
           id: "ID",
@@ -362,10 +437,13 @@ const AdControlListing = () => {
           stage_started_at: "Start date",
           quarantine_ends_at: "End date",
           cycle_no: "Cycle",
-          days_in_stage: "Days In ",
-          ad_purchases_last_10_days: "Purchases",
+          days_in_stage: "Days In",
+          total_purchases_last_10_days: "P(10d)",
+          ad_purchases_last_10_days: "AP(10d)",
+          ad_visits_last_10_days: "AV(10d)",
           assignee: "Assignee",
           ad_purchases_lifetime: "Lifetime",
+          total_purchases_lifetime: "P(full)",
           hours_left: "Hours left",
         }}
         structured

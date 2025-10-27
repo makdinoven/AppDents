@@ -10,7 +10,8 @@ const AdminPage = () => {
   const location = useLocation();
   const showSidebar =
     !location.pathname.includes("/detail/") &&
-    !location.pathname.includes("/landing-analytics/");
+    !location.pathname.includes("/landing-analytics/") &&
+    !location.pathname.includes("/book-landing-analytics/");
   const currentPage =
     ADMIN_SIDEBAR_LINKS.flatMap((s) => s.innerLinks ?? []).find((l) =>
       location.pathname.startsWith(l.link),

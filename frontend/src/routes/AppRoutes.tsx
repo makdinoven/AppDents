@@ -214,7 +214,11 @@ export const AppRoutes: FC = () => {
             />
             <Route
               path={`${Path.landingAnalytics}/:landingId?`}
-              element={<LandingAnalytics />}
+              element={<LandingAnalytics isBook={false} />}
+            />
+            <Route
+                path={`${Path.bookLandingAnalytics}/:landingId?`}
+                element={<LandingAnalytics isBook />}
             />
             <Route
               path={`${Path.landingDetail}/:landingId?`}
