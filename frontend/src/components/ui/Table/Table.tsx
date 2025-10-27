@@ -34,15 +34,6 @@ const Table = <T extends Record<string, any>>({
     "color",
   ];
 
-  const colors = new Map([
-    [0, s.green],
-    [1, `${s.green} ${s.pale}`],
-    [2, s.blue],
-    [3, `${s.blue} ${s.pale}`],
-    [4, s.purple],
-    [5, `${s.purple} ${s.pale}`],
-  ]);
-
   const headers = Object.keys(data[0]).filter(
     (key) => !excludedKeys.includes(key),
   );
@@ -121,10 +112,24 @@ const Table = <T extends Record<string, any>>({
     return value;
   };
 
-  const paintCell = (index: number): string => {
-    if (!structured || index < 3) return "";
-    const color = colors.get(index % colors.size);
-    return color || "";
+  const paintCell = (key: string): string => {
+    if (!structured) return "";
+
+    if (key === "ad_visits_last_10_days") return s.purple;
+    else if (
+      key === "ad_purchases_last_10_days" ||
+      key === "total_purchases_last_10_days"
+    )
+      return s.blue;
+    else if (
+      key === "ad_purchases_lifetime" ||
+      key === "total_purchases_lifetime"
+    )
+      return `${s.blue} ${s.pale}`;
+    else if (key === "stage_started_at" || key === "days_in_stage")
+      return s.green;
+
+    return "";
   };
 
   return (
@@ -149,10 +154,10 @@ const Table = <T extends Record<string, any>>({
                     {rowIdx + 1}
                   </td>
                 )}
-                {headers.map((key, index) => (
+                {headers.map((key) => (
                   <td
                     key={key}
-                    className={paintCell(index)}
+                    className={paintCell(key)}
                     style={
                       typeof row[key] === "number"
                         ? { textAlign: "center" }
