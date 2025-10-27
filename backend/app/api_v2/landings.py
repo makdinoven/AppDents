@@ -2,6 +2,7 @@ import copy
 import uuid
 import logging
 from datetime import datetime, timedelta, time, date
+from decimal import Decimal, ROUND_HALF_UP
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
@@ -9,7 +10,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException, Request, B
 from pydantic import BaseModel
 from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, selectinload
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Literal
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
@@ -20,15 +21,13 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     delete_landing, get_landing_cards, get_top_landings_by_sales, \
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
     track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
-    open_ad_period_if_needed, AD_TTL
-from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, \
-    get_sales_totals, open_ad_period_if_needed, AD_TTL
+    open_ad_period_if_needed, AD_TTL, get_sales_totals
+from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TrackAdIn
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
 from pydantic import BaseModel
 from ..schemas_v2.common import TagResponse
-    LandingListPageResponse, LangEnum, FreeAccessRequest, TrackAdIn
 from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email

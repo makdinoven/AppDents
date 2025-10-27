@@ -2,9 +2,8 @@
 from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
     health_checkers, smart_validations, clip_generator, slider, books, book_admin, media, search, book_metadata, \
-    ad_control, book_ad_control, policy
-    health_checkers, smart_validations, clip_generator, slider, books, search, summary_generator, ad_control, \
-    video_repair
+    ad_control, book_ad_control, policy, video_repair
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from .db.database import init_db
