@@ -19,7 +19,6 @@ openpyxl
 rapidfuzz==3.12.1
 aiomysql==0.2.0
 jose
-rapidfuzz
 boto3
 botocore
 celery
@@ -32,3 +31,4 @@ email_validator
 Pillow
 pypdf>=4.0.0
 fuzzywuzzy[speedup]>=0.18.0
+assemblyai

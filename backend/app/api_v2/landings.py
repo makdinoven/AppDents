@@ -5,12 +5,15 @@ from datetime import datetime, timedelta, time, date
 
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
+from fastapi import APIRouter, Depends, Query, status, HTTPException, Request, Body
+from pydantic import BaseModel
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional, Dict
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit
+from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase, LandingAdPeriod
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
@@ -19,10 +22,13 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
     open_ad_period_if_needed, AD_TTL
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, \
+    get_sales_totals, open_ad_period_if_needed, AD_TTL
+from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
     LandingListPageResponse, LangEnum, FreeAccessRequest
 from pydantic import BaseModel
 from ..schemas_v2.common import TagResponse
+    LandingListPageResponse, LangEnum, FreeAccessRequest, TrackAdIn
 from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
@@ -552,25 +558,21 @@ def language_stats(
 
     return {"total": total, "daily": daily}
 
+SortBy = Literal["sales", "created_at"]
+SortDir = Literal["asc", "desc"]
+
 @router.get("/most-popular")
 def most_popular_landings(
     language: Optional[str] = Query(None),
     limit: int = Query(10, gt=0, le=500),
-    start_date: Optional[date] = Query(
-        None, description="Начало периода (YYYY-MM-DD)"
-    ),
-    end_date: Optional[date] = Query(
-        None, description="Конец периода (YYYY-MM-DD, включительно)"
-    ),
+    start_date: Optional[date] = Query(None, description="Начало периода (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец периода (YYYY-MM-DD, включительно)"),
+    sort_by: str = Query("sales", description="Поле сортировки: sales | created_at"),
+    sort_dir: str = Query("desc", description="Направление: asc | desc"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin"))
 ):
-    """
-    • Если нет дат — используется агрегированное поле sales_count.
-    • Если есть только start_date — все продажи от start_date до сегодня.
-    • Если есть обе даты — все продажи за каждый день от start_date до end_date включительно.
-    • end_date без start_date — ошибка.
-    """
+    # нормализуем даты как раньше
     if not start_date and not end_date:
         sd, ed = None, None
     elif start_date and not end_date:
@@ -583,93 +585,63 @@ def most_popular_landings(
             detail="Если указываете end_date, нужно обязательно передать start_date."
         )
 
+    # список
     rows = get_top_landings_by_sales(
         db=db,
         language=language,
         limit=limit,
         start_date=sd,
         end_date=ed,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
 
-    return [
+    items = [
         {
             "id": l.id,
             "landing_name": l.landing_name,
             "slug": l.page_name,
-            "sales_count": sales,
+            "sales_count": int(sales or 0),
+            "ad_sales_count": int(ad_sales_count or 0),
             "language": l.language,
             "in_advertising": l.in_advertising,
+            "created_at": l.created_at.isoformat() if getattr(l, "created_at", None) else None,
         }
-        for l, sales in rows
+        for (l, sales, ad_sales_count) in rows
     ]
+
+    # totals по тем же фильтрам (датам/языку)
+    totals = get_sales_totals(
+        db=db,
+        language=language,
+        start_date=sd,
+        end_date=ed,
+    )
+
+    return {
+        "totals": totals,   # {"sales_total": N, "ad_sales_total": M}
+        "items": items
+    }
+
+def _client_ip(request: Request) -> str:
+    xfwd = request.headers.get("x-forwarded-for", "")
+    return (xfwd.split(",")[0].strip() if xfwd else request.client.host)
 
 @router.post("/track-ad/{slug}")
 def track_ad(slug: str,
              request: Request,
+            payload: Optional[TrackAdIn] = Body(None),
              db: Session = Depends(get_db)):
     landing = db.query(Landing).filter(Landing.page_name == slug).first()
     if not landing:
         raise HTTPException(404)
-    track_ad_visit(
-        db=db,
-        landing_id=landing.id,
-        fbp=request.cookies.get("_fbp"),
-        fbc=request.cookies.get("_fbc"),
-        ip=request.client.host
-    )
+    payload = payload or TrackAdIn()
+    # 1) собрать fbp/fbc максимально надёжно
+    fbp = payload.fbp or request.cookies.get("_fbp")
+    fbc = payload.fbc or request.cookies.get("_fbc")
+    ip = _client_ip(request)
+    track_ad_visit(db=db, landing_id=landing.id, fbp=fbp, fbc=fbc, ip=ip)
     return {"ok": True}
-
-
-class VisitIn(BaseModel):
-    from_ad: bool = False
-
-
-@router.post("/{landing_id}/visit", status_code=201)
-def track_landing_visit(
-    landing_id: int,
-    payload: VisitIn | None = None,
-    db: Session = Depends(get_db),
-):
-    """
-    Отслеживает визит на курсовой лендинг.
-    Если from_ad=True и реклама включена, продлевает TTL и открывает период.
-    """
-    exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
-    if not exists:
-        raise HTTPException(status_code=404, detail="Landing not found")
-
-    payload = payload or VisitIn()
-    from_ad = bool(payload.from_ad)
-
-    # 1) фиксируем визит (только в landing_visits)
-    db.add(LandingVisit(
-        landing_id=landing_id,
-        from_ad=from_ad,
-    ))
-
-    # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
-    if from_ad:
-        now = datetime.utcnow()
-        landing = (
-            db.query(Landing)
-              .filter(Landing.id == landing_id)
-              .with_for_update()
-              .first()
-        )
-        if landing and landing.in_advertising:
-            # гарантируем открытый период, если вдруг его нет
-            open_ad_period_if_needed(db, landing_id, started_by=None)
-
-            # продлеваем TTL
-            new_ttl = now + AD_TTL
-            if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
-                landing.ad_flag_expires_at = new_ttl
-
-        # ВАЖНО: если in_advertising == False, НИЧЕГО не включаем и не трогаем период/TTL
-
-    db.commit()
-    return {"ok": True}
-
 
 @router.post("/free-access/{landing_id}")
 def grant_free_access(
@@ -834,4 +806,405 @@ def personalized_cards(
         sort=sort,
         language=language,
     )
+class VisitIn(BaseModel):
+    from_ad: bool = False
 
+
+@router.post("/{landing_id}/visit", status_code=201)
+def track_landing_visit(
+    landing_id: int,
+    payload: VisitIn | None = None,
+    db: Session = Depends(get_db),
+):
+    exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Landing not found")
+
+    payload = payload or VisitIn()
+    from_ad = bool(payload.from_ad)
+
+    # 1) фиксируем визит (только в landing_visits)
+    db.add(LandingVisit(
+        landing_id=landing_id,
+        from_ad=from_ad,
+    ))
+
+    # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
+    if from_ad:
+        now = datetime.utcnow()
+        landing = (
+            db.query(Landing)
+              .filter(Landing.id == landing_id)
+              .with_for_update()
+              .first()
+        )
+        if landing and landing.in_advertising:
+            # гарантируем открытый период, если вдруг его нет
+            open_ad_period_if_needed(db, landing_id, started_by=None)
+
+            # продлеваем TTL
+            new_ttl = now + AD_TTL
+            if not landing.ad_flag_expires_at or landing.ad_flag_expires_at < new_ttl:
+                landing.ad_flag_expires_at = new_ttl
+
+        # ВАЖНО: если in_advertising == False, НИЧЕГО не включаем и не трогаем период/TTL
+
+    db.commit()
+    return {"ok": True}
+
+
+Granularity = Literal["hour", "day"]
+
+def _resolve_period(
+    start_date: Optional[date],
+    end_date: Optional[date],
+) -> tuple[datetime, datetime]:
+    now = datetime.utcnow()
+    if start_date is None and end_date is None:
+        return datetime(now.year, now.month, now.day), now
+    if start_date is not None and end_date is None:
+        return datetime.combine(start_date, time.min), now
+    if start_date is not None and end_date is not None:
+        return datetime.combine(start_date, time.min), datetime.combine(end_date + timedelta(days=1), time.min)
+    raise HTTPException(status_code=400, detail="Если указываете end_date, нужно обязательно передать start_date.")
+
+def _auto_granularity(start_dt: datetime, end_dt: datetime) -> Granularity:
+    return "hour" if (end_dt - start_dt) <= timedelta(hours=48) else "day"
+
+def _bucket_expr_mysql(ts_col, granularity: Granularity):
+    if granularity == "day":
+        return func.date(ts_col)  # 'YYYY-MM-DD'
+    return func.date_format(ts_col, '%Y-%m-%d %H:00:00')  # 'YYYY-MM-DD HH:00:00'
+
+def _coerce_bucket_to_dt(v, granularity: Granularity) -> datetime:
+    if isinstance(v, datetime):
+        return v.replace(minute=0, second=0, microsecond=0) if granularity == "hour" else v.replace(hour=0, minute=0, second=0, microsecond=0)
+    if isinstance(v, date):
+        return datetime(v.year, v.month, v.day)
+    # MySQL DATE_FORMAT -> str
+    from datetime import datetime as _dt
+    if len(v) == 19:
+        return _dt.strptime(v, "%Y-%m-%d %H:%M:%S")
+    return _dt.strptime(v, "%Y-%m-%d")
+
+def _iter_grid(start_dt: datetime, end_dt: datetime, granularity: Granularity):
+    step = timedelta(hours=1) if granularity == "hour" else timedelta(days=1)
+    cur = start_dt.replace(minute=0, second=0, microsecond=0) if granularity == "hour" \
+        else start_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+    while cur < end_dt:
+        yield cur
+        cur += step
+
+def _fill_series(start_dt: datetime, end_dt: datetime, granularity: Granularity, m: Dict[datetime, int]):
+    return [{"ts": ts.isoformat() + "Z", "count": int(m.get(ts, 0))} for ts in _iter_grid(start_dt, end_dt, granularity)]
+
+def _fetch_counts(
+    db: Session,
+    ts_col,
+    filters,
+    start_dt: datetime,
+    end_dt: datetime,
+    granularity: Granularity,
+) -> tuple[Dict[datetime, int], int]:
+    bucket = _bucket_expr_mysql(ts_col, granularity).label("b")
+    rows = (db.query(bucket, func.count("*"))
+              .filter(ts_col >= start_dt, ts_col < end_dt, *filters)
+              .group_by(bucket)
+              .order_by(bucket)
+              .all())
+    m: Dict[datetime, int] = {}
+    total = 0
+    for b, cnt in rows:
+        dt = _coerce_bucket_to_dt(b, granularity)
+        m[dt] = int(cnt)
+        total += int(cnt)
+    return m, total
+
+def _pct(numer: int, denom: int) -> float:
+    if denom <= 0:
+        return 0.0
+    # округление до двух знаков как в витринах
+    return float(Decimal(numer) / Decimal(denom).quantize(Decimal("1.00"), rounding=ROUND_HALF_UP)*100)
+
+@router.get("/analytics/landing-traffic")
+def landing_traffic(
+    landing_id: int,
+    start_date: Optional[date] = Query(None, description="Начало (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец (YYYY-MM-DD, включительно)"),
+    bucket:     Optional[Granularity] = Query(None, description="hour|day; по умолчанию авто"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    # 1) лендинг + имя
+    landing_row = (
+        db.query(Landing.id, Landing.landing_name, Landing.created_at)
+          .filter(Landing.id == landing_id)
+          .first()
+    )
+    if not landing_row:
+        raise HTTPException(status_code=404, detail="Landing not found")
+    landing_name = landing_row.landing_name
+    landing_created_at = landing_row.created_at
+
+    # 2) период и гранулярность
+    start_dt, end_dt = _resolve_period(start_date, end_date)
+    gran = bucket or _auto_granularity(start_dt, end_dt)
+
+    # 3) визиты/покупки за диапазон (у тебя это уже было)
+    visit_map, visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id == landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    purchase_map, purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.landing_id == landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # 4) суммы «за всё время» (без ограничений по дате)
+    visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(LandingVisit.landing_id == landing_id)
+          .scalar()
+        or 0
+    )
+    purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.landing_id == landing_id)
+          .scalar()
+        or 0
+    )
+    ad_visit_map, ad_visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id == landing_id,
+                 LandingVisit.from_ad.is_(True)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+    # Пересечение периодов рекламы с выбранным окном [start_dt, end_dt)
+    period_rows = (
+        db.query(LandingAdPeriod.started_at, LandingAdPeriod.ended_at)
+        .filter(
+            LandingAdPeriod.landing_id == landing_id,
+            LandingAdPeriod.started_at < end_dt,
+            func.coalesce(LandingAdPeriod.ended_at, datetime.utcnow()) > start_dt
+        )
+        .order_by(LandingAdPeriod.started_at.asc())
+        .all()
+    )
+
+    ad_periods = []
+    now = datetime.utcnow()
+    for s, e in period_rows:
+        clip_start = max(s, start_dt)
+        clip_end = min(e or now, end_dt)
+        if clip_start < clip_end:
+            ad_periods.append({
+                "start": clip_start.isoformat() + "Z",
+                "end": clip_end.isoformat() + "Z"
+            })
+
+    ad_visits_all_time = (
+                             db.query(func.count(LandingVisit.id))
+                             .filter(LandingVisit.landing_id == landing_id,
+                                     LandingVisit.from_ad.is_(True))
+                             .scalar()
+                         ) or 0
+
+    first_visit_at = (
+        db.query(func.min(LandingVisit.visited_at))
+        .filter(LandingVisit.landing_id == landing_id)
+        .scalar()
+    )
+
+    if first_visit_at is not None:
+        purchases_since_first_visit = (
+                                          db.query(func.count(Purchase.id))
+                                          .filter(
+                                              Purchase.landing_id == landing_id,
+                                              Purchase.created_at >= first_visit_at
+                                          )
+                                          .scalar()
+                                      ) or 0
+    else:
+        purchases_since_first_visit = 0
+
+    conversion_all_time_percent = _pct(purchases_since_first_visit, visits_all_time)
+
+    return {
+        "landing": {
+            "id": landing_id,
+            "name": landing_name,
+            "created_at": landing_created_at,
+            "in_advertising": bool(db.query(Landing.in_advertising).filter(Landing.id == landing_id).scalar()),
+        },
+        "range": {
+            "start": start_dt.isoformat() + "Z",
+            "end":   end_dt.isoformat() + "Z",
+        },
+        "granularity": gran,
+
+        # Итоги
+        "totals_all_time": {
+            "visits": visits_all_time,
+            "ad_visits": ad_visits_all_time,
+            "purchases": purchases_all_time,
+            "conversion_percent": conversion_all_time_percent,
+            "purchases_first_visit":purchases_since_first_visit,
+        },
+        "totals_range": {
+            "visits": visits_range_total,
+            "ad_visits": ad_visits_range_total,
+            "purchases": purchases_range_total
+        },
+        # Серии для графика
+        "series": {
+            "visits": _fill_series(start_dt, end_dt, gran, visit_map),
+            "ad_visits": _fill_series(start_dt, end_dt, gran, ad_visit_map),
+            "purchases": _fill_series(start_dt, end_dt, gran, purchase_map),
+        },
+        "ad_periods": ad_periods
+    }
+
+@router.get("/analytics/site-traffic")
+def site_traffic(
+    language: Optional[str] = Query(
+        None,
+        description="Фильтр по языку лендинга: EN, RU, ES, IT, AR, PT. Пусто = все языки."
+    ),
+    start_date: Optional[date] = Query(None, description="Начало (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец (YYYY-MM-DD, включительно)"),
+    bucket:     Optional[Granularity] = Query(None, description="hour|day; по умолчанию авто"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Агрегированная аналитика по ВСЕМ лендингам (опционально по языку).
+    Показатели: visits, ad_visits, purchases, ad_purchases.
+    Формат аналогичен /analytics/landing-traffic.
+    """
+    # 0) подготовим множество лендингов: is_hidden = False (+ язык, если задан)
+    landings_q = db.query(Landing.id).filter(Landing.is_hidden.is_(False))
+    if language:
+        landings_q = landings_q.filter(Landing.language == language.upper().strip())
+    landing_ids_subq = landings_q.subquery()  # один столбец id
+
+    # 1) период и гранулярность (та же логика)
+    start_dt, end_dt = _resolve_period(start_date, end_date)
+    gran = bucket or _auto_granularity(start_dt, end_dt)
+
+    # 2) серии и итоги за диапазон
+    visit_map, visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[LandingVisit.landing_id.in_(landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_visit_map, ad_visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=LandingVisit.visited_at,
+        filters=[
+            LandingVisit.landing_id.in_(landing_ids_subq),
+            LandingVisit.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    purchase_map, purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.landing_id.in_(landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_purchase_map, ad_purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[
+            Purchase.landing_id.in_(landing_ids_subq),
+            Purchase.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # 3) totals «за всё время» (без ограничений по дате)
+    visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(LandingVisit.landing_id.in_(landing_ids_subq))
+          .scalar()
+    ) or 0
+
+    ad_visits_all_time = (
+        db.query(func.count(LandingVisit.id))
+          .filter(
+              LandingVisit.landing_id.in_(landing_ids_subq),
+              LandingVisit.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
+
+    purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.landing_id.in_(landing_ids_subq))
+          .scalar()
+    ) or 0
+
+    ad_purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(
+              Purchase.landing_id.in_(landing_ids_subq),
+              Purchase.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
+
+    # 4) ответ — структура максимально похожа на landing_traffic
+    return {
+        "scope": {
+            "language": language.upper() if language else "ALL"
+        },
+        "range": {
+            "start": start_dt.isoformat() + "Z",
+            "end":   end_dt.isoformat() + "Z",
+        },
+        "granularity": gran,
+
+        "totals_all_time": {
+            "visits": visits_all_time,
+            "ad_visits": ad_visits_all_time,
+            "purchases": purchases_all_time,
+            "ad_purchases": ad_purchases_all_time,
+        },
+        "totals_range": {
+            "visits": visits_range_total,
+            "ad_visits": ad_visits_range_total,
+            "purchases": purchases_range_total,
+            "ad_purchases": ad_purchases_range_total,
+        },
+
+        "series": {
+            "visits":        _fill_series(start_dt, end_dt, gran, visit_map),
+            "ad_visits":     _fill_series(start_dt, end_dt, gran, ad_visit_map),
+            "purchases":     _fill_series(start_dt, end_dt, gran, purchase_map),
+            "ad_purchases":  _fill_series(start_dt, end_dt, gran, ad_purchase_map),
+        }
+    }

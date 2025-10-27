@@ -310,6 +310,16 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  validateVideoFix(data: any) {
+    return instance.post("/video_help/validate-fix", data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  getValidateVideoFixStatus(id: string) {
+    return instance.get(`/video_help/repair/${id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
   getVideoSummary({ video_url, context, answer_format }: SummaryToolDataType) {
     return instance.post(
       "/summary_generator/video-summary",
@@ -344,14 +354,8 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-  getAdListQuarantine(params: any) {
-    return instance.get("ad_control/ads/quarantine", {
-      params,
-      headers: getAuthHeaders(),
-    });
-  },
-  getAdListObservation(params: any) {
-    return instance.get("ad_control/ads/observation", {
+  getAdControlOverview(params: any) {
+    return instance.get("ad_control/ads/overview", {
       params,
       headers: getAuthHeaders(),
     });
@@ -419,7 +423,7 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-  getPublishers() {
+      getPublishers() {
     return instance.get("book-metadata/publishers", {
       headers: getAuthHeaders(),
     });

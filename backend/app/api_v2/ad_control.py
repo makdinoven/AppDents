@@ -737,7 +737,6 @@ def _overview_color(now: datetime, stage_start: datetime, sales10: int, lifetime
 @router.get("/ads/overview")
 def ads_overview_list(
     language: Optional[str] = Query(None, description="EN/RU/…; пусто = все"),
-    # ── фильтры
     q: Optional[str] = Query(None, description="Поиск по landing_name (ILIKE)"),
     staff_id: Optional[int] = Query(None),
     colors: Optional[List[OverviewColor]] = Query(None, description="white|orange|red|green|black"),

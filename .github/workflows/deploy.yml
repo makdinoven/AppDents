@@ -53,53 +53,92 @@ jobs:
           debug: true
           command_timeout: 15m
           script: |
+            #!/usr/bin/env bash
             set -Eeuo pipefail
             set -x
-
+            
+            # =========================
+            # 0) Базовая подготовка
+            # =========================
             cd /var/www/AppDents
             export COMPOSE_PROJECT_NAME=appdents
-
-            # Git: безопасный pull без ребейза/редактора, отключаем локальные хуки
+            export COMPOSE_FILE=docker-compose.yaml
+            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            
+            # =========================
+            # 1) Обновляем репозиторий
+            # =========================
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
-            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
             git pull --no-rebase --no-edit -s recursive -X theirs origin main
-
-            # .env обязателен
+            
+            # =========================
+            # 2) .env обязателен
+            # =========================
             if [ ! -f .env ]; then
               if [ -f /etc/appdents/prod.env ]; then
                 ln -sfn /etc/appdents/prod.env .env
               else
-                echo "[env] .env missing and /etc/appdents/prod.env not found"; exit 1
+                echo "[env] .env missing and /etc/appdents/prod.env not found"
+                exit 1
               fi
             fi
-
-            # Сборка изменившихся сервисов + всегда nginx
-            CHANGED="$(echo "${{ needs.check-changes.outputs.changed_services }}" | xargs || true)"
-            if [ -z "$CHANGED" ]; then
-              echo "Нет изменений в сервисах — пересобираем только nginx"
-              docker compose -f docker-compose.yaml build nginx
+            
+            # =========================
+            # 3) Какие сервисы менялись
+            # =========================
+            # из output джобы check-changes
+            CHANGED_RAW="${{ needs.check-changes.outputs.changed_services }}"
+            # нормализуем пробелы/переводы строк
+            CHANGED="$(echo "${CHANGED_RAW:-}" | xargs || true)"
+            
+            echo "[info] Changed services: '${CHANGED:-<none>}'"
+            
+            # =========================
+            # 4) Сборка образов
+            #    - всегда собираем nginx (быстрый и безопасный reload)
+            #    - при наличии изменений — собираем их тоже
+            # =========================
+            docker compose build nginx
+            if [ -n "${CHANGED:-}" ]; then
+              docker compose build ${CHANGED}
+            fi
+            
+            # =========================
+            # 5) Обновляем контейнеры
+            #    НИКАКОГО `down` и чисток сетей — сайт остаётся жить.
+            #    Пересоздаём ТОЛЬКО изменившиеся сервисы, без зависимостей.
+            #    Если изменений нет — просто «поднимаем» nginx (на случай обновления конфига/образа)
+            # =========================
+            if [ -z "${CHANGED:-}" ]; then
+              echo "[deploy] No service changes. Touch nginx only."
+              docker compose up -d --no-deps nginx
             else
-              echo "Есть изменения в: $CHANGED"
-              docker compose -f docker-compose.yaml build $CHANGED nginx
+              echo "[deploy] Updating changed services: ${CHANGED}"
+              for svc in ${CHANGED}; do
+                echo "[deploy] Upgrading: ${svc}"
+                # Пытаемся дождаться healthcheck (если он описан)
+                if ! docker compose up -d --no-deps --wait "${svc}"; then
+                  echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
+                  docker compose up -d --no-deps "${svc}"
+                fi
+              done
+              # На всякий случай убедимся, что nginx на последнем образе
+              docker compose up -d --no-deps nginx
             fi
-
-            # Рестарт стека с ретраями (устраняет гонки сетей)
-            docker compose -f docker-compose.yaml down --remove-orphans || true
-            docker network prune -f || true
-
-            for i in 1 2 3; do
-              if docker compose -f docker-compose.yaml up -d; then
-                break
-              fi
-              echo "[retry] compose up failed, attempt $i"
-              docker compose -f docker-compose.yaml down --remove-orphans || true
-              docker network prune -f || true
-              sleep 3
-            done
-
-            # Reload nginx (или restart при неудаче)
-            docker compose -f docker-compose.yaml exec nginx nginx -s reload || \
-              docker compose -f docker-compose.yaml restart nginx
-
+            
+            # =========================
+            # 6) Бездаунтаймовый reload nginx
+            # =========================
+            if ! docker compose exec -T nginx nginx -s reload; then
+              echo "[warn] nginx reload failed — doing safe restart"
+              docker compose restart nginx
+            fi
+            
+            # =========================
+            # 7) Уборка билд-кеша (безопасно)
+            # =========================
             docker builder prune -f || true
+            
+            echo "[done] Deploy complete."
+

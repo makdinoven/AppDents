@@ -124,6 +124,16 @@ class Landing(Base):
     is_hidden = Column(Boolean, nullable=False, server_default='0')
     in_advertising = Column(Boolean, default=False)
     ad_flag_expires_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),  # MySQL CURRENT_TIMESTAMP
+    )
+
+    __table_args__ = (
+        # если у тебя уже есть другие индексы — добавь этот в кортеж
+        Index("ix_landings_created_at", "created_at"),
+    )
 
 
     # Связь с лекторами через ассоциативную таблицу
@@ -136,6 +146,26 @@ class Landing(Base):
     def course_ids(self) -> list[int]:
         """Список ID курсов, связанных с этим лендингом."""
         return [c.id for c in self.courses]
+
+class LandingAdPeriod(Base):
+    __tablename__ = "landing_ad_periods"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
+
+    started_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    ended_at   = Column(DateTime, nullable=True)  # NULL = ещё в рекламе
+
+    # опционально, если хочешь хранить «кто» переключил
+    started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    ended_by   = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    landing = relationship("Landing", backref="ad_periods")
+
+    __table_args__ = (
+        Index("ix_ladp_landing_started", "landing_id", "started_at"),
+        Index("ix_ladp_landing_ended",   "landing_id", "ended_at"),
+    )
 
 class Tag(Base):
     __tablename__ = 'tags'
@@ -271,23 +301,7 @@ class ReferralRule(Base):
     max_purchase_no = Column(Integer)           # NULL = ∞
     percent         = Column(Float, nullable=False)
 
-class LandingVisit(Base):
-    """Все визиты на курсовые лендинги."""
-    __tablename__ = "landing_visits"
-
-    id         = Column(Integer, primary_key=True, autoincrement=True)
-    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
-    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    from_ad    = Column(Boolean, nullable=False, server_default="0")
-
-    landing = relationship("Landing", backref="visits")
-
-    __table_args__ = (
-        Index("ix_landing_visits_landing_visited", "landing_id", "visited_at"),
-    )
-
 class AdVisit(Base):
-    """Визиты с рекламы на курсовые лендинги с метаданными (fbp, fbc, ip)."""
     __tablename__ = "ad_visits"
     id          = Column(Integer, primary_key=True)
     landing_id  = Column(Integer, ForeignKey("landings.id"), nullable=False)
@@ -704,31 +718,39 @@ class LandingAdPeriod(Base):
 
     id         = Column(Integer, primary_key=True, autoincrement=True)
     landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
+    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    from_ad = Column(Boolean, nullable=False, server_default="0")
 
-    started_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    ended_at   = Column(DateTime, nullable=True)  # NULL = ещё в рекламе
+    book_landing = relationship("BookLanding", backref="visits")
 
-    # опционально, если хочешь хранить «кто» переключил
-    started_by = Column(Integer, ForeignKey("users.id"), nullable=True)
-    ended_by   = Column(Integer, ForeignKey("users.id"), nullable=True)
+    __table_args__ = (
+        Index("ix_book_landing_visits_landing_visited", "book_landing_id", "visited_at"),
+    )
 
+class LandingVisit(Base):
+    __tablename__ = "landing_visits"
 
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    landing_id = Column(Integer, ForeignKey("landings.id"), nullable=False, index=True)
+    visited_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    from_ad = Column(Boolean, nullable=False, server_default="0")
+
+    landing = relationship("Landing", backref="visits")
+
+    __table_args__ = (
+        Index("ix_lvisit_landing_dt", "landing_id", "visited_at"),
+    )
 class AdStaff(Base):
-    """Ответственные сотрудники за рекламу."""
     __tablename__ = "ad_staff"
     id   = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
 
-
 class AdAccount(Base):
-    """Рекламные кабинеты."""
     __tablename__ = "ad_accounts"
     id   = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
 
-
 class LandingAdAssignment(Base):
-    """Назначение ответственного и кабинета для лендинга."""
     __tablename__ = "landing_ad_assignments"
     landing_id = Column(Integer, ForeignKey("landings.id"), primary_key=True)
     staff_id   = Column(Integer, ForeignKey("ad_staff.id"), nullable=True)
@@ -737,9 +759,6 @@ class LandingAdAssignment(Base):
     landing = relationship("Landing", backref=backref("ad_assignment", uselist=False))
     staff   = relationship("AdStaff")
     account = relationship("AdAccount")
-
-
-# ── Модели для аналитики рекламы КНИГ ────────────────────────────────────────
 
 class BookLandingVisit(Base):
     """Все визиты на книжные лендинги."""
@@ -777,7 +796,6 @@ class BookLandingAdPeriod(Base):
         Index("ix_bladp_landing_started", "book_landing_id", "started_at"),
         Index("ix_bladp_landing_ended",   "book_landing_id", "ended_at"),
     )
-
 
 class BookAdVisit(Base):
     """Визиты с рекламы на книжные лендинги с метаданными (fbp, fbc, ip)."""

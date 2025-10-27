@@ -202,6 +202,7 @@ export const PAYMENT_SOURCES_OPTIONS = [
       ]),
     ).values(),
   ),
+  { value: "SPECIAL_OFFER", label: "SPECIAL_OFFER" },
 ];
 
 export const REF_CODE_PARAM = "rc";
@@ -219,10 +220,10 @@ export const BOOK_FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
 export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
   EN: EnFlag,
   ES: EsFlag,
-  RU: RuFlag,
   PT: PtFlag,
   AR: ArFlag,
   IT: ItFlag,
+  RU: RuFlag,
 };
 
 export const ADMIN_SIDEBAR_LINKS = [
@@ -265,6 +266,7 @@ export const ADMIN_SIDEBAR_LINKS = [
     innerLinks: [
       { label: "Video summary", link: Path.adminVideoSummaryTool },
       { label: "Clip tool", link: Path.adminClipTool },
+      { label: "Magic video fix", link: Path.adminMagicVideoTool },
     ],
   },
 ];
