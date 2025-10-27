@@ -97,8 +97,8 @@ export const mainApi = {
     return instance.get(`/authors/full_detail/${id}`);
   },
 
-  trackFacebookAd(slug: string) {
-    return instance.post(`/landings/track-ad/${slug}`);
+  trackFacebookAd(slug: string, fbc: any, fbp: any) {
+    return instance.post(`/landings/track-ad/${slug}`, { fbc, fbp });
   },
   globalSearch(params: {
     q: string;

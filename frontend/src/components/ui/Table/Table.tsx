@@ -152,7 +152,15 @@ const Table = <T extends Record<string, any>>({
                   {rowIdx + 1}
                 </td>
                 {headers.map((key, index) => (
-                  <td key={key} className={paintCell(index)}>
+                  <td
+                    key={key}
+                    className={paintCell(index)}
+                    style={
+                      typeof row[key] === "number"
+                        ? { textAlign: "center" }
+                        : undefined
+                    }
+                  >
                     {renderCell(key, row[key], row)}
                   </td>
                 ))}

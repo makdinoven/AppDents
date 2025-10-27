@@ -535,12 +535,13 @@
     "analytics": {
       "analytics": "Analytics",
       "size": "Size",
-      "landings": "Language stats",
-      "listing": "Ad listing",
+      "languageStats": "Language stats",
+      "adListing": "Ad listing",
       "referrals": "Referrals",
       "purchases": "Purchases",
       "userGrowth": "User growth",
-      "freeCourses": "Freewebs"
+      "freewebs": "Freewebs",
+      "traffic": "Traffic"
     },
     "tools": {
       "tools": "tools",
@@ -566,6 +567,12 @@
           "placeholder": "Enter answer format.."
         }
       }
+    },
+    "adControl": {
+      "adControl": "Ad control",
+      "listing": "Main",
+      "staff": "staff",
+      "accounts": "accounts"
     }
   }
 }

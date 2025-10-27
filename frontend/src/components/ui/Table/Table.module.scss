@@ -5,8 +5,6 @@
   align-items: flex-start;
   gap: 30px;
   width: 100%;
-  //flex: 1;
-  //min-width: 0;
 }
 
 .table_wrapper {
@@ -77,6 +75,12 @@
     &.green {
       &::after {
         background-color: $green;
+      }
+    }
+
+    &.black {
+      &::after {
+        background-color: $accent;
       }
     }
 

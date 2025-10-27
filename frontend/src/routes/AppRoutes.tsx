@@ -53,6 +53,7 @@ import AdminUsersListing from "../pages/Admin/pages/content/AdminUsersListing.ts
 import AdminBooksListing from "../pages/Admin/pages/content/AdminBooksListing.tsx";
 import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLandingsListing.tsx";
 import BookPage from "../pages/ProfilePage/pages/BookPage/BookPage.tsx";
+import MagicVideoTool from "../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -202,6 +203,10 @@ export const AppRoutes: FC = () => {
               element={<VideoSummaryTool />}
             />
             <Route path={`${Path.adminClipTool}`} element={<ClipTool />} />
+            <Route
+              path={`${Path.adminMagicVideoTool}`}
+              element={<MagicVideoTool />}
+            />
 
             <Route
               path={`${Path.courseDetail}/:courseId?`}

@@ -2,7 +2,6 @@ import s from "./AdControlListing.module.scss";
 import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES_NAME } from "../../../../../common/helpers/commonConstants.ts";
-import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 import SortOrderToggle, {
   SortDirectionType,
 } from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
@@ -23,11 +22,10 @@ import { transformIdNameArrToValueNameArr } from "../../../../../common/helpers/
 
 const adControlSearch = "ad-control-q";
 
-type ColorType = "green" | "orange" | "red" | "white";
+type ColorType = "green" | "orange" | "red" | "white" | "black";
 
 const AdControlListing = () => {
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<"quarantine" | "observation">("quarantine");
   const [loading, setLoading] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("EN");
   const [data, setData] = useState<any>(null);
@@ -43,18 +41,13 @@ const AdControlListing = () => {
     min: string;
     max: string;
   } | null>(null);
-  const [purchasesFirst5Range, setPurchasesFirst5Range] = useState<{
-    min: string;
-    max: string;
-  } | null>(null);
-  const [purchasesLast10Range, setPurchasesLast10Range] = useState<{
+  const [purchases10Range, setPurchases10Range] = useState<{
     min: string;
     max: string;
   } | null>(null);
   const [sortBy, setSortBy] = useState("");
   const [staffList, setStaffList] = useState<any>([]);
   const [accountsList, setAccountsList] = useState<any>([]);
-  const isQuarantine = mode === "quarantine";
   const [selectedStaff, setSelectedStaff] = useState<number | "all">("all");
   const [selectedAccount, setSelectedAccount] = useState<number | "all">("all");
   const {
@@ -69,8 +62,8 @@ const AdControlListing = () => {
     setLoading(true);
     const params: {
       q?: string;
-      start_date?: string;
-      end_date?: string;
+      stage_start_from?: string;
+      stage_start_to?: string;
       language?: string;
       sort_dir?: SortDirectionType;
       colors?: ColorType[];
@@ -91,10 +84,10 @@ const AdControlListing = () => {
       params.language = language;
     }
     if (dateRange.startDate) {
-      params.start_date = dateRange.startDate;
+      params.stage_start_from = dateRange.startDate;
     }
     if (dateRange.endDate) {
-      params.end_date = dateRange.endDate;
+      params.stage_start_to = dateRange.endDate;
     }
 
     if (sortOrder) {
@@ -122,33 +115,17 @@ const AdControlListing = () => {
         params.cycle_max = Number(cycleRange.max);
       }
     }
-    if (purchasesLast10Range) {
-      if (purchasesLast10Range.min && !isQuarantine) {
-        params.sales10_min = Number(purchasesLast10Range.min);
+    if (purchases10Range) {
+      if (purchases10Range.min) {
+        params.sales10_min = Number(purchases10Range.min);
       }
-      if (purchasesLast10Range.max && !isQuarantine) {
-        params.sales10_max = Number(purchasesLast10Range.max);
-      }
-    }
-    if (purchasesFirst5Range) {
-      if (purchasesFirst5Range.min && isQuarantine) {
-        params.first5_min = Number(purchasesFirst5Range.min);
-      }
-      if (purchasesFirst5Range.max && isQuarantine) {
-        params.first5_min = Number(purchasesFirst5Range.max);
+      if (purchases10Range.max) {
+        params.sales10_max = Number(purchases10Range.max);
       }
     }
 
     if (sortBy && sortBy !== "all") {
-      if (
-        (isQuarantine && (sortBy === "deadline" || sortBy === "first5")) ||
-        (!isQuarantine && sortBy === "sales10") ||
-        ["days", "cycle", "name", "language", "stage_start", "color"].includes(
-          sortBy,
-        )
-      ) {
-        params.sort_by = sortBy;
-      }
+      params.sort_by = sortBy;
     }
     if (selectedStaff && selectedStaff !== "all") {
       params.staff_id = selectedStaff;
@@ -157,13 +134,8 @@ const AdControlListing = () => {
       params.account_id = selectedAccount;
     }
     try {
-      if (mode === "quarantine") {
-        const res = await adminApi.getAdListQuarantine(params);
-        setData(res.data.items);
-      } else {
-        const res = await adminApi.getAdListObservation(params);
-        setData(res.data.items);
-      }
+      const res = await adminApi.getAdControlOverview(params);
+      setData(res.data.items);
 
       setLoading(false);
     } catch (err) {
@@ -193,7 +165,6 @@ const AdControlListing = () => {
   useEffect(() => {
     fetchData();
   }, [
-    mode,
     debauncedSearchQuery,
     dateRange,
     language,
@@ -203,10 +174,8 @@ const AdControlListing = () => {
     cycleRange?.max,
     daysRange?.min,
     daysRange?.max,
-    purchasesFirst5Range?.min,
-    purchasesFirst5Range?.max,
-    purchasesLast10Range?.min,
-    purchasesLast10Range?.max,
+    purchases10Range?.min,
+    purchases10Range?.max,
     sortBy,
     selectedStaff,
     selectedAccount,
@@ -225,8 +194,7 @@ const AdControlListing = () => {
     setSortOrder(null);
     setColors([]);
     setCycleRange(null);
-    setPurchasesFirst5Range(null);
-    setPurchasesLast10Range(null);
+    setPurchases10Range(null);
     setDaysRange(null);
     setSortBy("");
     setLanguage("EN");
@@ -238,13 +206,6 @@ const AdControlListing = () => {
     <Loader />
   ) : (
     <div className={s.ad_control_main}>
-      <div className={s.page_header}>
-        <SwitchButtons
-          buttonsArr={["quarantine", "observation"]}
-          activeValue={mode}
-          handleClick={(val) => setMode(val)}
-        />
-      </div>
       <div className={s.filters}>
         <div className={s.filters_row}>
           <DateRangeFilter
@@ -262,12 +223,7 @@ const AdControlListing = () => {
               label={"Sort by"}
               options={[
                 { name: "All", value: "all" },
-                ...(isQuarantine
-                  ? [
-                      { name: "Deadline", value: "deadline" },
-                      { name: "Purchases (first 5d)", value: "first5" },
-                    ]
-                  : [{ name: "Purchases (last 10d)", value: "sales10" }]),
+                { name: "Purchases (last 10d)", value: "sales10" },
                 { name: "Days in", value: "days" },
                 { name: "Cycle", value: "cycle" },
                 { name: "Landing name", value: "name" },
@@ -340,6 +296,7 @@ const AdControlListing = () => {
               { name: "Red", value: "red" },
               { name: "Orange", value: "orange" },
               { name: "Green", value: "green" },
+              { name: "Black", value: "black" },
             ]}
             placeholder={"Choose a color"}
             selectedValue={colors}
@@ -350,7 +307,30 @@ const AdControlListing = () => {
           />
         </div>
 
-        <div className={s.min_max_filters}>
+        <div className={s.filters_row}>
+          {staffList && (
+            <MultiSelect
+              isSearchable={false}
+              label={"Staff"}
+              id={"staff"}
+              options={staffList}
+              placeholder={"Choose staff members"}
+              selectedValue={selectedStaff !== "all" ? selectedStaff : ""}
+              isMultiple={false}
+              onChange={(val) => setSelectedStaff(Number(val.value))}
+              valueKey="value"
+              labelKey="name"
+            />
+          )}
+          <MinMaxFilter
+            label="Purchases 10d"
+            min={purchases10Range ? purchases10Range.min : ""}
+            max={purchases10Range ? purchases10Range.max : ""}
+            onChange={(values) => setPurchases10Range(values)}
+          />
+        </div>
+
+        <div className={s.filters_row}>
           <MinMaxFilter
             label="Cycle"
             min={cycleRange ? cycleRange.min : ""}
@@ -363,21 +343,6 @@ const AdControlListing = () => {
             max={daysRange ? daysRange.max : ""}
             onChange={(values) => setDaysRange(values)}
           />
-          {isQuarantine ? (
-            <MinMaxFilter
-              label="Purchases (first 5d)"
-              min={purchasesFirst5Range ? purchasesFirst5Range.min : ""}
-              max={purchasesFirst5Range ? purchasesFirst5Range.max : ""}
-              onChange={(values) => setPurchasesFirst5Range(values)}
-            />
-          ) : (
-            <MinMaxFilter
-              label="Purchases (last 10d)"
-              min={purchasesLast10Range ? purchasesLast10Range.min : ""}
-              max={purchasesLast10Range ? purchasesLast10Range.max : ""}
-              onChange={(values) => setPurchasesLast10Range(values)}
-            />
-          )}
         </div>
 
         <button className={s.clear_btn} onClick={handleClearFilters}>
@@ -398,9 +363,10 @@ const AdControlListing = () => {
           quarantine_ends_at: "End date",
           cycle_no: "Cycle",
           days_in_stage: "Days In ",
-          ad_purchases_first_5_days: "Purchases(5d)",
-          ad_purchases_last_10_days: "Purchases(10d)",
+          ad_purchases_last_10_days: "Purchases",
           assignee: "Assignee",
+          ad_purchases_lifetime: "Lifetime",
+          hours_left: "Hours left",
         }}
         structured
       />

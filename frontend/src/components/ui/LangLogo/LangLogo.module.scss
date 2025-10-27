@@ -10,8 +10,12 @@
   outline: 2px solid transparent;
   outline-offset: 1.5px;
   //overflow: hidden;
-  border: 0.5px solid $accent-glass;
+  border: 0.5px solid $tertiary;
   @include transition();
+  @include clamped-p4;
+  text-align: center;
+  background-color: $primary-06;
+  color: $tertiary;
 
   svg {
     position: absolute;
