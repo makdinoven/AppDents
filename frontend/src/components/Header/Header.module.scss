@@ -50,6 +50,10 @@
   align-items: center;
   justify-content: space-between;
   gap: inherit;
+
+  &.promo {
+    justify-content: flex-end;
+  }
 }
 
 .content {
