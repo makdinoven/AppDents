@@ -9,11 +9,14 @@ import urllib
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from functools import lru_cache
 from typing import Optional, List, Dict, Tuple
 
 import boto3
 from botocore.exceptions import ClientError
 import requests
+
+# =============== S3 / ENV =================
 
 S3_BUCKET      = os.getenv("S3_BUCKET")
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
@@ -26,17 +29,21 @@ s3 = boto3.client(
     region_name=S3_REGION,
 )
 
+# =============== Problem / Fix ============
+
 class Problem(Enum):
-    MISSING_MASTER = auto()
-    MISSING_VARIANT = auto()
-    NO_AUDIO = auto()
-    UNDECODABLE_SEGMENT = auto()
+    MISSING_MASTER = auto()         # master.m3u8 отсутствует или некорректный
+    MISSING_VARIANT = auto()        # нет variant-плейлистов
+    NO_AUDIO = auto()               # в сегментах нет аудио-дорожки
+    UNDECODABLE_SEGMENT = auto()    # не смогли прочитать сегмент (битый/отсутствует)
 
 class Fix(Enum):
-    REBUILD_HLS = auto()
-    FORCE_AUDIO_REENCODE = auto()
-    WRITE_ALIAS_MASTER = auto()
-    WRITE_STATUS = auto()
+    REBUILD_HLS = auto()            # пересобрать HLS
+    FORCE_AUDIO_REENCODE = auto()   # пересобрать аудио (видео копируем)
+    WRITE_ALIAS_MASTER = auto()     # создать/переписать алиас (legacy ↔ new)
+    WRITE_STATUS = auto()           # только записать статус / “OK”
+
+# =============== DTO ======================
 
 @dataclass
 class HLSPaths:
@@ -55,18 +62,28 @@ class FixPlan:
     to_apply: List[Fix] = field(default_factory=list)
     notes: Dict[str, str] = field(default_factory=dict)
 
-HLS_MASTER_RE = re.compile(r'#EXTM3U', re.I)
-HLS_VARIANT_RE = re.compile(r'#EXT-X-STREAM-INF', re.I)
+# =============== Regex ====================
 
+HLS_MASTER_RE   = re.compile(r'#EXTM3U', re.I)
+HLS_VARIANT_RE  = re.compile(r'#EXT-X-STREAM-INF', re.I)
 
-# ---------- S3 helpers ----------
+HLS_DIR_RE_LEGACY = re.compile(r"/\.hls/([^/]+)/playlist\.m3u8$", re.I)
+HLS_DIR_RE_NEW    = re.compile(r"/\.hls/([^/]+-[0-9a-f]{8})/playlist\.m3u8$", re.I)
 
-def s3_exists(key: str) -> bool:
+# =============== S3 helpers (с кэшем) =====
+
+@lru_cache(maxsize=512)
+def _s3_head_cached(key: str) -> bool:
     try:
         s3.head_object(Bucket=S3_BUCKET, Key=key)
         return True
     except ClientError:
         return False
+
+def s3_exists(key: str) -> bool:
+    if not key:
+        return False
+    return _s3_head_cached(key)
 
 def s3_get_text(key: str) -> Optional[str]:
     try:
@@ -76,20 +93,24 @@ def s3_get_text(key: str) -> Optional[str]:
         return None
 
 def s3_put_text(key: str, text: str, content_type: str = "application/vnd.apple.mpegurl") -> None:
+    # Важно: после записи инвалидация кэша head()
     s3.put_object(Bucket=S3_BUCKET, Key=key, Body=text.encode("utf-8"), ContentType=content_type)
+    try:
+        _s3_head_cached.cache_clear()
+    except Exception:
+        pass
 
 def url_from_key(key: str) -> str:
-    # Ключи у тебя встречаются с пробелами: не кодируем — CDN у тебя это переваривает.
+    # Ключи иногда содержат пробелы — CDN это переваривает.
     return f"{S3_PUBLIC_HOST}/{key}"
 
-
-# ---------- HLS parsing ----------
+# =============== HLS parsing ==============
 
 def parse_variant_paths(master_text: str) -> List[str]:
     """
-    Из master.m3u8 достаём относительные пути к variant-плейлистам.
+    Из master.m3u8 достаём относительные пути к variant-плейлистам (по EXT-X-STREAM-INF).
     """
-    lines = [l.strip() for l in master_text.splitlines() if l.strip()]
+    lines = [l.strip() for l in (master_text or "").splitlines() if l.strip()]
     variants = []
     last_inf = False
     for l in lines:
@@ -102,15 +123,15 @@ def parse_variant_paths(master_text: str) -> List[str]:
     return variants
 
 def join_hls_path(master_key: str, rel: str) -> str:
-    # master_key: path/to/master.m3u8, rel: variant/720p.m3u8
+    # master_key: path/to/playlist.m3u8, rel: variant/720p.m3u8
     base = master_key.rsplit("/", 1)[0]
     return f"{base}/{rel}"
 
 def pick_first_media_segment(variant_text: str) -> Optional[str]:
     """
-    Находим первый медиа-сегмент из variant.m3u8 (обычно .ts или .m4s)
+    Находим первый медиа-сегмент (.ts или .m4s) из variant.m3u8.
     """
-    for l in variant_text.splitlines():
+    for l in (variant_text or "").splitlines():
         l = l.strip()
         if not l or l.startswith("#"):
             continue
@@ -118,8 +139,7 @@ def pick_first_media_segment(variant_text: str) -> Optional[str]:
             return l
     return None
 
-
-# ---------- ffprobe ----------
+# =============== ffprobe ==================
 
 def ffprobe_json_bytes(data: bytes) -> Optional[dict]:
     with tempfile.NamedTemporaryFile(suffix=".bin", delete=True) as tmp:
@@ -127,9 +147,9 @@ def ffprobe_json_bytes(data: bytes) -> Optional[dict]:
         tmp.flush()
         return ffprobe_json_path(tmp.name)
 
-def ffprobe_json_path(path: str) -> Optional[dict]:
+def ffprobe_json_path(path_or_url: str) -> Optional[dict]:
     proc = subprocess.run(
-        ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", path],
+        ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", path_or_url],
         capture_output=True, text=True
     )
     if proc.returncode != 0:
@@ -144,79 +164,102 @@ def has_audio(meta: dict) -> bool:
         return False
     return any(s.get("codec_type") == "audio" for s in meta.get("streams", []))
 
+# =============== Smart checks =============
 
-# ---------- Core checks ----------
-
-def check_master_and_variants(master_key: str) -> CheckResult:
+def _check_master_core(master_key: str) -> Tuple[CheckResult, List[str]]:
+    """
+    Базовая проверка master + сбор variant-путей (как относительных, так и абсолютных ключей).
+    Возвращает (CheckResult, абсолютные variant-keys).
+    """
     res = CheckResult()
     if not s3_exists(master_key):
         res.problems.append(Problem.MISSING_MASTER)
         res.details["missing_master"] = master_key
-        return res
+        return res, []
 
     master_text = s3_get_text(master_key) or ""
     if not HLS_MASTER_RE.search(master_text):
         res.problems.append(Problem.MISSING_MASTER)
         res.details["corrupt_master"] = "not an M3U8"
-        return res
+        return res, []
 
-    variants = parse_variant_paths(master_text)
-    if not variants:
+    variants_rel = parse_variant_paths(master_text)
+    res.details["variants_total"] = str(len(variants_rel))
+
+    if not variants_rel:
         res.problems.append(Problem.MISSING_VARIANT)
         res.details["no_variants"] = "master has no variants"
-        return res
+        return res, []
 
-    # Проверяем, что хотя бы один variant существует
-    existing = 0
-    for rel in variants:
-        v_key = join_hls_path(master_key, rel)
-        if s3_exists(v_key):
-            existing += 1
+    # Абсолютные ключи variant-плейлистов
+    variant_keys = [join_hls_path(master_key, rel) for rel in variants_rel]
+
+    # Подсчёт реально существующих variant
+    existing = sum(1 for vk in variant_keys if s3_exists(vk))
+    res.details["variants_exist"] = str(existing)
+    res.details["variants_missing"] = str(len(variant_keys) - existing)
+
+    # Частичное отсутствие variant НЕ считается критичным для rebuild — это логируем
     if existing == 0:
+        # вообще нет ни одного существующего variant → критика
         res.problems.append(Problem.MISSING_VARIANT)
-        res.details["variants_exist"] = "0"
-    else:
-        res.details["variants_exist"] = str(existing)
 
+    return res, variant_keys
+
+def check_master_and_variants(master_key: str) -> CheckResult:
+    res, _ = _check_master_core(master_key)
     return res
+
+def _first_working_variant_key(variant_keys: List[str]) -> Tuple[Optional[str], Optional[str]]:
+    """
+    Возвращает tuple(variant_key, first_segment_key) для первого доступного variant.
+    Если ни один variant не подходит — (None, None).
+    """
+    for vkey in variant_keys:
+        text = s3_get_text(vkey)
+        if not text:
+            continue
+        seg_rel = pick_first_media_segment(text)
+        if not seg_rel:
+            # variant без сегментов — пробуем следующий
+            continue
+        seg_key = join_hls_path(vkey, seg_rel)
+        try:
+            # Проверим существует ли сегмент — иначе ffprobe свалится
+            s3.head_object(Bucket=S3_BUCKET, Key=seg_key)
+            return vkey, seg_key
+        except ClientError:
+            # сегмент отсутствует — пробуем следующий variant
+            continue
+    return None, None
 
 def check_audio_present(master_key: str) -> CheckResult:
     """
-    Скачиваем первый variant и первый сегмент; ffprobe -> наличие аудио.
+    Диагностика аудио:
+      • перебираем variant-плейлисты до первого «рабочего» сегмента;
+      • если удалось прочитать сегмент — ffprobe -> наличие аудио;
+      • если ни один вариант не подошёл — UNDECODABLE_SEGMENT.
     """
     res = CheckResult()
-    master_text = s3_get_text(master_key)
-    if not master_text:
-        res.problems.append(Problem.MISSING_MASTER)
+
+    # Базовые вещи (существование master/variants)
+    base, variant_keys = _check_master_core(master_key)
+    res.problems.extend(base.problems)
+    res.details.update(base.details)
+
+    if Problem.MISSING_MASTER in base.problems:
+        # дальше проверять нечего
+        return res
+    if Problem.MISSING_VARIANT in base.problems:
+        # ни одного живого variant
         return res
 
-    variants = parse_variant_paths(master_text)
-    if not variants:
-        res.problems.append(Problem.MISSING_VARIANT)
-        return res
-
-    # Возьмём первый существующий variant
-    variant_key = None
-    variant_text = None
-    for rel in variants:
-        v_key = join_hls_path(master_key, rel)
-        text = s3_get_text(v_key)
-        if text:
-            variant_key = v_key
-            variant_text = text
-            break
-
-    if not variant_key:
-        res.problems.append(Problem.MISSING_VARIANT)
-        return res
-
-    seg_rel = pick_first_media_segment(variant_text or "")
-    if not seg_rel:
+    vkey, seg_key = _first_working_variant_key(variant_keys)
+    if not vkey or not seg_key:
         res.problems.append(Problem.UNDECODABLE_SEGMENT)
-        res.details["no_segment"] = "no media segment in variant"
+        res.details["no_working_variant"] = "all variants missing or without segments"
         return res
 
-    seg_key = join_hls_path(variant_key, seg_rel)
     try:
         obj = s3.get_object(Bucket=S3_BUCKET, Key=seg_key)
         seg_bytes = obj["Body"].read()
@@ -231,20 +274,19 @@ def check_audio_present(master_key: str) -> CheckResult:
         res.details["segment_key"] = seg_key
     return res
 
+# =============== Fix helpers ==============
 
 def fix_write_alias_master(from_master_key: str, alias_master_key: str) -> None:
     """
-    «Алиас» на master: копируем плейлист (и, при необходимости, правим относительные пути).
-    В простом случае — просто копия (если структура каталогов совпадает).
+    «Алиас» на master: копируем плейлист (при необходимости можно переписать относительные пути).
+    В нашей структуре каталогов обычно достаточно прямой копии.
     """
     text = s3_get_text(from_master_key) or ""
-    # если alias лежит в другом каталоге — нужно переписать относительные пути
-    # здесь минимально: предполагаем ту же структуру => просто копируем
     s3_put_text(alias_master_key, text)
 
 def fix_mark_ready(db_session, video_id: int) -> None:
     """
-    Пометить сущность в БД как готовую (пример).
+    Пример пометки сущности как готовой.
     """
     # from ..models.models_v2 import Video
     # video = db_session.query(Video).get(video_id)
@@ -252,10 +294,7 @@ def fix_mark_ready(db_session, video_id: int) -> None:
     # db_session.commit()
     pass
 
-
-# ---------- Planner ----------
-HLS_DIR_RE_LEGACY = re.compile(r"/\.hls/([^/]+)/playlist\.m3u8$", re.I)
-HLS_DIR_RE_NEW    = re.compile(r"/\.hls/([^/]+-[0-9a-f]{8})/playlist\.m3u8$", re.I)
+# =============== Discovery =================
 
 def key_from_url(url: str) -> str:
     """
@@ -268,20 +307,18 @@ def key_from_url(url: str) -> str:
     if url.startswith(prefix):
         key = url[len(prefix):]
     else:
-        # если прислали прямой S3 endpoint URL — вырежем host и leading '/'
         parsed = urllib.parse.urlparse(url)
         key = parsed.path.lstrip("/")
-    # Не декодируем пробелы намеренно (у тебя в ключах реальные пробелы).
     return key
 
 def discover_hls_for_src(src_mp4_key: str) -> HLSPaths:
     """
     По ключу исходного MP4 ищем существующие HLS плейлисты.
     Логика:
-      - Берём базовую папку: <dir of mp4>/.hls/
-      - Ищем все playlist.m3u8 внутри.
-      - Классифицируем: legacy (без суффикса -hash) и new (с суффиксом -[0-9a-f]{8})
-      - Если ничего нет — предложим new-путь автоматически.
+      - базовая папка: <dir of mp4>/.hls/
+      - ищем все playlist.m3u8 внутри;
+      - классифицируем: legacy (без -hash) и new (с -[0-9a-f]{8});
+      - если new нет — сгенерируем «красивый» путь под него.
     """
     base_dir = src_mp4_key.rsplit("/", 1)[0] if "/" in src_mp4_key else ""
     hls_prefix = f"{base_dir}/.hls/"
@@ -292,20 +329,19 @@ def discover_hls_for_src(src_mp4_key: str) -> HLSPaths:
     for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
         for obj in page.get("Contents", []):
             key = obj["Key"]
-            if key.endswith("playlist.m3u8"):
-                if HLS_DIR_RE_NEW.search(key):
-                    # выбираем самый «свежий» new (по времени последнего модификатора)
-                    if not new_pl_key:
-                        new_pl_key = key
-                elif HLS_DIR_RE_LEGACY.search(key):
-                    if not legacy_pl_key:
-                        legacy_pl_key = key
+            if not key.endswith("playlist.m3u8"):
+                continue
+            if HLS_DIR_RE_NEW.search(key):
+                # Выбираем первый найденный new (для упрощения; можно добрать «самый новый» по LastModified)
+                if not new_pl_key:
+                    new_pl_key = key
+            elif HLS_DIR_RE_LEGACY.search(key):
+                if not legacy_pl_key:
+                    legacy_pl_key = key
 
-    # Если не нашли new — предлагаем новый каталог с суффиксом
+    # Если не нашли new — предложим новый каталог с суффиксом
     if not new_pl_key:
-        # slug делаем из имени родительской папки или имени mp4
         base_name = os.path.splitext(os.path.basename(src_mp4_key))[0]
-        # лёгкий "slug"
         slug = re.sub(r"[^a-z0-9\-]+", "-", base_name.lower().replace(" ", "-")).strip("-")
         suffix = uuid.uuid4().hex[:8]
         new_dir = f"{hls_prefix}{slug}-{suffix}"
@@ -318,87 +354,140 @@ def discover_hls_for_src(src_mp4_key: str) -> HLSPaths:
         new_pl_url=url_from_key(new_pl_key) if new_pl_key else None,
     )
 
+# =============== Планировщик фиксов =======
+
 def build_fix_plan(
     paths: HLSPaths,
     src_mp4_key: str,
     prefer_new: bool = True
 ) -> Tuple[FixPlan, Dict[str, CheckResult]]:
     """
-    Проверяем new/legacy master, собираем общий список проблем и составляем план фиксов.
+    Улучшенная диагностика HLS:
+      • различаем проблемы master/variant/audio;
+      • НЕ делаем rebuild, если достаточно алиаса либо аудио-пересборки.
+    Приоритеты (согласовано):
+      1) есть только legacy → WRITE_ALIAS_MASTER;
+      2) есть new, а legacy отсутствует/битый → WRITE_ALIAS_MASTER;
+      3) master есть, но нет аудио → FORCE_AUDIO_REENCODE;
+      4) варианты частично битые → WRITE_STATUS (без rebuild);
+      5) rebuild только если master полностью отсутствует/бит.
     """
     plan = FixPlan()
     checks: Dict[str, CheckResult] = {}
 
-    chosen_master = paths.new_pl_key if prefer_new and paths.new_pl_key else paths.legacy_pl_key
+    legacy_key = paths.legacy_pl_key
+    new_key    = paths.new_pl_key
 
-    # 1) Проверка master+variants
-    if chosen_master:
-        c_master = check_master_and_variants(chosen_master)
-        checks["master_variants"] = c_master
-    else:
-        c_master = CheckResult(problems=[Problem.MISSING_MASTER], details={"reason": "no chosen master"})
-        checks["master_variants"] = c_master
+    legacy_exists = bool(legacy_key and s3_exists(legacy_key))
+    new_exists    = bool(new_key and s3_exists(new_key))
 
-    # 2) Проверка звука (если master есть)
-    if Problem.MISSING_MASTER not in c_master.problems:
-        c_audio = check_audio_present(chosen_master)
-        checks["audio"] = c_audio
-    else:
-        checks["audio"] = CheckResult(problems=[Problem.MISSING_MASTER])
+    # Выбираем master: если prefer_new и new существует → он, иначе legacy
+    chosen_master = new_key if (prefer_new and new_exists) else (legacy_key if legacy_exists else None)
+    checks["paths"] = CheckResult(details={
+        "legacy_key": str(legacy_key),
+        "legacy_exists": str(legacy_exists),
+        "new_key": str(new_key),
+        "new_exists": str(new_exists),
+        "chosen_master": chosen_master or "none",
+    })
 
-    # 3) Сбор проблем
-    all_problems = set(checks["master_variants"].problems + checks["audio"].problems)
-
-    # 4) План фиксов
-    if Problem.MISSING_MASTER in all_problems or Problem.MISSING_VARIANT in all_problems or Problem.UNDECODABLE_SEGMENT in all_problems:
+    # --- 1) Если нет НИ одного мастера — без вариантов: rebuild
+    if not chosen_master:
         plan.to_apply.append(Fix.REBUILD_HLS)
+        plan.notes["reason"] = "no master (new/legacy) found"
+        plan.notes["prefer_new"] = str(prefer_new)
+        return plan, checks
 
-    if Problem.NO_AUDIO in all_problems:
-        plan.to_apply.append(Fix.FORCE_AUDIO_REENCODE)
+    # --- 2) Проверка master/variants
+    c_master = check_master_and_variants(chosen_master)
+    checks["master_variants"] = c_master
 
-    # Если есть «красивый» путь и он не существует — пишем алиас
-    if paths.legacy_pl_key and paths.new_pl_key and s3_exists(paths.new_pl_key) and not s3_exists(paths.legacy_pl_key):
+    # --- 3) Проверка аудио
+    c_audio = check_audio_present(chosen_master)
+    checks["audio"] = c_audio
+
+    # Собираем финальные проблемы
+    problems = set(c_master.problems + c_audio.problems)
+
+    # ====== Решения (в порядке приоритета) ======
+    # a) Алиас, если есть только legacy ИЛИ если new ok, а legacy отсутствует/битый
+    if new_exists and not legacy_exists:
         plan.to_apply.append(Fix.WRITE_ALIAS_MASTER)
+        plan.notes["alias"] = "legacy missing, new exists"
 
-    # Если проблем не осталось — можно пометить готовым
-    if not all_problems:
-        plan.to_apply.append(Fix.WRITE_STATUS)
+    # b) master отсутствует/битый → rebuild
+    if Problem.MISSING_MASTER in problems:
+        plan.to_apply.append(Fix.REBUILD_HLS)
+        plan.notes["reason"] = "missing/corrupt master"
+        return plan, checks
 
-    # Пояснения
-    plan.notes["chosen_master"] = chosen_master or "none"
-    plan.notes["problems"] = ", ".join(p.name for p in all_problems) or "none"
+    # c) нет ни одного живого variant → выбираем: если второй мастер есть — алиас, иначе rebuild
+    if Problem.MISSING_VARIANT in problems:
+        if new_exists and not legacy_exists:
+            # уже добавили алиас выше; этого достаточно
+            plan.notes["reason"] = "variants missing, alias will expose valid new"
+            plan.to_apply.append(Fix.WRITE_STATUS)
+            return plan, checks
+        # альтернатив нет → rebuild
+        plan.to_apply.append(Fix.REBUILD_HLS)
+        plan.notes["reason"] = "no variants at all"
+        return plan, checks
 
+    # d) сегменты не читаются на выбранном variant → пробовали все; если альтернативный master есть — алиас; если нет — rebuild
+    if Problem.UNDECODABLE_SEGMENT in problems:
+        if new_exists and not legacy_exists:
+            plan.to_apply.append(Fix.WRITE_ALIAS_MASTER)
+            plan.notes["reason"] = "segments undecodable in legacy, new exists"
+            plan.to_apply.append(Fix.WRITE_STATUS)
+            return plan, checks
+        plan.to_apply.append(Fix.REBUILD_HLS)
+        plan.notes["reason"] = "undecodable segments"
+        return plan, checks
+
+    # e) нет аудио, при этом master/variants валидны → только аудио-пересборка
+    if Problem.NO_AUDIO in problems:
+        plan.to_apply.append(Fix.FORCE_AUDIO_REENCODE)
+        plan.notes["reason"] = "no audio detected"
+        return plan, checks
+
+    # f) Частично отсутствуют variant-плейлисты (не критично) → просто статус
+    # (мы это различаем по details["variants_missing"] > 0, но без MISSING_VARIANT)
+    try:
+        missing = int(c_master.details.get("variants_missing", "0") or "0")
+        if missing > 0:
+            plan.notes["warn"] = f"{missing} variant(s) missing but others exist"
+    except Exception:
+        pass
+
+    # g) Всё ок
+    plan.to_apply.append(Fix.WRITE_STATUS)
+    plan.notes["reason"] = "ok"
     return plan, checks
 
+# =============== ffmpeg runners ===========
+
 def _lower_prio():
-    """Снижаем приоритет процесса (Linux)."""
     try:
         os.nice(10)
     except Exception:
         pass
 
 def _run_ffmpeg(cmd: list[str], timeout: int) -> None:
-    """
-    Запускаем ffmpeg «бережно»: без чтения stdin, с 1 потоком, с таймаутом.
-    Логируем stderr для диагностики.
-    """
     proc = subprocess.run(
         cmd,
         check=True,
         timeout=timeout,
         capture_output=True,
         text=True,
-        preexec_fn=_lower_prio,   # снижает CPU приоритет
+        preexec_fn=_lower_prio,
     )
     if proc.stderr:
-        # не «error» — у ffmpeg многое в stderr как обычный лог
+        # у ffmpeg большая часть лога в stderr — это не обязательно ошибка
         print(proc.stderr[:4000])
-
 
 def _make_hls_copy_aac(in_url: str, out_dir: str, timeout: int) -> None:
     """
-    Быстрый HLS: видео копируем как есть, аудио → AAC (если есть),
-    гарантируем сегментацию и совместимость.
+    Быстрый HLS: видео копируем, аудио → AAC; гарантируем сегментацию.
     """
     master = os.path.join(out_dir, "playlist.m3u8")
     segpat = os.path.join(out_dir, "segment_%05d.ts")
@@ -423,8 +512,7 @@ def _make_hls_copy_aac(in_url: str, out_dir: str, timeout: int) -> None:
 
 def _make_hls_full_reencode(in_url: str, out_dir: str, timeout: int) -> None:
     """
-    Крайняя мера (если видео не h264 или источник «битый»):
-    используем ultrafast + CRF 25, чтобы не грузить CPU.
+    Крайняя мера: полная перекодировка (ultrafast + CRF 25) если исходник проблемный.
     """
     master = os.path.join(out_dir, "playlist.m3u8")
     segpat = os.path.join(out_dir, "segment_%05d.ts")
@@ -446,7 +534,6 @@ def _make_hls_full_reencode(in_url: str, out_dir: str, timeout: int) -> None:
     ]
     _run_ffmpeg(cmd, timeout)
 
-
 def _upload_dir_to_s3(local_dir: str, s3_dir_key: str) -> None:
     for root, _, files in os.walk(local_dir):
         for f in files:
@@ -458,24 +545,18 @@ def _upload_dir_to_s3(local_dir: str, s3_dir_key: str) -> None:
             ct    = "application/vnd.apple.mpegurl" if f.endswith(".m3u8") else "video/MP2T"
             with open(local, "rb") as fp:
                 s3.put_object(Bucket=S3_BUCKET, Key=key, Body=fp.read(), ContentType=ct)
+    try:
+        _s3_head_cached.cache_clear()
+    except Exception:
+        pass
 
-
-# ───────────── «умные» фиксы ─────────────
+# =============== «умные» фиксы (rebuild/audio) ===
 
 def _probe_codecs_from_url(in_url: str) -> tuple[str | None, str | None]:
     """
-    Быстрый пробник кодеков по исходному MP4 (без скачивания):
-    возвращает (vcodec, acodec) в нижнем регистре.
+    Быстрая проверка кодеков исходного MP4 по URL: (vcodec, acodec) в нижнем регистре.
     """
-    with tempfile.NamedTemporaryFile(suffix=".url.txt", delete=False) as tmp:
-        # ffprobe умеет читать по http(s), так что путь — это просто URL
-        tmp.flush()
-    try:
-        meta = ffprobe_json_path(in_url)
-    finally:
-        try: os.unlink(tmp.name)
-        except: pass
-
+    meta = ffprobe_json_path(in_url)
     vcodec = None
     acodec = None
     if meta and "streams" in meta:
@@ -486,7 +567,6 @@ def _probe_codecs_from_url(in_url: str) -> tuple[str | None, str | None]:
                 acodec = (s.get("codec_name") or "").lower()
     return vcodec, acodec
 
-
 def fix_rebuild_hls(
     src_mp4_key: str,
     hls_dir_key: str,
@@ -496,15 +576,13 @@ def fix_rebuild_hls(
 ) -> None:
     """
     Пересборка HLS из исходного MP4.
-    - Читаем источник напрямую по URL (если prefer_in_url=True).
-    - По умолчанию НЕ делаем полный ре-энкод видео (copy), аудио → AAC.
-    - Если видео не h264/avc1 и forbid_full_reencode=False — сделаем «лёгкий» полный ре-энкод.
+      • читаем источник по CDN-URL;
+      • по умолчанию НЕ делаем полный ре-энкод видео (copy), аудио → AAC;
+      • если видео не h264/avc1 и forbid_full_reencode=False — делаем «лёгкий» полный ре-энкод.
     """
-    in_url = url_from_key(src_mp4_key) if prefer_in_url else None
-    if not in_url:
-        in_url = url_from_key(src_mp4_key)
+    in_url = url_from_key(src_mp4_key) if prefer_in_url else url_from_key(src_mp4_key)
 
-    # Быстрый «интеллект»: если видео уже h264 — полного ре-энкода не требуется.
+    # Если исходник уже h264 — стараемся избежать полной перекодировки
     vcodec, _acodec = _probe_codecs_from_url(in_url)
     allow_full = (vcodec not in ("h264", "avc1")) and (not forbid_full_reencode)
 
@@ -513,14 +591,10 @@ def fix_rebuild_hls(
             _make_hls_copy_aac(in_url, tmpdir, ffmpeg_timeout)
         except Exception as fast_err:
             if allow_full:
-                # Последняя надежда — лёгкий полный ре-энкод
                 _make_hls_full_reencode(in_url, tmpdir, ffmpeg_timeout)
             else:
-                # Отдаём ошибку «как есть»
                 raise fast_err
-
         _upload_dir_to_s3(tmpdir, hls_dir_key)
-
 
 def fix_force_audio_reencode(
     src_mp4_key: str,
@@ -531,7 +605,7 @@ def fix_force_audio_reencode(
 ) -> None:
     """
     Принудительно гарантируем корректное AAC-аудио.
-    Реализовано тем же путём, что и rebuild (copy видео + AAC аудио).
+    Реализовано тем же путём, что и rebuild (видео copy + аудио AAC).
     """
     fix_rebuild_hls(
         src_mp4_key=src_mp4_key,
@@ -541,6 +615,7 @@ def fix_force_audio_reencode(
         forbid_full_reencode=forbid_full_reencode,
     )
 
+# =============== Status ===================
 
 def write_status_json(hls_dir_key: str, data: dict) -> None:
     key = f"{hls_dir_key.rstrip('/')}/status.json"
@@ -551,3 +626,7 @@ def write_status_json(hls_dir_key: str, data: dict) -> None:
         ContentType="application/json",
         CacheControl="public, max-age=60",
     )
+    try:
+        _s3_head_cached.cache_clear()
+    except Exception:
+        pass
