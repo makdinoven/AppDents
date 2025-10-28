@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     FACEBOOK_ACCESS_TOKEN_NEW_13: str
     FACEBOOK_PIXEL_ID_NEW_13: str
 
+    # BookAI / Placid
+    BOOKAI_BASE_URL: str = "https://bookai.dent-s.com/api"
+    PLACID_API_KEY: str
+    PLACID_BASE_URL: str = "https://api.placid.app/api/rest"
+
 
     class Config:
         env_file = ".env"
