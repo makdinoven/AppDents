@@ -323,6 +323,15 @@ def complete_purchase(
             detail="User not found. Possibly webhook is delayed or user creation failed."
         )
 
+    # 4. Проверяем, не является ли пользователь администратором
+    from ..utils.role_utils import is_admin
+    if is_admin(user):
+        logging.warning("Попытка автологина администратора через complete_purchase: %s", email)
+        raise HTTPException(
+            status_code=403,
+            detail="Admin users cannot use auto-login after purchase for security reasons"
+        )
+
     # 5. Генерируем Bearer-токен
     token = create_access_token({"user_id": user.id})
 
