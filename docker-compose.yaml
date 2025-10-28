@@ -214,5 +214,5 @@ networks:
 
 volumes:
   mysql_data_prod:
-    external: true
+    #external: true
   certs_data:

@@ -16,6 +16,9 @@ docker-compose.override.yml
 
 #env
 .env
+.env.dev
+prod.conf
+docker-compose.yaml
 
 frontend/dist
 frontend/node_modules
