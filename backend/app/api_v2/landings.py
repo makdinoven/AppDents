@@ -699,6 +699,16 @@ def grant_free_access(
             user = create_user(db, data.email, random_pass, invited_by=inviter)
             new_user_created = True  # ④
             send_password_to_user(user.email, random_pass, data.region)
+        
+        # Проверяем, не является ли пользователь администратором
+        from ..utils.role_utils import is_admin
+        if is_admin(user):
+            logging.warning("Попытка автологина администратора через grant_free_access: %s", data.email)
+            raise HTTPException(
+                status_code=403,
+                detail="Admin users cannot use auto-login for free access for security reasons"
+            )
+        
         # автологин
         token = create_access_token({"user_id": user.id})
 

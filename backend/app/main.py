@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
     health_checkers, smart_validations, clip_generator, slider, books, book_admin, media, search, book_metadata, \
-    ad_control, book_ad_control, policy, video_repair
+    ad_control, book_ad_control, policy, video_repair, creatives
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
     app.include_router(ad_control.router, prefix="/api/ad_control", tags=["Ad-Control"])
     app.include_router(book_ad_control.router, prefix="/api/book_ad_control", tags=["Book Ad Analytics"])
     app.include_router(policy.router, prefix="/api/policy", tags=["Policy"])
+    app.include_router(creatives.router, tags=["creatives"])  # router уже имеет prefix /api/v2
 
 
 
