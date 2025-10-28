@@ -1,92 +1,134 @@
-
-
+"""
+Шаблоны Dent-S (все функции отправки писем из оригинального email_sender.py).
+"""
 from .common import send_html_email
 from .dent_s_courses_html import COURSES_BLOCK
+from ...core.config import settings
 
-# ----------------------------- PASSWORD EMAIL ------------------------------
 
-def send_recovery_email(recipient_email: str, new_password: str, region: str):
-    """Оригинальный шаблон Dent-S для восстановления пароля."""
+def send_password_to_user(recipient_email: str, password: str, region: str):
+    """Письмо с новым паролем при регистрации."""
     subject = {
         "EN": "Your New Account Password",
         "RU": "Ваш новый пароль для аккаунта",
         "IT": "La tua nuova password per l'account",
         "ES": "Tu nueva contraseña de cuenta",
-        "PT": "Sua nova senha de conta",
-        "AR": "كلمة المرور الجديدة لحسابك",
     }.get(region.upper(), "Your New Account Password")
 
     html = f"""
-    <html>
-      <body style="margin:0;padding:0;background-color:#edf8ff;font-family:Arial,sans-serif;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#edf8ff">
-          <tr><td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border-radius:12px;margin:30px 0;">
-              <tr>
-                <td align="center" style="padding:30px 0 20px 0;">
-                  <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:20px 40px;color:#01433d;">
-                  <h2 style="margin:0 0 20px 0;font-size:20px;">{subject}</h2>
-                  <p style="margin:0 0 10px 0;">Dear user,</p>
-                  <p style="margin:0 0 10px 0;">Your account has been successfully created.</p>
-                  <p style="margin:0 0 10px 0;">Your new password is:
-                    <span style="font-weight:bold;color:#01433d;">{new_password}</span>
-                  </p>
-                  <p style="margin:0 0 30px 0;">Please click the button below to log in:</p>
-                  <p style="text-align:center;">
-                    <a href="https://dent-s.com/login"
-                       style="background:#01433d;color:#fff;padding:12px 28px;
-                       text-decoration:none;border-radius:25px;">Log In</a>
-                  </p>
-                  <p style="margin:30px 0 0 0;">Best regards,<br><b>Dent-S Team</b></p>
-                </td>
-              </tr>
-              <tr><td height="40"></td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-    </html>
+    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
+      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <h2>{subject}</h2>
+        <p>Your new password: <b>{password}</b></p>
+        <p><a href="https://dent-s.com/login"
+               style="background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;">
+               Log In</a></p>
+        <p>Best regards,<br><b>Dent-S Team</b></p>
+      </div>
+    </body></html>
     """
+    send_html_email(recipient_email, subject, html)
 
-    send_html_email(recipient_email, subject, html_body=html)
+
+def send_recovery_email(recipient_email: str, new_password: str, region: str):
+    """Восстановление пароля."""
+    send_password_to_user(recipient_email, new_password, region)
 
 
-# ----------------------- ABANDONED CHECKOUT EMAIL --------------------------
+def send_successful_purchase_email(recipient_email: str, course_info: dict, region: str):
+    """Письмо при успешной покупке курса."""
+    title = course_info.get("title", "Your course")
+    url = course_info.get("url", "https://dent-s.com/login")
+    subject = {
+        "EN": "Your course is available!",
+        "RU": "Ваш курс теперь доступен!",
+        "IT": "Il tuo corso è disponibile!",
+        "ES": "¡Tu curso ya está disponible!",
+    }.get(region.upper(), "Your course is available!")
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
+      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <h2>{subject}</h2>
+        <p>Thank you for your purchase! You can access your course:</p>
+        <a href="{url}" style="background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;">Open Course</a>
+        <p style="margin-top:20px;">Course: <b>{title}</b></p>
+        <p>Best regards,<br><b>Dent-S Team</b></p>
+      </div>
+    </body></html>
+    """
+    send_html_email(recipient_email, subject, html)
+
+
+def send_failed_purchase_email(recipient_email: str, course_info: dict, region: str):
+    """Письмо при неудачной оплате."""
+    subject = {
+        "EN": "Payment failed",
+        "RU": "Оплата не прошла",
+        "IT": "Pagamento fallito",
+        "ES": "Pago fallido",
+    }.get(region.upper(), "Payment failed")
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
+      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <h2>{subject}</h2>
+        <p>Unfortunately, your payment could not be completed.</p>
+        <p>Please try again or contact support.</p>
+        <p><a href="https://dent-s.com/courses"
+              style="background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;">Try Again</a></p>
+      </div>
+    </body></html>
+    """
+    send_html_email(recipient_email, subject, html)
+
+
+def send_already_owned_course_email(recipient_email: str, course_info: dict, region: str):
+    """Письмо если пользователь уже купил курс."""
+    subject = {
+        "EN": "You already have this course",
+        "RU": "Этот курс уже у вас",
+        "IT": "Hai già questo corso",
+        "ES": "Ya tienes este curso",
+    }.get(region.upper(), "You already have this course")
+
+    title = course_info.get("title", "Course")
+    url = course_info.get("url", "https://dent-s.com/login")
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
+      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <h2>{subject}</h2>
+        <p>You already have access to this course: <b>{title}</b></p>
+        <a href="{url}" style="background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;">Go to Course</a>
+      </div>
+    </body></html>
+    """
+    send_html_email(recipient_email, subject, html)
+
 
 def send_abandoned_checkout_email(recipient_email: str, password: str, course_info: dict, region: str):
-    """Оригинальный HTML шаблон Dent-S для письма с курсом."""
+    """Письмо пользователю, бросившему корзину."""
     subject = {
         "EN": "Your free access to our course",
         "RU": "Ваш бесплатный доступ к курсу",
         "IT": "Il tuo accesso gratuito al corso",
         "ES": "Tu acceso gratuito al curso",
-        "PT": "Seu acesso gratuito ao curso",
-        "AR": "وصولك المجاني إلى الدورة",
     }.get(region.upper(), "Your free access")
 
-
     html = f"""
-    <html>
-      <body style="margin:0;padding:0;background-color:#edf8ff;font-family:Arial,sans-serif;">
-        <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#edf8ff">
-          <tr><td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border-radius:12px;margin:30px 0;">
-              <tr><td style="padding:40px;color:#01433d;">
-                <h2 style="margin:0 0 20px 0;">{subject}</h2>
-                <p style="margin:0 0 10px 0;">Welcome to Dent-S! Your account has been created.</p>
-                <p style="margin:0 0 10px 0;">Your password: <b>{password}</b></p>
-                <p style="margin:0 0 20px 0;">You can now enjoy your free course below:</p>
-                {COURSES_BLOCK.get(region.upper(), COURSES_BLOCK["EN"])}
-              </td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-    </html>
+    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
+      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <h2>{subject}</h2>
+        <p>Your password: <b>{password}</b></p>
+        <p>Enjoy your free course below:</p>
+        {COURSES_BLOCK.get(region.upper(), COURSES_BLOCK["EN"])}
+      </div>
+    </body></html>
     """
-
-    send_html_email(recipient_email, subject, html_body=html)
+    send_html_email(recipient_email, subject, html)

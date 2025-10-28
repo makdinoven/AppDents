@@ -25,10 +25,10 @@ from ..services_v2.user_service import (
     generate_random_password,
     get_user_by_email, credit_balance, add_book_to_user,
 )
-from ..utils.email_sender import (
-    send_already_owned_course_email,
-    send_successful_purchase_email,
-)
+from ..utils.email_sender.common import send_successful_purchase_email
+
+from ..utils.email_sender.dent_s import send_already_owned_course_email
+
 from ..utils.facebook import send_facebook_events
 
 logging.basicConfig(level=logging.INFO)
