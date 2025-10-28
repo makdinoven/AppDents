@@ -155,16 +155,15 @@ def stripe_checkout(
 
             # для каждого CartItem проверяем: ВСЕ ли его курсы куплены
             for item in list(current_user.cart.items or []):
-                landing_course_ids = {cr.id for cr in item.landing.courses}
-                if landing_course_ids and landing_course_ids.issubset(purchased):
-                    cs.remove_silent(db, current_user, item.landing_id)
+                # Проверяем только элементы типа LANDING (у BOOK элементов landing = None)
+                if item.item_type.value == "LANDING" and item.landing and item.landing.courses:
+                    landing_course_ids = {cr.id for cr in item.landing.courses}
+                    if landing_course_ids and landing_course_ids.issubset(purchased):
+                        cs.remove_silent(db, current_user, item.landing_id)
             if data.book_landing_ids:
                 for blid in data.book_landing_ids:
                     cs.remove_book_silent(db, current_user, blid)
 
-
-            if not current_user.cart.items:  # корзина опустела
-                cs.clear_cart(db, current_user)
 
             # если после удаления корзина пуста – полностью обнуляем
             if current_user.cart and not current_user.cart.items:
