@@ -58,6 +58,7 @@ import BookLandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytic
 import PurchaseHistory from "../pages/ProfilePage/pages/ProfileMain/content/PurchaseHistory/PurchaseHistory.tsx";
 import YourBooks from "../pages/ProfilePage/pages/YourBooks.tsx";
 import YourCourses from "../pages/ProfilePage/pages/YourCourses.tsx";
+import ProfilePageWrapper from "../pages/ProfilePage/layout/ProfilePageWrapper.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -111,14 +112,19 @@ export const AppRoutes: FC = () => {
           <Route
             element={
               <ProtectedRoute>
-                <ProfilePage />
+                <ProfilePageWrapper />
               </ProtectedRoute>
             }
           >
-            <Route path={Path.profileMain} element={<ProfileMain />} />
-            <Route path={Path.yourCourses} element={<YourCourses />} />
-            <Route path={Path.yourBooks} element={<YourBooks />} />
-            <Route path={Path.purchaseHistory} element={<PurchaseHistory />} />
+            <Route element={<ProfilePage />}>
+              <Route path={Path.profileMain} element={<ProfileMain />} />
+              <Route path={Path.yourCourses} element={<YourCourses />} />
+              <Route path={Path.yourBooks} element={<YourBooks />} />
+              <Route
+                path={Path.purchaseHistory}
+                element={<PurchaseHistory />}
+              />
+            </Route>
             <Route
               path={`${Path.myCourse}/:courseId?`}
               element={<CoursePage />}
