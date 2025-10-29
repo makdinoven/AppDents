@@ -1,4 +1,5 @@
 from typing import Optional, Dict, Any, List
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
 from pydantic import BaseModel
@@ -11,6 +12,8 @@ from ..services_v2.creative_service import generate_all_creatives, generate_sing
 from ..core.config import settings
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v2")
 
@@ -171,9 +174,11 @@ def get_or_create_creatives(
             "overall": "ready",
         }
     except ValueError as e:
+        logger.error(f"ValueError in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+        logger.error(f"Unexpected error in get_or_create_creatives, book_id={book_id}, language={language}: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
 
 
 
@@ -219,9 +224,11 @@ def manual_single_creative(
             "overall": "ready",
         }
     except ValueError as e:
+        logger.error(f"ValueError in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+        logger.error(f"Unexpected error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creative: {str(e)}")
 
 @router.post("/books/{book_id}/creatives/manual", response_model=CreativesResponse)
 def manual_creatives(
@@ -259,8 +266,10 @@ def manual_creatives(
             "overall": "ready",
         }
     except ValueError as e:
+        logger.error(f"ValueError in manual_creatives, book_id={book_id}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+        logger.error(f"Unexpected error in manual_creatives, book_id={book_id}, language={body.language}: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
 
 

@@ -106,42 +106,68 @@ def _build_layers_v3(book: Book, lang: str, price_old: str, price_new: str) -> D
 
 
 def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
-    r = requests.post(
-        f"{settings.PLACID_BASE_URL}/images",
-        headers={
-            "Authorization": f"Bearer {settings.PLACID_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        data=json.dumps(payload),
-        timeout=30,
-    )
-    if r.status_code >= 300:
-        return "", f"placid {r.status_code}: {r.text[:500]}"
-    data = r.json()
-    # API Placid возвращает объект с полем url или data.url
-    url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
-    if not url:
-        return "", "placid: empty url"
-    return url, None
+    try:
+        r = requests.post(
+            f"{settings.PLACID_BASE_URL}/images",
+            headers={
+                "Authorization": f"Bearer {settings.PLACID_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps(payload),
+            timeout=30,
+        )
+        if r.status_code >= 300:
+            logger.error(f"Placid API error {r.status_code}: {r.text[:500]}")
+            return "", f"placid {r.status_code}: {r.text[:500]}"
+        try:
+            data = r.json()
+        except (ValueError, json.JSONDecodeError) as e:
+            logger.error(f"Placid API invalid JSON response: {e}, response text: {r.text[:500]}")
+            return "", f"placid: invalid json response - {str(e)}"
+        # API Placid возвращает объект с полем url или data.url
+        url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
+        if not url:
+            logger.error(f"Placid API empty url in response: {data}")
+            return "", "placid: empty url"
+        return url, None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Placid API request failed: {e}")
+        return "", f"placid request error: {str(e)}"
 
 
 def _bookai_texts(db: Session, s3_url: str, language: str, version: int) -> Dict[str, str]:
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
-    r = requests.post(
-        f"{settings.BOOKAI_BASE_URL}{endpoint}",
-        json={"s3_url": s3_url, "language": language},
-        timeout=60,
-    )
-    if r.status_code == 400:
-        raise ValueError(f"bookai 400: {r.text[:500]}")
-    r.raise_for_status()
-    return r.json()
+    try:
+        r = requests.post(
+            f"{settings.BOOKAI_BASE_URL}{endpoint}",
+            json={"s3_url": s3_url, "language": language},
+            timeout=60,
+        )
+        if r.status_code == 400:
+            logger.error(f"BookAI 400 error: {r.text[:500]}")
+            raise ValueError(f"bookai 400: {r.text[:500]}")
+        r.raise_for_status()
+        try:
+            return r.json()
+        except (ValueError, json.JSONDecodeError) as e:
+            logger.error(f"BookAI invalid JSON response: {e}, response text: {r.text[:500]}")
+            raise ValueError(f"bookai invalid json response: {str(e)}")
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"BookAI HTTP error: {e}, response: {e.response.text[:500] if e.response else 'N/A'}")
+        raise ValueError(f"bookai http error: {str(e)}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"BookAI request failed: {e}")
+        raise ValueError(f"bookai request error: {str(e)}")
 
 
 def _download_bytes(url: str) -> bytes:
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    return r.content
+    try:
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        return r.content
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to download image from {url}: {e}")
+        raise RuntimeError(f"Failed to download image: {str(e)}")
 
 
 def _s3_key(book_id: int, code: str) -> str:
@@ -184,74 +210,84 @@ def generate_creative_v1(
     texts: Optional[Dict[str, str]],
     context_overrides: Optional[Dict[str, Any]] = None,
 ) -> BookCreative:
-    _require_book_fields(book)
-    bl = _min_price_landing(db, book.id, language)
-    if not bl or bl.new_price is None:
-        raise ValueError("Price not found in book_landings")
-    price_new = _format_price(float(bl.new_price))
-    price_old = _format_price(float(bl.old_price or 0))
+    try:
+        _require_book_fields(book)
+        bl = _min_price_landing(db, book.id, language)
+        if not bl or bl.new_price is None:
+            raise ValueError("Price not found in book_landings")
+        price_new = _format_price(float(bl.new_price))
+        price_old = _format_price(float(bl.old_price or 0))
 
-    # Применяем переопределения цен/полей при наличии
-    ov = context_overrides or {}
-    if "price_new" in ov:
-        try:
-            price_new = _format_price(float(ov.get("price_new")))
-        except Exception:
-            price_new = str(ov.get("price_new"))
-    if "price_old" in ov:
-        try:
-            price_old = _format_price(float(ov.get("price_old")))
-        except Exception:
-            price_old = str(ov.get("price_old"))
+        # Применяем переопределения цен/полей при наличии
+        ov = context_overrides or {}
+        if "price_new" in ov:
+            try:
+                price_new = _format_price(float(ov.get("price_new")))
+            except Exception:
+                price_new = str(ov.get("price_new"))
+        if "price_old" in ov:
+            try:
+                price_old = _format_price(float(ov.get("price_old")))
+            except Exception:
+                price_old = str(ov.get("price_old"))
 
-    if texts is None:
-        texts = _bookai_texts(db, book.cover_url, language, version=1)
+        if texts is None:
+            logger.info(f"Generating texts for creative v1, book_id={book.id}, language={language}")
+            texts = _bookai_texts(db, book.cover_url, language, version=1)
 
-    # Позволяем переопределить титул/обложку/слои
-    title = ov.get("title", book.title)
-    cover_url = ov.get("cover_url", book.cover_url)
-    layers_override = ov.get("layers") if ov else None
+        # Позволяем переопределить титул/обложку/слои
+        title = ov.get("title", book.title)
+        cover_url = ov.get("cover_url", book.cover_url)
+        layers_override = ov.get("layers") if ov else None
 
-    if layers_override and isinstance(layers_override, dict):
-        payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
-    else:
-        payload = {
-            "template_uuid": PLACID_TPL_V1,
-            "layers": {
-                "Main_book_image": {"media": cover_url},
-                "Back_book_image": {"media": cover_url},
-                "Book_name": {"text": title},
-                "Tag_1": {"text": texts.get("tag_1", "")},
-                "Tag_2": {"text": texts.get("tag_2", "")},
-                "Tag_3": {"text": texts.get("tag_3", "")},
-                "Hight_description": {"text": texts.get("hight_description", "")},
-                "Medium_description": {"text": texts.get("medium_description", "")},
-                "Down_description": {"text": texts.get("down_description", "")},
-                "Only_for_text": {"text": _only_for_text(language)},
-                "New_price": {"text": price_new},
-                "Old_price": {"text": price_old},
-            },
-        }
-    url, err = _placid_render(payload)
-    if err:
-        raise RuntimeError(err)
-    img = _download_bytes(url)
-    key = _s3_key(book.id, PLACID_TPL_V1)
-    s3_url = _upload_to_s3(key, img)
+        if layers_override and isinstance(layers_override, dict):
+            payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
+        else:
+            payload = {
+                "template_uuid": PLACID_TPL_V1,
+                "layers": {
+                    "Main_book_image": {"media": cover_url},
+                    "Back_book_image": {"media": cover_url},
+                    "Book_name": {"text": title},
+                    "Tag_1": {"text": texts.get("tag_1", "")},
+                    "Tag_2": {"text": texts.get("tag_2", "")},
+                    "Tag_3": {"text": texts.get("tag_3", "")},
+                    "Hight_description": {"text": texts.get("hight_description", "")},
+                    "Medium_description": {"text": texts.get("medium_description", "")},
+                    "Down_description": {"text": texts.get("down_description", "")},
+                    "Only_for_text": {"text": _only_for_text(language)},
+                    "New_price": {"text": price_new},
+                    "Old_price": {"text": price_old},
+                },
+            }
+        logger.info(f"Rendering creative v1 via Placid, book_id={book.id}")
+        url, err = _placid_render(payload)
+        if err:
+            raise RuntimeError(err)
+        logger.info(f"Downloading image from Placid, book_id={book.id}")
+        img = _download_bytes(url)
+        key = _s3_key(book.id, PLACID_TPL_V1)
+        logger.info(f"Uploading creative v1 to S3, book_id={book.id}, key={key}")
+        s3_url = _upload_to_s3(key, img)
 
-    row = BookCreative(
-        book_id=book.id,
-        language=language,
-        creative_code=PLACID_TPL_V1,
-        status=CreativeStatus.READY,
-        placid_image_url=url,
-        s3_key=key,
-        s3_url=s3_url,
-        payload_used={"layers": payload.get("layers", {})},
-    )
-    db.merge(row)
-    db.commit()
-    return row
+        row = BookCreative(
+            book_id=book.id,
+            language=language,
+            creative_code=PLACID_TPL_V1,
+            status=CreativeStatus.READY,
+            placid_image_url=url,
+            s3_key=key,
+            s3_url=s3_url,
+            payload_used={"layers": payload.get("layers", {})},
+        )
+        db.merge(row)
+        db.commit()
+        logger.info(f"Creative v1 generated successfully, book_id={book.id}")
+        return row
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate creative v1 for book_id={book.id}, language={language}: {e}", exc_info=True)
+        raise
 
 
 def generate_creative_v2(
@@ -261,73 +297,83 @@ def generate_creative_v2(
     texts: Optional[Dict[str, str]],
     context_overrides: Optional[Dict[str, Any]] = None,
 ) -> BookCreative:
-    _require_book_fields(book)
-    bl = _min_price_landing(db, book.id, language)
-    if not bl or bl.new_price is None:
-        raise ValueError("Price not found in book_landings")
-    price_new = _format_price(float(bl.new_price))
-    price_old = _format_price(float(bl.old_price or 0))
+    try:
+        _require_book_fields(book)
+        bl = _min_price_landing(db, book.id, language)
+        if not bl or bl.new_price is None:
+            raise ValueError("Price not found in book_landings")
+        price_new = _format_price(float(bl.new_price))
+        price_old = _format_price(float(bl.old_price or 0))
 
-    # Применяем переопределения цен/полей при наличии
-    ov = context_overrides or {}
-    if "price_new" in ov:
-        try:
-            price_new = _format_price(float(ov.get("price_new")))
-        except Exception:
-            price_new = str(ov.get("price_new"))
-    if "price_old" in ov:
-        try:
-            price_old = _format_price(float(ov.get("price_old")))
-        except Exception:
-            price_old = str(ov.get("price_old"))
+        # Применяем переопределения цен/полей при наличии
+        ov = context_overrides or {}
+        if "price_new" in ov:
+            try:
+                price_new = _format_price(float(ov.get("price_new")))
+            except Exception:
+                price_new = str(ov.get("price_new"))
+        if "price_old" in ov:
+            try:
+                price_old = _format_price(float(ov.get("price_old")))
+            except Exception:
+                price_old = str(ov.get("price_old"))
 
-    if texts is None:
-        texts = _bookai_texts(db, book.cover_url, language, version=2)
+        if texts is None:
+            logger.info(f"Generating texts for creative v2, book_id={book.id}, language={language}")
+            texts = _bookai_texts(db, book.cover_url, language, version=2)
 
-    # Позволяем переопределить титул/обложку/слои
-    title = ov.get("title", book.title)
-    cover_url = ov.get("cover_url", book.cover_url)
-    layers_override = ov.get("layers") if ov else None
+        # Позволяем переопределить титул/обложку/слои
+        title = ov.get("title", book.title)
+        cover_url = ov.get("cover_url", book.cover_url)
+        layers_override = ov.get("layers") if ov else None
 
-    if layers_override and isinstance(layers_override, dict):
-        payload = {"template_uuid": PLACID_TPL_V2, "layers": layers_override}
-    else:
-        payload = {
-            "template_uuid": PLACID_TPL_V2,
-            "layers": {
-                "Book_1_cover": {"media": cover_url},
-                "Book_2_cover": {"media": cover_url},
-                "Book_name": {"text": title},
-                "Tag_1": {"text": texts.get("tag_1", "")},
-                "Tag_2": {"text": texts.get("tag_2", "")},
-                "Tag_3": {"text": texts.get("tag_3", "")},
-                "Hight_description": {"text": texts.get("hight_description", "")},
-                "Down_description": {"text": texts.get("down_description", "")},
-                "Only_for": {"text": _only_for_text(language)},
-                "Old_price": {"text": price_old},
-                "New_price": {"text": price_new},
-            },
-        }
-    url, err = _placid_render(payload)
-    if err:
-        raise RuntimeError(err)
-    img = _download_bytes(url)
-    key = _s3_key(book.id, PLACID_TPL_V2)
-    s3_url = _upload_to_s3(key, img)
+        if layers_override and isinstance(layers_override, dict):
+            payload = {"template_uuid": PLACID_TPL_V2, "layers": layers_override}
+        else:
+            payload = {
+                "template_uuid": PLACID_TPL_V2,
+                "layers": {
+                    "Book_1_cover": {"media": cover_url},
+                    "Book_2_cover": {"media": cover_url},
+                    "Book_name": {"text": title},
+                    "Tag_1": {"text": texts.get("tag_1", "")},
+                    "Tag_2": {"text": texts.get("tag_2", "")},
+                    "Tag_3": {"text": texts.get("tag_3", "")},
+                    "Hight_description": {"text": texts.get("hight_description", "")},
+                    "Down_description": {"text": texts.get("down_description", "")},
+                    "Only_for": {"text": _only_for_text(language)},
+                    "Old_price": {"text": price_old},
+                    "New_price": {"text": price_new},
+                },
+            }
+        logger.info(f"Rendering creative v2 via Placid, book_id={book.id}")
+        url, err = _placid_render(payload)
+        if err:
+            raise RuntimeError(err)
+        logger.info(f"Downloading image from Placid, book_id={book.id}")
+        img = _download_bytes(url)
+        key = _s3_key(book.id, PLACID_TPL_V2)
+        logger.info(f"Uploading creative v2 to S3, book_id={book.id}, key={key}")
+        s3_url = _upload_to_s3(key, img)
 
-    row = BookCreative(
-        book_id=book.id,
-        language=language,
-        creative_code=PLACID_TPL_V2,
-        status=CreativeStatus.READY,
-        placid_image_url=url,
-        s3_key=key,
-        s3_url=s3_url,
-        payload_used={"layers": payload.get("layers", {})},
-    )
-    db.merge(row)
-    db.commit()
-    return row
+        row = BookCreative(
+            book_id=book.id,
+            language=language,
+            creative_code=PLACID_TPL_V2,
+            status=CreativeStatus.READY,
+            placid_image_url=url,
+            s3_key=key,
+            s3_url=s3_url,
+            payload_used={"layers": payload.get("layers", {})},
+        )
+        db.merge(row)
+        db.commit()
+        logger.info(f"Creative v2 generated successfully, book_id={book.id}")
+        return row
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate creative v2 for book_id={book.id}, language={language}: {e}", exc_info=True)
+        raise
 
 
 def generate_creative_v3(
@@ -336,66 +382,75 @@ def generate_creative_v3(
     language: str,
     context_overrides: Optional[Dict[str, Any]] = None,
 ) -> BookCreative:
-    _require_book_fields(book)
-    bl = _min_price_landing(db, book.id, language)
-    if not bl or bl.new_price is None:
-        raise ValueError("Price not found in book_landings")
-    price_new = _format_price(float(bl.new_price))
-    price_old = _format_price(float(bl.old_price or 0))
+    try:
+        _require_book_fields(book)
+        bl = _min_price_landing(db, book.id, language)
+        if not bl or bl.new_price is None:
+            raise ValueError("Price not found in book_landings")
+        price_new = _format_price(float(bl.new_price))
+        price_old = _format_price(float(bl.old_price or 0))
 
-    ov = context_overrides or {}
-    if "price_new" in ov:
-        try:
-            price_new = _format_price(float(ov.get("price_new")))
-        except Exception:
-            price_new = str(ov.get("price_new"))
-    if "price_old" in ov:
-        try:
-            price_old = _format_price(float(ov.get("price_old")))
-        except Exception:
-            price_old = str(ov.get("price_old"))
+        ov = context_overrides or {}
+        if "price_new" in ov:
+            try:
+                price_new = _format_price(float(ov.get("price_new")))
+            except Exception:
+                price_new = str(ov.get("price_new"))
+        if "price_old" in ov:
+            try:
+                price_old = _format_price(float(ov.get("price_old")))
+            except Exception:
+                price_old = str(ov.get("price_old"))
 
-    title = ov.get("title")  # не используется в v3 по умолчанию
-    cover_url = ov.get("cover_url", book.cover_url)
-    layers_override = ov.get("layers") if ov else None
+        title = ov.get("title")  # не используется в v3 по умолчанию
+        cover_url = ov.get("cover_url", book.cover_url)
+        layers_override = ov.get("layers") if ov else None
 
-    if layers_override and isinstance(layers_override, dict):
-        payload = {"template_uuid": PLACID_TPL_V3, "layers": layers_override}
-    else:
-        payload = {
-            "template_uuid": PLACID_TPL_V3,
-            "layers": {
-                "Book_cover": {"media": cover_url},
-                "Ipad_screen": {"media": cover_url},
-                "Iphone_screen": {"media": cover_url},
-                "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
-                "Button_text": {"text": "Download right now"},
-                "Title": {"text": "All formats available"},
-                "New_price": {"text": price_new},
-                "Only_for": {"text": _only_for_text(language)},
-                "Old_price": {"text": price_old},
-            },
-        }
-    url, err = _placid_render(payload)
-    if err:
-        raise RuntimeError(err)
-    img = _download_bytes(url)
-    key = _s3_key(book.id, PLACID_TPL_V3)
-    s3_url = _upload_to_s3(key, img)
+        if layers_override and isinstance(layers_override, dict):
+            payload = {"template_uuid": PLACID_TPL_V3, "layers": layers_override}
+        else:
+            payload = {
+                "template_uuid": PLACID_TPL_V3,
+                "layers": {
+                    "Book_cover": {"media": cover_url},
+                    "Ipad_screen": {"media": cover_url},
+                    "Iphone_screen": {"media": cover_url},
+                    "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
+                    "Button_text": {"text": "Download right now"},
+                    "Title": {"text": "All formats available"},
+                    "New_price": {"text": price_new},
+                    "Only_for": {"text": _only_for_text(language)},
+                    "Old_price": {"text": price_old},
+                },
+            }
+        logger.info(f"Rendering creative v3 via Placid, book_id={book.id}")
+        url, err = _placid_render(payload)
+        if err:
+            raise RuntimeError(err)
+        logger.info(f"Downloading image from Placid, book_id={book.id}")
+        img = _download_bytes(url)
+        key = _s3_key(book.id, PLACID_TPL_V3)
+        logger.info(f"Uploading creative v3 to S3, book_id={book.id}, key={key}")
+        s3_url = _upload_to_s3(key, img)
 
-    row = BookCreative(
-        book_id=book.id,
-        language=language,
-        creative_code=PLACID_TPL_V3,
-        status=CreativeStatus.READY,
-        placid_image_url=url,
-        s3_key=key,
-        s3_url=s3_url,
-        payload_used={"layers": payload.get("layers", {})},
-    )
-    db.merge(row)
-    db.commit()
-    return row
+        row = BookCreative(
+            book_id=book.id,
+            language=language,
+            creative_code=PLACID_TPL_V3,
+            status=CreativeStatus.READY,
+            placid_image_url=url,
+            s3_key=key,
+            s3_url=s3_url,
+            payload_used={"layers": payload.get("layers", {})},
+        )
+        db.merge(row)
+        db.commit()
+        logger.info(f"Creative v3 generated successfully, book_id={book.id}")
+        return row
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to generate creative v3 for book_id={book.id}, language={language}: {e}", exc_info=True)
+        raise
 
 
 def generate_all_creatives(db: Session, book_id: int, language: str, manual_payload: Optional[Dict[str, Dict[str, str]]] = None):
