@@ -109,11 +109,17 @@ def _build_layers_v3(book: Book, lang: str, price_old: str, price_new: str) -> D
 
 def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
     """Рендерит изображение через Placid API. Обрабатывает статусы queued/processing с polling."""
-    # Логируем media URLs для отладки проблем с обложками
+    # Логируем image/media URLs для отладки проблем с обложками
     layers = payload.get("layers", {})
-    media_layers = {k: v.get("media") for k, v in layers.items() if isinstance(v, dict) and "media" in v}
-    if media_layers:
-        logger.info(f"Placid payload media URLs: {media_layers}")
+    image_layers = {}
+    for k, v in layers.items():
+        if isinstance(v, dict):
+            # Проверяем оба ключа - "image" и "media"
+            image_url = v.get("image") or v.get("media")
+            if image_url:
+                image_layers[k] = image_url
+    if image_layers:
+        logger.info(f"Placid payload image/media URLs: {image_layers}")
     
     try:
         r = requests.post(
@@ -229,7 +235,12 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                     
                     # Логируем ошибки если есть (часто там указываются проблемы с загрузкой изображений)
                     if poll_errors:
-                        logger.warning(f"Placid image {image_id} polling errors on attempt {attempt}: {poll_errors}")
+                        for error in poll_errors:
+                            error_msg = error.get("message", "") if isinstance(error, dict) else str(error)
+                            logger.warning(f"Placid image {image_id} polling error on attempt {attempt}: {error_msg}")
+                            # Если ошибка связана с изображением, детально логируем
+                            if "image" in error_msg.lower() or "media" in error_msg.lower() or "file" in error_msg.lower():
+                                logger.error(f"Placid image loading error details: {error}")
                     
                     # Если изображение готово (completed или finished)
                     if poll_status in ("completed", "finished"):
@@ -426,13 +437,13 @@ def _download_bytes(url: str) -> bytes:
         raise RuntimeError(f"Failed to download image: {str(e)}")
 
 
-def _upload_image_to_placid(image_url: str) -> Optional[str]:
+def _upload_image_to_placid(image_url: str) -> Optional[Dict[str, str]]:
     """
-    Загружает изображение в Placid через Upload Media API и возвращает Placid URL.
-    Это гарантирует, что Placid имеет прямой доступ к изображению.
+    Загружает изображение в Placid через Upload Media API.
+    Возвращает словарь с file_key и file_id.
     
     Returns:
-        Placid file_id (URL) или None в случае ошибки
+        Словарь с ключами "file_key" и "file_id" или None в случае ошибки
     """
     try:
         # Скачиваем изображение
@@ -443,13 +454,18 @@ def _upload_image_to_placid(image_url: str) -> Optional[str]:
         import mimetypes
         content_type = mimetypes.guess_type(image_url)[0] or "image/jpeg"
         
+        # Используем уникальное имя файла для загрузки
+        import uuid
+        file_key = f"cover_{uuid.uuid4().hex[:8]}"
+        filename = f"{file_key}.jpg"
+        
         # Подготовка файла для загрузки
         files = {
-            'file': ('cover.jpg', image_data, content_type)
+            file_key: (filename, image_data, content_type)
         }
         
         # Загружаем в Placid
-        logger.info(f"Uploading image to Placid Media API...")
+        logger.info(f"Uploading image to Placid Media API with file_key={file_key}...")
         r = requests.post(
             f"{settings.PLACID_BASE_URL}/media",
             headers={
@@ -459,18 +475,40 @@ def _upload_image_to_placid(image_url: str) -> Optional[str]:
             timeout=60,
         )
         
+        logger.info(f"Placid Media API response status: {r.status_code}")
+        
         if r.status_code >= 300:
             logger.error(f"Placid Media upload error {r.status_code}: {r.text[:500]}")
             return None
         
         try:
             response_data = r.json()
+            logger.info(f"Placid Media API full response: {response_data}")
+            
             media_list = response_data.get("media", [])
             if media_list and len(media_list) > 0:
-                file_id = media_list[0].get("file_id")
+                # Ищем элемент с нашим file_key
+                media_item = None
+                for item in media_list:
+                    if item.get("file_key") == file_key:
+                        media_item = item
+                        break
+                
+                # Если не нашли по ключу, берем первый
+                if not media_item:
+                    media_item = media_list[0]
+                
+                file_id = media_item.get("file_id")
+                returned_file_key = media_item.get("file_key")
+                
+                logger.info(f"Placid Media response: file_key={returned_file_key}, file_id={file_id}")
+                
                 if file_id:
-                    logger.info(f"Image uploaded to Placid successfully, file_id: {file_id}")
-                    return file_id
+                    logger.info(f"Image uploaded to Placid successfully, file_key={returned_file_key}, file_id: {file_id}")
+                    return {
+                        "file_key": returned_file_key,
+                        "file_id": file_id
+                    }
                 else:
                     logger.error(f"Placid Media API returned no file_id in response: {response_data}")
                     return None
@@ -495,13 +533,17 @@ def _ensure_placid_media_url(cover_url: str) -> str:
         cover_url: Исходный URL обложки
         
     Returns:
-        Placid file_id URL для использования в слоях
+        file_id (URL от Placid) для использования в слоях как "media" или "image"
+        В Placid используется либо прямой URL, либо file_id от Upload Media API
     """
     # Всегда загружаем через Placid Upload Media для гарантии доступа
-    placid_file_id = _upload_image_to_placid(cover_url)
+    media_info = _upload_image_to_placid(cover_url)
     
-    if placid_file_id:
-        return placid_file_id
+    if media_info and media_info.get("file_id"):
+        # Используем file_id (URL от Placid) - он должен работать
+        file_id = media_info["file_id"]
+        logger.info(f"Using Placid file_id: {file_id}")
+        return file_id
     else:
         # Fallback: используем оригинальный URL (может не сработать, но попробуем)
         logger.warning(f"Failed to upload to Placid Media, using original URL as fallback: {cover_url}")
@@ -595,8 +637,8 @@ def generate_creative_v1(
             payload = {
                 "template_uuid": PLACID_TPL_V1,
                 "layers": {
-                    "Main_book_image": {"media": placid_media_url},
-                    "Back_book_image": {"media": placid_media_url},
+                    "Main_book_image": {"image": placid_media_url},
+                    "Back_book_image": {"image": placid_media_url},
                     "Book_name": {"text": title},
                     "Tag_1": {"text": texts.get("tag_1", "")},
                     "Tag_2": {"text": texts.get("tag_2", "")},
@@ -696,8 +738,8 @@ def generate_creative_v2(
             payload = {
                 "template_uuid": PLACID_TPL_V2,
                 "layers": {
-                    "Book_1_cover": {"media": placid_media_url},
-                    "Book_2_cover": {"media": placid_media_url},
+                    "Book_1_cover": {"image": placid_media_url},
+                    "Book_2_cover": {"image": placid_media_url},
                     "Book_name": {"text": title},
                     "Tag_1": {"text": texts.get("tag_1", "")},
                     "Tag_2": {"text": texts.get("tag_2", "")},
@@ -788,9 +830,9 @@ def generate_creative_v3(
             payload = {
                 "template_uuid": PLACID_TPL_V3,
                 "layers": {
-                    "Book_cover": {"media": placid_media_url},
-                    "Ipad_screen": {"media": placid_media_url},
-                    "Iphone_screen": {"media": placid_media_url},
+                    "Book_cover": {"image": placid_media_url},
+                    "Ipad_screen": {"image": placid_media_url},
+                    "Iphone_screen": {"image": placid_media_url},
                     "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
                     "Button_text": {"text": "Download right now"},
                     "Title": {"text": "All formats available"},
