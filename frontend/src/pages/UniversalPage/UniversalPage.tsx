@@ -4,30 +4,30 @@ import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeade
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
+import Loader from "../../components/ui/Loader/Loader.tsx";
 
 const UniversalPage = () => {
   const { pageType } = useParams();
   const { i18n } = useTranslation();
   const language = i18n.language.toLowerCase();
   const [content, setContent] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const pageInfo: Record<string, { title: string; content: string }> = {
+  const pageInfo: Record<string, { title: string }> = {
     "terms-of-use": {
       title: "footer.terms",
-      content,
     },
     "privacy-policy": {
       title: "footer.privacy",
-      content,
     },
     "cookie-policy": {
       title: "footer.cookie",
-      content,
     },
   };
 
   useEffect(() => {
     if (!pageType || !language) return;
+    setLoading(true);
     mainApi
       .getPageInfo(pageType, language)
       .then((res) => {
@@ -37,7 +37,8 @@ const UniversalPage = () => {
       })
       .catch((error) => {
         console.log(error);
-      });
+      })
+      .finally(() => setLoading(false));
   }, [language, pageType]);
 
   const page = pageInfo[pageType || ""] || { title: "", content: "" };
@@ -56,16 +57,18 @@ const UniversalPage = () => {
     }, [] as string[]);
   };
 
-  const paragraphs = splitBySentences(page.content);
+  const paragraphs = splitBySentences(content);
 
   return (
     <>
       <div className={s.page_container}>
         <DetailHeader title={page.title} />
         <div className={s.page_content}>
-          {paragraphs.map((p, idx) => (
-            <p key={idx}>{p}</p>
-          ))}
+          {loading ? (
+            <Loader />
+          ) : (
+            paragraphs.map((p, idx) => <p key={idx}>{p}</p>)
+          )}
         </div>
       </div>
     </>

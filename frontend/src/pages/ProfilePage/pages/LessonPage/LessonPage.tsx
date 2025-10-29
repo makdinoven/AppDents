@@ -79,7 +79,9 @@ const LessonPage = () => {
   if (lesson)
     return (
       <>
-        <BackButton link={`${Path.profile}/${Path.myCourse}/${course.id}`} />
+        <BackButton
+          link={`${Path.profileMain}/${Path.myCourse}/${course.id}`}
+        />
         <div className={s.lesson_page}>
           <h3>{lesson.lesson_name}</h3>
           {isPdfLink(lesson.video_link) ? (
@@ -110,7 +112,7 @@ const LessonPage = () => {
           <div className={s.navigation_links}>
             {prevLesson && (
               <Link
-                to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${prevLesson.sectionId}/${prevLesson.lesson.id}`}
+                to={`${Path.profileMain}/${Path.myCourse}/${course.id}/${Path.lesson}/${prevLesson.sectionId}/${prevLesson.lesson.id}`}
                 className={s.prev_link}
               >
                 <Arrow />
@@ -128,7 +130,7 @@ const LessonPage = () => {
                 </button>
               ) : (
                 <Link
-                  to={`${Path.profile}/${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
+                  to={`${Path.profileMain}/${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
                   className={s.next_link}
                 >
                   <Trans i18nKey={"profile.nextLesson"} />

@@ -10,7 +10,7 @@ interface TableProps<T extends Record<string, any>> {
   columnLabels?: Partial<Record<keyof T, string>>;
   landingLinkByIdPath?: string;
   structured?: boolean;
-  showIndex?: boolean; // 👈 новый проп
+  showIndex?: boolean;
 }
 
 const Table = <T extends Record<string, any>>({
@@ -20,7 +20,7 @@ const Table = <T extends Record<string, any>>({
   columnLabels = {},
   landingLinkByIdPath,
   structured = true,
-  showIndex = true, // 👈 по умолчанию нумерация включена
+  showIndex = true,
 }: TableProps<T>) => {
   if (!data || data.length === 0) return <div className={s.empty}>No data</div>;
 
@@ -109,7 +109,7 @@ const Table = <T extends Record<string, any>>({
     if (value === null || value === undefined) return "";
     if (typeof value === "object") return JSON.stringify(value);
 
-    return value;
+    return typeof value === "string" ? value.trim() : value;
   };
 
   const paintCell = (key: string): string => {
@@ -140,7 +140,7 @@ const Table = <T extends Record<string, any>>({
         <table className={s.table}>
           <thead>
             <tr>
-              {showIndex && <th>#</th>} {/* 👈 добавлено условие */}
+              {showIndex && <th>#</th>}
               {headers.map((key) => (
                 <th key={key}>{columnLabels[key as keyof T] || key}</th>
               ))}
@@ -149,7 +149,7 @@ const Table = <T extends Record<string, any>>({
           <tbody>
             {data.map((row, rowIdx) => (
               <tr key={rowIdx} className={row.color ? s[row.color] : ""}>
-                {showIndex && ( // 👈 добавлено условие
+                {showIndex && (
                   <td style={{ paddingLeft: row.color ? "15px" : "" }}>
                     {rowIdx + 1}
                   </td>

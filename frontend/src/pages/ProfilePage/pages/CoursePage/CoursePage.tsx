@@ -83,7 +83,7 @@ const CoursePage = () => {
       setIsPartial(
         ["partial", "special_offer"].includes(res.data.access_level),
       );
-      if (res.data.access_level === "none") navigate(Path.profile);
+      if (res.data.access_level === "none") navigate(Path.profileMain);
       setLoading(false);
     } catch (error) {
       console.error(error);
@@ -108,7 +108,7 @@ const CoursePage = () => {
           </>
         ) : (
           <>
-            <DetailHeader link={Path.profile} title={course?.name} />
+            <DetailHeader link={Path.profileMain} title={course?.name} />
             <Outlet />
             <ul className={s.modules_list}>
               {course.sections.map((section: any) => (

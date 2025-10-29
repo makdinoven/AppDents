@@ -118,7 +118,7 @@ export const usePayment = ({
     if (balance_left) {
       await dispatch(getMe());
       dispatch(clearUserCourses());
-      navigate(Path.profile);
+      navigate(Path.profileMain);
     }
   };
 
@@ -133,12 +133,12 @@ export const usePayment = ({
     );
 
     if (isLogged) {
-      navigate(Path.profile);
+      navigate(Path.profileMain);
     } else {
       closePaymentModal();
       localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
       await dispatch(getMe());
-      navigate(Path.profile);
+      navigate(Path.profileMain);
     }
   };
 

@@ -36,7 +36,7 @@ const MobileMenu = () => {
     buttons.push({
       icon: ProfileIcon,
       text: "nav.profile",
-      link: Path.profile,
+      link: Path.profileMain,
     });
   } else if (!isLogged && !accessToken) {
     buttons.push({

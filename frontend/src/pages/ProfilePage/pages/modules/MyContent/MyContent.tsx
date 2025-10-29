@@ -1,10 +1,10 @@
 import s from "./MyContent.module.scss";
 import { Trans } from "react-i18next";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { Path } from "../../../../routes/routes.ts";
+import SectionHeader from "../../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import { Path } from "../../../../../routes/routes.ts";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../store/store.ts";
-import CourseCardSkeletons from "../../../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import { AppRootStateType } from "../../../../../store/store.ts";
+import CourseCardSkeletons from "../../../../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import ProfileEntityCard from "../ProfileEntityCard/ProfileEntityCard.tsx";
 import { useEffect } from "react";
 

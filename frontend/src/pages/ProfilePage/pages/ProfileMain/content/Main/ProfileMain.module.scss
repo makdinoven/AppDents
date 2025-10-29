@@ -54,18 +54,6 @@
   }
 }
 
-.back_btn_tabs_container {
-  display: flex;
-  justify-content: space-between;
-  //display: grid;
-  //grid-template-columns: 30px 1fr 80px ;
-  gap: 10px;
-  margin-bottom: 40px;
-  button {
-    margin-bottom: 0;
-  }
-}
-
 .user_info {
   display: grid;
   grid-template-columns: 1fr 1.25fr;
@@ -232,11 +220,5 @@
     button {
       width: fit-content;
     }
-  }
-
-  .back_btn_tabs_container {
-    margin-bottom: 20px;
-    //display: grid;
-    //grid-template-columns: 60px 1fr 30px ;
   }
 }

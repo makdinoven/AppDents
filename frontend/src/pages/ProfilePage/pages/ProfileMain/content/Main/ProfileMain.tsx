@@ -1,7 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
-import BackButton from "../../../../../../components/ui/BackButton/BackButton.tsx";
 import { useEffect, useState } from "react";
 import {
   AppDispatchType,
@@ -24,13 +23,8 @@ import {
 } from "../../../../../../store/actions/userActions.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
 import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
-import Tabs from "../../../../../../components/ui/Tabs/Tabs.tsx";
-import PurchaseHistory from "../PurchaseHistory/PurchaseHistory.tsx";
-import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import MyContent from "../../../../modules/MyContent/MyContent.tsx";
-
-const QUERY_KEY = "content";
+import MyContent from "../../../modules/MyContent/MyContent.tsx";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -39,9 +33,8 @@ const ProfileMain = () => {
   const books = useSelector((state: AppRootStateType) => state.user.books);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
-  const [searchParams] = useSearchParams();
-  const tabFromParams = searchParams.get(QUERY_KEY);
-  const screenWidth = useScreenWidth();
+  const location = useLocation();
+  const childKey = location.pathname.slice(1);
 
   useEffect(() => {
     if (!courses.length) dispatch(getCourses());
@@ -60,95 +53,54 @@ const ProfileMain = () => {
     setShowResetPasswordModal(false);
   };
 
-  const profilePageContent = [
-    {
-      name: "profile.main",
-      value: "profile_main",
-      component: (
-        <>
-          <div className={s.page_header}>
-            <div className={s.user_info}>
-              <div className={s.left}>
-                <div className={s.user_top}>
-                  <User className={s.user_icon} />
-                  <div className={s.user_items}>
-                    <div>
-                      <div className={s.mail}>
-                        <Mail />
-                        <Trans i18nKey="mail" />:{" "}
-                      </div>
-                      {email}
-                    </div>
-                    <div>
-                      <div className={s.support}>
-                        <Support />
-                        <Trans i18nKey="support" />:{" "}
-                      </div>
-                      <a
-                        className={s.mail_link}
-                        href="mailto:info.dis.org@gmail.com"
-                      >
-                        info.dis.org@gmail.com
-                      </a>
-                    </div>
-                  </div>
-                </div>
-                <div className={s.profile_buttons}>
-                  <button onClick={handleLogout} className={s.logout_btn}>
-                    <LogoutIcon />
-                    <Trans i18nKey="logout" />
-                  </button>
-                  <PrettyButton
-                    className={s.reset_pass_btn}
-                    variant="danger"
-                    onClick={() => setShowResetPasswordModal(true)}
-                    text={"resetPassword"}
-                  />
-                </div>
-              </div>
-              <ReferralSection />
-            </div>
-          </div>
-          <MyContent key="books" items={books} type="book" />
-          <MyContent key="courses" items={courses} />
-        </>
-      ),
-    },
-    {
-      name: "profile.yourCourses",
-      value: "your_courses",
-      component: <MyContent key="courses" items={courses} />,
-    },
-    {
-      name: "profile.yourBooks",
-      value: "your_books",
-      component: <MyContent key="books" items={books} type="book" />,
-    },
-    {
-      name: "profile.purchaseHistory.purchases",
-      value: "purchase_history",
-      component: <PurchaseHistory />,
-    },
-  ];
-
-  const activeTab =
-    profilePageContent.find((tab) => tab.value === tabFromParams) ??
-    profilePageContent.find((tab) => tab.value === "profile_main");
-
   return (
     <>
-      <div className={s.back_btn_tabs_container}>
-        {screenWidth > 576 && <BackButton />}
-
-        <Tabs
-          queryKey={QUERY_KEY}
-          mainTab={"profile_main"}
-          tabs={profilePageContent}
-        />
-      </div>
-
-      <div key={activeTab?.value} className={s.profile_page_content}>
-        {activeTab?.component}
+      <div key={childKey} className={s.profile_page_content}>
+        <div className={s.page_header}>
+          <div className={s.user_info}>
+            <div className={s.left}>
+              <div className={s.user_top}>
+                <User className={s.user_icon} />
+                <div className={s.user_items}>
+                  <div>
+                    <div className={s.mail}>
+                      <Mail />
+                      <Trans i18nKey="mail" />:{" "}
+                    </div>
+                    {email}
+                  </div>
+                  <div>
+                    <div className={s.support}>
+                      <Support />
+                      <Trans i18nKey="support" />:{" "}
+                    </div>
+                    <a
+                      className={s.mail_link}
+                      href="mailto:info.dis.org@gmail.com"
+                    >
+                      info.dis.org@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className={s.profile_buttons}>
+                <button onClick={handleLogout} className={s.logout_btn}>
+                  <LogoutIcon />
+                  <Trans i18nKey="logout" />
+                </button>
+                <PrettyButton
+                  className={s.reset_pass_btn}
+                  variant="danger"
+                  onClick={() => setShowResetPasswordModal(true)}
+                  text={"resetPassword"}
+                />
+              </div>
+            </div>
+            <ReferralSection />
+          </div>
+        </div>
+        <MyContent key="books" items={books} type="book" />
+        <MyContent key="courses" items={courses} />
       </div>
 
       {showResetPasswordModal && (
