@@ -1,6 +1,7 @@
 import io
 import json
 import logging
+import re
 import time
 from typing import Optional, Dict, Any, Tuple
 
@@ -135,12 +136,32 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         # Функция для извлечения URL из ответа Placid
         def _extract_url(response_data: Dict) -> Optional[str]:
             """Извлекает URL изображения из ответа Placid API."""
-            # Проверяем различные возможные поля с URL
-            url = (response_data.get("url") or 
-                   response_data.get("image_url") or 
-                   response_data.get("transfer_url") or
-                   response_data.get("data", {}).get("url") if isinstance(response_data.get("data"), dict) else None)
-            return url
+            # Проверяем различные возможные поля с URL в порядке приоритета
+            # Проверяем image_url в первую очередь (приоритет для Placid API)
+            url = response_data.get("image_url")
+            if url and isinstance(url, str) and url.strip():
+                logger.debug(f"Found image_url in response: {url[:50]}...")
+                return url.strip()
+            
+            url = response_data.get("url")
+            if url and isinstance(url, str) and url.strip():
+                logger.debug(f"Found url in response: {url[:50]}...")
+                return url.strip()
+                
+            url = response_data.get("transfer_url")
+            if url and isinstance(url, str) and url.strip():
+                logger.debug(f"Found transfer_url in response: {url[:50]}...")
+                return url.strip()
+            
+            # Проверяем вложенный объект data
+            data_obj = response_data.get("data")
+            if isinstance(data_obj, dict):
+                url = data_obj.get("image_url") or data_obj.get("url")
+                if url and isinstance(url, str) and url.strip():
+                    logger.debug(f"Found url in data object: {url[:50]}...")
+                    return url.strip()
+            
+            return None
         
         # Если изображение готово сразу (completed или finished)
         if status in ("completed", "finished"):
@@ -196,11 +217,21 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                     if poll_status in ("completed", "finished"):
                         url = _extract_url(poll_data)
                         if url:
-                            logger.info(f"Placid image {image_id} completed (status: {poll_status}) after {attempt} polling attempts")
+                            logger.info(f"Placid image {image_id} completed (status: {poll_status}) after {attempt} polling attempts, URL: {url}")
                             return url, None
                         else:
-                            logger.warning(f"Placid image {image_id} status {poll_status} but no URL in response: {poll_data}")
-                            # Продолжаем polling в надежде получить URL
+                            # Детальное логирование для отладки
+                            logger.warning(
+                                f"Placid image {image_id} status {poll_status} but no URL extracted. "
+                                f"Response keys: {list(poll_data.keys())}, "
+                                f"image_url={poll_data.get('image_url')}, "
+                                f"url={poll_data.get('url')}, "
+                                f"transfer_url={poll_data.get('transfer_url')}"
+                            )
+                            # Если статус finished и нет URL после нескольких попыток - это ошибка
+                            if attempt >= 3:  # После 3 попыток считаем это ошибкой
+                                logger.error(f"Placid image {image_id} finished but no URL found after {attempt} attempts")
+                                return "", f"placid: finished status but no URL in response after {attempt} attempts"
                             continue
                     
                     elif poll_status in ("queued", "processing"):
@@ -258,6 +289,16 @@ class PlacidServiceError(Exception):
 class PlacidQuotaError(PlacidServiceError):
     """Недостаточно подписки/кредитов в Placid (403 Requires Subscription and Credits)."""
     pass
+
+
+def _clean_creative_text(text: str) -> str:
+    """Очищает текст от артефактов валидации типа '(60 chars.)' в конце."""
+    if not text:
+        return text
+    
+    # Удаляем паттерны типа "(60 chars.)", "(120 chars)", " (chars.)" и подобные в конце текста
+    text = re.sub(r'\s*\([^)]*chars[^)]*\)\s*$', '', text, flags=re.IGNORECASE)
+    return text.strip()
 
 
 def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dict[str, str]:
@@ -320,7 +361,15 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         
         r.raise_for_status()
         try:
-            return r.json()
+            texts = r.json()
+            # Очищаем все текстовые поля от артефактов валидации
+            cleaned_texts = {}
+            for key, value in texts.items():
+                if isinstance(value, str):
+                    cleaned_texts[key] = _clean_creative_text(value)
+                else:
+                    cleaned_texts[key] = value
+            return cleaned_texts
         except (ValueError, json.JSONDecodeError) as e:
             error_text = r.text[:500]
             logger.error(f"BookAI invalid JSON response: {e}, response text: {error_text}")
@@ -358,7 +407,8 @@ def _download_bytes(url: str) -> bytes:
 
 
 def _s3_key(book_id: int, code: str) -> str:
-    return f"creatives/{book_id}/{code}.png"
+    """Генерирует S3 ключ для креатива с уникальным именем (book_id + код шаблона)."""
+    return f"books/{book_id}/creatives/{book_id}_{code}.png"
 
 
 def _upload_to_s3(key: str, data: bytes) -> str:
