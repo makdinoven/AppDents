@@ -135,6 +135,21 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         return "", f"placid request error: {str(e)}"
 
 
+class BookAIServiceError(Exception):
+    """Базовое исключение для ошибок BookAI сервиса."""
+    pass
+
+
+class BookAIValidationError(BookAIServiceError):
+    """Ошибка валидации данных (400, 422) - должна возвращать 422."""
+    pass
+
+
+class BookAIServiceUnavailableError(BookAIServiceError):
+    """Сервис недоступен (502, 503, timeout) - должна возвращать 502."""
+    pass
+
+
 def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dict[str, str]:
     """Получает тексты для креатива через BookAI API, используя PDF файл книги."""
     from ..models.models_v2 import BookFile, BookFileFormat
@@ -153,27 +168,59 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         raise ValueError("PDF file has no s3_url")
     
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
+    url = f"{settings.BOOKAI_BASE_URL}{endpoint}"
+    logger.info(f"Calling BookAI: {url}, book_id={book_id}, language={language}, s3_url={s3_url[:100]}...")
+    
     try:
         r = requests.post(
-            f"{settings.BOOKAI_BASE_URL}{endpoint}",
+            url,
             json={"s3_url": s3_url, "language": language},
             timeout=60,
         )
+        logger.info(f"BookAI response status: {r.status_code}")
+        
+        # Обработка конкретных статусов
         if r.status_code == 400:
-            logger.error(f"BookAI 400 error: {r.text[:500]}")
-            raise ValueError(f"bookai 400: {r.text[:500]}")
+            error_text = r.text[:500]
+            logger.error(f"BookAI 400 error: {error_text}")
+            raise BookAIValidationError(f"bookai validation error (400): {error_text}")
+        
+        if r.status_code == 422:
+            error_text = r.text[:500]
+            logger.error(f"BookAI 422 error: {error_text}")
+            raise BookAIValidationError(f"bookai validation error (422): {error_text}")
+        
+        if r.status_code >= 500:
+            error_text = r.text[:500]
+            logger.error(f"BookAI server error {r.status_code}: {error_text}")
+            raise BookAIServiceUnavailableError(f"bookai service error ({r.status_code}): {error_text}")
+        
         r.raise_for_status()
         try:
             return r.json()
         except (ValueError, json.JSONDecodeError) as e:
             logger.error(f"BookAI invalid JSON response: {e}, response text: {r.text[:500]}")
-            raise ValueError(f"bookai invalid json response: {str(e)}")
+            raise BookAIServiceUnavailableError(f"bookai invalid json response: {str(e)}")
+            
+    except BookAIServiceError:
+        raise  # Перебрасываем специальные исключения как есть
     except requests.exceptions.HTTPError as e:
-        logger.error(f"BookAI HTTP error: {e}, response: {e.response.text[:500] if e.response else 'N/A'}")
-        raise ValueError(f"bookai http error: {str(e)}")
+        status_code = e.response.status_code if e.response else None
+        error_text = e.response.text[:500] if e.response else str(e)
+        logger.error(f"BookAI HTTP error {status_code}: {error_text}")
+        
+        if status_code and status_code >= 500:
+            raise BookAIServiceUnavailableError(f"bookai http error ({status_code}): {error_text}")
+        else:
+            raise BookAIValidationError(f"bookai http error ({status_code}): {error_text}")
+            
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        logger.error(f"BookAI connection/timeout error: {e}")
+        raise BookAIServiceUnavailableError(f"bookai service unavailable: {str(e)}")
+        
     except requests.exceptions.RequestException as e:
         logger.error(f"BookAI request failed: {e}")
-        raise ValueError(f"bookai request error: {str(e)}")
+        raise BookAIServiceUnavailableError(f"bookai request error: {str(e)}")
 
 
 def _download_bytes(url: str) -> bytes:

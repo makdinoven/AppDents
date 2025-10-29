@@ -8,7 +8,15 @@ from sqlalchemy.orm import Session
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Book, BookCreative, CreativeStatus, BookFile, BookFileFormat
-from ..services_v2.creative_service import generate_all_creatives, generate_single_creative, PLACID_TPL_V1, PLACID_TPL_V2, PLACID_TPL_V3
+from ..services_v2.creative_service import (
+    generate_all_creatives, 
+    generate_single_creative, 
+    PLACID_TPL_V1, 
+    PLACID_TPL_V2, 
+    PLACID_TPL_V3,
+    BookAIValidationError,
+    BookAIServiceUnavailableError,
+)
 from ..core.config import settings
 
 import requests
@@ -173,6 +181,12 @@ def get_or_create_creatives(
             ],
             "overall": "ready",
         }
+    except BookAIValidationError as e:
+        logger.error(f"BookAI validation error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+    except BookAIServiceUnavailableError as e:
+        logger.error(f"BookAI service unavailable in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except ValueError as e:
         logger.error(f"ValueError in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
@@ -223,6 +237,12 @@ def manual_single_creative(
             ],
             "overall": "ready",
         }
+    except BookAIValidationError as e:
+        logger.error(f"BookAI validation error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+    except BookAIServiceUnavailableError as e:
+        logger.error(f"BookAI service unavailable in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except ValueError as e:
         logger.error(f"ValueError in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
@@ -265,6 +285,12 @@ def manual_creatives(
             ],
             "overall": "ready",
         }
+    except BookAIValidationError as e:
+        logger.error(f"BookAI validation error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+    except BookAIServiceUnavailableError as e:
+        logger.error(f"BookAI service unavailable in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except ValueError as e:
         logger.error(f"ValueError in manual_creatives, book_id={book_id}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
