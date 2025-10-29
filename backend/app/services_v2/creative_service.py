@@ -132,11 +132,44 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         image_id = data.get("id")
         polling_url = data.get("polling_url")
         
-        # Если изображение готово сразу
-        if status == "completed":
-            url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
+        # Функция для извлечения URL из ответа Placid
+        def _extract_url(response_data: Dict) -> Optional[str]:
+            """Извлекает URL изображения из ответа Placid API."""
+            # Проверяем различные возможные поля с URL
+            url = (response_data.get("url") or 
+                   response_data.get("image_url") or 
+                   response_data.get("transfer_url") or
+                   response_data.get("data", {}).get("url") if isinstance(response_data.get("data"), dict) else None)
+            return url
+        
+        # Если изображение готово сразу (completed или finished)
+        if status in ("completed", "finished"):
+            url = _extract_url(data)
             if url:
+                logger.info(f"Placid image {image_id} ready immediately with status: {status}")
                 return url, None
+            else:
+                logger.warning(f"Placid image {image_id} status {status} but no URL found, trying polling_url")
+                # Если нет URL, но есть polling_url - используем его для получения URL
+                if polling_url:
+                    # Делаем один запрос к polling_url для получения URL
+                    try:
+                        poll_r = requests.get(
+                            polling_url,
+                            headers={"Authorization": f"Bearer {settings.PLACID_API_KEY}"},
+                            timeout=10,
+                        )
+                        if poll_r.status_code < 300:
+                            poll_data = poll_r.json()
+                            url = _extract_url(poll_data)
+                            if url:
+                                logger.info(f"Placid image {image_id} URL obtained via polling_url for status {status}")
+                                return url, None
+                    except Exception as e:
+                        logger.warning(f"Failed to get URL via polling_url for finished image: {e}")
+                
+                logger.error(f"Placid image {image_id} status {status} but no URL and polling failed: {data}")
+                return "", f"placid: no url for status {status}"
         
         # Если в очереди или обрабатывается - делаем polling
         if status in ("queued", "processing") and polling_url:
@@ -159,13 +192,16 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                     poll_data = poll_r.json()
                     poll_status = poll_data.get("status", "").lower()
                     
-                    if poll_status == "completed":
-                        url = poll_data.get("url") or poll_data.get("image_url") or poll_data.get("data", {}).get("url")
+                    # Если изображение готово (completed или finished)
+                    if poll_status in ("completed", "finished"):
+                        url = _extract_url(poll_data)
                         if url:
-                            logger.info(f"Placid image {image_id} completed after {attempt} polling attempts")
+                            logger.info(f"Placid image {image_id} completed (status: {poll_status}) after {attempt} polling attempts")
                             return url, None
                         else:
-                            logger.warning(f"Placid image {image_id} completed but no URL in response: {poll_data}")
+                            logger.warning(f"Placid image {image_id} status {poll_status} but no URL in response: {poll_data}")
+                            # Продолжаем polling в надежде получить URL
+                            continue
                     
                     elif poll_status in ("queued", "processing"):
                         logger.debug(f"Placid image {image_id} still {poll_status}, attempt {attempt}/{max_attempts}")
@@ -187,8 +223,8 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
             logger.error(f"Placid image {image_id} polling timeout after {max_attempts} attempts")
             return "", f"placid: polling timeout (image still {status} after {max_attempts * poll_interval}s)"
         
-        # Статус unknown или нет polling_url
-        url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
+        # Статус unknown или нет polling_url - пытаемся извлечь URL
+        url = _extract_url(data)
         if not url:
             logger.error(f"Placid API empty url in response (status={status}): {data}")
             return "", f"placid: empty url (status={status})"
