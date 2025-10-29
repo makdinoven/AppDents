@@ -37,7 +37,7 @@ const SuccessPayment = () => {
       });
       localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
       await dispatch(getMe());
-      navigate(Path.profile);
+      navigate(Path.profileMain);
     } catch (error) {
       navigate(Path.main);
       console.error(error);
