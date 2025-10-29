@@ -177,7 +177,13 @@ def _require_book_fields(book: Book) -> None:
         raise ValueError("Book.cover_url is required")
 
 
-def generate_creative_v1(db: Session, book: Book, language: str, texts: Optional[Dict[str, str]]) -> BookCreative:
+def generate_creative_v1(
+    db: Session,
+    book: Book,
+    language: str,
+    texts: Optional[Dict[str, str]],
+    context_overrides: Optional[Dict[str, Any]] = None,
+) -> BookCreative:
     _require_book_fields(book)
     bl = _min_price_landing(db, book.id, language)
     if not bl or bl.new_price is None:
@@ -185,10 +191,47 @@ def generate_creative_v1(db: Session, book: Book, language: str, texts: Optional
     price_new = _format_price(float(bl.new_price))
     price_old = _format_price(float(bl.old_price or 0))
 
+    # Применяем переопределения цен/полей при наличии
+    ov = context_overrides or {}
+    if "price_new" in ov:
+        try:
+            price_new = _format_price(float(ov.get("price_new")))
+        except Exception:
+            price_new = str(ov.get("price_new"))
+    if "price_old" in ov:
+        try:
+            price_old = _format_price(float(ov.get("price_old")))
+        except Exception:
+            price_old = str(ov.get("price_old"))
+
     if texts is None:
         texts = _bookai_texts(db, book.cover_url, language, version=1)
 
-    payload = _build_layers_v1(book, language, texts, price_old, price_new)
+    # Позволяем переопределить титул/обложку/слои
+    title = ov.get("title", book.title)
+    cover_url = ov.get("cover_url", book.cover_url)
+    layers_override = ov.get("layers") if ov else None
+
+    if layers_override and isinstance(layers_override, dict):
+        payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
+    else:
+        payload = {
+            "template_uuid": PLACID_TPL_V1,
+            "layers": {
+                "Main_book_image": {"media": cover_url},
+                "Back_book_image": {"media": cover_url},
+                "Book_name": {"text": title},
+                "Tag_1": {"text": texts.get("tag_1", "")},
+                "Tag_2": {"text": texts.get("tag_2", "")},
+                "Tag_3": {"text": texts.get("tag_3", "")},
+                "Hight_description": {"text": texts.get("hight_description", "")},
+                "Medium_description": {"text": texts.get("medium_description", "")},
+                "Down_description": {"text": texts.get("down_description", "")},
+                "Only_for_text": {"text": _only_for_text(language)},
+                "New_price": {"text": price_new},
+                "Old_price": {"text": price_old},
+            },
+        }
     url, err = _placid_render(payload)
     if err:
         raise RuntimeError(err)
@@ -211,7 +254,13 @@ def generate_creative_v1(db: Session, book: Book, language: str, texts: Optional
     return row
 
 
-def generate_creative_v2(db: Session, book: Book, language: str, texts: Optional[Dict[str, str]]) -> BookCreative:
+def generate_creative_v2(
+    db: Session,
+    book: Book,
+    language: str,
+    texts: Optional[Dict[str, str]],
+    context_overrides: Optional[Dict[str, Any]] = None,
+) -> BookCreative:
     _require_book_fields(book)
     bl = _min_price_landing(db, book.id, language)
     if not bl or bl.new_price is None:
@@ -219,10 +268,46 @@ def generate_creative_v2(db: Session, book: Book, language: str, texts: Optional
     price_new = _format_price(float(bl.new_price))
     price_old = _format_price(float(bl.old_price or 0))
 
+    # Применяем переопределения цен/полей при наличии
+    ov = context_overrides or {}
+    if "price_new" in ov:
+        try:
+            price_new = _format_price(float(ov.get("price_new")))
+        except Exception:
+            price_new = str(ov.get("price_new"))
+    if "price_old" in ov:
+        try:
+            price_old = _format_price(float(ov.get("price_old")))
+        except Exception:
+            price_old = str(ov.get("price_old"))
+
     if texts is None:
         texts = _bookai_texts(db, book.cover_url, language, version=2)
 
-    payload = _build_layers_v2(book, language, texts, price_old, price_new)
+    # Позволяем переопределить титул/обложку/слои
+    title = ov.get("title", book.title)
+    cover_url = ov.get("cover_url", book.cover_url)
+    layers_override = ov.get("layers") if ov else None
+
+    if layers_override and isinstance(layers_override, dict):
+        payload = {"template_uuid": PLACID_TPL_V2, "layers": layers_override}
+    else:
+        payload = {
+            "template_uuid": PLACID_TPL_V2,
+            "layers": {
+                "Book_1_cover": {"media": cover_url},
+                "Book_2_cover": {"media": cover_url},
+                "Book_name": {"text": title},
+                "Tag_1": {"text": texts.get("tag_1", "")},
+                "Tag_2": {"text": texts.get("tag_2", "")},
+                "Tag_3": {"text": texts.get("tag_3", "")},
+                "Hight_description": {"text": texts.get("hight_description", "")},
+                "Down_description": {"text": texts.get("down_description", "")},
+                "Only_for": {"text": _only_for_text(language)},
+                "Old_price": {"text": price_old},
+                "New_price": {"text": price_new},
+            },
+        }
     url, err = _placid_render(payload)
     if err:
         raise RuntimeError(err)
@@ -245,7 +330,12 @@ def generate_creative_v2(db: Session, book: Book, language: str, texts: Optional
     return row
 
 
-def generate_creative_v3(db: Session, book: Book, language: str) -> BookCreative:
+def generate_creative_v3(
+    db: Session,
+    book: Book,
+    language: str,
+    context_overrides: Optional[Dict[str, Any]] = None,
+) -> BookCreative:
     _require_book_fields(book)
     bl = _min_price_landing(db, book.id, language)
     if not bl or bl.new_price is None:
@@ -253,7 +343,39 @@ def generate_creative_v3(db: Session, book: Book, language: str) -> BookCreative
     price_new = _format_price(float(bl.new_price))
     price_old = _format_price(float(bl.old_price or 0))
 
-    payload = _build_layers_v3(book, language, price_old, price_new)
+    ov = context_overrides or {}
+    if "price_new" in ov:
+        try:
+            price_new = _format_price(float(ov.get("price_new")))
+        except Exception:
+            price_new = str(ov.get("price_new"))
+    if "price_old" in ov:
+        try:
+            price_old = _format_price(float(ov.get("price_old")))
+        except Exception:
+            price_old = str(ov.get("price_old"))
+
+    title = ov.get("title")  # не используется в v3 по умолчанию
+    cover_url = ov.get("cover_url", book.cover_url)
+    layers_override = ov.get("layers") if ov else None
+
+    if layers_override and isinstance(layers_override, dict):
+        payload = {"template_uuid": PLACID_TPL_V3, "layers": layers_override}
+    else:
+        payload = {
+            "template_uuid": PLACID_TPL_V3,
+            "layers": {
+                "Book_cover": {"media": cover_url},
+                "Ipad_screen": {"media": cover_url},
+                "Iphone_screen": {"media": cover_url},
+                "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
+                "Button_text": {"text": "Download right now"},
+                "Title": {"text": "All formats available"},
+                "New_price": {"text": price_new},
+                "Only_for": {"text": _only_for_text(language)},
+                "Old_price": {"text": price_old},
+            },
+        }
     url, err = _placid_render(payload)
     if err:
         raise RuntimeError(err)
@@ -288,5 +410,48 @@ def generate_all_creatives(db: Session, book_id: int, language: str, manual_payl
     c2 = generate_creative_v2(db, book, language, v2_payload)
     c3 = generate_creative_v3(db, book, language)
     return [c1, c2, c3]
+
+
+def generate_single_creative(
+    db: Session,
+    book_id: int,
+    language: str,
+    target: str,
+    overrides: Optional[Dict[str, Any]] = None,
+) -> BookCreative:
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise ValueError("Book not found")
+
+    # Нормализуем target: допускаем 'v1'/'v2'/'v3' или прямой creative_code
+    code = target.strip().lower()
+    if code in {"v1", PLACID_TPL_V1}:
+        # Тексты можно передать как overrides["texts"] либо плоскими ключами
+        texts: Optional[Dict[str, str]] = None
+        if overrides:
+            if isinstance(overrides.get("texts"), dict):
+                texts = overrides.get("texts")
+            else:
+                # собираем известные текстовые поля
+                known = ("hight_description", "medium_description", "down_description", "tag_1", "tag_2", "tag_3")
+                texts = {k: overrides[k] for k in known if k in overrides}
+                if not texts:
+                    texts = None
+        return generate_creative_v1(db, book, language, texts, context_overrides=overrides)
+    if code in {"v2", PLACID_TPL_V2}:
+        texts = None
+        if overrides:
+            if isinstance(overrides.get("texts"), dict):
+                texts = overrides.get("texts")
+            else:
+                known = ("hight_description", "down_description", "tag_1", "tag_2", "tag_3")
+                texts = {k: overrides[k] for k in known if k in overrides}
+                if not texts:
+                    texts = None
+        return generate_creative_v2(db, book, language, texts, context_overrides=overrides)
+    if code in {"v3", PLACID_TPL_V3}:
+        return generate_creative_v3(db, book, language, context_overrides=overrides)
+
+    raise ValueError("Unknown creative target")
 
 
