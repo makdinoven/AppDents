@@ -54,6 +54,7 @@ import AdminBooksListing from "../pages/Admin/pages/content/AdminBooksListing.ts
 import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLandingsListing.tsx";
 import BookPage from "../pages/ProfilePage/pages/BookPage/BookPage.tsx";
 import MagicVideoTool from "../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
+import BookLandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytics/BookLandingAnalytics.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -214,11 +215,11 @@ export const AppRoutes: FC = () => {
             />
             <Route
               path={`${Path.landingAnalytics}/:landingId?`}
-              element={<LandingAnalytics isBook={false} />}
+              element={<LandingAnalytics />}
             />
             <Route
-                path={`${Path.bookLandingAnalytics}/:landingId?`}
-                element={<LandingAnalytics isBook />}
+              path={`${Path.bookLandingAnalytics}/:landingId?`}
+              element={<BookLandingAnalytics />}
             />
             <Route
               path={`${Path.landingDetail}/:landingId?`}

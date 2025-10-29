@@ -349,7 +349,7 @@ export const adminApi = {
     });
   },
   getBookLandingTraffic(params: any) {
-    return instance.get("landings/analytics/landing-traffic", { //TODO ПОМЕНЯТЬ УРЛ
+    return instance.get("landings/analytics/book-landing-traffic", {
       params,
       headers: getAuthHeaders(),
     });
@@ -441,32 +441,41 @@ export const adminApi = {
     });
   },
   putAdBookLandingAssigned(
-      id: string,
-      data: { staff_id: number | null; account_id: number | null },
+    id: string,
+    data: { staff_id: number | null; account_id: number | null },
   ) {
-    return instance.put(`book_ad_control/ads/books/landing/${id}/assignment`, data, {
-      headers: getAuthHeaders(),
-    });
+    return instance.put(
+      `book_ad_control/ads/books/landing/${id}/assignment`,
+      data,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
   },
   getPublishers() {
     return instance.get("book-metadata/publishers", {
       headers: getAuthHeaders(),
     });
   },
-  extractBookMetadata(id: number) {
-    return instance.get(`book-metadata/${id}/extract-metadata`, {
-      headers: getAuthHeaders(),
-    });
+  createBookMetadata(id: number, lang: string) {
+    return instance.post(
+      `v2/books/${id}/ai-process?language=${lang}`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
   },
-  applyBookMetadata(
-    id: number,
-    data: {
-      page_count: number;
-      publisher_name?: string;
-      publication_year?: number;
-    },
-  ) {
-    return instance.post(`book-metadata/${id}/apply-metadata`, data, {
+  getOrCreateBookCreatives(id: number, lang: string, regen: boolean) {
+    return instance.get(
+      `v2/books/${id}/creatives?language=${lang}&regen=${regen}`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+  createBookCreativesManual(id: number, data: any) {
+    return instance.post(`v2/books/${id}/ai-creatives/manual}`, data, {
       headers: getAuthHeaders(),
     });
   },

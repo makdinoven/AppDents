@@ -12,11 +12,18 @@ import {
 import { cartStorage } from "../../api/cartApi/cartStorage.ts";
 import { getPaymentSource } from "../helpers/helpers.ts";
 import { Path } from "../../routes/routes.ts";
-import { clearUserCourses } from "../../store/slices/userSlice.ts";
+import {
+  clearUserBooks,
+  clearUserCourses,
+} from "../../store/slices/userSlice.ts";
 import { mainApi } from "../../api/mainApi/mainApi.ts";
 import { getMe } from "../../store/actions/userActions.ts";
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 import { PaymentHookDataPayload } from "../../store/slices/paymentSlice.ts";
+import { getCart } from "../../store/actions/cartActions.ts";
+import { Alert } from "../../components/ui/Alert/Alert.tsx";
+import { t } from "i18next";
+import { CheckMark } from "../../assets/icons";
 
 const IS_PAYMENT_DISABLED = false;
 
@@ -115,9 +122,18 @@ export const usePayment = ({
       }
     }
 
+    if (isBalanceUsed && balance_left) {
+      await dispatch(getCart());
+      Alert(
+        `${t("successPaymentWithBalance", { balance: balance_left })}`,
+        <CheckMark />,
+      );
+    }
+
     if (balance_left) {
       await dispatch(getMe());
       dispatch(clearUserCourses());
+      dispatch(clearUserBooks());
       navigate(Path.profile);
     }
   };
