@@ -150,6 +150,16 @@ class BookAIServiceUnavailableError(BookAIServiceError):
     pass
 
 
+class PlacidServiceError(Exception):
+    """Базовая ошибка для Placid рендеринга."""
+    pass
+
+
+class PlacidQuotaError(PlacidServiceError):
+    """Недостаточно подписки/кредитов в Placid (403 Requires Subscription and Credits)."""
+    pass
+
+
 def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dict[str, str]:
     """Получает тексты для креатива через BookAI API, используя PDF файл книги."""
     from ..models.models_v2 import BookFile, BookFileFormat
@@ -340,7 +350,11 @@ def generate_creative_v1(
         logger.info(f"Rendering creative v1 via Placid, book_id={book.id}")
         url, err = _placid_render(payload)
         if err:
-            raise RuntimeError(err)
+            # Определяем исчерпание кредитов/отсутствие подписки
+            msg = str(err)
+            if "Requires Subscription and Credits" in msg or "placid 403" in msg:
+                raise PlacidQuotaError(msg)
+            raise PlacidServiceError(msg)
         logger.info(f"Downloading image from Placid, book_id={book.id}")
         img = _download_bytes(url)
         key = _s3_key(book.id, PLACID_TPL_V1)
@@ -426,7 +440,10 @@ def generate_creative_v2(
         logger.info(f"Rendering creative v2 via Placid, book_id={book.id}")
         url, err = _placid_render(payload)
         if err:
-            raise RuntimeError(err)
+            msg = str(err)
+            if "Requires Subscription and Credits" in msg or "placid 403" in msg:
+                raise PlacidQuotaError(msg)
+            raise PlacidServiceError(msg)
         logger.info(f"Downloading image from Placid, book_id={book.id}")
         img = _download_bytes(url)
         key = _s3_key(book.id, PLACID_TPL_V2)
@@ -503,7 +520,10 @@ def generate_creative_v3(
         logger.info(f"Rendering creative v3 via Placid, book_id={book.id}")
         url, err = _placid_render(payload)
         if err:
-            raise RuntimeError(err)
+            msg = str(err)
+            if "Requires Subscription and Credits" in msg or "placid 403" in msg:
+                raise PlacidQuotaError(msg)
+            raise PlacidServiceError(msg)
         logger.info(f"Downloading image from Placid, book_id={book.id}")
         img = _download_bytes(url)
         key = _s3_key(book.id, PLACID_TPL_V3)
@@ -549,7 +569,7 @@ def generate_all_creatives(db: Session, book_id: int, language: str, manual_payl
         c3 = generate_creative_v3(db, book, language)
         logger.info(f"All creatives generated successfully, book_id={book_id}")
         return [c1, c2, c3]
-    except (BookAIServiceError, ValueError) as e:
+    except (BookAIServiceError, PlacidServiceError, ValueError) as e:
         # Пробрасываем BookAI ошибки и ValueError как есть
         logger.error(f"Error in generate_all_creatives, book_id={book_id}, language={language}: {e}")
         raise
