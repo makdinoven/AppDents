@@ -1,5 +1,5 @@
 """
-Шаблоны Dent-S (все функции отправки писем из оригинального email_sender.py).
+Шаблоны Dent-S
 """
 from .common import send_html_email
 from .dent_s_courses_html import COURSES_BLOCK

@@ -21,8 +21,12 @@ def send_html_email(recipient_email: str, subject: str, html_body: str):
 
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
+            # Не включаем TLS, если сервер локальный тестовый (aiosmtpd)
+            if smtp_port not in (25, 1025):
+                try:
+                    server.starttls()
+                except smtplib.SMTPNotSupportedError:
+                    pass
             if smtp_username and smtp_password:
                 server.login(smtp_username, smtp_password)
             server.sendmail(sender_email, recipient_email, msg.as_string())

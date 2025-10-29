@@ -1,6 +1,6 @@
 """
 Med.G шаблоны.
-HTML полностью идентичен Dent-S, но со своими доменами и цветами.
+
 """
 
 from .common import send_html_email
