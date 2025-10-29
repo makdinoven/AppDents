@@ -135,7 +135,23 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         return "", f"placid request error: {str(e)}"
 
 
-def _bookai_texts(db: Session, s3_url: str, language: str, version: int) -> Dict[str, str]:
+def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dict[str, str]:
+    """Получает тексты для креатива через BookAI API, используя PDF файл книги."""
+    from ..models.models_v2 import BookFile, BookFileFormat
+    
+    # Получаем PDF файл книги
+    pdf = (
+        db.query(BookFile)
+        .filter(BookFile.book_id == book_id, BookFile.file_format == BookFileFormat.PDF)
+        .first()
+    )
+    if not pdf:
+        raise ValueError("No source PDF for the book")
+    
+    s3_url = pdf.s3_url
+    if not s3_url:
+        raise ValueError("PDF file has no s3_url")
+    
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
     try:
         r = requests.post(
@@ -233,7 +249,7 @@ def generate_creative_v1(
 
         if texts is None:
             logger.info(f"Generating texts for creative v1, book_id={book.id}, language={language}")
-            texts = _bookai_texts(db, book.cover_url, language, version=1)
+            texts = _bookai_texts(db, book.id, language, version=1)
 
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
@@ -320,7 +336,7 @@ def generate_creative_v2(
 
         if texts is None:
             logger.info(f"Generating texts for creative v2, book_id={book.id}, language={language}")
-            texts = _bookai_texts(db, book.cover_url, language, version=2)
+            texts = _bookai_texts(db, book.id, language, version=2)
 
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
