@@ -33,7 +33,7 @@ const CoursePage = () => {
   }, [courseId]);
 
   useEffect(() => {
-    if (course) {
+    if (course && course.landing) {
       dispatch(
         setPaymentData({
           data: {

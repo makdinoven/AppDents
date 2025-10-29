@@ -57,7 +57,7 @@ const BookPage = () => {
         ) : (
           <>
             <section className={s.hero}>
-              <BackButton link={Path.profile} />
+              <BackButton link={Path.profileMain} />
               <h3>{book.title}</h3>
               <div className={s.content}>
                 <div
