@@ -109,6 +109,12 @@ def _build_layers_v3(book: Book, lang: str, price_old: str, price_new: str) -> D
 
 def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
     """Рендерит изображение через Placid API. Обрабатывает статусы queued/processing с polling."""
+    # Логируем media URLs для отладки проблем с обложками
+    layers = payload.get("layers", {})
+    media_layers = {k: v.get("media") for k, v in layers.items() if isinstance(v, dict) and "media" in v}
+    if media_layers:
+        logger.info(f"Placid payload media URLs: {media_layers}")
+    
     try:
         r = requests.post(
             f"{settings.PLACID_BASE_URL}/images",
@@ -128,10 +134,17 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
             logger.error(f"Placid API invalid JSON response: {e}, response text: {r.text[:500]}")
             return "", f"placid: invalid json response - {str(e)}"
         
+        # Проверяем наличие ошибок или warnings в ответе
+        errors = data.get("errors", [])
+        if errors:
+            logger.warning(f"Placid API returned errors in response: {errors}")
+        
         # Проверяем статус ответа
         status = data.get("status", "").lower()
         image_id = data.get("id")
         polling_url = data.get("polling_url")
+        
+        logger.info(f"Placid API initial response: id={image_id}, status={status}, errors={len(errors) if errors else 0}")
         
         # Функция для извлечения URL из ответа Placid
         def _extract_url(response_data: Dict) -> Optional[str]:
@@ -212,11 +225,18 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                     
                     poll_data = poll_r.json()
                     poll_status = poll_data.get("status", "").lower()
+                    poll_errors = poll_data.get("errors", [])
+                    
+                    # Логируем ошибки если есть (часто там указываются проблемы с загрузкой изображений)
+                    if poll_errors:
+                        logger.warning(f"Placid image {image_id} polling errors on attempt {attempt}: {poll_errors}")
                     
                     # Если изображение готово (completed или finished)
                     if poll_status in ("completed", "finished"):
                         url = _extract_url(poll_data)
                         if url:
+                            if poll_errors:
+                                logger.warning(f"Placid image {image_id} completed with errors (warnings): {poll_errors}")
                             logger.info(f"Placid image {image_id} completed (status: {poll_status}) after {attempt} polling attempts, URL: {url}")
                             return url, None
                         else:
@@ -406,6 +426,88 @@ def _download_bytes(url: str) -> bytes:
         raise RuntimeError(f"Failed to download image: {str(e)}")
 
 
+def _upload_image_to_placid(image_url: str) -> Optional[str]:
+    """
+    Загружает изображение в Placid через Upload Media API и возвращает Placid URL.
+    Это гарантирует, что Placid имеет прямой доступ к изображению.
+    
+    Returns:
+        Placid file_id (URL) или None в случае ошибки
+    """
+    try:
+        # Скачиваем изображение
+        logger.info(f"Downloading image for Placid upload: {image_url[:100]}...")
+        image_data = _download_bytes(image_url)
+        
+        # Определяем расширение файла из URL или content-type
+        import mimetypes
+        content_type = mimetypes.guess_type(image_url)[0] or "image/jpeg"
+        
+        # Подготовка файла для загрузки
+        files = {
+            'file': ('cover.jpg', image_data, content_type)
+        }
+        
+        # Загружаем в Placid
+        logger.info(f"Uploading image to Placid Media API...")
+        r = requests.post(
+            f"{settings.PLACID_BASE_URL}/media",
+            headers={
+                "Authorization": f"Bearer {settings.PLACID_API_KEY}",
+            },
+            files=files,
+            timeout=60,
+        )
+        
+        if r.status_code >= 300:
+            logger.error(f"Placid Media upload error {r.status_code}: {r.text[:500]}")
+            return None
+        
+        try:
+            response_data = r.json()
+            media_list = response_data.get("media", [])
+            if media_list and len(media_list) > 0:
+                file_id = media_list[0].get("file_id")
+                if file_id:
+                    logger.info(f"Image uploaded to Placid successfully, file_id: {file_id}")
+                    return file_id
+                else:
+                    logger.error(f"Placid Media API returned no file_id in response: {response_data}")
+                    return None
+            else:
+                logger.error(f"Placid Media API returned empty media array: {response_data}")
+                return None
+        except (ValueError, json.JSONDecodeError) as e:
+            logger.error(f"Placid Media API invalid JSON response: {e}, response text: {r.text[:500]}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Failed to upload image to Placid: {e}", exc_info=True)
+        return None
+
+
+def _ensure_placid_media_url(cover_url: str) -> str:
+    """
+    Гарантирует, что изображение доступно для Placid.
+    Загружает изображение через Placid Upload Media API для надежности.
+    
+    Args:
+        cover_url: Исходный URL обложки
+        
+    Returns:
+        Placid file_id URL для использования в слоях
+    """
+    # Всегда загружаем через Placid Upload Media для гарантии доступа
+    placid_file_id = _upload_image_to_placid(cover_url)
+    
+    if placid_file_id:
+        return placid_file_id
+    else:
+        # Fallback: используем оригинальный URL (может не сработать, но попробуем)
+        logger.warning(f"Failed to upload to Placid Media, using original URL as fallback: {cover_url}")
+        return cover_url
+
+
 def _s3_key(book_id: int, code: str) -> str:
     """Генерирует S3 ключ для креатива с уникальным именем (book_id + код шаблона)."""
     return f"books/{book_id}/creatives/{book_id}_{code}.png"
@@ -475,6 +577,16 @@ def generate_creative_v1(
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
         cover_url = ov.get("cover_url", book.cover_url)
+        
+        if not cover_url:
+            raise ValueError("Book cover_url is required for creative generation")
+        
+        logger.info(f"Using cover_url for creative v1, book_id={book.id}, cover_url={cover_url[:100]}...")
+        
+        # Загружаем изображение в Placid для гарантированного доступа
+        placid_media_url = _ensure_placid_media_url(cover_url)
+        logger.info(f"Placid media URL for creative v1: {placid_media_url[:100]}...")
+        
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
@@ -483,8 +595,8 @@ def generate_creative_v1(
             payload = {
                 "template_uuid": PLACID_TPL_V1,
                 "layers": {
-                    "Main_book_image": {"media": cover_url},
-                    "Back_book_image": {"media": cover_url},
+                    "Main_book_image": {"media": placid_media_url},
+                    "Back_book_image": {"media": placid_media_url},
                     "Book_name": {"text": title},
                     "Tag_1": {"text": texts.get("tag_1", "")},
                     "Tag_2": {"text": texts.get("tag_2", "")},
@@ -566,6 +678,16 @@ def generate_creative_v2(
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
         cover_url = ov.get("cover_url", book.cover_url)
+        
+        if not cover_url:
+            raise ValueError("Book cover_url is required for creative generation")
+        
+        logger.info(f"Using cover_url for creative v2, book_id={book.id}, cover_url={cover_url[:100]}...")
+        
+        # Загружаем изображение в Placid для гарантированного доступа
+        placid_media_url = _ensure_placid_media_url(cover_url)
+        logger.info(f"Placid media URL for creative v2: {placid_media_url[:100]}...")
+        
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
@@ -574,8 +696,8 @@ def generate_creative_v2(
             payload = {
                 "template_uuid": PLACID_TPL_V2,
                 "layers": {
-                    "Book_1_cover": {"media": cover_url},
-                    "Book_2_cover": {"media": cover_url},
+                    "Book_1_cover": {"media": placid_media_url},
+                    "Book_2_cover": {"media": placid_media_url},
                     "Book_name": {"text": title},
                     "Tag_1": {"text": texts.get("tag_1", "")},
                     "Tag_2": {"text": texts.get("tag_2", "")},
@@ -648,6 +770,16 @@ def generate_creative_v3(
 
         title = ov.get("title")  # не используется в v3 по умолчанию
         cover_url = ov.get("cover_url", book.cover_url)
+        
+        if not cover_url:
+            raise ValueError("Book cover_url is required for creative generation")
+        
+        logger.info(f"Using cover_url for creative v3, book_id={book.id}, cover_url={cover_url[:100]}...")
+        
+        # Загружаем изображение в Placid для гарантированного доступа
+        placid_media_url = _ensure_placid_media_url(cover_url)
+        logger.info(f"Placid media URL for creative v3: {placid_media_url[:100]}...")
+        
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
@@ -656,9 +788,9 @@ def generate_creative_v3(
             payload = {
                 "template_uuid": PLACID_TPL_V3,
                 "layers": {
-                    "Book_cover": {"media": cover_url},
-                    "Ipad_screen": {"media": cover_url},
-                    "Iphone_screen": {"media": cover_url},
+                    "Book_cover": {"media": placid_media_url},
+                    "Ipad_screen": {"media": placid_media_url},
+                    "Iphone_screen": {"media": placid_media_url},
                     "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
                     "Button_text": {"text": "Download right now"},
                     "Title": {"text": "All formats available"},
