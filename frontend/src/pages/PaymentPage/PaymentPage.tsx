@@ -9,14 +9,14 @@ import {
   CoursesIcon,
   PoweredByStripeLogo,
   Shield,
-      Mail
+  Mail,
 } from "../../assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import UseBalanceOption from "../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
-import { usePayment } from "../../common/hooks/usePayment.ts";
+import { usePayment } from "../../common/hooks/usePayment.tsx";
 import PaymentForm from "./content/PaymentForm/PaymentForm.tsx";
 import Button from "../../components/ui/Button/Button.tsx";
 import DisabledPaymentWarn from "../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
@@ -42,7 +42,9 @@ const PaymentPage = () => {
     (state: AppRootStateType) => state.payment,
   );
   const closeModalRef = useRef<() => void>(null);
-  const { isLogged, email } = useSelector((state: AppRootStateType) => state.user);
+  const { isLogged, email } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
   const modalRef = useRef<HTMLDivElement | null>(null);
   const isWebinar = paymentModalType === "webinar";
   const isFree = paymentModalType === "free";

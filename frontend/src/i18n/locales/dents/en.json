@@ -63,7 +63,7 @@
   "support": "Support",
   "copy": "Copy",
   "copied": "Copied!",
-  "successPaymentWithBalance": "Payment successful! You now have access to the course. Remaining balance: ${{balance}}. You will be redirected to your profile shortly.",
+  "successPaymentWithBalance": "Payment successful! You now have access to your purchase. Remaining balance: ${{balance}}.",
   "tryCourseForFree": "Get your free webinar",
   "get": "Get",
   "freeWebinar": "Free webinar",
