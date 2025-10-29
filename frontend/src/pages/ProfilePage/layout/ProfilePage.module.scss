@@ -3,7 +3,7 @@
   align-self: flex-end;
 }
 
-.profilePage {
+.profile_page {
   margin-bottom: 140px;
 }
 
@@ -47,14 +47,14 @@
     }
   }
 
-  &:active {
+  &.active {
     color: $primary;
     border-color: $primary;
   }
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .profilePage {
+  .profile_page {
     margin-bottom: 80px;
   }
 
@@ -69,7 +69,7 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .profilePage {
+  .profile_page {
     margin-bottom: 60px;
   }
 
