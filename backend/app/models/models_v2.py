@@ -581,6 +581,35 @@ class Book(Base):
     )
 
 
+class CreativeStatus(str, PyEnum):
+    PENDING    = "pending"
+    PROCESSING = "processing"
+    READY      = "ready"
+    FAILED     = "failed"
+
+
+class BookCreative(Base):
+    __tablename__ = "book_creatives"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    book_id       = Column(Integer, ForeignKey("books.id"), nullable=False, index=True)
+    language      = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT', name='book_language'), nullable=False)
+    creative_code = Column(String(32), nullable=False, index=True)  # kbhccvksoprg7 | ktawlyumyeaw7 | uoshaoahss0al
+
+    status        = Column(Enum(CreativeStatus, name="creative_status"), nullable=False, server_default=CreativeStatus.PENDING.value)
+    placid_job_id = Column(String(128))
+    placid_image_url = Column(String(700))
+    s3_key        = Column(String(700))
+    s3_url        = Column(String(700))
+    payload_used  = Column(JSON)
+    error_message = Column(Text)
+
+    created_at    = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    updated_at    = Column(DateTime, server_default=func.utc_timestamp(), onupdate=func.utc_timestamp(), nullable=False)
+
+    book = relationship("Book")
+
+
 class BookFile(Base):
     """
     Один файл книги в конкретном формате (PDF, EPUB, …).

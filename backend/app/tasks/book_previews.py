@@ -67,8 +67,8 @@ def _key_from_url(url: str) -> str:
     return path
 
 def _target_key_for(book: Book) -> str:
-    # Схема хранения превью: books/<slug>/preview/preview_15p.pdf
-    return f"books/{book.slug}/preview/preview_15p.pdf"
+    # Схема хранения превью: books/<slug>/preview/preview_20p.pdf
+    return f"books/{book.slug}/preview/preview_20p.pdf"
 
 def _run(cmd: str) -> tuple[int, str, str]:
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -85,9 +85,9 @@ def _preview_key_from_src(src_key: str, pages: int) -> str:
     return str(base / "preview" / f"preview_{pages}p.pdf")
 
 @shared_task(name="app.tasks.book_previews.generate_book_preview", rate_limit="20/m")
-def generate_book_preview(book_id: int, pages: int = 15) -> dict:
+def generate_book_preview(book_id: int, pages: int = 20) -> dict:
     """
-    Вырезает первые `pages` страниц из PDF книги, загружает превью на CDN,
+    Вырезает первые `pages` (по умолчанию 20) страниц из PDF книги, загружает превью на CDN,
     пишет URL в books.preview_pdf (+ отметку времени) и статусы/логи в Redis.
     """
     db: Session = SessionLocal()

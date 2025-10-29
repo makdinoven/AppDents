@@ -14,7 +14,8 @@ from typing import List, Optional, Dict, Literal
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase, LandingAdPeriod
+from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase, LandingAdPeriod, \
+    BookLanding, BookLandingVisit, BookLandingAdPeriod
 from ..schemas_v2.author import AuthorResponse
 
 from ..services_v2.landing_service import get_landing_detail, create_landing, update_landing, \
@@ -698,6 +699,16 @@ def grant_free_access(
             user = create_user(db, data.email, random_pass, invited_by=inviter)
             new_user_created = True  # ④
             send_password_to_user(user.email, random_pass, data.region)
+        
+        # Проверяем, не является ли пользователь администратором
+        from ..utils.role_utils import is_admin
+        if is_admin(user):
+            logging.warning("Попытка автологина администратора через grant_free_access: %s", data.email)
+            raise HTTPException(
+                status_code=403,
+                detail="Admin users cannot use auto-login for free access for security reasons"
+            )
+        
         # автологин
         token = create_access_token({"user_id": user.id})
 
@@ -925,6 +936,13 @@ def _pct(numer: int, denom: int) -> float:
     # округление до двух знаков как в витринах
     return float(Decimal(numer) / Decimal(denom).quantize(Decimal("1.00"), rounding=ROUND_HALF_UP)*100)
 
+def _sum_maps(*maps: Dict[datetime, int]) -> Dict[datetime, int]:
+    out: Dict[datetime, int] = {}
+    for m in maps:
+        for k, v in m.items():
+            out[k] = out.get(k, 0) + int(v)
+    return out
+
 @router.get("/analytics/landing-traffic")
 def landing_traffic(
     landing_id: int,
@@ -1075,6 +1093,158 @@ def landing_traffic(
         "ad_periods": ad_periods
     }
 
+@router.get("/analytics/book-landing-traffic")
+def book_landing_traffic(
+    book_landing_id: int,
+    start_date: Optional[date] = Query(None, description="Начало (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец (YYYY-MM-DD, включительно)"),
+    bucket:     Optional[Granularity] = Query(None, description="hour|day; по умолчанию авто"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    # 1) лендинг + имя
+    landing_row = (
+        db.query(BookLanding.id, BookLanding.landing_name, BookLanding.created_at)
+          .filter(BookLanding.id == book_landing_id)
+          .first()
+    )
+    if not landing_row:
+        raise HTTPException(status_code=404, detail="Book landing not found")
+    landing_name = landing_row.landing_name
+    landing_created_at = landing_row.created_at
+
+    # 2) период и гранулярность
+    start_dt, end_dt = _resolve_period(start_date, end_date)
+    gran = bucket or _auto_granularity(start_dt, end_dt)
+
+    # 3) визиты/покупки за диапазон
+    visit_map, visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=BookLandingVisit.visited_at,
+        filters=[BookLandingVisit.book_landing_id == book_landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    purchase_map, purchases_range_total = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.book_landing_id == book_landing_id],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # 4) суммы «за всё время»
+    visits_all_time = (
+        db.query(func.count(BookLandingVisit.id))
+          .filter(BookLandingVisit.book_landing_id == book_landing_id)
+          .scalar()
+        or 0
+    )
+    purchases_all_time = (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.book_landing_id == book_landing_id)
+          .scalar()
+        or 0
+    )
+
+    ad_visit_map, ad_visits_range_total = _fetch_counts(
+        db=db,
+        ts_col=BookLandingVisit.visited_at,
+        filters=[BookLandingVisit.book_landing_id == book_landing_id,
+                 BookLandingVisit.from_ad.is_(True)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # Пересечение периодов рекламы с выбранным окном [start_dt, end_dt)
+    period_rows = (
+        db.query(BookLandingAdPeriod.started_at, BookLandingAdPeriod.ended_at)
+        .filter(
+            BookLandingAdPeriod.book_landing_id == book_landing_id,
+            BookLandingAdPeriod.started_at < end_dt,
+            func.coalesce(BookLandingAdPeriod.ended_at, datetime.utcnow()) > start_dt
+        )
+        .order_by(BookLandingAdPeriod.started_at.asc())
+        .all()
+    )
+
+    ad_periods = []
+    now = datetime.utcnow()
+    for s, e in period_rows:
+        clip_start = max(s, start_dt)
+        clip_end = min(e or now, end_dt)
+        if clip_start < clip_end:
+            ad_periods.append({
+                "start": clip_start.isoformat() + "Z",
+                "end": clip_end.isoformat() + "Z"
+            })
+
+    ad_visits_all_time = (
+        db.query(func.count(BookLandingVisit.id))
+          .filter(
+              BookLandingVisit.book_landing_id == book_landing_id,
+              BookLandingVisit.from_ad.is_(True)
+          )
+          .scalar()
+    ) or 0
+
+    first_visit_at = (
+        db.query(func.min(BookLandingVisit.visited_at))
+        .filter(BookLandingVisit.book_landing_id == book_landing_id)
+        .scalar()
+    )
+
+    if first_visit_at is not None:
+        purchases_since_first_visit = (
+            db.query(func.count(Purchase.id))
+              .filter(
+                  Purchase.book_landing_id == book_landing_id,
+                  Purchase.created_at >= first_visit_at
+              )
+              .scalar()
+        ) or 0
+    else:
+        purchases_since_first_visit = 0
+
+    conversion_all_time_percent = _pct(purchases_since_first_visit, visits_all_time)
+
+    return {
+        "landing": {
+            "id": book_landing_id,
+            "name": landing_name,
+            "created_at": landing_created_at,
+            "in_advertising": bool(db.query(BookLanding.in_advertising).filter(BookLanding.id == book_landing_id).scalar()),
+        },
+        "range": {
+            "start": start_dt.isoformat() + "Z",
+            "end":   end_dt.isoformat() + "Z",
+        },
+        "granularity": gran,
+
+        "totals_all_time": {
+            "visits": visits_all_time,
+            "ad_visits": ad_visits_all_time,
+            "purchases": purchases_all_time,
+            "conversion_percent": conversion_all_time_percent,
+            "purchases_first_visit": purchases_since_first_visit,
+        },
+        "totals_range": {
+            "visits": visits_range_total,
+            "ad_visits": ad_visits_range_total,
+            "purchases": purchases_range_total
+        },
+        "series": {
+            "visits": _fill_series(start_dt, end_dt, gran, visit_map),
+            "ad_visits": _fill_series(start_dt, end_dt, gran, ad_visit_map),
+            "purchases": _fill_series(start_dt, end_dt, gran, purchase_map),
+        },
+        "ad_periods": ad_periods
+    }
+
 @router.get("/analytics/site-traffic")
 def site_traffic(
     language: Optional[str] = Query(
@@ -1088,22 +1258,26 @@ def site_traffic(
     current_admin: User = Depends(require_roles("admin")),
 ):
     """
-    Агрегированная аналитика по ВСЕМ лендингам (опционально по языку).
+    Агрегированная аналитика по ВСЕМ лендингам (курсы + книги) опционально по языку.
     Показатели: visits, ad_visits, purchases, ad_purchases.
     Формат аналогичен /analytics/landing-traffic.
     """
-    # 0) подготовим множество лендингов: is_hidden = False (+ язык, если задан)
+    # 0) подготовим множества лендингов: is_hidden = False (+ язык, если задан)
     landings_q = db.query(Landing.id).filter(Landing.is_hidden.is_(False))
+    book_landings_q = db.query(BookLanding.id).filter(BookLanding.is_hidden.is_(False))
     if language:
-        landings_q = landings_q.filter(Landing.language == language.upper().strip())
-    landing_ids_subq = landings_q.subquery()  # один столбец id
+        lang = language.upper().strip()
+        landings_q = landings_q.filter(Landing.language == lang)
+        book_landings_q = book_landings_q.filter(BookLanding.language == lang)
+    landing_ids_subq = landings_q.subquery()
+    book_landing_ids_subq = book_landings_q.subquery()
 
     # 1) период и гранулярность (та же логика)
     start_dt, end_dt = _resolve_period(start_date, end_date)
     gran = bucket or _auto_granularity(start_dt, end_dt)
 
-    # 2) серии и итоги за диапазон
-    visit_map, visits_range_total = _fetch_counts(
+    # 2) серии и итоги за диапазон (курсы)
+    visit_map_l, visits_range_total_l = _fetch_counts(
         db=db,
         ts_col=LandingVisit.visited_at,
         filters=[LandingVisit.landing_id.in_(landing_ids_subq)],
@@ -1112,7 +1286,7 @@ def site_traffic(
         granularity=gran,
     )
 
-    ad_visit_map, ad_visits_range_total = _fetch_counts(
+    ad_visit_map_l, ad_visits_range_total_l = _fetch_counts(
         db=db,
         ts_col=LandingVisit.visited_at,
         filters=[
@@ -1124,7 +1298,7 @@ def site_traffic(
         granularity=gran,
     )
 
-    purchase_map, purchases_range_total = _fetch_counts(
+    purchase_map_l, purchases_range_total_l = _fetch_counts(
         db=db,
         ts_col=Purchase.created_at,
         filters=[Purchase.landing_id.in_(landing_ids_subq)],
@@ -1133,11 +1307,54 @@ def site_traffic(
         granularity=gran,
     )
 
-    ad_purchase_map, ad_purchases_range_total = _fetch_counts(
+    ad_purchase_map_l, ad_purchases_range_total_l = _fetch_counts(
         db=db,
         ts_col=Purchase.created_at,
         filters=[
             Purchase.landing_id.in_(landing_ids_subq),
+            Purchase.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    # 2b) серии и итоги за диапазон (книги)
+    visit_map_b, visits_range_total_b = _fetch_counts(
+        db=db,
+        ts_col=BookLandingVisit.visited_at,
+        filters=[BookLandingVisit.book_landing_id.in_(book_landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_visit_map_b, ad_visits_range_total_b = _fetch_counts(
+        db=db,
+        ts_col=BookLandingVisit.visited_at,
+        filters=[
+            BookLandingVisit.book_landing_id.in_(book_landing_ids_subq),
+            BookLandingVisit.from_ad.is_(True),
+        ],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    purchase_map_b, purchases_range_total_b = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[Purchase.book_landing_id.in_(book_landing_ids_subq)],
+        start_dt=start_dt,
+        end_dt=end_dt,
+        granularity=gran,
+    )
+
+    ad_purchase_map_b, ad_purchases_range_total_b = _fetch_counts(
+        db=db,
+        ts_col=Purchase.created_at,
+        filters=[
+            Purchase.book_landing_id.in_(book_landing_ids_subq),
             Purchase.from_ad.is_(True),
         ],
         start_dt=start_dt,
@@ -1151,6 +1368,11 @@ def site_traffic(
           .filter(LandingVisit.landing_id.in_(landing_ids_subq))
           .scalar()
     ) or 0
+    visits_all_time += (
+        db.query(func.count(BookLandingVisit.id))
+          .filter(BookLandingVisit.book_landing_id.in_(book_landing_ids_subq))
+          .scalar()
+    ) or 0
 
     ad_visits_all_time = (
         db.query(func.count(LandingVisit.id))
@@ -1160,10 +1382,23 @@ def site_traffic(
           )
           .scalar()
     ) or 0
+    ad_visits_all_time += (
+        db.query(func.count(BookLandingVisit.id))
+          .filter(
+              BookLandingVisit.book_landing_id.in_(book_landing_ids_subq),
+              BookLandingVisit.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
 
     purchases_all_time = (
         db.query(func.count(Purchase.id))
           .filter(Purchase.landing_id.in_(landing_ids_subq))
+          .scalar()
+    ) or 0
+    purchases_all_time += (
+        db.query(func.count(Purchase.id))
+          .filter(Purchase.book_landing_id.in_(book_landing_ids_subq))
           .scalar()
     ) or 0
 
@@ -1171,6 +1406,14 @@ def site_traffic(
         db.query(func.count(Purchase.id))
           .filter(
               Purchase.landing_id.in_(landing_ids_subq),
+              Purchase.from_ad.is_(True),
+          )
+          .scalar()
+    ) or 0
+    ad_purchases_all_time += (
+        db.query(func.count(Purchase.id))
+          .filter(
+              Purchase.book_landing_id.in_(book_landing_ids_subq),
               Purchase.from_ad.is_(True),
           )
           .scalar()
@@ -1194,16 +1437,16 @@ def site_traffic(
             "ad_purchases": ad_purchases_all_time,
         },
         "totals_range": {
-            "visits": visits_range_total,
-            "ad_visits": ad_visits_range_total,
-            "purchases": purchases_range_total,
-            "ad_purchases": ad_purchases_range_total,
+            "visits": visits_range_total_l + visits_range_total_b,
+            "ad_visits": ad_visits_range_total_l + ad_visits_range_total_b,
+            "purchases": purchases_range_total_l + purchases_range_total_b,
+            "ad_purchases": ad_purchases_range_total_l + ad_purchases_range_total_b,
         },
 
         "series": {
-            "visits":        _fill_series(start_dt, end_dt, gran, visit_map),
-            "ad_visits":     _fill_series(start_dt, end_dt, gran, ad_visit_map),
-            "purchases":     _fill_series(start_dt, end_dt, gran, purchase_map),
-            "ad_purchases":  _fill_series(start_dt, end_dt, gran, ad_purchase_map),
+            "visits":        _fill_series(start_dt, end_dt, gran, _sum_maps(visit_map_l, visit_map_b)),
+            "ad_visits":     _fill_series(start_dt, end_dt, gran, _sum_maps(ad_visit_map_l, ad_visit_map_b)),
+            "purchases":     _fill_series(start_dt, end_dt, gran, _sum_maps(purchase_map_l, purchase_map_b)),
+            "ad_purchases":  _fill_series(start_dt, end_dt, gran, _sum_maps(ad_purchase_map_l, ad_purchase_map_b)),
         }
     }

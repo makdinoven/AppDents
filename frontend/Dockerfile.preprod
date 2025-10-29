@@ -11,8 +11,7 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Ускоряем npm за счёт кэша
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --legacy-peer-deps --no-audit --no-fund
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
 # Копируем исходники
 COPY . .
@@ -20,9 +19,7 @@ COPY . .
 # Кэш для vite/esbuild, детальный вывод на время отладки
 # (убери DEBUG после диагностики)
 ENV DEBUG="vite:*,rollup:*"
-RUN --mount=type=cache,target=/root/.cache/vite \
-    --mount=type=cache,target=/root/.cache/esbuild \
-    npm run build:preprod
+RUN npm run build:preprod
 
 ############################
 # Stage 2: Static via Nginx
