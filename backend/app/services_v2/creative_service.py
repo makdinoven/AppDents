@@ -177,7 +177,20 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
             json={"s3_url": s3_url, "language": language},
             timeout=60,
         )
-        logger.info(f"BookAI response status: {r.status_code}")
+        logger.info(f"BookAI response status: {r.status_code}, content-type: {r.headers.get('Content-Type', 'unknown')}")
+        
+        # Проверяем, не вернул ли сервер HTML страницу ошибки (502 от Cloudflare)
+        content_type = r.headers.get('Content-Type', '').lower()
+        response_text_start = r.text.strip()[:20].upper() if r.text else ""
+        is_html_error = 'text/html' in content_type or response_text_start.startswith('<!DOCTYPE')
+        
+        if is_html_error and r.status_code >= 400:
+            error_text = r.text[:500] if len(r.text) > 500 else r.text
+            logger.error(f"BookAI returned HTML error page (status {r.status_code}): {error_text[:200]}")
+            if r.status_code >= 500 or r.status_code == 502:
+                raise BookAIServiceUnavailableError(f"bookai service unavailable (returned HTML error page with status {r.status_code})")
+            else:
+                raise BookAIValidationError(f"bookai validation error (returned HTML with status {r.status_code})")
         
         # Обработка конкретных статусов
         if r.status_code == 400:
@@ -199,7 +212,8 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         try:
             return r.json()
         except (ValueError, json.JSONDecodeError) as e:
-            logger.error(f"BookAI invalid JSON response: {e}, response text: {r.text[:500]}")
+            error_text = r.text[:500]
+            logger.error(f"BookAI invalid JSON response: {e}, response text: {error_text}")
             raise BookAIServiceUnavailableError(f"bookai invalid json response: {str(e)}")
             
     except BookAIServiceError:
@@ -517,6 +531,8 @@ def generate_creative_v3(
 
 
 def generate_all_creatives(db: Session, book_id: int, language: str, manual_payload: Optional[Dict[str, Dict[str, str]]] = None):
+    """Генерирует все три креатива для книги. Пробрасывает исключения BookAI без изменений."""
+    logger.info(f"Starting generation of all creatives, book_id={book_id}, language={language}")
     book = db.query(Book).get(book_id)
     if not book:
         raise ValueError("Book not found")
@@ -524,10 +540,23 @@ def generate_all_creatives(db: Session, book_id: int, language: str, manual_payl
     v1_payload = manual_payload.get("v1") if manual_payload else None
     v2_payload = manual_payload.get("v2") if manual_payload else None
 
-    c1 = generate_creative_v1(db, book, language, v1_payload)
-    c2 = generate_creative_v2(db, book, language, v2_payload)
-    c3 = generate_creative_v3(db, book, language)
-    return [c1, c2, c3]
+    try:
+        logger.info(f"Generating creative v1, book_id={book_id}")
+        c1 = generate_creative_v1(db, book, language, v1_payload)
+        logger.info(f"Generating creative v2, book_id={book_id}")
+        c2 = generate_creative_v2(db, book, language, v2_payload)
+        logger.info(f"Generating creative v3, book_id={book_id}")
+        c3 = generate_creative_v3(db, book, language)
+        logger.info(f"All creatives generated successfully, book_id={book_id}")
+        return [c1, c2, c3]
+    except (BookAIServiceError, ValueError) as e:
+        # Пробрасываем BookAI ошибки и ValueError как есть
+        logger.error(f"Error in generate_all_creatives, book_id={book_id}, language={language}: {e}")
+        raise
+    except Exception as e:
+        # Обертываем неожиданные ошибки
+        logger.error(f"Unexpected error in generate_all_creatives, book_id={book_id}, language={language}: {e}", exc_info=True)
+        raise
 
 
 def generate_single_creative(
