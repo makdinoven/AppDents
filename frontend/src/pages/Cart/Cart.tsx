@@ -21,14 +21,13 @@ import {
 import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
-import { usePayment } from "../../common/hooks/usePayment.ts";
+import { usePayment } from "../../common/hooks/usePayment.tsx";
 
 const Cart = () => {
   const closeModalRef = useRef<() => void>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch<AppDispatchType>();
   const { isLogged } = useSelector((state: AppRootStateType) => state.user);
-  // const [loading, setLoading] = useState(false);
   const { items, quantity, total_amount } = useSelector(
     (state: AppRootStateType) => state.cart,
   );
