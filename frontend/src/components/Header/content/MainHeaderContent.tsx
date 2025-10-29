@@ -59,8 +59,8 @@ const MainHeaderContent = () => {
       }
       return (
         <Link
-          to={Path.profile}
-          className={`${s.profile_button} ${location.pathname === Path.profile ? s.active : ""}`}
+          to={Path.profileMain}
+          className={`${s.profile_button} ${location.pathname === Path.profileMain ? s.active : ""}`}
         >
           <UserFilled />
         </Link>

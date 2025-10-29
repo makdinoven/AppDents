@@ -13,7 +13,7 @@ import CoursePage from "../pages/ProfilePage/pages/CoursePage/CoursePage.tsx";
 import SuccessPayment from "../pages/SuccessPayment/SuccessPayment.tsx";
 import LessonPage from "../pages/ProfilePage/pages/LessonPage/LessonPage.tsx";
 import UserDetail from "../pages/Admin/pages/detail/UserDetail.tsx";
-import ProfilePage from "../pages/ProfilePage/ProfilePage.tsx";
+import ProfilePage from "../pages/ProfilePage/layout/ProfilePage.tsx";
 import ProfessorPage from "../pages/ProfessorPage/ProfessorPage.tsx";
 import UniversalPage from "../pages/UniversalPage/UniversalPage.tsx";
 import Professors from "../pages/Professors/Professors.tsx";
@@ -54,6 +54,9 @@ import AdminBooksListing from "../pages/Admin/pages/content/AdminBooksListing.ts
 import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLandingsListing.tsx";
 import BookPage from "../pages/ProfilePage/pages/BookPage/BookPage.tsx";
 import MagicVideoTool from "../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
+import PurchaseHistory from "../pages/ProfilePage/pages/ProfileMain/content/PurchaseHistory/PurchaseHistory.tsx";
+import YourBooks from "../pages/ProfilePage/pages/YourBooks.tsx";
+import YourCourses from "../pages/ProfilePage/pages/YourCourses.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -105,14 +108,16 @@ export const AppRoutes: FC = () => {
           <Route path={`${Path.info}/:pageType`} element={<UniversalPage />} />
 
           <Route
-            path={Path.profile}
             element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
             }
           >
-            <Route index element={<ProfileMain />} />
+            <Route path={Path.profileMain} element={<ProfileMain />} />
+            <Route path={Path.yourCourses} element={<YourCourses />} />
+            <Route path={Path.yourBooks} element={<YourBooks />} />
+            <Route path={Path.purchaseHistory} element={<PurchaseHistory />} />
             <Route
               path={`${Path.myCourse}/:courseId?`}
               element={<CoursePage />}
@@ -217,8 +222,8 @@ export const AppRoutes: FC = () => {
               element={<LandingAnalytics isBook={false} />}
             />
             <Route
-                path={`${Path.bookLandingAnalytics}/:landingId?`}
-                element={<LandingAnalytics isBook />}
+              path={`${Path.bookLandingAnalytics}/:landingId?`}
+              element={<LandingAnalytics isBook />}
             />
             <Route
               path={`${Path.landingDetail}/:landingId?`}

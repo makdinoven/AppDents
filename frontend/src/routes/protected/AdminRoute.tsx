@@ -21,7 +21,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
       if (!isLogged) {
         navigate(Path.login, { replace: true, state: {} });
       } else if (!isAdmin) {
-        navigate(Path.profile, { replace: true, state: {} });
+        navigate(Path.profileMain, { replace: true, state: {} });
       }
     }
   }, [loading, isLogged, isAdmin, navigate]);

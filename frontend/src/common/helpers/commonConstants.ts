@@ -172,8 +172,11 @@ export const PAYMENT_SOURCES = [
   { name: PAGE_SOURCES.professor, path: Path.professor },
   { name: PAGE_SOURCES.professorOffer, path: Path.professor },
   { name: PAGE_SOURCES.professorListOffer, path: Path.professors },
-  { name: PAGE_SOURCES.cabinetOffer, path: Path.profile },
-  { name: PAGE_SOURCES.cabinetFree, path: `${Path.profile}/${Path.myCourse}` },
+  { name: PAGE_SOURCES.cabinetOffer, path: Path.profileMain },
+  {
+    name: PAGE_SOURCES.cabinetFree,
+    path: `${Path.profileMain}/${Path.myCourse}`,
+  },
   { name: PAGE_SOURCES.landingOffer, path: Path.landing },
   { name: PAGE_SOURCES.landingOffer, path: `/${Path.landingClient}` },
   { name: PAGE_SOURCES.courses, path: Path.courses },

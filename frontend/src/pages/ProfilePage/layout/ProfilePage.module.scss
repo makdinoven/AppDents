@@ -1,0 +1,83 @@
+.admin_wrapper {
+  margin-bottom: 40px;
+  align-self: flex-end;
+}
+
+.profilePage {
+  margin-bottom: 140px;
+}
+
+.back_btn_tabs_container {
+  display: flex;
+  justify-content: space-between;
+  //display: grid;
+  //grid-template-columns: 30px 1fr 80px ;
+  gap: 20px;
+  margin-bottom: 40px;
+  button {
+    margin-bottom: 0;
+  }
+}
+
+.btns_container {
+  display: flex;
+  width: fit-content;
+  height: fit-content;
+  gap: 20px;
+  padding: 10px 20px;
+  border: 1px solid $hover-color;
+  border-radius: 10px;
+  overflow-y: auto;
+  @include custom-scrollbar;
+}
+
+.btn {
+  display: flex;
+  @include clamped-p2;
+  color: $accent;
+  padding: 2px 5px;
+  border-bottom: 2px solid $background-color;
+  @include transition;
+  flex-shrink: 0;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+      border-color: $primary;
+    }
+  }
+
+  &:active {
+    color: $primary;
+    border-color: $primary;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .profilePage {
+    margin-bottom: 80px;
+  }
+
+  .btns_container {
+    max-width: 100%;
+    width: 100%;
+    padding: 5px 10px;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profilePage {
+    margin-bottom: 60px;
+  }
+
+  .back_btn_tabs_container {
+    margin-bottom: 20px;
+  }
+
+  .btn {
+    border-width: 1px;
+  }
+}

@@ -26,7 +26,7 @@
   "seeMore": "See more",
   "endOfList": {
     "course": "These are all the courses for now. More coming soon!",
-    "book":  "These are all the books for now. More coming soon!"
+    "book": "These are all the books for now. More coming soon!"
   },
   "endOfListFilter": {
     "course": "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
@@ -343,7 +343,7 @@
         "chapter": "Chapter",
         "downloadButton": "Download instantly in MP3"
       }
-      },
+    },
     "main": "Main",
     "user": "User:",
     "referrals": {
@@ -471,8 +471,8 @@
   },
 
   "bookCard": {
-  "tags": "Tags",
-  "authors": "Authors"
+    "tags": "Tags",
+    "authors": "Authors"
   },
 
   "admin": {
