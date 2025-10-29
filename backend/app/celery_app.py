@@ -20,6 +20,7 @@ celery = Celery(
             "app.tasks.book_previews",
             "app.tasks.book_formats",
             "app.tasks.book_covers",
+            "app.tasks.creatives",
         ],
 )
 
@@ -110,4 +111,5 @@ celery.conf.task_routes = {
     "app.tasks.book_formats.*": {"queue": "book"},
     "app.tasks.book_previews.*": {"queue": "book"},
     "app.tasks.book_covers.*": {"queue": "book"},
+    "app.tasks.creatives.*": {"queue": "book"},
 }
