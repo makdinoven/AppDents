@@ -19,7 +19,7 @@ import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOver
 import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../assets/icons";
 
-const LandingAnalytics = () => {
+const BookLandingAnalytics = () => {
   const { landingId } = useParams();
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
@@ -48,12 +48,12 @@ const LandingAnalytics = () => {
     setLoading(true);
 
     const params: {
-      landing_id: string;
+      book_landing_id: string;
       bucket: string;
       start_date?: string;
       end_date?: string;
     } = {
-      landing_id: landingId!,
+      book_landing_id: landingId!,
       bucket: chartMode,
     };
     if (dateRange.startDate) {
@@ -63,7 +63,7 @@ const LandingAnalytics = () => {
       params.end_date = dateRange.endDate;
     }
     try {
-      const res = await adminApi.getLandingTraffic(params);
+      const res = await adminApi.getBookLandingTraffic(params);
 
       setChartData(res.data.series);
       setLanding({
@@ -103,8 +103,7 @@ const LandingAnalytics = () => {
 
   const fetchAssigned = async (id: string) => {
     try {
-      const res = await adminApi.getAdLandingAssigned(id);
-
+      const res = await adminApi.getAdBookLandingAssigned(id);
       setAssigned({ account: res.data.account_id, staff: res.data.staff_id });
     } catch (error) {
       console.error(error);
@@ -117,7 +116,7 @@ const LandingAnalytics = () => {
   }) => {
     setAssignmentLoading(true);
     try {
-      await adminApi.putAdLandingAssigned(landingId!, data);
+      await adminApi.putAdBookLandingAssigned(landingId!, data);
 
       await fetchAssigned(landingId!);
       setAssignmentLoading(false);
@@ -286,4 +285,4 @@ const LandingAnalytics = () => {
   );
 };
 
-export default LandingAnalytics;
+export default BookLandingAnalytics;

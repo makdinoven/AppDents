@@ -16,6 +16,7 @@ import PhotoUploader from "../../../../../components/CommonComponents/PhotoUploa
 import CoverCandidatesSelector from "./modules/CoverCandidatesSelector/CoverCandidatesSelector.tsx";
 import BookMetadataSelector from "./modules/BookMetadataSelector/BookMetadataSelector.tsx";
 import BookUploader from "./modules/BookUploader/BookUploader.tsx";
+import BookCreatives from "./modules/BookCreatives/BookCreatives.tsx";
 
 export type CoverCandidate = {
   id: number;
@@ -155,136 +156,140 @@ const BookDetail = () => {
       {loading ? (
         <Loader />
       ) : (
-        book && (
-          <div className={s.list}>
-            <AdminField
-              type="input"
-              id="title"
-              placeholder={t("admin.books.title.placeholder")}
-              label={t("admin.books.title")}
-              value={book.title}
-              onChange={handleChange}
-            />
-            <AdminField
-              type="textarea"
-              id="description"
-              placeholder={t("admin.books.description.placeholder")}
-              label={t("admin.books.description")}
-              value={book.description ? book.description : ""}
-              onChange={handleChange}
-            />
-
-            <div className={s.two_items}>
-              <AdminField
-                type="input"
-                id="publication_date"
-                placeholder={t("admin.books.publicationDate.placeholder")}
-                label={t("admin.books.publicationDate")}
-                value={book.publication_date ? book.publication_date : ""}
-                onChange={handleChange}
-              />
-              <AdminField
-                type="input"
-                id="page_count"
-                placeholder={"Enter page count..."}
-                label={"Page count"}
-                value={book.page_count ? book.page_count : ""}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className={s.two_items}>
-              <MultiSelect
-                isSearchable={false}
-                id={"language"}
-                options={LANGUAGES}
-                placeholder={"Choose a language"}
-                label={t("admin.landings.language")}
-                selectedValue={book.language}
-                isMultiple={false}
-                onChange={handleChange}
-                valueKey="value"
-                labelKey="label"
-              />
-              {tags && (
-                <MultiSelect
-                  id={"tag_ids"}
-                  options={tags}
-                  placeholder={"Choose a tag"}
-                  label={t("admin.landings.tags")}
-                  selectedValue={book.tag_ids}
-                  isMultiple={true}
-                  onChange={handleChange}
-                  valueKey="id"
-                  labelKey="name"
-                />
-              )}
-            </div>
-
-            <div className={s.two_items}>
-              {publishers && (
-                <MultiSelect
-                  id={"publisher_ids"}
-                  options={publishers}
-                  placeholder={"Choose publishers"}
-                  label={"Publishers"}
-                  selectedValue={book.publisher_ids}
-                  isMultiple={true}
-                  onChange={handleChange}
-                  valueKey="id"
-                  labelKey="name"
-                />
-              )}
-              {authors && (
-                <MultiSelect
-                  id={"author_ids"}
-                  options={authors}
-                  placeholder={"Choose an author"}
-                  label={t("admin.landings.authors")}
-                  selectedValue={book.author_ids}
-                  isMultiple={true}
-                  onChange={handleChange}
-                  valueKey="id"
-                  labelKey="name"
-                />
-              )}
-            </div>
-
-            {book.files.length > 0 && (
+        <>
+          {book.files.length > 0 && (
+            <>
+              <BookCreatives />
               <BookMetadataSelector book={book} setBook={setBook} />
-            )}
-
-            <BookUploader
-              itemId={book.id}
-              files={book.files}
-              getCovers={handleGetBookCoverCandidates}
-            />
-
-            {coverCandidates.length > 0 && (
-              <CoverCandidatesSelector
-                setCoverCandidates={setCoverCandidates}
-                coverCandidates={coverCandidates}
-                book={book}
-                setBook={setBook}
+            </>
+          )}
+          {book && (
+            <div className={s.list}>
+              <AdminField
+                type="input"
+                id="title"
+                placeholder={t("admin.books.title.placeholder")}
+                label={t("admin.books.title")}
+                value={book.title}
+                onChange={handleChange}
               />
-            )}
-            <PhotoUploader
-              onUpload={handleUploadPhoto}
-              url={book.cover_url}
-              type="book"
-              dataId={book.id}
-              id="cover_url"
-              title={t("admin.landings.mainImage")}
-              label={t("admin.landings.mainImage.choose")}
-            />
+              <AdminField
+                type="textarea"
+                id="description"
+                placeholder={t("admin.books.description.placeholder")}
+                label={t("admin.books.description")}
+                value={book.description ? book.description : ""}
+                onChange={handleChange}
+              />
 
-            <DetailBottom
-              deleteLabel={"admin.books.delete"}
-              handleSave={handleSave}
-              handleDelete={handleDeleteBook}
-            />
-          </div>
-        )
+              <div className={s.two_items}>
+                <AdminField
+                  type="input"
+                  id="publication_date"
+                  placeholder={t("admin.books.publicationDate.placeholder")}
+                  label={t("admin.books.publicationDate")}
+                  value={book.publication_date ? book.publication_date : ""}
+                  onChange={handleChange}
+                />
+                <AdminField
+                  type="input"
+                  id="page_count"
+                  placeholder={"Enter page count..."}
+                  label={"Page count"}
+                  value={book.page_count ? book.page_count : ""}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className={s.two_items}>
+                <MultiSelect
+                  isSearchable={false}
+                  id={"language"}
+                  options={LANGUAGES}
+                  placeholder={"Choose a language"}
+                  label={t("admin.landings.language")}
+                  selectedValue={book.language}
+                  isMultiple={false}
+                  onChange={handleChange}
+                  valueKey="value"
+                  labelKey="label"
+                />
+                {tags && (
+                  <MultiSelect
+                    id={"tag_ids"}
+                    options={tags}
+                    placeholder={"Choose a tag"}
+                    label={t("admin.landings.tags")}
+                    selectedValue={book.tag_ids}
+                    isMultiple={true}
+                    onChange={handleChange}
+                    valueKey="id"
+                    labelKey="name"
+                  />
+                )}
+              </div>
+
+              <div className={s.two_items}>
+                {publishers && (
+                  <MultiSelect
+                    id={"publisher_ids"}
+                    options={publishers}
+                    placeholder={"Choose publishers"}
+                    label={"Publishers"}
+                    selectedValue={book.publisher_ids}
+                    isMultiple={true}
+                    onChange={handleChange}
+                    valueKey="id"
+                    labelKey="name"
+                  />
+                )}
+                {authors && (
+                  <MultiSelect
+                    id={"author_ids"}
+                    options={authors}
+                    placeholder={"Choose an author"}
+                    label={t("admin.landings.authors")}
+                    selectedValue={book.author_ids}
+                    isMultiple={true}
+                    onChange={handleChange}
+                    valueKey="id"
+                    labelKey="name"
+                  />
+                )}
+              </div>
+
+              <BookUploader
+                itemId={book.id}
+                files={book.files}
+                getCovers={handleGetBookCoverCandidates}
+              />
+
+              {coverCandidates.length > 0 && (
+                <CoverCandidatesSelector
+                  setCoverCandidates={setCoverCandidates}
+                  coverCandidates={coverCandidates}
+                  book={book}
+                  setBook={setBook}
+                />
+              )}
+              <PhotoUploader
+                onUpload={handleUploadPhoto}
+                url={book.cover_url}
+                type="book"
+                dataId={book.id}
+                id="cover_url"
+                title={t("admin.landings.mainImage")}
+                label={t("admin.landings.mainImage.choose")}
+              />
+
+              <DetailBottom
+                deleteLabel={"admin.books.delete"}
+                handleSave={handleSave}
+                handleDelete={handleDeleteBook}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

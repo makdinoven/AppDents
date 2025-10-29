@@ -61,7 +61,7 @@
   "support": "Supporto",
   "copy": "Copia",
   "copied": "Copiato!",
-  "successPaymentWithBalance": "Pagamento effettuato con successo! Hai ottenuto l'accesso al corso. Saldo rimanente: ${{balance}}. Verrai reindirizzato al tuo profilo a breve.",
+  "successPaymentWithBalance": "Pagamento avvenuto con successo! Ora hai accesso al tuo acquisto. Saldo rimanente: ${{balance}}.",
   "tryCourseForFree": "Prova gratis",
   "get": "Ottieni",
   "freeWebinar": "Webinar gratuito",
