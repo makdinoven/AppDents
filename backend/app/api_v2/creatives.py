@@ -16,6 +16,8 @@ from ..services_v2.creative_service import (
     PLACID_TPL_V3,
     BookAIValidationError,
     BookAIServiceUnavailableError,
+    PlacidQuotaError,
+    PlacidServiceError,
 )
 from ..core.config import settings
 
@@ -187,6 +189,13 @@ def get_or_create_creatives(
     except BookAIServiceUnavailableError as e:
         logger.error(f"BookAI service unavailable in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+    except PlacidQuotaError as e:
+        logger.error(f"Placid quota error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        # 402 Payment Required логичнее для недостатка кредитов
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
+    except PlacidServiceError as e:
+        logger.error(f"Placid service error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
         logger.error(f"ValueError in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
@@ -243,6 +252,12 @@ def manual_single_creative(
     except BookAIServiceUnavailableError as e:
         logger.error(f"BookAI service unavailable in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+    except PlacidQuotaError as e:
+        logger.error(f"Placid quota error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
+    except PlacidServiceError as e:
+        logger.error(f"Placid service error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
         logger.error(f"ValueError in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
@@ -291,6 +306,12 @@ def manual_creatives(
     except BookAIServiceUnavailableError as e:
         logger.error(f"BookAI service unavailable in manual_creatives, book_id={book_id}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
+    except PlacidQuotaError as e:
+        logger.error(f"Placid quota error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
+    except PlacidServiceError as e:
+        logger.error(f"Placid service error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
         logger.error(f"ValueError in manual_creatives, book_id={book_id}, language={body.language}: {e}")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
