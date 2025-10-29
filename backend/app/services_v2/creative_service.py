@@ -1,6 +1,7 @@
 import io
 import json
 import logging
+import time
 from typing import Optional, Dict, Any, Tuple
 
 import requests
@@ -106,6 +107,7 @@ def _build_layers_v3(book: Book, lang: str, price_old: str, price_new: str) -> D
 
 
 def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
+    """Рендерит изображение через Placid API. Обрабатывает статусы queued/processing с polling."""
     try:
         r = requests.post(
             f"{settings.PLACID_BASE_URL}/images",
@@ -124,12 +126,74 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         except (ValueError, json.JSONDecodeError) as e:
             logger.error(f"Placid API invalid JSON response: {e}, response text: {r.text[:500]}")
             return "", f"placid: invalid json response - {str(e)}"
-        # API Placid возвращает объект с полем url или data.url
+        
+        # Проверяем статус ответа
+        status = data.get("status", "").lower()
+        image_id = data.get("id")
+        polling_url = data.get("polling_url")
+        
+        # Если изображение готово сразу
+        if status == "completed":
+            url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
+            if url:
+                return url, None
+        
+        # Если в очереди или обрабатывается - делаем polling
+        if status in ("queued", "processing") and polling_url:
+            logger.info(f"Placid image {image_id} is {status}, polling for completion...")
+            max_attempts = 60  # максимум 60 попыток
+            poll_interval = 2   # каждые 2 секунды (итого до 2 минут)
+            
+            for attempt in range(1, max_attempts + 1):
+                time.sleep(poll_interval)
+                try:
+                    poll_r = requests.get(
+                        polling_url,
+                        headers={"Authorization": f"Bearer {settings.PLACID_API_KEY}"},
+                        timeout=10,
+                    )
+                    if poll_r.status_code >= 300:
+                        logger.warning(f"Placid polling error {poll_r.status_code} on attempt {attempt}")
+                        continue
+                    
+                    poll_data = poll_r.json()
+                    poll_status = poll_data.get("status", "").lower()
+                    
+                    if poll_status == "completed":
+                        url = poll_data.get("url") or poll_data.get("image_url") or poll_data.get("data", {}).get("url")
+                        if url:
+                            logger.info(f"Placid image {image_id} completed after {attempt} polling attempts")
+                            return url, None
+                        else:
+                            logger.warning(f"Placid image {image_id} completed but no URL in response: {poll_data}")
+                    
+                    elif poll_status in ("queued", "processing"):
+                        logger.debug(f"Placid image {image_id} still {poll_status}, attempt {attempt}/{max_attempts}")
+                        continue
+                    else:
+                        # Ошибка или неизвестный статус
+                        errors = poll_data.get("errors", [])
+                        error_msg = f"Placid image {image_id} status: {poll_status}"
+                        if errors:
+                            error_msg += f", errors: {errors}"
+                        logger.error(error_msg)
+                        return "", f"placid: unexpected status {poll_status}"
+                        
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"Placid polling request failed on attempt {attempt}: {e}")
+                    continue
+            
+            # Исчерпаны попытки
+            logger.error(f"Placid image {image_id} polling timeout after {max_attempts} attempts")
+            return "", f"placid: polling timeout (image still {status} after {max_attempts * poll_interval}s)"
+        
+        # Статус unknown или нет polling_url
         url = data.get("url") or data.get("image_url") or data.get("data", {}).get("url")
         if not url:
-            logger.error(f"Placid API empty url in response: {data}")
-            return "", "placid: empty url"
+            logger.error(f"Placid API empty url in response (status={status}): {data}")
+            return "", f"placid: empty url (status={status})"
         return url, None
+        
     except requests.exceptions.RequestException as e:
         logger.error(f"Placid API request failed: {e}")
         return "", f"placid request error: {str(e)}"
