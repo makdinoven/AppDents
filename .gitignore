@@ -22,3 +22,4 @@ docker-compose.yaml
 
 frontend/dist
 frontend/node_modules
+venv/
