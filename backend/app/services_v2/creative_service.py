@@ -632,13 +632,14 @@ def generate_creative_v1(
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
-            payload = {"template_uuid": PLACID_TPL_V3, "layers": layers_override}
+            payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
         else:
             payload = {
-                "template_uuid": PLACID_TPL_V3,
+                "template_uuid": PLACID_TPL_V1,
                 "layers": {
                     "Main_book_image": {"image": placid_media_url},
                     "Back_book_image": {"image": placid_media_url},
+                    "Iphone_screen": {"image": placid_media_url},
                     "Book_name": {"text": title},
                     "Tag_1": {"text": texts.get("tag_1", "")},
                     "Tag_2": {"text": texts.get("tag_2", "")},
@@ -825,14 +826,13 @@ def generate_creative_v3(
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
-            payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
+            payload = {"template_uuid": PLACID_TPL_V3, "layers": layers_override}
         else:
             payload = {
-                "template_uuid": PLACID_TPL_V1,
+                "template_uuid": PLACID_TPL_V3,
                 "layers": {
                     "Book_cover": {"image": placid_media_url},
                     "Ipad_screen": {"image": placid_media_url},
-                    "Iphone_screen": {"image": placid_media_url},
                     "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
                     "Button_text": {"text": "Download right now"},
                     "Title": {"text": "All formats available"},
