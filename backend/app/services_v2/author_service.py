@@ -448,7 +448,7 @@ def list_authors_search_paginated(
                 .selectinload(Landing.courses),
               selectinload(Author.landings)
                 .selectinload(Landing.tags),
-                selectinload(Author.books).selectinload(Author.landings),
+                selectinload(Author.books).selectinload(Book.landings),
           )
           .filter(Author.name.ilike(f"%{search}%"))
           .order_by(
