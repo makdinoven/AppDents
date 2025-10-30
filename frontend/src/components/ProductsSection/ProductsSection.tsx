@@ -95,6 +95,8 @@ const ProductsSection = ({
   const activeFilter = externalFilter ?? internalFilter;
   const activeSort = externalSort ?? internalSort;
 
+  const showSwitchButtons = false;
+
   useEffect(() => {
     if (skip !== 0) {
       skipResetInProgress.current = true;
@@ -174,7 +176,7 @@ const ProductsSection = ({
       <div className={s.courses_header}>
         <div className={s.title_switchBtns_container}>
           {sectionTitle && <SectionHeader name={sectionTitle} />}
-          {!externalCardType && (
+          {!externalCardType && showSwitchButtons && (
             <SwitchButtons
               buttonsArr={["nav.courses", "nav.books"]}
               activeValue={cardType === "course" ? "nav.courses" : "nav.books"}

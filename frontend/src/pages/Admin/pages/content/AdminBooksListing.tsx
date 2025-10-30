@@ -26,8 +26,7 @@ const AdminBooksListing = () => {
   const INITIAL_BOOK = {
     title: `New Book-${generateId()}`,
     slug: "asdassda",
-    cover_url:
-      "https://afkebooks.com/wp-content/uploads/2022/08/41czKxyUDzL.jpg",
+    cover_url: "",
     files: [],
   };
 

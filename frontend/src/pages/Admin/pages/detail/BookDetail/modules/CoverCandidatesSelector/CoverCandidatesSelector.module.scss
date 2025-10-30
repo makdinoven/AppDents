@@ -25,7 +25,8 @@
     }
 
     &.active {
-      background-color: $background-color;
+      background-color: $accent;
+      border-color: $accent;
     }
   }
 }

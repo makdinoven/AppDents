@@ -41,7 +41,7 @@ const ProfessorCard = ({
             <img src={photo ? photo : INITIAL_PHOTO} alt="professor photo" />
           </div>
           <div className={s.description_wrapper}>
-            {courses_count > 0 && books_count > 0 && (
+            {(courses_count > 0 || books_count > 0) && (
               <div className={s.counts}>
                 {courses_count > 0 && (
                   <span
