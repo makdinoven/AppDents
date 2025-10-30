@@ -47,7 +47,7 @@ class BookAudioPayload(BaseModel):
 class BookCreate(BaseModel):
     title:       str
     description: Optional[str]
-    cover_url:   HttpUrl
+    cover_url:   Optional[HttpUrl] = None
     tag_ids: list[int] = Field(default_factory=list)
     language:    constr(to_upper=True,
                         regex="^(EN|RU|ES|PT|AR|IT)$") = "EN"
@@ -70,7 +70,7 @@ class BookResponse(BaseModel):
     id:          int
     title:       str
     description: Optional[str]
-    cover_url:   HttpUrl
+    cover_url:   Optional[HttpUrl] = None
     language:    str
     author_ids:  List[int]
     files:       List[Dict[str, Any]]

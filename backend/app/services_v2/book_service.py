@@ -98,7 +98,7 @@ def create_book(db: Session, payload: BookCreate) -> Book:
     book = Book(
         title       = payload.title,
         description = payload.description,
-        cover_url   = str(payload.cover_url),
+        cover_url   = (str(payload.cover_url) if payload.cover_url else None),
         language    = payload.language.upper(),
         tags=_fetch_tags(db, payload.tag_ids),
         authors     = authors,
