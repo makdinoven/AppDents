@@ -36,7 +36,9 @@ const BookCreatives = ({ book }: { book: any }) => {
         book.language,
         regen,
       );
-      Alert("Creatives created", <CheckMark />);
+      if (regen) {
+        Alert("Creatives regenerated", <CheckMark />);
+      }
       setCreatives(res.data.items);
       setLoading(false);
     } catch (error) {
