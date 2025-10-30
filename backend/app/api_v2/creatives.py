@@ -60,8 +60,10 @@ class ManualCreativeFlexible(BaseModel):
 class CreativeItemResponse(BaseModel):
     """Элемент креатива в ответе."""
     code: str
+    creative_code: str
     status: str
     s3_url: str
+    payload_used: Optional[Dict[str, Any]] = None
 
 
 class CreativesResponse(BaseModel):
@@ -219,7 +221,13 @@ def get_or_create_creatives(
         ordered = _order_creatives_by_template([ready[code] for code in needed if code in ready])
         return {
             "items": [
-                {"code": x.creative_code, "status": x.status.value, "s3_url": x.s3_url or ""}
+                {
+                    "code": x.creative_code,
+                    "creative_code": x.creative_code,
+                    "status": x.status.value,
+                    "s3_url": x.s3_url or "",
+                    "payload_used": x.payload_used or {},
+                }
                 for x in ordered
             ],
             "overall": "ready",
@@ -231,7 +239,13 @@ def get_or_create_creatives(
         ordered = _order_creatives_by_template(results)
         return {
             "items": [
-                {"code": x.creative_code, "status": x.status.value, "s3_url": x.s3_url or ""}
+                {
+                    "code": x.creative_code,
+                    "creative_code": x.creative_code,
+                    "status": x.status.value,
+                    "s3_url": x.s3_url or "",
+                    "payload_used": x.payload_used or {},
+                }
                 for x in ordered
             ],
             "overall": "ready",
@@ -295,7 +309,13 @@ def manual_single_creative(
         item = generate_single_creative(db, book_id, body.language, target, overrides=overrides)
         return {
             "items": [
-                {"code": item.creative_code, "status": item.status.value, "s3_url": item.s3_url or ""}
+                {
+                    "code": item.creative_code,
+                    "creative_code": item.creative_code,
+                    "status": item.status.value,
+                    "s3_url": item.s3_url or "",
+                    "payload_used": item.payload_used or {},
+                }
             ],
             "overall": "ready",
         }
@@ -348,7 +368,13 @@ def manual_creatives(
         ordered = _order_creatives_by_template(results)
         return {
             "items": [
-                {"code": x.creative_code, "status": x.status.value, "s3_url": x.s3_url or ""}
+                {
+                    "code": x.creative_code,
+                    "creative_code": x.creative_code,
+                    "status": x.status.value,
+                    "s3_url": x.s3_url or "",
+                    "payload_used": x.payload_used or {},
+                }
                 for x in ordered
             ],
             "overall": "ready",
