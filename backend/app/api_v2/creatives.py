@@ -74,6 +74,7 @@ class CreativesResponse(BaseModel):
 def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(get_db), current_admin=Depends(require_roles("admin"))):
     import os
     from urllib.parse import urlparse, unquote, quote
+    import time
 
     S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")
     S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
@@ -126,11 +127,63 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
     r = requests.post(
         f"{settings.BOOKAI_BASE_URL}/process",
         json={"s3_url": preview_pdf_url, "language": language, "book_id": book_id},
-        timeout=30,
+        timeout=60,
     )
     if r.status_code >= 300:
         raise HTTPException(r.status_code, r.text[:500])
-    return r.json()
+
+    # Если BookAI уже вернул финальный результат — отдадим сразу
+    try:
+        resp = r.json()
+    except ValueError:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "BookAI returned non-JSON response")
+
+    if not isinstance(resp, dict):
+        return resp
+
+    status_val = str(resp.get("status") or "").lower()
+    task_id = resp.get("task_id") or resp.get("job_id") or resp.get("id")
+
+    # Статусы строго по контракту BookAI
+    if status_val == "completed":
+        return resp
+    if status_val == "failed":
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, resp.get("error_message") or "BookAI processing failed")
+
+    # Для pending/processing — обязательен task_id
+    if not task_id:
+        # Нет способа ждать — возвращаем исходный ответ
+        return resp
+
+    polling_url = f"{settings.BOOKAI_BASE_URL}/task/{task_id}"
+
+    # Polling до завершения
+    max_attempts = 45  # ~1.5 минуты при 2s
+    interval_sec = 2
+    for attempt in range(1, max_attempts + 1):
+        time.sleep(interval_sec)
+        try:
+            pr = requests.get(polling_url, timeout=20)
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"BookAI polling failed on attempt {attempt}: {e}")
+            continue
+
+        if pr.status_code >= 300:
+            raise HTTPException(pr.status_code, pr.text[:500])
+
+        try:
+            pdata = pr.json()
+        except ValueError:
+            logger.warning("BookAI polling returned non-JSON response, keep waiting")
+            continue
+
+        pstatus = str(pdata.get("status") or "").lower()
+        if pstatus == "completed":
+            return pdata
+        if pstatus == "failed":
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, pdata.get("error_message") or "BookAI processing failed")
+
+    raise HTTPException(status.HTTP_504_GATEWAY_TIMEOUT, "BookAI processing timeout")
 
 
 def _order_creatives_by_template(creatives: List[BookCreative]) -> List[BookCreative]:
@@ -184,23 +237,23 @@ def get_or_create_creatives(
             "overall": "ready",
         }
     except BookAIValidationError as e:
-        logger.error(f"BookAI validation error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        logger.error("BookAI validation error in get_or_create_creatives")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except BookAIServiceUnavailableError as e:
-        logger.error(f"BookAI service unavailable in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        logger.error("BookAI service unavailable in get_or_create_creatives")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except PlacidQuotaError as e:
-        logger.error(f"Placid quota error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        logger.error("Placid quota error in get_or_create_creatives")
         # 402 Payment Required логичнее для недостатка кредитов
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
     except PlacidServiceError as e:
-        logger.error(f"Placid service error in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        logger.error("Placid service error in get_or_create_creatives")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
-        logger.error(f"ValueError in get_or_create_creatives, book_id={book_id}, language={language}: {e}")
+        logger.error("ValueError in get_or_create_creatives")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in get_or_create_creatives, book_id={book_id}, language={language}: {e}", exc_info=True)
+        logger.error("Unexpected error in get_or_create_creatives", exc_info=True)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
 
 
@@ -247,22 +300,22 @@ def manual_single_creative(
             "overall": "ready",
         }
     except BookAIValidationError as e:
-        logger.error(f"BookAI validation error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        logger.error("BookAI validation error in manual_single_creative")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except BookAIServiceUnavailableError as e:
-        logger.error(f"BookAI service unavailable in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        logger.error("BookAI service unavailable in manual_single_creative")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except PlacidQuotaError as e:
-        logger.error(f"Placid quota error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        logger.error("Placid quota error in manual_single_creative")
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
     except PlacidServiceError as e:
-        logger.error(f"Placid service error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        logger.error("Placid service error in manual_single_creative")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
-        logger.error(f"ValueError in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}")
+        logger.error("ValueError in manual_single_creative")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in manual_single_creative, book_id={book_id}, target={target}, language={body.language}: {e}", exc_info=True)
+        logger.error("Unexpected error in manual_single_creative", exc_info=True)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creative: {str(e)}")
 
 @router.post("/books/{book_id}/creatives/manual", response_model=CreativesResponse)
@@ -301,22 +354,22 @@ def manual_creatives(
             "overall": "ready",
         }
     except BookAIValidationError as e:
-        logger.error(f"BookAI validation error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        logger.error("BookAI validation error in manual_creatives")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except BookAIServiceUnavailableError as e:
-        logger.error(f"BookAI service unavailable in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        logger.error("BookAI service unavailable in manual_creatives")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     except PlacidQuotaError as e:
-        logger.error(f"Placid quota error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        logger.error("Placid quota error in manual_creatives")
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
     except PlacidServiceError as e:
-        logger.error(f"Placid service error in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        logger.error("Placid service error in manual_creatives")
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
     except ValueError as e:
-        logger.error(f"ValueError in manual_creatives, book_id={book_id}, language={body.language}: {e}")
+        logger.error("ValueError in manual_creatives")
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
     except Exception as e:
-        logger.error(f"Unexpected error in manual_creatives, book_id={book_id}, language={body.language}: {e}", exc_info=True)
+        logger.error("Unexpected error in manual_creatives", exc_info=True)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
 
 

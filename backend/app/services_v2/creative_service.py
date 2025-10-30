@@ -352,49 +352,23 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
     
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
     url = f"{settings.BOOKAI_BASE_URL}{endpoint}"
-    logger.info(f"Calling BookAI: {url}, book_id={book_id}, language={language}, s3_url={s3_url[:100]}...")
+    logger.info(f"BookAI request: {url} book_id={book_id} lang={language}")
     
     try:
         r = requests.post(
             url,
             json={"s3_url": s3_url, "language": language},
-            timeout=60,
+            timeout=30,
         )
-        logger.info(f"BookAI response status: {r.status_code}, content-type: {r.headers.get('Content-Type', 'unknown')}")
-        
-        # Проверяем, не вернул ли сервер HTML страницу ошибки (502 от Cloudflare)
-        content_type = r.headers.get('Content-Type', '').lower()
-        response_text_start = r.text.strip()[:20].upper() if r.text else ""
-        is_html_error = 'text/html' in content_type or response_text_start.startswith('<!DOCTYPE')
-        
-        if is_html_error and r.status_code >= 400:
-            error_text = r.text[:500] if len(r.text) > 500 else r.text
-            logger.error(f"BookAI returned HTML error page (status {r.status_code}): {error_text[:200]}")
-            if r.status_code >= 500 or r.status_code == 502:
-                raise BookAIServiceUnavailableError(f"bookai service unavailable (returned HTML error page with status {r.status_code})")
-            else:
-                raise BookAIValidationError(f"bookai validation error (returned HTML with status {r.status_code})")
-        
-        # Обработка конкретных статусов
         if r.status_code == 400:
-            error_text = r.text[:500]
-            logger.error(f"BookAI 400 error: {error_text}")
-            raise BookAIValidationError(f"bookai validation error (400): {error_text}")
-        
+            raise BookAIValidationError("bookai validation error (400)")
         if r.status_code == 422:
-            error_text = r.text[:500]
-            logger.error(f"BookAI 422 error: {error_text}")
-            raise BookAIValidationError(f"bookai validation error (422): {error_text}")
-        
+            raise BookAIValidationError("bookai validation error (422)")
         if r.status_code >= 500:
-            error_text = r.text[:500]
-            logger.error(f"BookAI server error {r.status_code}: {error_text}")
-            raise BookAIServiceUnavailableError(f"bookai service error ({r.status_code}): {error_text}")
-        
+            raise BookAIServiceUnavailableError(f"bookai service error ({r.status_code})")
         r.raise_for_status()
         try:
             texts = r.json()
-            # Очищаем все текстовые поля от артефактов валидации
             cleaned_texts = {}
             for key, value in texts.items():
                 if isinstance(value, str):
@@ -403,29 +377,25 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
                     cleaned_texts[key] = value
             return cleaned_texts
         except (ValueError, json.JSONDecodeError) as e:
-            error_text = r.text[:500]
-            logger.error(f"BookAI invalid JSON response: {e}, response text: {error_text}")
-            raise BookAIServiceUnavailableError(f"bookai invalid json response: {str(e)}")
+            raise BookAIServiceUnavailableError("bookai invalid json response")
             
     except BookAIServiceError:
         raise  # Перебрасываем специальные исключения как есть
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code if e.response else None
-        error_text = e.response.text[:500] if e.response else str(e)
-        logger.error(f"BookAI HTTP error {status_code}: {error_text}")
-        
+        logger.error(f"BookAI HTTP error {status_code}")
         if status_code and status_code >= 500:
-            raise BookAIServiceUnavailableError(f"bookai http error ({status_code}): {error_text}")
+            raise BookAIServiceUnavailableError(f"bookai http error ({status_code})")
         else:
-            raise BookAIValidationError(f"bookai http error ({status_code}): {error_text}")
+            raise BookAIValidationError(f"bookai http error ({status_code})")
             
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        logger.error(f"BookAI connection/timeout error: {e}")
-        raise BookAIServiceUnavailableError(f"bookai service unavailable: {str(e)}")
+        logger.error("BookAI connection/timeout error")
+        raise BookAIServiceUnavailableError("bookai service unavailable")
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"BookAI request failed: {e}")
-        raise BookAIServiceUnavailableError(f"bookai request error: {str(e)}")
+        logger.error("BookAI request failed")
+        raise BookAIServiceUnavailableError("bookai request error")
 
 
 def _download_bytes(url: str) -> bytes:
