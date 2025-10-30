@@ -1,0 +1,45 @@
+.creatives_container {
+  @include flex-column;
+  position: relative;
+  gap: 50px;
+  border: 1px solid $hover-color;
+  padding: 20px;
+  border-radius: 30px;
+
+  h4 {
+    text-transform: uppercase;
+    @include clamped-h3;
+  }
+}
+
+.creatives_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.create_btn {
+  margin-right: auto;
+}
+
+.regenerate_all_btn {
+  margin-left: auto;
+}
+
+.creatives_list {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 50px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .creatives_container {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .creatives_list {
+    gap: 20px;
+  }
+}

@@ -157,12 +157,6 @@ const BookDetail = () => {
         <Loader />
       ) : (
         <>
-          {book.files.length > 0 && (
-            <>
-              <BookCreatives />
-              <BookMetadataSelector book={book} setBook={setBook} />
-            </>
-          )}
           {book && (
             <div className={s.list}>
               <AdminField
@@ -258,6 +252,12 @@ const BookDetail = () => {
                 )}
               </div>
 
+              {book.files.length > 0 && (
+                <>
+                  <BookMetadataSelector book={book} fetchData={fetchAllData} />
+                </>
+              )}
+
               <BookUploader
                 itemId={book.id}
                 files={book.files}
@@ -287,6 +287,12 @@ const BookDetail = () => {
                 handleSave={handleSave}
                 handleDelete={handleDeleteBook}
               />
+
+              {book.files.length > 0 && (
+                <>
+                  <BookCreatives book={book} />
+                </>
+              )}
             </div>
           )}
         </>

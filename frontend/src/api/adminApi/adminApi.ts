@@ -474,9 +474,16 @@ export const adminApi = {
       },
     );
   },
-  createBookCreativesManual(id: number, data: any) {
-    return instance.post(`v2/books/${id}/ai-creatives/manual}`, data, {
-      headers: getAuthHeaders(),
-    });
+  createBookCreativesManual(
+    params: { target: string; book_id: number },
+    data: { language: string; fields: { layers: any } },
+  ) {
+    return instance.post(
+      `v2/books/${params.book_id}/creatives/manual/${params.target}`,
+      data,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
   },
 };

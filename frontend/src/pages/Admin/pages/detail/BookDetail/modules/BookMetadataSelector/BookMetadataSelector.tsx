@@ -6,10 +6,10 @@ import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
 
 const BookMetadataSelector = ({
   book,
-  setBook,
+  fetchData,
 }: {
   book: any;
-  setBook: (book: any) => void;
+  fetchData: () => void;
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -17,9 +17,8 @@ const BookMetadataSelector = ({
     if (!book.id) return;
     setLoading(true);
     try {
-      const res = await adminApi.createBookMetadata(book.id, book.language);
-      console.log(res.data);
-      // setBook(res.data);
+      await adminApi.createBookMetadata(book.id, book.language);
+      fetchData();
       setLoading(false);
     } catch (error) {
       setLoading(false);
