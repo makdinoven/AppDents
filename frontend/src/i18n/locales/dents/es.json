@@ -109,7 +109,6 @@
     "privacyAgreement": "Al hacer clic en el botón «Pagar», aceptas recibir correos electrónicos de marketing y consientes nuestra <1>Política de Privacidad.</1>"
   },
 
-
   "nav": {
     "home": "Inicio",
     "courses": "Cursos",
@@ -220,7 +219,6 @@
     "salesCount": "Ventas: {{count}}"
   },
 
-
   "landing": {
     "by": "Por",
     "about": "Acerca de este curso",
@@ -282,9 +280,9 @@
 
   "profile": {
     "yourCourses": "Tus cursos",
-    "noCourses": "No hay cursos",
     "yourBooks": "Tus libros",
-    "noBooks": "Aún no hay libros",
+    "noCourses": "Aún no has comprado nada. Comienza a aprender hoy: puedes elegir el curso adecuado <1>aquí</1>.",
+    "noBooks": "Aún no has comprado nada. Comienza a aprender hoy: puedes elegir el libro adecuado <1>aquí</1>.",
     "nextLesson": "Siguiente lección",
     "prevLesson": "Lección anterior",
     "pdfText": "Esta lección contiene materiales en PDF en lugar de un video. Haz clic en el enlace de abajo para abrir el archivo.",
@@ -355,7 +353,6 @@
     "coursesCount_other": "{{count}} cursos",
     "booksCount_one": "{{count}} libro",
     "booksCount_other": "{{count}} libros"
-
   },
   "other": {
     "otherCourses": "Otros cursos",

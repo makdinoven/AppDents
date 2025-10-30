@@ -21,7 +21,9 @@ const ProfilePageWrapper = () => {
           />
         </div>
       )}
-      <Outlet />
+      <div className={s.profile_page_wrapper}>
+        <Outlet />
+      </div>
       <div id={"profile_courses"}>
         <ProductsSection
           productCardFlags={{ isOffer: true, isClient: true }}

@@ -1,6 +1,6 @@
 import s from "./CoursePage.module.scss";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { adminApi } from "../../../../api/adminApi/adminApi.ts";
 import { normalizeCourse } from "../../../../common/helpers/helpers.ts";
 import DetailHeader from "../../../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
@@ -17,7 +17,7 @@ import DetailHeaderSkeleton from "../../../../components/ui/Skeletons/DetailHead
 import { LanguagesType } from "../../../../components/ui/LangLogo/LangLogo.tsx";
 import { CartItemKind } from "../../../../api/cartApi/types.ts";
 
-const CoursePage = () => {
+const CoursePage = memo(() => {
   const { openPaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch<AppDispatchType>();
   const { courseId, lessonId } = useParams();
@@ -140,6 +140,6 @@ const CoursePage = () => {
       </div>
     </>
   );
-};
+});
 
 export default CoursePage;

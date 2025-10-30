@@ -7,6 +7,7 @@ import { AppRootStateType } from "../../../../../store/store.ts";
 import CourseCardSkeletons from "../../../../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import ProfileEntityCard from "../ProfileEntityCard/ProfileEntityCard.tsx";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const MyContent = ({
   items,
@@ -18,6 +19,7 @@ const MyContent = ({
   const loading = useSelector((state: AppRootStateType) =>
     type === "course" ? state.user.loadingCourses : state.user.loadingBooks,
   );
+  const navigate = useNavigate();
 
   useEffect(() => {}, [type]);
   return (
@@ -52,6 +54,16 @@ const MyContent = ({
                 i18nKey={
                   type === "course" ? "profile.noCourses" : "profile.noBooks"
                 }
+                components={{
+                  1: (
+                    <span
+                      onClick={() =>
+                        navigate(type === "course" ? Path.courses : Path.books)
+                      }
+                      className={`${s.highlight}`}
+                    />
+                  ),
+                }}
               />
             </p>
           )}

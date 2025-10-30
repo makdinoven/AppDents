@@ -67,6 +67,8 @@ const PdfReader = ({
     [],
   );
 
+  console.log("RENDERED");
+
   const handleScroll = () => {
     if (!documentRef.current || !totalPages) return;
     const container = documentRef.current;

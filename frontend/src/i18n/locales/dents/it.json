@@ -221,8 +221,7 @@
     "salesCount": "Vendite: {{count}}"
   },
 
-
-"landing": {
+  "landing": {
     "by": "Da",
     "about": "Informazioni su questo corso",
     "access": "l'accesso non è limitato nel tempo",
@@ -283,9 +282,9 @@
 
   "profile": {
     "yourCourses": "I tuoi corsi",
-    "noCourses": "Nessun corso",
     "yourBooks": "I tuoi libri",
-    "noBooks": "Nessun libro ancora",
+    "noCourses": "Non hai ancora acquistato nulla. Inizia a imparare oggi — puoi scegliere il corso giusto <1>qui</1>.",
+    "noBooks": "Non hai ancora acquistato nulla. Inizia a imparare oggi — puoi scegliere il libro giusto <1>qui</1>.",
     "nextLesson": "Lezione successiva",
     "prevLesson": "Lezione precedente",
     "pdfText": "Questa lezione contiene materiali in formato PDF invece di un video. Clicca sul link qui sotto per aprire il file.",
@@ -356,7 +355,6 @@
     "coursesCount_other": "{{count}} corsi",
     "booksCount_one": "{{count}} libro",
     "booksCount_other": "{{count}} libri"
-
   },
   "other": {
     "otherCourses": "Altri corsi",

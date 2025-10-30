@@ -68,7 +68,7 @@
       .formats_field {
         @include skeleton(
           $pos: relative,
-          $h: 60px,
+          $h: 30px,
           $radius: 15px,
           $color: $light-grey
         );
@@ -89,7 +89,7 @@
         }
 
         .formats_field {
-          height: 40px;
+          height: 30px;
         }
       }
     }
@@ -178,7 +178,7 @@
         height: fit-content;
         min-width: 100%;
         width: fit-content;
-        @include skeleton($pos: relative, $radius: 40px, $h: 40px);
+        @include skeleton($pos: relative, $radius: 40px, $h: 30px);
       }
     }
   }

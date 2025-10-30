@@ -12,6 +12,21 @@
 .no_content {
   @include flex-center;
   @include clamped-p2;
+  max-width: 90%;
+  position: absolute;
+  display: block;
+}
+
+.highlight {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  @include transition;
+  color: $primary;
+
+  &:hover {
+    color: $accent;
+  }
 }
 
 @media (max-width: $middle-breakpoint) {

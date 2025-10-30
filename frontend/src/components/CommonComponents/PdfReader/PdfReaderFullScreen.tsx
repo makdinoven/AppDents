@@ -71,6 +71,7 @@ const PdfReaderFullScreen = ({
         url={url}
         fullScreen={true}
         setFullScreen={() => closeFullScreenRef.current?.()}
+        key="pdf"
       />
     </ModalOverlay>
   );

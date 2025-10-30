@@ -315,9 +315,9 @@
 
   "profile": {
     "yourCourses": "Your courses",
-    "noCourses": "No Courses Yet",
     "yourBooks": "Your books",
-    "noBooks": "No Books Yet",
+    "noCourses": "You haven’t purchased anything yet. Start learning today — you can choose the right course <1>here</1>",
+    "noBooks": "You haven’t purchased anything yet. Start learning today — you can choose the right book <1>here</1>",
     "nextLesson": "Next lesson",
     "prevLesson": "Prev lesson",
     "pdfText": "This lesson contains PDF materials instead of a video. Click the link below to open the file.",

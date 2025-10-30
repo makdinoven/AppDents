@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
 import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
@@ -13,6 +12,7 @@ import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import PdfReaderWrapper from "../../../../components/CommonComponents/PdfReader/PdfReaderWrapper.tsx";
+import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 
 const BookPage = () => {
   const { bookId } = useParams();
@@ -53,7 +53,7 @@ const BookPage = () => {
     <>
       <div className={s.book_page}>
         {loading && !book ? (
-          <Loader />
+          <BookHeroSkeleton type="download" />
         ) : (
           <>
             <section className={s.hero}>
