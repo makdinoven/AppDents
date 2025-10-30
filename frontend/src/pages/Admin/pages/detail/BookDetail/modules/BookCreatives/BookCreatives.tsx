@@ -4,6 +4,8 @@ import PrettyButton from "../../../../../../../components/ui/PrettyButton/Pretty
 import { useState } from "react";
 import LoaderOverlay from "../../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import RegenerateCreative from "./RegenerateCreative/RegenerateCreative.tsx";
+import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../../../assets/icons";
 
 export type Creative = {
   code: string;
@@ -34,11 +36,11 @@ const BookCreatives = ({ book }: { book: any }) => {
         book.language,
         regen,
       );
-      // Alert("Creatives created", <CheckMark />);
+      Alert("Creatives created", <CheckMark />);
       setCreatives(res.data.items);
       setLoading(false);
-    } catch {
-      // Alert(`Error creating creative: ${error}`, <ErrorIcon />);
+    } catch (error) {
+      Alert(`Error creating creative: ${error}`, <ErrorIcon />);
       setLoading(false);
     }
   };
