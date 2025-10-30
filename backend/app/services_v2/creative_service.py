@@ -544,8 +544,26 @@ def _upload_to_s3(key: str, data: bytes) -> str:
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
         config=Config(signature_version="s3", s3={"addressing_style": "path"}),
     )
-    s3.upload_fileobj(io.BytesIO(data), S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "image/png"})
-    return f"{S3_PUBLIC_HOST}/{key}"
+    # Агрессивно отключаем кэш у CDN/браузера для предотвращения отдачи старых версий
+    from datetime import datetime, timezone
+    cache_control = "no-cache, no-store, must-revalidate, max-age=0"
+    expires_dt = datetime.now(timezone.utc)
+
+    s3.upload_fileobj(
+        io.BytesIO(data),
+        S3_BUCKET,
+        key,
+        ExtraArgs={
+            "ACL": "public-read",
+            "ContentType": "image/png",
+            "CacheControl": cache_control,
+            "Expires": expires_dt,
+        },
+    )
+
+    # Добавляем cache-busting параметр, чтобы обойти CDN кеш по тому же ключу
+    version = int(time.time())
+    return f"{S3_PUBLIC_HOST}/{key}?v={version}"
 
 
 def _require_book_fields(book: Book) -> None:
@@ -638,17 +656,34 @@ def generate_creative_v1(
         logger.info(f"Uploading creative v1 to S3, book_id={book.id}, key={key}")
         s3_url = _upload_to_s3(key, img)
 
-        row = BookCreative(
-            book_id=book.id,
-            language=language,
-            creative_code=PLACID_TPL_V1,
-            status=CreativeStatus.READY,
-            placid_image_url=url,
-            s3_key=key,
-            s3_url=s3_url,
-            payload_used={"layers": payload.get("layers", {})},
+        existing = (
+            db.query(BookCreative)
+            .filter(
+                BookCreative.book_id == book.id,
+                BookCreative.language == language,
+                BookCreative.creative_code == PLACID_TPL_V1,
+            )
+            .first()
         )
-        db.merge(row)
+        if existing:
+            existing.status = CreativeStatus.READY
+            existing.placid_image_url = url
+            existing.s3_key = key
+            existing.s3_url = s3_url
+            existing.payload_used = {"layers": payload.get("layers", {})}
+            row = existing
+        else:
+            row = BookCreative(
+                book_id=book.id,
+                language=language,
+                creative_code=PLACID_TPL_V1,
+                status=CreativeStatus.READY,
+                placid_image_url=url,
+                s3_key=key,
+                s3_url=s3_url,
+                payload_used={"layers": payload.get("layers", {})},
+            )
+            db.add(row)
         db.commit()
         logger.info(f"Creative v1 generated successfully, book_id={book.id}")
         return row
@@ -738,17 +773,34 @@ def generate_creative_v2(
         logger.info(f"Uploading creative v2 to S3, book_id={book.id}, key={key}")
         s3_url = _upload_to_s3(key, img)
 
-        row = BookCreative(
-            book_id=book.id,
-            language=language,
-            creative_code=PLACID_TPL_V2,
-            status=CreativeStatus.READY,
-            placid_image_url=url,
-            s3_key=key,
-            s3_url=s3_url,
-            payload_used={"layers": payload.get("layers", {})},
+        existing = (
+            db.query(BookCreative)
+            .filter(
+                BookCreative.book_id == book.id,
+                BookCreative.language == language,
+                BookCreative.creative_code == PLACID_TPL_V2,
+            )
+            .first()
         )
-        db.merge(row)
+        if existing:
+            existing.status = CreativeStatus.READY
+            existing.placid_image_url = url
+            existing.s3_key = key
+            existing.s3_url = s3_url
+            existing.payload_used = {"layers": payload.get("layers", {})}
+            row = existing
+        else:
+            row = BookCreative(
+                book_id=book.id,
+                language=language,
+                creative_code=PLACID_TPL_V2,
+                status=CreativeStatus.READY,
+                placid_image_url=url,
+                s3_key=key,
+                s3_url=s3_url,
+                payload_used={"layers": payload.get("layers", {})},
+            )
+            db.add(row)
         db.commit()
         logger.info(f"Creative v2 generated successfully, book_id={book.id}")
         return row
@@ -828,17 +880,34 @@ def generate_creative_v3(
         logger.info(f"Uploading creative v3 to S3, book_id={book.id}, key={key}")
         s3_url = _upload_to_s3(key, img)
 
-        row = BookCreative(
-            book_id=book.id,
-            language=language,
-            creative_code=PLACID_TPL_V3,
-            status=CreativeStatus.READY,
-            placid_image_url=url,
-            s3_key=key,
-            s3_url=s3_url,
-            payload_used={"layers": payload.get("layers", {})},
+        existing = (
+            db.query(BookCreative)
+            .filter(
+                BookCreative.book_id == book.id,
+                BookCreative.language == language,
+                BookCreative.creative_code == PLACID_TPL_V3,
+            )
+            .first()
         )
-        db.merge(row)
+        if existing:
+            existing.status = CreativeStatus.READY
+            existing.placid_image_url = url
+            existing.s3_key = key
+            existing.s3_url = s3_url
+            existing.payload_used = {"layers": payload.get("layers", {})}
+            row = existing
+        else:
+            row = BookCreative(
+                book_id=book.id,
+                language=language,
+                creative_code=PLACID_TPL_V3,
+                status=CreativeStatus.READY,
+                placid_image_url=url,
+                s3_key=key,
+                s3_url=s3_url,
+                payload_used={"layers": payload.get("layers", {})},
+            )
+            db.add(row)
         db.commit()
         logger.info(f"Creative v3 generated successfully, book_id={book.id}")
         return row

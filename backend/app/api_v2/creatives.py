@@ -212,9 +212,18 @@ def get_or_create_creatives(
     
     Каждый элемент содержит code (creative_code), status и s3_url.
     """
-    q = db.query(BookCreative).filter_by(book_id=book_id, language=language)
-    items = q.all()
-    ready = {x.creative_code: x for x in items if x.status == CreativeStatus.READY}
+    # Берём последние версии по каждому шаблону, чтобы не отдать старые URL
+    items = (
+        db.query(BookCreative)
+        .filter_by(book_id=book_id, language=language)
+        .order_by(BookCreative.updated_at.desc(), BookCreative.created_at.desc())
+        .all()
+    )
+    latest_by_code = {}
+    for x in items:
+        if x.creative_code not in latest_by_code:
+            latest_by_code[x.creative_code] = x
+    ready = {code: x for code, x in latest_by_code.items() if x.status == CreativeStatus.READY}
     needed = {PLACID_TPL_V1, PLACID_TPL_V2, PLACID_TPL_V3}
 
     if not regen and needed.issubset(set(ready.keys())):
