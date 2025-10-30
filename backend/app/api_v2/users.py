@@ -28,7 +28,8 @@ from ..services_v2.user_service import (
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
     get_free_course_stats
 )
-from ..utils.email_sender import send_password_to_user, send_recovery_email
+from ..utils.email_sender.common import send_password_to_user
+from ..utils.email_sender.dent_s import send_recovery_email
 from ..utils.s3 import generate_presigned_url
 
 router = APIRouter()

@@ -15,7 +15,8 @@ from ..services_v2.stripe_service import create_checkout_session, handle_webhook
 from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user, add_book_to_user
 from ..services_v2.wallet_service import debit_balance
-from ..utils.email_sender import send_successful_purchase_email
+from ..utils.email_sender.common import send_successful_purchase_email
+from ..utils.email_sender.dent_s import send_already_owned_course_email
 from ..services_v2 import cart_service as cs
 
 router = APIRouter()
