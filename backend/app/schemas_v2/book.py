@@ -56,6 +56,14 @@ class BookCreate(BaseModel):
     audio_files: List[BookAudioPayload] = Field(default_factory=list)
     publication_date: Optional[str] = None
 
+    @validator("cover_url", pre=True)
+    def _empty_cover_to_none(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
+
 class BookUpdate(BookCreate):
     """Все поля те же, все опциональные."""
     title:       Optional[str] = None
@@ -64,6 +72,14 @@ class BookUpdate(BookCreate):
     files:       Optional[List[BookFilePayload]]
     audio_files: Optional[List[BookAudioPayload]]
     tag_ids: list[int] = Field(default_factory=list)
+
+    @validator("cover_url", pre=True)
+    def _empty_cover_to_none_update(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
 
 class BookResponse(BaseModel):
@@ -352,6 +368,14 @@ class BookPatch(BaseModel):
     publication_date: Optional[str] = None
     author_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
+
+    @validator("cover_url", pre=True)
+    def _empty_cover_to_none_patch(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str) and v.strip() == "":
+            return None
+        return v
 
 
 # ═══════════════════ Metadata Extraction ═══════════════════
