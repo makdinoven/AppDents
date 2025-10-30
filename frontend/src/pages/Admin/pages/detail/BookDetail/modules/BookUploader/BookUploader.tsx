@@ -12,9 +12,11 @@ const BookUploader = ({
   itemId,
   files,
   getCovers,
+  setBook,
 }: {
   itemId: number;
   getCovers: () => void;
+  setBook: (book: any) => void;
   files: {
     file_format: "PDF" | "EPUB" | "MOBI" | "AZW3" | "FB2";
     size_bytes: number;
@@ -69,6 +71,7 @@ const BookUploader = ({
 
       const finalizeRes = await adminApi.finalizeBookUploading(itemId, { key });
       fetchStatuses();
+      fetchPreviews();
       setBookUrl(finalizeRes.data.pdf_cdn_url);
     } catch (e) {
       Alert(`Error uploading pdf file: ${e}`, <ErrorIcon />);
@@ -79,27 +82,51 @@ const BookUploader = ({
 
   const fetchStatuses = async () => {
     try {
-      const preview = await adminApi.getBookPreviewStatus(itemId);
       const format = await adminApi.getBookFormatStatus(itemId);
-
-      setPreviewStatus(preview.data.job.status as JobStatus);
       setFormatStatus(format.data.job.status as JobStatus);
     } catch (e) {
       console.error("Error fetching statuses", e);
     }
   };
 
+  const fetchPreviews = async () => {
+    try {
+      if (previewStatus == "success") {
+        getCovers();
+        return;
+      }
+      const preview = await adminApi.getBookPreviewStatus(itemId);
+      setPreviewStatus(preview.data.job.status as JobStatus);
+    } catch (e) {
+      console.error("Error fetching previews", e);
+    }
+  };
+
   useEffect(() => {
-    if (!previewStatus && !formatStatus) return;
-    if (previewStatus === "success" && formatStatus === "success") {
-      getCovers();
+    if (
+      !previewStatus ||
+      previewStatus === "success" ||
+      previewStatus === "failed"
+    )
+      return;
+    const interval = setInterval(fetchPreviews, 3000);
+    return () => clearInterval(interval);
+  }, [previewStatus]);
+
+  useEffect(() => {
+    if (
+      !formatStatus ||
+      formatStatus === "success" ||
+      formatStatus === "failed"
+    ) {
+      if (formatStatus === "success") {
+        // setBook(...prev, {})
+      }
       return;
     }
-    if (previewStatus === "failed" || formatStatus === "failed") return;
-
     const interval = setInterval(fetchStatuses, 3000);
     return () => clearInterval(interval);
-  }, [previewStatus, formatStatus]);
+  }, [formatStatus]);
 
   return (
     <div className={s.pdf_uploader_container}>
@@ -109,14 +136,14 @@ const BookUploader = ({
         {(previewStatus || formatStatus) && (
           <div className={s.statuses}>
             {previewStatus && (
-              <p className={s[previewStatus]}>
+              <p className={`${s.preview_status} ${s[previewStatus]}`}>
                 {previewStatus === "success"
                   ? "Preview generated"
                   : `Generating preview... ${previewStatus}`}
               </p>
             )}
             {formatStatus && (
-              <p className={s[formatStatus]}>
+              <p className={`${s.format_status} ${s[formatStatus]}`}>
                 {formatStatus === "success"
                   ? "Formats generated"
                   : `Generating formats... ${formatStatus}`}

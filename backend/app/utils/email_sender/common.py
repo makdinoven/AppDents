@@ -3,37 +3,60 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from ...core.config import settings
-
+from email.header import Header
+import ssl
 
 # Универсальная функция SMTP-отправки
-def send_html_email(recipient_email: str, subject: str, html_body: str):
-    smtp_server   = settings.EMAIL_HOST
-    smtp_port     = settings.EMAIL_PORT
-    smtp_username = settings.EMAIL_USERNAME
-    smtp_password = settings.EMAIL_PASSWORD
+def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
+    smtp_server   = settings.EMAIL_HOST               # 172.18.0.1
+    smtp_port     = int(settings.EMAIL_PORT or 0)     # может быть строкой
+    smtp_username = (settings.EMAIL_USERNAME or "").strip()
+    smtp_password = (settings.EMAIL_PASSWORD or "").strip()
     sender_email  = settings.EMAIL_SENDER
 
-    msg = MIMEMultipart()
+    # plain-text альтернатива для лучшей доставляемости
+    text_body = "If you see this text, your email client does not support HTML."
+
+    msg = MIMEMultipart("alternative")
     msg["From"] = sender_email
     msg["To"] = recipient_email
-    msg["Subject"] = subject
+    msg["Subject"] = Header(subject, "utf-8")
+    msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    ctx = ssl.create_default_context()
+
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            # Не включаем TLS, если сервер локальный тестовый (aiosmtpd)
-            if smtp_port not in (25, 1025):
-                try:
-                    server.starttls()
-                except smtplib.SMTPNotSupportedError:
-                    pass
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
-            logging.info("📨 Email sent to %s", recipient_email)
+        if smtp_port == 465:
+            # SMTPS (implicit TLS) — НИКАКОГО starttls()
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission — STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25 — обычно без TLS/логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port or 25, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
     except Exception as e:
-        logging.error("SMTP error while sending to %s: %s", recipient_email, e)
-        raise
+        # замените на logger.exception(...) при наличии логгера
+        print("SMTP error:", repr(e))
+        return False
 
 
 # Универсальное письмо с паролем

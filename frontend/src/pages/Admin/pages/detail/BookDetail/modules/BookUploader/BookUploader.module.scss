@@ -1,3 +1,24 @@
+@mixin job-status-colors {
+  &.pending {
+    background-color: $yellow;
+  }
+
+  &.running {
+    background-color: $secondary-lighter;
+  }
+
+  &.success {
+    background-color: $green;
+  }
+
+  &.failed {
+    background-color: $error-color;
+  }
+
+  &.skipped {
+    background-color: $orange;
+  }
+}
 .pdf_uploader_container {
   position: relative;
   padding: 15px;
@@ -42,24 +63,12 @@
     @include clamped-p4;
     color: $background-color;
 
-    &.pending {
-      background-color: $yellow;
+    &.preview_status {
+      @include job-status-colors;
     }
 
-    &.running {
-      background-color: $secondary-lighter;
-    }
-
-    &.success {
-      background-color: $green;
-    }
-
-    &.failed {
-      background-color: $error-color;
-    }
-
-    &.skipped {
-      background-color: $orange;
+    &.format_status {
+      @include job-status-colors;
     }
   }
 }
@@ -154,7 +163,7 @@
 
   .statuses {
     flex-direction: column;
-    p {
+    .status_p {
       padding: 2px 7px;
     }
   }

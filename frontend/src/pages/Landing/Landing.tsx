@@ -124,7 +124,7 @@ const Landing = () => {
         authors,
         lessons_count,
       } = res.data;
-
+      console.log(id);
       const newPrice = !isWebinar ? new_price : 1;
       const oldPrice = !isWebinar ? old_price : 1;
 

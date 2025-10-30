@@ -7,9 +7,9 @@ import { Path } from "../../routes/routes.ts";
 import {
   BooksIcon,
   CoursesIcon,
+  Mail,
   PoweredByStripeLogo,
   Shield,
-  Mail,
 } from "../../assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
 import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
@@ -29,6 +29,7 @@ import { useLocation } from "react-router-dom";
 import PaymentItemCard from "./content/PaymentItemCard/PaymentItemCard.tsx";
 
 const PaymentPage = () => {
+  const validateRef = useRef<() => Promise<boolean>>(null);
   const location = useLocation();
   const dispatch = useDispatch<AppDispatchType>();
   const {
@@ -111,6 +112,15 @@ const PaymentPage = () => {
     closeModalRef.current?.();
   };
 
+  const safeHandlePayment = async () => {
+    // Если пользователь не залогинен — сначала валидируем email
+    if (!isLogged) {
+      const ok = await validateRef.current?.();
+      if (!ok) return; // форма не валидна — не дергаем оплату
+    }
+    handlePayment();
+  };
+
   if (!hookPaymentData || !renderPaymentData) return null;
 
   const paymentItemsLength = renderPaymentData.items.length;
@@ -181,6 +191,7 @@ const PaymentPage = () => {
           setEmail={setEmailValue}
           isLogged={isLogged}
           isFree={isFree}
+          onRegisterValidate={(fn) => (validateRef.current = fn)} // <— ДОБАВИЛИ
         />
       )}
 
@@ -213,7 +224,7 @@ const PaymentPage = () => {
         </p>
       )}
       <Button
-        onClick={handlePayment}
+        onClick={safeHandlePayment}
         disabled={IS_PAYMENT_DISABLED}
         variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
         loading={loading}

@@ -126,13 +126,34 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
         # Fallback: используем исходный PDF URL (как есть)
         preview_pdf_url = pdf.s3_url
 
-    r = requests.post(
-        f"{settings.BOOKAI_BASE_URL}/process",
-        json={"s3_url": preview_pdf_url, "language": language, "book_id": book_id},
-        timeout=60,
-    )
-    if r.status_code >= 300:
-        raise HTTPException(r.status_code, r.text[:500])
+    # Надёжный запуск процесса с ретраями на 5xx/таймауты (например, 524 от CDN)
+    r = None
+    post_max_attempts = 5
+    post_interval_sec = 2
+    for post_attempt in range(1, post_max_attempts + 1):
+        try:
+            r = requests.post(
+                f"{settings.BOOKAI_BASE_URL}/process",
+                json={"s3_url": preview_pdf_url, "language": language, "book_id": book_id},
+                timeout=60,
+            )
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"BookAI /process request failed on attempt {post_attempt}: {e}")
+            if post_attempt == post_max_attempts:
+                raise HTTPException(status.HTTP_502_BAD_GATEWAY, "BookAI request failed")
+            time.sleep(post_interval_sec)
+            continue
+
+        # Мягко обрабатываем 5xx (включая 524) ретраями, 4xx — сразу ошибка
+        if r.status_code >= 500:
+            logger.warning(f"BookAI /process returned {r.status_code} on attempt {post_attempt}")
+            if post_attempt == post_max_attempts:
+                raise HTTPException(r.status_code, r.text[:500])
+            time.sleep(post_interval_sec)
+            continue
+        if r.status_code >= 400:
+            raise HTTPException(r.status_code, r.text[:500])
+        break
 
     # Если BookAI уже вернул финальный результат — отдадим сразу
     try:
@@ -170,7 +191,11 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
             logger.warning(f"BookAI polling failed on attempt {attempt}: {e}")
             continue
 
-        if pr.status_code >= 300:
+        # Для 5xx продолжаем ждать, 4xx — ошибка
+        if pr.status_code >= 500:
+            logger.warning(f"BookAI polling returned {pr.status_code} on attempt {attempt}, keep waiting")
+            continue
+        if pr.status_code >= 400:
             raise HTTPException(pr.status_code, pr.text[:500])
 
         try:
