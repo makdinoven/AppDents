@@ -16,7 +16,7 @@ def _safe_price(v) -> float:
 def get_or_create_cart(db: Session, user: User) -> Cart:
     cart = db.query(Cart).filter(Cart.user_id == user.id).first()
     if not cart:
-        cart = Cart(user_id=user.id, total_amount=0.0, created_at=datetime.utcnow())
+        cart = Cart(user_id=user.id, total_amount=0.0)
         db.add(cart)
         db.commit()
         db.refresh(cart)
