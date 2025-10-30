@@ -3,7 +3,7 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from ...core.config import settings
-
+from email.header import Header
 
 # Универсальная функция SMTP-отправки
 def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
