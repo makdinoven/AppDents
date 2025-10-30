@@ -36,25 +36,62 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str):
     send_password_to_user(recipient_email, new_password, region)
 
 
-def send_successful_purchase_email(recipient_email: str, course_info: dict, region: str):
-    """Письмо при успешной покупке курса."""
-    title = course_info.get("title", "Your course")
-    url = course_info.get("url", "https://dent-s.com/login")
+def send_successful_purchase_email(
+    recipient_email: str,
+    course_names: list[str] | None = None,
+    new_account: bool = False,
+    password: str | None = None,
+    region: str = "EN",
+    book_titles: list[str] | None = None,
+):
+    """Письмо при успешной покупке: курсы и/или книги."""
     subject = {
-        "EN": "Your course is available!",
-        "RU": "Ваш курс теперь доступен!",
-        "IT": "Il tuo corso è disponibile!",
-        "ES": "¡Tu curso ya está disponible!",
-    }.get(region.upper(), "Your course is available!")
+        "EN": "Purchase Confirmation — Items added to your account",
+        "RU": "Подтверждение покупки — элементы добавлены в аккаунт",
+        "IT": "Conferma di acquisto — elementi aggiunti all'account",
+        "ES": "Confirmación de compra — elementos añadidos a su cuenta",
+    }.get(region.upper(), "Purchase Confirmation")
+
+    courses_str = ", ".join(course_names or [])
+    books_str = ", ".join(book_titles or [])
+
+    login_url = "https://dent-s.com/login"
+    labels = {
+        "EN": {"courses": "Courses", "books": "Books", "login": "Log In",
+                "purchased_courses": "You have purchased:", "purchased_books": "You have purchased:"},
+        "RU": {"courses": "Курсы", "books": "Книги", "login": "Войти",
+                "purchased_courses": "Вы приобрели:", "purchased_books": "Вы приобрели:"},
+        "IT": {"courses": "Corsi", "books": "Libri", "login": "Accedi",
+                "purchased_courses": "Hai acquistato:", "purchased_books": "Hai acquistato:"},
+        "ES": {"courses": "Cursos", "books": "Libros", "login": "Iniciar sesión",
+                "purchased_courses": "Ha comprado:", "purchased_books": "Ha comprado:"},
+    }.get(region.upper(), {"courses": "Courses", "books": "Books", "login": "Log In",
+                           "purchased_courses": "You have purchased:", "purchased_books": "You have purchased:"})
+
+    account_block = ""
+    if new_account:
+        account_block = f"""
+        <div style=\"margin-top:12px;\">
+          <p><b>Email:</b> {recipient_email}</p>
+          <p><b>Password:</b> {password or ''}</p>
+        </div>
+        """
+
+    sections = []
+    if courses_str:
+        sections.append(f"<h3 style=\"margin:16px 0 6px;\">{labels['courses']}</h3><p>{labels['purchased_courses']} <b>{courses_str}</b></p>")
+    if books_str:
+        sections.append(f"<h3 style=\"margin:16px 0 6px;\">{labels['books']}</h3><p>{labels['purchased_books']} <b>{books_str}</b></p>")
+    body_sections = "".join(sections)
 
     html = f"""
-    <html><body style="font-family:Arial,sans-serif;background:#edf8ff;">
-      <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;">
-        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+    <html><body style=\"font-family:Arial,sans-serif;background:#edf8ff;\">\n
+      <div style=\"max-width:600px;margin:auto;background:white;padding:20px;border-radius:12px;\">\n
+        <img src=\"https://dent-s.com/assets/img/logo.png\" alt=\"Dent-S\" width=\"150\" />
         <h2>{subject}</h2>
-        <p>Thank you for your purchase! You can access your course:</p>
-        <a href="{url}" style="background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;">Open Course</a>
-        <p style="margin-top:20px;">Course: <b>{title}</b></p>
+        {account_block}
+        {body_sections}
+        <p><a href=\"{login_url}\" style=\"background:#01433d;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;\">{labels['login']}</a></p>
         <p>Best regards,<br><b>Dent-S Team</b></p>
       </div>
     </body></html>

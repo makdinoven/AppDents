@@ -1402,7 +1402,8 @@ def send_successful_purchase_email(
     course_names: list[str],
     new_account: bool = False,
     password: str = None,
-    region: str = "EN"
+    region: str = "EN",
+    book_titles: list[str] | None = None,
 ):
     """
     Отправляет письмо с подтверждением успешной покупки курса(ов).
@@ -1564,6 +1565,17 @@ def send_successful_purchase_email(
     else:
         body_html += f"""
         <p>{locale["added"]}</p>"""
+
+    # Добавим блок книг, если переданы
+    if book_titles:
+        books_str = ", ".join(book_titles)
+        books_block = {
+            "EN": f"<p>Additionally, you purchased book(s): <strong>{books_str}</strong>.</p>",
+            "RU": f"<p>Дополнительно вы приобрели книгу(и): <strong>{books_str}</strong>.</p>",
+            "ES": f"<p>Además, ha comprado libro(s): <strong>{books_str}</strong>.</p>",
+            "IT": f"<p>Inoltre, hai acquistato libro/i: <strong>{books_str}</strong>.</p>",
+        }.get(region.upper(), f"<p>Additionally, you purchased book(s): <strong>{books_str}</strong>.</p>")
+        body_html += books_block
 
     body_html += f"""
         <p>{locale["prompt"]}</p>

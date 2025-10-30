@@ -686,12 +686,24 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         )
 
     if (new_full + new_partial):
+        # Собираем названия книг для письма: из новых книжных выдач + прямых покупок
+        book_titles: list[str] = [b.title for b in new_books]
+        try:
+            if purchased_book_ids:
+                extra_books = db.query(Book).filter(Book.id.in_(list(purchased_book_ids))).all()
+                for b in extra_books:
+                    if b.title not in book_titles:
+                        book_titles.append(b.title)
+        except Exception:
+            logging.exception("Failed to collect book titles for email")
+
         send_successful_purchase_email(
             recipient_email=email,
             course_names=[c.name for c in (new_full + new_partial)],
             new_account=new_user_created,
             password=random_pass if new_user_created else None,
             region=region,
+            book_titles=book_titles or None,
         )
 
     logging.info("Обработка завершена успешно (session=%s)", session_id)

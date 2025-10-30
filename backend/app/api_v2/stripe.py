@@ -12,7 +12,7 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding
+from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding, Book
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user, add_book_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender.common import send_successful_purchase_email
@@ -173,11 +173,26 @@ def stripe_checkout(
             db.refresh(current_user)
 
             # ---- 3. письмо и ответ фронту ---------------------------------
+            # Соберём названия книг: из книжных лендингов и прямых book_ids
+            book_titles: list[str] = []
+            if data.book_landing_ids:
+                bl_list = db.query(BookLanding).filter(BookLanding.id.in_(data.book_landing_ids)).all()
+                for bl in bl_list:
+                    for b in (bl.books or []):
+                        if b.title not in book_titles:
+                            book_titles.append(b.title)
+            if data.book_ids:
+                direct_books = db.query(Book).filter(Book.id.in_(list(dict.fromkeys(data.book_ids)))).all()
+                for b in direct_books:
+                    if b.title not in book_titles:
+                        book_titles.append(b.title)
+
             send_successful_purchase_email(
                 recipient_email=current_user.email,
                 course_names=[c.name for c in courses],
                 new_account=False,
                 region=data.region,
+                book_titles=book_titles or None,
             )
             return {
                 "checkout_url": None,
