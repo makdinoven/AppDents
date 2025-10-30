@@ -70,7 +70,9 @@ def stripe_checkout(
     if data.use_balance and current_user is None:
         raise HTTPException(400, "use_balance=true доступно только авторизованным")
 
-    if data.transfer_cart and not data.cart_landing_ids:
+    # Если флаг transfer_cart=true, допускаем пустой список cart_landing_ids (ничего переносить)
+    # Ошибку отдаём только когда параметр вовсе не передан (None)
+    if data.transfer_cart and data.cart_landing_ids is None:
         raise HTTPException(400, "cart_landing_ids required when transfer_cart=true")
 
     unique_course_ids = list(dict.fromkeys(data.course_ids))

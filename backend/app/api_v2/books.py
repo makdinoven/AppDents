@@ -67,7 +67,7 @@ router = APIRouter()
 
 def preview_pdf_url_for_book(book_or_slug) -> str:
     book_id = book_or_slug.id if hasattr(book_or_slug, "id") else str(book_or_slug)
-    return f"{S3_PUBLIC_HOST}/books/{book_id}/preview/preview_15p.pdf"
+    return f"{S3_PUBLIC_HOST}/books/{book_id}/preview/preview_20p.pdf"
 
 def _unique_landing_name(db: Session, desired: str | None) -> str:
     base = (desired or "Book landing").strip()
