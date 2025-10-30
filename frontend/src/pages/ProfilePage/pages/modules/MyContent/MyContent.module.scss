@@ -7,13 +7,16 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+
+  &.no_items {
+    grid-template-columns: 1fr;
+  }
 }
 
 .no_content {
   @include flex-center;
   @include clamped-p2;
-  max-width: 90%;
-  position: absolute;
+  max-width: 100%;
   display: block;
 }
 
@@ -32,6 +35,10 @@
 @media (max-width: $middle-breakpoint) {
   .content_list {
     grid-template-columns: 1fr 1fr;
+
+    &.no_items {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
@@ -48,6 +55,10 @@
     &.book {
       display: grid;
       grid-template-columns: 1fr 1fr;
+    }
+
+    &.no_items {
+      grid-template-columns: 1fr;
     }
   }
 }
