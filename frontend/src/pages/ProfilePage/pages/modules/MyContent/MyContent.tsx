@@ -30,9 +30,7 @@ const MyContent = ({
       {loading ? (
         <CourseCardSkeletons amount={6} columns={3} />
       ) : (
-        <ul
-          className={`${s.content_list} ${type === "book" ? s.book : ""} ${items.length <= 0 && s.no_items}`}
-        >
+        <ul className={`${s.content_list} ${type === "book" ? s.book : ""}`}>
           {items.length > 0 ? (
             items.map((item: any, index: number) => (
               <ProfileEntityCard

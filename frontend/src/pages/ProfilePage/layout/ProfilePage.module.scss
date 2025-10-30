@@ -3,7 +3,7 @@
   align-self: flex-end;
 }
 
-.profile_page {
+.profile_page_wrapper {
   margin-bottom: 140px;
 }
 
@@ -54,7 +54,7 @@
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .profile_page {
+  .profile_page_wrapper {
     margin-bottom: 80px;
   }
 
@@ -69,10 +69,9 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .profile_page {
+  .profile_page_wrapper {
     margin-bottom: 60px;
   }
-
   .back_btn_tabs_container {
     margin-bottom: 20px;
   }
