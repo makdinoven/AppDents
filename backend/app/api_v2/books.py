@@ -412,7 +412,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
             selectinload(BookLanding.books).selectinload(Book.tags),
             selectinload(BookLanding.books).selectinload(Book.publishers),
         )
-        .filter(BookLanding.page_name == page_name, BookLanding.is_hidden.is_(False))
+        .filter(BookLanding.page_name == page_name)
         .first()
     )
     if not landing:

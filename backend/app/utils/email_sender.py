@@ -1387,14 +1387,37 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
     msg.attach(MIMEText(body_html, "html", "utf-8"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
+        if smtp_port == 465:
+            # SMTPS: НИКАКОГО starttls() здесь
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                # логин пропускаем, если пустые креды (у тебя так)
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission: STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25: как правило, без TLS и без логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
     except Exception as e:
-        print("Error sending recovery email:", e)
+        # Замени на нормальный logger, если есть
+        print("SMTP error:", repr(e))
+        return False
 
 
 def send_successful_purchase_email(
@@ -1595,14 +1618,37 @@ def send_successful_purchase_email(
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
+        if smtp_port == 465:
+            # SMTPS: НИКАКОГО starttls() здесь
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                # логин пропускаем, если пустые креды (у тебя так)
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission: STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25: как правило, без TLS и без логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
     except Exception as e:
-        print("Error sending purchase confirmation email:", e)
+        # Замени на нормальный logger, если есть
+        print("SMTP error:", repr(e))
+        return False
 
 def send_failed_purchase_email(
     recipient_email: str,
@@ -1746,14 +1792,37 @@ def send_failed_purchase_email(
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
+        if smtp_port == 465:
+            # SMTPS: НИКАКОГО starttls() здесь
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                # логин пропускаем, если пустые креды (у тебя так)
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission: STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25: как правило, без TLS и без логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
     except Exception as e:
-        print("Error sending payment failed email:", e)
+        # Замени на нормальный logger, если есть
+        print("SMTP error:", repr(e))
+        return False
 
 def send_already_owned_course_email(
     recipient_email: str,
@@ -1881,14 +1950,37 @@ def send_already_owned_course_email(
     msg.attach(MIMEText(body_html, "html"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
+        if smtp_port == 465:
+            # SMTPS: НИКАКОГО starttls() здесь
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                # логин пропускаем, если пустые креды (у тебя так)
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission: STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25: как правило, без TLS и без логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
     except Exception as e:
-        print(f"Error sending already-owned-course email: {e}")
+        # Замени на нормальный logger, если есть
+        print("SMTP error:", repr(e))
+        return False
 
 # --------------------------------------------------------------------------
 #  MARKETING LETTER FOR ABANDONED CHECKOUT
@@ -2111,15 +2203,37 @@ def send_abandoned_checkout_email(
     msg.attach(MIMEText(body_html, "html", "utf-8"))
 
     try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            if smtp_port != 25:
-                server.starttls()
-            if smtp_username and smtp_password:
-                server.login(smtp_username, smtp_password)
-            server.sendmail(sender_email, recipient_email, msg.as_string())
-            logging.info("Abandoned-checkout e-mail sent to %s", recipient_email)
-    except Exception as exc:
-        logging.error("SMTP error while sending to %s: %s", recipient_email, exc)
+        if smtp_port == 465:
+            # SMTPS: НИКАКОГО starttls() здесь
+            with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=15, context=ctx) as s:
+                # логин пропускаем, если пустые креды (у тебя так)
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        elif smtp_port == 587:
+            # Submission: STARTTLS обязателен
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                s.ehlo()
+                s.starttls(context=ctx)
+                s.ehlo()
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        else:
+            # 25: как правило, без TLS и без логина (локальный relay)
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as s:
+                if smtp_username and smtp_password:
+                    s.login(smtp_username, smtp_password)
+                s.sendmail(sender_email, [recipient_email], msg.as_string())
+
+        return True
+
+    except Exception as e:
+        # Замени на нормальный logger, если есть
+        print("SMTP error:", repr(e))
+        return False
 
 
 
