@@ -261,6 +261,7 @@ const BookDetail = () => {
               <BookUploader
                 itemId={book.id}
                 files={book.files}
+                setBook={setBook}
                 getCovers={handleGetBookCoverCandidates}
               />
 
