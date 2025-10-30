@@ -123,18 +123,39 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         logger.info(f"Placid payload image/media URLs: {image_layers}")
     
     try:
-        r = requests.post(
-            f"{settings.PLACID_BASE_URL}/images",
-            headers={
-                "Authorization": f"Bearer {settings.PLACID_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            data=json.dumps(payload),
-            timeout=90,
-        )
-        if r.status_code >= 300:
-            logger.error(f"Placid API error {r.status_code}: {r.text[:500]}")
-            return "", f"placid {r.status_code}: {r.text[:500]}"
+        # Ретраи на 5xx/таймауты для POST /images (например, 524 от CDN)
+        post_max_attempts = 5
+        post_interval_sec = 2
+        r = None
+        for post_attempt in range(1, post_max_attempts + 1):
+            try:
+                r = requests.post(
+                    f"{settings.PLACID_BASE_URL}/images",
+                    headers={
+                        "Authorization": f"Bearer {settings.PLACID_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    data=json.dumps(payload),
+                    timeout=90,
+                )
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Placid API /images request failed on attempt {post_attempt}: {e}")
+                if post_attempt == post_max_attempts:
+                    return "", f"placid request error: {str(e)}"
+                time.sleep(post_interval_sec)
+                continue
+
+            if r.status_code >= 500:
+                logger.warning(f"Placid API /images returned {r.status_code} on attempt {post_attempt}")
+                if post_attempt == post_max_attempts:
+                    logger.error(f"Placid API error {r.status_code}: {r.text[:500]}")
+                    return "", f"placid {r.status_code}: {r.text[:500]}"
+                time.sleep(post_interval_sec)
+                continue
+            if r.status_code >= 400:
+                logger.error(f"Placid API error {r.status_code}: {r.text[:500]}")
+                return "", f"placid {r.status_code}: {r.text[:500]}"
+            break
         try:
             data = r.json()
         except (ValueError, json.JSONDecodeError) as e:
@@ -399,13 +420,28 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
 
 
 def _download_bytes(url: str) -> bytes:
-    try:
-        r = requests.get(url, timeout=120)
-        r.raise_for_status()
-        return r.content
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Failed to download image from {url}: {e}")
-        raise RuntimeError(f"Failed to download image: {str(e)}")
+    # Часто URL становится доступен не сразу — делаем ретраи
+    max_attempts = 10
+    interval_sec = 1
+    last_err: Optional[Exception] = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            r = requests.get(url, timeout=120)
+            if r.status_code >= 500:
+                logger.warning(f"Download {url} returned {r.status_code} on attempt {attempt}")
+                last_err = RuntimeError(f"server error {r.status_code}")
+            elif r.status_code >= 400:
+                # Для 4xx тоже попробуем несколько раз — ресурс может ещё не прогрессировал у CDN
+                logger.warning(f"Download {url} returned {r.status_code} on attempt {attempt}")
+                last_err = RuntimeError(f"client error {r.status_code}")
+            else:
+                return r.content
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Download {url} failed on attempt {attempt}: {e}")
+            last_err = e
+        time.sleep(interval_sec)
+    logger.error(f"Failed to download image from {url} after {max_attempts} attempts: {last_err}")
+    raise RuntimeError(f"Failed to download image: {str(last_err) if last_err else 'unknown error'}")
 
 
 def _upload_image_to_placid(image_url: str) -> Optional[Dict[str, str]]:
