@@ -130,7 +130,7 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                 "Content-Type": "application/json",
             },
             data=json.dumps(payload),
-            timeout=30,
+            timeout=90,
         )
         if r.status_code >= 300:
             logger.error(f"Placid API error {r.status_code}: {r.text[:500]}")
@@ -198,7 +198,7 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                         poll_r = requests.get(
                             polling_url,
                             headers={"Authorization": f"Bearer {settings.PLACID_API_KEY}"},
-                            timeout=10,
+                            timeout=30,
                         )
                         if poll_r.status_code < 300:
                             poll_data = poll_r.json()
@@ -215,8 +215,8 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
         # Если в очереди или обрабатывается - делаем polling
         if status in ("queued", "processing") and polling_url:
             logger.info(f"Placid image {image_id} is {status}, polling for completion...")
-            max_attempts = 60  # максимум 60 попыток
-            poll_interval = 2   # каждые 2 секунды (итого до 2 минут)
+            max_attempts = 120  # максимум 120 попыток
+            poll_interval = 2   # каждые 2 секунды (итого до ~4 минут)
             
             for attempt in range(1, max_attempts + 1):
                 time.sleep(poll_interval)
@@ -224,7 +224,7 @@ def _placid_render(payload: Dict[str, Any]) -> Tuple[str, Optional[str]]:
                     poll_r = requests.get(
                         polling_url,
                         headers={"Authorization": f"Bearer {settings.PLACID_API_KEY}"},
-                        timeout=10,
+                        timeout=30,
                     )
                     if poll_r.status_code >= 300:
                         logger.warning(f"Placid polling error {poll_r.status_code} on attempt {attempt}")
@@ -358,7 +358,7 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         r = requests.post(
             url,
             json={"s3_url": s3_url, "language": language},
-            timeout=30,
+            timeout=90,
         )
         if r.status_code == 400:
             raise BookAIValidationError("bookai validation error (400)")
@@ -400,7 +400,7 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
 
 def _download_bytes(url: str) -> bytes:
     try:
-        r = requests.get(url, timeout=60)
+        r = requests.get(url, timeout=120)
         r.raise_for_status()
         return r.content
     except requests.exceptions.RequestException as e:
@@ -443,7 +443,7 @@ def _upload_image_to_placid(image_url: str) -> Optional[Dict[str, str]]:
                 "Authorization": f"Bearer {settings.PLACID_API_KEY}",
             },
             files=files,
-            timeout=60,
+            timeout=120,
         )
         
         logger.info(f"Placid Media API response status: {r.status_code}")
@@ -583,10 +583,6 @@ def generate_creative_v1(
             except Exception:
                 price_old = str(ov.get("price_old"))
 
-        if texts is None:
-            logger.info(f"Generating texts for creative v1, book_id={book.id}, language={language}")
-            texts = _bookai_texts(db, book.id, language, version=1)
-
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
         cover_url = ov.get("cover_url", book.cover_url)
@@ -601,6 +597,11 @@ def generate_creative_v1(
         logger.info(f"Placid media URL for creative v1: {placid_media_url[:100]}...")
         
         layers_override = ov.get("layers") if ov else None
+
+        # Если не переданы слои, но нужны тексты — генерируем их через BookAI
+        if texts is None and not (layers_override and isinstance(layers_override, dict)):
+            logger.info(f"Generating texts for creative v1, book_id={book.id}, language={language}")
+            texts = _bookai_texts(db, book.id, language, version=1)
 
         if layers_override and isinstance(layers_override, dict):
             payload = {"template_uuid": PLACID_TPL_V1, "layers": layers_override}
@@ -685,10 +686,6 @@ def generate_creative_v2(
             except Exception:
                 price_old = str(ov.get("price_old"))
 
-        if texts is None:
-            logger.info(f"Generating texts for creative v2, book_id={book.id}, language={language}")
-            texts = _bookai_texts(db, book.id, language, version=2)
-
         # Позволяем переопределить титул/обложку/слои
         title = ov.get("title", book.title)
         cover_url = ov.get("cover_url", book.cover_url)
@@ -703,6 +700,11 @@ def generate_creative_v2(
         logger.info(f"Placid media URL for creative v2: {placid_media_url[:100]}...")
         
         layers_override = ov.get("layers") if ov else None
+
+        # Если не переданы слои, но нужны тексты — генерируем их через BookAI
+        if texts is None and not (layers_override and isinstance(layers_override, dict)):
+            logger.info(f"Generating texts for creative v2, book_id={book.id}, language={language}")
+            texts = _bookai_texts(db, book.id, language, version=2)
 
         if layers_override and isinstance(layers_override, dict):
             payload = {"template_uuid": PLACID_TPL_V2, "layers": layers_override}
