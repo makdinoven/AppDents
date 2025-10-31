@@ -113,18 +113,8 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
     if not pdf:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "No source PDF for the book")
 
-    src_key = _key_from_url(pdf.s3_url)
-    prev_key = _preview_key_from_src(src_key, 20)
-    preview_pdf_url = _cdn_url_for_key(prev_key)
-
-    # Проверяем доступность превью 20p, иначе fallback на исходный PDF (подпись/прямая ссылка)
-    try:
-        head = requests.head(preview_pdf_url, timeout=5, allow_redirects=True)
-        if head.status_code != 200:
-            raise RuntimeError("not ready")
-    except Exception:
-        # Fallback: используем исходный PDF URL (как есть)
-        preview_pdf_url = pdf.s3_url
+    # Отправляем в BookAI ПОЛНУЮ версию PDF из BookFiles
+    process_pdf_url = pdf.s3_url
 
     # Надёжный запуск процесса с ретраями на 5xx/таймауты (например, 524 от CDN)
     r = None
@@ -134,7 +124,7 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
         try:
             r = requests.post(
                 f"{settings.BOOKAI_BASE_URL}/process",
-                json={"s3_url": preview_pdf_url, "language": language, "book_id": book_id},
+                json={"s3_url": process_pdf_url, "language": language, "book_id": book_id},
                 timeout=60,
             )
         except requests.exceptions.RequestException as e:
