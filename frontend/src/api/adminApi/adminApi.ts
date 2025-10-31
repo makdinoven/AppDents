@@ -165,6 +165,16 @@ export const adminApi = {
     });
   },
 
+  generateBookCoverCandidates(id: any) {
+    return instance.post(
+      `book_admin/admin/books/${id}/generate-cover-candidates`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+
   finalizeBookUploading(id: any, data: { key: string }) {
     return instance.post(
       `book_admin/admin/books/${id}/upload-pdf-finalize`,
@@ -176,13 +186,13 @@ export const adminApi = {
   },
 
   getBookPreviewStatus(id: any) {
-    return instance.get(`book_admin/${id}/format-status`, {
+    return instance.get(`book_admin/${id}/preview-status`, {
       headers: getAuthHeaders(),
     });
   },
 
   getBookFormatStatus(id: any) {
-    return instance.get(`book_admin/${id}/preview-status`, {
+    return instance.get(`book_admin/${id}/format-status`, {
       headers: getAuthHeaders(),
     });
   },
