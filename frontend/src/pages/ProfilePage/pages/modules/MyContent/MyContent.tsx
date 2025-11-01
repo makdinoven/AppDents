@@ -29,47 +29,43 @@ const MyContent = ({
       />
       {loading ? (
         <CourseCardSkeletons amount={6} columns={3} />
-      ) : (
-        <ul
-          className={`${s.content_list} ${type === "book" ? s.book : ""} ${items.length === 0 && s.no_items}`}
-        >
-          {items.length > 0 ? (
-            items.map((item: any, index: number) => (
-              <ProfileEntityCard
-                index={index}
-                isPartial={type === "course" && item.access_level === "partial"}
-                isOffer={
-                  type === "course" && item.access_level === "special_offer"
-                }
-                viewText={type === "course" ? "viewCourse" : "viewBook"}
-                key={`${type}-${item.id}`}
-                name={item.name || item.title}
-                previewPhoto={item.preview || item.cover_url}
-                link={`${type === "course" ? Path.myCourse : Path.myBook}/${item.id}`}
-                expires_at={item.expires_at && item.expires_at}
-                type={type}
-              />
-            ))
-          ) : (
-            <p className={s.no_content}>
-              <Trans
-                i18nKey={
-                  type === "course" ? "profile.noCourses" : "profile.noBooks"
-                }
-                components={{
-                  1: (
-                    <span
-                      onClick={() =>
-                        navigate(type === "course" ? Path.courses : Path.books)
-                      }
-                      className={`${s.highlight}`}
-                    />
-                  ),
-                }}
-              />
-            </p>
-          )}
+      ) : items.length > 0 ? (
+        <ul className={`${s.content_list} ${type === "book" ? s.book : ""}`}>
+          {items.map((item: any, index: number) => (
+            <ProfileEntityCard
+              key={`${type}-${item.id}`}
+              index={index}
+              isPartial={type === "course" && item.access_level === "partial"}
+              isOffer={
+                type === "course" && item.access_level === "special_offer"
+              }
+              viewText={type === "course" ? "viewCourse" : "viewBook"}
+              name={item.name || item.title}
+              previewPhoto={item.preview || item.cover_url}
+              link={`${type === "course" ? Path.myCourse : Path.myBook}/${item.id}`}
+              expires_at={item.expires_at && item.expires_at}
+              type={type}
+            />
+          ))}
         </ul>
+      ) : (
+        <p className={s.no_content}>
+          <Trans
+            i18nKey={
+              type === "course" ? "profile.noCourses" : "profile.noBooks"
+            }
+            components={{
+              1: (
+                <span
+                  onClick={() =>
+                    navigate(type === "course" ? Path.courses : Path.books)
+                  }
+                  className={s.highlight}
+                />
+              ),
+            }}
+          />
+        </p>
       )}
     </section>
   );

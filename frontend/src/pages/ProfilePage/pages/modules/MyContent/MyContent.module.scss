@@ -7,17 +7,14 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-
-  &.no_items {
-    grid-template-columns: 1fr;
-  }
 }
 
 .no_content {
   @include flex-center;
   @include clamped-p2;
-  max-width: 100%;
+  flex: 1;
   display: block;
+  margin-left: 20px;
 }
 
 .highlight {
@@ -35,16 +32,16 @@
 @media (max-width: $middle-breakpoint) {
   .content_list {
     grid-template-columns: 1fr 1fr;
-
-    &.no_items {
-      grid-template-columns: 1fr;
-    }
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .content {
-    gap: 20px;
+    gap: 10px;
+  }
+
+  .no_content {
+    margin-left: 10px;
   }
 
   .content_list {
@@ -55,10 +52,6 @@
     &.book {
       display: grid;
       grid-template-columns: 1fr 1fr;
-    }
-
-    &.no_items {
-      grid-template-columns: 1fr;
     }
   }
 }

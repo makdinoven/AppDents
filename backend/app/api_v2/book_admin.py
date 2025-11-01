@@ -80,7 +80,17 @@ def upload_pdf_and_generate(
         tmp_path = tmp.name
 
     key = _pdf_key(book)
-    s3.upload_file(tmp_path, S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "application/pdf"})
+    s3.upload_file(
+        tmp_path,
+        S3_BUCKET,
+        key,
+        ExtraArgs={
+            "ACL": "public-read",
+            "ContentType": "application/pdf",
+            "CacheControl": "public, max-age=14400, immutable, no-transform",
+            "ContentDisposition": "inline",
+        },
+    )
     os.unlink(tmp_path)
     cdn_url = _cdn_url(key)
 
@@ -493,6 +503,30 @@ def select_cover(
     return {"message": "Cover updated", "book_id": book.id, "cover_url": book.cover_url}
 
 
+@router.post("/admin/books/{book_id}/generate-cover-candidates", summary="Сгенерировать кандидаты обложки (первые страницы в JPEG)")
+def start_cover_candidates(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    book = db.query(Book).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Очистим старые кандидаты и подготовим статус
+    job = rds.hgetall(cover_k_job(book_id)) or {}
+    count = int(job.get("candidates_count") or 0)
+    for i in range(1, count + 1):
+        rds.delete(cover_k_cand(book_id, i))
+    rds.hset(cover_k_job(book_id), mapping={
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+    })
+    rds.delete(cover_k_log(book_id))
+
+    celery.send_task("app.tasks.book_covers.generate_cover_candidates", args=[book.id], queue="book")
+    return {"message": "Cover candidates generation started", "book_id": book.id}
+
 @router.post("/book-landings/{landing_id}/generate-previews", summary="Сгенерировать превью для всех книг лендинга")
 def start_landing_previews(
     landing_id: int,
@@ -640,14 +674,11 @@ def finalize_pdf_upload(
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
 
-    # 4) Ставим Celery-таски (queue="special" как в конфиге)
-    celery.send_task("app.tasks.book_covers.generate_cover_candidates",
-                     args=[book.id], queue="book")
+    # 4) Ставим Celery-таски превью и форматов (обложки выносятся отдельным роутом)
     celery.send_task("app.tasks.book_previews.generate_book_preview",
                      args=[book.id], queue="book")
     celery.send_task("app.tasks.book_formats.generate_book_formats",
                      args=[book.id], queue="book")
-    # Запускаем генерацию кандидатов обложек (первые 3 страницы в JPEG)
 
 
     log.info("[BOOK][FINALIZE] book_id=%s key=%s size=%sB → tasks queued", book.id, key, size_bytes)
@@ -658,8 +689,7 @@ def finalize_pdf_upload(
         "size_bytes": size_bytes,
         "tasks": {
             "preview": "queued",
-            "formats": "queued",
-            "cover_candidates": "queued",
+            "formats": "queued"
         }
     }
 

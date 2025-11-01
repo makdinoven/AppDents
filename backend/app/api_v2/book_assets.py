@@ -8,13 +8,33 @@ import logging
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
 from .users import get_current_user
 from ..models.models_v2 import User, Book, BookAudio, BookFileFormat
 from ..utils.s3 import generate_presigned_url
+from urllib.parse import urlparse, unquote
+
+# S3 client для стриминга
+import os
+import boto3
+from botocore.config import Config
+
+S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
+S3_REGION      = os.getenv("S3_REGION", "ru-1")
+
+s3_client = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -37,6 +57,15 @@ def _sign(url: Optional[str]) -> Optional[str]:
     if not url:
         return None
     return generate_presigned_url(url, expires=timedelta(hours=24))
+
+
+def _s3_key_from_url(url: str) -> str:
+    """Извлекает ключ объекта из публичного/прямого URL."""
+    p = urlparse(url)
+    path = unquote(p.path.lstrip("/"))
+    if path.startswith(f"{S3_BUCKET}/"):
+        return path[len(S3_BUCKET) + 1 :]
+    return path
 
 
 # ── API ─────────────────────────────────────────────────────────────────────
@@ -150,3 +179,74 @@ def download_book_audio(
         raise HTTPException(status_code=403, detail="No access to this audio")
 
     return {"url": _sign(audio.s3_url)}
+
+
+@router.get("/{book_id}/pdf", summary="Потоковая раздача PDF с поддержкой Range (для владельцев)")
+def stream_book_pdf(
+    book_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
+    Доступно владельцам книги и администраторам.
+    """
+
+    book = (
+        db.query(Book)
+          .options(selectinload(Book.files))
+          .get(book_id)
+    )
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # ищем PDF
+    pdf_file = next((f for f in (book.files or []) if f.file_format == BookFileFormat.PDF), None)
+    if not pdf_file or not pdf_file.s3_url:
+        raise HTTPException(status_code=404, detail="PDF not found")
+
+    key = _s3_key_from_url(pdf_file.s3_url)
+
+    range_header = request.headers.get("range") or request.headers.get("Range")
+    get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
+    if range_header:
+        get_kwargs["Range"] = range_header
+
+    try:
+        obj = s3_client.get_object(**get_kwargs)
+    except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=404, detail="PDF not found")
+    except Exception as e:
+        logger.error("S3 get_object error: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch PDF")
+
+    body = obj["Body"]
+    content_type = obj.get("ContentType") or "application/pdf"
+    content_length = obj.get("ContentLength")
+    content_range = obj.get("ContentRange")
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": content_type,
+        "Content-Disposition": "inline",
+    }
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+    if content_range:
+        headers["Content-Range"] = content_range
+
+    status_code = 206 if content_range else 200
+
+    # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
+    iterator = getattr(body, "iter_chunks", None)
+    if callable(iterator):
+        stream_iter = body.iter_chunks()
+    else:
+        stream_iter = iter(lambda: body.read(8192), b"")
+
+    return StreamingResponse(
+        stream_iter,
+        status_code=status_code,
+        headers=headers,
+        media_type=content_type,
+    )

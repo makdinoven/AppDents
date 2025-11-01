@@ -18,13 +18,6 @@ import BookMetadataSelector from "./modules/BookMetadataSelector/BookMetadataSel
 import BookUploader from "./modules/BookUploader/BookUploader.tsx";
 import BookCreatives from "./modules/BookCreatives/BookCreatives.tsx";
 
-export type CoverCandidate = {
-  id: number;
-  blob: Blob;
-  url: string;
-  formData: FormData;
-};
-
 const BookDetail = () => {
   const navigate = useNavigate();
   const { bookId } = useParams();
@@ -33,7 +26,6 @@ const BookDetail = () => {
   const [tags, setTags] = useState<any>([]);
   const [publishers, setPublishers] = useState<any>(null);
   const [authors, setAuthors] = useState<any>([]);
-  const [coverCandidates, setCoverCandidates] = useState<CoverCandidate[]>([]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -97,56 +89,6 @@ const BookDetail = () => {
       navigate(-1);
     } catch (error) {
       Alert(`Error deleting book: ${error}`, <ErrorIcon />);
-    }
-  };
-
-  const handleGetBookCoverCandidates = async () => {
-    try {
-      const fetchWithRetry = async (
-        bookId: string,
-        index: number,
-        retries = 5,
-      ): Promise<Blob> => {
-        for (let attempt = 1; attempt <= retries; attempt++) {
-          try {
-            const res = await adminApi.getBookCoverCandidate(bookId, index);
-            return res.data;
-          } catch (err: any) {
-            if (err?.response?.status === 404 && attempt < retries) {
-              console.warn(
-                `Attempt ${attempt} for candidate ${index} failed with 404, retrying...`,
-              );
-              await new Promise((r) => setTimeout(r, 500));
-              continue;
-            }
-            throw err;
-          }
-        }
-        throw new Error(
-          `Failed to fetch candidate ${index} after ${retries} retries`,
-        );
-      };
-
-      const requests = [1, 2, 3].map((i) => fetchWithRetry(bookId!, i));
-      const blobs = await Promise.all(requests);
-
-      const candidates = blobs.map((blob, i) => {
-        const formData = new FormData();
-        formData.append("file", blob);
-        formData.append("entity_type", "book_cover");
-        formData.append("entity_id", String(bookId));
-
-        return {
-          id: i,
-          blob,
-          url: URL.createObjectURL(blob),
-          formData,
-        };
-      });
-
-      setCoverCandidates(candidates);
-    } catch (error) {
-      Alert(`Error getting candidates after retries: ${error}`, <ErrorIcon />);
     }
   };
 
@@ -252,27 +194,19 @@ const BookDetail = () => {
                 )}
               </div>
 
-              {book.files.length > 0 && (
-                <>
-                  <BookMetadataSelector book={book} fetchData={fetchAllData} />
-                </>
-              )}
-
               <BookUploader
                 itemId={book.id}
                 files={book.files}
                 setBook={setBook}
-                getCovers={handleGetBookCoverCandidates}
               />
 
-              {coverCandidates.length > 0 && (
-                <CoverCandidatesSelector
-                  setCoverCandidates={setCoverCandidates}
-                  coverCandidates={coverCandidates}
-                  book={book}
-                  setBook={setBook}
-                />
+              {book.files.length > 0 && (
+                <div className={s.two_items}>
+                  <BookMetadataSelector book={book} fetchData={fetchAllData} />
+                  <CoverCandidatesSelector book={book} setBook={setBook} />
+                </div>
               )}
+
               <PhotoUploader
                 onUpload={handleUploadPhoto}
                 url={book.cover_url}

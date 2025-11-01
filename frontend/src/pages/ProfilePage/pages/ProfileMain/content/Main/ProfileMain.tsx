@@ -17,14 +17,15 @@ import ModalWrapper from "../../../../../../components/Modals/ModalWrapper/Modal
 import ResetPasswordModal from "../../../../../../components/Modals/ResetPasswordModal.tsx";
 import { Path } from "../../../../../../routes/routes.ts";
 import {
-  getCourses,
   getBooks,
+  getCourses,
   logoutAsync,
 } from "../../../../../../store/actions/userActions.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
 import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
 import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import MyContent from "../../../modules/MyContent/MyContent.tsx";
+import { logout } from "../../../../../../store/slices/userSlice.ts";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -41,9 +42,10 @@ const ProfileMain = () => {
     if (!books.length) dispatch(getBooks());
   }, []);
 
-  const handleLogout = () => {
-    dispatch(logoutAsync());
+  const handleLogout = async () => {
+    await dispatch(logoutAsync());
     dispatch(clearCart());
+    dispatch(logout());
     setTimeout(() => {
       navigate(Path.main);
     }, 0);

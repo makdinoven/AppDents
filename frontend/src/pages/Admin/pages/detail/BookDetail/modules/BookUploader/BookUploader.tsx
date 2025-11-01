@@ -11,11 +11,9 @@ type JobStatus = "pending" | "running" | "success" | "failed" | "skipped";
 const BookUploader = ({
   itemId,
   files,
-  getCovers,
   setBook,
 }: {
   itemId: number;
-  getCovers: () => void;
   setBook: (book: any) => void;
   files: {
     file_format: "PDF" | "EPUB" | "MOBI" | "AZW3" | "FB2";
@@ -43,7 +41,8 @@ const BookUploader = ({
   const loadPdf = async (file: File) => {
     try {
       setLoading(true);
-
+      setFormatStatus(null);
+      setPreviewStatus(null);
       const data = {
         filename: file.name,
         content_type: "application/pdf",
@@ -70,6 +69,17 @@ const BookUploader = ({
       }
 
       const finalizeRes = await adminApi.finalizeBookUploading(itemId, { key });
+      setBook((prev: any) => ({
+        ...prev,
+        files: [
+          {
+            file_format: "PDF",
+            size_bytes: finalizeRes.data.size_bytes,
+            s3_url: finalizeRes.data.pdf_cdn_url,
+          },
+        ],
+      }));
+
       fetchStatuses();
       fetchPreviews();
       setBookUrl(finalizeRes.data.pdf_cdn_url);
@@ -91,14 +101,41 @@ const BookUploader = ({
 
   const fetchPreviews = async () => {
     try {
-      if (previewStatus == "success") {
-        getCovers();
-        return;
-      }
       const preview = await adminApi.getBookPreviewStatus(itemId);
       setPreviewStatus(preview.data.job.status as JobStatus);
     } catch (e) {
       console.error("Error fetching previews", e);
+    }
+  };
+
+  const updateBookWithFormats = async () => {
+    try {
+      const res = await adminApi.getBookFormatStatus(itemId);
+      const formats = res.data?.formats ?? {};
+      const newFiles = Object.entries(formats)
+        .filter(
+          ([fmt, v]: any) => fmt !== "PDF" && v?.status === "success" && v?.url,
+        )
+        .map(([fmt, v]: any) => ({
+          file_format: fmt as "EPUB" | "MOBI" | "AZW3" | "FB2",
+          size_bytes: Number(v.size) || 0,
+          s3_url: v.url as string,
+        }));
+      if (newFiles.length) {
+        setBook((prev: any) => {
+          const existingPdf = (prev.files ?? []).find(
+            (f: any) => f.file_format === "PDF",
+          );
+
+          const mergedFiles = existingPdf
+            ? [existingPdf, ...newFiles]
+            : newFiles;
+
+          return { ...prev, files: mergedFiles };
+        });
+      }
+    } catch (e) {
+      console.error("Error updating book formats:", e);
     }
   };
 
@@ -107,8 +144,9 @@ const BookUploader = ({
       !previewStatus ||
       previewStatus === "success" ||
       previewStatus === "failed"
-    )
+    ) {
       return;
+    }
     const interval = setInterval(fetchPreviews, 3000);
     return () => clearInterval(interval);
   }, [previewStatus]);
@@ -119,14 +157,16 @@ const BookUploader = ({
       formatStatus === "success" ||
       formatStatus === "failed"
     ) {
-      if (formatStatus === "success") {
-        // setBook(...prev, {})
-      }
       return;
     }
     const interval = setInterval(fetchStatuses, 3000);
     return () => clearInterval(interval);
   }, [formatStatus]);
+
+  useEffect(() => {
+    if (formatStatus !== "success") return;
+    updateBookWithFormats();
+  }, [formatStatus, itemId, setBook]);
 
   return (
     <div className={s.pdf_uploader_container}>
