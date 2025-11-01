@@ -94,6 +94,12 @@
     align-items: center;
   }
 
+  .instant_access {
+    @include clamped-p1;
+    color: $secondary;
+    text-align: center;
+  }
+
   .card_bottom_content {
     display: flex;
     gap: 20px;

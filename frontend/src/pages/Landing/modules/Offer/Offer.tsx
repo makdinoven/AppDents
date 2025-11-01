@@ -1,7 +1,6 @@
 import s from "./Offer.module.scss";
-import { CircleArrow } from "../../../../assets/icons";
+import { CircleArrow, Clock } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
-import { Clock } from "../../../../assets/icons";
 
 const Offer = ({
   data: { landing_name, authors, renderBuyButton, isWebinar },
@@ -38,10 +37,12 @@ const Offer = ({
                       ? "landing.accessFullWebinar"
                       : "landing.accessFull"
                   }
-                ></Trans>
+                />
               </p>
             </div>
-
+            <p className={s.instant_access}>
+              <Trans i18nKey={"landing.instantAccess"} />
+            </p>
             {renderBuyButton}
           </div>
         </div>
