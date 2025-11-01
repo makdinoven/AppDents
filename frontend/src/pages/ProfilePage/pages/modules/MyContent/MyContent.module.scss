@@ -12,7 +12,7 @@
 .no_content {
   @include flex-center;
   @include clamped-p2;
-  width: 100%;
+  flex: 1;
   display: block;
   margin-left: 20px;
 }
