@@ -47,9 +47,7 @@ const ProfilePage = () => {
           </NavLink>
         </div>
       </div>
-      <div className={s.profile_page}>
-        <Outlet />
-      </div>
+      <Outlet />
     </>
   );
 };

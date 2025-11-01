@@ -287,7 +287,7 @@ const PdfReader = ({
           {screenWidth > screenResolutionMap.get("mobile")!.width &&
             renderNextPrevButtons}
           <button className={s.expand_button} onClick={handleCloseFullScreen}>
-            {fromProfile ? <MaximizeIcon /> : <ModalClose />}
+            <ModalClose />
           </button>
         </div>
       </>,
@@ -326,7 +326,7 @@ const PdfReader = ({
 
   return (
     <div
-      className={`${s.pdf_reader} ${fullScreen ? s.full_screen : ""} ${fromProfile ? s.from_profile : ""}`}
+      className={`${s.pdf_reader} ${fromProfile ? s.from_profile : ""} ${fullScreen ? s.full_screen : ""} `}
       onClick={handleOverlayClick}
     >
       <div className={s.header}>{headerContent.get(fullScreen)}</div>
