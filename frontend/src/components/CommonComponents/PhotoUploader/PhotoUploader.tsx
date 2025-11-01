@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../assets/icons";
+import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const PhotoUploader = ({
   id,
@@ -11,19 +12,25 @@ const PhotoUploader = ({
   label,
   url,
   onUpload,
-  type = "default",
-  dataId,
+  entityType,
+  entityId,
 }: {
-  type?: "default" | "book";
+  entityType:
+    | "book_cover"
+    | "book_landing_preview"
+    | "book_landing_galary"
+    | "book_landing_gallery"
+    | "landing_preview"
+    | "author_preview";
   id: string;
   title: string;
   label: string;
-  dataId?: number;
+  entityId: number;
   url: string | undefined;
   onUpload: any;
 }) => {
   const [preview, setPreview] = useState(url || initialPhoto);
-
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (url) {
       setPreview(url);
@@ -34,25 +41,20 @@ const PhotoUploader = ({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        let res;
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("entity_type", entityType);
+        formData.append("entity_id", String(entityId));
 
-        if (type === "book") {
-          const formData = new FormData();
-          formData.append("file", file);
-          formData.append("entity_type", "book_cover");
-          formData.append("entity_id", String(dataId!));
-
-          res = await adminApi.uploadImageNew(formData);
-        } else {
-          const formData = new FormData();
-          formData.append("file", file);
-          res = await adminApi.uploadPhoto(formData);
-        }
+        const res = await adminApi.uploadImageNew(formData);
 
         const uploadedUrl = res.data.url;
         setPreview(uploadedUrl);
         onUpload(uploadedUrl);
+        setLoading(false);
       } catch (error) {
+        setLoading(false);
         Alert(`Error loading image: ${error}`, <ErrorIcon />);
       }
     }
@@ -60,6 +62,8 @@ const PhotoUploader = ({
 
   return (
     <div className={s.photo_uploader}>
+      {loading && <LoaderOverlay />}
+
       <div className={s.input_wrapper}>
         <p>{title}</p>
         <label htmlFor={id}>{label}</label>

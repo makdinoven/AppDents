@@ -210,8 +210,8 @@ const BookDetail = () => {
               <PhotoUploader
                 onUpload={handleUploadPhoto}
                 url={book.cover_url}
-                type="book"
-                dataId={book.id}
+                entityType={"book_cover"}
+                entityId={book.id}
                 id="cover_url"
                 title={t("admin.landings.mainImage")}
                 label={t("admin.landings.mainImage.choose")}

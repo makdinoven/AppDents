@@ -1,6 +1,10 @@
 .photo_uploader {
   display: flex;
   justify-content: space-between;
+  position: relative;
+  border: 1.5px solid $hover-color;
+  padding: 20px;
+  border-radius: 30px;
 }
 
 .input_wrapper {

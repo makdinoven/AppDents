@@ -63,6 +63,8 @@ const EditLanding = ({
       <PhotoUploader
         onUpload={handleUploadPhoto}
         url={landing.preview_photo}
+        entityType={"landing_preview"}
+        entityId={landing.id}
         id="preview_photo"
         title={t("admin.landings.mainImage")}
         label={t("admin.landings.mainImage.choose")}
