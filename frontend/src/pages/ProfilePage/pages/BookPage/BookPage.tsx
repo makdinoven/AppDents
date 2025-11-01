@@ -2,7 +2,10 @@ import s from "./BookPage.module.scss";
 import { useParams } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
-import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
+import {
+  BASE_URL,
+  BOOK_FORMATS,
+} from "../../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
 import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
@@ -140,7 +143,7 @@ const BookPage = () => {
 
               <PdfReaderWrapper
                 fromProfile
-                url={handleProvideDownloadInfo(BOOK_FORMATS[0]).url ?? ""}
+                url={`${BASE_URL}/api/books/${bookId}/pdf`}
                 isSlideActive={true}
               />
             </section>

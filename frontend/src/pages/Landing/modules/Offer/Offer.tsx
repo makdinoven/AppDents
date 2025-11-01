@@ -1,5 +1,5 @@
 import s from "./Offer.module.scss";
-import { CircleArrow } from "../../../../assets/icons";
+import { CircleArrow, Unlock } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
 import { Clock } from "../../../../assets/icons";
 
@@ -27,6 +27,20 @@ const Offer = ({
             </div>
           </div>
           <div className={s.card_bottom}>
+            <div className={s.card_bottom_content}>
+              <span>
+                <Unlock className={s.unlock} />
+              </span>
+              <p>
+                <Trans
+                  i18nKey={
+                    isWebinar
+                      ? "landing.instantAccessFullWebinar"
+                      : "landing.instantAccessFull"
+                  }
+                ></Trans>
+              </p>
+            </div>
             <div className={s.card_bottom_content}>
               <span>
                 <Clock />

@@ -253,8 +253,10 @@
     "videoIsNotSupported": "المتصفح لا يدعم الفيديو",
     "specialOffer": "عرض خاص",
     "accessFull": "الوصول إلى الدورة غير محدود بالزمن!",
+    "instantAccessFull": "احصل على الوصول الفوري إلى الدورة مباشرة بعد الشراء!",
     "fullWebinarProgram": "البرنامج الكامل للويبينار",
     "accessFullWebinar": "الوصول إلى الويبينار غير محدود بالوقت!",
+    "instantAccessWebinar": "احصل على الوصول الفوري للندوة مباشرة بعد الشراء!",
     "video": {
       "modalTitle": "افتح الدورة الكاملة",
       "buyCourseToWatch": "اشترِ الدورة الكاملة لمتابعة المشاهدة."

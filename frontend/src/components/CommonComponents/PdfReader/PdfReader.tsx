@@ -20,6 +20,7 @@ import Loader from "../../ui/Loader/Loader.tsx";
 import { useThrottle } from "../../../common/hooks/useThrottle.ts";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import { DEFAULT_SCALE, scales, screenResolutionMap } from "./constants.ts";
+import { getAuthHeaders } from "../../../common/helpers/helpers.ts";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -63,6 +64,10 @@ const PdfReader = ({
       cMapUrl: "/cmaps/",
       standardFontDataUrl: "/standard_fonts/",
       wasmUrl: "/wasm/",
+      withCredentials: true,
+      httpHeaders: {
+        Authorization: `Bearer ${getAuthHeaders().Authorization}`,
+      },
     }),
     [],
   );
@@ -354,7 +359,15 @@ const PdfReader = ({
       >
         {url && (
           <Document
-            file={url}
+            file={
+              {
+                url,
+                httpHeaders: {
+                  Authorization: `Bearer ${getAuthHeaders().Authorization}`,
+                },
+                withCredentials: true,
+              } as any
+            }
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             options={options}
