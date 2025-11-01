@@ -37,7 +37,11 @@
 
 @media (max-width: $mobile-breakpoint) {
   .content {
-    gap: 10px;
+    gap: 20px;
+
+    &.book {
+      gap: 10px;
+    }
   }
 
   .no_content {

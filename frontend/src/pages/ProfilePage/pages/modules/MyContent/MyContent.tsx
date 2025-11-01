@@ -23,7 +23,7 @@ const MyContent = ({
 
   useEffect(() => {}, [type]);
   return (
-    <section className={s.content}>
+    <section className={`${s.content} ${type === "book" && s.book}`}>
       <SectionHeader
         name={type === "course" ? "profile.yourCourses" : "profile.yourBooks"}
       />
