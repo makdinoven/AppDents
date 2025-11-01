@@ -239,6 +239,7 @@
     "buyLessonsFor_other": "Comprar {{count}} lecciones:<2>{{new_price}}$</2> <1>{{old_price}}$</1>",
     "fullWebinarProgram": "Programa completo del webinario",
     "accessFullWebinar": "¡El acceso al webinario es ilimitado en el tiempo!",
+    "instantAccess": "¡Acceso instantáneo al curso justo después de la compra!",
     "buyForFull": "Comprar curso para <1>${{old_price}}</1> <2>${{new_price}}</2>",
     "youCanBuyEntireCourse": "Puedes comprar el <1>curso completo</1> ahora al nuevo precio <2>${{new_price}}</2>, en lugar del antiguo - ${{old_price}}",
     "fiveMinuteFragment": "Aquí puedes ver un <1>fragmento de cinco minutos</1>",

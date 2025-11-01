@@ -260,10 +260,6 @@ export const adminApi = {
     });
   },
 
-  uploadPhoto(file: any) {
-    return instance.post("photo/photo", file, { headers: getAuthHeaders() });
-  },
-
   uploadImageNew(data: any) {
     return instance.post("media/upload-image", data, {
       headers: getAuthHeaders(),

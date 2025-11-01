@@ -110,6 +110,8 @@ const AuthorDetail = () => {
               labelKey="label"
             />
             <PhotoUploader
+              entityType={"author_preview"}
+              entityId={author!.id}
               onUpload={handleUploadPhoto}
               url={author?.photo}
               id="photo"
