@@ -1,5 +1,5 @@
 import s from "./Offer.module.scss";
-import { CircleArrow, Unlock } from "../../../../assets/icons";
+import { CircleArrow, Lightning } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
 import { Clock } from "../../../../assets/icons";
 
@@ -29,7 +29,7 @@ const Offer = ({
           <div className={s.card_bottom}>
             <div className={s.card_bottom_content}>
               <span>
-                <Unlock className={s.unlock} />
+                <Lightning className={s.lightning} />
               </span>
               <p>
                 <Trans
