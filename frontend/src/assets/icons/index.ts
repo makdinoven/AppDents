@@ -72,4 +72,5 @@ export { default as NoResultsIcon } from "./no-result-icon.svg?react";
 export { default as SettingsIcon } from "./settings-icon.svg?react";
 export { default as Bookmark } from "./bookmark.svg?react";
 export { default as LongArrow } from "./long-arrow.svg?react";
-export { default as GlobeIcon } from "./globe.svg?react";
+export { default as Unlock } from "./unlock.svg?react";
+export { default as Lightning } from "./lightning.svg?react";

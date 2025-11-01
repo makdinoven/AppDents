@@ -248,6 +248,8 @@
     "videoIsNotSupported": "Tu navegador no admite video",
     "specialOffer": "Oferta especial",
     "accessFull": "¡El acceso al curso es ilimitado en el tiempo!",
+    "instantAccessFull": "¡Obtén acceso instantáneo al curso inmediatamente después de la compra!",
+    "instantAccessWebinar": "¡Obtén acceso instantáneo al webinar inmediatamente después de la compra!",
     "video": {
       "modalTitle": "Desbloquea el curso completo",
       "buyCourseToWatch": "Compra el curso completo para seguir viendo."

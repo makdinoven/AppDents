@@ -281,8 +281,9 @@
     "videoIsNotSupported": "Your browser is not supporting video",
     "specialOffer": "Special offer",
     "accessFull": "Access to the course is unlimited in time!",
+    "instantAccessFull": "Gain instant access to the course right after buying!",
     "accessFullWebinar": "Access to the webinar is unlimited in time!",
-    "instantAccess": "Instant access to the course right after purchase!",
+    "instantAccessWebinar": "Gain instant access to the webinar right after buying!",
     "video": {
       "modalTitle": "Unlock the full course",
       "buyCourseToWatch": "Buy full course to continue watching."

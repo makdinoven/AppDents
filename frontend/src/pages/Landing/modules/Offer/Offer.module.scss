@@ -87,11 +87,19 @@
     }
   }
 
+  .lightning {
+    path {
+      stroke: $background-color;
+      stroke-width: 1.5px;
+      fill: none !important;
+    }
+  }
+
   .card_bottom {
     @include flex-column;
     gap: 20px;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .instant_access {
