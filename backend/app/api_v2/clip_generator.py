@@ -12,7 +12,7 @@ from ..tasks.clip_tasks import clip_video
 router = APIRouter()
 
 # Очередь можно задать через ENV, по умолчанию "default"
-CLIP_QUEUE = os.getenv("CLIP_QUEUE", "special")
+CLIP_QUEUE = os.getenv("CLIP_QUEUE", "default")
 
 class ClipIn(BaseModel):
     # Не делаем строгий HttpUrl, чтобы не сломать presigned/CDN-ссылки с пробелами и пр.
