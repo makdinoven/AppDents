@@ -403,7 +403,7 @@ COURSES_BLOCK: dict[str, str | None] = {
                             <span
                               style="
                                 text-decoration: line-through;
-                                color: #006д8d;
+                                color: #006d8d;
                               "
                               >$1000</span
                             >

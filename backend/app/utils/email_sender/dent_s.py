@@ -331,171 +331,190 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
 # --------------------------------------------------------------------------
 def send_successful_purchase_email(
     recipient_email: str,
-    course_names: list[str],
+    course_names: list[str] | None = None,
     new_account: bool = False,
     password: str | None = None,
-    region: str = "EN"
+    region: str = "EN",
+    book_titles: list[str] | None = None,
 ):
-    contact_email = "info.dis.org@gmail.com"
-    login_url     = "https://dent-s.com/login"
-    more_url      = "https://dent-s.com/"
+    """Письмо при успешной покупке: курсы и/или книги."""
+    subject = {
+        "EN": "Purchase Confirmation — Items added to your account",
+        "RU": "Подтверждение покупки — элементы добавлены в аккаунт",
+        "IT": "Conferma di acquisto — elementi aggiunti all'account",
+        "ES": "Confirmación de compra — elementos añadidos a su cuenta",
+        "PT": "Confirmação de compra — itens adicionados à sua conta",
+        "AR": "تأكيد الشراء — تمت إضافة العناصر إلى حسابك",
+    }.get(region.upper(), "Purchase Confirmation")
 
-    courses_str = ", ".join(course_names) if course_names else ""
+    courses_str = ", ".join(course_names or [])
+    books_str = ", ".join(book_titles or [])
 
-    translations = {
+    # локализации
+    loc = {
         "EN": {
-            "subject":        "Purchase Confirmation — Your Course(s) Has Been Added",
-            "heading_default":"Purchase Confirmation",
-            "heading_new":    "Welcome and Congratulations!",
-            "purchased":      "You have successfully purchased the following course(s): <strong>{courses_str}</strong>.",
-            "account_info":   "We have created a new account for you.",
-            "label_email":    "<strong>Email:</strong> {recipient_email}",
-            "label_password": "<strong>Temporary Password:</strong> <span class=\"password\">{password}</span>",
-            "added":          "They have been added to your account.",
-            "prompt":         "Please use the button below to log in:",
-            "btn_login":      "Log In",
-            "btn_more":       "More courses here",
-            "thanks":         "Thank you for your purchase!",
-            "support":        "If you have any questions, contact us at <strong>{contact_email}</strong>."
+            "heading_new": "Welcome and congratulations!",
+            "heading_default": "Purchase confirmation",
+            "courses": "Courses",
+            "books": "Books",
+            "purchased_courses": "You have purchased the following course(s):",
+            "purchased_books": "You have purchased the following book(s):",
+            "account_created": "We have created a new account for you:",
+            "email": "Email",
+            "password": "Temporary password",
+            "login": "Log In",
         },
         "RU": {
-            "subject":        "Подтверждение покупки — ваш курс добавлен",
-            "heading_default":"Подтверждение покупки",
-            "heading_new":    "Добро пожаловать и поздравляем!",
-            "purchased":      "Вы успешно приобрели курс(ы): <strong>{courses_str}</strong>.",
-            "account_info":   "Для вас создан новый аккаунт.",
-            "label_email":    "<strong>Email:</strong> {recipient_email}",
-            "label_password": "<strong>Пароль:</strong> <span class=\"password\">{password}</span>",
-            "added":          "Они добавлены в ваш аккаунт.",
-            "prompt":         "Пожалуйста, перейдите по кнопке ниже, чтобы войти:",
-            "btn_login":      "Войти",
-            "btn_more":       "Больше курсов здесь",
-            "thanks":         "Спасибо за покупку!",
-            "support":        "Если у вас возникнут вопросы, напишите на <strong>{contact_email}</strong>."
-        },
-        "ES": {
-            "subject":        "Confirmación de compra — su curso ha sido agregado",
-            "heading_default":"Confirmación de compra",
-            "heading_new":    "¡Bienvenido y felicitaciones!",
-            "purchased":      "Ha comprado con éxito el/los curso(s): <strong>{courses_str}</strong>.",
-            "account_info":   "Se ha creado una nueva cuenta para usted.",
-            "label_email":    "<strong>Email:</strong> {recipient_email}",
-            "label_password": "<strong>Contraseña temporal:</strong> <span class=\"password\">{password}</span>",
-            "added":          "Se han agregado a su cuenta.",
-            "prompt":         "Use el botón a continuación para iniciar sesión:",
-            "btn_login":      "Iniciar sesión",
-            "btn_more":       "Más cursos aquí",
-            "thanks":         "¡Gracias por su compra!",
-            "support":        "Si tiene alguna pregunta, escriba a <strong>{contact_email}</strong>."
+            "heading_new": "Добро пожаловать и поздравляем!",
+            "heading_default": "Подтверждение покупки",
+            "courses": "Курсы",
+            "books": "Книги",
+            "purchased_courses": "Вы приобрели следующие курс(ы):",
+            "purchased_books": "Вы приобрели следующие книгу(и):",
+            "account_created": "Мы создали для вас новый аккаунт:",
+            "email": "Email",
+            "password": "Временный пароль",
+            "login": "Войти",
         },
         "IT": {
-            "subject":        "Conferma di acquisto — il tuo corso è stato aggiunto",
-            "heading_default":"Conferma di acquisto",
-            "heading_new":    "Benvenuto e congratulazioni!",
-            "purchased":      "Hai acquistato con successo il/los corso(i): <strong>{courses_str}</strong>.",
-            "account_info":   "Abbiamo creato un nuovo account per te.",
-            "label_email":    "<strong>Email:</strong> {recipient_email}",
-            "label_password": "<strong>Password temporanea:</strong> <span class=\"password\">{password}</span>",
-            "added":          "Sono stati aggiunti al tuo account.",
-            "prompt":         "Per favore, usa il pulsante qui sotto per accedere:",
-            "btn_login":      "Accedi",
-            "btn_more":       "Altri corsi qui",
-            "thanks":         "Grazie per il tuo acquisto!",
-            "support":        "Se hai domande, contatta <strong>{contact_email}</strong>."
+            "heading_new": "Benvenuto e congratulazioni!",
+            "heading_default": "Conferma di acquisto",
+            "courses": "Corsi",
+            "books": "Libri",
+            "purchased_courses": "Hai acquistato i seguenti corsi:",
+            "purchased_books": "Hai acquistato i seguenti libri:",
+            "account_created": "Abbiamo creato per te un nuovo account:",
+            "email": "Email",
+            "password": "Password temporanea",
+            "login": "Accedi",
+        },
+        "ES": {
+            "heading_new": "¡Bienvenido y felicitaciones!",
+            "heading_default": "Confirmación de compra",
+            "courses": "Cursos",
+            "books": "Libros",
+            "purchased_courses": "Ha comprado los siguientes cursos:",
+            "purchased_books": "Ha comprado los siguientes libros:",
+            "account_created": "Hemos creado una nueva cuenta para usted:",
+            "email": "Email",
+            "password": "Contraseña temporal",
+            "login": "Iniciar sesión",
         },
         "PT": {
-            "subject":        "Confirmação de compra — seu curso foi adicionado",
-            "heading_default":"Confirmação de compra",
-            "heading_new":    "Bem-vindo e parabéns!",
-            "purchased":      "Você comprou com sucesso o(s) curso(s): <strong>{courses_str}</strong>.",
-            "account_info":   "Criamos uma nova conta para você.",
-            "label_email":    "<strong>Email:</strong> {recipient_email}",
-            "label_password": "<strong>Senha temporária:</strong> <span class=\"password\">{password}</span>",
-            "added":          "Eles foram adicionados à sua conta.",
-            "prompt":         "Por favor, use o botão abaixo para fazer login:",
-            "btn_login":      "Entrar",
-            "btn_more":       "Mais cursos aqui",
-            "thanks":         "Obrigado por sua compra!",
-            "support":        "Se tiver dúvidas, entre em contato em <strong>{contact_email}</strong>."
+            "heading_new": "Bem-vindo e parabéns!",
+            "heading_default": "Confirmação de compra",
+            "courses": "Cursos",
+            "books": "Livros",
+            "purchased_courses": "Você comprou os seguintes cursos:",
+            "purchased_books": "Você comprou os seguintes livros:",
+            "account_created": "Criamos uma nova conta para você:",
+            "email": "Email",
+            "password": "Senha temporária",
+            "login": "Entrar",
         },
         "AR": {
-            "subject":        "تأكيد الشراء — تم إضافة دورتك",
-            "heading_default":"تأكيد الشراء",
-            "heading_new":    "مرحبًا وتهانينا!",
-            "purchased":      "لقد اشتريت بنجاح الدورة(الدورات): <strong>{courses_str}</strong>.",
-            "account_info":   "تم إنشاء حساب جديد لك.",
-            "label_email":    "<strong>البريد الإلكتروني:</strong> {recipient_email}",
-            "label_password": "<strong>كلمة المرور المؤقتة:</strong> <span class=\"password\">{password}</span>",
-            "added":          "تمت إضافتها إلى حسابك.",
-            "prompt":         "يرجى استخدام الزر أدناه لتسجيل الدخول:",
-            "btn_login":      "تسجيل الدخول",
-            "btn_more":       "المزيد من الدورات هنا",
-            "thanks":         "شكرًا لشرائك!",
-            "support":        "إذا كانت لديك أي أسئلة، تواصل معنا على <strong>{contact_email}</strong>."
+            "heading_new": "مرحبًا وتهانينا!",
+            "heading_default": "تأكيد الشراء",
+            "courses": "الدورات",
+            "books": "الكتب",
+            "purchased_courses": "لقد اشتريت الدورات التالية:",
+            "purchased_books": "لقد اشتريت الكتب التالية:",
+            "account_created": "لقد أنشأنا لك حسابًا جديدًا:",
+            "email": "البريد الإلكتروني",
+            "password": "كلمة المرور المؤقتة",
+            "login": "تسجيل الدخول",
         },
-    }
+    }.get(region.upper(), {})
 
-    loc = translations.get(region.upper(), translations["EN"])
-    subject = loc["subject"]
+    login_url = "https://dent-s.com/login"
 
     html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
-    body_html = f"""\
-    <!DOCTYPE html>
+
+    # --- формируем блоки ---
+    account_block = ""
+    if new_account:
+        account_block = f"""
+        <div style="margin-top:12px;">
+          <p>{loc["account_created"]}</p>
+          <p><b>{loc["email"]}:</b> {recipient_email}</p>
+          <p><b>{loc["password"]}:</b> {password or ""}</p>
+        </div>
+        """
+
+    courses_block = ""
+    if courses_str:
+        courses_block = f"""
+        <div style="margin-top:12px;">
+          <h3 style="margin:0 0 6px;">{loc["courses"]}</h3>
+          <p style="margin:0;">{loc["purchased_courses"]} <b>{courses_str}</b></p>
+        </div>
+        """
+
+    books_block = ""
+    if books_str:
+        books_block = f"""
+        <div style="margin-top:12px;">
+          <h3 style="margin:0 0 6px;">{loc["books"]}</h3>
+          <p style="margin:0;">{loc["purchased_books"]} <b>{books_str}</b></p>
+        </div>
+        """
+
+    body_html = f"""
     <html{html_dir}>
     <head>
       <meta charset="utf-8">
       <title>{subject}</title>
       <style>
-        body {{ font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }}
+        body {{
+          font-family: Arial, sans-serif;
+          background-color: #edf8ff;
+          padding: 20px;
+        }}
         .container {{
           background-color: #fff;
           padding: 20px;
-          border-radius: 8px;
+          border-radius: 12px;
           box-shadow: 0 0 10px rgba(0,0,0,0.1);
           max-width: 600px;
           margin: auto;
         }}
-        h2 {{ color: #333; }}
-        p {{ font-size: 16px; line-height: 1.5; color: #555; }}
-        .password {{ font-size: 18px; font-weight: bold; color: #d9534f; }}
+        h2 {{
+          color: #01433d;
+        }}
+        p {{
+          font-size: 16px;
+          line-height: 1.5;
+          color: #333;
+        }}
         .btn {{
           display: inline-block;
           padding: 10px 20px;
           margin-top: 20px;
-          background-color: #28a745;
+          background-color: #01433d;
           color: #fff;
           text-decoration: none;
-          border-radius: 5px;
+          border-radius: 6px;
         }}
-        .btn-more {{ background-color: #007bff; margin-left: 10px; }}
       </style>
     </head>
     <body>
       <div class="container">
+        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
         <h2>{loc["heading_new"] if new_account else loc["heading_default"]}</h2>
-        <p>{loc["purchased"].format(courses_str=courses_str)}</p>"""
-
-    if new_account:
-        body_html += f"""
-        <p>{loc["account_info"]}</p>
-        <p>{loc["label_email"].format(recipient_email=recipient_email)}</p>
-        <p class="password">{loc["label_password"].format(password=password)}</p>"""
-    else:
-        body_html += f"""
-        <p>{loc["added"]}</p>"""
-
-    body_html += f"""
-        <p>{loc["prompt"]}</p>
-        <a href="{login_url}" class="btn">{loc["btn_login"]}</a>
-        <a href="{more_url}" class="btn btn-more">{loc["btn_more"]}</a>
-        <p>{loc["thanks"]}</p>
-        <p>{loc["support"].format(contact_email=contact_email)}</p>
+        {account_block}
+        {courses_block}
+        {books_block}
+        <p style="text-align:center;">
+          <a href="{login_url}" class="btn">{loc["login"]}</a>
+        </p>
+        <p style="margin-top:20px;text-align:center;">Best regards,<br><b>Dent-S Team</b></p>
       </div>
     </body>
     </html>
     """
 
     send_html_email(recipient_email, subject, body_html)
+
 
 
 # --------------------------------------------------------------------------
