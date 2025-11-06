@@ -264,7 +264,7 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str = "
       <tr align="center">
         <td>
           <a href="https://dent-s.com/">
-            <img src="https://cdn.dent-s.com/logo-dents.png"
+            <img src="https://dent-s.com/assets/img/logo.png"
                  alt="Logo" width="150"
                  style="width:100%;max-width:150px;">
           </a>
@@ -902,7 +902,7 @@ def send_abandoned_checkout_email(
   <table width="100%" cellpadding="0" cellspacing="0">
     <tr><td align="center">
       <a href="https://dent-s.com/">
-        <img src="https://cdn.dent-s.com/logo-dents.png" width="150" style="max-width:150px;width:100%;">
+        <img src="https://dent-s.com/assets/img/logo.png" width="150" style="max-width:150px;width:100%;">
       </a>
     </td></tr>
     <tr><td align="center">
