@@ -253,8 +253,6 @@ COURSES_BLOCK: dict[str, str | None] = {
               </td>
             </tr>
     """,
-    # Для остальных локалей можно задать собственный HTML,
-    # а пока используем English как запасной вариант
     "RU": """
         <tr>
               <td
@@ -758,7 +756,6 @@ TADs Diretti: L’Ancoraggio Scheletrico per Ogni Approccio
               </td>
             </tr>
     """,
-
     "ES": """
         <tr>
               <td
