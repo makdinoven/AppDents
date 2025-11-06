@@ -32,7 +32,7 @@ from ..schemas_v2.common import TagResponse
 from ..services_v2.preview_service import get_or_schedule_preview
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
-from ..utils.email_sender.common import send_password_to_user
+from ..utils.email_sender import send_password_to_user
 from ..utils.facebook import send_registration_event
 
 router = APIRouter()
