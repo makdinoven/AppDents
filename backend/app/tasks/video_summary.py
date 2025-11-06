@@ -1,4 +1,4 @@
-# app/tasks/video_summary.py
+
 from typing import Optional, Dict, Any, Literal
 import os
 import re
@@ -15,25 +15,31 @@ if not AAI_API_KEY:
 LangCode = Literal["auto", "ru", "en", "it", "es"]
 OutLang = Literal["auto", "ru", "en", "it", "es"]
 
-# ================== Базовый промпт (всегда используется) ==================
-DEFAULT_MARKETING_PROMPT = """
-Ты — ассистент, который делает краткие, маркетинговые выжимки по стоматологическим видеоурокам.
-Цель — ясно и интересно показать СУТЬ содержания, чтобы заинтересовать просмотром, без раскрытия деталей.
+# ================== Мультибрендовый промпт ==================
+PROJECT_BRAND = os.getenv("PROJECT_BRAND", "").upper().strip()
 
-Правила стиля:
-• Не упоминай формат материала: никакого «вебинар», «видео», «урок», «лекция», «занятие», «в этом/данном вебинаре…» и т.п.
-• Не указывай целевую аудиторию и пользу для кого-то (никаких «материал будет полезен…», «для стоматологов…», «подойдёт…», «ориентирован на…»).
-• Не упоминай ведущего/лекторов/автора (никаких «Лектор рассказывает…»). Используй безличные формулировки: «рассматриваются», «обсуждаются», «показывается», «разбираются».
-• Пиши одним абзацем из 2–6 предложений. Никаких списков, нумерации, буллетов, двоеточий с перечислениями.
-• Обобщай темы вместо конкретных деталей.
-• Не давай пошаговых инструкций, чисел/параметров, торговых марок, названий материалов и программ, конкретных углов/толщин/скоростей и протоколов.
-• Без хайпа и оценочных эпитетов. Нейтрально и ёмко, с фокусом на ценности для обучающегося.
+def _load_prompt(env_key: str, path_key: str) -> str | None:
+    """Пробует сначала путь, потом текст в .env"""
+    path = os.getenv(path_key)
+    if path and os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    text = os.getenv(env_key)
+    return text.strip() if text else None
 
-Формат ответа:
-Единый абзац из 2–6 предложений, который поясняет, о чём содержание и чему помогает научиться, без конкретики.
 
-Ответь на языке: {target_lang}.
-""".strip()
+if PROJECT_BRAND == "DENTS":
+    DEFAULT_MARKETING_PROMPT = _load_prompt("AAI_PROMPT_DENTS", "AAI_PROMPT_DENTS_PATH")
+    if not DEFAULT_MARKETING_PROMPT:
+        raise RuntimeError("Не найден промпт для DENT-S (AAI_PROMPT_DENTS / AAI_PROMPT_DENTS_PATH).")
+
+elif PROJECT_BRAND == "MEDG":
+    DEFAULT_MARKETING_PROMPT = _load_prompt("AAI_PROMPT_MEDG", "AAI_PROMPT_MEDG_PATH")
+    if not DEFAULT_MARKETING_PROMPT:
+        raise RuntimeError("Не найден промпт для MEDG (AAI_PROMPT_MEDG / AAI_PROMPT_MEDG_PATH).")
+
+else:
+    raise RuntimeError("PROJECT_BRAND должен быть DENTS или MEDG.")
 
 
 # ================== Хелперы ==================
@@ -119,6 +125,7 @@ def _lemur_summarize(lemur, *, model: str, context: str, answer_format: str, tex
 
 # ================== Celery task ==================
 @shared_task(
+    name="app.tasks.video_summary.summarize_video_task",
     bind=True,
     track_started=True,
     soft_time_limit=30 * 60,
