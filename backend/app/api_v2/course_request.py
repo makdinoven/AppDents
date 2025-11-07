@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from ..schemas_v2.course_requests import CourseRequestIn, CourseRequestOut
 from ..services_v2.course_requests import send_course_request_email
 
-router = APIRouter(prefix="/requests", tags=["requests"])
+router = APIRouter()
 
 
 @router.post("/course-request", response_model=CourseRequestOut)
