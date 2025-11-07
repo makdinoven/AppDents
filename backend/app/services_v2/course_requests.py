@@ -3,8 +3,9 @@ from ..utils.email_sender.common import send_html_email  # ✅ использу�
 from ..utils.hss_cleaner import sanitize_and_linkify
 from ..db.database import SessionLocal
 from ..models.models_v2 import User
+from fastapi import HTTPException, status
 
-INFO_EMAIL = "info.dis.org@gmail.com"
+INFO_EMAIL = os.getenv("INFO_EMAIL", "info.dis.org@gmail.com")
 
 
 def get_user_email_from_db(user_id: int):
@@ -18,7 +19,9 @@ def get_user_email_from_db(user_id: int):
 
 
 def send_course_request_email(user_id: int, text: str):
-    """Формирует и отправляет письмо-заявку"""
+    """Формирует и отправляет письмо-заявку.
+    При ошибке отправки бросает HTTPException(502) для корректного ответа API.
+    """
     safe_html = sanitize_and_linkify(text)
     user_email = get_user_email_from_db(user_id)
     user_email_display = user_email or f"user_id:{user_id}"
@@ -38,5 +41,18 @@ def send_course_request_email(user_id: int, text: str):
     </body></html>
     """
 
-    send_html_email(INFO_EMAIL, subject, body)
+    try:
+        ok = send_html_email(INFO_EMAIL, subject, body)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось отправить email (внутренняя ошибка почтового сервера).",
+        ) from e
+
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Не удалось отправить email (почтовый сервер вернул отказ).",
+        )
+
     return INFO_EMAIL, user_email
