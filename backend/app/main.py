@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(creatives.router, tags=["creatives"])
     app.include_router(book_assets.router, prefix="/api/books", tags=["book_assets"])
     app.include_router(summary_generator.router, prefix="/api/summary_generator", tags=["summary generator"])
-    app.include_router(course_request.router,tags=["course request"])
+    app.include_router(course_request.router,prefix="/api/request", tags=["requests"])
 
 
     @app.on_event("startup")
