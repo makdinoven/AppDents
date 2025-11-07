@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
     health_checkers, smart_validations, clip_generator, slider, books, book_admin, media, search, book_metadata, \
-    ad_control, book_ad_control, policy, video_repair, creatives, book_assets, summary_generator
+    ad_control, book_ad_control, policy, video_repair, creatives, book_assets, summary_generator,course_request
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(creatives.router, tags=["creatives"])
     app.include_router(book_assets.router, prefix="/api/books", tags=["book_assets"])
     app.include_router(summary_generator.router, prefix="/api/summary_generator", tags=["summary generator"])
-
+    app.include_router(course_request.router,tags=["course request"])
 
 
     @app.on_event("startup")
