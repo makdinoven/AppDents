@@ -499,7 +499,7 @@ def send_successful_purchase_email(
     </head>
     <body>
       <div class="container">
-        <img src="https://dent-s.com/assets/img/logo.png" alt="Dent-S" width="150" />
+        <img src="https://cdn.dent-s.com/logo-dents.png" alt="Dent-S" width="150" />
         <h2>{loc["heading_new"] if new_account else loc["heading_default"]}</h2>
         {account_block}
         {courses_block}
