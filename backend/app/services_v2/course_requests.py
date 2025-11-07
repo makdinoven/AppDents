@@ -4,6 +4,7 @@ from ..utils.hss_cleaner import sanitize_and_linkify
 from ..db.database import SessionLocal
 from ..models.models_v2 import User
 from fastapi import HTTPException, status
+import os
 
 INFO_EMAIL = os.getenv("INFO_EMAIL", "info.dis.org@gmail.com")
 
