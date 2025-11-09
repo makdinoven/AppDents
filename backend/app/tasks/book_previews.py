@@ -68,8 +68,8 @@ def _key_from_url(url: str) -> str:
     return path
 
 def _target_key_for(book: Book) -> str:
-    # Схема хранения превью: books/<slug>/preview/preview_20p.pdf
-    return f"books/{book.slug}/preview/preview_20p.pdf"
+    # Схема хранения превью: books/<book.id>/preview/preview_20p.pdf
+    return f"books/{book.id}/preview/preview_20p.pdf"
 
 def _run(cmd: str) -> tuple[int, str, str]:
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
