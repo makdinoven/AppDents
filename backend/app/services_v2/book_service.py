@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any
-from sqlalchemy.orm import Session, selectinload
+
 from fastapi import HTTPException, status
+from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload
 
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
@@ -17,8 +19,10 @@ from ..utils.s3 import generate_presigned_url
 
 log = logging.getLogger(__name__)
 
-# TTL для флага рекламы (3 часа)
-BOOK_AD_TTL = timedelta(hours=3)
+# TTL для флага рекламы (должно совпадать с логикой курсовых лендингов)
+BOOK_AD_TTL = timedelta(hours=14)
+BOOK_AD_UNIQUE_IP_WINDOW = BOOK_AD_TTL
+BOOK_AD_MIN_UNIQUE_IPS = 3
 
 # ─────────────────────────── S3/PDF метаданные ────────────────────────────────
 PDF_CACHE_CONTROL = "public, max-age=86400, immutable, no-transform"
@@ -363,23 +367,74 @@ def open_book_ad_period_if_needed(db: Session, book_landing_id: int, started_by:
     ))
 
 
+def _close_book_ad_period_if_open(db: Session, book_landing_id: int, ended_by: int | None = None):
+    open_period = (
+        db.query(BookLandingAdPeriod)
+          .filter(
+              BookLandingAdPeriod.book_landing_id == book_landing_id,
+              BookLandingAdPeriod.ended_at.is_(None),
+          )
+          .with_for_update()
+          .first()
+    )
+    if open_period:
+        open_period.ended_at = datetime.utcnow()
+        open_period.ended_by = ended_by
+
+
+def _unique_ip_count_recent(db: Session, book_landing_id: int, window_end: datetime) -> int:
+    window_start = window_end - BOOK_AD_UNIQUE_IP_WINDOW
+    count = (
+        db.query(func.count(func.distinct(BookAdVisit.ip_address)))
+          .filter(
+              BookAdVisit.book_landing_id == book_landing_id,
+              BookAdVisit.visited_at >= window_start,
+              BookAdVisit.ip_address.isnot(None),
+              BookAdVisit.ip_address != "",
+          )
+          .scalar()
+    )
+    return int(count or 0)
+
+
 def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc: str | None, ip: str):
     """
     Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
-    Устанавливает флаг in_advertising и TTL.
+    Загорает флаг только после порога уникальных IP за окно BOOK_AD_UNIQUE_IP_WINDOW.
     """
+    now = datetime.utcnow()
     visit = BookAdVisit(
         book_landing_id=book_landing_id,
         fbp=fbp,
         fbc=fbc,
-        ip_address=ip,
+        ip_address=(ip.strip() if ip else None),
     )
     db.add(visit)
+    db.flush()
 
-    book_landing = db.query(BookLanding).filter(BookLanding.id == book_landing_id).first()
-    if book_landing:
-        book_landing.in_advertising = True
-        book_landing.ad_flag_expires_at = datetime.utcnow() + BOOK_AD_TTL
+    book_landing = (
+        db.query(BookLanding)
+          .filter(BookLanding.id == book_landing_id)
+          .with_for_update()
+          .first()
+    )
+    if not book_landing:
+        db.commit()
+        return
+
+    unique_count = _unique_ip_count_recent(db, book_landing_id, now)
+
+    if not book_landing.in_advertising:
+        if unique_count >= BOOK_AD_MIN_UNIQUE_IPS:
+            book_landing.in_advertising = True
+            book_landing.ad_flag_expires_at = now + BOOK_AD_TTL
+            open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
+    else:
+        open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
+        new_exp = now + BOOK_AD_TTL
+        if not book_landing.ad_flag_expires_at or book_landing.ad_flag_expires_at < new_exp:
+            book_landing.ad_flag_expires_at = new_exp
+
     db.commit()
 
 
@@ -393,23 +448,49 @@ def check_and_reset_book_ad_flag(book_landing: BookLanding, db: Session):
         if book_landing.ad_flag_expires_at < now:
             book_landing.in_advertising = False
             book_landing.ad_flag_expires_at = None
+            _close_book_ad_period_if_open(db, book_landing.id, ended_by=None)
 
 
 def reset_expired_book_ad_flags(db: Session):
     """
     Массовый сброс истекших флагов рекламы для книжных лендингов.
     """
-    from sqlalchemy import func
-    updated = (
-        db.query(BookLanding)
-        .filter(
-            BookLanding.in_advertising.is_(True),
-            BookLanding.ad_flag_expires_at < func.utc_timestamp(),
-        )
-        .update(
-            {BookLanding.in_advertising: False, BookLanding.ad_flag_expires_at: None},
-            synchronize_session=False,
-        )
-    )
-    if updated:
-        db.commit()
+    expiring_ids = [
+        lid for (lid,) in
+        db.query(BookLanding.id)
+          .filter(
+              BookLanding.in_advertising.is_(True),
+              BookLanding.ad_flag_expires_at.isnot(None),
+              BookLanding.ad_flag_expires_at < func.utc_timestamp(),
+          )
+          .all()
+    ]
+
+    if not expiring_ids:
+        return 0
+
+    db.query(BookLandingAdPeriod) \
+      .filter(
+          BookLandingAdPeriod.book_landing_id.in_(expiring_ids),
+          BookLandingAdPeriod.ended_at.is_(None),
+      ) \
+      .update(
+          {
+              BookLandingAdPeriod.ended_at: func.utc_timestamp(),
+              BookLandingAdPeriod.ended_by: None,
+          },
+          synchronize_session=False,
+      )
+
+    db.query(BookLanding) \
+      .filter(BookLanding.id.in_(expiring_ids)) \
+      .update(
+          {
+              BookLanding.in_advertising: False,
+              BookLanding.ad_flag_expires_at: None,
+          },
+          synchronize_session=False,
+      )
+
+    db.commit()
+    return len(expiring_ids)

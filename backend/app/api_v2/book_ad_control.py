@@ -16,6 +16,7 @@ from ..models.models_v2 import (
     BookLandingAdAssignment, AdAccount, User, AdStaff, Purchase,
     BookLandingAdPeriod, BookLanding, BookAdVisit
 )
+from ..services_v2.book_service import reset_expired_book_ad_flags
 
 router = APIRouter()
 
@@ -264,6 +265,7 @@ def book_ads_overview_list(
     Показывает метрики: посещения, продажи, время в рекламе, цветовую индикацию.
     """
     now = datetime.utcnow()
+    reset_expired_book_ad_flags(db)
 
     # только те, кто сейчас помечен "в рекламе"
     base = (
