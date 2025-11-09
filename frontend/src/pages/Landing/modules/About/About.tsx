@@ -1,6 +1,6 @@
 import s from "./About.module.scss";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { Book } from "../../../../assets/icons/index.ts";
+import { Book, LightningAbout } from "../../../../assets/icons/index.ts";
 import { Glasses } from "../../../../assets/icons/index.ts";
 import { Percent } from "../../../../assets/icons/index.ts";
 import { Dollar } from "../../../../assets/icons/index.ts";
@@ -8,7 +8,15 @@ import { Clock } from "../../../../assets/icons/index.ts";
 import { Calendar } from "../../../../assets/icons/index.ts";
 
 const About = ({
-  data: { lessonsCount, discount, access, professorsCount, savings, duration },
+  data: {
+    lessonsCount,
+    discount,
+    access,
+    professorsCount,
+    savings,
+    duration,
+    instantAccess,
+  },
   type,
 }: {
   data: any;
@@ -21,6 +29,7 @@ const About = ({
     access && { Icon: Calendar, text: access },
     discount && { Icon: Percent, text: discount },
     savings && { Icon: Dollar, text: savings },
+    instantAccess && { Icon: LightningAbout, text: instantAccess },
   ].filter(Boolean);
 
   return (

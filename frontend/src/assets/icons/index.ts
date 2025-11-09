@@ -74,3 +74,4 @@ export { default as Bookmark } from "./bookmark.svg?react";
 export { default as LongArrow } from "./long-arrow.svg?react";
 export { default as Unlock } from "./unlock.svg?react";
 export { default as Lightning } from "./lightning.svg?react";
+export { default as LightningAbout } from "./lightning-about.svg?react";

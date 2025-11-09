@@ -149,13 +149,13 @@ $border-radius: 20px;
     background-color: $background-color-05;
     height: 210px;
     padding: 10px;
+    @include flex-center();
 
     img {
       aspect-ratio: 9/12;
       height: 100%;
       width: auto;
       border-radius: 0;
-      justify-self: center;
     }
   }
 

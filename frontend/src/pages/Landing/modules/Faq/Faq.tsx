@@ -30,6 +30,13 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
         ],
       },
     },
+    {
+      question: "10_question",
+      answer: {
+        text: "10_answer",
+        links: [""],
+      },
+    },
   ];
 
   const faqItemsBook = [
@@ -56,6 +63,13 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
           "https://dent-s.com/password-reset",
           "https://dent-s.com/login",
         ],
+      },
+    },
+    {
+      question: "10_question_book",
+      answer: {
+        text: "10_answer_book",
+        links: [""],
       },
     },
   ];
