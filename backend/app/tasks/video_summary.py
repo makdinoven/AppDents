@@ -7,7 +7,37 @@ from celery import shared_task
 
 # ================== ENV / конфиг ==================
 AAI_API_KEY = os.getenv("AAI_API_KEY")
-DEFAULT_LEMUR_MODEL = os.getenv("AAI_LEMUR_MODEL", "anthropic/claude-3-5-sonnet")
+
+DEFAULT_LEMUR_MODEL_FALLBACK = "anthropic/claude-3-7-sonnet-20250219"
+
+VALID_LEMUR_MODELS = {
+    "anthropic/claude-3-opus",
+    "anthropic/claude-3-haiku",
+    "anthropic/claude-3-7-sonnet-20250219",
+    "anthropic/claude-3-5-haiku-20241022",
+    "anthropic/claude-sonnet-4-20250514",
+    "anthropic/claude-opus-4-20250514",
+}
+
+LEMUR_MODEL_ALIASES = {
+    "anthropic/claude-3-5-sonnet": "anthropic/claude-3-7-sonnet-20250219",
+    "anthropic/claude-3-5-sonnet-20240620": "anthropic/claude-3-7-sonnet-20250219",
+    "anthropic/claude-3-5-sonnet-20241014": "anthropic/claude-3-7-sonnet-20250219",
+}
+
+
+def _normalize_final_model(model: Optional[str], *, default: str = DEFAULT_LEMUR_MODEL_FALLBACK) -> str:
+    candidate = (model or "").strip()
+    if not candidate:
+        return default
+    if candidate in VALID_LEMUR_MODELS:
+        return candidate
+    if candidate in LEMUR_MODEL_ALIASES:
+        return LEMUR_MODEL_ALIASES[candidate]
+    return default
+
+
+DEFAULT_LEMUR_MODEL = _normalize_final_model(os.getenv("AAI_LEMUR_MODEL"), default=DEFAULT_LEMUR_MODEL_FALLBACK)
 
 if not AAI_API_KEY:
     raise RuntimeError("AAI_API_KEY is not set")
@@ -222,7 +252,7 @@ def summarize_video_task(
     self.update_state(state="PROGRESS", meta={"stage": "lemur_requested"})
 
     target_lang = _to_target_language(lang, language_code, output_language)
-    model = final_model or DEFAULT_LEMUR_MODEL
+    model = _normalize_final_model(final_model)
     lemur = aai.Lemur()  # конструктор без final_model для совместимости
 
     eff_prompt = _build_effective_prompt(target_lang, context)  # база + уточнение редактора
