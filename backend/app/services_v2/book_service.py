@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import List
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session, selectinload
 from fastapi import HTTPException, status
 
@@ -19,6 +19,57 @@ log = logging.getLogger(__name__)
 
 # TTL для флага рекламы (3 часа)
 BOOK_AD_TTL = timedelta(hours=3)
+
+# ─────────────────────────── S3/PDF метаданные ────────────────────────────────
+PDF_CACHE_CONTROL = "public, max-age=86400, immutable, no-transform"
+PDF_CONTENT_DISPOSITION = "inline"
+
+
+def _clean_metadata(values: Dict[str, str]) -> Dict[str, str]:
+    """
+    Убираем пустые значения, чтобы не записывать лишние x-amz-meta-*.
+    """
+    return {k: v for k, v in values.items() if v}
+
+
+def pdf_extra_args(metadata: Dict[str, str] | None = None) -> Dict[str, Any]:
+    """
+    Стандартные ExtraArgs для PDF, чтобы браузеры правильно обрабатывали файл.
+    """
+    extra: Dict[str, Any] = {
+        "ACL": "public-read",
+        "ContentType": "application/pdf",
+        "ContentDisposition": PDF_CONTENT_DISPOSITION,
+        "CacheControl": PDF_CACHE_CONTROL,
+    }
+    if metadata:
+        extra["Metadata"] = metadata
+    return extra
+
+
+def original_pdf_metadata(book: Book) -> Dict[str, str]:
+    """
+    Базовая метадата для оригинального PDF-файла книги.
+    """
+    values = {
+        "asset": "original",
+        "book-id": str(book.id),
+        "book-slug": getattr(book, "slug", "") or "",
+    }
+    return _clean_metadata(values)
+
+
+def preview_pdf_metadata(book: Book, pages: int) -> Dict[str, str]:
+    """
+    Метадата для превью PDF (число страниц и ссылка на книгу).
+    """
+    values = {
+        "asset": "preview",
+        "book-id": str(book.id),
+        "book-slug": getattr(book, "slug", "") or "",
+        "pages": str(pages),
+    }
+    return _clean_metadata(values)
 
 def _serialize_book_file(bf: BookFile) -> dict:
     return {

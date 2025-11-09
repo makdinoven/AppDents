@@ -16,6 +16,7 @@ from ..db.database import get_db
 from .users import get_current_user
 from ..models.models_v2 import User, Book, BookAudio, BookFileFormat
 from ..utils.s3 import generate_presigned_url
+from ..services_v2.book_service import PDF_CACHE_CONTROL, PDF_CONTENT_DISPOSITION
 from urllib.parse import urlparse, unquote
 
 # S3 client для стриминга
@@ -225,15 +226,27 @@ def stream_book_pdf(
     content_length = obj.get("ContentLength")
     content_range = obj.get("ContentRange")
 
+    metadata = obj.get("Metadata") or {}
+
     headers = {
         "Accept-Ranges": "bytes",
         "Content-Type": content_type,
-        "Content-Disposition": "inline",
+        "Content-Disposition": PDF_CONTENT_DISPOSITION,
+        "Cache-Control": PDF_CACHE_CONTROL,
     }
     if content_length is not None:
         headers["Content-Length"] = str(content_length)
     if content_range:
         headers["Content-Range"] = content_range
+
+    if metadata.get("asset"):
+        headers["X-Book-Pdf-Asset"] = metadata["asset"]
+    if metadata.get("pages"):
+        headers["X-Book-Preview-Pages"] = metadata["pages"]
+    if metadata.get("book-id"):
+        headers["X-Book-Id"] = metadata["book-id"]
+    if metadata.get("book-slug"):
+        headers["X-Book-Slug"] = metadata["book-slug"]
 
     status_code = 206 if content_range else 200
 

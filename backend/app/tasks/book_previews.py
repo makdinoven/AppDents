@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from ..db.database import SessionLocal
 from ..models.models_v2 import Book, BookFile, BookFileFormat
+from ..services_v2.book_service import pdf_extra_args, preview_pdf_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -143,8 +144,10 @@ def generate_book_preview(book_id: int, pages: int = 20) -> dict:
 
             # Загрузка превью на CDN
             key = _preview_key_from_src(src_key, pages)
+            metadata = preview_pdf_metadata(book, pages)
+            extra_args = pdf_extra_args(metadata)
             try:
-                s3.upload_file(out_pdf, S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": "application/pdf"})
+                s3.upload_file(out_pdf, S3_BUCKET, key, ExtraArgs=extra_args)
             except ClientError as e:
                 _set_job_status(book_id, "failed")
                 _log(book_id, f"s3 upload failed: {e}")

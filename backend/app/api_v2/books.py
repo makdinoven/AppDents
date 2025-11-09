@@ -602,20 +602,25 @@ def get_presigned_pdf_upload_url(
     # Политика и поля для POST-загрузки
     # Лимит размера — до 2 ГБ (подправь при необходимости).
     max_size = 2 * 1024 * 1024 * 1024
+    metadata = book_service.original_pdf_metadata(book)
+    meta_fields = {f"x-amz-meta-{k}": v for k, v in metadata.items()}
     conditions = [
         {"bucket": S3_BUCKET},
         ["starts-with", "$key", f"books/{book_id}/original/"],
         {"acl": "public-read"},
         {"Content-Type": "application/pdf"},
+        {"Content-Disposition": book_service.PDF_CONTENT_DISPOSITION},
+        {"Cache-Control": book_service.PDF_CACHE_CONTROL},
         ["content-length-range", 1, max_size],
-        {"Cache-Control": "public, max-age=14400, immutable, no-transform"},
-        {"Content-Disposition": "inline"},
     ]
+    for meta_key, meta_value in meta_fields.items():
+        conditions.append({meta_key: meta_value})
     fields = {
         "acl": "public-read",
         "Content-Type": "application/pdf",
-        "Cache-Control": "public, max-age=14400, immutable, no-transform",
-        "Content-Disposition": "inline",
+        "Cache-Control": book_service.PDF_CACHE_CONTROL,
+        "Content-Disposition": book_service.PDF_CONTENT_DISPOSITION,
+        **meta_fields,
     }
 
     post = s3v4.generate_presigned_post(
