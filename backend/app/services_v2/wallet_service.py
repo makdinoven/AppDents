@@ -157,6 +157,16 @@ def get_cashback_percent(db: Session, invitee_id: int) -> float:
 
 
 def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
+    def _serialize_book(book_obj) -> dict[str, Any] | None:
+        if not book_obj:
+            return None
+        return {
+            "id": getattr(book_obj, "id", None),
+            "title": getattr(book_obj, "title", None),
+            "slug": getattr(book_obj, "slug", None),
+            "cover_url": getattr(book_obj, "cover_url", None),
+        }
+
     # --- 1. кошелёк ---
     tx_rows = (
         db.query(m.WalletTransaction)
@@ -173,6 +183,10 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
             "slug": None,
             "landing_name": None,
             "email": None,
+            "book_landing_id": None,
+            "book_landing_slug": None,
+            "book_landing_name": None,
+            "books": [],
         }
         for tx in tx_rows
     ]
@@ -180,23 +194,48 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
     # --- 2. классические покупки ---
     purchase_rows = (
         db.query(m.Purchase)
-          .options(selectinload(m.Purchase.landing))
+          .options(
+              selectinload(m.Purchase.landing),
+              selectinload(m.Purchase.book),
+              selectinload(m.Purchase.book_landing).selectinload(m.BookLanding.books),
+          )
           .filter(m.Purchase.user_id == user_id)
           .all()
     )
-    purchase_items = [
-        {
-            "id": p.id,
-            "amount": -abs(p.amount),
-            "type": "PURCHASE",
-            "meta": {"source": p.source.value},
-            "created_at": p.created_at,
-            "slug": p.landing.page_name if p.landing else None,
-            "landing_name": p.landing.landing_name if p.landing else None,
-            "email": None,
-        }
-        for p in purchase_rows
-    ]
+    purchase_items: list[Dict[str, Any]] = []
+    for p in purchase_rows:
+        book_landing = getattr(p, "book_landing", None)
+        book_entries = []
+        if getattr(p, "book", None):
+            serialized = _serialize_book(p.book)
+            if serialized and serialized["id"] is not None:
+                book_entries.append(serialized)
+        if book_landing and getattr(book_landing, "books", None):
+            for book in book_landing.books or []:
+                serialized = _serialize_book(book)
+                if serialized and serialized["id"] is not None:
+                    book_entries.append(serialized)
+        # удаляем дубликаты, сохраняя порядок
+        dedup_books: dict[int, Dict[str, Any]] = {}
+        for entry in book_entries:
+            dedup_books[entry["id"]] = entry
+
+        purchase_items.append(
+            {
+                "id": p.id,
+                "amount": -abs(p.amount),
+                "type": "PURCHASE",
+                "meta": {"source": p.source.value},
+                "created_at": p.created_at,
+                "slug": p.landing.page_name if p.landing else None,
+                "landing_name": p.landing.landing_name if p.landing else None,
+                "email": None,
+                "book_landing_id": book_landing.id if book_landing else None,
+                "book_landing_slug": book_landing.page_name if book_landing else None,
+                "book_landing_name": book_landing.landing_name if book_landing else None,
+                "books": list(dedup_books.values()),
+            }
+        )
 
     # --- 3. склейка ---
     items = tx_items + purchase_items
@@ -207,11 +246,35 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
     user_ids   = {i["meta"].get("from_user")    for i in items if isinstance(i["meta"], dict) and i["meta"].get("from_user")}
     purch_ids  = {i["meta"].get("purchase_id")  for i in items if isinstance(i["meta"], dict) and i["meta"].get("purchase_id")}
     course_ids = set()
+    book_ids: set[int] = set()
+    book_landing_ids: set[int] = set()
     for i in items:
         meta = i["meta"]
         if isinstance(meta, dict) and meta.get("courses"):
             first = meta["courses"][0]
             course_ids.add(first)
+        if isinstance(meta, dict):
+            meta_books = meta.get("books")
+            if isinstance(meta_books, (list, tuple)):
+                for bid in meta_books:
+                    try:
+                        bid_int = int(bid)
+                    except (TypeError, ValueError):
+                        continue
+                    book_ids.add(bid_int)
+            blid = meta.get("book_landing_id")
+            if blid is not None:
+                try:
+                    book_landing_ids.add(int(blid))
+                except (TypeError, ValueError):
+                    pass
+        if i.get("book_landing_id"):
+            book_landing_ids.add(i["book_landing_id"])
+        if i.get("books"):
+            for book in i["books"]:
+                bid = book.get("id")
+                if bid is not None:
+                    book_ids.add(bid)
 
     # ----------------------------------------------------------------------
     # 5. ПОДТЯГИВАЕМ ДАННЫЕ одним запросом на каждый тип
@@ -236,6 +299,42 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
             .filter(m.Landing.id.in_(course_ids))
                                            )
 
+    book_map: dict[int, Dict[str, Any]] = {}
+    if book_ids:
+        book_rows = (
+            db.query(m.Book.id, m.Book.title, m.Book.slug, m.Book.cover_url)
+              .filter(m.Book.id.in_(book_ids))
+              .all()
+        )
+        for bid, title, slug, cover in book_rows:
+            book_map[int(bid)] = {
+                "id": int(bid),
+                "title": title,
+                "slug": slug,
+                "cover_url": cover,
+            }
+
+    book_landing_map: dict[int, Dict[str, Any]] = {}
+    if book_landing_ids:
+        book_landing_rows = (
+            db.query(m.BookLanding)
+              .options(selectinload(m.BookLanding.books))
+              .filter(m.BookLanding.id.in_(book_landing_ids))
+              .all()
+        )
+        for bl in book_landing_rows:
+            serialized_books: dict[int, Dict[str, Any]] = {}
+            for bk in getattr(bl, "books", []) or []:
+                serialized = _serialize_book(bk)
+                if serialized and serialized["id"] is not None:
+                    serialized_books[serialized["id"]] = serialized
+            book_landing_map[bl.id] = {
+                "id": bl.id,
+                "slug": bl.page_name,
+                "name": bl.landing_name,
+                "books": list(serialized_books.values()),
+            }
+
     # ----------------------------------------------------------------------
     # 6. ГИДРАТАЦИЯ элементов
     # ----------------------------------------------------------------------
@@ -255,6 +354,40 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
             elif meta.get("courses"):
                 cid = meta["courses"][0]
                 itm["landing_name"] = course_land_map.get(cid)
+
+        # book landing details и книги
+        existing_books: dict[int, Dict[str, Any]] = {
+            b["id"]: b for b in (itm.get("books") or []) if isinstance(b, dict) and b.get("id") is not None
+        }
+
+        meta_books = meta.get("books", []) if isinstance(meta, dict) else []
+        if isinstance(meta_books, (list, tuple)):
+            for bid in meta_books:
+                try:
+                    bid_int = int(bid)
+                except (TypeError, ValueError):
+                    continue
+                data = book_map.get(bid_int)
+                if data:
+                    existing_books[bid_int] = data
+
+        book_landing_id = itm.get("book_landing_id") or meta.get("book_landing_id")
+        if book_landing_id is not None:
+            try:
+                book_landing_id = int(book_landing_id)
+            except (TypeError, ValueError):
+                book_landing_id = None
+        if book_landing_id and book_landing_id in book_landing_map:
+            bl_info = book_landing_map[book_landing_id]
+            itm["book_landing_id"] = book_landing_id
+            itm["book_landing_slug"] = bl_info.get("slug")
+            if not itm.get("book_landing_name"):
+                itm["book_landing_name"] = bl_info.get("name")
+            for bk in bl_info.get("books", []):
+                if bk and bk.get("id") is not None:
+                    existing_books[bk["id"]] = bk
+
+        itm["books"] = list(existing_books.values())
 
     # итоги, отсортированные по дате ↓
     return sorted(items, key=lambda x: x["created_at"], reverse=True)

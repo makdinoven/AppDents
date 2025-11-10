@@ -22,6 +22,13 @@ class AdminAdjustRequest(BaseModel):
     amount: float
     meta: Optional[dict] = None
 
+class WalletBookItem(BaseModel):
+    id: int
+    title: str
+    slug: Optional[str] = None
+    cover_url: Optional[str] = None
+
+
 class WalletTransactionItem(BaseModel):
     id: int
     amount: float
@@ -31,6 +38,10 @@ class WalletTransactionItem(BaseModel):
     slug: Optional[str] = None
     landing_name: Optional[str] = None
     email: Optional[str] = None
+    book_landing_id: Optional[int] = None
+    book_landing_slug: Optional[str] = None
+    book_landing_name: Optional[str] = None
+    books: List[WalletBookItem] = Field(default_factory=list)
 
 class ReferralRuleIn(BaseModel):
     min_purchase_no: int
