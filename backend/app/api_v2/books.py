@@ -4,7 +4,7 @@ import os
 import logging
 from math import ceil
 from typing import Optional, List, Dict, Union
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
 
 import boto3
 from botocore.config import Config
@@ -908,7 +908,52 @@ def book_landing_cards(
         "cards": cards,
     }
 
-from datetime import timedelta
+
+# ─────────────── АНАЛИТИКА КНИГ ───────────────────────────────────────────────
+@router.get("/analytics/language-stats")
+def book_language_stats(
+    start_date: Optional[date] = Query(
+        None,
+        description="Дата начала (YYYY-MM-DD).",
+    ),
+    end_date: Optional[date] = Query(
+        None,
+        description="Дата конца (YYYY-MM-DD, включительно).",
+    ),
+    detailed: bool = Query(True, description="Нужна ли разбивка по дням"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    """
+    Возвращает статистику покупок книжных лендингов по языкам за выбранный период.
+
+    Период вычисляется по тем же правилам, что и для курсовых лендингов.
+    """
+    now = datetime.utcnow()
+
+    if start_date is None and end_date is None:
+        start_dt = datetime(now.year, now.month, now.day)
+        end_dt = now
+    elif start_date is not None and end_date is None:
+        start_dt = datetime.combine(start_date, time.min)
+        end_dt = now
+    elif start_date is not None and end_date is not None:
+        start_dt = datetime.combine(start_date, time.min)
+        end_dt = datetime.combine(end_date + timedelta(days=1), time.min)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date,  нужно обязательно передать start_date."
+        )
+
+    total = book_service.get_book_purchases_by_language(db, start_dt, end_dt)
+
+    daily: list[dict] = []
+    if detailed:
+        daily = book_service.get_book_purchases_by_language_per_day(db, start_dt, end_dt)
+
+    return {"total": total, "daily": daily}
+
 
 @router.get("/me/books/{book_id}", response_model=UserBookDetailResponse,
             summary="Детали купленной книги для пользователя (форматы + ссылки на скачивание)")

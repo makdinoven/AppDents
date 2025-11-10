@@ -1,5 +1,6 @@
 import logging
-from datetime import datetime, timedelta
+from collections import defaultdict
+from datetime import datetime, timedelta, date
 from typing import List, Dict, Any
 
 from fastapi import HTTPException, status
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
     BookFileFormat, Author, BookLanding, User, Tag,
-    BookAdVisit, BookLandingAdPeriod
+    BookAdVisit, BookLandingAdPeriod, Purchase
 )
 from ..schemas_v2.book import (
     BookCreate, BookUpdate,
@@ -521,3 +522,95 @@ def reset_expired_book_ad_flags(db: Session):
 
     db.commit()
     return len(target_ids)
+
+
+# ============================================================================
+# Аналитика продаж книжных лендингов
+# ============================================================================
+
+def get_book_purchases_by_language(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+):
+    """
+    Возвращает агрегированную статистику покупок книжных лендингов по языкам
+    за период [start_dt, end_dt).
+    """
+    rows = (
+        db.query(
+            BookLanding.language.label("language"),
+            func.count(Purchase.id).label("purchase_count"),
+            func.coalesce(func.sum(Purchase.amount), 0).label("total_amount"),
+        )
+        .join(Purchase, Purchase.book_landing_id == BookLanding.id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at < end_dt,
+        )
+        .group_by(BookLanding.language)
+        .all()
+    )
+
+    return [
+        {
+            "language": row.language,
+            "count": row.purchase_count,
+            "total_amount": f"{row.total_amount:.2f} $",
+        }
+        for row in rows
+    ]
+
+
+def get_book_purchases_by_language_per_day(
+    db: Session,
+    start_dt: datetime,
+    end_dt: datetime,
+):
+    """
+    Возвращает статистику покупок книжных лендингов по языкам с разбивкой по дням
+    за период [start_dt, end_dt).
+    """
+    day_col = func.date(Purchase.created_at)
+
+    rows = (
+        db.query(
+            day_col.label("day"),
+            BookLanding.language.label("language"),
+            func.count(Purchase.id).label("purchase_count"),
+            func.coalesce(func.sum(Purchase.amount), 0).label("total_amount"),
+        )
+        .join(Purchase, Purchase.book_landing_id == BookLanding.id)
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at < end_dt,
+        )
+        .group_by(day_col, BookLanding.language)
+        .order_by(day_col)
+        .all()
+    )
+
+    stats: dict[date, dict[str, dict[str, str | int]]] = defaultdict(dict)
+
+    for row in rows:
+        stats[row.day][row.language] = {
+            "language": row.language,
+            "count": row.purchase_count,
+            "total_amount": f"{row.total_amount:.2f} $",
+        }
+
+    data = []
+    current = start_dt.date()
+    last = end_dt.date()
+
+    while current < last:
+        languages = list(stats.get(current, {}).values())
+        data.append(
+            {
+                "date": current.isoformat(),
+                "languages": languages,
+            }
+        )
+        current += timedelta(days=1)
+
+    return data
