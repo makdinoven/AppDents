@@ -19,7 +19,8 @@ def list_authors_by_page(
     *,
     page: int = 1,
     size: int = 12,
-    language: Optional[str] = None
+    language: Optional[str] = None,
+    sort: Optional[str] = None
 ) -> dict:
     popularity_sub = (
         db.query(
@@ -32,6 +33,13 @@ def list_authors_by_page(
     ).subquery()
 
     # 1) Базовый запрос для фильтрации
+    order_columns = [
+        popularity_sub.c.popularity.desc(),
+        Author.id.desc()
+    ]
+    if sort == "id_desc":
+        order_columns = [Author.id.desc()]
+
     base_query = (
         db.query(Author)
         .join(popularity_sub, popularity_sub.c.author_id == Author.id)
@@ -42,10 +50,7 @@ def list_authors_by_page(
             .selectinload(Landing.tags),
             selectinload(Author.books).selectinload(Book.landings),
         )
-        .order_by(
-            popularity_sub.c.popularity.desc(),  # ← сортировка
-            Author.id.desc()
-        )
+        .order_by(*order_columns)
     )
     if language:
         base_query = base_query.filter(Author.language == language)

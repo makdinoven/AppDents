@@ -26,6 +26,10 @@ def get_authors(
         None,
         description="Фильтр по языку (EN, RU, ES, PT, IT, AR)"
     ),
+    sort: Optional[str] = Query(
+        None,
+        description="Параметр сортировки: 'id_desc' — по убыванию ID, иначе по популярности"
+    ),
     page: int = Query(
         1,
         ge=1,
@@ -48,7 +52,7 @@ def get_authors(
         "items": [ ...список авторов... ]
     }
     """
-    return list_authors_by_page(db, page=page, size=size, language=language)
+    return list_authors_by_page(db, page=page, size=size, language=language, sort=sort)
 
 @router.get("/detail/{author_id}", response_model=AuthorResponse)
 def get_author(author_id: int, db: Session = Depends(get_db)):
