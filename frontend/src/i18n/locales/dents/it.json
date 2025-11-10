@@ -224,8 +224,9 @@
   "landing": {
     "by": "Da",
     "about": "Informazioni su questo corso",
+    "instantAccess": "accesso immediato subito dopo il pagamento",
     "access": "l'accesso non è limitato nel tempo",
-    "duration": "Durata:",
+    "duration": "durata:",
     "lessons_one": "lezione",
     "lessons_other": "lezioni",
     "professors_one": "professore",
@@ -278,7 +279,11 @@
       "8_question": "Come contatto il supporto?",
       "8_answer": "Puoi contattare il supporto tramite il tuo account su <link1>dent-s.com</link1> o usando l'email indicata sulla ricevuta.",
       "9_question": "Come reimposto la password?",
-      "9_answer": "Clicca su <link1>Hai dimenticato la password?</link1> nella <link2>pagina di accesso</link2> e segui le istruzioni per crearne una nuova."
+      "9_answer": "Clicca su <link1>Hai dimenticato la password?</link1> nella <link2>pagina di accesso</link2> e segui le istruzioni per crearne una nuova.",
+      "10_question": "Quanto velocemente posso accedere a questo corso?",
+      "10_answer": "Dopo il pagamento, il corso diventa immediatamente disponibile. Potrai iniziare a studiare senza alcuna attesa.",
+      "10_question_book": "Quanto velocemente posso accedere al libro?",
+      "10_answer_book": "Dopo il pagamento, il libro diventa immediatamente disponibile. Potrai iniziare a leggerlo senza alcuna attesa."
     }
   },
 

@@ -271,6 +271,7 @@ const Landing = () => {
     savings: `$${landing?.old_price - landing?.new_price} ${t("landing.savings")}`,
     access: t("landing.access"),
     duration: `${t("landing.duration")} ${landing?.duration ? landing?.duration : "0"}`,
+    instantAccess: t("landing.instantAccess"),
   };
 
   const aboutDataWebinar = {
@@ -279,6 +280,7 @@ const Landing = () => {
     }),
     access: t("landing.access"),
     duration: `${t("landing.duration")} ${firstLesson?.duration ? firstLesson?.duration : "0"}`,
+    instantAccess: t("landing.instantAccess"),
   };
 
   const courseProgramData = {

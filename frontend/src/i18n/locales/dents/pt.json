@@ -217,8 +217,9 @@
   "landing": {
     "by": "Por",
     "about": "Sobre este curso",
+    "instantAccess": "acesso instantâneo logo após o pagamento",
     "access": "o acesso não é limitado no tempo",
-    "duration": "Duração:",
+    "duration": "duração:",
     "lessons_one": "aula",
     "lessons_other": "aulas",
     "professors_one": "professor",
@@ -271,7 +272,11 @@
       "8_question": "Como entro em contato com o suporte?",
       "8_answer": "Você pode entrar em contato pelo seu perfil no site <link1>dent-s.com</link1> ou através do e-mail que consta no recibo de pagamento.",
       "9_question": "Como redefinir minha senha?",
-      "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha."
+      "9_answer": "Clique em <link1>Esqueceu sua senha?</link1> na <link2>página de login</link2> e siga as instruções para criar uma nova senha.",
+      "10_question": "Com que rapidez posso acessar este curso?",
+      "10_answer": "Após o pagamento, o curso fica disponível imediatamente. Você poderá começar a aprender sem esperar.",
+      "10_question_book": "Com que rapidez posso acessar o livro?",
+      "10_answer_book": "Após o pagamento, o livro fica disponível imediatamente. Você poderá começar a ler sem esperar."
     }
   },
 
