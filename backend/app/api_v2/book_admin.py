@@ -47,13 +47,13 @@ log = logging.getLogger(__name__)
 def _pdf_key(book: Book) -> str:
     return f"books/{book.slug}/{book.slug}.pdf"
 
-def _preview_pdf_url(book_slug: str) -> str:
+def _preview_pdf_url(book_id: int) -> str:
     """
-    Генерирует CDN-URL превью PDF (15 страниц) по slug книги.
-    Путь соответствует логике в book_previews.py: books/<slug>/preview/preview_15p.pdf
+    Генерирует CDN-URL превью PDF (20 страниц) по book_id книги.
+    Путь соответствует логике в book_previews.py: books/<id>/preview/preview_20p.pdf
     """
     from urllib.parse import quote
-    key = f"books/{book_slug}/preview/preview_15p.pdf"
+    key = f"books/{book_id}/preview/preview_20p.pdf"
     return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
 
 def _cdn_url(key: str) -> str:
@@ -422,11 +422,11 @@ def book_preview_status(
     job = rds.hgetall(prev_k_job(book_id)) or {}
     logs = rds.lrange(prev_k_log(book_id), 0, 100)
     
-    # Генерируем URL превью по slug книги
+    # Генерируем URL превью по id книги
     preview_url = None
     book = db.query(Book).get(book_id)
     if book:
-        preview_url = _preview_pdf_url(book.slug)
+        preview_url = _preview_pdf_url(book.id)
     
     return {"job": job, "logs": logs, "preview_url": preview_url}
 
@@ -738,7 +738,7 @@ def admin_get_book_detail(
         "cover_url": book.cover_url,
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
-        "preview_pdf_url": _preview_pdf_url(book.slug),
+        "preview_pdf_url": _preview_pdf_url(book.id),
         "page_count": getattr(book, "page_count", None),
         "publisher_ids": [p.id for p in (book.publishers or [])],
 
