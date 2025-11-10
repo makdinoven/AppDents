@@ -522,6 +522,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # 12.2) Обрабатываем книжные ЛЕНДИНГИ: выдаём книги из лендинга, инкрементим sales_count
     purchased_book_ids = set(book_ids_list)
+    book_landing_purchase_records: list[Purchase] = []
+    book_purchase_records: list[Purchase] = []
 
     for blid in book_landing_ids_list:
         bl = db.query(BookLanding).filter(
@@ -548,6 +550,17 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
         # sales_count++ у книжного лендинга
         bl.sales_count = (bl.sales_count or 0) + 1
 
+        book_landing_purchase = Purchase(
+            user_id=user.id,
+            book_landing_id=blid,
+            book_id=None,
+            from_ad=from_ad,
+            amount=0.0,
+            source=purchase_source,
+        )
+        db.add(book_landing_purchase)
+        book_landing_purchase_records.append(book_landing_purchase)
+
     # 12.3) Чистим корзину от купленных книжных лендингов (если были)
     try:
         cart_bl_ids = []
@@ -558,19 +571,18 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     except Exception as e:
         logging.warning("Failed to cleanup cart book landings: %s", e)
 
-    # 12.4) Создаём Purchase записи по книгам и книжным лендингам
-    # Сумму уже положили в первую Purchase выше (курсовую). Для книг распределяем 0.0,
-    # чтобы просто зафиксировать состав покупки (финансовый факт уже есть).
-
-    for blid in book_landing_ids_list:
-        db.add(Purchase(
+    # 12.4) Фиксируем покупки отдельных книг (если переданы напрямую)
+    for bid in book_ids_list:
+        book_purchase = Purchase(
             user_id=user.id,
-            book_landing_id=blid,
-            book_id=None,
+            book_landing_id=None,
+            book_id=bid,
             from_ad=from_ad,
             amount=0.0,
             source=purchase_source,
-        ))
+        )
+        db.add(book_purchase)
+        book_purchase_records.append(book_purchase)
 
     # 15) [CHANGE] Создаём Purchase ВСЕГДА (финансовый факт), даже если нет новых курсов / landing_id = NULL
     amount_total = (session.get("amount_total") or 0) / 100.0
@@ -589,17 +601,40 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 purchase = p
 
     elif book_landing_ids_list:
-        for idx, blid in enumerate(book_landing_ids_list):
-            p = Purchase(
-                user_id=user.id,
-                book_landing_id=blid,
-                from_ad=from_ad,
-                amount=amount_total if idx == 0 else 0.0,
-                source=purchase_source,
-            )
-            db.add(p)
-            if idx == 0:
-                purchase = p
+        if book_landing_purchase_records:
+            first_purchase = book_landing_purchase_records[0]
+            first_purchase.amount = amount_total
+            purchase = first_purchase
+        else:
+            for idx, blid in enumerate(book_landing_ids_list):
+                p = Purchase(
+                    user_id=user.id,
+                    book_landing_id=blid,
+                    from_ad=from_ad,
+                    amount=amount_total if idx == 0 else 0.0,
+                    source=purchase_source,
+                )
+                db.add(p)
+                if idx == 0:
+                    purchase = p
+
+    elif book_ids_list:
+        if book_purchase_records:
+            first_purchase = book_purchase_records[0]
+            first_purchase.amount = amount_total
+            purchase = first_purchase
+        else:
+            for idx, bid in enumerate(book_ids_list):
+                p = Purchase(
+                    user_id=user.id,
+                    book_id=bid,
+                    from_ad=from_ad,
+                    amount=amount_total if idx == 0 else 0.0,
+                    source=purchase_source,
+                )
+                db.add(p)
+                if idx == 0:
+                    purchase = p
 
     else:
         # крайний фолбэк
