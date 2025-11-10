@@ -401,6 +401,7 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
     """
     Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
     Загорает флаг только после порога уникальных IP за окно BOOK_AD_UNIQUE_IP_WINDOW.
+    Если активная реклама не набирает порог — выключает её.
     """
     now = datetime.utcnow()
     visit = BookAdVisit(
@@ -408,6 +409,7 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
         fbp=fbp,
         fbc=fbc,
         ip_address=(ip.strip() if ip else None),
+        visited_at=now,
     )
     db.add(visit)
     db.flush()
@@ -429,11 +431,19 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
             book_landing.in_advertising = True
             book_landing.ad_flag_expires_at = now + BOOK_AD_TTL
             open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
+        else:
+            # не достигли порога — убедимся, что открытых периодов нет
+            _close_book_ad_period_if_open(db, book_landing_id, ended_by=None)
     else:
-        open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
-        new_exp = now + BOOK_AD_TTL
-        if not book_landing.ad_flag_expires_at or book_landing.ad_flag_expires_at < new_exp:
-            book_landing.ad_flag_expires_at = new_exp
+        if unique_count < BOOK_AD_MIN_UNIQUE_IPS:
+            book_landing.in_advertising = False
+            book_landing.ad_flag_expires_at = None
+            _close_book_ad_period_if_open(db, book_landing_id, ended_by=None)
+        else:
+            open_book_ad_period_if_needed(db, book_landing_id, started_by=None)
+            new_exp = now + BOOK_AD_TTL
+            if not book_landing.ad_flag_expires_at or book_landing.ad_flag_expires_at < new_exp:
+                book_landing.ad_flag_expires_at = new_exp
 
     db.commit()
 
@@ -455,7 +465,7 @@ def reset_expired_book_ad_flags(db: Session):
     """
     Массовый сброс истекших флагов рекламы для книжных лендингов.
     """
-    expiring_ids = [
+    expiring_ids = {
         lid for (lid,) in
         db.query(BookLanding.id)
           .filter(
@@ -464,14 +474,31 @@ def reset_expired_book_ad_flags(db: Session):
               BookLanding.ad_flag_expires_at < func.utc_timestamp(),
           )
           .all()
-    ]
+    }
 
-    if not expiring_ids:
+    cutoff = datetime.utcnow() - BOOK_AD_TTL
+    stale_period_ids = {
+        lid for (lid,) in
+        db.query(BookLandingAdPeriod.book_landing_id)
+          .join(BookLanding, BookLanding.id == BookLandingAdPeriod.book_landing_id)
+          .filter(
+              BookLanding.in_advertising.is_(True),
+              BookLanding.ad_flag_expires_at.is_(None),
+              BookLandingAdPeriod.ended_at.is_(None),
+              BookLandingAdPeriod.started_at < cutoff,
+          )
+          .distinct()
+          .all()
+    }
+
+    target_ids = expiring_ids | stale_period_ids
+
+    if not target_ids:
         return 0
 
     db.query(BookLandingAdPeriod) \
       .filter(
-          BookLandingAdPeriod.book_landing_id.in_(expiring_ids),
+          BookLandingAdPeriod.book_landing_id.in_(target_ids),
           BookLandingAdPeriod.ended_at.is_(None),
       ) \
       .update(
@@ -483,7 +510,7 @@ def reset_expired_book_ad_flags(db: Session):
       )
 
     db.query(BookLanding) \
-      .filter(BookLanding.id.in_(expiring_ids)) \
+      .filter(BookLanding.id.in_(target_ids)) \
       .update(
           {
               BookLanding.in_advertising: False,
@@ -493,4 +520,4 @@ def reset_expired_book_ad_flags(db: Session):
       )
 
     db.commit()
-    return len(expiring_ids)
+    return len(target_ids)
