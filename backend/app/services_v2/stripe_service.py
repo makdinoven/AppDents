@@ -525,11 +525,14 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     for blid in book_landing_ids_list:
         bl = db.query(BookLanding).filter(
-            BookLanding.id == blid, BookLanding.is_hidden.is_(False)
+            BookLanding.id == blid
         ).one_or_none()
         if not bl:
-            logging.warning("Book landing %s not found/hidden", blid)
+            logging.warning("Book landing %s not found", blid)
             continue
+
+        if bl.is_hidden:
+            logging.info("Book landing %s скрыт, но покупка подтверждена — выдаём доступ", blid)
 
         books_from_bl = books_in_landing(db, bl)
         for b in books_from_bl:
