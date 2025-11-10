@@ -99,10 +99,16 @@ services:
       - pub
 
   celery_worker_book:
+    deploy:
+         resources:
+           limits:
+             cpus: "2.0"           
+           reservations:
+             cpus: "1.0" 
     build: ./backend
     container_name: celery_worker_preprod_book
     command: >
-      celery -A app.celery_app worker -l info -Q book -n book@%h --concurrency=1
+      celery -A app.celery_app worker -l info -Q book -n book@%h --concurrency=2
     env_file: .env 
     working_dir: /app
     depends_on:
