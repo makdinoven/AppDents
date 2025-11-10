@@ -628,7 +628,8 @@
     "analytics": {
       "analytics": "Analytics",
       "size": "Size",
-      "languageStats": "Language stats",
+      "languageCoursesStats": "Courses Lang stats",
+      "languageBooksStats": "Books Lang stats",
       "adListing": "Ad listing",
       "referrals": "Referrals",
       "purchases": "Purchases",

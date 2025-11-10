@@ -80,11 +80,9 @@
   }
 
   &.book {
+    border-radius: 5px;
     width: 65px;
     height: 84px;
-    &:not(.no_photo) {
-      border-radius: unset;
-    }
   }
 
   &.landing {

@@ -26,6 +26,11 @@ const Table = <T extends Record<string, any>>({
 
   const excludedKeys = [
     "slug",
+    "book_slug",
+    "book_landing_slug",
+    "book_landing_id",
+    "book_id",
+    "book_title",
     "landing_slug",
     "inviter_id",
     "referral_id",
@@ -48,6 +53,19 @@ const Table = <T extends Record<string, any>>({
       return (
         <a
           href={`/${Path.landingClient}/${slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {value}
+        </a>
+      );
+    }
+
+    if (key === "book_landing_name") {
+      const slug = row.slug || row.book_landing_slug;
+      return (
+        <a
+          href={`${Path.bookLandingClient}/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
         >

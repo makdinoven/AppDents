@@ -37,8 +37,8 @@
   background-color: $hover-color;
 
   &.book {
+    border-radius: 10px;
     background-color: unset;
-    border-radius: unset;
     border: none;
     height: 160px;
     width: 120px;
@@ -106,6 +106,7 @@
     height: 55px;
 
     &.book {
+      border-radius: 5px;
       max-height: 80px;
       width: 55px;
     }

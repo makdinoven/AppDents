@@ -23,9 +23,9 @@ export const getAuthHeaders = () => {
 
 export const generateId = () => Math.floor(Math.random() * 100000);
 
-export const formatAuthorsDesc = (authors: any) => {
+export const formatAuthorsDesc = (authors: any, showBy: boolean = true) => {
   return authors?.length > 0
-    ? `${t("landing.by")} ${
+    ? `${showBy ? t("landing.by") : ""} ${
         authors
           ?.slice(0, 3)
           .map((author: any) => capitalizeText(author.name))

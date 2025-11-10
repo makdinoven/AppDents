@@ -70,14 +70,6 @@
       margin-bottom: 15px;
       @include flex-center();
 
-      @media (max-width: $middle-breakpoint) {
-        width: 100%;
-      }
-
-      @media (max-width: $tablet-breakpoint) {
-        @include clamped-p1();
-      }
-
       &.buy {
         height: 60px;
         margin-bottom: 0;
@@ -95,6 +87,20 @@
         .new_price {
           color: $accent;
           @include transition();
+        }
+      }
+
+      @media (max-width: $middle-breakpoint) {
+        width: 100%;
+      }
+
+      @media (max-width: $tablet-breakpoint) {
+        @include clamped-p1();
+        margin-top: auto;
+        height: 40px;
+
+        &.buy {
+          height: unset;
         }
       }
 

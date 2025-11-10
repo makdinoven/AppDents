@@ -15,7 +15,9 @@ const YourBooks = () => {
     if (!books.length) dispatch(getBooks());
   }, []);
 
-  return <MyContent key={childKey} items={books} type="book" />;
+  return (
+    <MyContent key={childKey} showSearch={true} items={books} type="book" />
+  );
 };
 
 export default YourBooks;

@@ -163,7 +163,7 @@ const BookCard = ({
               <Trans i18nKey={"bookCard.authors"} />:
               <span className={s.book_info_value}>
                 {" "}
-                {formatAuthorsDesc(authors)}
+                {formatAuthorsDesc(authors, false)}
               </span>
             </li>
           )}

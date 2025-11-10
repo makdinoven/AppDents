@@ -9,7 +9,7 @@ import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.
 import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 
-const AnalyticsLanguageStats = () => {
+const AnalyticsCoursesLanguageStats = () => {
   const [languageStats, setLanguageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState<"eur" | "usd">(
@@ -57,7 +57,7 @@ const AnalyticsLanguageStats = () => {
     };
 
     try {
-      const res = await adminApi.getLanguageStats(params);
+      const res = await adminApi.getLanguageCoursesStats(params);
       setLanguageStats(res.data);
       setLoading(false);
     } catch (err) {
@@ -142,4 +142,4 @@ const AnalyticsLanguageStats = () => {
   );
 };
 
-export default AnalyticsLanguageStats;
+export default AnalyticsCoursesLanguageStats;

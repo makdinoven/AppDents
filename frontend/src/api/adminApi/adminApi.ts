@@ -175,6 +175,32 @@ export const adminApi = {
     );
   },
 
+  getBookCoverCandidatesJob(id: any) {
+    return instance.get(`book_admin/${id}/cover-candidates`, {
+      headers: getAuthHeaders(),
+    });
+  },
+
+  regenerateBookFormats(id: any) {
+    return instance.post(
+      `book_admin/${id}/generate-formats`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+
+  regenerateBookPreview(id: any) {
+    return instance.post(
+      `book_admin/${id}/generate-preview`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+
   finalizeBookUploading(id: any, data: { key: string }) {
     return instance.post(
       `book_admin/admin/books/${id}/upload-pdf-finalize`,
@@ -272,8 +298,14 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
-  getLanguageStats(params: any) {
+  getLanguageCoursesStats(params: any) {
     return instance.get("landings/analytics/language-stats", {
+      params: params,
+      headers: getAuthHeaders(),
+    });
+  },
+  getLanguageBooksStats(params: any) {
+    return instance.get("books/analytics/language-stats", {
       params: params,
       headers: getAuthHeaders(),
     });

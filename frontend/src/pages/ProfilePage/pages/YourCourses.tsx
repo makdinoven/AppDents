@@ -15,7 +15,9 @@ const YourCourses = () => {
     if (!courses.length) dispatch(getCourses());
   }, []);
 
-  return <MyContent key={childKey} items={courses} type="course" />;
+  return (
+    <MyContent key={childKey} showSearch={true} items={courses} type="course" />
+  );
 };
 
 export default YourCourses;

@@ -4,7 +4,7 @@ import PrettyButton from "../../../../../../../components/ui/PrettyButton/Pretty
 import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
 import { CheckMark, ErrorIcon } from "../../../../../../../assets/icons";
 import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type CoverCandidate = {
   id: number;
@@ -20,7 +20,9 @@ const Component = ({
   book: any;
   setBook: (data: any) => void;
 }) => {
+  const [jobStatus, setJobStatus] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [settingLoading, setSettingLoading] = useState(false);
   const [coverCandidates, setCoverCandidates] = useState<CoverCandidate[]>([]);
   const [selectedBookCover, setSelectedBookCover] =
     useState<CoverCandidate | null>(null);
@@ -35,10 +37,13 @@ const Component = ({
       return;
     }
     try {
+      setSettingLoading(true);
       const res = await adminApi.uploadImageNew(selectedBookCover.formData);
       Alert(`Book cover changed`, <CheckMark />);
       setBook({ ...book, cover_url: res.data.url });
       setCoverCandidates([]);
+      setJobStatus(null);
+      setSettingLoading(false);
     } catch (e) {
       Alert(`Error loading book cover image: ${e}`, <ErrorIcon />);
     }
@@ -48,42 +53,39 @@ const Component = ({
     try {
       setLoading(true);
       await adminApi.generateBookCoverCandidates(book.id);
-      await handleGetBookCoverCandidates();
-      setLoading(false);
+      await handleGetCoverCandidatesJob();
     } catch {
       Alert(`Error generating book cover candidates`, <ErrorIcon />);
       setLoading(false);
     }
   };
 
+  const handleGetCoverCandidatesJob = async () => {
+    try {
+      const res = await adminApi.getBookCoverCandidatesJob(book.id);
+      setJobStatus(res.data.job.status);
+      if (res.data.job.status === "success") {
+        setLoading(false);
+      }
+    } catch (e) {
+      Alert(
+        `Error occurred while trying to get cover candidates job status`,
+        <ErrorIcon />,
+      );
+    }
+  };
+
   const handleGetBookCoverCandidates = async () => {
     try {
-      const fetchWithRetry = async (
+      const getCoverCandidate = async (
         bookId: string,
         index: number,
-        retries = 5,
       ): Promise<Blob> => {
-        for (let attempt = 1; attempt <= retries; attempt++) {
-          try {
-            const res = await adminApi.getBookCoverCandidate(bookId, index);
-            return res.data;
-          } catch (err: any) {
-            if (err?.response?.status === 404 && attempt < retries) {
-              console.warn(
-                `Attempt ${attempt} for candidate ${index} failed with 404, retrying...`,
-              );
-              await new Promise((r) => setTimeout(r, 500));
-              continue;
-            }
-            throw err;
-          }
-        }
-        throw new Error(
-          `Failed to fetch candidate ${index} after ${retries} retries`,
-        );
+        const res = await adminApi.getBookCoverCandidate(bookId, index);
+        return res.data;
       };
 
-      const requests = [1, 2, 3].map((i) => fetchWithRetry(book.id!, i));
+      const requests = [1, 2, 3].map((i) => getCoverCandidate(book.id!, i));
       const blobs = await Promise.all(requests);
 
       const candidates = blobs.map((blob, i) => {
@@ -106,6 +108,21 @@ const Component = ({
     }
   };
 
+  useEffect(() => {
+    if (jobStatus && jobStatus !== "success") {
+      const interval = setTimeout(() => {
+        handleGetCoverCandidatesJob();
+      }, 3000);
+
+      return () => clearTimeout(interval);
+    }
+
+    if (jobStatus === "success") {
+      handleGetBookCoverCandidates();
+      setJobStatus(null);
+    }
+  }, [jobStatus]);
+
   if (!book) return;
 
   return (
@@ -113,7 +130,7 @@ const Component = ({
       <PrettyButton
         loading={loading}
         onClick={handleGenerateBookCoverCandidates}
-        text={"Get cover candidates"}
+        text={"Select book cover"}
       />
       {coverCandidates.length > 0 && (
         <ModalWrapper
@@ -135,7 +152,11 @@ const Component = ({
               ))}
             </div>
 
-            <PrettyButton text={"Set cover img"} onClick={handleSetCover} />
+            <PrettyButton
+              text={"Set cover img"}
+              loading={settingLoading}
+              onClick={handleSetCover}
+            />
           </div>
         </ModalWrapper>
       )}

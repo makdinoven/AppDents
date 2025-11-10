@@ -35,7 +35,7 @@ import BookLandingDetail from "../pages/Admin/pages/detail/BookLandingDetail..ts
 import BookDetail from "../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
 import LandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytics/LandingAnalytics.tsx";
 import AnalyticsPurchases from "../pages/Admin/pages/analytics/AnalyticsPurchases.tsx";
-import AnalyticsLanguageStats from "../pages/Admin/pages/analytics/AnalyticsLanguageStats.tsx";
+import AnalyticsCoursesLanguageStats from "../pages/Admin/pages/analytics/AnalyticsCoursesLanguageStats.tsx";
 import AnalyticsAdListing from "../pages/Admin/pages/analytics/AnalyticsAdListing.tsx";
 import AnalyticsReferrals from "../pages/Admin/pages/analytics/AnalyticsReferrals.tsx";
 import AnalyticsUserGrowth from "../pages/Admin/pages/analytics/AnalyticsUserGrowth.tsx";
@@ -59,6 +59,7 @@ import PurchaseHistory from "../pages/ProfilePage/pages/ProfileMain/content/Purc
 import YourBooks from "../pages/ProfilePage/pages/YourBooks.tsx";
 import YourCourses from "../pages/ProfilePage/pages/YourCourses.tsx";
 import ProfilePageWrapper from "../pages/ProfilePage/layout/ProfilePageWrapper.tsx";
+import AnalyticsBooksLanguageStats from "../pages/Admin/pages/analytics/AnalyticsBooksLanguageStats.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -174,8 +175,12 @@ export const AppRoutes: FC = () => {
               element={<AnalyticsPurchases />}
             />
             <Route
-              path={`${Path.adminLanguageStats}`}
-              element={<AnalyticsLanguageStats />}
+              path={`${Path.adminCoursesLanguageStats}`}
+              element={<AnalyticsCoursesLanguageStats />}
+            />
+            <Route
+              path={`${Path.adminBooksLanguageStats}`}
+              element={<AnalyticsBooksLanguageStats />}
             />
             <Route
               path={`${Path.adminAdListing}`}

@@ -194,11 +194,14 @@ const BookDetail = () => {
                 )}
               </div>
 
-              <BookUploader
-                itemId={book.id}
-                files={book.files}
-                setBook={setBook}
-              />
+              {book && (
+                <BookUploader
+                  book={book}
+                  itemId={book.id}
+                  files={book.files}
+                  setBook={setBook}
+                />
+              )}
 
               {book.files.length > 0 && (
                 <div className={s.two_items}>

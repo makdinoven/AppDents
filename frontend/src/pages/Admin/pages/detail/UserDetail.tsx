@@ -80,10 +80,6 @@ const UserDetail = () => {
     }
   };
 
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
-
   const handleChangeBalance = async () => {
     const amount = Number(amountToAdd);
     if (isNaN(amount) || amount === 0) return;
@@ -117,6 +113,7 @@ const UserDetail = () => {
                 data={user.purchases}
                 columnLabels={{
                   id: "ID",
+                  book_landing_name: "Book landing",
                   course_id: "Course ID",
                   landing_name: "Landing",
                   created_at: "Date",

@@ -152,10 +152,10 @@ $border-radius: 20px;
     @include flex-center();
 
     img {
+      border-radius: 7px;
       aspect-ratio: 9/12;
       height: 100%;
       width: auto;
-      border-radius: 0;
     }
   }
 

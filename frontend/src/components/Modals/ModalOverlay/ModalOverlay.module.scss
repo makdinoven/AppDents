@@ -55,30 +55,33 @@
     padding: 10px 10px calc(90px + env(safe-area-inset-bottom));
     justify-content: center;
 
-    @supports (-webkit-overflow-scrolling: touch) {
-      &.top {
+
+    &:not(.fullscreen) {
+      @supports (-webkit-overflow-scrolling: touch) {
+        &.top {
+          padding: 10px 10px calc(40px + env(safe-area-inset-bottom));
+        }
         padding: 10px 10px calc(40px + env(safe-area-inset-bottom));
-      }
-      padding: 10px 10px calc(40px + env(safe-area-inset-bottom));
-      background-color: unset;
-      backdrop-filter: unset;
-      &::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-color: $cart-background;
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
-        z-index: -1;
-        mask-image: linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 1) 0,
-          rgba(0, 0, 0, 1) 70%,
-          rgba(0, 0, 0, 0) 100%
-        );
-        mask-repeat: no-repeat;
-        mask-size: 100% 100%;
-        mask-position: top;
+        background-color: unset;
+        backdrop-filter: unset;
+        &::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-color: $cart-background;
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
+          z-index: -1;
+          mask-image: linear-gradient(
+                          to bottom,
+                          rgba(0, 0, 0, 1) 0,
+                          rgba(0, 0, 0, 1) 70%,
+                          rgba(0, 0, 0, 0) 100%
+          );
+          mask-repeat: no-repeat;
+          mask-size: 100% 100%;
+          mask-position: top;
+        }
       }
     }
   }

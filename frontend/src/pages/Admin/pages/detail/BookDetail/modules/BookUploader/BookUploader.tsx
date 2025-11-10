@@ -12,8 +12,10 @@ const BookUploader = ({
   itemId,
   files,
   setBook,
+  book,
 }: {
   itemId: number;
+  book: any;
   setBook: (book: any) => void;
   files: {
     file_format: "PDF" | "EPUB" | "MOBI" | "AZW3" | "FB2";
@@ -24,7 +26,7 @@ const BookUploader = ({
   const [loading, setLoading] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<JobStatus | null>(null);
   const [formatStatus, setFormatStatus] = useState<JobStatus | null>(null);
-  const [bookUrl, setBookUrl] = useState("");
+  const bookPreviewUrl = book.preview_pdf_url;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +84,6 @@ const BookUploader = ({
 
       fetchStatuses();
       fetchPreviews();
-      setBookUrl(finalizeRes.data.pdf_cdn_url);
     } catch (e) {
       Alert(`Error uploading pdf file: ${e}`, <ErrorIcon />);
     } finally {
@@ -139,6 +140,24 @@ const BookUploader = ({
     }
   };
 
+  const handleRegenerateFormats = async () => {
+    try {
+      await adminApi.regenerateBookFormats(book.id);
+      setFormatStatus("running");
+    } catch {
+      Alert(`Error regenerating formats.`, <ErrorIcon />);
+    }
+  };
+
+  const handleRegeneratePreview = async () => {
+    try {
+      await adminApi.regenerateBookPreview(book.id);
+      setPreviewStatus("running");
+    } catch {
+      Alert(`Error regenerating preview.`, <ErrorIcon />);
+    }
+  };
+
   useEffect(() => {
     if (
       !previewStatus ||
@@ -168,29 +187,74 @@ const BookUploader = ({
     updateBookWithFormats();
   }, [formatStatus, itemId, setBook]);
 
+  const statuses = [
+    {
+      type: "preview",
+      status: previewStatus,
+      condition: book?.preview_pdf_url,
+      success: "Preview generated",
+      pending: "Generating preview...",
+      retryText: "Preview has not been generated. Click to retry.",
+      onClick: handleRegeneratePreview,
+    },
+    {
+      type: "format",
+      status: formatStatus,
+      condition: book?.files.length === 5 && book?.files.length > 0,
+      success: "All formats generated",
+      pending: "Generating formats...",
+      retryText: "Formats are not generated. Click to retry.",
+      onClick: handleRegenerateFormats,
+    },
+  ];
+
   return (
     <div className={s.pdf_uploader_container}>
       <div className={s.uploader_header}>
         <h3>Book Uploader</h3>
 
-        {(previewStatus || formatStatus) && (
-          <div className={s.statuses}>
-            {previewStatus && (
-              <p className={`${s.preview_status} ${s[previewStatus]}`}>
-                {previewStatus === "success"
-                  ? "Preview generated"
-                  : `Generating preview... ${previewStatus}`}
-              </p>
+        <div className={s.statuses}>
+          {statuses
+            .filter(
+              ({ type }) =>
+                !(
+                  type === "format" &&
+                  (!book?.files || book.files.length === 0)
+                ),
+            )
+            .map(
+              ({
+                type,
+                status,
+                condition,
+                success,
+                pending,
+                retryText,
+                onClick,
+              }) => {
+                const isSuccess = status === "success" || condition;
+                const statusClass =
+                  (status && s[status]) || (isSuccess ? s.success : s.pending);
+                const text = status
+                  ? isSuccess
+                    ? success
+                    : `${pending} ${status}`
+                  : isSuccess
+                    ? success
+                    : retryText;
+
+                return (
+                  <p
+                    key={type}
+                    onClick={!isSuccess ? onClick : undefined}
+                    className={`${s[`${type}_status`]} ${statusClass} ${!isSuccess ? s.retry_btn : ""}`}
+                  >
+                    {text}
+                  </p>
+                );
+              },
             )}
-            {formatStatus && (
-              <p className={`${s.format_status} ${s[formatStatus]}`}>
-                {formatStatus === "success"
-                  ? "Formats generated"
-                  : `Generating formats... ${formatStatus}`}
-              </p>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
       {files && (
@@ -220,11 +284,11 @@ const BookUploader = ({
             />
           </label>
         </div>
-        {bookUrl && (
+        {bookPreviewUrl && (
           <ViewLink
-            text={"View generated pdf book"}
+            text={"Book preview"}
             className={s.view_link}
-            link={bookUrl}
+            link={bookPreviewUrl}
             isExternal
           />
         )}

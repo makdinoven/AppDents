@@ -35,8 +35,13 @@
 
 @media (max-width: $mobile-breakpoint) {
   .creatives_container {
-    padding: 20px;
+    padding: 10px;
     gap: 20px;
+  }
+
+  .creatives_header {
+    flex-direction: column;
+    gap: 10px;
   }
 
   .creatives_list {

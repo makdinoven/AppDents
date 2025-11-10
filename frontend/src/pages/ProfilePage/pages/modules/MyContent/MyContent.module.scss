@@ -1,12 +1,19 @@
 .content {
   @include flex-column;
-  gap: 40px;
+  gap: 30px;
 }
 
 .content_list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+}
+
+.no_items_container {
+  @include clamped-p2;
+  text-align: center;
+  width: 100%;
+  color: $hover-color-darken-analogue;
 }
 
 .no_content {
