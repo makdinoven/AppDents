@@ -256,8 +256,9 @@
   "landing": {
     "by": "By",
     "about": "About this course",
+    "instantAccess": "instant access right after payment",
     "access": "access is not limited in time",
-    "duration": "Duration:",
+    "duration": "duration:",
     "lessons_one": "lesson",
     "lessons_other": "lessons",
     "professors_one": "professor",
@@ -311,7 +312,11 @@
       "8_question": "How do I contact support?",
       "8_answer": "You can reach our support team through your personal account on the <link1>dent-s.com</link1> website, as well as via the contact email listed on the payment receipt that was sent to you.",
       "9_question": "How do I reset my password?",
-      "9_answer": "If you need to reset your password, simply click on the <link1>Forgot your Password?</link1> link on the <link2>login page</link2>. Follow the instructions to receive an email with a link to create a new password."
+      "9_answer": "If you need to reset your password, simply click on the <link1>Forgot your Password?</link1> link on the <link2>login page</link2>. Follow the instructions to receive an email with a link to create a new password.",
+      "10_question": "How quickly can I access this course?",
+      "10_answer": "After payment, the course becomes instantly available. You can start learning right away with no waiting.",
+      "10_question_book": "How quickly can I access the book?",
+      "10_answer_book": "After payment, the book becomes instantly available. You can start reading right away with no waiting."
     }
   },
 

@@ -1,7 +1,7 @@
 import s from "./ProfessorCard.module.scss";
 import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Link } from "react-router-dom";
-import INITIAL_PHOTO from "../../../assets/no-pictures.png";
+import INITIAL_PHOTO from "../../../assets/no-user.png";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import React from "react";
