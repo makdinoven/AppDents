@@ -16,10 +16,12 @@ const AdminAuthorsListing = () => {
   const dispatch = useDispatch<AppDispatchType>();
 
   const loadData = (params: ParamsType) => {
-    if (params.q) {
-      dispatch(searchAuthors(params));
+    const newParams = { ...params, sort: "id_desc" };
+
+    if (newParams.q) {
+      dispatch(searchAuthors(newParams));
     } else {
-      dispatch(getAuthors(params));
+      dispatch(getAuthors(newParams));
     }
   };
 
