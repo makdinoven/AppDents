@@ -106,6 +106,12 @@ class PurchaseResponse(BaseModel):
     course_id: Optional[int]               # если покупка была курса
     landing_slug: Optional[str]            # вместо landing_id
     landing_name: Optional[str]            # название лендинга
+    book_id: Optional[int]                 # если покупка была книги
+    book_slug: Optional[str]
+    book_title: Optional[str]
+    book_landing_id: Optional[int]
+    book_landing_slug: Optional[str]
+    book_landing_name: Optional[str]
     created_at: datetime
     from_ad: bool
     amount: Optional[float] = 0.0
@@ -123,6 +129,24 @@ class PurchaseResponse(BaseModel):
         else:
             data["landing_slug"] = None
             data["landing_name"] = None
+        book = data.get("book")
+        if book:
+            data["book_id"] = getattr(book, "id", None)
+            data["book_slug"] = getattr(book, "slug", None)
+            data["book_title"] = getattr(book, "title", None)
+        else:
+            data.setdefault("book_id", None)
+            data["book_slug"] = None
+            data["book_title"] = None
+        book_landing = data.get("book_landing")
+        if book_landing:
+            data["book_landing_id"] = getattr(book_landing, "id", None)
+            data["book_landing_slug"] = getattr(book_landing, "page_name", None)
+            data["book_landing_name"] = getattr(book_landing, "landing_name", None)
+        else:
+            data.setdefault("book_landing_id", None)
+            data["book_landing_slug"] = None
+            data["book_landing_name"] = None
         return data
 
     @validator("amount", pre=True, always=True)

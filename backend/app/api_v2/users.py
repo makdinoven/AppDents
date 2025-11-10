@@ -501,7 +501,11 @@ def get_user_details(
               joinedload(User.courses),                 # курсы для списка ID
               joinedload(User.books),                   # ⟵ книги для списка ID
               joinedload(User.purchases)
-                .joinedload(Purchase.landing)           # покупки (курсовые)
+                .joinedload(Purchase.landing),          # покупки (курсовые)
+              joinedload(User.purchases)
+                .joinedload(Purchase.book),             # покупки книг
+              joinedload(User.purchases)
+                .joinedload(Purchase.book_landing),     # лендинги книг
           )
           .filter(User.id == user_id)
           .first()
