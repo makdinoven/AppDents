@@ -249,12 +249,8 @@ export const ADMIN_SIDEBAR_LINKS = [
     innerLinks: [
       { label: "admin.analytics.purchases", link: Path.adminPurchases },
       {
-        label: "admin.analytics.languageCoursesStats",
-        link: Path.adminCoursesLanguageStats,
-      },
-      {
-        label: "admin.analytics.languageBooksStats",
-        link: Path.adminBooksLanguageStats,
+        label: "admin.analytics.languageStats",
+        link: Path.adminLanguageStats,
       },
       { label: "admin.analytics.adListing", link: Path.adminAdListing },
       { label: "admin.analytics.referrals", link: Path.adminReferrals },

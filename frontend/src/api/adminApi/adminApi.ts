@@ -298,6 +298,12 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getMostPopularBookLandings(params: any) {
+    return instance.get("landings/most-popular/books", {
+      params: params,
+      headers: getAuthHeaders(),
+    });
+  },
   getLanguageCoursesStats(params: any) {
     return instance.get("landings/analytics/language-stats", {
       params: params,
