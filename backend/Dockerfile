@@ -17,11 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core fonts-liberation \
     libharfbuzz0b libpng16-16 \
     libxcb-cursor0 libxkbcommon-x11-0 \
-    # 🔹 НОВОЕ: стек нормализаций и OCR
-    qpdf mupdf-tools \            # qpdf + mutool (для clean/linearize)
-    ocrmypdf \                    # сам OCR-оркестратор
-    tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus \  # движок и языки
-    pngquant unpaper \            # ускорение и авто-очистка страниц (по желанию)
+    qpdf mupdf-tools \            
+    ocrmypdf \                    
+    tesseract-ocr tesseract-ocr-eng tesseract-ocr-rus \  
+    pngquant unpaper \            
  && rm -rf /var/lib/apt/lists/*
 
 # 2) Установка Calibre (как у тебя)
