@@ -58,14 +58,32 @@ CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 # --- новые константы сторожа ---
-STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "1000"))   # 5 мин
-STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "2600")) # 10 мин
+STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "300"))   
+STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "600")) # 10 мин
 MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
 MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "2"))
 # Доп. опции на ретраях (диагностика и более мягкие эвристики)
 PDF2EPUB_RETRY_OPTS = os.getenv(
     "CALIBRE_PDF2EPUB_RETRY_OPTS",
     "--debug-pipeline /tmp/caldbg --enable-heuristics --unwrap-factor 0.18 --dont-split-on-page-breaks"
+)
+MIN_EPUB_ABS_BYTES = int(os.getenv("CALIBRE_MIN_EPUB_ABS_BYTES", str(512 * 1024)))  # ≥ 512KB
+MIN_EPUB_RATIO     = float(os.getenv("CALIBRE_MIN_EPUB_RATIO", "0.01"))             # ≥ 1% от размера PDF
+
+# --- OCR (ocrmypdf) ---
+OCR_ENABLE   = os.getenv("CALIBRE_ENABLE_OCR", "1").strip().lower() in {"1","true","yes","y"}
+OCRMYPDF_BIN = os.getenv("OCRMYPDF_BIN", "ocrmypdf")
+OCR_LANGS    = os.getenv("OCR_LANGS", "eng+rus")   # под себя
+# разумные, не «тяжёлые» опции по умолчанию; можно переопределить через ENV
+OCR_OPTS     = os.getenv(
+    "OCR_OPTS",
+    "--skip-text --rotate-pages --deskew --clean-final --fast-web-view 0 --output-type pdf"
+)
+
+# --- обновлённые флаги для AZW3 (устраняют часть падений на разбиении) ---
+EPUB2AZW3_OPTS = os.getenv(
+    "EPUB2AZW3_OPTS",
+    "--flow-size 0 --dont-split-on-page-breaks --no-inline-toc"
 )
 # Стратегия нормализации PDF по шагам (через запятую): gs,mutool,qpdf
 PDF_PREFLIGHT_STRATEGY = os.getenv("CALIBRE_PDF_PREFLIGHT_STRATEGY", "gs,mutool,qpdf")        # 90 мин на шаг
@@ -80,6 +98,45 @@ def _set_job_phase(book_id: int, phase: str) -> None:
     _set_job_status(book_id, rds.hget(_k_job(book_id), "status") or "running")
     rds.hset(_k_job(book_id), mapping={"phase": phase})
 
+def _should_treat_epub_as_broken(pdf_path: str, epub_path: str) -> bool:
+    """Эвристика «пустого» EPUB: слишком малый размер относительно исходного PDF."""
+    try:
+        pdf_size  = os.path.getsize(pdf_path)
+        epub_size = os.path.getsize(epub_path)
+    except Exception:
+        return False
+    min_reasonable = max(MIN_EPUB_ABS_BYTES, int(pdf_size * MIN_EPUB_RATIO))
+    return epub_size < max(1, min_reasonable)
+
+
+def _maybe_ocr_pdf(
+    book_id: int,
+    src_pdf: str,
+    workdir: str,
+    *,
+    note: str = "ocr pass",
+) -> tuple[bool, str | None]:
+    """
+    Если есть ocrmypdf и OCR включен — сделать OCR поверх src_pdf → вернуть путь к ocr.pdf.
+    """
+    if not OCR_ENABLE:
+        _log(book_id, "ocr: disabled by CALIBRE_ENABLE_OCR")
+        return False, None
+    if not _which(OCRMYPDF_BIN):
+        _log(book_id, f"ocr: '{OCRMYPDF_BIN if 'OCRMYPDF_BIN' in globals() else OCRMYPDF_BIN}' not found; skip")
+        return False, None
+
+    out_pdf = os.path.join(workdir, "in.ocr.pdf")
+    args = [OCRMYPDF_BIN, *shlex.split(OCR_OPTS), "-l", OCR_LANGS, src_pdf, out_pdf]
+
+    _log(book_id, f"ocr: start ({note}) → {' '.join(args)}")
+    rc, _, _ = _run(args, book_id=book_id, fmt=BookFileFormat.EPUB, phase="ocr")
+    if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
+        _log(book_id, f"ocr: ok → {out_pdf}")
+        return True, out_pdf
+
+    _log(book_id, f"ocr: failed rc={rc}")
+    return False, None
 
 def _calibre_jobs() -> int | None:
     override = os.getenv("CALIBRE_CONVERT_JOBS")
@@ -120,14 +177,18 @@ def _normalize_pdf_sequence(book_id: int, src_pdf: str, workdir: str, *, strateg
     for step in steps:
         out = os.path.join(workdir, f"in.norm.{len(used)+1}.pdf")
         if step == "gs" and _which("gs"):
-            rc, _, _ = _run([
-                "gs", "-dBATCH", "-dNOPAUSE", "-dSAFER", "-sDEVICE=pdfwrite",
-                "-dPDFSETTINGS=/ebook",
-                "-dDetectDuplicateImages=true", "-dCompressFonts=true",
-                "-dColorConversionStrategy=/sRGB", "-dProcessColorModel=/DeviceRGB",
-                "-dEmbedAllFonts=true", "-dSubsetFonts=true",
-                "-sOutputFile=" + out, cur
-            ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
+            rc, _, _ = _run(["gs",
+                                "-dBATCH","-dNOPAUSE","-dSAFER",
+                                "-sDEVICE=pdfwrite",
+                                "-dDownsampleColorImages=false",
+                                "-dDownsampleGrayImages=false",
+                                "-dDownsampleMonoImages=false",
+                                "-dDetectDuplicateImages=true",
+                                "-dCompressFonts=true",
+                                "-dEmbedAllFonts=true","-dSubsetFonts=true",
+                                "-sColorConversionStrategy=UseDeviceIndependentColor",
+                                "-sOutputFile=" + out, cur]
+            , book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
             if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
                 used.append("gs"); cur = out; continue
 
@@ -151,41 +212,70 @@ def _convert_pdf_to_epub_with_retries(
     out_epub: str,
 ) -> tuple[bool, str | None]:
     """
-    Пытается PDF→EPUB с авто-нормализацией и ретраями.
-    Возвращает (success, путь_к_локальному_epub_или_None)
+    Пытается PDF→EPUB с авто-нормализацией, sanity-check и OCR-веткой.
+    Возвращает (success, путь_к_epub_или_None).
     """
-    # Попытка 0 — как есть (src_pdf_initial)
     attempt = 0
     src_pdf_current = src_pdf_initial
+    tried_ocr = False
 
-    while attempt <= MAX_CONVERT_RETRIES:
+    while True:
+        # ограничим число обычных ретраев
+        if attempt > MAX_CONVERT_RETRIES:
+            # если OCR ещё не пробовали — попробуем 1 раз
+            if not tried_ocr:
+                ok, ocr_pdf = _maybe_ocr_pdf(book_id, src_pdf_current, os.path.dirname(out_epub), note="on final fallback")
+                if ok and ocr_pdf:
+                    tried_ocr = True
+                    src_pdf_current = ocr_pdf
+                    attempt = 0  # дадим ещё проходов после OCR
+                    continue
+            _log(book_id, "epub: all attempts exhausted")
+            return False, None
+
         attempt += 1
-        # Опции: первая попытка — базовые, далее добавляем «мягкие» + debug
         extra_opts = PDF2EPUB_OPTS if attempt == 1 else (PDF2EPUB_OPTS + " " + PDF2EPUB_RETRY_OPTS)
         _set_job_progress(book_id, note=f"PDF→EPUB попытка {attempt}")
         _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
 
-        rc, out, err = _run(
+        rc, _, _ = _run(
             _build_convert_args(src_pdf_current, out_epub, extra_opts),
             book_id=book_id, fmt=BookFileFormat.EPUB, phase=f"convert#{attempt}",
         )
 
-        # Успех
+        # успех по коду возврата и наличию файла
         if rc == 0 and os.path.exists(out_epub) and os.path.getsize(out_epub) > 0:
-            return True, out_epub
+            # sanity-check по размеру
+            if _should_treat_epub_as_broken(src_pdf_current, out_epub):
+                _log(book_id, "epub: sanity-check failed (file too small) → treat as failure")
+                try:
+                    os.remove(out_epub)
+                except Exception:
+                    pass
+            else:
+                return True, out_epub
 
-        # Не успех — если исчерпали попытки, выходим
-        if attempt >= MAX_CONVERT_RETRIES + 1:
+        # сюда попадаем при неуспехе попытки (rc!=0) или провале sanity-check
+        if attempt > MAX_CONVERT_RETRIES:
+            # OCR как отдельный финальный шанс
+            if not tried_ocr:
+                ok, ocr_pdf = _maybe_ocr_pdf(book_id, src_pdf_current, os.path.dirname(out_epub), note="after normal retries")
+                if ok and ocr_pdf:
+                    tried_ocr = True
+                    src_pdf_current = ocr_pdf
+                    attempt = 0
+                    continue
             _log(book_id, f"epub: all attempts failed (last rc={rc})")
             return False, None
 
-        # Фоллбек: нормализуем PDF и пробуем ещё раз
+        # ещё не исчерпали обычные ретраи → нормализуем и повторим
         _log(book_id, f"epub: attempt {attempt} failed (rc={rc}), trying PDF normalize…")
         src_pdf_current, used = _normalize_pdf_sequence(
             book_id, src_pdf_current, os.path.dirname(out_epub),
             strategy=PDF_PREFLIGHT_STRATEGY
         )
         _log(book_id, f"epub: normalize done via [{used}] → retry")
+
 
 def _preflight_pdf(book_id: int, src_pdf: str, workdir: str) -> str:
     cleaned = os.path.join(workdir, "in.cleaned.pdf")
