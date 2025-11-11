@@ -9,7 +9,8 @@ import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.
 import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 
-const AnalyticsCoursesLanguageStats = () => {
+const AnalyticsLanguageStats = () => {
+  const [mode, setMode] = useState<"courses" | "books">("courses");
   const [languageStats, setLanguageStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCurrency, setSelectedCurrency] = useState<"eur" | "usd">(
@@ -26,7 +27,7 @@ const AnalyticsCoursesLanguageStats = () => {
 
   useEffect(() => {
     fetchLandingsStats();
-  }, [dateRange]);
+  }, [dateRange, mode]);
 
   const convertAmount = (amount: string, currency: "usd" | "eur") => {
     const num = parseFloat(amount.replace("$", ""));
@@ -56,8 +57,13 @@ const AnalyticsCoursesLanguageStats = () => {
       end_date: dateRange.endDate,
     };
 
+    const api =
+      mode === "books"
+        ? adminApi.getLanguageBooksStats
+        : adminApi.getLanguageCoursesStats;
+
     try {
-      const res = await adminApi.getLanguageCoursesStats(params);
+      const res = await api(params);
       setLanguageStats(res.data);
       setLoading(false);
     } catch (err) {
@@ -67,6 +73,12 @@ const AnalyticsCoursesLanguageStats = () => {
 
   return (
     <>
+      <SwitchButtons
+        useTranslation={false}
+        buttonsArr={["courses", "books"]}
+        activeValue={mode}
+        handleClick={(val) => setMode(val)}
+      />
       <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}
@@ -142,4 +154,4 @@ const AnalyticsCoursesLanguageStats = () => {
   );
 };
 
-export default AnalyticsCoursesLanguageStats;
+export default AnalyticsLanguageStats;
