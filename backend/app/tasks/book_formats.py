@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 from pathlib import PurePosixPath
 from urllib.parse import urlparse, unquote, quote
-
+import signal, os
 import boto3
 import redis
 from botocore.config import Config
@@ -56,6 +56,20 @@ CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
 CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
+# --- новые константы сторожа ---
+STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "300"))   # 5 мин
+STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "600")) # 10 мин
+MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))        # 90 мин на шаг
+
+def _tail_lines(s: str, n: int = 120) -> str:
+    if not s:
+        return ""
+    lines = s.splitlines()[-n:]
+    return "\n".join(lines)
+
+def _set_job_phase(book_id: int, phase: str) -> None:
+    _set_job_status(book_id, rds.hget(_k_job(book_id), "status") or "running")
+    rds.hset(_k_job(book_id), mapping={"phase": phase})
 
 
 def _calibre_jobs() -> int | None:
@@ -78,6 +92,43 @@ _JOB_PROGRESS_STEPS: dict[BookFileFormat, tuple[int, int]] = {
     BookFileFormat.AZW3: (65, 20),
     BookFileFormat.FB2: (85, 15),
 }
+
+def _which(cmd: str) -> str | None:
+    for p in os.getenv("PATH", "").split(os.pathsep):
+        candidate = os.path.join(p, cmd)
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return None
+
+def _preflight_pdf(src_pdf: str, workdir: str) -> str:
+    """Возвращает путь к «очищенному» PDF, либо исходный, если править нечем."""
+    cleaned = os.path.join(workdir, "in.cleaned.pdf")
+    # 1) qpdf --check и по возможности --linearize/clean
+    qpdf = _which("qpdf")
+    if qpdf:
+        rc, out, err = _run([qpdf, "--check", src_pdf], phase="preflight")
+        _log(0, f"qpdf --check rc={rc}")  # book_id здесь не обязателен
+        # попробуем перепаковать
+        rc, _, _ = _run([qpdf, "--linearize", "--object-streams=generate", src_pdf, cleaned], phase="preflight")
+        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
+            return cleaned
+    # 2) mutool clean (MuPDF)
+    mutool = _which("mutool")
+    if mutool:
+        rc, _, _ = _run([mutool, "clean", "-gg", src_pdf, cleaned], phase="preflight")
+        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
+            return cleaned
+    # 3) (опционально) Ghostscript — дорогая операция, но спасает
+    gs = _which("gs")
+    if gs:
+        rc, _, _ = _run([
+            gs, "-dBATCH", "-dNOPAUSE", "-dSAFER", "-sDEVICE=pdfwrite",
+            "-dDetectDuplicateImages=true", "-dCompressFonts=true",
+            "-sOutputFile=" + cleaned, src_pdf
+        ], phase="preflight")
+        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
+            return cleaned
+    return src_pdf
 
 # ───────────────── Redis-ключи статусов ──────────────────
 def _k_job(book_id: int) -> str:           return f"bookfmt:{book_id}"
@@ -144,7 +195,9 @@ def _update_job_progress_from_fmt(book_id: int, fmt: BookFileFormat, fmt_progres
     _set_job_progress(book_id, job_progress)
 
 
-_progress_cache: dict[tuple[int, BookFileFormat], int] = {}
+_progress_cache: dict[tuple[int, BookFileFormat], tuple[int, float]] = {}
+PROGRESS_MIN_DELTA = int(os.getenv("CALIBRE_PROGRESS_MIN_DELTA", "1"))
+PROGRESS_MIN_INTERVAL = float(os.getenv("CALIBRE_PROGRESS_MIN_INTERVAL", "5"))
 
 
 def _fmt_label(fmt: BookFileFormat) -> str:
@@ -152,11 +205,26 @@ def _fmt_label(fmt: BookFileFormat) -> str:
 
 
 def _remember_progress(book_id: int, fmt: BookFileFormat, progress: int) -> bool:
+    now = time.monotonic()
     key = (book_id, fmt)
     prev = _progress_cache.get(key)
-    if prev is None or abs(progress - prev) >= 5 or progress in (0, 100):
-        _progress_cache[key] = progress
+    prev_val = prev[0] if prev else None
+    prev_ts = prev[1] if prev else 0.0
+
+    if prev is None or progress in (0, 100):
+        _progress_cache[key] = (progress, now)
         return True
+
+    if progress <= prev_val:
+        _progress_cache[key] = (prev_val, now)
+        return False
+
+    delta = progress - prev_val
+    if delta >= 5 or delta >= PROGRESS_MIN_DELTA and (now - prev_ts) >= PROGRESS_MIN_INTERVAL:
+        _progress_cache[key] = (progress, now)
+        return True
+
+    _progress_cache[key] = (prev_val, now)
     return False
 
 
@@ -311,79 +379,85 @@ def _formats_key_from_pdf(pdf_key: str, ext: str) -> str:
     stem = PurePosixPath(pdf_key).stem      # File
     return str(base / "formats" / f"{stem}.{ext.lower()}")
 
-def _run(
-    cmd: str | list[str],
-    *,
-    book_id: int | None = None,
-    fmt: BookFileFormat | None = None,
-    phase: str | None = None,
-) -> tuple[int, str, str]:
-    if isinstance(cmd, str):
-        args = shlex.split(cmd)
-    else:
-        args = cmd
-
+def _run(cmd, *, book_id: int | None = None, fmt: BookFileFormat | None = None, phase: str | None = None):
+    args = shlex.split(cmd) if isinstance(cmd, str) else cmd
+    # отдельная группа процессов, чтобы убивать детей одним сигналом
     proc = subprocess.Popen(
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        preexec_fn=os.setsid,
     )
 
-    stdout_lines: list[str] = []
-    stderr_lines: list[str] = []
+    stdout_lines, stderr_lines = [], []
     start_time = time.monotonic()
-    last_activity = start_time
+    last_output = start_time
     last_heartbeat = start_time
 
-    def _log_phase(message: str) -> None:
-        if book_id is not None and fmt is not None:
-            prefix = _fmt_label(fmt)
-            if phase:
-                _log(book_id, f"{prefix}:{phase} {message}")
-            else:
-                _log(book_id, f"{prefix}: {message}")
+    def _pg_kill(sig):
+        try:
+            os.killpg(proc.pid, sig)
+        except Exception:
+            pass
 
     if book_id is not None and fmt is not None and phase:
-        _log_phase("started")
+        _log(book_id, f"{_fmt_label(fmt)}:{phase} started: {' '.join(args)}")
 
     sel = selectors.DefaultSelector()
-    if proc.stdout:
-        sel.register(proc.stdout, selectors.EVENT_READ, ("stdout", proc.stdout))
-    if proc.stderr:
-        sel.register(proc.stderr, selectors.EVENT_READ, ("stderr", proc.stderr))
+    if proc.stdout: sel.register(proc.stdout, selectors.EVENT_READ, ("stdout", proc.stdout))
+    if proc.stderr: sel.register(proc.stderr, selectors.EVENT_READ, ("stderr", proc.stderr))
 
     while sel.get_map():
         events = sel.select(timeout=1.0)
+
+        # --- нет событий: проверки таймаутов ---
+        now = time.monotonic()
         if not events:
-            if (
-                book_id is not None
-                and fmt is not None
-                and CONVERT_HEARTBEAT_SECONDS > 0
-                and time.monotonic() - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS
-            ):
-                elapsed = time.monotonic() - start_time
+            # хартбит + подсказка «жив»
+            if (book_id is not None and fmt is not None and
+                CONVERT_HEARTBEAT_SECONDS > 0 and now - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS):
+                elapsed = now - start_time
                 _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({elapsed:.0f}s elapsed)")
-                last_heartbeat = time.monotonic()
+                last_heartbeat = now
+
+            # сторож: нет вывода
+            if STALL_NO_OUTPUT_SECS and (now - last_output) >= STALL_NO_OUTPUT_SECS:
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: no output for {int(now-last_output)}s → terminate")
+                _pg_kill(signal.SIGTERM)
+
+            # общий предел на этап
+            if MAX_STAGE_SECS and (now - start_time) >= MAX_STAGE_SECS:
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now-start_time)}s → kill")
+                _pg_kill(signal.SIGKILL)
+
             if proc.poll() is not None and not sel.get_map():
                 break
             continue
 
+        # --- читаем вывод ---
         for key, _ in events:
             stream_name, stream = key.data
             line = stream.readline()
             if line:
+                last_output = time.monotonic()
                 if stream_name == "stdout":
                     stdout_lines.append(line)
                 else:
                     stderr_lines.append(line)
-                last_activity = time.monotonic()
-                last_heartbeat = last_activity
                 if book_id is not None and fmt is not None:
                     _handle_convert_output(book_id, fmt, line, stream=stream_name)
             else:
                 sel.unregister(stream)
+
+        # повторная проверка хартбита/прогресса
+        now = time.monotonic()
+        if (book_id is not None and fmt is not None and
+            CONVERT_HEARTBEAT_SECONDS > 0 and now - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS):
+            elapsed = now - start_time
+            _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({elapsed:.0f}s elapsed)")
+            last_heartbeat = now
 
         if proc.poll() is not None and not sel.get_map():
             break
@@ -391,7 +465,13 @@ def _run(
     rc = proc.wait()
 
     if book_id is not None and fmt is not None and phase:
-        _log_phase(f"finished rc={rc}")
+        _log(book_id, f"{_fmt_label(fmt)}:{phase} finished rc={rc}")
+        # полезный хвост в Redis на случай падения/сталла
+        rds.hset(_k_fmt(book_id, fmt.value), mapping={
+            "rc": str(rc),
+            "stdout_tail": _tail_lines("".join(stdout_lines), 120),
+            "stderr_tail": _tail_lines("".join(stderr_lines), 120),
+        })
 
     return rc, "".join(stdout_lines), "".join(stderr_lines)
 
@@ -419,6 +499,12 @@ def generate_book_formats(book_id: int) -> dict:
         rds.hdel(_k_job(book_id), "finished_at")
         _set_job_progress(book_id, 0, note="инициализация")
         _log(book_id, "start")
+        try:
+            vrc, vout, verr = _run([EBOOK_CONVERT_BIN, "--version"], phase="probe")
+            ver_line = (vout or verr or "").strip() or f"rc={vrc}"
+            _log(book_id, f"calibre: {ver_line}")
+        except Exception as e:
+            _log(book_id, f"calibre: version probe failed: {e}")
 
         book = db.query(Book).get(book_id)
         if not book:
@@ -460,6 +546,8 @@ def generate_book_formats(book_id: int) -> dict:
                 size_mb = size_bytes / (1024 * 1024)
                 _log(book_id, f"pdf: downloaded {size_mb:.2f} MiB in {elapsed:.1f}s")
                 _set_job_progress(book_id, 5, note="pdf загружен локально")
+                _set_job_phase(book_id, "preflight")
+                src_pdf_clean = _preflight_pdf(src_pdf, tmp)
 
             # ───────────── 1) EPUB (PDF → EPUB, 1 раз) ─────────────
             base_epub_local = os.path.join(tmp, "base.epub")
@@ -495,11 +583,12 @@ def generate_book_formats(book_id: int) -> dict:
                 _log(book_id, "epub: convert start (pdf → epub)")
                 stage_started = time.monotonic()
                 rc, out, err = _run(
-                    _build_convert_args(src_pdf, base_epub_local, PDF2EPUB_OPTS),
-                    book_id=book.id,
-                    fmt=BookFileFormat.EPUB,
-                    phase="convert",
-                )
+                        _build_convert_args(src_pdf_clean, base_epub_local, PDF2EPUB_OPTS),
+                        book_id=book.id,
+                        fmt=BookFileFormat.EPUB,
+                        phase="convert",
+                    )
+
                 if rc != 0 or not os.path.exists(base_epub_local) or os.path.getsize(base_epub_local) == 0:
                     _set_fmt_status(book_id, BookFileFormat.EPUB, "failed")
                     _log(book_id, f"epub: convert failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
