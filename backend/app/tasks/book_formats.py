@@ -58,8 +58,8 @@ CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 # --- новые константы сторожа ---
-STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "300"))   # 5 мин
-STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "600")) # 10 мин
+STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "1000"))   # 5 мин
+STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "2600")) # 10 мин
 MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))        # 90 мин на шаг
 
 def _tail_lines(s: str, n: int = 120) -> str:
