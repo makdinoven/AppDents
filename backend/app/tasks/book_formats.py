@@ -12,6 +12,7 @@ from urllib.parse import urlparse, unquote, quote
 import signal, os
 import boto3
 import redis
+import psutil
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task
@@ -390,7 +391,9 @@ def _run(cmd, *, book_id: int | None = None, fmt: BookFileFormat | None = None, 
         bufsize=1,
         preexec_fn=os.setsid,
     )
-
+    proc_obj = psutil.Process(proc.pid) if psutil else None
+    last_cpu_time = 0.0
+    last_cpu_check = time.monotonic()
     stdout_lines, stderr_lines = [], []
     start_time = time.monotonic()
     last_output = start_time
@@ -415,6 +418,16 @@ def _run(cmd, *, book_id: int | None = None, fmt: BookFileFormat | None = None, 
         # --- нет событий: проверки таймаутов ---
         now = time.monotonic()
         if not events:
+            proc_obj = psutil.Process(proc.pid) if psutil else None
+            last_cpu_time = 0.0
+            if proc_obj:
+                    try:
+                        c0 = proc_obj.cpu_times()
+                        last_cpu_time = float(getattr(c0, "user", 0.0)) + float(getattr(c0, "system", 0.0))
+                    except Exception:
+                        pass
+            last_cpu_check = time.monotonic()
+
             # хартбит + подсказка «жив»
             if (book_id is not None and fmt is not None and
                 CONVERT_HEARTBEAT_SECONDS > 0 and now - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS):
