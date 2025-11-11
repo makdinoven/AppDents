@@ -55,6 +55,7 @@ _PROGRESS_RE = re.compile(r"(\d{1,3})%")
 CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
 CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
+CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 
 
 def _calibre_jobs() -> int | None:
@@ -197,7 +198,11 @@ def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = N
         if jobs:
             args.extend(["--jobs", str(jobs)])
 
-    if "--log-level" not in opts and "--verbose" not in opts:
+    if (
+        "--log-level" not in opts
+        and "--verbose" not in opts
+        and _calibre_supports_log_level()
+    ):
         args.extend(["--log-level", CALIBRE_LOG_LEVEL])
 
     args.extend(opts)
@@ -205,6 +210,28 @@ def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = N
 
 
 _CALIBRE_SUPPORTS_JOBS: bool | None = None
+_CALIBRE_SUPPORTS_LOG_LEVEL: bool | None = None
+_CALIBRE_HELP_CACHE: str | None = None
+
+
+def _calibre_help_text() -> str:
+    global _CALIBRE_HELP_CACHE
+    if _CALIBRE_HELP_CACHE is not None:
+        return _CALIBRE_HELP_CACHE
+    try:
+        proc = subprocess.run(
+            [EBOOK_CONVERT_BIN, "--help"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+            timeout=8,
+        )
+        _CALIBRE_HELP_CACHE = proc.stdout or ""
+    except Exception as exc:
+        logger.warning("Cannot probe ebook-convert capabilities: %s", exc)
+        _CALIBRE_HELP_CACHE = ""
+    return _CALIBRE_HELP_CACHE
 
 
 def _calibre_supports_jobs() -> bool:
@@ -218,20 +245,30 @@ def _calibre_supports_jobs() -> bool:
         return _CALIBRE_SUPPORTS_JOBS
 
     try:
-        proc = subprocess.run(
-            [EBOOK_CONVERT_BIN, "--help"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-            timeout=8,
-        )
-        _CALIBRE_SUPPORTS_JOBS = "--jobs" in (proc.stdout or "")
-    except Exception as exc:
-        logger.warning("Cannot probe ebook-convert for --jobs support: %s", exc)
+        _CALIBRE_SUPPORTS_JOBS = "--jobs" in _calibre_help_text()
+    except Exception:
         _CALIBRE_SUPPORTS_JOBS = False
 
     return _CALIBRE_SUPPORTS_JOBS
+
+
+def _calibre_supports_log_level() -> bool:
+    global _CALIBRE_SUPPORTS_LOG_LEVEL
+
+    if _CALIBRE_SUPPORTS_LOG_LEVEL is not None:
+        return _CALIBRE_SUPPORTS_LOG_LEVEL
+
+    if CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE is not None:
+        _CALIBRE_SUPPORTS_LOG_LEVEL = CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE.strip().lower() in {"1", "true", "yes", "y"}
+        return _CALIBRE_SUPPORTS_LOG_LEVEL
+
+    try:
+        help_text = _calibre_help_text()
+        _CALIBRE_SUPPORTS_LOG_LEVEL = "--log-level" in help_text
+    except Exception:
+        _CALIBRE_SUPPORTS_LOG_LEVEL = False
+
+    return _CALIBRE_SUPPORTS_LOG_LEVEL
 
 # ──────────────────── Вспомогательные ────────────────────
 def _content_type_for(ext: str) -> str:
