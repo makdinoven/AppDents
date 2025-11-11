@@ -1,0 +1,229 @@
+.purchase {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-content: center;
+  width: 100%;
+  height: fit-content;
+  padding: 30px;
+  gap: 20px;
+  position: relative;
+
+  &:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: calc(100% - 90px);
+    height: 2px;
+    background-color: $hover-color;
+  }
+}
+
+.content {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  @include clamped-p3;
+  text-transform: none;
+  overflow: hidden;
+}
+
+.icon {
+  align-self: flex-start;
+  width: 30px;
+  height: 30px;
+
+  path {
+    color: $hover-color-darken-analogue;
+    stroke: currentColor;
+    stroke-width: 2px;
+  }
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: $primary;
+  text-transform: none;
+}
+
+.description {
+  display: flex;
+  gap: 5px;
+  padding-right: 10px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
+  @include clamped-p3;
+}
+
+.top {
+  @include flex-column;
+  justify-content: start;
+  align-items: start;
+  gap: 10px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.bottom {
+  @include flex-column;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: fit-content;
+  height: 100%;
+  gap: 10px;
+  color: $hover-color-dark;
+  text-align: left;
+}
+
+/* amount блоки */
+.amount {
+  width: fit-content;
+}
+
+.amount_referral {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.product_icon {
+  width: 22px;
+  height: 22px;
+  opacity: 0.7;
+  path {
+    stroke: $primary;
+  }
+}
+
+.amount_caption {
+  display: flex;
+  gap: 2px;
+}
+
+.amount_balance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.balance {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.from_balance {
+  color: $hover-color-dark;
+  text-wrap: nowrap;
+}
+
+.plus {
+  color: $green;
+}
+
+.minus {
+  color: $error-color;
+}
+
+.zero {
+  color: $text-color;
+}
+
+/* дата */
+.date {
+  @include clamped-p4;
+  display: flex;
+  flex-direction: row;
+  color: $hover-color-dark;
+  justify-content: end;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+
+  > :last-child {
+    gap: 0;
+  }
+}
+
+/* текст внутри ExpandableText и ссылки на лендинги — тоже тут */
+.exp_text {
+  @include clamped-p3;
+}
+
+.landing_name {
+  @include transition;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: $hover-color-dark;
+
+  &:hover {
+    color: $primary;
+    text-decoration-color: $primary;
+  }
+}
+
+.purchase_info_field {
+  color: $hover-color-dark;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .purchase {
+    padding: 15px;
+    gap: 7px;
+
+    &:not(:last-child)::after {
+      width: calc(100% - 40px);
+      height: 1px;
+    }
+  }
+
+  .icon {
+    width: 20px;
+    height: 20px;
+    path {
+      stroke-width: 1.6px;
+    }
+  }
+
+  .product_icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .description {
+    @include clamped-p4;
+    flex-wrap: wrap;
+    text-wrap: wrap;
+  }
+
+  .top {
+    gap: 2px;
+  }
+
+  .date {
+    @include flex-column;
+    align-items: flex-end;
+    gap: 0;
+  }
+
+  .balance {
+    @include flex-column;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  .landing_name {
+    text-decoration-thickness: 1px;
+  }
+}

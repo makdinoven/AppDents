@@ -330,3 +330,11 @@ export const getFbp = (): string | null => {
   const match = document.cookie.match(/_fbp=([^;]+)/);
   return match ? match[1] : null;
 };
+
+export const getCamelCaseString = (string: string): string => {
+  return string.split("_").reduce((result, value, index) => {
+    return index === 0
+      ? result + value.toLowerCase()
+      : result + capitalizeText(value);
+  }, "");
+};

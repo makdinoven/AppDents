@@ -378,6 +378,7 @@ export const adminApi = {
   getPurchasesSourceChart(params: any) {
     return instance.get("users/analytics/purchase/source", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getLandingTraffic(params: any) {

@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { userApi } from "../../../../../../api/userApi/userApi";
 import { Alert } from "../../../../../../components/ui/Alert/Alert";
 import s from "./PurchaseHistory.module.scss";
-import Purchase from "./Purchase/Purchase";
-import { capitalizeText } from "../../../../../../common/helpers/helpers";
+import PurchaseTable from "./PurchaseTable/PurchaseTable";
+import { getCamelCaseString } from "../../../../../../common/helpers/helpers";
 import { AlertCirceIcon } from "../../../../../../assets/icons/index";
 import PurchaseHistorySkeleton from "../../../../../../components/ui/Skeletons/PurchaseHistorySkeleton/PurchaseHistorySkeleton";
 
@@ -17,14 +17,6 @@ const PurchaseHistory: React.FC = () => {
   useEffect(() => {
     fetchPurchaseHistoryData();
   }, []);
-
-  const getCamelCaseString = (string: string): string => {
-    return string.split("_").reduce((result, value, index) => {
-      return index === 0
-        ? result + value.toLowerCase()
-        : result + capitalizeText(value);
-    }, "");
-  };
 
   const fetchPurchaseHistoryData = async () => {
     setLoading(true);
@@ -95,12 +87,12 @@ const PurchaseHistory: React.FC = () => {
         <PurchaseHistorySkeleton />
       ) : (
         <>
-          <Purchase
+          <PurchaseTable
             content={referrals}
             title={t("profile.purchaseHistory.invitedUsers")}
             isReferral
           />
-          <Purchase
+          <PurchaseTable
             content={mergeTransactions(transactions)}
             title={t("profile.purchaseHistory.purchases")}
           />

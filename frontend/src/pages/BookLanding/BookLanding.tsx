@@ -110,7 +110,6 @@ const BookLanding = () => {
   }, [landingPath]);
 
   const openPayment = () => {
-    console.log("openPayment");
     openPaymentModal(landingPath, undefined, "BOOKS");
   };
 

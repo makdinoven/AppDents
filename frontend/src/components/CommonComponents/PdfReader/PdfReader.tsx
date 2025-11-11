@@ -4,22 +4,14 @@ import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 import s from "./PdfReader.module.scss";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import {
-  Chevron,
-  ListIcon,
-  MaximizeIcon,
-  ModalClose,
-  ZoomIn,
-  ZoomOut,
-} from "../../../assets/icons";
 import { SingleValue } from "react-select";
-import MultiSelect from "../MultiSelect/MultiSelect.tsx";
 import { t } from "i18next";
 import ThumbNails from "./ThumbNails/ThumbNails.tsx";
 import Loader from "../../ui/Loader/Loader.tsx";
 import { useThrottle } from "../../../common/hooks/useThrottle.ts";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import { DEFAULT_SCALE, scales, screenResolutionMap } from "./constants.ts";
+import PdfHeader from "./PdfHeader/PdfHeader.tsx";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -214,122 +206,26 @@ const PdfReader = ({
     event.stopPropagation();
   };
 
-  const commonFilterProps = {
-    isSearchable: false,
-    isMultiple: false,
-    valueKey: "value" as const,
-    labelKey: "label" as const,
-  };
-
-  const findScale = scales.find((option) => option.value === scale);
-
-  const isFirstPage = Number(currentPage) === 1 || !totalPages;
-  const isLastPage = Number(currentPage) === Number(totalPages) || !totalPages;
-
-  const renderNextPrevButtons = (
-    <div className={s.arrows_wrapper}>
-      <button
-        onClick={goToPrevPage}
-        className={`${s.up} ${isFirstPage ? s.inactive : ""}`}
-      >
-        <Chevron />
-      </button>
-      <button
-        onClick={goToNextPage}
-        className={`${s.down} ${isLastPage ? s.inactive : ""}`}
-      >
-        <Chevron />
-      </button>
-    </div>
-  );
-
-  const headerContent = new Map([
-    [
-      true,
-      <>
-        <div className={s.left_side}>
-          <button className={s.list} onClick={handleThumbNailsClick}>
-            <ListIcon />
-          </button>
-          <p className={`${s.page_indicator} ${s.full_screen}`}>
-            <input
-              type={"number"}
-              min={1}
-              max={totalPages || 1}
-              className={s.page_input}
-              value={currentPage === "" ? "" : currentPage}
-              onChange={(e) => handleInputChange(e.target.value)}
-            />
-            {t("of")}
-            <span>{totalPages ? totalPages : 0}</span>
-          </p>
-        </div>
-        <div className={s.right_side}>
-          <div className={s.scales_wrapper}>
-            <button onClick={() => handleZoom("out")}>
-              <ZoomOut />
-            </button>
-            <button onClick={() => handleZoom("in")}>
-              <ZoomIn />
-            </button>
-            {screenWidth > screenResolutionMap.get("mobile")!.width && (
-              <MultiSelect
-                {...commonFilterProps}
-                id="scales-select"
-                placeholder={scale.toString()}
-                options={scales}
-                selectedValue={findScale?.value as number}
-                onChange={handleSelectChange}
-                centrate
-              />
-            )}
-          </div>
-          {screenWidth > screenResolutionMap.get("mobile")!.width &&
-            renderNextPrevButtons}
-          <button className={s.expand_button} onClick={handleCloseFullScreen}>
-            <ModalClose />
-          </button>
-        </div>
-      </>,
-    ],
-    [
-      false,
-      <>
-        <div className={s.left_side}>
-          <p className={s.page_indicator}>
-            <span>
-              {totalPages ? currentPage : 0}/{totalPages ? totalPages : 0}
-            </span>
-          </p>
-          <button
-            className={s.expand_button}
-            onClick={handleOpenFullScreen}
-            disabled={!totalPages}
-          >
-            <MaximizeIcon />
-          </button>
-        </div>
-        {screenWidth < screenResolutionMap.get("mobile")!.width && (
-          <div className={s.scales_wrapper}>
-            <button onClick={() => handleZoom("out")}>
-              <ZoomOut />
-            </button>
-            <button onClick={() => handleZoom("in")}>
-              <ZoomIn />
-            </button>
-          </div>
-        )}
-        {renderNextPrevButtons}
-      </>,
-    ],
-  ]);
-
   return (
     <div
       className={`${s.pdf_reader} ${fromProfile ? s.from_profile : ""} ${fullScreen ? s.full_screen : ""} `}
       onClick={handleOverlayClick}
     >
-      <div className={s.header}>{headerContent.get(fullScreen)}</div>
+      <PdfHeader
+        handleThumbNailsClick={handleThumbNailsClick}
+        totalPages={totalPages}
+        currentPage={currentPage}
+        handleZoom={handleZoom}
+        handleInputChange={handleInputChange}
+        screenWidth={screenWidth}
+        handleSelectChange={handleSelectChange}
+        goToNextPage={goToNextPage}
+        goToPrevPage={goToPrevPage}
+        handleCloseFullScreen={handleCloseFullScreen}
+        handleOpenFullScreen={handleOpenFullScreen}
+        fullScreen={fullScreen}
+        scale={scale}
+      />
       {url && (
         <ThumbNails
           isOpen={isThumbNailsOpen}
