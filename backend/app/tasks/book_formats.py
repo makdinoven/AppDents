@@ -53,6 +53,7 @@ s3     = boto3.client(
 
 _PROGRESS_RE = re.compile(r"(\d{1,3})%")
 CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
+CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 
 
 def _calibre_jobs() -> int | None:
@@ -118,7 +119,14 @@ def _set_fmt_status(
 def _set_job_progress(book_id: int, progress: int | None = None, note: str | None = None) -> None:
     data: dict[str, str] = {}
     if progress is not None:
-        data["progress"] = str(max(0, min(100, progress)))
+        progress = max(0, min(100, progress))
+        current = rds.hget(_k_job(book_id), "progress")
+        if current is not None:
+            try:
+                progress = max(progress, int(current))
+            except ValueError:
+                pass
+        data["progress"] = str(progress)
     if note is not None:
         data["note"] = note
     if data:
@@ -126,6 +134,8 @@ def _set_job_progress(book_id: int, progress: int | None = None, note: str | Non
 
 
 def _update_job_progress_from_fmt(book_id: int, fmt: BookFileFormat, fmt_progress: int) -> None:
+    if fmt_progress <= 0:
+        return
     base, span = _JOB_PROGRESS_STEPS.get(fmt, (0, 0))
     fmt_progress = max(0, min(100, fmt_progress))
     job_progress = min(100, base + (fmt_progress * span) // 100)
@@ -153,24 +163,28 @@ def _clear_progress(book_id: int, fmt: BookFileFormat) -> None:
 
 
 def _handle_convert_output(book_id: int, fmt: BookFileFormat, line: str, *, stream: str) -> None:
-    stripped = line.strip()
-    if not stripped:
+    if not line:
         return
 
-    match = _PROGRESS_RE.search(stripped)
-    if match:
-        progress = max(0, min(100, int(match.group(1))))
-        if _remember_progress(book_id, fmt, progress):
-            _set_fmt_status(book_id, fmt, "running", progress=progress)
-            _update_job_progress_from_fmt(book_id, fmt, progress)
-            _log(book_id, f"{_fmt_label(fmt)}: progress {progress}%")
-        return
+    for chunk in re.split(r"[\r\n]+", line):
+        stripped = chunk.strip()
+        if not stripped:
+            continue
 
-    lowered = stripped.lower()
-    if stream == "stderr":
-        _log(book_id, f"{_fmt_label(fmt)} stderr: {stripped}")
-    elif any(lowered.startswith(prefix) for prefix in ("input ", "output ", "parsed", "converting", "rendering", "creating", "processing")):
-        _log(book_id, f"{_fmt_label(fmt)}: {stripped}")
+        match = _PROGRESS_RE.search(stripped)
+        if match:
+            progress = max(0, min(100, int(match.group(1))))
+            if _remember_progress(book_id, fmt, progress):
+                _set_fmt_status(book_id, fmt, "running", progress=progress)
+                _update_job_progress_from_fmt(book_id, fmt, progress)
+                _log(book_id, f"{_fmt_label(fmt)}: progress {progress}%")
+            continue
+
+        lowered = stripped.lower()
+        if stream == "stderr":
+            _log(book_id, f"{_fmt_label(fmt)} stderr: {stripped}")
+        elif any(lowered.startswith(prefix) for prefix in ("input ", "output ", "parsed", "converting", "rendering", "creating", "processing", "splitting", "working")):
+            _log(book_id, f"{_fmt_label(fmt)}: {stripped}")
 
 
 def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = None) -> list[str]:
@@ -251,6 +265,9 @@ def _run(
 
     stdout_lines: list[str] = []
     stderr_lines: list[str] = []
+    start_time = time.monotonic()
+    last_activity = start_time
+    last_heartbeat = start_time
 
     def _log_phase(message: str) -> None:
         if book_id is not None and fmt is not None:
@@ -270,7 +287,22 @@ def _run(
         sel.register(proc.stderr, selectors.EVENT_READ, ("stderr", proc.stderr))
 
     while sel.get_map():
-        for key, _ in sel.select():
+        events = sel.select(timeout=1.0)
+        if not events:
+            if (
+                book_id is not None
+                and fmt is not None
+                and CONVERT_HEARTBEAT_SECONDS > 0
+                and time.monotonic() - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS
+            ):
+                elapsed = time.monotonic() - start_time
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({elapsed:.0f}s elapsed)")
+                last_heartbeat = time.monotonic()
+            if proc.poll() is not None and not sel.get_map():
+                break
+            continue
+
+        for key, _ in events:
             stream_name, stream = key.data
             line = stream.readline()
             if line:
@@ -278,6 +310,8 @@ def _run(
                     stdout_lines.append(line)
                 else:
                     stderr_lines.append(line)
+                last_activity = time.monotonic()
+                last_heartbeat = last_activity
                 if book_id is not None and fmt is not None:
                     _handle_convert_output(book_id, fmt, line, stream=stream_name)
             else:
