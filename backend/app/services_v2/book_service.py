@@ -1,10 +1,10 @@
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, date
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, cast, Date
 from sqlalchemy.orm import Session, selectinload
 
 from ..models.models_v2 import (
@@ -614,3 +614,137 @@ def get_book_purchases_by_language_per_day(
         current += timedelta(days=1)
 
     return data
+
+
+def get_top_book_landings_by_sales(
+    db: Session,
+    language: Optional[str] = None,
+    limit: int = 10,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    sort_by: str = "sales",
+    sort_dir: str = "desc",
+):
+    reset_expired_book_ad_flags(db)
+    order_desc = sort_dir.lower() == "desc"
+
+    if start_date or end_date:
+        sales_subq = (
+            db.query(
+                Purchase.book_landing_id.label("book_landing_id"),
+                func.count(Purchase.id).label("sales"),
+            )
+            .filter(Purchase.book_landing_id.isnot(None))
+        )
+        if start_date:
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
+        if end_date:
+            sales_subq = sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        sales_subq = sales_subq.group_by(Purchase.book_landing_id).subquery()
+
+        ad_sales_subq = (
+            db.query(
+                Purchase.book_landing_id.label("book_landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
+            )
+            .filter(
+                Purchase.book_landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+        )
+        if start_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) >= start_date)
+        if end_date:
+            ad_sales_subq = ad_sales_subq.filter(cast(Purchase.created_at, Date) <= end_date)
+        ad_sales_subq = ad_sales_subq.group_by(Purchase.book_landing_id).subquery()
+
+        query = (
+            db.query(
+                BookLanding,
+                sales_subq.c.sales.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .join(sales_subq, sales_subq.c.book_landing_id == BookLanding.id)
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.is_hidden.is_(False))
+        )
+        if language:
+            query = query.filter(BookLanding.language == language)
+
+        if sort_by == "created_at":
+            query = query.order_by(
+                BookLanding.created_at.desc() if order_desc else BookLanding.created_at.asc()
+            )
+        else:
+            query = query.order_by(
+                sales_subq.c.sales.desc() if order_desc else sales_subq.c.sales.asc()
+            )
+
+        result = query.limit(limit).all()
+
+    else:
+        ad_sales_subq = (
+            db.query(
+                Purchase.book_landing_id.label("book_landing_id"),
+                func.count(Purchase.id).label("ad_sales"),
+            )
+            .filter(
+                Purchase.book_landing_id.isnot(None),
+                Purchase.from_ad.is_(True),
+            )
+            .group_by(Purchase.book_landing_id)
+            .subquery()
+        )
+
+        query = (
+            db.query(
+                BookLanding,
+                BookLanding.sales_count.label("sales"),
+                func.coalesce(ad_sales_subq.c.ad_sales, 0).label("ad_sales_count"),
+            )
+            .outerjoin(ad_sales_subq, ad_sales_subq.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.is_hidden.is_(False))
+        )
+        if language:
+            query = query.filter(BookLanding.language == language)
+
+        if sort_by == "created_at":
+            query = query.order_by(
+                BookLanding.created_at.desc() if order_desc else BookLanding.created_at.asc()
+            )
+        else:
+            query = query.order_by(
+                BookLanding.sales_count.desc() if order_desc else BookLanding.sales_count.asc()
+            )
+
+        result = query.limit(limit).all()
+
+    return result
+
+
+def get_book_sales_totals(
+    db: Session,
+    language: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+) -> dict[str, int]:
+    base = (
+        db.query(func.count(Purchase.id))
+        .join(BookLanding, BookLanding.id == Purchase.book_landing_id)
+        .filter(Purchase.book_landing_id.isnot(None))
+    )
+
+    if language:
+        base = base.filter(BookLanding.language == language)
+
+    if start_date:
+        base = base.filter(cast(Purchase.created_at, Date) >= start_date)
+    if end_date:
+        base = base.filter(cast(Purchase.created_at, Date) <= end_date)
+
+    sales_total = base.scalar() or 0
+
+    ad_base = base.filter(Purchase.from_ad.is_(True))
+    ad_sales_total = ad_base.scalar() or 0
+
+    return {"sales_total": int(sales_total), "ad_sales_total": int(ad_sales_total)}

@@ -69,6 +69,22 @@ def preview_pdf_url_for_book(book_or_slug) -> str:
     book_id = book_or_slug.id if hasattr(book_or_slug, "id") else str(book_or_slug)
     return f"{S3_PUBLIC_HOST}/books/{book_id}/preview/preview_20p.pdf"
 
+
+def _client_ip(request: Request) -> str:
+    """
+    Корректно извлекаем IP клиента, учитывая возможный прокси перед сервисом.
+    """
+    xfwd = request.headers.get("X-Forwarded-For", "").strip()
+    if xfwd:
+        first_ip = xfwd.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+    xreal = request.headers.get("X-Real-IP", "").strip()
+    if xreal:
+        return xreal
+    return request.client.host
+
+
 def _unique_landing_name(db: Session, desired: str | None) -> str:
     base = (desired or "Book landing").strip()
     if not base:
@@ -203,7 +219,7 @@ def track_book_ad(slug: str,
         book_landing_id=book_landing.id,
         fbp=request.cookies.get("_fbp"),
         fbc=request.cookies.get("_fbc"),
-        ip=request.client.host
+        ip=_client_ip(request)
     )
     return {"ok": True}
 
