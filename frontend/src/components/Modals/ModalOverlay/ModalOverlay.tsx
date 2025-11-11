@@ -77,6 +77,8 @@ const ModalOverlay = ({
 
   if (!isVisible) return null;
 
+  const shouldRenderChildren = isVisibleCondition || isClosing;
+
   return (
     <div
       onClick={closeModal}
@@ -86,7 +88,7 @@ const ModalOverlay = ({
         onClick={(e) => e.stopPropagation()}
         className={`${s.content} ${isClosing ? s.closing : ""}`}
       >
-        {children}
+        {shouldRenderChildren && children}
       </div>
     </div>
   );

@@ -59,7 +59,7 @@ const PdfReaderFullScreen = ({
 
   const content = (
     <ModalOverlay
-      isVisibleCondition={true}
+      isVisibleCondition={isFullScreen}
       modalPosition={"fullscreen"}
       customHandleClose={closeFullScreen}
       onInitClose={(fn) => (closeFullScreenRef.current = fn)}

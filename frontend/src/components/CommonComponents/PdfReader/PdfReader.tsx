@@ -147,14 +147,6 @@ const PdfReader = ({
     handleScrollToPage(newPage);
   };
 
-  const handleOpenFullScreen = () => {
-    setFullScreen(true);
-  };
-
-  const handleCloseFullScreen = () => {
-    setFullScreen(false);
-  };
-
   const handleZoom = (direction: "in" | "out") => {
     setScale((prev) => {
       const currentIndex = scales.findIndex((option) => option.value === prev);
@@ -221,28 +213,14 @@ const PdfReader = ({
         handleSelectChange={handleSelectChange}
         goToNextPage={goToNextPage}
         goToPrevPage={goToPrevPage}
-        handleCloseFullScreen={handleCloseFullScreen}
-        handleOpenFullScreen={handleOpenFullScreen}
+        handleCloseFullScreen={() => setFullScreen(false)}
+        handleOpenFullScreen={() => setFullScreen(true)}
         fullScreen={fullScreen}
         scale={scale}
       />
-      {url && (
-        <ThumbNails
-          isOpen={isThumbNailsOpen}
-          onLoadSuccess={onDocumentLoadSuccess}
-          options={options}
-          totalPages={totalPages}
-          link={url}
-          handlePageChange={(page) => handleScrollToPage(page)}
-          onClick={handleThumbNailsAreaClick}
-          currentPage={pageNum}
-        />
-      )}
       <div className={`${s.overlay} ${isThumbNailsOpen ? s.open : ""}`}></div>
       <div
-        onClick={!fullScreen ? handleOpenFullScreen : undefined}
         style={{
-          cursor: !fullScreen ? "pointer" : "auto",
           overflow: isThumbNailsOpen ? "hidden" : "",
         }}
         className={s.document}
@@ -258,6 +236,15 @@ const PdfReader = ({
             loading={false}
             error={false}
           >
+            {fullScreen && (
+              <ThumbNails
+                isOpen={isThumbNailsOpen}
+                totalPages={totalPages}
+                handlePageChange={(page) => handleScrollToPage(page)}
+                onClick={handleThumbNailsAreaClick}
+                currentPage={pageNum}
+              />
+            )}
             {Array.from(new Array(totalPages), (_el, index) => (
               <div key={index + 1} data-page={index + 1}>
                 <Page

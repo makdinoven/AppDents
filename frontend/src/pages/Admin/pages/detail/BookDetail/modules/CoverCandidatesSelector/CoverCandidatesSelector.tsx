@@ -114,7 +114,7 @@ const CoverCandidatesSelector = ({
     if (jobStatus !== "success") {
       const interval = setInterval(() => {
         handleGetCoverCandidatesJob();
-      }, 3000);
+      }, 10000);
 
       return () => clearInterval(interval);
     }
