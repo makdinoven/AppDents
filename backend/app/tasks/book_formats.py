@@ -60,7 +60,15 @@ CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 # --- новые константы сторожа ---
 STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "1000"))   # 5 мин
 STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "2600")) # 10 мин
-MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))        # 90 мин на шаг
+MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
+MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "2"))
+# Доп. опции на ретраях (диагностика и более мягкие эвристики)
+PDF2EPUB_RETRY_OPTS = os.getenv(
+    "CALIBRE_PDF2EPUB_RETRY_OPTS",
+    "--debug-pipeline /tmp/caldbg --enable-heuristics --unwrap-factor 0.18 --dont-split-on-page-breaks"
+)
+# Стратегия нормализации PDF по шагам (через запятую): gs,mutool,qpdf
+PDF_PREFLIGHT_STRATEGY = os.getenv("CALIBRE_PDF_PREFLIGHT_STRATEGY", "gs,mutool,qpdf")        # 90 мин на шаг
 
 def _tail_lines(s: str, n: int = 120) -> str:
     if not s:
@@ -100,36 +108,117 @@ def _which(cmd: str) -> str | None:
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return None
+def _normalize_pdf_sequence(book_id: int, src_pdf: str, workdir: str, *, strategy: str) -> tuple[str, str]:
+    """
+    Прогоняет src_pdf через цепочку нормализаций (gs → mutool → qpdf),
+    возвращает (путь_к_нормализованному, метка_чем_нормализовали).
+    Если ничего не удалось — возвращает исходный файл и 'none'.
+    """
+    steps = [s.strip().lower() for s in strategy.split(",") if s.strip()]
+    cur = src_pdf
+    used = []
+    for step in steps:
+        out = os.path.join(workdir, f"in.norm.{len(used)+1}.pdf")
+        if step == "gs" and _which("gs"):
+            rc, _, _ = _run([
+                "gs", "-dBATCH", "-dNOPAUSE", "-dSAFER", "-sDEVICE=pdfwrite",
+                "-dPDFSETTINGS=/ebook",
+                "-dDetectDuplicateImages=true", "-dCompressFonts=true",
+                "-dColorConversionStrategy=/sRGB", "-dProcessColorModel=/DeviceRGB",
+                "-dEmbedAllFonts=true", "-dSubsetFonts=true",
+                "-sOutputFile=" + out, cur
+            ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
+            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
+                used.append("gs"); cur = out; continue
 
-def _preflight_pdf(src_pdf: str, workdir: str) -> str:
-    """Возвращает путь к «очищенному» PDF, либо исходный, если править нечем."""
+        if step == "mutool" and _which("mutool"):
+            rc, _, _ = _run(["mutool", "clean", "-gg", cur, out],
+                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
+            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
+                used.append("mutool"); cur = out; continue
+
+        if step == "qpdf" and _which("qpdf"):
+            rc, _, _ = _run(["qpdf", "--linearize", "--object-streams=generate", cur, out],
+                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
+            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
+                used.append("qpdf"); cur = out; continue
+    return cur, ("+".join(used) if used else "none")
+
+
+def _convert_pdf_to_epub_with_retries(
+    book_id: int,
+    src_pdf_initial: str,
+    out_epub: str,
+) -> tuple[bool, str | None]:
+    """
+    Пытается PDF→EPUB с авто-нормализацией и ретраями.
+    Возвращает (success, путь_к_локальному_epub_или_None)
+    """
+    # Попытка 0 — как есть (src_pdf_initial)
+    attempt = 0
+    src_pdf_current = src_pdf_initial
+
+    while attempt <= MAX_CONVERT_RETRIES:
+        attempt += 1
+        # Опции: первая попытка — базовые, далее добавляем «мягкие» + debug
+        extra_opts = PDF2EPUB_OPTS if attempt == 1 else (PDF2EPUB_OPTS + " " + PDF2EPUB_RETRY_OPTS)
+        _set_job_progress(book_id, note=f"PDF→EPUB попытка {attempt}")
+        _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
+
+        rc, out, err = _run(
+            _build_convert_args(src_pdf_current, out_epub, extra_opts),
+            book_id=book_id, fmt=BookFileFormat.EPUB, phase=f"convert#{attempt}",
+        )
+
+        # Успех
+        if rc == 0 and os.path.exists(out_epub) and os.path.getsize(out_epub) > 0:
+            return True, out_epub
+
+        # Не успех — если исчерпали попытки, выходим
+        if attempt >= MAX_CONVERT_RETRIES + 1:
+            _log(book_id, f"epub: all attempts failed (last rc={rc})")
+            return False, None
+
+        # Фоллбек: нормализуем PDF и пробуем ещё раз
+        _log(book_id, f"epub: attempt {attempt} failed (rc={rc}), trying PDF normalize…")
+        src_pdf_current, used = _normalize_pdf_sequence(
+            book_id, src_pdf_current, os.path.dirname(out_epub),
+            strategy=PDF_PREFLIGHT_STRATEGY
+        )
+        _log(book_id, f"epub: normalize done via [{used}] → retry")
+
+def _preflight_pdf(book_id: int, src_pdf: str, workdir: str) -> str:
     cleaned = os.path.join(workdir, "in.cleaned.pdf")
-    # 1) qpdf --check и по возможности --linearize/clean
+
     qpdf = _which("qpdf")
     if qpdf:
-        rc, out, err = _run([qpdf, "--check", src_pdf], phase="preflight")
-        _log(0, f"qpdf --check rc={rc}")  # book_id здесь не обязателен
-        # попробуем перепаковать
-        rc, _, _ = _run([qpdf, "--linearize", "--object-streams=generate", src_pdf, cleaned], phase="preflight")
+        rc, out, err = _run([qpdf, "--check", src_pdf],
+                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
+        _log(book_id, f"qpdf --check rc={rc}")
+        rc, _, _ = _run([qpdf, "--linearize", "--object-streams=generate", src_pdf, cleaned],
+                        book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
         if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
             return cleaned
-    # 2) mutool clean (MuPDF)
+
     mutool = _which("mutool")
     if mutool:
-        rc, _, _ = _run([mutool, "clean", "-gg", src_pdf, cleaned], phase="preflight")
+        rc, _, _ = _run([mutool, "clean", "-gg", src_pdf, cleaned],
+                        book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
         if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
             return cleaned
-    # 3) (опционально) Ghostscript — дорогая операция, но спасает
+
     gs = _which("gs")
     if gs:
         rc, _, _ = _run([
             gs, "-dBATCH", "-dNOPAUSE", "-dSAFER", "-sDEVICE=pdfwrite",
             "-dDetectDuplicateImages=true", "-dCompressFonts=true",
             "-sOutputFile=" + cleaned, src_pdf
-        ], phase="preflight")
+        ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
         if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
             return cleaned
+
     return src_pdf
+
 
 # ───────────────── Redis-ключи статусов ──────────────────
 def _k_job(book_id: int) -> str:           return f"bookfmt:{book_id}"
@@ -233,29 +322,59 @@ def _clear_progress(book_id: int, fmt: BookFileFormat) -> None:
     _progress_cache.pop((book_id, fmt), None)
 
 
-def _handle_convert_output(book_id: int, fmt: BookFileFormat, line: str, *, stream: str) -> None:
+def _handle_convert_output(
+    book_id: int,
+    fmt: BookFileFormat,
+    line: str,
+    *,
+    stream: str,
+) -> bool:
+    """
+    Разбирает строку вывода calibre. Обновляет прогресс/лог/статусы.
+    Возвращает True, если в этой строке был обнаружен НОВЫЙ прогресс (%).
+    """
     if not line:
-        return
+        return False
+
+    progress_seen = False
 
     for chunk in re.split(r"[\r\n]+", line):
         stripped = chunk.strip()
         if not stripped:
             continue
 
-        match = _PROGRESS_RE.search(stripped)
-        if match:
-            progress = max(0, min(100, int(match.group(1))))
-            if _remember_progress(book_id, fmt, progress):
-                _set_fmt_status(book_id, fmt, "running", progress=progress)
-                _update_job_progress_from_fmt(book_id, fmt, progress)
-                _log(book_id, f"{_fmt_label(fmt)}: progress {progress}%")
+        # 1) прогресс "NN%"
+        m = _PROGRESS_RE.search(stripped)
+        if m:
+            prog = max(0, min(100, int(m.group(1))))
+            if _remember_progress(book_id, fmt, prog):
+                _set_fmt_status(book_id, fmt, "running", progress=prog)
+                _update_job_progress_from_fmt(book_id, fmt, prog)
+                try:
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={
+                        "last_progress_at": str(int(time.time()))
+                    })
+                except Exception:
+                    pass
+                _log(book_id, f"{_fmt_label(fmt)}: progress {prog}%")
+                progress_seen = True
             continue
 
+        # 2) диагностический вывод
         lowered = stripped.lower()
         if stream == "stderr":
             _log(book_id, f"{_fmt_label(fmt)} stderr: {stripped}")
-        elif any(lowered.startswith(prefix) for prefix in ("input ", "output ", "parsed", "converting", "rendering", "creating", "processing", "splitting", "working")):
+        elif any(
+            lowered.startswith(prefix) for prefix in (
+                "input ", "output ", "parsed", "converting",
+                "rendering", "creating", "processing",
+                "splitting", "working"
+            )
+        ):
             _log(book_id, f"{_fmt_label(fmt)}: {stripped}")
+
+    return progress_seen
+
 
 
 def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = None) -> list[str]:
@@ -380,24 +499,56 @@ def _formats_key_from_pdf(pdf_key: str, ext: str) -> str:
     stem = PurePosixPath(pdf_key).stem      # File
     return str(base / "formats" / f"{stem}.{ext.lower()}")
 
-def _run(cmd, *, book_id: int | None = None, fmt: BookFileFormat | None = None, phase: str | None = None):
-    args = shlex.split(cmd) if isinstance(cmd, str) else cmd
-    # отдельная группа процессов, чтобы убивать детей одним сигналом
+from collections import deque
+
+def _run(
+    cmd,
+    *,
+    book_id: int | None = None,
+    fmt: BookFileFormat | None = None,
+    phase: str | None = None,
+):
+    """
+    Запускает внешнюю команду, построчно читает stdout/stderr,
+    шлёт хартбиты, следит за «тишиной», отсутствием прогресса
+    и предельной длительностью этапа. При убийстве кладёт хвосты в Redis.
+    Возвращает (rc, stdout_tail, stderr_tail).
+    """
+    args = shlex.split(cmd) if isinstance(cmd, str) else list(cmd)
+
     proc = subprocess.Popen(
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
-        preexec_fn=os.setsid,
+        preexec_fn=os.setsid,  # отдельная группа процессов
     )
-    proc_obj = psutil.Process(proc.pid) if psutil else None
-    last_cpu_time = 0.0
-    last_cpu_check = time.monotonic()
-    stdout_lines, stderr_lines = [], []
+
+    # буферы с ограничением по числу строк (без раздувания памяти)
+    STD_TAIL_LINES = int(os.getenv("CALIBRE_STD_TAIL_LINES", "200"))
+    stdout_tail_buf: deque[str] = deque(maxlen=STD_TAIL_LINES)
+    stderr_tail_buf: deque[str] = deque(maxlen=STD_TAIL_LINES)
+
+    # CPU «пульс» процесса
+    try:
+        proc_obj = psutil.Process(proc.pid) if psutil else None
+    except Exception:
+        proc_obj = None
+
     start_time = time.monotonic()
-    last_output = start_time
-    last_heartbeat = start_time
+    last_progress_ts = start_time
+    last_heartbeat_ts = start_time
+    last_any_activity_ts = start_time  # output || new progress || cpu pulse
+
+    last_cpu_check = start_time
+    last_cpu_time = 0.0
+    if proc_obj:
+        try:
+            c0 = proc_obj.cpu_times()
+            last_cpu_time = float(getattr(c0, "user", 0.0)) + float(getattr(c0, "system", 0.0))
+        except Exception:
+            last_cpu_time = 0.0
 
     def _pg_kill(sig):
         try:
@@ -409,84 +560,126 @@ def _run(cmd, *, book_id: int | None = None, fmt: BookFileFormat | None = None, 
         _log(book_id, f"{_fmt_label(fmt)}:{phase} started: {' '.join(args)}")
 
     sel = selectors.DefaultSelector()
-    if proc.stdout: sel.register(proc.stdout, selectors.EVENT_READ, ("stdout", proc.stdout))
-    if proc.stderr: sel.register(proc.stderr, selectors.EVENT_READ, ("stderr", proc.stderr))
+    if proc.stdout:
+        sel.register(proc.stdout, selectors.EVENT_READ, ("stdout", proc.stdout))
+    if proc.stderr:
+        sel.register(proc.stderr, selectors.EVENT_READ, ("stderr", proc.stderr))
 
     while sel.get_map():
         events = sel.select(timeout=1.0)
-
-        # --- нет событий: проверки таймаутов ---
         now = time.monotonic()
+
         if not events:
-            proc_obj = psutil.Process(proc.pid) if psutil else None
-            last_cpu_time = 0.0
-            if proc_obj:
+            # CPU-пульс раз в ~15 сек
+            if proc_obj and (now - last_cpu_check) >= 15.0:
+                try:
+                    ct = proc_obj.cpu_times()
+                    cpu_time = float(getattr(ct, "user", 0.0)) + float(getattr(ct, "system", 0.0))
+                    if cpu_time - last_cpu_time >= 1.0:
+                        last_any_activity_ts = now
+                    last_cpu_time = cpu_time
+                except Exception:
+                    pass
+                last_cpu_check = now
+
+            # heartbeat
+            if (
+                book_id is not None and fmt is not None and
+                CONVERT_HEARTBEAT_SECONDS > 0 and
+                (now - last_heartbeat_ts) >= CONVERT_HEARTBEAT_SECONDS
+            ):
+                elapsed = now - start_time
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
+                last_heartbeat_ts = now
+
+            # «тишина»
+            if STALL_NO_OUTPUT_SECS and (now - last_any_activity_ts) >= STALL_NO_OUTPUT_SECS:
+                if book_id is not None and fmt is not None:
+                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
+                                  f"no output/progress for {int(now - last_any_activity_ts)}s → terminate")
                     try:
-                        c0 = proc_obj.cpu_times()
-                        last_cpu_time = float(getattr(c0, "user", 0.0)) + float(getattr(c0, "system", 0.0))
+                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_output"})
                     except Exception:
                         pass
-            last_cpu_check = time.monotonic()
-
-            # хартбит + подсказка «жив»
-            if (book_id is not None and fmt is not None and
-                CONVERT_HEARTBEAT_SECONDS > 0 and now - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS):
-                elapsed = now - start_time
-                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({elapsed:.0f}s elapsed)")
-                last_heartbeat = now
-
-            # сторож: нет вывода
-            if STALL_NO_OUTPUT_SECS and (now - last_output) >= STALL_NO_OUTPUT_SECS:
-                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: no output for {int(now-last_output)}s → terminate")
                 _pg_kill(signal.SIGTERM)
 
-            # общий предел на этап
+            # «нет прогресса»
+            if STALL_NO_PROGRESS_SECS and (now - last_progress_ts) >= STALL_NO_PROGRESS_SECS:
+                if book_id is not None and fmt is not None:
+                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
+                                  f"no progress for {int(now - last_progress_ts)}s → terminate")
+                    try:
+                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_progress"})
+                    except Exception:
+                        pass
+                _pg_kill(signal.SIGTERM)
+
+            # общий таймаут
             if MAX_STAGE_SECS and (now - start_time) >= MAX_STAGE_SECS:
-                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now-start_time)}s → kill")
+                if book_id is not None and fmt is not None:
+                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now - start_time)}s → kill")
+                    try:
+                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "max_stage"})
+                    except Exception:
+                        pass
                 _pg_kill(signal.SIGKILL)
 
             if proc.poll() is not None and not sel.get_map():
                 break
             continue
 
-        # --- читаем вывод ---
+        # есть строки
         for key, _ in events:
             stream_name, stream = key.data
             line = stream.readline()
             if line:
-                last_output = time.monotonic()
+                last_any_activity_ts = now
                 if stream_name == "stdout":
-                    stdout_lines.append(line)
+                    stdout_tail_buf.append(line.rstrip("\n"))
                 else:
-                    stderr_lines.append(line)
+                    stderr_tail_buf.append(line.rstrip("\n"))
+
                 if book_id is not None and fmt is not None:
-                    _handle_convert_output(book_id, fmt, line, stream=stream_name)
+                    progressed = _handle_convert_output(book_id, fmt, line, stream=stream_name)
+                    if progressed:
+                        last_progress_ts = now
+                        last_any_activity_ts = now
             else:
                 sel.unregister(stream)
 
-        # повторная проверка хартбита/прогресса
+        # повторный heartbeat, если надо
         now = time.monotonic()
-        if (book_id is not None and fmt is not None and
-            CONVERT_HEARTBEAT_SECONDS > 0 and now - last_heartbeat >= CONVERT_HEARTBEAT_SECONDS):
+        if (
+            book_id is not None and fmt is not None and
+            CONVERT_HEARTBEAT_SECONDS > 0 and
+            (now - last_heartbeat_ts) >= CONVERT_HEARTBEAT_SECONDS
+        ):
             elapsed = now - start_time
-            _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({elapsed:.0f}s elapsed)")
-            last_heartbeat = now
+            _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
+            last_heartbeat_ts = now
 
         if proc.poll() is not None and not sel.get_map():
             break
 
     rc = proc.wait()
 
-    if book_id is not None and fmt is not None and phase:
-        _log(book_id, f"{_fmt_label(fmt)}:{phase} finished rc={rc}")
-        # полезный хвост в Redis на случай падения/сталла
-        rds.hset(_k_fmt(book_id, fmt.value), mapping={
-            "rc": str(rc),
-            "stdout_tail": _tail_lines("".join(stdout_lines), 120),
-            "stderr_tail": _tail_lines("".join(stderr_lines), 120),
-        })
+    # хвосты для диагностики
+    stdout_tail = "\n".join(list(stdout_tail_buf)[-120:])
+    stderr_tail = "\n".join(list(stderr_tail_buf)[-120:])
 
-    return rc, "".join(stdout_lines), "".join(stderr_lines)
+    if book_id is not None and fmt is not None and phase:
+        try:
+            rds.hset(_k_fmt(book_id, fmt.value), mapping={
+                "rc": str(rc),
+                "stdout_tail": stdout_tail,
+                "stderr_tail": stderr_tail,
+            })
+        except Exception:
+            pass
+        _log(book_id, f"{_fmt_label(fmt)}:{phase} finished rc={rc}")
+
+    return rc, stdout_tail, stderr_tail
+
 
 def _tmp_dir() -> str | None:
     # Уважает выделенный большой tmp-раздел, если настроен
@@ -560,7 +753,7 @@ def generate_book_formats(book_id: int) -> dict:
                 _log(book_id, f"pdf: downloaded {size_mb:.2f} MiB in {elapsed:.1f}s")
                 _set_job_progress(book_id, 5, note="pdf загружен локально")
                 _set_job_phase(book_id, "preflight")
-                src_pdf_clean = _preflight_pdf(src_pdf, tmp)
+                src_pdf_clean = _preflight_pdf(book_id, src_pdf, tmp)
 
             # ───────────── 1) EPUB (PDF → EPUB, 1 раз) ─────────────
             base_epub_local = os.path.join(tmp, "base.epub")
@@ -594,53 +787,48 @@ def generate_book_formats(book_id: int) -> dict:
                 _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
                 _update_job_progress_from_fmt(book_id, BookFileFormat.EPUB, 0)
                 _log(book_id, "epub: convert start (pdf → epub)")
-                stage_started = time.monotonic()
-                rc, out, err = _run(
-                        _build_convert_args(src_pdf_clean, base_epub_local, PDF2EPUB_OPTS),
-                        book_id=book.id,
-                        fmt=BookFileFormat.EPUB,
-                        phase="convert",
-                    )
 
-                if rc != 0 or not os.path.exists(base_epub_local) or os.path.getsize(base_epub_local) == 0:
-                    _set_fmt_status(book_id, BookFileFormat.EPUB, "failed")
-                    _log(book_id, f"epub: convert failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
-                    _clear_progress(book.id, BookFileFormat.EPUB)
-                    failed.append({"format": "EPUB", "error": f"convert failed (rc={rc})"})
-                    # Без EPUB дальше шансов мало — но аккуратно завершим.
+                stage_started = time.monotonic()
+                ok_epub, local_epub_path = _convert_pdf_to_epub_with_retries(
+                    book_id=book.id,
+                    src_pdf_initial=src_pdf_clean,   # твой «предпрефлайченный» src_pdf_clean
+                    out_epub=base_epub_local,
+                )
+
+                if not ok_epub:
+                    _convert_pdf_direct_formats(
+                        book_id=book.id,
+                        src_pdf=src_pdf_clean,   # уже «очищенный» после _preflight_pdf
+                        tmp_dir=tmp,
+                        pdf_key=pdf_key,
+                        db=db,
+                        created=created,
+                        failed=failed,
+                    )
                 else:
                     convert_elapsed = time.monotonic() - stage_started
                     epub_key = _formats_key_from_pdf(pdf_key, "epub")
                     try:
                         s3.upload_file(
-                            base_epub_local, S3_BUCKET, epub_key,
+                            local_epub_path, S3_BUCKET, epub_key,
                             ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for("epub")}
                         )
-                        size = os.path.getsize(base_epub_local)
+                        size = os.path.getsize(local_epub_path)
                         epub_url = _safe_cdn_url(epub_key)
                         db.add(BookFile(book_id=book.id, file_format=BookFileFormat.EPUB,
                                         s3_url=epub_url, size_bytes=size))
                         db.commit()
-                        _set_fmt_status(
-                            book_id,
-                            BookFileFormat.EPUB,
-                            "success",
-                            url=epub_url,
-                            size=size,
-                            progress=100,
-                        )
+                        _set_fmt_status(book_id, BookFileFormat.EPUB, "success", url=epub_url, size=size, progress=100)
                         _update_job_progress_from_fmt(book_id, BookFileFormat.EPUB, 100)
                         _clear_progress(book.id, BookFileFormat.EPUB)
-                        _log(
-                            book_id,
-                            f"epub: uploaded → {epub_url} ({size / (1024 * 1024):.2f} MiB, {convert_elapsed:.1f}s)",
-                        )
+                        _log(book_id, f"epub: uploaded → {epub_url} ({size / (1024 * 1024):.2f} MiB, {convert_elapsed:.1f}s)")
                         created.append({"format": "EPUB", "url": epub_url, "size": size})
                     except ClientError as e:
                         _set_fmt_status(book_id, BookFileFormat.EPUB, "failed")
-                        _log(book_id, f"epub: s3 upload failed: {e}")
                         _clear_progress(book.id, BookFileFormat.EPUB)
+                        _log(book_id, f"epub: s3 upload failed: {e}")
                         failed.append({"format": "EPUB", "error": "s3_upload_failed"})
+
 
             have_epub_local = os.path.exists(base_epub_local)
 
@@ -894,3 +1082,58 @@ def generate_book_formats(book_id: int) -> dict:
         for fmt in (BookFileFormat.EPUB, BookFileFormat.MOBI, BookFileFormat.AZW3, BookFileFormat.FB2):
             _clear_progress(book_id, fmt)
         db.close()
+
+def _convert_pdf_direct_formats(
+    book_id: int,
+    src_pdf: str,
+    tmp_dir: str,
+    pdf_key: str,
+    db: Session,
+    created: list,
+    failed: list,
+):
+    """Пытается собрать AZW3/MOBI/FB2 напрямую из PDF, если EPUB не вышел."""
+    direct_targets = [
+        (BookFileFormat.AZW3, "azw3", EPUB2AZW3_OPTS),
+        (BookFileFormat.MOBI, "mobi", EPUB2MOBI_OPTS),
+        (BookFileFormat.FB2,  "fb2",  EPUB2FB2_OPTS),
+    ]
+
+    for fmt, ext, opts in direct_targets:
+        _set_fmt_status(book_id, fmt, "running", progress=0)
+        _update_job_progress_from_fmt(book_id, fmt, 0)
+        out_path = os.path.join(tmp_dir, f"out_direct.{ext}")
+        _log(book_id, f"{ext}: direct convert start (pdf → {ext})")
+
+        rc, out, err = _run(
+            _build_convert_args(src_pdf, out_path, opts),
+            book_id=book_id, fmt=fmt, phase="convert_direct",
+        )
+
+        if rc != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+            _set_fmt_status(book_id, fmt, "failed")
+            _clear_progress(book_id, fmt)
+            _log(book_id, f"{ext}: direct PDF→{ext} failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
+            failed.append({"format": fmt.value, "error": f"pdf→{ext} failed (rc={rc})"})
+            continue
+
+        key = _formats_key_from_pdf(pdf_key, ext)
+        try:
+            s3.upload_file(
+                out_path, S3_BUCKET, key,
+                ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for(ext)}
+            )
+            size = os.path.getsize(out_path)
+            url  = _safe_cdn_url(key)
+            db.add(BookFile(book_id=book_id, file_format=fmt, s3_url=url, size_bytes=size))
+            db.commit()
+            _set_fmt_status(book_id, fmt, "success", url=url, size=size, progress=100)
+            _update_job_progress_from_fmt(book_id, fmt, 100)
+            _clear_progress(book_id, fmt)
+            _log(book_id, f"{ext}: direct uploaded → {url} ({size/(1024*1024):.2f} MiB)")
+            created.append({"format": fmt.value, "url": url, "size": size})
+        except ClientError as e:
+            _set_fmt_status(book_id, fmt, "failed")
+            _clear_progress(book_id, fmt)
+            _log(book_id, f"{ext}: direct s3 upload failed: {e}")
+            failed.append({"format": fmt.value, "error": "s3_upload_failed"})
