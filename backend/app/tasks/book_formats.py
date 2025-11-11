@@ -54,6 +54,7 @@ s3     = boto3.client(
 _PROGRESS_RE = re.compile(r"(\d{1,3})%")
 CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
 CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
+CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 
 
 def _calibre_jobs() -> int | None:
@@ -191,7 +192,7 @@ def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = N
     args = [EBOOK_CONVERT_BIN, src_path, dst_path]
     opts = shlex.split(extra_opts or "")
 
-    if "--jobs" not in opts:
+    if "--jobs" not in opts and _calibre_supports_jobs():
         jobs = _calibre_jobs()
         if jobs:
             args.extend(["--jobs", str(jobs)])
@@ -201,6 +202,36 @@ def _build_convert_args(src_path: str, dst_path: str, extra_opts: str | None = N
 
     args.extend(opts)
     return args
+
+
+_CALIBRE_SUPPORTS_JOBS: bool | None = None
+
+
+def _calibre_supports_jobs() -> bool:
+    global _CALIBRE_SUPPORTS_JOBS
+
+    if _CALIBRE_SUPPORTS_JOBS is not None:
+        return _CALIBRE_SUPPORTS_JOBS
+
+    if CALIBRE_SUPPORTS_JOBS_OVERRIDE is not None:
+        _CALIBRE_SUPPORTS_JOBS = CALIBRE_SUPPORTS_JOBS_OVERRIDE.strip().lower() in {"1", "true", "yes", "y"}
+        return _CALIBRE_SUPPORTS_JOBS
+
+    try:
+        proc = subprocess.run(
+            [EBOOK_CONVERT_BIN, "--help"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+            timeout=8,
+        )
+        _CALIBRE_SUPPORTS_JOBS = "--jobs" in (proc.stdout or "")
+    except Exception as exc:
+        logger.warning("Cannot probe ebook-convert for --jobs support: %s", exc)
+        _CALIBRE_SUPPORTS_JOBS = False
+
+    return _CALIBRE_SUPPORTS_JOBS
 
 # ──────────────────── Вспомогательные ────────────────────
 def _content_type_for(ext: str) -> str:
