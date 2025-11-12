@@ -32,8 +32,8 @@ REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
 # Умеренные флаги (качество ок, память экономим)
-# PDF → EPUB
-PDF2EPUB_OPTS  = " "
+# PDF → EPUB - добавляем --no-images-to-jpeg для предотвращения зависаний
+PDF2EPUB_OPTS  = "--no-images-to-jpeg"
 # EPUB → AZW3 (под Kindle)
 EPUB2AZW3_OPTS = ""
 # EPUB → MOBI (KF8/new)
@@ -65,7 +65,7 @@ MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "2"))
 # Доп. опции на ретраях (диагностика и более мягкие эвристики)
 PDF2EPUB_RETRY_OPTS = os.getenv(
     "CALIBRE_PDF2EPUB_RETRY_OPTS",
-    "--debug-pipeline /tmp/caldbg --enable-heuristics --unwrap-factor 0.18 --dont-split-on-page-breaks"
+    "--no-images-to-jpeg --enable-heuristics --unwrap-factor 0.18 --dont-split-on-page-breaks"
 )
 MIN_EPUB_ABS_BYTES = int(os.getenv("CALIBRE_MIN_EPUB_ABS_BYTES", str(512 * 1024)))  # ≥ 512KB
 MIN_EPUB_RATIO     = float(os.getenv("CALIBRE_MIN_EPUB_RATIO", "0.01"))             # ≥ 1% от размера PDF
@@ -77,13 +77,13 @@ OCR_LANGS    = os.getenv("OCR_LANGS", "eng+rus")   # под себя
 # разумные, не «тяжёлые» опции по умолчанию; можно переопределить через ENV
 OCR_OPTS     = os.getenv(
     "OCR_OPTS",
-    "--skip-text --rotate-pages --deskew --clean-final --fast-web-view 0 --output-type pdf"
+    "--skip-text --rotate-pages --deskew --clean-final --output-type pdf"
 )
 
 # --- обновлённые флаги для AZW3 (устраняют часть падений на разбиении) ---
 EPUB2AZW3_OPTS = os.getenv(
     "EPUB2AZW3_OPTS",
-    "--flow-size 0 --dont-split-on-page-breaks --no-inline-toc"
+    "--dont-split-on-page-breaks --no-inline-toc"
 )
 # Стратегия нормализации PDF по шагам (через запятую): gs,mutool,qpdf
 PDF_PREFLIGHT_STRATEGY = os.getenv("CALIBRE_PDF_PREFLIGHT_STRATEGY", "gs,mutool,qpdf")        # 90 мин на шаг
@@ -1183,10 +1183,11 @@ def _convert_pdf_direct_formats(
     failed: list,
 ):
     """Пытается собрать AZW3/MOBI/FB2 напрямую из PDF, если EPUB не вышел."""
+    # Для прямой конверсии из PDF используем минимальные опции
     direct_targets = [
-        (BookFileFormat.AZW3, "azw3", EPUB2AZW3_OPTS),
-        (BookFileFormat.MOBI, "mobi", EPUB2MOBI_OPTS),
-        (BookFileFormat.FB2,  "fb2",  EPUB2FB2_OPTS),
+        (BookFileFormat.AZW3, "azw3", "--no-images-to-jpeg"),
+        (BookFileFormat.MOBI, "mobi", "--no-images-to-jpeg"),
+        (BookFileFormat.FB2,  "fb2",  "--no-images-to-jpeg"),
     ]
 
     for fmt, ext, opts in direct_targets:
