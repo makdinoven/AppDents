@@ -189,8 +189,8 @@ def stream_book_pdf(
     db: Session = Depends(get_db),
 ):
     """
-    Возвращает redirect на presigned URL S3 для прямой загрузки PDF.
-    Это позволяет избежать проксирования через сервер и использовать Range-запросы напрямую к S3.
+    Возвращает presigned URL S3 в JSON для прямой загрузки PDF.
+    Клиент сам делает запрос к S3 с поддержкой Range.
     Доступно владельцам книги и администраторам.
     """
 
@@ -215,6 +215,6 @@ def stream_book_pdf(
     if not presigned_url:
         raise HTTPException(status_code=500, detail="Failed to generate presigned URL")
     
-    # Возвращаем redirect на presigned URL
-    # Клиент будет загружать напрямую из S3 с поддержкой Range-запросов
-    return RedirectResponse(url=presigned_url, status_code=307)
+    # Возвращаем JSON с URL вместо редиректа
+    # Фронтенд должен использовать этот URL напрямую для загрузки PDF
+    return {"url": presigned_url, "size": pdf_file.size_bytes}
