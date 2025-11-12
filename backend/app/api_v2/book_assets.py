@@ -242,12 +242,14 @@ def stream_book_pdf(
     key = _s3_key_from_url(pdf_file.s3_url)
 
     range_header = request.headers.get("range") or request.headers.get("Range")
+    logger.info(f"PDF request for book {book_id}: Range header = {range_header}")
     
     # Всегда получаем размер файла через head_object
     try:
         head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
         file_size = head_obj.get("ContentLength", 0)
         metadata = head_obj.get("Metadata") or {}
+        logger.info(f"PDF file size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
     except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
         raise HTTPException(status_code=404, detail="PDF not found")
     except Exception as e:
@@ -259,7 +261,13 @@ def stream_book_pdf(
     if range_header:
         # Если есть Range header от PDF.js - используем его
         get_kwargs["Range"] = range_header
-    # Если нет Range header - запрашиваем весь файл (S3 вернёт стрим)
+        logger.info(f"Using client Range: {range_header}")
+    else:
+        # Первый запрос без Range - возвращаем только первый chunk
+        # Это заставит PDF.js перейти на Range-запросы
+        initial_chunk = min(524288, file_size)  # 512KB или меньше
+        get_kwargs["Range"] = f"bytes=0-{initial_chunk - 1}"
+        logger.info(f"First request without Range, limiting to {initial_chunk} bytes")
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -285,16 +293,17 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Если был Range запрос - возвращаем 206 Partial Content
-    if range_header and content_range:
+    # Всегда возвращаем 206 Partial Content, т.к. всегда делаем Range запрос к S3
+    if content_range:
         headers["Content-Range"] = content_range
         headers["Content-Length"] = str(content_length) if content_length else str(0)
         status_code = 206
+        logger.info(f"Returning 206: {content_range}")
     else:
-        # Первый запрос без Range - возвращаем 200 OK
-        # Accept-Ranges: bytes сигнализирует PDF.js что можно делать Range-запросы
+        # Fallback - не должно случиться, но на всякий случай
         headers["Content-Length"] = str(file_size)
         status_code = 200
+        logger.warning("No Content-Range from S3, returning 200")
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
