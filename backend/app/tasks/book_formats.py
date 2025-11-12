@@ -21,25 +21,41 @@ from sqlalchemy.orm import Session
 from ..db.database import SessionLocal
 from ..models.models_v2 import Book, BookFile, BookFileFormat
 
-# ──────────────────── ENV / S3 / Redis ────────────────────
+# ──────────────────── Конфигурация ────────────────────
+
+# S3 хранилище для загрузки/скачивания файлов
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
 S3_REGION      = os.getenv("S3_REGION", "ru-1")
 S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
-# Внешние бинарники
+# Redis для хранения статусов конверсии и логов
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+
+# Calibre ebook-convert бинарник
 EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
-# Умеренные флаги (качество ок, память экономим)
-# PDF → EPUB - по умолчанию пробуем использовать внешний pdftohtml (быстрее и стабильнее)
+# Опции конверсии для разных форматов
 PDF2EPUB_OPTS  = os.getenv("CALIBRE_PDF2EPUB_OPTS", "--use-auto-toc --pdf-engine=pdftohtml")
-# EPUB → AZW3 (под Kindle)
-EPUB2AZW3_OPTS = ""
-# EPUB → MOBI (KF8/new)
-EPUB2MOBI_OPTS = ""
-# EPUB → FB2
-EPUB2FB2_OPTS  = ""
+EPUB2AZW3_OPTS = os.getenv("EPUB2AZW3_OPTS", "")
+EPUB2MOBI_OPTS = os.getenv("EPUB2MOBI_OPTS", "")
+EPUB2FB2_OPTS  = os.getenv("EPUB2FB2_OPTS", "")
+
+# Временная директория для конверсии (для больших файлов можно указать отдельный раздел)
+# Используется в _tmp_dir()
+# CALIBRE_TEMP_DIR - путь к временной директории
+
+# Настройки логирования Calibre
+CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
+CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))  # Интервал heartbeat сообщений
+
+# Таймауты watchdog
+# Если процесс не выдает ни вывода, ни прогресса более N секунд → завершаем
+INACTIVITY_TIMEOUT_SECS = int(os.getenv("CALIBRE_INACTIVITY_TIMEOUT_SECS", "180"))  # 3 минуты
+# Максимальное время на конверсию одного формата
+MAX_FORMAT_TIMEOUT_SECS = int(os.getenv("CALIBRE_MAX_FORMAT_TIMEOUT_SECS", "3600"))  # 60 минут
+
+# ──────────────────── Инициализация ────────────────────
 
 logger = logging.getLogger(__name__)
 rds    = redis.Redis.from_url(REDIS_URL, decode_responses=True)
@@ -53,39 +69,8 @@ s3     = boto3.client(
 )
 
 _PROGRESS_RE = re.compile(r"(\d{1,3})%")
-CALIBRE_LOG_LEVEL = os.getenv("CALIBRE_CONVERT_LOG_LEVEL", "INFO")
-CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
-# --- новые константы сторожа ---
-STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "150"))   
-STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "300")) 
-MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
-MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "3"))  # 3 попытки: обычная → нормализация → агрессивное упрощение
-# Доп. опции на ретраях (более мягкие эвристики + внешний движок)
-PDF2EPUB_RETRY_OPTS = os.getenv(
-    "CALIBRE_PDF2EPUB_RETRY_OPTS",
-    "--use-auto-toc --pdf-engine=pdftohtml --enable-heuristics --unwrap-factor 0.18"
-)
-MIN_EPUB_ABS_BYTES = int(os.getenv("CALIBRE_MIN_EPUB_ABS_BYTES", str(512 * 1024)))  # ≥ 512KB
-MIN_EPUB_RATIO     = float(os.getenv("CALIBRE_MIN_EPUB_RATIO", "0.01"))             # ≥ 1% от размера PDF
-
-# --- OCR (ocrmypdf) ---
-OCR_ENABLE   = os.getenv("CALIBRE_ENABLE_OCR", "1").strip().lower() in {"1","true","yes","y"}
-OCRMYPDF_BIN = os.getenv("OCRMYPDF_BIN", "ocrmypdf")
-OCR_LANGS    = os.getenv("OCR_LANGS", "eng+rus")   # под себя
-# разумные, не «тяжёлые» опции по умолчанию; можно переопределить через ENV
-# --output-type pdf: не делать PDF/A (избегает проблем с цветовыми пространствами)
-OCR_OPTS     = os.getenv(
-    "OCR_OPTS",
-    "--skip-text --output-type pdf"
-)
-
-# --- флаги для AZW3 (минимальные, чтобы избежать ошибок) ---
-# Оставляем пустыми по умолчанию, чтобы не конфликтовать с версией Calibre
-EPUB2AZW3_OPTS = os.getenv("EPUB2AZW3_OPTS", "")
-# Стратегия нормализации PDF по шагам (через запятую): gs,mutool,qpdf
-PDF_PREFLIGHT_STRATEGY = os.getenv("CALIBRE_PDF_PREFLIGHT_STRATEGY", "gs,mutool,qpdf")        # 90 мин на шаг
 
 def _tail_lines(s: str, n: int = 120) -> str:
     if not s:
@@ -97,45 +82,6 @@ def _set_job_phase(book_id: int, phase: str) -> None:
     _set_job_status(book_id, rds.hget(_k_job(book_id), "status") or "running")
     rds.hset(_k_job(book_id), mapping={"phase": phase})
 
-def _should_treat_epub_as_broken(pdf_path: str, epub_path: str) -> bool:
-    """Эвристика «пустого» EPUB: слишком малый размер относительно исходного PDF."""
-    try:
-        pdf_size  = os.path.getsize(pdf_path)
-        epub_size = os.path.getsize(epub_path)
-    except Exception:
-        return False
-    min_reasonable = max(MIN_EPUB_ABS_BYTES, int(pdf_size * MIN_EPUB_RATIO))
-    return epub_size < max(1, min_reasonable)
-
-
-def _maybe_ocr_pdf(
-    book_id: int,
-    src_pdf: str,
-    workdir: str,
-    *,
-    note: str = "ocr pass",
-) -> tuple[bool, str | None]:
-    """
-    Если есть ocrmypdf и OCR включен — сделать OCR поверх src_pdf → вернуть путь к ocr.pdf.
-    """
-    if not OCR_ENABLE:
-        _log(book_id, "ocr: disabled by CALIBRE_ENABLE_OCR")
-        return False, None
-    if not _which(OCRMYPDF_BIN):
-        _log(book_id, f"ocr: '{OCRMYPDF_BIN if 'OCRMYPDF_BIN' in globals() else OCRMYPDF_BIN}' not found; skip")
-        return False, None
-
-    out_pdf = os.path.join(workdir, "in.ocr.pdf")
-    args = [OCRMYPDF_BIN, *shlex.split(OCR_OPTS), "-l", OCR_LANGS, src_pdf, out_pdf]
-
-    _log(book_id, f"ocr: start ({note}) → {' '.join(args)}")
-    rc, _, _ = _run(args, book_id=book_id, fmt=BookFileFormat.EPUB, phase="ocr")
-    if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
-        _log(book_id, f"ocr: ok → {out_pdf}")
-        return True, out_pdf
-
-    _log(book_id, f"ocr: failed rc={rc}")
-    return False, None
 
 def _calibre_jobs() -> int | None:
     override = os.getenv("CALIBRE_CONVERT_JOBS")
@@ -158,265 +104,120 @@ _JOB_PROGRESS_STEPS: dict[BookFileFormat, tuple[int, int]] = {
     BookFileFormat.FB2: (85, 15),
 }
 
+
 def _which(cmd: str) -> str | None:
     for p in os.getenv("PATH", "").split(os.pathsep):
         candidate = os.path.join(p, cmd)
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return None
-def _simplify_pdf_via_ps(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
+
+
+def _optimize_pdf_lightly(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
     """
-    Упрощение PDF через PostScript (pdf2ps → ps2pdf):
-    - Сохраняет векторную графику и текст
-    - "Перепечатывает" PDF, удаляя сложные структуры
-    - Лучше качество, чем растеризация
+    Легкая оптимизация PDF:
+    - Сначала qpdf --linearize (быстро, безопасно)
+    - Если не сработал/отсутствует: gs с минимальными настройками (без ресемплинга)
+    - Возвращает (успех, путь к оптимизированному PDF) или (False, None)
     """
-    if not _which("pdf2ps") or not _which("ps2pdf"):
-        _log(book_id, "simplify-ps: pdf2ps/ps2pdf not found, skipping")
-        return False, None
+    out_pdf = os.path.join(workdir, "in.optimized.pdf")
     
-    ps_file = os.path.join(workdir, "temp.ps")
-    out_pdf = os.path.join(workdir, "in.ps-simplified.pdf")
+    # Попытка 1: qpdf (быстрая и безопасная)
+    if _which("qpdf"):
+        _log(book_id, "optimize: trying qpdf --linearize")
+        rc, _, _ = _run(
+            ["qpdf", "--linearize", "--object-streams=generate", src_pdf, out_pdf],
+            book_id=book_id, fmt=BookFileFormat.EPUB, phase="optimize"
+        )
+        if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
+            _log(book_id, f"optimize: qpdf ok → {out_pdf}")
+            return True, out_pdf
+        _log(book_id, f"optimize: qpdf failed rc={rc}")
     
-    _log(book_id, "simplify-ps: converting PDF → PS → PDF")
+    # Попытка 2: Ghostscript с минимальными настройками
+    if _which("gs"):
+        _log(book_id, "optimize: trying gs (minimal settings)")
+        rc, _, _ = _run([
+            "gs",
+            "-dBATCH", "-dNOPAUSE", "-dSAFER",
+            "-sDEVICE=pdfwrite",
+            "-dDownsampleColorImages=false",  # НЕ ресемплируем
+            "-dDownsampleGrayImages=false",
+            "-dDownsampleMonoImages=false",
+            "-dDetectDuplicateImages=true",
+            "-dCompressFonts=true",
+            "-dEmbedAllFonts=true",
+            "-dSubsetFonts=true",
+            "-sOutputFile=" + out_pdf,
+            src_pdf
+        ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="optimize")
+        
+        if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
+            _log(book_id, f"optimize: gs ok → {out_pdf}")
+            return True, out_pdf
+        _log(book_id, f"optimize: gs failed rc={rc}")
     
-    # PDF → PostScript
-    rc1, _, _ = _run(["pdf2ps", src_pdf, ps_file],
-                     book_id=book_id, fmt=BookFileFormat.EPUB, phase="ps-simplify")
-    if rc1 != 0 or not os.path.exists(ps_file):
-        _log(book_id, f"simplify-ps: pdf2ps failed rc={rc1}")
-        return False, None
+    _log(book_id, "optimize: all methods failed or tools not available")
+    return False, None
+
+
+def _convert_pdf_to_epub(
+    book_id: int,
+    src_pdf: str,
+    out_epub: str,
+    workdir: str,
+) -> tuple[bool, str | None, str | None]:
+    """
+    Простая конверсия PDF→EPUB с 2 попытками:
+    1. Попытка с оригинальным PDF
+    2. Если не получилось: оптимизация PDF и повторная попытка
     
-    # PostScript → PDF
-    rc2, _, _ = _run(["ps2pdf", ps_file, out_pdf],
-                     book_id=book_id, fmt=BookFileFormat.EPUB, phase="ps-simplify")
+    Возвращает (success, путь_к_epub_или_None, путь_к_optimized_pdf_или_None)
+    """
+    optimized_pdf = None
     
-    # Удаляем временный PS
+    # Попытка 1: оригинальный PDF
+    _log(book_id, "epub: attempt 1 (original pdf)")
+    _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
+    
+    rc, _, _ = _run(
+        _build_convert_args(src_pdf, out_epub, PDF2EPUB_OPTS),
+        book_id=book_id, fmt=BookFileFormat.EPUB, phase="convert#1",
+    )
+    
+    if rc == 0 and os.path.exists(out_epub) and os.path.getsize(out_epub) > 0:
+        _log(book_id, "epub: attempt 1 succeeded")
+        return True, out_epub, None
+    
+    _log(book_id, f"epub: attempt 1 failed (rc={rc})")
+    
+    # Попытка 2: с оптимизацией
+    _log(book_id, "epub: attempting PDF optimization before retry")
+    ok_opt, optimized_pdf = _optimize_pdf_lightly(book_id, src_pdf, workdir)
+    
+    if not ok_opt or not optimized_pdf:
+        _log(book_id, "epub: optimization failed, cannot retry")
+        return False, None, None
+    
+    _log(book_id, "epub: attempt 2 (optimized pdf)")
+    # Удаляем неудачный EPUB перед повторной попыткой
     try:
-        os.remove(ps_file)
+        if os.path.exists(out_epub):
+            os.remove(out_epub)
     except Exception:
         pass
     
-    if rc2 == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
-        _log(book_id, f"simplify-ps: ok → {out_pdf}")
-        return True, out_pdf
+    rc, _, _ = _run(
+        _build_convert_args(optimized_pdf, out_epub, PDF2EPUB_OPTS),
+        book_id=book_id, fmt=BookFileFormat.EPUB, phase="convert#2",
+    )
     
-    _log(book_id, f"simplify-ps: ps2pdf failed rc={rc2}")
-    return False, None
-
-
-def _simplify_pdf_aggressive(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
-    """
-    Агрессивное упрощение PDF через Ghostscript (качественная растеризация):
-    - Конвертирует в изображения высокого разрешения
-    - Сохраняет читаемость текста
-    - Оптимизирует для конверсии
-    """
-    if not _which("gs"):
-        return False, None
+    if rc == 0 and os.path.exists(out_epub) and os.path.getsize(out_epub) > 0:
+        _log(book_id, "epub: attempt 2 succeeded")
+        return True, out_epub, optimized_pdf
     
-    out_pdf = os.path.join(workdir, "in.simplified.pdf")
-    # 300 DPI - стандарт для качественного текста
-    dpi = os.getenv("CALIBRE_SIMPLIFY_DPI", "300")
-    
-    _log(book_id, f"simplify: quality rasterization at {dpi} dpi (preserving text)")
-    rc, _, _ = _run([
-        "gs",
-        "-dBATCH", "-dNOPAUSE", "-dSAFER",
-        "-sDEVICE=pdfwrite",
-        "-dPDFSETTINGS=/prepress",  # высокое качество вместо /ebook
-        "-dColorImageResolution=" + dpi,
-        "-dGrayImageResolution=" + dpi,
-        "-dMonoImageResolution=" + dpi,
-        "-dDownsampleColorImages=true",
-        "-dDownsampleGrayImages=true",
-        "-dDownsampleMonoImages=true",
-        "-dColorImageDownsampleType=/Bicubic",
-        "-dGrayImageDownsampleType=/Bicubic",
-        "-dEmbedAllFonts=true",  # СОХРАНЯЕМ шрифты
-        "-dSubsetFonts=true",
-        "-dCompressFonts=true",
-        "-dAutoFilterColorImages=false",  # без автофильтров
-        "-dAutoFilterGrayImages=false",
-        "-dColorImageFilter=/FlateEncode",  # качественное сжатие
-        "-dGrayImageFilter=/FlateEncode",
-        "-sOutputFile=" + out_pdf,
-        src_pdf
-    ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="simplify")
-    
-    if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
-        _log(book_id, f"simplify: ok → {out_pdf} ({os.path.getsize(out_pdf) / (1024*1024):.1f} MiB)")
-        return True, out_pdf
-    
-    _log(book_id, f"simplify: failed rc={rc}")
-    return False, None
-
-
-def _normalize_pdf_sequence(book_id: int, src_pdf: str, workdir: str, *, strategy: str) -> tuple[str, str]:
-    """
-    Прогоняет src_pdf через цепочку нормализаций (gs → mutool → qpdf),
-    возвращает (путь_к_нормализованному, метка_чем_нормализовали).
-    Если ничего не удалось — возвращает исходный файл и 'none'.
-    """
-    steps = [s.strip().lower() for s in strategy.split(",") if s.strip()]
-    cur = src_pdf
-    used = []
-    for step in steps:
-        out = os.path.join(workdir, f"in.norm.{len(used)+1}.pdf")
-        if step == "gs" and _which("gs"):
-            rc, _, _ = _run(["gs",
-                                "-dBATCH","-dNOPAUSE","-dSAFER",
-                                "-sDEVICE=pdfwrite",
-                                "-dDownsampleColorImages=false",
-                                "-dDownsampleGrayImages=false",
-                                "-dDownsampleMonoImages=false",
-                                "-dDetectDuplicateImages=true",
-                                "-dCompressFonts=true",
-                                "-dEmbedAllFonts=true","-dSubsetFonts=true",
-                                "-sColorConversionStrategy=UseDeviceIndependentColor",
-                                "-sOutputFile=" + out, cur]
-            , book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
-                used.append("gs"); cur = out; continue
-
-        if step == "mutool" and _which("mutool"):
-            rc, _, _ = _run(["mutool", "clean", "-gg", cur, out],
-                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
-                used.append("mutool"); cur = out; continue
-
-        if step == "qpdf" and _which("qpdf"):
-            rc, _, _ = _run(["qpdf", "--linearize", "--object-streams=generate", cur, out],
-                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-            if rc == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
-                used.append("qpdf"); cur = out; continue
-    return cur, ("+".join(used) if used else "none")
-
-
-def _convert_pdf_to_epub_with_retries(
-    book_id: int,
-    src_pdf_initial: str,
-    out_epub: str,
-) -> tuple[bool, str | None]:
-    """
-    Пытается PDF→EPUB с авто-нормализацией, sanity-check и OCR-веткой.
-    Возвращает (success, путь_к_epub_или_None).
-    """
-    attempt = 0
-    src_pdf_current = src_pdf_initial
-    tried_ocr = False
-
-    while True:
-        # ограничим число обычных ретраев
-        if attempt > MAX_CONVERT_RETRIES:
-            # если OCR ещё не пробовали — попробуем 1 раз
-            if not tried_ocr:
-                ok, ocr_pdf = _maybe_ocr_pdf(book_id, src_pdf_current, os.path.dirname(out_epub), note="on final fallback")
-                if ok and ocr_pdf:
-                    tried_ocr = True
-                    src_pdf_current = ocr_pdf
-                    attempt = 0  # дадим ещё проходов после OCR
-                    continue
-            _log(book_id, "epub: all attempts exhausted")
-            return False, None
-
-        attempt += 1
-        extra_opts = PDF2EPUB_OPTS if attempt == 1 else (PDF2EPUB_OPTS + " " + PDF2EPUB_RETRY_OPTS)
-        _set_job_progress(book_id, note=f"PDF→EPUB попытка {attempt}")
-        _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
-
-        rc, _, _ = _run(
-            _build_convert_args(src_pdf_current, out_epub, extra_opts),
-            book_id=book_id, fmt=BookFileFormat.EPUB, phase=f"convert#{attempt}",
-        )
-
-        # успех по коду возврата и наличию файла
-        if rc == 0 and os.path.exists(out_epub) and os.path.getsize(out_epub) > 0:
-            # sanity-check по размеру
-            if _should_treat_epub_as_broken(src_pdf_current, out_epub):
-                _log(book_id, "epub: sanity-check failed (file too small) → treat as failure")
-                try:
-                    os.remove(out_epub)
-                except Exception:
-                    pass
-            else:
-                return True, out_epub
-
-        # сюда попадаем при неуспехе попытки (rc!=0) или провале sanity-check
-        if attempt > MAX_CONVERT_RETRIES:
-            # OCR как отдельный финальный шанс
-            if not tried_ocr:
-                ok, ocr_pdf = _maybe_ocr_pdf(book_id, src_pdf_current, os.path.dirname(out_epub), note="after normal retries")
-                if ok and ocr_pdf:
-                    tried_ocr = True
-                    src_pdf_current = ocr_pdf
-                    attempt = 0
-                    continue
-            _log(book_id, f"epub: all attempts failed (last rc={rc})")
-            return False, None
-
-        # ещё не исчерпали обычные ретраи → пробуем разные стратегии
-        _log(book_id, f"epub: attempt {attempt} failed (rc={rc}), trying PDF normalize…")
-        
-        # Попытка 2: PostScript путь (быстрее и лучше качество)
-        if attempt == 2:
-            _log(book_id, "epub: trying PS-simplification (pdf→ps→pdf)")
-            ok_ps, ps_pdf = _simplify_pdf_via_ps(book_id, src_pdf_current, os.path.dirname(out_epub))
-            if ok_ps and ps_pdf:
-                src_pdf_current = ps_pdf
-                _log(book_id, "epub: PS-simplified → retry")
-                continue
-            # Если PS не сработал, пробуем обычную нормализацию
-            _log(book_id, "epub: PS-simplification failed, trying standard normalize")
-        
-        # Попытка 3: Качественная растеризация (последний шанс перед OCR)
-        if attempt == 3:
-            _log(book_id, "epub: trying quality rasterization (300 dpi)")
-            ok_simp, simp_pdf = _simplify_pdf_aggressive(book_id, src_pdf_current, os.path.dirname(out_epub))
-            if ok_simp and simp_pdf:
-                src_pdf_current = simp_pdf
-                _log(book_id, "epub: rasterized PDF → retry")
-                continue
-        
-        # Обычная нормализация (для попытки 1 и fallback)
-        src_pdf_current, used = _normalize_pdf_sequence(
-            book_id, src_pdf_current, os.path.dirname(out_epub),
-            strategy=PDF_PREFLIGHT_STRATEGY
-        )
-        _log(book_id, f"epub: normalize done via [{used}] → retry")
-
-
-def _preflight_pdf(book_id: int, src_pdf: str, workdir: str) -> str:
-    cleaned = os.path.join(workdir, "in.cleaned.pdf")
-
-    qpdf = _which("qpdf")
-    if qpdf:
-        rc, out, err = _run([qpdf, "--check", src_pdf],
-                            book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-        _log(book_id, f"qpdf --check rc={rc}")
-        rc, _, _ = _run([qpdf, "--linearize", "--object-streams=generate", src_pdf, cleaned],
-                        book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
-            return cleaned
-
-    mutool = _which("mutool")
-    if mutool:
-        rc, _, _ = _run([mutool, "clean", "-gg", src_pdf, cleaned],
-                        book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
-            return cleaned
-
-    gs = _which("gs")
-    if gs:
-        rc, _, _ = _run([
-            gs, "-dBATCH", "-dNOPAUSE", "-dSAFER", "-sDEVICE=pdfwrite",
-            "-dDetectDuplicateImages=true", "-dCompressFonts=true",
-            "-sOutputFile=" + cleaned, src_pdf
-        ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="preflight")
-        if rc == 0 and os.path.exists(cleaned) and os.path.getsize(cleaned) > 0:
-            return cleaned
-
-    return src_pdf
+    _log(book_id, f"epub: attempt 2 failed (rc={rc})")
+    return False, None, optimized_pdf
 
 
 # ───────────────── Redis-ключи статусов ──────────────────
@@ -790,36 +591,27 @@ def _run(
             _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
             last_heartbeat_ts = now
 
-        # «нет прогресса» - критично проверять всегда, независимо от вывода!
-        if STALL_NO_PROGRESS_SECS and (now - last_progress_ts) >= STALL_NO_PROGRESS_SECS:
+        # Единая проверка неактивности: нет вывода И нет прогресса более INACTIVITY_TIMEOUT_SECS
+        no_output_duration = now - last_any_activity_ts
+        no_progress_duration = now - last_progress_ts
+        
+        if INACTIVITY_TIMEOUT_SECS > 0 and no_output_duration >= INACTIVITY_TIMEOUT_SECS and no_progress_duration >= INACTIVITY_TIMEOUT_SECS:
             if book_id is not None and fmt is not None:
                 _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
-                              f"no progress for {int(now - last_progress_ts)}s → terminate")
+                              f"no activity (output or progress) for {int(min(no_output_duration, no_progress_duration))}s → terminate")
                 try:
-                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_progress"})
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "inactivity"})
                 except Exception:
                     pass
             _pg_kill(signal.SIGTERM)
             break
 
-        # «тишина» - только при отсутствии событий
-        if not events and STALL_NO_OUTPUT_SECS and (now - last_any_activity_ts) >= STALL_NO_OUTPUT_SECS:
-            if book_id is not None and fmt is not None:
-                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
-                              f"no output/progress for {int(now - last_any_activity_ts)}s → terminate")
-                try:
-                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_output"})
-                except Exception:
-                    pass
-            _pg_kill(signal.SIGTERM)
-            break
-
-        # общий таймаут (проверяем всегда)
-        if MAX_STAGE_SECS and (now - start_time) >= MAX_STAGE_SECS:
+        # Общий лимит на формат (проверяем всегда)
+        if MAX_FORMAT_TIMEOUT_SECS > 0 and (now - start_time) >= MAX_FORMAT_TIMEOUT_SECS:
             if book_id is not None and fmt is not None:
                 _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now - start_time)}s → kill")
                 try:
-                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "max_stage"})
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "max_timeout"})
                 except Exception:
                     pass
             _pg_kill(signal.SIGKILL)
@@ -880,12 +672,22 @@ def _tmp_dir() -> str | None:
 @shared_task(name="app.tasks.book_formats.generate_book_formats", rate_limit="8/m")
 def generate_book_formats(book_id: int) -> dict:
     """
-    Конверсия «в 2 шага»:
-      1) PDF → EPUB (один раз; умеренные флаги качества)
-      2) EPUB → MOBI, AZW3, FB2
-
-    Результаты → S3: books/<ID>/formats/<stem>.<ext>
-    В БД создаются/обновляются BookFile, в Redis — статусы/лог.
+    Упрощенная конверсия книг в разные форматы.
+    
+    Флоу:
+    1. PDF → EPUB (2 попытки: оригинал, затем с легкой оптимизацией)
+    2. Если EPUB получился:
+       - EPUB → MOBI, AZW3, FB2
+    3. Если EPUB не получился:
+       - Прямая конверсия: PDF → MOBI, AZW3, FB2 (2 попытки для каждого)
+    
+    Результаты загружаются в S3: books/<ID>/formats/<stem>.<ext>
+    Статусы и логи сохраняются в Redis.
+    Записи о файлах создаются в БД.
+    
+    Watchdog отслеживает прогресс:
+    - Нет активности 3 минуты → завершение
+    - Максимум 60 минут на формат
     """
     db: Session = SessionLocal()
     created, failed = [], []
@@ -943,11 +745,11 @@ def generate_book_formats(book_id: int) -> dict:
                 size_mb = size_bytes / (1024 * 1024)
                 _log(book_id, f"pdf: downloaded {size_mb:.2f} MiB in {elapsed:.1f}s")
                 _set_job_progress(book_id, 5, note="pdf загружен локально")
-                _set_job_phase(book_id, "preflight")
-                src_pdf_clean = _preflight_pdf(book_id, src_pdf, tmp)
 
-            # ───────────── 1) EPUB (PDF → EPUB, 1 раз) ─────────────
+            # ───────────── 1) EPUB (PDF → EPUB) ─────────────
             base_epub_local = os.path.join(tmp, "base.epub")
+            optimized_pdf = None  # Для последующей прямой конверсии, если EPUB не получится
+            
             epub_row = (
                 db.query(BookFile)
                   .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.EPUB)
@@ -975,28 +777,17 @@ def generate_book_formats(book_id: int) -> dict:
 
             if not epub_row:
                 _set_job_progress(book_id, 10, note="конвертация PDF→EPUB")
-                _set_fmt_status(book_id, BookFileFormat.EPUB, "running", progress=0)
-                _update_job_progress_from_fmt(book_id, BookFileFormat.EPUB, 0)
-                _log(book_id, "epub: convert start (pdf → epub)")
+                _log(book_id, "epub: convert start")
 
                 stage_started = time.monotonic()
-                ok_epub, local_epub_path = _convert_pdf_to_epub_with_retries(
+                ok_epub, local_epub_path, optimized_pdf = _convert_pdf_to_epub(
                     book_id=book.id,
-                    src_pdf_initial=src_pdf_clean,   # твой «предпрефлайченный» src_pdf_clean
+                    src_pdf=src_pdf,
                     out_epub=base_epub_local,
+                    workdir=tmp,
                 )
 
-                if not ok_epub:
-                    _convert_pdf_direct_formats(
-                        book_id=book.id,
-                        src_pdf=src_pdf_clean,   # уже «очищенный» после _preflight_pdf
-                        tmp_dir=tmp,
-                        pdf_key=pdf_key,
-                        db=db,
-                        created=created,
-                        failed=failed,
-                    )
-                else:
+                if ok_epub and local_epub_path:
                     convert_elapsed = time.monotonic() - stage_started
                     epub_key = _formats_key_from_pdf(pdf_key, "epub")
                     try:
@@ -1019,30 +810,50 @@ def generate_book_formats(book_id: int) -> dict:
                         _clear_progress(book.id, BookFileFormat.EPUB)
                         _log(book_id, f"epub: s3 upload failed: {e}")
                         failed.append({"format": "EPUB", "error": "s3_upload_failed"})
-
+                else:
+                    _set_fmt_status(book_id, BookFileFormat.EPUB, "failed")
+                    _clear_progress(book.id, BookFileFormat.EPUB)
+                    _log(book_id, "epub: conversion failed, will try direct PDF conversion for other formats")
+                    failed.append({"format": "EPUB", "error": "conversion_failed"})
 
             have_epub_local = os.path.exists(base_epub_local)
 
-            # ───────────── 2) MOBI (EPUB → MOBI) ─────────────
-            mobi_row = (
-                db.query(BookFile)
-                  .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.MOBI)
-                  .first()
-            )
-            if mobi_row:
-                _set_fmt_status(
-                    book_id,
-                    BookFileFormat.MOBI,
-                    "skipped",
-                    url=mobi_row.s3_url,
-                    size=mobi_row.size_bytes or 0,
-                    progress=100,
+            # ───────────── 2-4) Остальные форматы ─────────────
+            # Если нет EPUB, используем прямую конверсию из PDF для всех форматов
+            if not have_epub_local:
+                _log(book_id, "epub not available, converting remaining formats directly from PDF")
+                direct_created, direct_failed = _convert_pdf_direct_formats(
+                    book_id=book.id,
+                    src_pdf=src_pdf,
+                    optimized_pdf=optimized_pdf,
+                    tmp_dir=tmp,
+                    pdf_key=pdf_key,
+                    db=db,
                 )
-                _update_job_progress_from_fmt(book_id, BookFileFormat.MOBI, 100)
-                _clear_progress(book.id, BookFileFormat.MOBI)
-                _log(book_id, "mobi: skipped (already in DB)")
+                created.extend(direct_created)
+                failed.extend(direct_failed)
             else:
-                if have_epub_local:
+                # Есть EPUB - конвертируем из него
+                
+                # ───────────── 2) MOBI (EPUB → MOBI) ─────────────
+                mobi_row = (
+                    db.query(BookFile)
+                      .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.MOBI)
+                      .first()
+                )
+                if mobi_row:
+                    _set_fmt_status(
+                        book_id,
+                        BookFileFormat.MOBI,
+                        "skipped",
+                        url=mobi_row.s3_url,
+                        size=mobi_row.size_bytes or 0,
+                        progress=100,
+                    )
+                    _update_job_progress_from_fmt(book_id, BookFileFormat.MOBI, 100)
+                    _clear_progress(book.id, BookFileFormat.MOBI)
+                    _log(book_id, "mobi: skipped (already in DB)")
+                else:
                     _set_job_progress(book_id, 55, note="конвертация EPUB→MOBI")
                     _set_fmt_status(book_id, BookFileFormat.MOBI, "running", progress=0)
                     _update_job_progress_from_fmt(book_id, BookFileFormat.MOBI, 0)
@@ -1093,31 +904,26 @@ def generate_book_formats(book_id: int) -> dict:
                             _log(book_id, f"mobi: s3 upload failed: {e}")
                             _clear_progress(book.id, BookFileFormat.MOBI)
                             failed.append({"format": "MOBI", "error": "s3_upload_failed"})
-                else:
-                    _set_fmt_status(book_id, BookFileFormat.MOBI, "failed", progress=0)
-                    _clear_progress(book.id, BookFileFormat.MOBI)
-                    _log(book_id, "mobi: skipped (no local epub)")
 
-            # ───────────── 3) AZW3 (EPUB → AZW3) ─────────────
-            azw3_row = (
-                db.query(BookFile)
-                  .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.AZW3)
-                  .first()
-            )
-            if azw3_row:
-                _set_fmt_status(
-                    book_id,
-                    BookFileFormat.AZW3,
-                    "skipped",
-                    url=azw3_row.s3_url,
-                    size=azw3_row.size_bytes or 0,
-                    progress=100,
+                # ───────────── 3) AZW3 (EPUB → AZW3) ─────────────
+                azw3_row = (
+                    db.query(BookFile)
+                      .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.AZW3)
+                      .first()
                 )
-                _update_job_progress_from_fmt(book_id, BookFileFormat.AZW3, 100)
-                _clear_progress(book.id, BookFileFormat.AZW3)
-                _log(book_id, "azw3: skipped (already in DB)")
-            else:
-                if have_epub_local:
+                if azw3_row:
+                    _set_fmt_status(
+                        book_id,
+                        BookFileFormat.AZW3,
+                        "skipped",
+                        url=azw3_row.s3_url,
+                        size=azw3_row.size_bytes or 0,
+                        progress=100,
+                    )
+                    _update_job_progress_from_fmt(book_id, BookFileFormat.AZW3, 100)
+                    _clear_progress(book.id, BookFileFormat.AZW3)
+                    _log(book_id, "azw3: skipped (already in DB)")
+                else:
                     _set_job_progress(book_id, 75, note="конвертация EPUB→AZW3")
                     _set_fmt_status(book_id, BookFileFormat.AZW3, "running", progress=0)
                     _update_job_progress_from_fmt(book_id, BookFileFormat.AZW3, 0)
@@ -1168,31 +974,26 @@ def generate_book_formats(book_id: int) -> dict:
                             _log(book_id, f"azw3: s3 upload failed: {e}")
                             _clear_progress(book.id, BookFileFormat.AZW3)
                             failed.append({"format": "AZW3", "error": "s3_upload_failed"})
-                else:
-                    _set_fmt_status(book_id, BookFileFormat.AZW3, "failed", progress=0)
-                    _clear_progress(book.id, BookFileFormat.AZW3)
-                    _log(book_id, "azw3: skipped (no local epub)")
 
-            # ───────────── 4) FB2 (EPUB → FB2) ─────────────
-            fb2_row = (
-                db.query(BookFile)
-                  .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.FB2)
-                  .first()
-            )
-            if fb2_row:
-                _set_fmt_status(
-                    book_id,
-                    BookFileFormat.FB2,
-                    "skipped",
-                    url=fb2_row.s3_url,
-                    size=fb2_row.size_bytes or 0,
-                    progress=100,
+                # ───────────── 4) FB2 (EPUB → FB2) ─────────────
+                fb2_row = (
+                    db.query(BookFile)
+                      .filter(BookFile.book_id == book.id, BookFile.file_format == BookFileFormat.FB2)
+                      .first()
                 )
-                _update_job_progress_from_fmt(book_id, BookFileFormat.FB2, 100)
-                _clear_progress(book.id, BookFileFormat.FB2)
-                _log(book_id, "fb2: skipped (already in DB)")
-            else:
-                if have_epub_local:
+                if fb2_row:
+                    _set_fmt_status(
+                        book_id,
+                        BookFileFormat.FB2,
+                        "skipped",
+                        url=fb2_row.s3_url,
+                        size=fb2_row.size_bytes or 0,
+                        progress=100,
+                    )
+                    _update_job_progress_from_fmt(book_id, BookFileFormat.FB2, 100)
+                    _clear_progress(book.id, BookFileFormat.FB2)
+                    _log(book_id, "fb2: skipped (already in DB)")
+                else:
                     _set_job_progress(book_id, 90, note="конвертация EPUB→FB2")
                     _set_fmt_status(book_id, BookFileFormat.FB2, "running", progress=0)
                     _update_job_progress_from_fmt(book_id, BookFileFormat.FB2, 0)
@@ -1243,10 +1044,6 @@ def generate_book_formats(book_id: int) -> dict:
                             _log(book_id, f"fb2: s3 upload failed: {e}")
                             _clear_progress(book.id, BookFileFormat.FB2)
                             failed.append({"format": "FB2", "error": "s3_upload_failed"})
-                else:
-                    _set_fmt_status(book_id, BookFileFormat.FB2, "failed", progress=0)
-                    _clear_progress(book.id, BookFileFormat.FB2)
-                    _log(book_id, "fb2: skipped (no local epub)")
 
         # Финальный статус
         status = "failed" if failed and not created else "success"
@@ -1277,38 +1074,78 @@ def generate_book_formats(book_id: int) -> dict:
 def _convert_pdf_direct_formats(
     book_id: int,
     src_pdf: str,
+    optimized_pdf: str | None,
     tmp_dir: str,
     pdf_key: str,
     db: Session,
-    created: list,
-    failed: list,
-):
-    """Пытается собрать AZW3/MOBI/FB2 напрямую из PDF, если EPUB не вышел."""
-    # Для прямой конверсии из PDF используем минимальные опции (пустые строки)
+) -> tuple[list, list]:
+    """
+    Пытается собрать AZW3/MOBI/FB2 напрямую из PDF, если EPUB не вышел.
+    Для каждого формата:
+    1. Попытка из оригинального PDF
+    2. Если не получилось и есть optimized_pdf: попытка из оптимизированного
+    
+    Возвращает (created, failed) списки
+    """
+    created = []
+    failed = []
+    
     direct_targets = [
-        (BookFileFormat.AZW3, "azw3", ""),
-        (BookFileFormat.MOBI, "mobi", ""),
-        (BookFileFormat.FB2,  "fb2",  ""),
+        (BookFileFormat.AZW3, "azw3", EPUB2AZW3_OPTS),
+        (BookFileFormat.MOBI, "mobi", EPUB2MOBI_OPTS),
+        (BookFileFormat.FB2,  "fb2",  EPUB2FB2_OPTS),
     ]
 
     for fmt, ext, opts in direct_targets:
         _set_fmt_status(book_id, fmt, "running", progress=0)
         _update_job_progress_from_fmt(book_id, fmt, 0)
+        
+        success = False
         out_path = os.path.join(tmp_dir, f"out_direct.{ext}")
-        _log(book_id, f"{ext}: direct convert start (pdf → {ext})")
-
+        
+        # Попытка 1: из оригинального PDF
+        _log(book_id, f"{ext}: direct attempt 1 (original pdf → {ext})")
         rc, out, err = _run(
             _build_convert_args(src_pdf, out_path, opts),
-            book_id=book_id, fmt=fmt, phase="convert_direct",
+            book_id=book_id, fmt=fmt, phase="direct#1",
         )
-
-        if rc != 0 or not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
+        
+        if rc == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+            _log(book_id, f"{ext}: direct attempt 1 succeeded")
+            success = True
+        else:
+            _log(book_id, f"{ext}: direct attempt 1 failed (rc={rc})")
+            
+            # Попытка 2: из оптимизированного PDF (если есть)
+            if optimized_pdf:
+                _log(book_id, f"{ext}: direct attempt 2 (optimized pdf → {ext})")
+                # Удаляем неудачный результат
+                try:
+                    if os.path.exists(out_path):
+                        os.remove(out_path)
+                except Exception:
+                    pass
+                
+                rc, out, err = _run(
+                    _build_convert_args(optimized_pdf, out_path, opts),
+                    book_id=book_id, fmt=fmt, phase="direct#2",
+                )
+                
+                if rc == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+                    _log(book_id, f"{ext}: direct attempt 2 succeeded")
+                    success = True
+                else:
+                    _log(book_id, f"{ext}: direct attempt 2 failed (rc={rc})")
+        
+        # Обработка результата
+        if not success:
             _set_fmt_status(book_id, fmt, "failed")
             _clear_progress(book_id, fmt)
-            _log(book_id, f"{ext}: direct PDF→{ext} failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
-            failed.append({"format": fmt.value, "error": f"pdf→{ext} failed (rc={rc})"})
+            _log(book_id, f"{ext}: all direct attempts failed")
+            failed.append({"format": fmt.value, "error": f"pdf→{ext} failed"})
             continue
 
+        # Успех - загружаем в S3
         key = _formats_key_from_pdf(pdf_key, ext)
         try:
             s3.upload_file(
@@ -1322,10 +1159,12 @@ def _convert_pdf_direct_formats(
             _set_fmt_status(book_id, fmt, "success", url=url, size=size, progress=100)
             _update_job_progress_from_fmt(book_id, fmt, 100)
             _clear_progress(book_id, fmt)
-            _log(book_id, f"{ext}: direct uploaded → {url} ({size/(1024*1024):.2f} MiB)")
+            _log(book_id, f"{ext}: uploaded → {url} ({size/(1024*1024):.2f} MiB)")
             created.append({"format": fmt.value, "url": url, "size": size})
         except ClientError as e:
             _set_fmt_status(book_id, fmt, "failed")
             _clear_progress(book_id, fmt)
-            _log(book_id, f"{ext}: direct s3 upload failed: {e}")
+            _log(book_id, f"{ext}: s3 upload failed: {e}")
             failed.append({"format": fmt.value, "error": "s3_upload_failed"})
+    
+    return created, failed
