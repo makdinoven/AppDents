@@ -1022,20 +1022,30 @@ def get_my_book_detail(
         if not book:
             raise HTTPException(status_code=403, detail="You don't own this book")
 
-    def _sign(url: str | None) -> str | None:
+    def _sign_with_filename(url: str | None, filename: str | None = None) -> str | None:
         if not url:
             return None
         try:
-            return generate_presigned_url(url, expires=timedelta(hours=24))
+            content_disposition = None
+            if filename:
+                safe_filename = filename.replace('"', '\\"')
+                content_disposition = f'attachment; filename="{safe_filename}"'
+            
+            return generate_presigned_url(
+                url, 
+                expires=timedelta(hours=24),
+                response_content_disposition=content_disposition
+            )
         except Exception:
             return None
 
     files_download = []
     for f in (book.files or []):
         fmt = getattr(f.file_format, "value", f.file_format)
+        filename = f"{book.slug}.{fmt.lower()}"
         files_download.append({
             "file_format": fmt,
-            "download_url": _sign(f.s3_url),
+            "download_url": _sign_with_filename(f.s3_url, filename),
             "size_bytes": f.size_bytes,
         })
 
@@ -1045,7 +1055,7 @@ def get_my_book_detail(
             "chapter_index": a.chapter_index,
             "title": a.title,
             "duration_sec": a.duration_sec,
-            "download_url": _sign(a.s3_url),
+            "download_url": _sign_with_filename(a.s3_url),
         })
 
     available_formats = []

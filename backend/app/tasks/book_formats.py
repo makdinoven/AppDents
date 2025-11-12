@@ -468,6 +468,14 @@ def _content_type_for(ext: str) -> str:
     if ext == "pdf":  return "application/pdf"
     return "application/octet-stream"
 
+def _make_content_disposition(filename: str) -> str:
+    """
+    Генерирует Content-Disposition header для скачивания файла.
+    Экранирует кавычки в имени файла.
+    """
+    safe_filename = filename.replace('"', '\\"')
+    return f'attachment; filename="{safe_filename}"'
+
 def _safe_cdn_url(key: str) -> str:
     key = key.lstrip("/")
     return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
@@ -790,10 +798,16 @@ def generate_book_formats(book_id: int) -> dict:
                 if ok_epub and local_epub_path:
                     convert_elapsed = time.monotonic() - stage_started
                     epub_key = _formats_key_from_pdf(pdf_key, "epub")
+                    filename = os.path.basename(epub_key)
                     try:
                         s3.upload_file(
                             local_epub_path, S3_BUCKET, epub_key,
-                            ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for("epub")}
+                            ExtraArgs={
+                                "ACL": "public-read",
+                                "ContentType": _content_type_for("epub"),
+                                "ContentDisposition": _make_content_disposition(filename),
+                                "CacheControl": "public, max-age=86400, immutable, no-transform",
+                            }
                         )
                         size = os.path.getsize(local_epub_path)
                         epub_url = _safe_cdn_url(epub_key)
@@ -874,10 +888,16 @@ def generate_book_formats(book_id: int) -> dict:
                     else:
                         convert_elapsed = time.monotonic() - stage_started
                         mobi_key = _formats_key_from_pdf(pdf_key, "mobi")
+                        filename = os.path.basename(mobi_key)
                         try:
                             s3.upload_file(
                                 out_mobi, S3_BUCKET, mobi_key,
-                                ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for("mobi")}
+                                ExtraArgs={
+                                    "ACL": "public-read",
+                                    "ContentType": _content_type_for("mobi"),
+                                    "ContentDisposition": _make_content_disposition(filename),
+                                    "CacheControl": "public, max-age=86400, immutable, no-transform",
+                                }
                             )
                             size = os.path.getsize(out_mobi)
                             mobi_url = _safe_cdn_url(mobi_key)
@@ -944,10 +964,16 @@ def generate_book_formats(book_id: int) -> dict:
                     else:
                         convert_elapsed = time.monotonic() - stage_started
                         azw3_key = _formats_key_from_pdf(pdf_key, "azw3")
+                        filename = os.path.basename(azw3_key)
                         try:
                             s3.upload_file(
                                 out_azw3, S3_BUCKET, azw3_key,
-                                ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for("azw3")}
+                                ExtraArgs={
+                                    "ACL": "public-read",
+                                    "ContentType": _content_type_for("azw3"),
+                                    "ContentDisposition": _make_content_disposition(filename),
+                                    "CacheControl": "public, max-age=86400, immutable, no-transform",
+                                }
                             )
                             size = os.path.getsize(out_azw3)
                             azw3_url = _safe_cdn_url(azw3_key)
@@ -1014,10 +1040,16 @@ def generate_book_formats(book_id: int) -> dict:
                     else:
                         convert_elapsed = time.monotonic() - stage_started
                         fb2_key = _formats_key_from_pdf(pdf_key, "fb2")
+                        filename = os.path.basename(fb2_key)
                         try:
                             s3.upload_file(
                                 out_fb2, S3_BUCKET, fb2_key,
-                                ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for("fb2")}
+                                ExtraArgs={
+                                    "ACL": "public-read",
+                                    "ContentType": _content_type_for("fb2"),
+                                    "ContentDisposition": _make_content_disposition(filename),
+                                    "CacheControl": "public, max-age=86400, immutable, no-transform",
+                                }
                             )
                             size = os.path.getsize(out_fb2)
                             fb2_url = _safe_cdn_url(fb2_key)
@@ -1147,10 +1179,16 @@ def _convert_pdf_direct_formats(
 
         # Успех - загружаем в S3
         key = _formats_key_from_pdf(pdf_key, ext)
+        filename = os.path.basename(key)
         try:
             s3.upload_file(
                 out_path, S3_BUCKET, key,
-                ExtraArgs={"ACL": "public-read", "ContentType": _content_type_for(ext)}
+                ExtraArgs={
+                    "ACL": "public-read",
+                    "ContentType": _content_type_for(ext),
+                    "ContentDisposition": _make_content_disposition(filename),
+                    "CacheControl": "public, max-age=86400, immutable, no-transform",
+                }
             )
             size = os.path.getsize(out_path)
             url  = _safe_cdn_url(key)

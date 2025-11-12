@@ -48,7 +48,11 @@ def _s3_v4():
         config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
 
-def generate_presigned_url(s3_url: str, expires: timedelta = timedelta(hours=6)) -> str:
+def generate_presigned_url(
+    s3_url: str, 
+    expires: timedelta = timedelta(hours=6),
+    response_content_disposition: str | None = None
+) -> str:
     """
     Принимает:
       • s3://bucket/key                → вернёт подписанный https URL (endpoint)
@@ -57,6 +61,9 @@ def generate_presigned_url(s3_url: str, expires: timedelta = timedelta(hours=6))
       • любые другие https://…         → вернёт как есть (с корректным encoding), без подписи.
 
     ВАЖНО: не пытаемся подписывать «чужие» домены (example.com и т.п.), только наш endpoint/CDN.
+    
+    response_content_disposition: Добавляет заголовок Content-Disposition к ответу S3
+      (работает только для подписанных URL, игнорируется для публичных CDN URL)
     """
     if not s3_url:
         return s3_url
@@ -71,9 +78,14 @@ def generate_presigned_url(s3_url: str, expires: timedelta = timedelta(hours=6))
             key    = p.path.lstrip("/")
             if not bucket or not key:
                 return _encode_http_url(s3_url)
+            
+            params = {"Bucket": bucket, "Key": key}
+            if response_content_disposition:
+                params["ResponseContentDisposition"] = response_content_disposition
+            
             signed = _s3_v2.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": bucket, "Key": key},
+                Params=params,
                 ExpiresIn=int(expires.total_seconds()),
             )
             return signed
@@ -92,9 +104,13 @@ def generate_presigned_url(s3_url: str, expires: timedelta = timedelta(hours=6))
                 if len(parts) == 2:
                     bucket, key = parts
                     if bucket and key:
+                        params = {"Bucket": bucket, "Key": key}
+                        if response_content_disposition:
+                            params["ResponseContentDisposition"] = response_content_disposition
+                        
                         signed = _s3_v2.generate_presigned_url(
                             ClientMethod="get_object",
-                            Params={"Bucket": bucket, "Key": key},
+                            Params=params,
                             ExpiresIn=int(expires.total_seconds()),
                         )
                         return signed

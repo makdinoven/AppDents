@@ -80,6 +80,9 @@ def upload_pdf_and_generate(
         tmp_path = tmp.name
 
     key = _pdf_key(book)
+    # Генерируем имя файла для скачивания (используем slug или title книги)
+    safe_filename = f"{book.slug}.pdf".replace('"', '\\"')
+    
     s3.upload_file(
         tmp_path,
         S3_BUCKET,
@@ -88,7 +91,7 @@ def upload_pdf_and_generate(
             "ACL": "public-read",
             "ContentType": "application/pdf",
             "CacheControl": "public, max-age=14400, immutable, no-transform",
-            "ContentDisposition": "inline",
+            "ContentDisposition": f'attachment; filename="{safe_filename}"',
         },
     )
     os.unlink(tmp_path)
