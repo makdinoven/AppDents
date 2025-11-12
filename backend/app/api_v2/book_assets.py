@@ -187,11 +187,19 @@ def stream_book_pdf(
     book_id: int,
     request: Request,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """
     Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
     Доступно владельцам книги и администраторам.
+    
+    Для запросов без Range header отдает только первые 64KB (достаточно для метаданных PDF),
+    что заставляет клиента использовать Range запросы с самого начала.
     """
+
+    # Проверка авторизации
+    if not (_is_admin(user) or _user_owns_book(db, user.id, book_id)):
+        raise HTTPException(status_code=403, detail="No access to this book")
 
     book = (
         db.query(Book)
@@ -209,9 +217,29 @@ def stream_book_pdf(
     key = _s3_key_from_url(pdf_file.s3_url)
 
     range_header = request.headers.get("range") or request.headers.get("Range")
-    get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
-    if range_header:
-        get_kwargs["Range"] = range_header
+    metadata = {}
+    file_size = None
+    
+    # Если нет Range header, отдаем только первые 64KB для метаданных PDF
+    # Это заставит react-pdf использовать Range запросы с самого начала
+    if not range_header:
+        # Получаем размер файла через head_object (быстро, без загрузки)
+        try:
+            head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
+            file_size = head_obj.get("ContentLength", 0)
+            metadata = head_obj.get("Metadata") or {}
+        except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+            raise HTTPException(status_code=404, detail="PDF not found")
+        except Exception as e:
+            logger.error("S3 head_object error: %s", e)
+            raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
+        
+        # Отдаем только первые 64KB (65536 байт) - достаточно для метаданных PDF
+        # PDF.js обычно запрашивает первые ~32KB для метаданных
+        initial_chunk_size = min(65536, file_size)
+        range_header = f"bytes=0-{initial_chunk_size - 1}"
+    
+    get_kwargs = {"Bucket": S3_BUCKET, "Key": key, "Range": range_header}
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -225,8 +253,10 @@ def stream_book_pdf(
     content_type = obj.get("ContentType") or "application/pdf"
     content_length = obj.get("ContentLength")
     content_range = obj.get("ContentRange")
-
-    metadata = obj.get("Metadata") or {}
+    
+    # Если metadata не получена из head_object, пробуем из get_object
+    if not metadata:
+        metadata = obj.get("Metadata") or {}
 
     headers = {
         "Accept-Ranges": "bytes",
@@ -238,6 +268,10 @@ def stream_book_pdf(
         headers["Content-Length"] = str(content_length)
     if content_range:
         headers["Content-Range"] = content_range
+    elif file_size is not None:
+        # Для первого запроса без Range указываем полный размер файла в Content-Range
+        # чтобы клиент знал общий размер и мог делать последующие Range запросы
+        headers["Content-Range"] = f"bytes 0-{content_length - 1 if content_length else 0}/{file_size}"
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
@@ -248,7 +282,9 @@ def stream_book_pdf(
     if metadata.get("book-slug"):
         headers["X-Book-Slug"] = metadata["book-slug"]
 
-    status_code = 206 if content_range else 200
+    # Всегда используем 206 для частичного контента (даже для первого запроса)
+    # так как мы теперь всегда отдаем частичный контент при отсутствии Range header
+    status_code = 206 if (content_range or file_size is not None) else 200
 
     # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
     iterator = getattr(body, "iter_chunks", None)
