@@ -254,16 +254,11 @@ def stream_book_pdf(
         logger.error("S3 head_object error: %s", e)
         raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
     
-    # Если нет Range header - PDF.js делает первый запрос
-    # Возвращаем только первые 32KB для инициализации
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     
     if range_header:
+        # Если есть Range header - используем его
         get_kwargs["Range"] = range_header
-    else:
-        # Первый запрос без Range - возвращаем только начало файла
-        # PDF.js увидит Accept-Ranges и сделает последующие Range-запросы
-        get_kwargs["Range"] = "bytes=0-32767"  # Первые 32KB
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -289,17 +284,16 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Всегда возвращаем 206 Partial Content с Content-Range
-    # Это говорит PDF.js что поддерживаются Range-запросы
-    if content_range:
+    # Если был Range запрос - возвращаем 206 Partial Content
+    if range_header and content_range:
         headers["Content-Range"] = content_range
         if content_length is not None:
             headers["Content-Length"] = str(content_length)
         status_code = 206
     else:
-        # Fallback - если по какой-то причине нет Content-Range
-        if content_length is not None:
-            headers["Content-Length"] = str(content_length)
+        # Первый запрос без Range - возвращаем 200 OK с полным размером
+        # PDF.js увидит Accept-Ranges: bytes и сам начнёт делать Range-запросы
+        headers["Content-Length"] = str(file_size)
         status_code = 200
 
     if metadata.get("asset"):

@@ -322,7 +322,6 @@ class UserBookDetailResponse(BaseModel):
     files_download: List[BookFileDownload] = []
     audio_download: List[BookAudioDownload] = []
     available_formats: List[str] = []  # ["PDF", "EPUB", ...]
-    reader_pdf_url: Optional[str] = None  # Presigned URL для PDF ридера с поддержкой Range
 
 class AuthorRef(BaseModel):
     id: int
