@@ -1,21 +1,41 @@
 # API для файлов и аудио книг:
 #  - GET /api/books/{book_id}/assets      — список форматов и аудио; у владельца есть download_url
 #  - GET /api/books/{book_id}/download    — выдать presigned URL по формату (PDF/EPUB/...)
-#  - GET /api/books/{book_id}/pdf         — presigned URL на PDF с поддержкой Range-запросов
+#  - GET /api/books/{book_id}/pdf         — потоковая раздача PDF с поддержкой Range (200 OK → 206 Partial)
 #  - GET /api/books/audios/{audio_id}/download — presigned URL аудиодорожки
-# Требует: users_books, модели Book/BookFile/BookAudio, utils.s3.generate_presigned_url
+# Требует: users_books, модели Book/BookFile/BookAudio, utils.s3.generate_presigned_url, boto3
 
 import logging
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
 from .users import get_current_user
 from ..models.models_v2 import User, Book, BookAudio, BookFileFormat
 from ..utils.s3 import generate_presigned_url
+from ..services_v2.book_service import PDF_CACHE_CONTROL, PDF_CONTENT_DISPOSITION
+
+# S3 client для стриминга
+import os
+import boto3
+from botocore.config import Config
+
+S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
+S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
+S3_REGION      = os.getenv("S3_REGION", "ru-1")
+
+s3_client = boto3.client(
+    "s3",
+    endpoint_url=S3_ENDPOINT,
+    region_name=S3_REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -38,6 +58,16 @@ def _sign(url: Optional[str]) -> Optional[str]:
     if not url:
         return None
     return generate_presigned_url(url, expires=timedelta(hours=24))
+
+
+def _s3_key_from_url(url: str) -> str:
+    """Извлекает ключ объекта из публичного/прямого URL."""
+    from urllib.parse import urlparse, unquote
+    p = urlparse(url)
+    path = unquote(p.path.lstrip("/"))
+    if path.startswith(f"{S3_BUCKET}/"):
+        return path[len(S3_BUCKET) + 1 :]
+    return path
 
 
 # ── API ─────────────────────────────────────────────────────────────────────
@@ -153,18 +183,18 @@ def download_book_audio(
     return {"url": _sign(audio.s3_url)}
 
 
-@router.get("/{book_id}/pdf", summary="Получить presigned URL на PDF с поддержкой Range (для владельцев)")
-def get_book_pdf_url(
+@router.get("/{book_id}/pdf", summary="Потоковая раздача PDF с поддержкой Range")
+def stream_book_pdf(
     book_id: int,
+    request: Request,
     db: Session = Depends(get_db),
 ):
     """
-    Возвращает presigned URL на PDF файл книги.
-    S3 автоматически поддерживает Range-запросы, браузер будет делать их напрямую.
-    Доступно владельцам книги и администраторам.
+    Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
+    
+    Для запросов без Range header возвращает полный файл (200 OK).
+    Для Range запросов возвращает частичный контент (206 Partial Content).
     """
-    # Проверка доступа
-
     book = (
         db.query(Book)
           .options(selectinload(Book.files))
@@ -178,13 +208,95 @@ def get_book_pdf_url(
     if not pdf_file or not pdf_file.s3_url:
         raise HTTPException(status_code=404, detail="PDF not found")
 
-    # Генерируем presigned URL с долгим сроком жизни
-    # S3 автоматически поддерживает Range-запросы
-    presigned_url = generate_presigned_url(pdf_file.s3_url, expires=timedelta(hours=24))
+    key = _s3_key_from_url(pdf_file.s3_url)
+
+    range_header = request.headers.get("range") or request.headers.get("Range")
     
-    return {
-        "url": presigned_url,
-        "book_id": book.id,
-        "title": book.title,
-        "size_bytes": pdf_file.size_bytes,
+    # Получаем размер файла через head_object для случаев без Range header
+    file_size = None
+    metadata = {}
+    if not range_header:
+        try:
+            head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
+            file_size = head_obj.get("ContentLength", 0)
+            metadata = head_obj.get("Metadata") or {}
+        except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+            raise HTTPException(status_code=404, detail="PDF not found")
+        except Exception as e:
+            logger.error("S3 head_object error: %s", e)
+            raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
+    
+    # Для первого запроса возвращаем весь файл с 200 OK
+    # PDF.js увидит Accept-Ranges: bytes и начнет делать Range-запросы
+    # Благодаря StreamingResponse клиент может начать обработку до полной загрузки
+    get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
+    is_initial_request = not range_header
+    
+    if range_header:
+        get_kwargs["Range"] = range_header
+
+    try:
+        obj = s3_client.get_object(**get_kwargs)
+    except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=404, detail="PDF not found")
+    except Exception as e:
+        logger.error("S3 get_object error: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch PDF")
+
+    body = obj["Body"]
+    content_type = obj.get("ContentType") or "application/pdf"
+    content_length = obj.get("ContentLength")
+    content_range = obj.get("ContentRange")
+    
+    # Если metadata не получена из head_object, пробуем из get_object
+    if not metadata:
+        metadata = obj.get("Metadata") or {}
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": content_type,
+        "Content-Disposition": PDF_CONTENT_DISPOSITION,
+        "Cache-Control": PDF_CACHE_CONTROL,
     }
+    
+    # Для первого запроса (без Range header) возвращаем 200 OK
+    # с полным размером файла, чтобы PDF.js знал общий размер
+    if is_initial_request and file_size:
+        # Возвращаем 200 OK с Content-Length = полный размер файла
+        # PDF.js поймет что может делать Range-запросы благодаря Accept-Ranges: bytes
+        headers["Content-Length"] = str(file_size)
+        status_code = 200
+    elif content_range:
+        # Для Range запросов используем 206 Partial Content
+        headers["Content-Range"] = content_range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 206
+    else:
+        # Fallback
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 200
+
+    if metadata.get("asset"):
+        headers["X-Book-Pdf-Asset"] = metadata["asset"]
+    if metadata.get("pages"):
+        headers["X-Book-Preview-Pages"] = metadata["pages"]
+    if metadata.get("book-id"):
+        headers["X-Book-Id"] = metadata["book-id"]
+    if metadata.get("book-slug"):
+        headers["X-Book-Slug"] = metadata["book-slug"]
+
+    # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
+    iterator = getattr(body, "iter_chunks", None)
+    if callable(iterator):
+        stream_iter = body.iter_chunks()
+    else:
+        stream_iter = iter(lambda: body.read(8192), b"")
+
+    return StreamingResponse(
+        stream_iter,
+        status_code=status_code,
+        headers=headers,
+        media_type=content_type,
+    )
