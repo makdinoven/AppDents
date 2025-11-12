@@ -263,11 +263,9 @@ def stream_book_pdf(
         get_kwargs["Range"] = range_header
         logger.info(f"Using client Range: {range_header}")
     else:
-        # Первый запрос без Range - возвращаем только первый chunk
-        # Это заставит PDF.js перейти на Range-запросы
-        initial_chunk = min(524288, file_size)  # 512KB или меньше
-        get_kwargs["Range"] = f"bytes=0-{initial_chunk - 1}"
-        logger.info(f"First request without Range, limiting to {initial_chunk} bytes")
+        # Первый запрос без Range - стримим весь файл с 200 OK
+        # PDF.js увидит Accept-Ranges: bytes и начнет делать Range-запросы
+        logger.info(f"First request without Range header, streaming full file ({file_size} bytes)")
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -293,17 +291,17 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Всегда возвращаем 206 Partial Content, т.к. всегда делаем Range запрос к S3
+    # Если был Range запрос - возвращаем 206 Partial Content
+    # Если не было Range - возвращаем 200 OK, PDF.js увидит Accept-Ranges и начнет делать Range-запросы
     if content_range:
         headers["Content-Range"] = content_range
         headers["Content-Length"] = str(content_length) if content_length else str(0)
         status_code = 206
-        logger.info(f"Returning 206: {content_range}")
+        logger.info(f"Returning 206 Partial Content: {content_range}")
     else:
-        # Fallback - не должно случиться, но на всякий случай
         headers["Content-Length"] = str(file_size)
         status_code = 200
-        logger.warning("No Content-Range from S3, returning 200")
+        logger.info(f"Returning 200 OK with full Content-Length: {file_size}, PDF.js will use Range requests")
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
