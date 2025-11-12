@@ -229,14 +229,16 @@ def stream_book_pdf(
             logger.error("S3 head_object error: %s", e)
             raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
     
-    # Если нет Range header, возвращаем только первый чанк для инициализации PDF.js
-    # PDF.js дальше сам запросит нужные диапазоны
+    # Для первого запроса (без Range) возвращаем только первый чанк,
+    # но с кодом 200 OK, чтобы PDF.js понял что может делать Range-запросы
     INITIAL_CHUNK_SIZE = 524288  # 512 KB - достаточно для парсинга структуры PDF
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
+    is_initial_request = not range_header
+    
     if range_header:
         get_kwargs["Range"] = range_header
     elif file_size:
-        # Запрашиваем только первый чанк
+        # Запрашиваем только первый чанк для оптимизации
         chunk_end = min(INITIAL_CHUNK_SIZE - 1, file_size - 1)
         get_kwargs["Range"] = f"bytes=0-{chunk_end}"
 
@@ -264,13 +266,24 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Всегда возвращаем 206 Partial Content с Content-Range
-    if content_range:
+    # Для первого запроса (без Range header) возвращаем 200 OK
+    # с полным размером файла, чтобы PDF.js знал общий размер
+    if is_initial_request and file_size:
+        # Возвращаем 200 OK с Content-Length = полный размер файла
+        # PDF.js поймет что может делать Range-запросы благодаря Accept-Ranges: bytes
+        headers["Content-Length"] = str(file_size)
+        status_code = 200
+    elif content_range:
+        # Для Range запросов используем 206 Partial Content
         headers["Content-Range"] = content_range
-    if content_length is not None:
-        headers["Content-Length"] = str(content_length)
-    
-    status_code = 206
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 206
+    else:
+        # Fallback
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 200
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
