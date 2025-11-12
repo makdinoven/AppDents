@@ -9,7 +9,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse, Response, RedirectResponse
+from fastapi.responses import StreamingResponse, Response
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -189,9 +189,11 @@ def stream_book_pdf(
     db: Session = Depends(get_db),
 ):
     """
-    Возвращает presigned URL S3 в JSON для прямой загрузки PDF.
-    Клиент сам делает запрос к S3 с поддержкой Range.
+    Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
     Доступно владельцам книги и администраторам.
+    
+    Для запросов без Range header возвращает полный файл (200 OK).
+    Для Range запросов возвращает частичный контент (206 Partial Content).
     """
 
     # Проверка авторизации
@@ -209,12 +211,95 @@ def stream_book_pdf(
     if not pdf_file or not pdf_file.s3_url:
         raise HTTPException(status_code=404, detail="PDF not found")
 
-    # Генерируем presigned URL на 24 часа
-    presigned_url = generate_presigned_url(pdf_file.s3_url, expires=timedelta(hours=24))
+    key = _s3_key_from_url(pdf_file.s3_url)
+
+    range_header = request.headers.get("range") or request.headers.get("Range")
+    metadata = {}
+    file_size = None
+    is_initial_request = not range_header
     
-    if not presigned_url:
-        raise HTTPException(status_code=500, detail="Failed to generate presigned URL")
+    # Если нет Range header, возвращаем полный файл
+    # Проблема с множественными запросами решается на фронтенде через ленивую загрузку страниц
+    if is_initial_request:
+        # Получаем размер файла через head_object (быстро, без загрузки)
+        try:
+            head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
+            file_size = head_obj.get("ContentLength", 0)
+            metadata = head_obj.get("Metadata") or {}
+        except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+            raise HTTPException(status_code=404, detail="PDF not found")
+        except Exception as e:
+            logger.error("S3 head_object error: %s", e)
+            raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
     
-    # Возвращаем JSON с URL вместо редиректа
-    # Фронтенд должен использовать этот URL напрямую для загрузки PDF
-    return {"url": presigned_url, "size": pdf_file.size_bytes}
+    get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
+    if range_header:
+        get_kwargs["Range"] = range_header
+
+    try:
+        obj = s3_client.get_object(**get_kwargs)
+    except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=404, detail="PDF not found")
+    except Exception as e:
+        logger.error("S3 get_object error: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch PDF")
+
+    body = obj["Body"]
+    content_type = obj.get("ContentType") or "application/pdf"
+    content_length = obj.get("ContentLength")
+    content_range = obj.get("ContentRange")
+    
+    # Если metadata не получена из head_object, пробуем из get_object
+    if not metadata:
+        metadata = obj.get("Metadata") or {}
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": content_type,
+        "Content-Disposition": PDF_CONTENT_DISPOSITION,
+        "Cache-Control": PDF_CACHE_CONTROL,
+    }
+    
+    # Для первого запроса возвращаем 200 OK с полным файлом
+    # PDF.js ожидает 200 OK для первого запроса без Range header
+    if is_initial_request:
+        # Устанавливаем Content-Length равным полному размеру файла
+        if file_size is not None:
+            headers["Content-Length"] = str(file_size)
+        elif content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 200
+    elif content_range:
+        # Для Range запросов используем Content-Range от S3 и 206 Partial Content
+        headers["Content-Range"] = content_range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 206
+    else:
+        # Fallback для полного файла без Range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 200
+
+    if metadata.get("asset"):
+        headers["X-Book-Pdf-Asset"] = metadata["asset"]
+    if metadata.get("pages"):
+        headers["X-Book-Preview-Pages"] = metadata["pages"]
+    if metadata.get("book-id"):
+        headers["X-Book-Id"] = metadata["book-id"]
+    if metadata.get("book-slug"):
+        headers["X-Book-Slug"] = metadata["book-slug"]
+
+    # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
+    iterator = getattr(body, "iter_chunks", None)
+    if callable(iterator):
+        stream_iter = body.iter_chunks()
+    else:
+        stream_iter = iter(lambda: body.read(8192), b"")
+
+    return StreamingResponse(
+        stream_iter,
+        status_code=status_code,
+        headers=headers,
+        media_type=content_type,
+    )
