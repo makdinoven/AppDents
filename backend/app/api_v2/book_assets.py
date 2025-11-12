@@ -259,15 +259,14 @@ def stream_book_pdf(
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     
     if range_header:
-        # Если есть Range header от PDF.js - используем его
+        # Если есть Range header от клиента - используем его
         get_kwargs["Range"] = range_header
         logger.info(f"Using client Range: {range_header}")
     else:
-        # Первый запрос без Range - возвращаем первые 2MB
-        # Этого достаточно для парсинга структуры PDF и заставит PDF.js использовать Range-запросы
-        initial_chunk = min(2097152, file_size)  # 2MB или меньше
-        get_kwargs["Range"] = f"bytes=0-{initial_chunk - 1}"
-        logger.info(f"First request without Range, returning first {initial_chunk} bytes (2MB chunk)")
+        # Первый запрос без Range - стримим весь файл
+        # PDF.js увидит Accept-Ranges: bytes и МОЖЕТ начать делать Range-запросы
+        # (но это не гарантировано - зависит от настроек PDF.js)
+        logger.info(f"Request without Range header, streaming full file ({file_size} bytes)")
 
     try:
         obj = s3_client.get_object(**get_kwargs)
