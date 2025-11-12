@@ -32,8 +32,7 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
           rel="noopener"
           className={s.button}
         >
-          <Trans i18nKey="bookLanding.download" />
-          {activeFormat.file_format}
+          <Trans i18nKey="bookLanding.download" /> {activeFormat.file_format}
         </a>
         <ul className={s.format_buttons}>
           {formats?.map((format: FormatType) => {
