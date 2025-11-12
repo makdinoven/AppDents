@@ -1076,6 +1076,22 @@ def get_my_book_detail(
             if fmt not in available_formats:
                 available_formats.append(fmt)
 
+    # Генерируем presigned URL для PDF ридера с поддержкой Range-запросов
+    # Используем inline disposition, чтобы браузер открывал файл, а не скачивал
+    reader_pdf_url = None
+    pdf_file = next((f for f in (book.files or []) if getattr(f.file_format, "value", f.file_format) == "PDF"), None)
+    if pdf_file and pdf_file.s3_url:
+        try:
+            # inline disposition для просмотра в ридере
+            inline_disposition = "inline"
+            reader_pdf_url = generate_presigned_url(
+                pdf_file.s3_url,
+                expires=timedelta(hours=24),
+                response_content_disposition=inline_disposition
+            )
+        except Exception as e:
+            logger.warning(f"Failed to generate reader_pdf_url for book {book.id}: {e}")
+
     return {
         "id": book.id,
         "title": book.title,
@@ -1087,6 +1103,7 @@ def get_my_book_detail(
         "files_download": files_download,
         "audio_download": audio_download,
         "available_formats": available_formats,
+        "reader_pdf_url": reader_pdf_url,
     }
 
 
