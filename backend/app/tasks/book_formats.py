@@ -32,8 +32,8 @@ REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
 # Умеренные флаги (качество ок, память экономим)
-# PDF → EPUB - добавляем --no-images-to-jpeg для предотвращения зависаний
-PDF2EPUB_OPTS  = "--no-images-to-jpeg"
+# PDF → EPUB - используем минимальные опции для стабильности
+PDF2EPUB_OPTS  = ""
 # EPUB → AZW3 (под Kindle)
 EPUB2AZW3_OPTS = ""
 # EPUB → MOBI (KF8/new)
@@ -62,10 +62,10 @@ STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "300"))
 STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "600")) # 10 мин
 MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
 MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "2"))
-# Доп. опции на ретраях (диагностика и более мягкие эвристики)
+# Доп. опции на ретраях (более мягкие эвристики)
 PDF2EPUB_RETRY_OPTS = os.getenv(
     "CALIBRE_PDF2EPUB_RETRY_OPTS",
-    "--no-images-to-jpeg --enable-heuristics --unwrap-factor 0.18 --dont-split-on-page-breaks"
+    "--enable-heuristics --unwrap-factor 0.18"
 )
 MIN_EPUB_ABS_BYTES = int(os.getenv("CALIBRE_MIN_EPUB_ABS_BYTES", str(512 * 1024)))  # ≥ 512KB
 MIN_EPUB_RATIO     = float(os.getenv("CALIBRE_MIN_EPUB_RATIO", "0.01"))             # ≥ 1% от размера PDF
@@ -75,16 +75,15 @@ OCR_ENABLE   = os.getenv("CALIBRE_ENABLE_OCR", "1").strip().lower() in {"1","tru
 OCRMYPDF_BIN = os.getenv("OCRMYPDF_BIN", "ocrmypdf")
 OCR_LANGS    = os.getenv("OCR_LANGS", "eng+rus")   # под себя
 # разумные, не «тяжёлые» опции по умолчанию; можно переопределить через ENV
+# --output-type pdf: не делать PDF/A (избегает проблем с цветовыми пространствами)
 OCR_OPTS     = os.getenv(
     "OCR_OPTS",
-    "--skip-text --rotate-pages --deskew --clean-final --output-type pdf"
+    "--skip-text --output-type pdf"
 )
 
-# --- обновлённые флаги для AZW3 (устраняют часть падений на разбиении) ---
-EPUB2AZW3_OPTS = os.getenv(
-    "EPUB2AZW3_OPTS",
-    "--dont-split-on-page-breaks --no-inline-toc"
-)
+# --- флаги для AZW3 (минимальные, чтобы избежать ошибок) ---
+# Оставляем пустыми по умолчанию, чтобы не конфликтовать с версией Calibre
+EPUB2AZW3_OPTS = os.getenv("EPUB2AZW3_OPTS", "")
 # Стратегия нормализации PDF по шагам (через запятую): gs,mutool,qpdf
 PDF_PREFLIGHT_STRATEGY = os.getenv("CALIBRE_PDF_PREFLIGHT_STRATEGY", "gs,mutool,qpdf")        # 90 мин на шаг
 
@@ -1183,11 +1182,11 @@ def _convert_pdf_direct_formats(
     failed: list,
 ):
     """Пытается собрать AZW3/MOBI/FB2 напрямую из PDF, если EPUB не вышел."""
-    # Для прямой конверсии из PDF используем минимальные опции
+    # Для прямой конверсии из PDF используем минимальные опции (пустые строки)
     direct_targets = [
-        (BookFileFormat.AZW3, "azw3", "--no-images-to-jpeg"),
-        (BookFileFormat.MOBI, "mobi", "--no-images-to-jpeg"),
-        (BookFileFormat.FB2,  "fb2",  "--no-images-to-jpeg"),
+        (BookFileFormat.AZW3, "azw3", ""),
+        (BookFileFormat.MOBI, "mobi", ""),
+        (BookFileFormat.FB2,  "fb2",  ""),
     ]
 
     for fmt, ext, opts in direct_targets:
