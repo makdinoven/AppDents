@@ -26,14 +26,8 @@ const DownloadSection: React.FC<DownloadSectionProps> = ({
             components={[<span className={s.highlight} />]}
           />
         </p>
-        <a
-          href={activeFormat.download_url}
-          target="_blank"
-          rel="noopener"
-          className={s.button}
-        >
-          <Trans i18nKey="bookLanding.download" />
-          {activeFormat.file_format}
+        <a href={activeFormat.download_url} download className={s.button}>
+          <Trans i18nKey="bookLanding.download" /> {activeFormat.file_format}
         </a>
         <ul className={s.format_buttons}>
           {formats?.map((format: FormatType) => {
