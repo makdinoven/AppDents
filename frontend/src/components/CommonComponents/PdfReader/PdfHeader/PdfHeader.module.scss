@@ -13,6 +13,18 @@
   //border-bottom-right-radius: 7px;
   //border-bottom-left-radius: 7px;
 
+  .right_side {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+
+    @media (max-width: $mobile-breakpoint) {
+      gap: 15px;
+    }
+  }
+
   .left_side {
     display: flex;
     flex-direction: row;
@@ -21,10 +33,6 @@
     align-items: center;
     color: $accent;
     height: 100%;
-
-    @media (max-width: $mobile-breakpoint) {
-      gap: 15px;
-    }
 
     .list {
       height: 30px;
@@ -74,19 +82,11 @@
         height: 100%;
         padding: 10px;
         text-align: center;
+
+        @media (max-width: $mobile-breakpoint) {
+          padding: 0;
+        }
       }
-    }
-  }
-
-  .right_side {
-    display: flex;
-    flex-direction: row;
-    gap: 15px;
-    justify-content: center;
-    align-items: center;
-
-    @media (max-width: $mobile-breakpoint) {
-      gap: 15px;
     }
   }
 

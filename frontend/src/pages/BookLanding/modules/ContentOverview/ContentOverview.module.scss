@@ -2,13 +2,110 @@
   @include flex-column();
   gap: 40px;
   height: fit-content;
+}
 
-  @media (max-width: $tablet-breakpoint) {
+.books {
+  @include flex-column();
+  gap: 40px;
+}
+
+.book_container {
+  gap: 10px;
+  position: relative;
+  @include flex-column();
+  height: fit-content;
+  width: 100%;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.content {
+  width: 100%;
+  height: 100%;
+  &::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+}
+
+.description {
+  text-align: left;
+  @include clamped-p3();
+}
+
+.heading {
+  margin-bottom: 20px;
+  display: block;
+  width: 45%;
+  height: fit-content;
+}
+
+.book_title {
+  @include clamped-h3();
+  text-transform: uppercase;
+  gap: 15px;
+  display: flex;
+  text-align: start;
+  width: fit-content;
+  align-self: flex-start;
+  justify-content: center;
+  flex-direction: row;
+  color: $accent;
+
+  svg {
+    flex-shrink: 0;
+    width: 35px;
+    height: 35px;
+
+    path {
+      stroke-width: 2px;
+      stroke: $primary;
+    }
+  }
+}
+
+.date {
+  @include clamped-p3();
+  text-transform: lowercase;
+  color: $hover-color-dark;
+  gap: 10px;
+  @include flex-center();
+  flex-direction: row;
+}
+
+
+@media (max-width: $tablet-breakpoint) {
+  .content_overview {
     gap: 10px;
   }
 
-  .slider {
+  .book_title {
+    gap: 10px;
+    .date {
+      margin-left: 50px;
+      @include clamped-p1();
+    }
+  }
+
+  .content {
     width: 100%;
-    height: fit-content;
+    @include flex-column();
+    gap: 30px;
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .book_title {
+    width: 25px;
+    height: 25px;
+  }
+
+  .heading {
+    width: 100%;
   }
 }

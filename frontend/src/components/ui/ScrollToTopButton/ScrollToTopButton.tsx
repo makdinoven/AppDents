@@ -11,12 +11,14 @@ const ScrollToTopButton = () => {
   const isScrolled = useScroll(1200);
 
   return (
-    <button
+    <div
       onClick={handleClick}
-      className={`${s.scroll_btn} ${isScrolled ? s.show : ""}`}
+      className={`${s.btn_wrapper} ${isScrolled ? s.show : ""}`}
     >
-      <Arrow />
-    </button>
+      <button className={s.scroll_btn}>
+        <Arrow />
+      </button>
+    </div>
   );
 };
 

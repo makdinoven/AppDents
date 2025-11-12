@@ -1,13 +1,13 @@
 .menu {
   display: none;
   position: sticky;
-  padding: 2.5px;
+  padding: 2px;
   bottom: 15px;
   background-color: $primary-04;
   backdrop-filter: blur(20px);
   z-index: 999;
-  border-radius: 25px;
-  margin: 0 10px;
+  border-radius: 22px;
+  margin: 0 3px;
   border: 0.5px solid $primary;
 
   .menu_content {
@@ -15,7 +15,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
     background-color: $background-color-09;
-    border-radius: 22px;
+    border-radius: 20px;
   }
 
   @supports (-webkit-overflow-scrolling: touch) {

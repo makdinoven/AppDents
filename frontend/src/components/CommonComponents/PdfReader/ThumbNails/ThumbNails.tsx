@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Thumbnail } from "react-pdf";
 import s from "./ThumbNails.module.scss";
 
@@ -6,7 +6,6 @@ interface IThumbNailsProps {
   isOpen: boolean;
   totalPages: number | undefined;
   handlePageChange: (currentPage: number) => void;
-  onClick: (e: React.MouseEvent<HTMLInputElement>) => void;
   currentPage: number;
 }
 
@@ -14,14 +13,9 @@ const ThumbNails = ({
   isOpen,
   totalPages,
   handlePageChange,
-  onClick,
   currentPage,
 }: IThumbNailsProps) => {
-  const [activeThumbNail, setActiveThumbNail] = useState(1);
-
-  useEffect(() => {
-    setActiveThumbNail(currentPage);
-  }, [currentPage]);
+  const [activeThumbNail, setActiveThumbNail] = useState(currentPage);
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -32,23 +26,32 @@ const ThumbNails = ({
     setActiveThumbNail(currentPage);
   };
 
+  const handleThumbNailsAreaClick = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    event.stopPropagation();
+  };
+
   return (
     <div
       className={`${s.thumb_nails_wrapper} ${isOpen && s.open}`}
       onContextMenu={handleContextMenu}
-      onClick={onClick}
+      onClick={handleThumbNailsAreaClick}
     >
       <ul className={s.thumb_nails_list}>
         {totalPages &&
           Array.from({ length: totalPages as number }, (_, i) => {
             const currentPage = i + 1;
             return (
-              <li key={currentPage} className={s.thumb_nail_wrapper}>
+              <li
+                key={currentPage}
+                className={`${s.thumb_nail_wrapper} ${activeThumbNail === currentPage && s.active}`}
+              >
                 <Thumbnail
                   pageNumber={currentPage}
                   width={100}
                   canvasBackground="white"
-                  className={`${s.thumb_nail} ${activeThumbNail === currentPage && s.active}`}
+                  className={s.thumb_nail}
                   onClick={() => handleThumbNailClick(currentPage)}
                   renderMode="canvas"
                   loading="lazy"

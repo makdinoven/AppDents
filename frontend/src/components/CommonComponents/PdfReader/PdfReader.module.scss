@@ -16,15 +16,22 @@
   margin: 0 0 10px 30px;
 
   &.full_screen {
-    width: 100%;
-    height: 100%;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    height: 100dvh;
+    width: 100dvw;
     min-width: unset;
     max-width: unset;
     min-height: unset !important;
     max-height: unset !important;
-    z-index: 3;
     margin: 0;
     aspect-ratio: unset;
+    height: 100svh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overscroll-behavior: contain;
+    touch-action: pan-y pinch-zoom;
+    box-shadow: 0 0 20px $accent-03;
   }
 
   &.from_profile {
@@ -97,6 +104,7 @@
 
 @media (max-width: $mobile-breakpoint) {
   .pdf_reader {
+    height: 450px;
     &.from_profile {
       max-height: calc(100vh - 200px);
       min-height: calc(100vh - 200px);

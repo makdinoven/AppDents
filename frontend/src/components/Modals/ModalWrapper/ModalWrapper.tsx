@@ -9,6 +9,7 @@ import React, {
 import { Trans } from "react-i18next";
 import ModalCloseButton from "../../ui/ModalCloseButton/ModalCloseButton.tsx";
 import s from "./ModalWrapper.module.scss";
+import { RemoveScroll } from "react-remove-scroll";
 
 type CutoutPosition = "top-right" | "top-left" | "bottom-right" | "none";
 type ModalVariant = "dark" | "default";
@@ -200,11 +201,9 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
     if (!isOpen) return;
 
     const handleEscape = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.body.style.overflow = "";
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isOpen, onClose]);
@@ -212,56 +211,58 @@ const ModalWrapper: React.FC<ModalWrapperProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn} ${isDropdown ? "" : s.overlay_bg}`}
-      onClick={handleClose}
-    >
-      <div className={s.modal_container} style={modalContainerStyles}>
-        {showTopCutout && (
+    <RemoveScroll>
+      <div
+        className={`${s.modal_overlay} ${isClosing ? s.fadeOut : s.fadeIn} ${isDropdown ? "" : s.overlay_bg}`}
+        onClick={handleClose}
+      >
+        <div className={s.modal_container} style={modalContainerStyles}>
+          {showTopCutout && (
+            <div
+              className={`${s.modal_header} ${cutoutPosition === "top-right" ? s.topRight : s.topLeft}`}
+              style={cutoutStyles}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {hasCloseButton && (
+                <ModalCloseButton
+                  className={s.close_button}
+                  onClick={handleClose}
+                />
+              )}
+            </div>
+          )}
+
           <div
-            className={`${s.modal_header} ${cutoutPosition === "top-right" ? s.topRight : s.topLeft}`}
-            style={cutoutStyles}
+            ref={modalContentRef}
+            className={s.modal_body}
+            style={modalContentStyles}
             onClick={(e) => e.stopPropagation()}
           >
-            {hasCloseButton && (
+            {!showTopCutout && hasCloseButton && (
               <ModalCloseButton
                 className={s.close_button}
                 onClick={handleClose}
               />
             )}
-          </div>
-        )}
 
-        <div
-          ref={modalContentRef}
-          className={s.modal_body}
-          style={modalContentStyles}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {!showTopCutout && hasCloseButton && (
-            <ModalCloseButton
-              className={s.close_button}
-              onClick={handleClose}
+            {hasTitle && (
+              <h3>
+                <Trans i18nKey={title} />
+              </h3>
+            )}
+            {children}
+          </div>
+
+          {showBottomCutout && (
+            <div
+              className={`${s.modal_bottom} ${s.bottomRight}`}
+              style={cutoutStyles}
+              onClick={(e) => e.stopPropagation()}
             />
           )}
-
-          {hasTitle && (
-            <h3>
-              <Trans i18nKey={title} />
-            </h3>
-          )}
-          {children}
         </div>
-
-        {showBottomCutout && (
-          <div
-            className={`${s.modal_bottom} ${s.bottomRight}`}
-            style={cutoutStyles}
-            onClick={(e) => e.stopPropagation()}
-          />
-        )}
       </div>
-    </div>
+    </RemoveScroll>
   );
 };
 

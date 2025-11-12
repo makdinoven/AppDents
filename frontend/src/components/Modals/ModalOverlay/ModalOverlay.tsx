@@ -2,6 +2,7 @@ import s from "./ModalOverlay.module.scss";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { Path } from "../../../routes/routes.ts";
 import { useLocation, useNavigate } from "react-router-dom";
+import { RemoveScroll } from "react-remove-scroll";
 
 const ModalOverlay = ({
   children,
@@ -53,10 +54,8 @@ const ModalOverlay = ({
 
   useEffect(() => {
     if (!isVisible) return;
-    document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleEscape);
     return () => {
-      document.body.style.overflow = "";
       document.removeEventListener("keydown", handleEscape);
     };
   }, [isVisible]);
@@ -80,17 +79,19 @@ const ModalOverlay = ({
   const shouldRenderChildren = isVisibleCondition || isClosing;
 
   return (
-    <div
-      onClick={closeModal}
-      className={`${s.overlay} ${s[modalPosition]} ${isClosing ? s.closing : s.open}`}
-    >
+    <RemoveScroll>
       <div
-        onClick={(e) => e.stopPropagation()}
-        className={`${s.content} ${isClosing ? s.closing : ""}`}
+        onClick={closeModal}
+        className={`${s.overlay} ${s[modalPosition]} ${isClosing ? s.closing : s.open}`}
       >
-        {shouldRenderChildren && children}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`${s.content} ${isClosing ? s.closing : ""}`}
+        >
+          {shouldRenderChildren && children}
+        </div>
       </div>
-    </div>
+    </RemoveScroll>
   );
 };
 

@@ -45,6 +45,21 @@
 .thumb_nail_wrapper {
   @include flex-column();
   align-items: center;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 15px;
+  outline: 1px solid $background-color;
+  @include transition();
+
+  @media (hover: hover) {
+    &:hover:not(.active) {
+      background-color: $hover-color-analogue;
+    }
+  }
+
+  &.active {
+    outline: 1px solid $primary;
+  }
 }
 
 .thumb_nail {
@@ -52,11 +67,7 @@
   border-radius: 10px;
   overflow: hidden;
   @include transition();
-
-  &.active {
-    outline: 2px solid $primary;
-    outline-offset: 3px;
-  }
+  border: 1.5px solid $hover-color-analogue;
 }
 
 .page {

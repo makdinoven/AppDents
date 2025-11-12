@@ -20,6 +20,8 @@ import {
 import { CartItemType } from "../../api/cartApi/types.ts";
 import SimpleBuySection from "./modules/SimpleBuySection/SimpleBuySection.tsx";
 import ProfessorBuySection from "./modules/BuySection/ProfessorBuySection.tsx";
+import INITIAL_PHOTO from "../../assets/no-user.png";
+import { Trans } from "react-i18next";
 
 const ProfessorPage = () => {
   const [searchParams] = useSearchParams();
@@ -167,26 +169,35 @@ const ProfessorPage = () => {
                 {screenWidth > 577 && (
                   <h1 className={s.professor_name}>{professor.name}</h1>
                 )}
-                <ExpandableText
-                  lines={screenWidth > 577 ? 10 : 3}
-                  textClassName={s.professor_description}
-                  text={professor.description}
-                  color={"primary"}
-                />
+                {professor.description ? (
+                  <ExpandableText
+                    lines={screenWidth > 577 ? 10 : 3}
+                    textClassName={s.professor_description}
+                    text={professor.description}
+                    color={"primary"}
+                  />
+                ) : (
+                  <p className={s.no_description}>
+                    <Trans i18nKey="professor.noDescription" />
+                  </p>
+                )}
               </div>
-              {professor.photo && (
-                <div className={s.card_wrapper}>
-                  <div className={s.card}>
-                    <div className={s.card_header}></div>
-                    <div className={s.card_body}>
-                      <div className={s.photo}>
+
+              <div className={s.card_wrapper}>
+                <div className={s.card}>
+                  <div className={s.card_header}></div>
+                  <div className={s.card_body}>
+                    <div className={s.photo}>
+                      {professor.photo ? (
                         <img src={professor.photo} alt="Professor image" />
-                      </div>
+                      ) : (
+                        <img src={INITIAL_PHOTO} alt="photo" />
+                      )}
                     </div>
-                    <div className={s.card_bottom}></div>
                   </div>
+                  <div className={s.card_bottom}></div>
                 </div>
-              )}
+              </div>
             </section>
           </>
         )}

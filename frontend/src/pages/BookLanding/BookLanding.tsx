@@ -123,10 +123,7 @@ const BookLanding = () => {
         />
         {bookData && (
           <>
-            <ContentOverview
-              books={bookData.books}
-              portalParentId="portal_parent"
-            />
+            <ContentOverview books={bookData.books} />
             <BuySection
               openPayment={openPayment}
               type="buy"

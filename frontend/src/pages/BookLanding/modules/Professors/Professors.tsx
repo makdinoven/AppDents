@@ -14,7 +14,7 @@ const Professors = ({ professors, type = "course" }: ProfessorsProps) => {
       className={s.professors_container}
     >
       <SectionHeader name={"professors"} />
-      <ProfessorsList source={"landing"} professors={professors} />
+      <ProfessorsList professors={professors} />
     </div>
   );
 };

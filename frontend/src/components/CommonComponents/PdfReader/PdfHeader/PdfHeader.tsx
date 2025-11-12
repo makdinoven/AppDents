@@ -10,47 +10,55 @@ import {
 import { t } from "i18next";
 import { scales, screenResolutionMap } from "../constants.ts";
 import MultiSelect from "../../MultiSelect/MultiSelect.tsx";
+import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import { useEffect, useState } from "react";
+import { usePdfReaderFullscreen } from "../hooks/usePdfReaderFullscreen.ts";
+import { usePdfReaderScale } from "../hooks/usePdfReaderScale.ts";
 
 type Props = {
   handleThumbNailsClick: () => void;
   totalPages?: number;
   currentPage: string;
-  handleInputChange: (val: string) => void;
-  handleZoom: (val: "in" | "out") => void;
-  screenWidth: number;
-  handleSelectChange: (val: {
-    value: number | string | string[];
-    name: string;
-  }) => void;
-  goToPrevPage: () => void;
-  goToNextPage: () => void;
-  handleCloseFullScreen: (() => void) | null;
-  handleOpenFullScreen: () => void;
-  fullScreen: boolean;
-  scale: number;
+  handleScrollToPage: (p: number) => void;
 };
 
 const PdfHeader = ({
   handleThumbNailsClick,
   totalPages,
   currentPage,
-  handleInputChange,
-  handleZoom,
-  screenWidth,
-  handleSelectChange,
-  goToPrevPage,
-  goToNextPage,
-  handleCloseFullScreen,
-  handleOpenFullScreen,
-  fullScreen,
-  scale,
+  handleScrollToPage,
 }: Props) => {
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const { scale, handleZoom, handleScaleSelectChange } = usePdfReaderScale();
+  const [inputValue, setInputValue] = useState(currentPage);
   const findScale = scales.find((option) => option.value === scale);
-
+  const screenWidth = useScreenWidth();
   const isFirstPage = Number(currentPage) === 1 || !totalPages;
   const isLastPage = Number(currentPage) === Number(totalPages) || !totalPages;
-  const isFirstScale = scale === scales[0].value;
-  const isLastScale = scale === scales[scales.length - 1].value;
+  const isFirstScale = scale === scales[0].value || !totalPages;
+  const isLastScale = scale === scales[scales.length - 1].value || !totalPages;
+  const pageNum = Number(currentPage);
+  const { fullScreen, handleOpenFullScreen, handleCloseFullScreen } =
+    usePdfReaderFullscreen();
+
+  const goToPrevPage = () => {
+    const newPage = Math.max(1, pageNum - 1);
+    handleScrollToPage(newPage);
+  };
+
+  const goToNextPage = () => {
+    const newPage = Math.min(totalPages || 1, pageNum + 1);
+    handleScrollToPage(newPage);
+  };
+
+  const handleInputSubmit = () => {
+    let page = Number(inputValue);
+    if (isNaN(page)) return;
+
+    if (page < 1) page = 1;
+    if (totalPages && page > totalPages) page = totalPages;
+    handleScrollToPage(page);
+  };
 
   const renderNextPrevButtons = (
     <div className={s.arrows_wrapper}>
@@ -86,6 +94,12 @@ const PdfHeader = ({
     </div>
   );
 
+  useEffect(() => {
+    if (!isInputFocused) {
+      setInputValue(currentPage);
+    }
+  }, [currentPage]);
+
   const headerContent = new Map([
     [
       true,
@@ -100,8 +114,16 @@ const PdfHeader = ({
               min={1}
               max={totalPages || 1}
               className={s.page_input}
-              value={currentPage === "" ? "" : currentPage}
-              onChange={(e) => handleInputChange(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setIsInputFocused(false)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleInputSubmit();
+                }
+              }}
             />
             {t("of")}
             <span>{totalPages ? totalPages : 0}</span>
@@ -122,14 +144,14 @@ const PdfHeader = ({
                 placeholder={scale.toString()}
                 options={scales}
                 selectedValue={findScale?.value as number}
-                onChange={(val) => handleSelectChange(val)}
+                onChange={(val) => handleScaleSelectChange(val)}
                 centrate
               />
             )}
           </div>
           <button
             className={`${s.expand_button} ${s.close_icon}`}
-            onClick={handleCloseFullScreen ? handleCloseFullScreen : undefined}
+            onClick={handleCloseFullScreen}
           >
             <ModalClose />
           </button>
@@ -148,7 +170,7 @@ const PdfHeader = ({
           </p>
         </div>
         <div className={s.right_side}>
-          {renderScalesButtons}
+          {/*{renderScalesButtons}*/}
           <button
             className={s.expand_button}
             onClick={handleOpenFullScreen}

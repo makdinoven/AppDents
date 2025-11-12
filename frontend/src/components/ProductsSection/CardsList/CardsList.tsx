@@ -33,6 +33,7 @@ export type BookCardType = {
   old_price: number;
   new_price: number;
   book_ids: number[];
+  available_formats: string[];
 };
 
 type CardsListProps =
