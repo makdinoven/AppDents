@@ -94,8 +94,23 @@ def generate_presigned_url(
         if scheme in ("http", "https"):
             host = (p.netloc or "").lower()
 
-            # Наш CDN — ссылка и так публичная: просто корректно кодируем path.
+            # Наш CDN — ссылка и так публичная
             if host == _S3_PUBLIC_HOST:
+                # Если нужно переопределить Content-Disposition, создаём presigned URL
+                if response_content_disposition:
+                    # Извлекаем key из CDN URL: https://cdn.dent-s.com/books/8/file.pdf → books/8/file.pdf
+                    key = unquote(p.path.lstrip("/"))
+                    if key:
+                        params = {"Bucket": S3_BUCKET, "Key": key}
+                        params["ResponseContentDisposition"] = response_content_disposition
+                        
+                        signed = _s3_v2.generate_presigned_url(
+                            ClientMethod="get_object",
+                            Params=params,
+                            ExpiresIn=int(expires.total_seconds()),
+                        )
+                        return signed
+                # Иначе просто возвращаем публичный URL
                 return _encode_http_url(s3_url)
 
             # Наш endpoint вида https://s3.twcstorage.ru/<bucket>/<key>
