@@ -129,13 +129,13 @@ def generate_cover_candidates(book_id: int, pages: int = 3, dpi: int = 150, jpeg
             # Рендерим каждую страницу отдельной командой, чтобы избежать склеивания страниц
             for page_num in range(1, pages + 1):
                 out_file = os.path.join(tmp, f"out_{page_num}.jpg")
-                # -dFIXEDMEDIA фиксирует размер выходного медиа
-                # -dPDFFitPage подгоняет PDF под размер медиа (предотвращает склеивание)
+                # -dAutoRotatePages=/None предотвращает автоповорот
+                # -dUseCropBox использует правильные границы страницы
                 cmd = (
                     f'gs -q -dNOPAUSE -dBATCH -sDEVICE=jpeg -r{dpi} '
-                    f'-dJPEGQ={jpeg_quality} -dFIXEDMEDIA -dPDFFitPage '
+                    f'-dJPEGQ={jpeg_quality} -dAutoRotatePages=/None -dUseCropBox '
                     f'-dFirstPage={page_num} -dLastPage={page_num} '
-                    f'-o "{out_file}" "{in_pdf}"'
+                    f'-sOutputFile="{out_file}" "{in_pdf}"'
                 )
                 rc, out, err = _run(cmd)
                 if rc != 0:
