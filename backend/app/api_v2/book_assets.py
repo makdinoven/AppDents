@@ -54,10 +54,22 @@ def _user_owns_book(db: Session, user_id: int, book_id: int) -> bool:
     ).first()
     return bool(row)
 
-def _sign(url: Optional[str]) -> Optional[str]:
+def _sign(url: Optional[str], filename: Optional[str] = None) -> Optional[str]:
     if not url:
         return None
-    return generate_presigned_url(url, expires=timedelta(hours=24))
+    
+    # Если указано имя файла, добавляем Content-Disposition для скачивания
+    content_disposition = None
+    if filename:
+        # Экранируем кавычки в имени файла
+        safe_filename = filename.replace('"', '\\"')
+        content_disposition = f'attachment; filename="{safe_filename}"'
+    
+    return generate_presigned_url(
+        url, 
+        expires=timedelta(hours=24),
+        response_content_disposition=content_disposition
+    )
 
 
 def _s3_key_from_url(url: str) -> str:
@@ -98,10 +110,13 @@ def get_book_assets(
 
     files = []
     for f in book.files:
+        format_value = f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format)
+        filename = f"{book.slug}.{format_value.lower()}" if owns else None
+        
         files.append({
-            "format": f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format),
+            "format": format_value,
             "size_bytes": f.size_bytes,
-            "download_url": _sign(f.s3_url) if owns else None,
+            "download_url": _sign(f.s3_url, filename=filename) if owns else None,
         })
 
     audios = []
@@ -141,21 +156,20 @@ def download_book_file(
     if not (_is_admin(user) or _user_owns_book(db, user.id, book_id)):
         raise HTTPException(status_code=403, detail="No access to this book")
 
-    # ищем нужный формат
-    f = next((
-        bf for bf in (
-            db.query(Book)
-              .options(selectinload(Book.files))
-              .get(book_id)
-              or Book()  # пустая заглушка, чтобы next() не падал на None
-        ).files
-        if bf.file_format == fmt
-    ), None)
-
+    # ищем книгу и нужный формат
+    book = db.query(Book).options(selectinload(Book.files)).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    f = next((bf for bf in book.files if bf.file_format == fmt), None)
     if not f:
         raise HTTPException(status_code=404, detail=f"File in format {fmt} not found")
 
-    return {"url": _sign(f.s3_url)}
+    # Генерируем имя файла для скачивания
+    # Используем slug книги (безопасный для URL) + расширение формата
+    filename = f"{book.slug}.{fmt.value.lower()}"
+    
+    return {"url": _sign(f.s3_url, filename=filename)}
 
 
 @router.get("/audios/{audio_id}/download", summary="Скачать аудиоглаву/аудиокнигу (только для владельцев)")
