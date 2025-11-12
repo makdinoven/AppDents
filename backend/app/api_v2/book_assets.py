@@ -266,11 +266,21 @@ def stream_book_pdf(
     }
     if content_length is not None:
         headers["Content-Length"] = str(content_length)
-    # Content-Range используется только для 206 Partial Content
-    # Для первого запроса (200 OK) не устанавливаем Content-Range,
-    # но устанавливаем Accept-Ranges: bytes, чтобы клиент знал, что можно делать Range запросы
-    if content_range and not is_initial_request:
+    
+    # Для первого запроса устанавливаем Content-Range с полным размером файла,
+    # чтобы PDF.js знал реальный размер файла и мог делать Range запросы
+    if is_initial_request and file_size is not None:
+        # Формат: bytes start-end/total
+        headers["Content-Range"] = f"bytes 0-{content_length - 1 if content_length else 0}/{file_size}"
+        # Используем 206 для первого запроса, чтобы PDF.js понял, что это частичный контент
+        status_code = 206
+    elif content_range:
+        # Для Range запросов используем Content-Range от S3
         headers["Content-Range"] = content_range
+        status_code = 206
+    else:
+        # Fallback (не должно происходить в нормальной работе)
+        status_code = 200
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
@@ -280,11 +290,6 @@ def stream_book_pdf(
         headers["X-Book-Id"] = metadata["book-id"]
     if metadata.get("book-slug"):
         headers["X-Book-Slug"] = metadata["book-slug"]
-
-    # Для первого запроса без Range header от клиента используем 200 OK (PDF.js ожидает это)
-    # Для Range запросов от клиента используем 206 Partial Content
-    # Важно: даже если мы делаем Range запрос к S3 для первого запроса, клиенту возвращаем 200
-    status_code = 206 if (content_range and not is_initial_request) else 200
 
     # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
     iterator = getattr(body, "iter_chunks", None)
