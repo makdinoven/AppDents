@@ -214,14 +214,11 @@ def stream_book_pdf(
     key = _s3_key_from_url(pdf_file.s3_url)
 
     range_header = request.headers.get("range") or request.headers.get("Range")
-    metadata = {}
-    file_size = None
-    is_initial_request = not range_header
     
-    # Если нет Range header, возвращаем полный файл
-    # Проблема с множественными запросами решается на фронтенде через ленивую загрузку страниц
-    if is_initial_request:
-        # Получаем размер файла через head_object (быстро, без загрузки)
+    # Получаем размер файла через head_object для случаев без Range header
+    file_size = None
+    metadata = {}
+    if not range_header:
         try:
             head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
             file_size = head_obj.get("ContentLength", 0)
@@ -232,9 +229,13 @@ def stream_book_pdf(
             logger.error("S3 head_object error: %s", e)
             raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
     
+    # Если нет Range header, формируем его для всего файла
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     if range_header:
         get_kwargs["Range"] = range_header
+    elif file_size:
+        # Запрашиваем весь файл через Range для единообразия
+        get_kwargs["Range"] = f"bytes=0-{file_size - 1}"
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -260,26 +261,13 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Для первого запроса возвращаем 200 OK с полным файлом
-    # PDF.js ожидает 200 OK для первого запроса без Range header
-    if is_initial_request:
-        # Устанавливаем Content-Length равным полному размеру файла
-        if file_size is not None:
-            headers["Content-Length"] = str(file_size)
-        elif content_length is not None:
-            headers["Content-Length"] = str(content_length)
-        status_code = 200
-    elif content_range:
-        # Для Range запросов используем Content-Range от S3 и 206 Partial Content
+    # Всегда возвращаем 206 Partial Content с Content-Range
+    if content_range:
         headers["Content-Range"] = content_range
-        if content_length is not None:
-            headers["Content-Length"] = str(content_length)
-        status_code = 206
-    else:
-        # Fallback для полного файла без Range
-        if content_length is not None:
-            headers["Content-Length"] = str(content_length)
-        status_code = 200
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+    
+    status_code = 206
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
