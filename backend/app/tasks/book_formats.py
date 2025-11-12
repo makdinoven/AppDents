@@ -59,7 +59,7 @@ CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 # --- новые константы сторожа ---
 STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "150"))   
-STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "300")) # 10 мин
+STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "300")) 
 MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
 MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "3"))  # 3 попытки: обычная → нормализация → агрессивное упрощение
 # Доп. опции на ретраях (более мягкие эвристики + внешний движок)
@@ -164,26 +164,67 @@ def _which(cmd: str) -> str | None:
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return None
+def _simplify_pdf_via_ps(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
+    """
+    Упрощение PDF через PostScript (pdf2ps → ps2pdf):
+    - Сохраняет векторную графику и текст
+    - "Перепечатывает" PDF, удаляя сложные структуры
+    - Лучше качество, чем растеризация
+    """
+    if not _which("pdf2ps") or not _which("ps2pdf"):
+        _log(book_id, "simplify-ps: pdf2ps/ps2pdf not found, skipping")
+        return False, None
+    
+    ps_file = os.path.join(workdir, "temp.ps")
+    out_pdf = os.path.join(workdir, "in.ps-simplified.pdf")
+    
+    _log(book_id, "simplify-ps: converting PDF → PS → PDF")
+    
+    # PDF → PostScript
+    rc1, _, _ = _run(["pdf2ps", src_pdf, ps_file],
+                     book_id=book_id, fmt=BookFileFormat.EPUB, phase="ps-simplify")
+    if rc1 != 0 or not os.path.exists(ps_file):
+        _log(book_id, f"simplify-ps: pdf2ps failed rc={rc1}")
+        return False, None
+    
+    # PostScript → PDF
+    rc2, _, _ = _run(["ps2pdf", ps_file, out_pdf],
+                     book_id=book_id, fmt=BookFileFormat.EPUB, phase="ps-simplify")
+    
+    # Удаляем временный PS
+    try:
+        os.remove(ps_file)
+    except Exception:
+        pass
+    
+    if rc2 == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
+        _log(book_id, f"simplify-ps: ok → {out_pdf}")
+        return True, out_pdf
+    
+    _log(book_id, f"simplify-ps: ps2pdf failed rc={rc2}")
+    return False, None
+
+
 def _simplify_pdf_aggressive(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
     """
-    Агрессивное упрощение PDF через Ghostscript:
-    - Конвертирует в изображения (растеризация)
-    - Удаляет сложные векторные объекты
+    Агрессивное упрощение PDF через Ghostscript (качественная растеризация):
+    - Конвертирует в изображения высокого разрешения
+    - Сохраняет читаемость текста
     - Оптимизирует для конверсии
     """
     if not _which("gs"):
         return False, None
     
     out_pdf = os.path.join(workdir, "in.simplified.pdf")
-    # Растеризуем с разумным разрешением (150 dpi для быстроты, 300 для качества)
-    dpi = "150"
+    # 300 DPI - стандарт для качественного текста
+    dpi = os.getenv("CALIBRE_SIMPLIFY_DPI", "300")
     
-    _log(book_id, f"simplify: aggressive rasterization at {dpi} dpi")
+    _log(book_id, f"simplify: quality rasterization at {dpi} dpi (preserving text)")
     rc, _, _ = _run([
         "gs",
         "-dBATCH", "-dNOPAUSE", "-dSAFER",
         "-sDEVICE=pdfwrite",
-        "-dPDFSETTINGS=/ebook",  # оптимизация для e-book
+        "-dPDFSETTINGS=/prepress",  # высокое качество вместо /ebook
         "-dColorImageResolution=" + dpi,
         "-dGrayImageResolution=" + dpi,
         "-dMonoImageResolution=" + dpi,
@@ -192,14 +233,19 @@ def _simplify_pdf_aggressive(book_id: int, src_pdf: str, workdir: str) -> tuple[
         "-dDownsampleMonoImages=true",
         "-dColorImageDownsampleType=/Bicubic",
         "-dGrayImageDownsampleType=/Bicubic",
-        "-dEmbedAllFonts=false",  # не встраивать шрифты
-        "-dSubsetFonts=false",
+        "-dEmbedAllFonts=true",  # СОХРАНЯЕМ шрифты
+        "-dSubsetFonts=true",
+        "-dCompressFonts=true",
+        "-dAutoFilterColorImages=false",  # без автофильтров
+        "-dAutoFilterGrayImages=false",
+        "-dColorImageFilter=/FlateEncode",  # качественное сжатие
+        "-dGrayImageFilter=/FlateEncode",
         "-sOutputFile=" + out_pdf,
         src_pdf
     ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="simplify")
     
     if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
-        _log(book_id, f"simplify: ok → {out_pdf}")
+        _log(book_id, f"simplify: ok → {out_pdf} ({os.path.getsize(out_pdf) / (1024*1024):.1f} MiB)")
         return True, out_pdf
     
     _log(book_id, f"simplify: failed rc={rc}")
@@ -309,19 +355,30 @@ def _convert_pdf_to_epub_with_retries(
             _log(book_id, f"epub: all attempts failed (last rc={rc})")
             return False, None
 
-        # ещё не исчерпали обычные ретраи → нормализуем и повторим
+        # ещё не исчерпали обычные ретраи → пробуем разные стратегии
         _log(book_id, f"epub: attempt {attempt} failed (rc={rc}), trying PDF normalize…")
         
-        # На второй попытке пробуем агрессивное упрощение
+        # Попытка 2: PostScript путь (быстрее и лучше качество)
         if attempt == 2:
-            _log(book_id, "epub: trying aggressive PDF simplification (rasterization)")
+            _log(book_id, "epub: trying PS-simplification (pdf→ps→pdf)")
+            ok_ps, ps_pdf = _simplify_pdf_via_ps(book_id, src_pdf_current, os.path.dirname(out_epub))
+            if ok_ps and ps_pdf:
+                src_pdf_current = ps_pdf
+                _log(book_id, "epub: PS-simplified → retry")
+                continue
+            # Если PS не сработал, пробуем обычную нормализацию
+            _log(book_id, "epub: PS-simplification failed, trying standard normalize")
+        
+        # Попытка 3: Качественная растеризация (последний шанс перед OCR)
+        if attempt == 3:
+            _log(book_id, "epub: trying quality rasterization (300 dpi)")
             ok_simp, simp_pdf = _simplify_pdf_aggressive(book_id, src_pdf_current, os.path.dirname(out_epub))
             if ok_simp and simp_pdf:
                 src_pdf_current = simp_pdf
-                _log(book_id, "epub: simplified PDF → retry")
+                _log(book_id, "epub: rasterized PDF → retry")
                 continue
         
-        # Обычная нормализация
+        # Обычная нормализация (для попытки 1 и fallback)
         src_pdf_current, used = _normalize_pdf_sequence(
             book_id, src_pdf_current, os.path.dirname(out_epub),
             strategy=PDF_PREFLIGHT_STRATEGY
