@@ -229,18 +229,14 @@ def stream_book_pdf(
             logger.error("S3 head_object error: %s", e)
             raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
     
-    # Для первого запроса (без Range) возвращаем только первый чанк,
-    # но с кодом 200 OK, чтобы PDF.js понял что может делать Range-запросы
-    INITIAL_CHUNK_SIZE = 524288  # 512 KB - достаточно для парсинга структуры PDF
+    # Для первого запроса возвращаем весь файл с 200 OK
+    # PDF.js увидит Accept-Ranges: bytes и начнет делать Range-запросы
+    # Благодаря StreamingResponse клиент может начать обработку до полной загрузки
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     is_initial_request = not range_header
     
     if range_header:
         get_kwargs["Range"] = range_header
-    elif file_size:
-        # Запрашиваем только первый чанк для оптимизации
-        chunk_end = min(INITIAL_CHUNK_SIZE - 1, file_size - 1)
-        get_kwargs["Range"] = f"bytes=0-{chunk_end}"
 
     try:
         obj = s3_client.get_object(**get_kwargs)
