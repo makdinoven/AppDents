@@ -32,8 +32,8 @@ REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 EBOOK_CONVERT_BIN = os.getenv("EBOOK_CONVERT_BIN", "ebook-convert")
 
 # Умеренные флаги (качество ок, память экономим)
-# PDF → EPUB - используем минимальные опции для стабильности
-PDF2EPUB_OPTS  = ""
+# PDF → EPUB - по умолчанию пробуем использовать внешний pdftohtml (быстрее и стабильнее)
+PDF2EPUB_OPTS  = os.getenv("CALIBRE_PDF2EPUB_OPTS", "--use-auto-toc --pdf-engine=pdftohtml")
 # EPUB → AZW3 (под Kindle)
 EPUB2AZW3_OPTS = ""
 # EPUB → MOBI (KF8/new)
@@ -58,14 +58,14 @@ CONVERT_HEARTBEAT_SECONDS = int(os.getenv("CALIBRE_PROGRESS_HEARTBEAT", "60"))
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
 CALIBRE_SUPPORTS_LOG_LEVEL_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_LOG_LEVEL")
 # --- новые константы сторожа ---
-STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "300"))   
-STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "600")) # 10 мин
+STALL_NO_OUTPUT_SECS   = int(os.getenv("CALIBRE_STALL_NO_OUTPUT_SECS", "150"))   
+STALL_NO_PROGRESS_SECS = int(os.getenv("CALIBRE_STALL_NO_PROGRESS_SECS", "300")) # 10 мин
 MAX_STAGE_SECS         = int(os.getenv("CALIBRE_MAX_STAGE_SECS", "5400"))
-MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "2"))
-# Доп. опции на ретраях (более мягкие эвристики)
+MAX_CONVERT_RETRIES = int(os.getenv("CALIBRE_MAX_CONVERT_RETRIES", "3"))  # 3 попытки: обычная → нормализация → агрессивное упрощение
+# Доп. опции на ретраях (более мягкие эвристики + внешний движок)
 PDF2EPUB_RETRY_OPTS = os.getenv(
     "CALIBRE_PDF2EPUB_RETRY_OPTS",
-    "--enable-heuristics --unwrap-factor 0.18"
+    "--use-auto-toc --pdf-engine=pdftohtml --enable-heuristics --unwrap-factor 0.18"
 )
 MIN_EPUB_ABS_BYTES = int(os.getenv("CALIBRE_MIN_EPUB_ABS_BYTES", str(512 * 1024)))  # ≥ 512KB
 MIN_EPUB_RATIO     = float(os.getenv("CALIBRE_MIN_EPUB_RATIO", "0.01"))             # ≥ 1% от размера PDF
@@ -164,6 +164,48 @@ def _which(cmd: str) -> str | None:
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
     return None
+def _simplify_pdf_aggressive(book_id: int, src_pdf: str, workdir: str) -> tuple[bool, str | None]:
+    """
+    Агрессивное упрощение PDF через Ghostscript:
+    - Конвертирует в изображения (растеризация)
+    - Удаляет сложные векторные объекты
+    - Оптимизирует для конверсии
+    """
+    if not _which("gs"):
+        return False, None
+    
+    out_pdf = os.path.join(workdir, "in.simplified.pdf")
+    # Растеризуем с разумным разрешением (150 dpi для быстроты, 300 для качества)
+    dpi = "150"
+    
+    _log(book_id, f"simplify: aggressive rasterization at {dpi} dpi")
+    rc, _, _ = _run([
+        "gs",
+        "-dBATCH", "-dNOPAUSE", "-dSAFER",
+        "-sDEVICE=pdfwrite",
+        "-dPDFSETTINGS=/ebook",  # оптимизация для e-book
+        "-dColorImageResolution=" + dpi,
+        "-dGrayImageResolution=" + dpi,
+        "-dMonoImageResolution=" + dpi,
+        "-dDownsampleColorImages=true",
+        "-dDownsampleGrayImages=true",
+        "-dDownsampleMonoImages=true",
+        "-dColorImageDownsampleType=/Bicubic",
+        "-dGrayImageDownsampleType=/Bicubic",
+        "-dEmbedAllFonts=false",  # не встраивать шрифты
+        "-dSubsetFonts=false",
+        "-sOutputFile=" + out_pdf,
+        src_pdf
+    ], book_id=book_id, fmt=BookFileFormat.EPUB, phase="simplify")
+    
+    if rc == 0 and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 0:
+        _log(book_id, f"simplify: ok → {out_pdf}")
+        return True, out_pdf
+    
+    _log(book_id, f"simplify: failed rc={rc}")
+    return False, None
+
+
 def _normalize_pdf_sequence(book_id: int, src_pdf: str, workdir: str, *, strategy: str) -> tuple[str, str]:
     """
     Прогоняет src_pdf через цепочку нормализаций (gs → mutool → qpdf),
@@ -269,6 +311,17 @@ def _convert_pdf_to_epub_with_retries(
 
         # ещё не исчерпали обычные ретраи → нормализуем и повторим
         _log(book_id, f"epub: attempt {attempt} failed (rc={rc}), trying PDF normalize…")
+        
+        # На второй попытке пробуем агрессивное упрощение
+        if attempt == 2:
+            _log(book_id, "epub: trying aggressive PDF simplification (rasterization)")
+            ok_simp, simp_pdf = _simplify_pdf_aggressive(book_id, src_pdf_current, os.path.dirname(out_epub))
+            if ok_simp and simp_pdf:
+                src_pdf_current = simp_pdf
+                _log(book_id, "epub: simplified PDF → retry")
+                continue
+        
+        # Обычная нормализация
         src_pdf_current, used = _normalize_pdf_sequence(
             book_id, src_pdf_current, os.path.dirname(out_epub),
             strategy=PDF_PREFLIGHT_STRATEGY
@@ -658,61 +711,64 @@ def _run(
         events = sel.select(timeout=1.0)
         now = time.monotonic()
 
-        if not events:
-            # CPU-пульс раз в ~15 сек
-            if proc_obj and (now - last_cpu_check) >= 15.0:
+        # CPU-пульс (проверяем всегда, не только при отсутствии событий)
+        if proc_obj and (now - last_cpu_check) >= 15.0:
+            try:
+                ct = proc_obj.cpu_times()
+                cpu_time = float(getattr(ct, "user", 0.0)) + float(getattr(ct, "system", 0.0))
+                if cpu_time - last_cpu_time >= 1.0:
+                    last_any_activity_ts = now
+                last_cpu_time = cpu_time
+            except Exception:
+                pass
+            last_cpu_check = now
+
+        # heartbeat (проверяем всегда)
+        if (
+            book_id is not None and fmt is not None and
+            CONVERT_HEARTBEAT_SECONDS > 0 and
+            (now - last_heartbeat_ts) >= CONVERT_HEARTBEAT_SECONDS
+        ):
+            elapsed = now - start_time
+            _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
+            last_heartbeat_ts = now
+
+        # «нет прогресса» - критично проверять всегда, независимо от вывода!
+        if STALL_NO_PROGRESS_SECS and (now - last_progress_ts) >= STALL_NO_PROGRESS_SECS:
+            if book_id is not None and fmt is not None:
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
+                              f"no progress for {int(now - last_progress_ts)}s → terminate")
                 try:
-                    ct = proc_obj.cpu_times()
-                    cpu_time = float(getattr(ct, "user", 0.0)) + float(getattr(ct, "system", 0.0))
-                    if cpu_time - last_cpu_time >= 1.0:
-                        last_any_activity_ts = now
-                    last_cpu_time = cpu_time
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_progress"})
                 except Exception:
                     pass
-                last_cpu_check = now
+            _pg_kill(signal.SIGTERM)
+            break
 
-            # heartbeat
-            if (
-                book_id is not None and fmt is not None and
-                CONVERT_HEARTBEAT_SECONDS > 0 and
-                (now - last_heartbeat_ts) >= CONVERT_HEARTBEAT_SECONDS
-            ):
-                elapsed = now - start_time
-                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
-                last_heartbeat_ts = now
+        # «тишина» - только при отсутствии событий
+        if not events and STALL_NO_OUTPUT_SECS and (now - last_any_activity_ts) >= STALL_NO_OUTPUT_SECS:
+            if book_id is not None and fmt is not None:
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
+                              f"no output/progress for {int(now - last_any_activity_ts)}s → terminate")
+                try:
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_output"})
+                except Exception:
+                    pass
+            _pg_kill(signal.SIGTERM)
+            break
 
-            # «тишина»
-            if STALL_NO_OUTPUT_SECS and (now - last_any_activity_ts) >= STALL_NO_OUTPUT_SECS:
-                if book_id is not None and fmt is not None:
-                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
-                                  f"no output/progress for {int(now - last_any_activity_ts)}s → terminate")
-                    try:
-                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_output"})
-                    except Exception:
-                        pass
-                _pg_kill(signal.SIGTERM)
+        # общий таймаут (проверяем всегда)
+        if MAX_STAGE_SECS and (now - start_time) >= MAX_STAGE_SECS:
+            if book_id is not None and fmt is not None:
+                _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now - start_time)}s → kill")
+                try:
+                    rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "max_stage"})
+                except Exception:
+                    pass
+            _pg_kill(signal.SIGKILL)
+            break
 
-            # «нет прогресса»
-            if STALL_NO_PROGRESS_SECS and (now - last_progress_ts) >= STALL_NO_PROGRESS_SECS:
-                if book_id is not None and fmt is not None:
-                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} stalled: "
-                                  f"no progress for {int(now - last_progress_ts)}s → terminate")
-                    try:
-                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "no_progress"})
-                    except Exception:
-                        pass
-                _pg_kill(signal.SIGTERM)
-
-            # общий таймаут
-            if MAX_STAGE_SECS and (now - start_time) >= MAX_STAGE_SECS:
-                if book_id is not None and fmt is not None:
-                    _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} timeout after {int(now - start_time)}s → kill")
-                    try:
-                        rds.hset(_k_fmt(book_id, fmt.value), mapping={"stalled": "1", "stall_kind": "max_stage"})
-                    except Exception:
-                        pass
-                _pg_kill(signal.SIGKILL)
-
+        if not events:
             if proc.poll() is not None and not sel.get_map():
                 break
             continue
@@ -735,17 +791,6 @@ def _run(
                         last_any_activity_ts = now
             else:
                 sel.unregister(stream)
-
-        # повторный heartbeat, если надо
-        now = time.monotonic()
-        if (
-            book_id is not None and fmt is not None and
-            CONVERT_HEARTBEAT_SECONDS > 0 and
-            (now - last_heartbeat_ts) >= CONVERT_HEARTBEAT_SECONDS
-        ):
-            elapsed = now - start_time
-            _log(book_id, f"{_fmt_label(fmt)}:{phase or 'convert'} still running ({int(elapsed)}s elapsed)")
-            last_heartbeat_ts = now
 
         if proc.poll() is not None and not sel.get_map():
             break
