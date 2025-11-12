@@ -82,6 +82,24 @@ def _s3_key_from_url(url: str) -> str:
     return path
 
 
+def _generate_filename(book: Book, format: str) -> str:
+    """
+    Генерирует безопасное имя файла для скачивания.
+    Использует slug, или очищенный title, или id книги.
+    """
+    import re
+    
+    if book.slug:
+        base_name = book.slug
+    elif book.title:
+        # Очищаем title от недопустимых символов для имени файла
+        base_name = re.sub(r'[^\w\s-]', '', book.title).strip().replace(' ', '-').lower()[:50]
+    else:
+        base_name = f"book-{book.id}"
+    
+    return f"{base_name}.{format.lower()}"
+
+
 # ── API ─────────────────────────────────────────────────────────────────────
 
 @router.get("/{book_id}/assets", summary="Список форматов и аудио по книге")
@@ -111,7 +129,7 @@ def get_book_assets(
     files = []
     for f in book.files:
         format_value = f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format)
-        filename = f"{book.slug}.{format_value.lower()}" if owns else None
+        filename = _generate_filename(book, format_value) if owns else None
         
         files.append({
             "format": format_value,
@@ -166,8 +184,7 @@ def download_book_file(
         raise HTTPException(status_code=404, detail=f"File in format {fmt} not found")
 
     # Генерируем имя файла для скачивания
-    # Используем slug книги (безопасный для URL) + расширение формата
-    filename = f"{book.slug}.{fmt.value.lower()}"
+    filename = _generate_filename(book, fmt.value)
     
     return {"url": _sign(f.s3_url, filename=filename)}
 

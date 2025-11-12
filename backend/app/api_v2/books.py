@@ -1039,10 +1039,21 @@ def get_my_book_detail(
         except Exception:
             return None
 
+    def _generate_filename(format: str) -> str:
+        """Генерирует безопасное имя файла для скачивания"""
+        import re
+        if book.slug:
+            base_name = book.slug
+        elif book.title:
+            base_name = re.sub(r'[^\w\s-]', '', book.title).strip().replace(' ', '-').lower()[:50]
+        else:
+            base_name = f"book-{book.id}"
+        return f"{base_name}.{format.lower()}"
+    
     files_download = []
     for f in (book.files or []):
         fmt = getattr(f.file_format, "value", f.file_format)
-        filename = f"{book.slug}.{fmt.lower()}"
+        filename = _generate_filename(fmt)
         files_download.append({
             "file_format": fmt,
             "download_url": _sign_with_filename(f.s3_url, filename),
