@@ -192,8 +192,8 @@ def stream_book_pdf(
     Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
     Доступно владельцам книги и администраторам.
     
-    Для запросов без Range header отдает только первые 64KB (достаточно для метаданных PDF),
-    что заставляет клиента использовать Range запросы с самого начала.
+    Для запросов без Range header возвращает полный файл (200 OK).
+    Для Range запросов возвращает частичный контент (206 Partial Content).
     """
 
     # Проверка авторизации
@@ -218,8 +218,8 @@ def stream_book_pdf(
     file_size = None
     is_initial_request = not range_header
     
-    # Если нет Range header, отдаем только первые 64KB для метаданных PDF
-    # Это заставит react-pdf использовать Range запросы с самого начала
+    # Если нет Range header, возвращаем полный файл
+    # Проблема с множественными запросами решается на фронтенде через ленивую загрузку страниц
     if is_initial_request:
         # Получаем размер файла через head_object (быстро, без загрузки)
         try:
@@ -231,11 +231,6 @@ def stream_book_pdf(
         except Exception as e:
             logger.error("S3 head_object error: %s", e)
             raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
-        
-        # Отдаем только первые 64KB (65536 байт) - достаточно для метаданных PDF
-        # PDF.js обычно запрашивает первые ~32KB для метаданных
-        initial_chunk_size = min(65536, file_size)
-        range_header = f"bytes=0-{initial_chunk_size - 1}"
     
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     if range_header:
@@ -264,22 +259,26 @@ def stream_book_pdf(
         "Content-Disposition": PDF_CONTENT_DISPOSITION,
         "Cache-Control": PDF_CACHE_CONTROL,
     }
-    if content_length is not None:
-        headers["Content-Length"] = str(content_length)
     
-    # Для первого запроса устанавливаем Content-Range с полным размером файла,
-    # чтобы PDF.js знал реальный размер файла и мог делать Range запросы
-    if is_initial_request and file_size is not None:
-        # Формат: bytes start-end/total
-        headers["Content-Range"] = f"bytes 0-{content_length - 1 if content_length else 0}/{file_size}"
-        # Используем 206 для первого запроса, чтобы PDF.js понял, что это частичный контент
-        status_code = 206
+    # Для первого запроса возвращаем 200 OK с полным файлом
+    # PDF.js ожидает 200 OK для первого запроса без Range header
+    if is_initial_request:
+        # Устанавливаем Content-Length равным полному размеру файла
+        if file_size is not None:
+            headers["Content-Length"] = str(file_size)
+        elif content_length is not None:
+            headers["Content-Length"] = str(content_length)
+        status_code = 200
     elif content_range:
-        # Для Range запросов используем Content-Range от S3
+        # Для Range запросов используем Content-Range от S3 и 206 Partial Content
         headers["Content-Range"] = content_range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
         status_code = 206
     else:
-        # Fallback (не должно происходить в нормальной работе)
+        # Fallback для полного файла без Range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
         status_code = 200
 
     if metadata.get("asset"):
