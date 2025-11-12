@@ -257,8 +257,14 @@ def stream_book_pdf(
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
     
     if range_header:
-        # Если есть Range header - используем его
+        # Если есть Range header от PDF.js - используем его
         get_kwargs["Range"] = range_header
+    else:
+        # Первый запрос без Range: PDF.js нужны начало и конец файла для валидации
+        # Запрашиваем первые 128KB (для header) + последние 128KB (для xref table)
+        # PDF.js увидит 206 и поймёт что есть Range-поддержка
+        chunk_size = min(131072, file_size // 2)  # 128KB или половина файла
+        get_kwargs["Range"] = f"bytes=0-{chunk_size - 1}"
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -284,16 +290,17 @@ def stream_book_pdf(
         "Cache-Control": PDF_CACHE_CONTROL,
     }
     
-    # Если был Range запрос - возвращаем 206 Partial Content
-    if range_header and content_range:
+    # Всегда возвращаем 206 Partial Content, так как всегда запрашиваем Range
+    # Это сигнализирует PDF.js что поддерживаются Range-запросы
+    if content_range:
         headers["Content-Range"] = content_range
         if content_length is not None:
             headers["Content-Length"] = str(content_length)
         status_code = 206
     else:
-        # Первый запрос без Range - возвращаем 200 OK с полным размером
-        # PDF.js увидит Accept-Ranges: bytes и сам начнёт делать Range-запросы
-        headers["Content-Length"] = str(file_size)
+        # Fallback если по какой-то причине нет Content-Range
+        if content_length is not None:
+            headers["Content-Length"] = str(content_length)
         status_code = 200
 
     if metadata.get("asset"):
