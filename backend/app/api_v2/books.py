@@ -427,6 +427,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
                 .selectinload(Author.books).selectinload(Book.landings),
             selectinload(BookLanding.books).selectinload(Book.tags),
             selectinload(BookLanding.books).selectinload(Book.publishers),
+            selectinload(BookLanding.books).selectinload(Book.files),
         )
         .filter(BookLanding.page_name == page_name)
         .first()
@@ -454,6 +455,15 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
 
     # Подсчёт общего количества страниц
     total_pages = sum(getattr(b, "page_count", 0) or 0 for b in landing.books)
+    
+    # Агрегируем доступные форматы из всех книг лендинга
+    available_formats_set = set()
+    for b in landing.books:
+        for f in (getattr(b, "files", []) or []):
+            if f.s3_url:
+                fmt = getattr(f.file_format, "value", f.file_format)
+                available_formats_set.add(fmt)
+    available_formats = sorted(list(available_formats_set))
     
     # Книги (только превью)
     books = [
@@ -560,6 +570,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         "books": books,
         "authors": authors,
         "tags": tags,
+        "available_formats": available_formats,
     }
 
 
@@ -812,6 +823,15 @@ def _serialize_book_card(bl: BookLanding) -> dict:
                 publishers_map[p.id] = {"id": p.id, "name": p.name}
     publishers = list(publishers_map.values())
 
+    # Агрегируем доступные форматы из всех книг лендинга
+    available_formats_set = set()
+    for b in (bl.books or []):
+        for f in (getattr(b, "files", []) or []):
+            if f.s3_url:
+                fmt = getattr(f.file_format, "value", f.file_format)
+                available_formats_set.add(fmt)
+    available_formats = sorted(list(available_formats_set))
+
     return {
         "id": bl.id,
         "landing_name": bl.landing_name or "",
@@ -826,6 +846,7 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "first_tag": first_tag,
         "main_image": _landing_main_image_from_books(bl),
         "book_ids": book_ids,
+        "available_formats": available_formats,
     }
 
 
@@ -855,6 +876,7 @@ def book_landing_cards(
               selectinload(BookLanding.books).selectinload(Book.authors),
               selectinload(BookLanding.books).selectinload(Book.tags),
               selectinload(BookLanding.books).selectinload(Book.publishers),
+              selectinload(BookLanding.books).selectinload(Book.files),
           )
           .filter(BookLanding.is_hidden.is_(False))
     )
@@ -1026,6 +1048,13 @@ def get_my_book_detail(
             "download_url": _sign(a.s3_url),
         })
 
+    available_formats = []
+    for f in (book.files or []):
+        if f.s3_url:  # только существующие файлы
+            fmt = getattr(f.file_format, "value", f.file_format)
+            if fmt not in available_formats:
+                available_formats.append(fmt)
+
     return {
         "id": book.id,
         "title": book.title,
@@ -1036,6 +1065,7 @@ def get_my_book_detail(
         "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
         "files_download": files_download,
         "audio_download": audio_download,
+        "available_formats": available_formats,
     }
 
 

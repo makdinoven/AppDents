@@ -298,6 +298,7 @@ class BookLandingCardResponse(BaseModel):
     gallery: List[BookLandingGalleryItem] = []
     main_image: str | None = None
     book_ids: list[int] | None = None
+    available_formats: List[str] = []  # форматы всех книг лендинга
 
 class BookLandingCardsResponse(BaseModel):
     total: int
@@ -320,6 +321,7 @@ class UserBookDetailResponse(BaseModel):
     publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
     files_download: List[BookFileDownload] = []
     audio_download: List[BookAudioDownload] = []
+    available_formats: List[str] = []  # ["PDF", "EPUB", ...]
 
 class AuthorRef(BaseModel):
     id: int
