@@ -832,6 +832,13 @@ def _serialize_book_card(bl: BookLanding) -> dict:
                 available_formats_set.add(fmt)
     available_formats = sorted(list(available_formats_set))
 
+    # Берём дату публикации из первой книги лендинга, у которой она есть
+    publication_date = None
+    for b in (bl.books or []):
+        if getattr(b, "publication_date", None):
+            publication_date = b.publication_date
+            break
+
     return {
         "id": bl.id,
         "landing_name": bl.landing_name or "",
@@ -847,6 +854,7 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "main_image": _landing_main_image_from_books(bl),
         "book_ids": book_ids,
         "available_formats": available_formats,
+        "publication_date": publication_date,
     }
 
 
@@ -1003,7 +1011,7 @@ def get_my_book_detail(
     # проверка владения: join к m2m user.books
     book = (
         db.query(Book)
-          .options(selectinload(Book.files), selectinload(Book.audio_files))
+          .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.authors), selectinload(Book.publishers))
           .join(User.books)
           .filter(User.id == current_user.id, Book.id == book_id)
           .first()
@@ -1015,7 +1023,7 @@ def get_my_book_detail(
         if is_admin:
             book = (
                 db.query(Book)
-                  .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.publishers))
+                  .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.authors), selectinload(Book.publishers))
                   .filter(Book.id == book_id)
                   .first()
             )
@@ -1076,6 +1084,14 @@ def get_my_book_detail(
             if fmt not in available_formats:
                 available_formats.append(fmt)
 
+    # Найдем reader_url - публичную ссылку на PDF (без подписи)
+    reader_url = None
+    for f in (book.files or []):
+        fmt = getattr(f.file_format, "value", f.file_format)
+        if fmt == "PDF" and f.s3_url:
+            reader_url = f.s3_url
+            break
+
     return {
         "id": book.id,
         "title": book.title,
@@ -1084,6 +1100,8 @@ def get_my_book_detail(
         "publication_date": getattr(book, "publication_date", None),
         "page_count": getattr(book, "page_count", None),
         "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
+        "authors": [{"id": a.id, "name": a.name, "photo": a.photo} for a in (book.authors or [])],
+        "reader_url": reader_url,
         "files_download": files_download,
         "audio_download": audio_download,
         "available_formats": available_formats,
