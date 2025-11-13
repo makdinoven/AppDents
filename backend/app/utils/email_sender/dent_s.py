@@ -944,3 +944,318 @@ def send_abandoned_checkout_email(
 </html>
 """
     send_html_email(recipient_email, loc["subject"], body_html)
+
+
+# --------------------------------------------------------------------------
+#  ПРИГЛАШЕНИЕ НА ПЛАТФОРМУ (от пользователя)
+# --------------------------------------------------------------------------
+def send_invitation_email(
+    recipient_email: str,
+    sender_email: str,
+    referral_code: str,
+    region: str = "EN"
+) -> None:
+    """Письмо-приглашение от пользователя на платформу Dent-S."""
+    register_url = f"https://dent-s.com/?rc={referral_code}"
+    
+    translations = {
+        "EN": {
+            "subject": "You've been invited to Dent-S platform!",
+            "heading": "Join Dent-S Platform",
+            "greeting": f"{sender_email} invites you to join our dental online learning platform!",
+            "intro": "Discover a world of professional dental education at your fingertips.",
+            "benefits_title": "What awaits you:",
+            "benefits": [
+                "Hundreds of online courses from leading experts",
+                "Extensive library of dental books and materials",
+                "Affordable prices and special offers",
+                "Learn at your own pace, anytime, anywhere"
+            ],
+            "cta": "Join Dent-S today and start your learning journey!",
+            "button": "Explore Platform",
+            "footer": "This invitation was sent by {sender}. If you received this email by mistake, please ignore it."
+        },
+        "RU": {
+            "subject": "Вас пригласили на платформу Dent-S!",
+            "heading": "Присоединяйтесь к Dent-S",
+            "greeting": f"{sender_email} приглашает вас на нашу платформу стоматологического онлайн-обучения!",
+            "intro": "Откройте для себя мир профессионального стоматологического образования.",
+            "benefits_title": "Что вас ждёт:",
+            "benefits": [
+                "Сотни онлайн-курсов от ведущих экспертов",
+                "Обширная библиотека стоматологических книг и материалов",
+                "Доступные цены и специальные предложения",
+                "Обучайтесь в своём темпе, в любое время и в любом месте"
+            ],
+            "cta": "Присоединяйтесь к Dent-S сегодня и начните своё обучение!",
+            "button": "Посмотреть платформу",
+            "footer": "Это приглашение отправлено пользователем {sender}. Если вы получили это письмо по ошибке, просто проигнорируйте его."
+        },
+        "ES": {
+            "subject": "¡Te han invitado a la plataforma Dent-S!",
+            "heading": "Únete a Dent-S",
+            "greeting": f"¡{sender_email} te invita a unirte a nuestra plataforma de formación dental online!",
+            "intro": "Descubre un mundo de educación dental profesional al alcance de tu mano.",
+            "benefits_title": "Lo que te espera:",
+            "benefits": [
+                "Cientos de cursos online de expertos líderes",
+                "Amplia biblioteca de libros y materiales dentales",
+                "Precios asequibles y ofertas especiales",
+                "Aprende a tu propio ritmo, en cualquier momento y lugar"
+            ],
+            "cta": "¡Únete a Dent-S hoy y comienza tu viaje de aprendizaje!",
+            "button": "Ver plataforma",
+            "footer": "Esta invitación fue enviada por {sender}. Si recibiste este correo por error, ignóralo."
+        },
+        "IT": {
+            "subject": "Sei stato invitato alla piattaforma Dent-S!",
+            "heading": "Unisciti a Dent-S",
+            "greeting": f"{sender_email} ti invita a unirti alla nostra piattaforma di formazione odontoiatrica online!",
+            "intro": "Scopri un mondo di educazione dentale professionale a portata di mano.",
+            "benefits_title": "Cosa ti aspetta:",
+            "benefits": [
+                "Centinaia di corsi online da esperti di primo piano",
+                "Vasta biblioteca di libri e materiali dentali",
+                "Prezzi accessibili e offerte speciali",
+                "Impara al tuo ritmo, sempre e ovunque"
+            ],
+            "cta": "Unisciti a Dent-S oggi e inizia il tuo percorso di apprendimento!",
+            "button": "Visualizza piattaforma",
+            "footer": "Questo invito è stato inviato da {sender}. Se hai ricevuto questa email per errore, ignorala."
+        },
+        "PT": {
+            "subject": "Você foi convidado para a plataforma Dent-S!",
+            "heading": "Junte-se ao Dent-S",
+            "greeting": f"{sender_email} convida você para nossa plataforma de ensino odontológico online!",
+            "intro": "Descubra um mundo de educação odontológica profissional ao seu alcance.",
+            "benefits_title": "O que te espera:",
+            "benefits": [
+                "Centenas de cursos online de especialistas líderes",
+                "Ampla biblioteca de livros e materiais odontológicos",
+                "Preços acessíveis e ofertas especiais",
+                "Aprenda no seu ritmo, a qualquer hora e em qualquer lugar"
+            ],
+            "cta": "Junte-se ao Dent-S hoje e comece sua jornada de aprendizado!",
+            "button": "Ver plataforma",
+            "footer": "Este convite foi enviado por {sender}. Se você recebeu este email por engano, ignore-o."
+        },
+        "AR": {
+            "subject": "تمت دعوتك إلى منصة Dent-S!",
+            "heading": "انضم إلى Dent-S",
+            "greeting": f"{sender_email} يدعوك للانضمام إلى منصتنا للتعليم الإلكتروني في طب الأسنان!",
+            "intro": "اكتشف عالم التعليم المهني في طب الأسنان في متناول يدك.",
+            "benefits_title": "ما ينتظرك:",
+            "benefits": [
+                "المئات من الدورات عبر الإنترنت من الخبراء الرائدين",
+                "مكتبة واسعة من كتب ومواد طب الأسنان",
+                "أسعار معقولة وعروض خاصة",
+                "تعلم بالسرعة التي تناسبك، في أي وقت وفي أي مكان"
+            ],
+            "cta": "انضم إلى Dent-S اليوم وابدأ رحلتك التعليمية!",
+            "button": "عرض المنصة",
+            "footer": "تم إرسال هذه الدعوة من قبل {sender}. إذا تلقيت هذا البريد الإلكتروني بالخطأ، يرجى تجاهله."
+        },
+    }
+    
+    loc = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
+    
+    benefits_html = "".join([f"<li style='margin:8px 0;'>{b}</li>" for b in loc["benefits"]])
+    
+    body_html = f"""\
+<!DOCTYPE html>
+<html lang="{region.lower()}"{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{loc["subject"]}</title>
+</head>
+<body style="margin:0;padding:20px;background:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center">
+      <a href="https://dent-s.com/">
+        <img src="https://cdn.dent-s.com/logo-dents.png" width="150" style="max-width:150px;width:100%;">
+      </a>
+    </td></tr>
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#edf8ff;border-radius:20px;padding:20px;box-shadow:0 0 10px rgba(0,0,0,0.08);text-align:center;">
+        <tr><td>
+          <h2 style="margin:0 0 16px;font-size:32px;color:#7fdfd5;font-weight:600;">{loc["heading"]}</h2>
+        </td></tr>
+        <tr><td style="font-size:18px;line-height:28px;font-weight:500;padding:10px;text-align:left;">
+          <p style="margin:0 0 16px;font-size:20px;font-weight:600;text-align:center;">{loc["greeting"]}</p>
+          <p style="margin:0 0 16px;">{loc["intro"]}</p>
+          <p style="margin:16px 0 8px;font-size:20px;font-weight:600;color:#01433d;">{loc["benefits_title"]}</p>
+          <ul style="margin:0 0 16px;padding-left:20px;text-align:left;">
+            {benefits_html}
+          </ul>
+          <p style="margin:16px 0 24px;font-weight:600;text-align:center;">{loc["cta"]}</p>
+          <p style="margin:24px 0;text-align:center;">
+            <a href="{register_url}" style="display:inline-block;padding:14px 40px;background:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:600;font-size:18px;">{loc["button"]}</a>
+          </p>
+          <p style="margin:20px 0 0;font-size:14px;color:#64748b;text-align:center;">{loc["footer"].format(sender=sender_email)}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+    send_html_email(recipient_email, loc["subject"], body_html)
+
+
+# --------------------------------------------------------------------------
+#  ПОДТВЕРЖДЕНИЕ ОТПРАВКИ ПРИГЛАШЕНИЯ
+# --------------------------------------------------------------------------
+def send_invitation_confirmation_email(
+    sender_email: str,
+    recipient_email: str,
+    region: str = "EN"
+) -> None:
+    """Письмо-подтверждение отправителю о том, что приглашение отправлено."""
+    referral_url = "https://dent-s.com/referrals"
+    
+    translations = {
+        "EN": {
+            "subject": "Invitation sent successfully",
+            "heading": "Invitation Sent!",
+            "message": f"You have successfully sent an invitation to <strong>{recipient_email}</strong>.",
+            "info": "If they register using your referral link, you will receive 50% cashback from all their purchases on the platform.",
+            "tip_title": "How it works:",
+            "tips": [
+                "Your colleague registers using your unique link",
+                "They make purchases on the platform",
+                "You automatically receive 50% of the purchase amount to your balance",
+                "You can use the balance to purchase any courses or books"
+            ],
+            "cta": "Track your referrals and earnings in your personal account.",
+            "button": "View My Referrals",
+            "footer": "Thank you for helping Dent-S grow!"
+        },
+        "RU": {
+            "subject": "Приглашение успешно отправлено",
+            "heading": "Приглашение отправлено!",
+            "message": f"Вы успешно отправили приглашение для <strong>{recipient_email}</strong>.",
+            "info": "Если они зарегистрируются по вашей реферальной ссылке, вы будете получать 50% кэшбэка со всех их покупок на платформе.",
+            "tip_title": "Как это работает:",
+            "tips": [
+                "Ваш коллега регистрируется по вашей уникальной ссылке",
+                "Он совершает покупки на платформе",
+                "Вы автоматически получаете 50% от суммы покупки на свой баланс",
+                "Вы можете использовать баланс для покупки любых курсов или книг"
+            ],
+            "cta": "Отслеживайте своих рефералов и заработок в личном кабинете.",
+            "button": "Мои рефералы",
+            "footer": "Спасибо, что помогаете Dent-S расти!"
+        },
+        "ES": {
+            "subject": "Invitación enviada con éxito",
+            "heading": "¡Invitación enviada!",
+            "message": f"Has enviado con éxito una invitación a <strong>{recipient_email}</strong>.",
+            "info": "Si se registran usando tu enlace de referido, recibirás 50% de cashback de todas sus compras en la plataforma.",
+            "tip_title": "Cómo funciona:",
+            "tips": [
+                "Tu colega se registra usando tu enlace único",
+                "Realizan compras en la plataforma",
+                "Recibes automáticamente el 50% del monto de la compra en tu saldo",
+                "Puedes usar el saldo para comprar cualquier curso o libro"
+            ],
+            "cta": "Rastrea tus referidos y ganancias en tu cuenta personal.",
+            "button": "Ver mis referidos",
+            "footer": "¡Gracias por ayudar a crecer a Dent-S!"
+        },
+        "IT": {
+            "subject": "Invito inviato con successo",
+            "heading": "Invito inviato!",
+            "message": f"Hai inviato con successo un invito a <strong>{recipient_email}</strong>.",
+            "info": "Se si registrano usando il tuo link referral, riceverai il 50% di cashback da tutti i loro acquisti sulla piattaforma.",
+            "tip_title": "Come funziona:",
+            "tips": [
+                "Il tuo collega si registra usando il tuo link unico",
+                "Effettuano acquisti sulla piattaforma",
+                "Ricevi automaticamente il 50% dell'importo dell'acquisto sul tuo saldo",
+                "Puoi usare il saldo per acquistare qualsiasi corso o libro"
+            ],
+            "cta": "Traccia i tuoi referral e guadagni nel tuo account personale.",
+            "button": "Visualizza i miei referral",
+            "footer": "Grazie per aiutare Dent-S a crescere!"
+        },
+        "PT": {
+            "subject": "Convite enviado com sucesso",
+            "heading": "Convite enviado!",
+            "message": f"Você enviou com sucesso um convite para <strong>{recipient_email}</strong>.",
+            "info": "Se eles se registrarem usando seu link de indicação, você receberá 50% de cashback de todas as compras deles na plataforma.",
+            "tip_title": "Como funciona:",
+            "tips": [
+                "Seu colega se registra usando seu link único",
+                "Eles fazem compras na plataforma",
+                "Você recebe automaticamente 50% do valor da compra em seu saldo",
+                "Você pode usar o saldo para comprar qualquer curso ou livro"
+            ],
+            "cta": "Acompanhe suas indicações e ganhos em sua conta pessoal.",
+            "button": "Ver minhas indicações",
+            "footer": "Obrigado por ajudar o Dent-S a crescer!"
+        },
+        "AR": {
+            "subject": "تم إرسال الدعوة بنجاح",
+            "heading": "تم إرسال الدعوة!",
+            "message": f"لقد أرسلت بنجاح دعوة إلى <strong>{recipient_email}</strong>.",
+            "info": "إذا قاموا بالتسجيل باستخدام رابط الإحالة الخاص بك، ستحصل على 50% استرداد نقدي من جميع مشترياتهم على المنصة.",
+            "tip_title": "كيف يعمل:",
+            "tips": [
+                "يسجل زميلك باستخدام رابطك الفريد",
+                "يقومون بإجراء مشتريات على المنصة",
+                "تحصل تلقائيًا على 50% من قيمة الشراء في رصيدك",
+                "يمكنك استخدام الرصيد لشراء أي دورات أو كتب"
+            ],
+            "cta": "تتبع إحالاتك وأرباحك في حسابك الشخصي.",
+            "button": "عرض إحالاتي",
+            "footer": "شكرًا لمساعدتك Dent-S على النمو!"
+        },
+    }
+    
+    loc = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
+    
+    tips_html = "".join([f"<li style='margin:8px 0;'>{t}</li>" for t in loc["tips"]])
+    
+    body_html = f"""\
+<!DOCTYPE html>
+<html lang="{region.lower()}"{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{loc["subject"]}</title>
+</head>
+<body style="margin:0;padding:20px;background:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center">
+      <a href="https://dent-s.com/">
+        <img src="https://cdn.dent-s.com/logo-dents.png" width="150" style="max-width:150px;width:100%;">
+      </a>
+    </td></tr>
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#edf8ff;border-radius:20px;padding:20px;box-shadow:0 0 10px rgba(0,0,0,0.08);">
+        <tr><td>
+          <h2 style="margin:0 0 16px;font-size:32px;color:#7fdfd5;font-weight:600;text-align:center;">{loc["heading"]}</h2>
+        </td></tr>
+        <tr><td style="font-size:18px;line-height:28px;font-weight:500;padding:10px;">
+          <p style="margin:0 0 16px;text-align:center;">{loc["message"]}</p>
+          <p style="margin:0 0 16px;">{loc["info"]}</p>
+          <p style="margin:16px 0 8px;font-size:20px;font-weight:600;color:#01433d;">{loc["tip_title"]}</p>
+          <ul style="margin:0 0 16px;padding-left:20px;">
+            {tips_html}
+          </ul>
+          <p style="margin:16px 0 24px;font-weight:500;text-align:center;">{loc["cta"]}</p>
+          <p style="margin:24px 0;text-align:center;">
+            <a href="{referral_url}" style="display:inline-block;padding:14px 40px;background:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:600;font-size:18px;">{loc["button"]}</a>
+          </p>
+          <p style="margin:20px 0 0;font-size:14px;color:#64748b;text-align:center;">{loc["footer"]}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+    send_html_email(sender_email, loc["subject"], body_html)
