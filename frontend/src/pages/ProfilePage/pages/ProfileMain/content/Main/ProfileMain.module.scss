@@ -1,3 +1,8 @@
+.page_content {
+  @include flex-column();
+  gap: 80px;
+}
+
 .main_content {
   @include flex-column();
   gap: 10px;
@@ -147,6 +152,9 @@
 }
 
 @media (max-width: $middle-breakpoint) {
+  .page_content {
+    gap: 60px;
+  }
   .left_content {
     gap: 20px;
   }
@@ -176,6 +184,10 @@
 }
 
 @media (max-width: $mobile-breakpoint) {
+  .page_content {
+    gap: 30px;
+  }
+
   .profile,
   .settings {
     height: 140px;

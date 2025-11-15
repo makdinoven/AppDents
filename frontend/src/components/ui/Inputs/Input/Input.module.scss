@@ -38,6 +38,10 @@
     display: flex;
     width: 100%;
     min-width: 280px;
+
+    &:focus-within {
+      border-color: $primary-accent;
+    }
   }
 
   &.invite {

@@ -116,13 +116,11 @@ const ReferralSection = ({
             i
           </button>
         </p>
-        {/*{isStepsOpen && (*/}
         <ul className={`${s.steps} ${isStepsOpen ? s.open : ""}`}>
           {steps.map((step, i) => (
             <li key={i}>{step.step}</li>
           ))}
         </ul>
-        {/*)}*/}
         <p className={s.friends}>
           <Trans
             i18nKey={"profile.referral.friendsPurchases"}

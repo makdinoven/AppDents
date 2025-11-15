@@ -1,8 +1,6 @@
 import s from "./FriendMailInput.module.scss";
 import { Trans } from "react-i18next";
 import Form from "../../../../../../../../components/Modals/modules/Form/Form.tsx";
-// import { t } from "i18next";
-// import { userApi } from "../../../../../../../../api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../../../../../../store/store.ts";
 import { ChangePasswordType } from "../../../../../../../../api/userApi/types.ts";
@@ -12,7 +10,7 @@ import {
   AlertCirceIcon,
   CheckMark,
 } from "../../../../../../../../assets/icons";
-import { useEffect, useState } from "react";
+import { Ref, useEffect, useState } from "react";
 import EmailInput from "../../../../../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
 import { emailSchema } from "../../../../../../../../common/schemas/emailSchema.ts";
 import Button from "../../../../../../../../components/ui/Button/Button.tsx";
@@ -23,9 +21,10 @@ import { Alert } from "../../../../../../../../components/ui/Alert/Alert.tsx";
 
 interface FriendMailInputProps {
   closeModal: () => void;
+  ref: Ref<HTMLDivElement>;
 }
 
-const FriendMailInput = ({ closeModal }: FriendMailInputProps) => {
+const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
   const [loading, setLoading] = useState<boolean>(false);
   const [email, setEmail] = useState("");
@@ -77,7 +76,7 @@ const FriendMailInput = ({ closeModal }: FriendMailInputProps) => {
   };
 
   return (
-    <div className={s.modal}>
+    <div className={s.modal} ref={ref}>
       <ModalCloseButton
         className={s.close_modal_button}
         onClick={() => closeModal()}
@@ -108,7 +107,6 @@ const FriendMailInput = ({ closeModal }: FriendMailInputProps) => {
             variant="filled"
             loading={loading}
             disabled={loading}
-            onClick={() => {}}
           />
         </div>
       </Form>

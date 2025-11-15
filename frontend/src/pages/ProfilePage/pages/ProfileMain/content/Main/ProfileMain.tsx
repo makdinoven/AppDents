@@ -25,6 +25,8 @@ import { logout } from "../../../../../../store/slices/userSlice.ts";
 import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
 import FriendMailInput from "./modules/FriendMailInput/FriendMailInput.tsx";
 import ModalOverlay from "../../../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import useOutsideClick from "../../../../../../common/hooks/useOutsideClick.ts";
+import MyContent from "../../../modules/MyContent/MyContent.tsx";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -36,6 +38,7 @@ const ProfileMain = () => {
   const location = useLocation();
   const childKey = location.pathname.slice(1);
   const closeModalRef = useRef<() => void>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!courses.length) dispatch(getCourses());
@@ -55,8 +58,13 @@ const ProfileMain = () => {
     setShowInviteFriendModal(false);
   };
 
+  useOutsideClick(modalRef, () => {
+    handleModalClose();
+    closeModalRef.current?.();
+  });
+
   return (
-    <>
+    <div className={s.page_content}>
       <div key={childKey} className={s.main_content}>
         <div className={s.main_content_top}>
           <div className={s.profile}>
@@ -103,15 +111,18 @@ const ProfileMain = () => {
           openInviteFriendModal={() => setShowInviteFriendModal(true)}
         />
       </div>
+      <MyContent key="books" items={books} type="book" />
+      <MyContent key="courses" items={courses} />
+
       <ModalOverlay
         isVisibleCondition={showInviteFriendModal}
         modalPosition="top"
         customHandleClose={handleModalClose}
         onInitClose={(fn) => (closeModalRef.current = fn)}
       >
-        <FriendMailInput closeModal={handleModalClose} />
+        <FriendMailInput closeModal={handleModalClose} ref={modalRef} />
       </ModalOverlay>
-    </>
+    </div>
   );
 };
 
