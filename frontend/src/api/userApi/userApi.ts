@@ -97,4 +97,10 @@ export const userApi = {
   checkEmail(params: { email: string }) {
     return instance.post("validations/check-email", params);
   },
+
+  inviteFriend(data: { recipient_email: string; language: string }) {
+    return instance.post("wallet/send-invitation", data, {
+      headers: getAuthHeaders(),
+    });
+  },
 };

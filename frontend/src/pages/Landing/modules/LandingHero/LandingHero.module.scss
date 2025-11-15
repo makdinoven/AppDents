@@ -102,6 +102,16 @@ $arrow-w: 66px;
         background-position: center center;
         background-size: contain;
       }
+
+      svg {
+        height: 60%;
+        width: auto;
+        path,
+        rect {
+          stroke: $accent;
+          stroke-width: 8px;
+        }
+      }
     }
 
     .card_bottom {

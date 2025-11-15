@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
-import initialPhoto from "../../../../assets/no-pictures.png";
 import { CircleArrow } from "../../../../assets/icons/index.ts";
 import LandingHeroSkeleton from "../../../../components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
+import { NoPictures } from "../../../../assets";
 
 interface LandingHeroProps {
   data: any;
@@ -20,7 +20,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   const MOBILE_BREAKPOINT = 576;
 
   const [isMobile, setIsMobile] = useState(
-    window.innerWidth < MOBILE_BREAKPOINT
+    window.innerWidth < MOBILE_BREAKPOINT,
   );
 
   useEffect(() => {
@@ -65,10 +65,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({
                   {photo ? (
                     <img src={photo} alt="Course image" />
                   ) : (
-                    <div
-                      style={{ backgroundImage: `url(${initialPhoto})` }}
-                      className={s.no_photo}
-                    ></div>
+                    <NoPictures />
                   )}
                 </div>
               </div>

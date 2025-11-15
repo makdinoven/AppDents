@@ -15,6 +15,7 @@
   "forgotPassword": "Forgot your password?",
   "alreadyHaveAccount": "Already have an account?",
   "passwordResetMailSent": "A new password will be sent to your e-mail",
+  "passwordResetLabel": "Enter new password for reset",
   "passwordReset": "password reset",
   "feedbackTooltip": "Can't find the course you need? Fill out the form and we'll help you.",
   "reset": "reset",
@@ -332,13 +333,13 @@
     "referral": {
       "myReferrals": "My referrals",
       "balance": "Your balance: <1>{{count}}$</1>",
-      "spend": "Spend on any course!",
+      "spend": "Spend on any course or book!",
       "link": "Invite link:",
       "invite": "Invite a friend — earn a bonus.",
       "friendsPurchases": "<1>50%</1> of your friends’ purchases go straight to your balance!",
       "step_1": "1. Copy your personal link below.",
       "step_2": "2. Send it to a friend via WhatsApp, Telegram, email — whatever works for you.",
-      "step_3": "3. Your friend buys any course — for example, one that costs <1>$19</1>.",
+      "step_3": "3. Your friend buys any course or book — for example, one that costs <1>$19</1>.",
       "step_4": "4. You receive <1>50%</1> of their payment (e.g. <1>$9.50</1>) as credit in your wallet."
     },
     "bookPage": {
@@ -352,11 +353,19 @@
       }
     },
     "main": "Main",
+    "profile": "Profile",
+    "settings": "Settings",
     "user": "User:",
     "referrals": {
-      "email": "email",
+      "email": "Email",
       "invitation": "Invitation",
-      "totalCashback": "total cashback"
+      "totalCashback": "Total cashback",
+      "inviteFriend": "Invite a friend",
+      "enterFriendsMail": "Enter your friend's email to invite them to the site via your referral link",
+      "sendInvite": "Send invitation",
+      "inviteSuccess": "Invitation sent successfully! If the email does not arrive, check your Spam folder.",
+      "inviteFailed": "Invitation sending failed!",
+      "inviteFriendLabel": "Enter recipient's email"
     },
     "purchaseHistory": {
       "invitedUsers": "Invited users",

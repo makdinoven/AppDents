@@ -13,6 +13,7 @@ import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
 import DownloadSection from "./DownloadSection/DownloadSection.tsx";
+import { NoPictures } from "../../../../assets";
 
 const BookPage = () => {
   const { bookId } = useParams();
@@ -58,13 +59,12 @@ const BookPage = () => {
               <BackButton link={Path.profileMain} />
               <h3>{book.title}</h3>
               <div className={s.content}>
-                <div
-                  className={`${s.left_side} ${!book.cover_url && s.no_picture}`}
-                >
-                  <img
-                    src={book.cover_url || "/src/assets/no-pictures.png"}
-                    alt="preview"
-                  />
+                <div className={s.left_side}>
+                  {book.cover_url ? (
+                    <img src={book.cover_url} alt="preview" />
+                  ) : (
+                    <NoPictures />
+                  )}
                 </div>
                 <div className={s.right_side}>
                   <div className={s.info}>

@@ -1,11 +1,10 @@
 .section {
   display: flex;
   flex-direction: column;
-  border-radius: 25px;
+  border-radius: 20px;
   border: 1px solid $primary;
   width: 100%;
   height: 100%;
-  gap: 10px;
   overflow: hidden;
   @include clamped-p3;
 
@@ -15,11 +14,81 @@
   }
 }
 
-.copy_button {
-  min-width: unset;
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: auto;
+  column-gap: 20px;
+  justify-items: flex-end;
+}
+
+.copy_button,
+.invite_button {
   width: fit-content;
-  margin-left: auto;
   @include clamped-p3;
+  background-color: $accent;
+  color: $text-color;
+  padding: 5px 30px;
+  border-radius: 30px;
+  @include flex-center();
+  gap: 5px;
+  text-transform: uppercase;
+  height: 40px;
+  @include transition();
+  text-wrap: nowrap;
+
+  svg {
+    width: 24px;
+    height: 24px;
+
+    path {
+      stroke-width: 1.5;
+      stroke: $text-color;
+      @include transition();
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      color: $text-color-accent;
+
+      svg {
+        path {
+          stroke: $accent;
+          @include transition();
+        }
+      }
+    }
+  }
+}
+
+.invite_button {
+  background-color: transparent;
+  box-shadow: 0 0 0 1px $accent inset;
+  color: $accent;
+
+  svg {
+    path {
+      stroke: $accent;
+      stroke-width: 2.5;
+      @include transition();
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color;
+      color: $primary;
+      box-shadow: none;
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
 }
 
 .section_part {
@@ -29,7 +98,7 @@
 .section_header,
 .section_bottom,
 .section_middle {
-  padding: 10px 20px;
+  padding: 20px;
 }
 
 .section_middle {
@@ -43,22 +112,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  //@include horizontal-line(
-  //  $bottom: 0,
-  //  $right: 7%,
-  //  $height: 1.5px,
-  //  $width: 70%,
-  //  $color: $primary
-  //);
 }
 
 .spend {
   @include clamped-p3;
-  border-radius: 20px;
+  border-radius: 30px;
   margin-left: auto;
-  padding: 2px 15px;
-  height: fit-content;
+  padding: 5px 30px;
   text-align: center;
+  height: 40px;
 }
 
 .invite_row {
@@ -72,6 +134,7 @@
   color: $text-color;
   text-decoration: underline 1.5px;
   @include clamped-p3;
+  align-self: center;
 }
 
 .info_circle {
@@ -82,8 +145,8 @@
   cursor: pointer;
   border-radius: 50%;
   font-size: 16px;
-  color: $primary;
-  border: 1px solid $primary;
+  color: $primary-accent;
+  border: 1px solid $primary-accent;
   flex-shrink: 0;
   padding: 2px;
   user-select: none;
@@ -96,8 +159,8 @@
   }
 
   &:active {
-    background-color: $primary;
-    border-color: $primary;
+    background-color: $primary-accent;
+    border-color: $primary-accent;
     color: $background-color;
   }
 }
@@ -129,13 +192,17 @@
 .friends {
   span {
     font-weight: 500;
-    color: $primary;
+    color: $primary-accent;
   }
+}
+
+.highlight {
+  color: $primary-accent;
 }
 
 .highlighted {
   font-weight: 500;
-  color: $primary;
+  color: $primary-accent;
 }
 
 .section_bottom {
@@ -177,12 +244,49 @@
 }
 
 @media (max-width: $middle-breakpoint) {
-  .copy_button {
-    margin: unset;
+  .section_bottom {
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .section_header,
+  .section_bottom,
+  .section_middle {
+    padding: 10px;
+  }
+
+  .section_header {
+    flex-direction: column;
+    justify-content: center;
   }
 
   .spend {
-    margin: unset;
+    margin: 0;
+    padding: 5px 30px;
+    @include clamped-p3();
+    height: 30px;
+  }
+
+  .buttons {
+    gap: 10px;
+  }
+
+  .copy_button,
+  .invite_button {
+    height: 30px;
+    padding: 5px 20px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .invite_link_wrapper {
+    flex-wrap: nowrap;
+    text-wrap: nowrap;
   }
 }
 
@@ -192,18 +296,22 @@
     border-radius: 20px;
   }
 
+  .buttons {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    justify-items: center;
+  }
+
+  .spend {
+    margin: 0;
+    padding: 5px 30px;
+    @include clamped-p3();
+    height: 30px;
+    min-width: 200px;
+    max-width: 100%;
+    text-wrap: nowrap;
+  }
+
   .section_header {
-    flex-direction: column;
-  }
-
-  .section_header,
-  .section_bottom,
-  .section_middle {
-    padding: 7px 15px;
-  }
-
-  .invite_link_wrapper {
-    display: flex;
     flex-direction: column;
   }
 

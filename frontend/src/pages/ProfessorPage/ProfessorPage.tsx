@@ -20,8 +20,8 @@ import {
 import { CartItemType } from "../../api/cartApi/types.ts";
 import SimpleBuySection from "./modules/SimpleBuySection/SimpleBuySection.tsx";
 import ProfessorBuySection from "./modules/BuySection/ProfessorBuySection.tsx";
-import INITIAL_PHOTO from "../../assets/no-user.png";
 import { Trans } from "react-i18next";
+import { NoUser } from "../../assets";
 
 const ProfessorPage = () => {
   const [searchParams] = useSearchParams();
@@ -191,7 +191,7 @@ const ProfessorPage = () => {
                       {professor.photo ? (
                         <img src={professor.photo} alt="Professor image" />
                       ) : (
-                        <img src={INITIAL_PHOTO} alt="photo" />
+                        <NoUser />
                       )}
                     </div>
                   </div>

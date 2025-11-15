@@ -1,6 +1,6 @@
 import s from "./PhotoUploader.module.scss";
-import initialPhoto from "../../../../../../assets/no-pictures.png";
 import { useState } from "react";
+import { NoPictures } from "../../../../../../assets";
 
 const PhotoUploader = ({
   id,
@@ -13,7 +13,7 @@ const PhotoUploader = ({
   label: string;
   url: string;
 }) => {
-  const [preview, setPreview] = useState(url || initialPhoto);
+  const [preview, setPreview] = useState(url || null);
 
   const uploadPhoto = (e: any) => {
     const file = e.target.files?.[0];
@@ -38,7 +38,11 @@ const PhotoUploader = ({
         />
       </div>
       <div className={s.photo_preview}>
-        <img src={preview} alt="Landing main photo" />
+        {preview ? (
+          <img src={preview} alt="Landing main photo" />
+        ) : (
+          <NoPictures />
+        )}
       </div>
     </div>
   );

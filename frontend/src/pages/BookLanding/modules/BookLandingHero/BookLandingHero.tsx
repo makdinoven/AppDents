@@ -6,6 +6,7 @@ import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
+import { NoPictures } from "../../../../assets";
 
 interface LandingHeroProps {
   data: any;
@@ -36,13 +37,12 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
     <section className={s.hero}>
       <h3>{data.landing_name}</h3>
       <div className={s.content}>
-        <div
-          className={`${s.left_side} ${!data.books?.[0]?.cover_url && s.no_picture}`}
-        >
-          <img
-            src={data.books?.[0]?.cover_url || "/src/assets/no-pictures.png"}
-            alt="preview"
-          />
+        <div className={s.left_side}>
+          {data.books?.[0]?.cover_url ? (
+            <img src={data.books[0].cover_url} alt="preview" />
+          ) : (
+            <NoPictures />
+          )}
         </div>
         <div className={s.right_side}>
           <div className={s.info}>

@@ -137,6 +137,13 @@ $card-body-padding-bottom: calc(
   height: 100%;
   background-color: rgba(1, 67, 61, 0.4);
   border-radius: $border-radius-small;
+
+  svg {
+    path {
+      stroke: $accent;
+      stroke-width: 8px;
+    }
+  }
 }
 
 .photo {
