@@ -6,6 +6,7 @@ import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
 import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
+import { t } from "i18next";
 
 interface LandingHeroProps {
   data: any;
@@ -72,22 +73,22 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            {data.publication_date && (
-              <p>
-                <Trans
-                  i18nKey="bookLanding.publishedDate"
-                  values={{ date: data.publication_date }}
-                  components={[<span className={s.highlight} />]}
-                />
-              </p>
-            )}
-            {data.books[0].publisher && (
+            {data.books?.length > 0 && data.books[0].publishers?.length > 0 && (
               <p>
                 <Trans
                   i18nKey={"bookLanding.publisher"}
                   values={{
-                    publisher: data.books[0].publisher,
+                    publisher: data.books[0].publishers[0].name,
                   }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.books?.length > 0 && (
+              <p>
+                <Trans
+                  i18nKey="bookLanding.publicationDate"
+                  values={{ date: data.books[0].publication_date }}
                   components={[<span className={s.highlight} />]}
                 />
               </p>
@@ -99,6 +100,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                   values={{
                     count: data.total_pages,
                   }}
+                  components={[<span className={s.highlight} />]}
                 />
               </p>
             )}
@@ -108,14 +110,15 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 values={{
                   count: data.sales_count,
                 }}
+                components={[<span className={s.highlight} />]}
               />
             </p>
             {data.tags?.length > 0 && (
               <p>
                 <Trans
-                  i18nKey={`${data.tags?.length > 1 ? "bookLanding.tags" : "bookLanding.tag"}`}
+                  i18nKey="bookLanding.tags"
                   values={{
-                    tags: data.tags?.map((tag: any) => tag)!.join(", "),
+                    tags: data.tags?.map((tag: any) => t(tag))!.join(", "),
                   }}
                   components={[<span className={s.highlight} />]}
                 />

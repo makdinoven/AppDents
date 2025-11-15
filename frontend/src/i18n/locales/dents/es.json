@@ -192,7 +192,7 @@
     "onlineBook": "Libro en Línea",
     "annotation": "Anotación",
     "about": "Acerca del Libro",
-    "publishedDate": "Fecha de Publicación: <0>{{date}}</0>",
+    "publicationDate": "Fecha de publicación: <0>{{date}}</0>",
     "author": "Autor: <0>{{authors}}</0>",
     "authors": "Autores: <0>{{authors}}</0>",
     "language": "Idioma: <0>{{language}}</0>",
@@ -211,12 +211,13 @@
       "error": "Ocurrió un error al cargar"
     },
     "pages": {
-      "count": "Páginas: {{count}}",
+      "count": "Páginas: <0>{{count}}</0>",
       "title": "Páginas",
       "readFirstPages": "¡Lee las primeras páginas del libro!",
       "fullBook": "La versión completa del libro estará disponible después del pago."
     },
-    "salesCount": "Ventas: {{count}}"
+    "salesCount": "Ventas: <0>{{count}}</0>",
+    "tags": "Etiquetas: <0>{{tags}}</0>"
   },
 
   "landing": {

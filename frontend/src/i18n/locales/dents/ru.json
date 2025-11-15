@@ -192,7 +192,7 @@
     "onlineBook": "Онлайн-книга",
     "annotation": "Аннотация",
     "about": "О книге",
-    "publishedDate": "Дата публикации: <0>{{date}}</0>",
+    "publicationDate": "Дата публикации: <0>{{date}}</0>",
     "author": "Автор: <0>{{authors}}</0>",
     "authors": "Авторы: <0>{{authors}}</0>",
     "language": "Язык: <0>{{language}}</0>",
@@ -212,12 +212,13 @@
       "error": "Произошла ошибка загрузки"
     },
     "pages": {
-      "count": "Страниц: {{count}}",
+      "count": "Страниц: <0>{{count}}</0>",
       "title": "Страницы",
       "readFirstPages": "Прочтите первые страницы книги!",
       "fullBook": "Полная версия книги будет доступна после оплаты."
     },
-    "salesCount": "Продаж: {{count}}"
+    "salesCount": "Продаж: <0>{{count}}</0>",
+    "tags": "Теги: <0>{{tags}}</0>"
   },
 
   "landing": {
