@@ -1,12 +1,12 @@
 .input_wrapper {
   @include clamped-p1;
   position: relative;
-  border-bottom: 2px solid $text-color;
-  padding-bottom: 5px;
+  border: 2px solid $text-color;
+  border-radius: 30px;
+  padding: 5px 15px;
   @include transition();
 
   input {
-    border-radius: 5px;
     width: 100%;
 
     &::placeholder {
@@ -25,24 +25,37 @@
   }
 
   &.password {
-    padding-right: 35px;
+    padding-right: 55px;
   }
 
   &.password.error {
-    padding-right: 65px;
+    padding-right: 55px;
+  }
+
+  &.admin {
+    border: 1px solid $accent-glass;
+    height: 30px;
+    display: flex;
+    width: 100%;
+    min-width: 280px;
+  }
+
+  &.invite {
+    border: 1px solid $text-color;
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
   .input_wrapper {
-    border-bottom: 1px solid $text-color;
+    padding: 4px 15px;
+    border: 1px solid $text-color;
 
     &.padding {
       padding-right: 25px;
     }
 
     &.password {
-      padding-right: 25px;
+      padding-right: 45px;
     }
 
     &.error {
@@ -50,7 +63,7 @@
     }
 
     &.password.error {
-      padding-right: 54px;
+      padding-right: 45px;
     }
   }
 }

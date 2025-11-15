@@ -16,11 +16,14 @@ import { Path } from "../../../../routes/routes.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
 import PdfReaderWrapper from "../../../../components/CommonComponents/PdfReader/PdfReaderWrapper.tsx";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
+import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
+import { NoPictures } from "../../../../assets";
 
 const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const pdfLink = `${BASE_URL}/api/books/${bookId}/pdf`;
 
   const fetchBookData = useCallback(async () => {
     try {
@@ -63,13 +66,12 @@ const BookPage = () => {
               <BackButton link={Path.profileMain} />
               <h3>{book.title}</h3>
               <div className={s.content}>
-                <div
-                  className={`${s.left_side} ${!book.cover_url && s.no_picture}`}
-                >
-                  <img
-                    src={book.cover_url || "/src/assets/no-pictures.png"}
-                    alt="preview"
-                  />
+                <div className={s.left_side}>
+                  {book.cover_url ? (
+                    <img src={book.cover_url} alt="preview" />
+                  ) : (
+                    <NoPictures />
+                  )}
                 </div>
                 <div className={s.right_side}>
                   <div className={s.info}>
@@ -143,9 +145,23 @@ const BookPage = () => {
 
               <PdfReaderWrapper
                 fromProfile
-                url={`${BASE_URL}/api/books/${bookId}/pdf`}
+                url={pdfLink}
                 isSlideActive={true}
               />
+
+              {/*{isPdfLink(pdfLink) && (*/}
+              {/*  <p className={s.pdf_text}>*/}
+              {/*    <span>*/}
+              {/*      <Trans i18nKey="profile.pdfText" />*/}
+              {/*    </span>*/}
+              {/*    <ViewLink*/}
+              {/*      className={s.pdf_link}*/}
+              {/*      text={"profile.openPdf"}*/}
+              {/*      link={pdfLink}*/}
+              {/*      isExternal={true}*/}
+              {/*    />*/}
+              {/*  </p>*/}
+              {/*)}*/}
             </section>
             {/*<section className={s.section_wrapper}>*/}
             {/*  <SectionHeader name={t("profile.bookPage.listenInAudioVerse")} />*/}

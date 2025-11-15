@@ -1,5 +1,4 @@
 import s from "./ProfileEntityCard.module.scss";
-import initialPhoto from "../../../../../assets/no-pictures.png";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { useScreenWidth } from "../../../../../common/hooks/useScreenWidth.ts";
@@ -9,6 +8,7 @@ import { CheckMarkIcon } from "../../../../../assets/icons";
 import { Clock } from "../../../../../assets/icons";
 import { Dollar } from "../../../../../assets/icons";
 import { Percent } from "../../../../../assets/icons";
+import { NoPictures } from "../../../../../assets";
 
 const ProfileEntityCard = ({
   isPartial = false,
@@ -44,13 +44,13 @@ const ProfileEntityCard = ({
   };
 
   const renderCover = () => {
-    return !isCourse ? (
-      <div className={s.cover_container}>
-        <img src={previewPhoto} alt="Book image" />
-      </div>
+    const cover = previewPhoto ? (
+      <img src={previewPhoto} alt={isCourse ? "Course image" : "Book image"} />
     ) : (
-      <img src={previewPhoto} alt="Course image" />
+      <NoPictures className={s.no_photo} />
     );
+
+    return !isCourse ? <div className={s.cover_container}>{cover}</div> : cover;
   };
 
   return (
@@ -75,15 +75,7 @@ const ProfileEntityCard = ({
           className={s.card_content_bg}
         ></div>
         <h3>{name}</h3>
-        {previewPhoto ? (
-          renderCover()
-        ) : (
-          <img
-            className={s.no_photo}
-            src={initialPhoto}
-            alt={isCourse ? "Course image" : "Book image"}
-          />
-        )}
+        {renderCover()}
       </div>
       <div className={`${s.card_bottom} ${!isCourse ? s.book : ""}`}>
         {isCourse && (

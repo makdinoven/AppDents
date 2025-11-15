@@ -15,6 +15,7 @@
   "forgotPassword": "Forgot your password?",
   "alreadyHaveAccount": "Already have an account?",
   "passwordResetMailSent": "A new password will be sent to your e-mail",
+  "passwordResetLabel": "Enter new password for reset",
   "passwordReset": "password reset",
   "feedbackTooltip": "Can't find the course you need? Fill out the form and we'll help you.",
   "reset": "reset",
@@ -332,7 +333,7 @@
     "referral": {
       "myReferrals": "My referrals",
       "balance": "Your balance: <1>{{count}}$</1>",
-      "spend": "Spend on any course!",
+      "spend": "Spend on any course or book!",
       "link": "Invite link:",
       "invite": "Invite a friend — earn a bonus.",
       "friendsPurchases": "<1>50%</1> of your friends’ purchases go straight to your balance!",
@@ -352,11 +353,17 @@
       }
     },
     "main": "Main",
+    "profile": "Profile",
+    "settings": "Settings",
     "user": "User:",
     "referrals": {
       "email": "email",
       "invitation": "Invitation",
-      "totalCashback": "total cashback"
+      "totalCashback": "total cashback",
+      "inviteFriend": "Invite friend",
+      "enterFriendsMail": "Enter your friend's email to invite them to the site via your referral link",
+      "sendInvite": "Send invite",
+      "inviteFriendLabel": "Enter your friend's email"
     },
     "purchaseHistory": {
       "invitedUsers": "Invited users",

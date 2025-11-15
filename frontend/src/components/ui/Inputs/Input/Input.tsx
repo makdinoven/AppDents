@@ -14,11 +14,12 @@ const Input: React.FC<InputProps> = ({
   children,
   ...props
 }) => {
+  const { variant } = props as any;
   return (
     <div
-      className={`${s.input_wrapper} ${error ? s.error : ""} ${type ? s[type] : ""} ${iconPadding ? s.padding : ""}`}
+      className={`${s.input_wrapper} ${error ? s.error : ""} ${type ? s[type] : ""} ${iconPadding ? s.padding : ""} ${variant && s[variant]}`}
     >
-      <input {...props} type={type} />
+      <input {...props} type={type} className={variant && s[variant]} />
 
       {children}
     </div>

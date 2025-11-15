@@ -150,6 +150,17 @@
     height: 100%;
     object-fit: cover;
   }
+
+  svg {
+    width: calc(100% - 10px);
+    height: 100%;
+    object-fit: cover;
+
+    path {
+      stroke: $secondary-lighter;
+      stroke-width: 8px;
+    }
+  }
 }
 
 @media (max-width: $middle-breakpoint) {

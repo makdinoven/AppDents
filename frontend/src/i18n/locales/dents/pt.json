@@ -17,6 +17,7 @@
   "forgotPassword": "Esqueceu sua senha?",
   "alreadyHaveAccount": "Já tem uma conta?",
   "passwordResetMailSent": "Uma nova senha será enviada para seu e-mail",
+  "passwordResetLabel": "Insira uma nova senha para redefinir",
   "passwordReset": "redefinição de senha",
   "reset": "redefinir",
   "update": "atualizar",
@@ -292,7 +293,7 @@
     "referral": {
       "myReferrals": "Meus indicados",
       "balance": "Seu saldo: <1>{{count}}$</1>",
-      "spend": "Gaste em qualquer curso!",
+      "spend": "Gaste-o em qualquer curso ou livro!",
       "link": "Link de convite:",
       "invite": "Convide um amigo e ganhe um bônus.",
       "friendsPurchases": "<1>50%</1> das compras dos seus amigos vão direto para o seu saldo!",
@@ -303,11 +304,15 @@
     },
 
     "main": "Principal",
+    "profile": "Perfil",
+    "settings": "Configurações",
     "user": "Usuário:",
     "referrals": {
       "email": "Email",
       "invitation": "Convite",
-      "totalCashback": "cashback total"
+      "totalCashback": "cashback total",
+      "inviteFriend": "Convidar um amigo",
+      "enterFriendsMail": "Informe o e-mail do seu amigo para convidá-lo ao site pelo link de referência"
     },
     "purchaseHistory": {
       "invitedUsers": "Usuários convidados",

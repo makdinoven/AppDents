@@ -1,24 +1,77 @@
-.profile_page_content {
-  @include flex-column;
-  gap: 80px;
+.main_content {
+  @include flex-column();
+  gap: 10px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.main_content_top {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  max-width: 100%;
+  width: 100%;
+}
+
+.profile,
+.settings {
+  @include flex-column();
+  gap: 9px;
+  padding: 10px 20px;
+  box-shadow: 0 0 0 1px $hover-color inset;
+  border-radius: 20px;
+  @include clamped-p3();
+}
+
+.profile {
+  flex-grow: 1;
+  flex-direction: row;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  position: relative;
 }
 
-.page_header {
-  @include flex-column;
-  gap: 40px;
+.profile_left {
+  @include flex-column();
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 9px;
 }
+.left_content {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6%;
+  width: fit-content;
 
-.logout_btn {
-  svg {
+  .user {
+    width: 80px;
+    height: 80px;
+
     flex-shrink: 0;
   }
-  display: flex;
+}
+
+.logout {
+  @include flex-center();
+  flex-direction: row;
   gap: 5px;
-  align-items: center;
-  justify-content: center;
-  @include clamped-p2;
+  flex-shrink: 0;
   @include transition();
+  position: absolute;
+  top: 10px;
+  right: 20px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+
+    path {
+      @include transition();
+    }
+  }
 
   @media (hover: hover) {
     &:hover {
@@ -27,6 +80,7 @@
       svg {
         path {
           fill: $error-color;
+          stroke: $error-color;
         }
       }
     }
@@ -38,187 +92,128 @@
     svg {
       path {
         fill: $error-color;
-      }
-    }
-  }
-
-  svg {
-    width: 27px;
-    height: 27px;
-    path {
-      @include transition();
-      stroke {
-        color: $accent;
+        stroke: $error-color;
       }
     }
   }
 }
 
-.user_info {
-  display: grid;
-  grid-template-columns: 1fr 1.25fr;
-  gap: 20px;
-}
-
-.reset_pass_btn {
-  @include clamped-p3;
-  min-width: unset;
-}
-
-.left {
-  @include clamped-p3;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-
-  .mail,
-  .support {
-    @include flex-center;
-    justify-content: flex-start;
-    text-transform: capitalize;
-    flex-direction: row;
-    gap: 5px;
-    color: $accent;
-
-    svg {
-      height: 30px;
-      width: auto;
-      path {
-        stroke: $accent;
-        stroke-width: 1.5;
-        opacity: 1;
-      }
-    }
-  }
-
-  .mail_link {
-    vertical-align: center;
-    text-decoration: underline;
-    color: $primary;
-  }
-}
-
-.user_icon {
-  width: 100px;
-  height: 100px;
-}
-
-.user_top {
-  display: flex;
+.profile_info {
+  @include flex-column();
   gap: 10px;
-  align-items: center;
-
-  svg {
-    flex-shrink: 0;
-  }
+  justify-content: center;
+  align-items: flex-start;
 }
 
-.user_items {
-  @include flex-column;
-  gap: 10px;
-
-  div {
-    @include flex-center;
-    justify-content: flex-start;
-    gap: 5px;
-    @include clamped-h4;
-  }
-}
-
-.buttons {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-
-.tabs_wrapper {
+.mail,
+.support {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
+  height: fit-content;
+
+  span {
+    text-transform: capitalize;
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+
+    path {
+      min-width: 100%;
+      min-height: 100%;
+      stroke-width: 2;
+      stroke: $accent;
+      opacity: 100%;
+    }
+  }
 }
 
-.profile_buttons {
-  display: flex;
-  justify-content: space-between;
+.mail {
+  svg {
+    path {
+      stroke-width: 1.6;
+    }
+  }
+}
+
+.support {
+  a {
+    color: $primary-accent;
+  }
 }
 
 @media (max-width: $middle-breakpoint) {
-  .user_info {
-    display: flex;
-    flex-direction: column;
+  .left_content {
+    gap: 20px;
   }
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .profile_page {
-    gap: 60px;
+  .profile,
+  .settings {
+    height: 130px;
   }
 
-  .left {
-    gap: 20px;
+  .main_content_top {
+    flex-direction: column;
+    gap: 5px;
   }
 
-  .user_icon {
-    width: 60px;
-    height: 60px;
-  }
+  .logout {
+    svg {
+      width: 16px;
+      height: 16px;
 
-  .back_btn_tabs_container {
-    margin-bottom: 20px;
-    @include flex-column();
-    justify-content: center;
-    align-items: stretch;
-    //display: grid;
-    //grid-template-columns: 60px 1fr 30px ;
+      path {
+        stroke-width: 1.5;
+      }
+    }
   }
 }
 
 @media (max-width: $mobile-breakpoint) {
-  .profile_page {
-    gap: 30px;
+  .profile,
+  .settings {
+    height: 140px;
+    padding: 15px 10px;
+    border-radius: 10px;
   }
 
-  .reset_pass_btn {
-    min-width: unset;
-    padding: 5px 15px;
+  .left_content {
+    gap: 15px;
+
+    .user {
+      width: 60px;
+      height: 60px;
+    }
   }
 
-  .profile_page_content {
-    gap: 30px;
-  }
-
-  .logout_btn {
-    gap: 0;
+  .mail,
+  .support {
+    gap: 8px;
     svg {
       width: 20px;
       height: 20px;
     }
   }
 
-  .left {
-    gap: 10px;
+  .support {
+    flex-wrap: wrap;
+    row-gap: 5px;
+  }
 
-    .mail,
-    .support {
-      svg {
-        width: 20px;
-        height: 20px;
+  .logout {
+    svg {
+      width: 16px;
+      height: 16px;
+
+      path {
+        stroke-width: 1.5;
       }
-    }
-  }
-
-  .user_icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .user_items {
-    gap: 5px;
-
-    button {
-      width: fit-content;
     }
   }
 }

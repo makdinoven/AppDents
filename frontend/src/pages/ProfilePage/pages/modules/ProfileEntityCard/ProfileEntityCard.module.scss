@@ -142,6 +142,20 @@ $border-radius: 20px;
     background-color: $background-color-05;
   }
 
+  .no_photo {
+    height: 170px;
+    max-width: 150px;
+    min-width: 150px;
+    align-self: center;
+    opacity: 0.7;
+
+    path,
+    rect {
+      stroke: $accent;
+      stroke-width: 8px;
+    }
+  }
+
   .cover_container {
     border-radius: $border-radius;
     width: 100%;
@@ -150,6 +164,7 @@ $border-radius: 20px;
     height: 210px;
     padding: 10px;
     @include flex-center();
+    position: relative;
 
     img {
       border-radius: 7px;
@@ -157,12 +172,13 @@ $border-radius: 20px;
       height: 100%;
       width: auto;
     }
-  }
 
-  .no_photo {
-    background-color: $accent-glass;
-    object-fit: contain;
-    z-index: 2;
+    .no_photo {
+      height: 80%;
+      width: auto;
+      max-width: unset;
+      min-width: unset;
+    }
   }
 }
 
@@ -334,8 +350,14 @@ $border-radius: 20px;
       object-fit: cover;
       width: 40%;
       height: auto;
-      max-height: 75px;
+      max-height: 80px;
       border-radius: 10px;
+    }
+
+    .no_photo {
+      height: 100px;
+      max-width: 100px;
+      min-width: 100px;
     }
 
     .cover_container {

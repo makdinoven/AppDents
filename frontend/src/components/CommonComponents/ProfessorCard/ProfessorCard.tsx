@@ -1,10 +1,10 @@
 import s from "./ProfessorCard.module.scss";
 import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Link } from "react-router-dom";
-import INITIAL_PHOTO from "../../../assets/no-user.png";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import React from "react";
+import { NoUser } from "../../../assets";
 
 const ProfessorCard = ({
   variant,
@@ -38,7 +38,7 @@ const ProfessorCard = ({
           className={s.card_content}
         >
           <div className={s.photo_wrapper}>
-            <img src={photo ? photo : INITIAL_PHOTO} alt="professor photo" />
+            {photo ? <img src={photo} alt="professor photo" /> : <NoUser />}
           </div>
           <div className={s.description_wrapper}>
             {(courses_count > 0 || books_count > 0) && (
