@@ -315,9 +315,13 @@
     "referrals": {
       "email": "Correo electrónico",
       "invitation": "Invitación",
-      "totalCashback": "cashback total",
+      "totalCashback": "Cashback total",
       "inviteFriend": "Invitar a un amigo",
-      "enterFriendsMail": "Indica el correo electrónico de tu amigo para invitarlo al sitio mediante el enlace de referencia"
+      "enterFriendsMail": "Ingrese el correo electrónico de su amigo para invitarlo al sitio a través de su enlace de referencia",
+      "sendInvite": "Enviar invitación",
+      "inviteSuccess": "¡Invitación enviada con éxito! Si el correo no llega, revise la carpeta de spam.",
+      "inviteFailed": "¡Error al enviar la invitación!",
+      "inviteFriendLabel": "Ingrese el correo del destinatario"
     },
     "purchaseHistory": {
       "invitedUsers": "Usuarios invitados",

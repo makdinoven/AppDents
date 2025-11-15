@@ -322,9 +322,13 @@
     "referrals": {
       "email": "البريد الإلكتروني",
       "invitation": "دعوة",
-      "totalCashback": "إجمالي الكاش باك",
-      "inviteFriend": "ادعُ صديقًا",
-      "enterFriendsMail": "أدخل بريد صديقك الإلكتروني لدعوته إلى الموقع عبر الرابط الإحالي"
+      "totalCashback": "إجمالي كاش باك",
+      "inviteFriend": "دعوة صديق",
+      "enterFriendsMail": "أدخل بريد صديقك لدعوته إلى الموقع عبر رابط الإحالة الخاص بك",
+      "sendInvite": "إرسال الدعوة",
+      "inviteSuccess": "تم إرسال الدعوة بنجاح! إذا لم يصل البريد الإلكتروني، تحقق من مجلد الرسائل غير المرغوب فيها.",
+      "inviteFailed": "فشل إرسال الدعوة!",
+      "inviteFriendLabel": "أدخل بريد المستلم"
     },
     "purchaseHistory": {
       "invitedUsers": "المستخدمون المدعوون",

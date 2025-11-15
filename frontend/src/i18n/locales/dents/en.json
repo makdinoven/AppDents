@@ -357,13 +357,15 @@
     "settings": "Settings",
     "user": "User:",
     "referrals": {
-      "email": "email",
+      "email": "Email",
       "invitation": "Invitation",
-      "totalCashback": "total cashback",
-      "inviteFriend": "Invite friend",
+      "totalCashback": "Total cashback",
+      "inviteFriend": "Invite a friend",
       "enterFriendsMail": "Enter your friend's email to invite them to the site via your referral link",
-      "sendInvite": "Send invite",
-      "inviteFriendLabel": "Enter your friend's email"
+      "sendInvite": "Send invitation",
+      "inviteSuccess": "Invitation sent successfully! If the email does not arrive, check your Spam folder.",
+      "inviteFailed": "Invitation sending failed!",
+      "inviteFriendLabel": "Enter recipient's email"
     },
     "purchaseHistory": {
       "invitedUsers": "Invited users",
