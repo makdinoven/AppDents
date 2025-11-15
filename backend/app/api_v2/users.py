@@ -26,7 +26,7 @@ from ..services_v2.user_service import (
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
-    get_free_course_stats
+    get_free_course_stats, get_purchases_by_source_timeseries
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 from ..utils.s3 import generate_presigned_url
@@ -662,6 +662,40 @@ def purchase_stats(
         page=page,
         size=size,
         source_filter=source,
+    )
+
+
+@router.get("/analytics/purchase/source")
+def purchase_source_timeseries(
+    start_date: dt.date = Query(..., description="Дата начала периода (YYYY-MM-DD)."),
+    end_date: dt.date = Query(..., description="Дата конца периода (YYYY-MM-DD, включительно)."),
+    mode: str = Query("count", description="count — количество покупок, amount — сумма покупок."),
+    source: str | None = Query(
+        None,
+        description="Фильтр по источнику покупки (LANDING, CART, HOMEPAGE, ...). Пусто = все источники.",
+    ),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    if end_date < start_date:
+        raise HTTPException(
+            status_code=400,
+            detail="end_date не может быть меньше start_date.",
+        )
+
+    normalized_mode = mode.strip().lower()
+    if normalized_mode not in {"count", "amount"}:
+        raise HTTPException(
+            status_code=400,
+            detail="mode должен быть 'count' или 'amount'.",
+        )
+
+    return get_purchases_by_source_timeseries(
+        db,
+        start_date,
+        end_date,
+        source=source,
+        mode=normalized_mode,
     )
 
 @router.get("/analytics/free-course-stats")

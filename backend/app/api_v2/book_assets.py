@@ -1,15 +1,16 @@
 # API для файлов и аудио книг:
 #  - GET /api/books/{book_id}/assets      — список форматов и аудио; у владельца есть download_url
 #  - GET /api/books/{book_id}/download    — выдать presigned URL по формату (PDF/EPUB/...)
+#  - GET /api/books/{book_id}/pdf         — потоковая раздача PDF с поддержкой Range (200 OK → 206 Partial)
 #  - GET /api/books/audios/{audio_id}/download — presigned URL аудиодорожки
-# Требует: users_books, модели Book/BookFile/BookAudio, utils.s3.generate_presigned_url
+# Требует: users_books, модели Book/BookFile/BookAudio, utils.s3.generate_presigned_url, boto3
 
 import logging
 from datetime import timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -17,7 +18,6 @@ from .users import get_current_user
 from ..models.models_v2 import User, Book, BookAudio, BookFileFormat
 from ..utils.s3 import generate_presigned_url
 from ..services_v2.book_service import PDF_CACHE_CONTROL, PDF_CONTENT_DISPOSITION
-from urllib.parse import urlparse, unquote
 
 # S3 client для стриминга
 import os
@@ -54,19 +54,50 @@ def _user_owns_book(db: Session, user_id: int, book_id: int) -> bool:
     ).first()
     return bool(row)
 
-def _sign(url: Optional[str]) -> Optional[str]:
+def _sign(url: Optional[str], filename: Optional[str] = None) -> Optional[str]:
     if not url:
         return None
-    return generate_presigned_url(url, expires=timedelta(hours=24))
+    
+    # Если указано имя файла, добавляем Content-Disposition для скачивания
+    content_disposition = None
+    if filename:
+        # Экранируем кавычки в имени файла
+        safe_filename = filename.replace('"', '\\"')
+        content_disposition = f'attachment; filename="{safe_filename}"'
+    
+    return generate_presigned_url(
+        url, 
+        expires=timedelta(hours=24),
+        response_content_disposition=content_disposition
+    )
 
 
 def _s3_key_from_url(url: str) -> str:
     """Извлекает ключ объекта из публичного/прямого URL."""
+    from urllib.parse import urlparse, unquote
     p = urlparse(url)
     path = unquote(p.path.lstrip("/"))
     if path.startswith(f"{S3_BUCKET}/"):
         return path[len(S3_BUCKET) + 1 :]
     return path
+
+
+def _generate_filename(book: Book, format: str) -> str:
+    """
+    Генерирует безопасное имя файла для скачивания.
+    Использует slug, или очищенный title, или id книги.
+    """
+    import re
+    
+    if book.slug:
+        base_name = book.slug
+    elif book.title:
+        # Очищаем title от недопустимых символов для имени файла
+        base_name = re.sub(r'[^\w\s-]', '', book.title).strip().replace(' ', '-').lower()[:50]
+    else:
+        base_name = f"book-{book.id}"
+    
+    return f"{base_name}.{format.lower()}"
 
 
 # ── API ─────────────────────────────────────────────────────────────────────
@@ -97,10 +128,13 @@ def get_book_assets(
 
     files = []
     for f in book.files:
+        format_value = f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format)
+        filename = _generate_filename(book, format_value) if owns else None
+        
         files.append({
-            "format": f.file_format.value if hasattr(f.file_format, "value") else str(f.file_format),
+            "format": format_value,
             "size_bytes": f.size_bytes,
-            "download_url": _sign(f.s3_url) if owns else None,
+            "download_url": _sign(f.s3_url, filename=filename) if owns else None,
         })
 
     audios = []
@@ -140,21 +174,19 @@ def download_book_file(
     if not (_is_admin(user) or _user_owns_book(db, user.id, book_id)):
         raise HTTPException(status_code=403, detail="No access to this book")
 
-    # ищем нужный формат
-    f = next((
-        bf for bf in (
-            db.query(Book)
-              .options(selectinload(Book.files))
-              .get(book_id)
-              or Book()  # пустая заглушка, чтобы next() не падал на None
-        ).files
-        if bf.file_format == fmt
-    ), None)
-
+    # ищем книгу и нужный формат
+    book = db.query(Book).options(selectinload(Book.files)).get(book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    
+    f = next((bf for bf in book.files if bf.file_format == fmt), None)
     if not f:
         raise HTTPException(status_code=404, detail=f"File in format {fmt} not found")
 
-    return {"url": _sign(f.s3_url)}
+    # Генерируем имя файла для скачивания
+    filename = _generate_filename(book, fmt.value)
+    
+    return {"url": _sign(f.s3_url, filename=filename)}
 
 
 @router.get("/audios/{audio_id}/download", summary="Скачать аудиоглаву/аудиокнигу (только для владельцев)")
@@ -182,7 +214,7 @@ def download_book_audio(
     return {"url": _sign(audio.s3_url)}
 
 
-@router.get("/{book_id}/pdf", summary="Потоковая раздача PDF с поддержкой Range (для владельцев)")
+@router.get("/{book_id}/pdf", summary="Потоковая раздача PDF с поддержкой Range")
 def stream_book_pdf(
     book_id: int,
     request: Request,
@@ -190,9 +222,10 @@ def stream_book_pdf(
 ):
     """
     Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
-    Доступно владельцам книги и администраторам.
+    
+    Для запросов без Range header возвращает полный файл (200 OK).
+    Для Range запросов возвращает частичный контент (206 Partial Content).
     """
-
     book = (
         db.query(Book)
           .options(selectinload(Book.files))
@@ -209,9 +242,31 @@ def stream_book_pdf(
     key = _s3_key_from_url(pdf_file.s3_url)
 
     range_header = request.headers.get("range") or request.headers.get("Range")
+    logger.info(f"PDF request for book {book_id}: Range header = {range_header}")
+    
+    # Всегда получаем размер файла через head_object
+    try:
+        head_obj = s3_client.head_object(Bucket=S3_BUCKET, Key=key)
+        file_size = head_obj.get("ContentLength", 0)
+        metadata = head_obj.get("Metadata") or {}
+        logger.info(f"PDF file size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
+    except s3_client.exceptions.NoSuchKey:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=404, detail="PDF not found")
+    except Exception as e:
+        logger.error("S3 head_object error: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to fetch PDF metadata")
+    
     get_kwargs = {"Bucket": S3_BUCKET, "Key": key}
+    
     if range_header:
+        # Если есть Range header от клиента - используем его
         get_kwargs["Range"] = range_header
+        logger.info(f"Using client Range: {range_header}")
+    else:
+        # Первый запрос без Range - стримим весь файл
+        # PDF.js увидит Accept-Ranges: bytes и МОЖЕТ начать делать Range-запросы
+        # (но это не гарантировано - зависит от настроек PDF.js)
+        logger.info(f"Request without Range header, streaming full file ({file_size} bytes)")
 
     try:
         obj = s3_client.get_object(**get_kwargs)
@@ -225,8 +280,10 @@ def stream_book_pdf(
     content_type = obj.get("ContentType") or "application/pdf"
     content_length = obj.get("ContentLength")
     content_range = obj.get("ContentRange")
-
-    metadata = obj.get("Metadata") or {}
+    
+    # Если metadata не получена из head_object, пробуем из get_object
+    if not metadata:
+        metadata = obj.get("Metadata") or {}
 
     headers = {
         "Accept-Ranges": "bytes",
@@ -234,10 +291,18 @@ def stream_book_pdf(
         "Content-Disposition": PDF_CONTENT_DISPOSITION,
         "Cache-Control": PDF_CACHE_CONTROL,
     }
-    if content_length is not None:
-        headers["Content-Length"] = str(content_length)
+    
+    # Если был Range запрос - возвращаем 206 Partial Content
+    # Если не было Range - возвращаем 200 OK, PDF.js увидит Accept-Ranges и начнет делать Range-запросы
     if content_range:
         headers["Content-Range"] = content_range
+        headers["Content-Length"] = str(content_length) if content_length else str(0)
+        status_code = 206
+        logger.info(f"Returning 206 Partial Content: {content_range}")
+    else:
+        headers["Content-Length"] = str(file_size)
+        status_code = 200
+        logger.info(f"Returning 200 OK with full Content-Length: {file_size}, PDF.js will use Range requests")
 
     if metadata.get("asset"):
         headers["X-Book-Pdf-Asset"] = metadata["asset"]
@@ -247,8 +312,6 @@ def stream_book_pdf(
         headers["X-Book-Id"] = metadata["book-id"]
     if metadata.get("book-slug"):
         headers["X-Book-Slug"] = metadata["book-slug"]
-
-    status_code = 206 if content_range else 200
 
     # У объекта StreamingBody нет iter_chunks в старых версиях botocore; используем iter_chunks/iter_lines fallbacks
     iterator = getattr(body, "iter_chunks", None)

@@ -391,3 +391,48 @@ def get_wallet_feed(db: Session, user_id: int) -> List[Dict[str, Any]]:
 
     # итоги, отсортированные по дате ↓
     return sorted(items, key=lambda x: x["created_at"], reverse=True)
+
+
+def send_user_invitation(
+    db: Session,
+    sender_id: int,
+    recipient_email: str,
+    language: str = "EN"
+) -> dict:
+    """
+    Отправляет приглашение на email.
+    Возвращает: {success: bool, user_exists: bool, message: str}
+    """
+    # 1. Проверить, существует ли пользователь с таким email
+    existing_user = db.query(User).filter(User.email == recipient_email).first()
+    
+    # 2. Получить отправителя и его реферальный код
+    sender = db.query(User).get(sender_id)
+    if not sender.referral_code:
+        sender.referral_code = generate_unique_referral_code(db)
+        db.commit()
+        db.refresh(sender)
+    
+    # 3. Сохранить приглашение в БД
+    invitation = m.Invitation(
+        sender_id=sender_id,
+        recipient_email=recipient_email,
+        language=language
+    )
+    db.add(invitation)
+    db.commit()
+    
+    # 4. Отправить письма
+    from ..utils.email_sender import (
+        send_invitation_email,
+        send_invitation_confirmation_email
+    )
+    
+    send_invitation_email(recipient_email, sender.email, sender.referral_code, language)
+    send_invitation_confirmation_email(sender.email, recipient_email, language)
+    
+    return {
+        "success": True,
+        "user_exists": existing_user is not None,
+        "message": "Invitation sent successfully"
+    }

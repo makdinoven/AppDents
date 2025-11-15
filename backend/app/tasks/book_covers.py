@@ -42,7 +42,7 @@ def _k_log(book_id: int) -> str:        return f"bookcover:{book_id}:log"   # li
 def _k_cand(book_id: int, idx: int) -> str: return f"bookcover:{book_id}:cand:{idx}"  # string (base64 JPEG)
 
 # TTL для кандидатов (секунд)
-DEFAULT_TTL_SECONDS = int(os.getenv("BOOK_COVER_CANDIDATE_TTL", "6000"))  # 10 часа
+DEFAULT_TTL_SECONDS = int(os.getenv("BOOK_COVER_CANDIDATE_TTL", "600"))  # 1 час
 
 def _log(book_id: int, msg: str) -> None:
     line = f"{datetime.utcnow().isoformat()}Z | {msg}"
@@ -125,29 +125,33 @@ def generate_cover_candidates(book_id: int, pages: int = 3, dpi: int = 150, jpeg
                 _set_job_times(book_id, finished=True)
                 return {"ok": False, "error": "s3_download_failed"}
 
-            # Ghostscript: JPEG рендер первых N страниц
-            # -o out_%d.jpg создаст файлы 1..N
-            out_mask = os.path.join(tmp, "out_%d.jpg")
-            cmd = f'gs -q -dNOPAUSE -dBATCH -sDEVICE=jpeg -r{dpi} -dJPEGQ={jpeg_quality} -dFirstPage=1 -dLastPage={pages} -o "{out_mask}" "{in_pdf}"'
-            rc, out, err = _run(cmd)
-            if rc != 0:
-                _set_job_status(book_id, "failed")
-                _log(book_id, f"ghostscript failed (rc={rc})\nSTDOUT:\n{out}\nSTDERR:\n{err}")
-                _set_job_times(book_id, finished=True)
-                return {"ok": False, "error": "gs_failed"}
+            # Ghostscript: JPEG рендер каждой страницы отдельно
+            # Рендерим каждую страницу отдельной командой, чтобы избежать склеивания страниц
+            for page_num in range(1, pages + 1):
+                out_file = os.path.join(tmp, f"out_{page_num}.jpg")
+                # -dAutoRotatePages=/None предотвращает автоповорот
+                # -dUseCropBox использует правильные границы страницы
+                cmd = (
+                    f'gs -q -dNOPAUSE -dBATCH -sDEVICE=jpeg -r{dpi} '
+                    f'-dJPEGQ={jpeg_quality} -dAutoRotatePages=/None -dUseCropBox '
+                    f'-dFirstPage={page_num} -dLastPage={page_num} '
+                    f'-sOutputFile="{out_file}" "{in_pdf}"'
+                )
+                rc, out, err = _run(cmd)
+                if rc != 0:
+                    _log(book_id, f"ghostscript failed for page {page_num} (rc={rc})\nSTDERR:\n{err}")
+                    continue  # Пропускаем эту страницу, но продолжаем с остальными
 
-            # Сохраняем кандидатов в Redis (base64 JPEG)
-            for i in range(1, pages + 1):
-                local_img = os.path.join(tmp, f"out_{i}.jpg")
-                if not os.path.exists(local_img):
-                    continue
-                try:
-                    with open(local_img, "rb") as fh:
-                        b64 = base64.b64encode(fh.read()).decode("ascii")
-                    rds.set(_k_cand(book.id, i), b64, ex=DEFAULT_TTL_SECONDS)
-                    produced += 1
-                except Exception as e:
-                    _log(book_id, f"store candidate {i} failed: {e}")
+                # Сохраняем кандидата в Redis (base64 JPEG)
+                if os.path.exists(out_file):
+                    try:
+                        with open(out_file, "rb") as fh:
+                            b64 = base64.b64encode(fh.read()).decode("ascii")
+                        rds.set(_k_cand(book.id, page_num), b64, ex=DEFAULT_TTL_SECONDS)
+                        produced += 1
+                        _log(book_id, f"page {page_num} rendered successfully")
+                    except Exception as e:
+                        _log(book_id, f"store candidate {page_num} failed: {e}")
 
         # Сохраняем счётчик и TTL на джобу/логи
         if produced:

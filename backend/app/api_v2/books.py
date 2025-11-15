@@ -69,6 +69,22 @@ def preview_pdf_url_for_book(book_or_slug) -> str:
     book_id = book_or_slug.id if hasattr(book_or_slug, "id") else str(book_or_slug)
     return f"{S3_PUBLIC_HOST}/books/{book_id}/preview/preview_20p.pdf"
 
+
+def _client_ip(request: Request) -> str:
+    """
+    Корректно извлекаем IP клиента, учитывая возможный прокси перед сервисом.
+    """
+    xfwd = request.headers.get("X-Forwarded-For", "").strip()
+    if xfwd:
+        first_ip = xfwd.split(",")[0].strip()
+        if first_ip:
+            return first_ip
+    xreal = request.headers.get("X-Real-IP", "").strip()
+    if xreal:
+        return xreal
+    return request.client.host
+
+
 def _unique_landing_name(db: Session, desired: str | None) -> str:
     base = (desired or "Book landing").strip()
     if not base:
@@ -203,7 +219,7 @@ def track_book_ad(slug: str,
         book_landing_id=book_landing.id,
         fbp=request.cookies.get("_fbp"),
         fbc=request.cookies.get("_fbc"),
-        ip=request.client.host
+        ip=_client_ip(request)
     )
     return {"ok": True}
 
@@ -411,6 +427,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
                 .selectinload(Author.books).selectinload(Book.landings),
             selectinload(BookLanding.books).selectinload(Book.tags),
             selectinload(BookLanding.books).selectinload(Book.publishers),
+            selectinload(BookLanding.books).selectinload(Book.files),
         )
         .filter(BookLanding.page_name == page_name)
         .first()
@@ -438,6 +455,15 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
 
     # Подсчёт общего количества страниц
     total_pages = sum(getattr(b, "page_count", 0) or 0 for b in landing.books)
+    
+    # Агрегируем доступные форматы из всех книг лендинга
+    available_formats_set = set()
+    for b in landing.books:
+        for f in (getattr(b, "files", []) or []):
+            if f.s3_url:
+                fmt = getattr(f.file_format, "value", f.file_format)
+                available_formats_set.add(fmt)
+    available_formats = sorted(list(available_formats_set))
     
     # Книги (только превью)
     books = [
@@ -544,6 +570,7 @@ def public_book_landing_by_slug(page_name: str, db: Session = Depends(get_db)):
         "books": books,
         "authors": authors,
         "tags": tags,
+        "available_formats": available_formats,
     }
 
 
@@ -796,6 +823,22 @@ def _serialize_book_card(bl: BookLanding) -> dict:
                 publishers_map[p.id] = {"id": p.id, "name": p.name}
     publishers = list(publishers_map.values())
 
+    # Агрегируем доступные форматы из всех книг лендинга
+    available_formats_set = set()
+    for b in (bl.books or []):
+        for f in (getattr(b, "files", []) or []):
+            if f.s3_url:
+                fmt = getattr(f.file_format, "value", f.file_format)
+                available_formats_set.add(fmt)
+    available_formats = sorted(list(available_formats_set))
+
+    # Берём дату публикации из первой книги лендинга, у которой она есть
+    publication_date = None
+    for b in (bl.books or []):
+        if getattr(b, "publication_date", None):
+            publication_date = b.publication_date
+            break
+
     return {
         "id": bl.id,
         "landing_name": bl.landing_name or "",
@@ -810,6 +853,8 @@ def _serialize_book_card(bl: BookLanding) -> dict:
         "first_tag": first_tag,
         "main_image": _landing_main_image_from_books(bl),
         "book_ids": book_ids,
+        "available_formats": available_formats,
+        "publication_date": publication_date,
     }
 
 
@@ -839,6 +884,7 @@ def book_landing_cards(
               selectinload(BookLanding.books).selectinload(Book.authors),
               selectinload(BookLanding.books).selectinload(Book.tags),
               selectinload(BookLanding.books).selectinload(Book.publishers),
+              selectinload(BookLanding.books).selectinload(Book.files),
           )
           .filter(BookLanding.is_hidden.is_(False))
     )
@@ -965,7 +1011,7 @@ def get_my_book_detail(
     # проверка владения: join к m2m user.books
     book = (
         db.query(Book)
-          .options(selectinload(Book.files), selectinload(Book.audio_files))
+          .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.authors), selectinload(Book.publishers))
           .join(User.books)
           .filter(User.id == current_user.id, Book.id == book_id)
           .first()
@@ -977,27 +1023,48 @@ def get_my_book_detail(
         if is_admin:
             book = (
                 db.query(Book)
-                  .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.publishers))
+                  .options(selectinload(Book.files), selectinload(Book.audio_files), selectinload(Book.authors), selectinload(Book.publishers))
                   .filter(Book.id == book_id)
                   .first()
             )
         if not book:
             raise HTTPException(status_code=403, detail="You don't own this book")
 
-    def _sign(url: str | None) -> str | None:
+    def _sign_with_filename(url: str | None, filename: str | None = None) -> str | None:
         if not url:
             return None
         try:
-            return generate_presigned_url(url, expires=timedelta(hours=24))
+            content_disposition = None
+            if filename:
+                safe_filename = filename.replace('"', '\\"')
+                content_disposition = f'attachment; filename="{safe_filename}"'
+            
+            return generate_presigned_url(
+                url, 
+                expires=timedelta(hours=24),
+                response_content_disposition=content_disposition
+            )
         except Exception:
             return None
 
+    def _generate_filename(format: str) -> str:
+        """Генерирует безопасное имя файла для скачивания"""
+        import re
+        if book.slug:
+            base_name = book.slug
+        elif book.title:
+            base_name = re.sub(r'[^\w\s-]', '', book.title).strip().replace(' ', '-').lower()[:50]
+        else:
+            base_name = f"book-{book.id}"
+        return f"{base_name}.{format.lower()}"
+    
     files_download = []
     for f in (book.files or []):
         fmt = getattr(f.file_format, "value", f.file_format)
+        filename = _generate_filename(fmt)
         files_download.append({
             "file_format": fmt,
-            "download_url": _sign(f.s3_url),
+            "download_url": _sign_with_filename(f.s3_url, filename),
             "size_bytes": f.size_bytes,
         })
 
@@ -1007,8 +1074,23 @@ def get_my_book_detail(
             "chapter_index": a.chapter_index,
             "title": a.title,
             "duration_sec": a.duration_sec,
-            "download_url": _sign(a.s3_url),
+            "download_url": _sign_with_filename(a.s3_url),
         })
+
+    available_formats = []
+    for f in (book.files or []):
+        if f.s3_url:  # только существующие файлы
+            fmt = getattr(f.file_format, "value", f.file_format)
+            if fmt not in available_formats:
+                available_formats.append(fmt)
+
+    # Найдем reader_url - публичную ссылку на PDF (без подписи)
+    reader_url = None
+    for f in (book.files or []):
+        fmt = getattr(f.file_format, "value", f.file_format)
+        if fmt == "PDF" and f.s3_url:
+            reader_url = f.s3_url
+            break
 
     return {
         "id": book.id,
@@ -1018,8 +1100,11 @@ def get_my_book_detail(
         "publication_date": getattr(book, "publication_date", None),
         "page_count": getattr(book, "page_count", None),
         "publishers": [{"id": p.id, "name": p.name} for p in (book.publishers or [])],
+        "authors": [{"id": a.id, "name": a.name, "photo": a.photo} for a in (book.authors or [])],
+        "reader_url": reader_url,
         "files_download": files_download,
         "audio_download": audio_download,
+        "available_formats": available_formats,
     }
 
 

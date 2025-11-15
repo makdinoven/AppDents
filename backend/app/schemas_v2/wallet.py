@@ -55,3 +55,14 @@ class ReferralRuleOut(ReferralRuleIn):
 
 class ReferralRulesResponse(BaseModel):
     rules: List[ReferralRuleOut]
+
+
+class SendInvitationRequest(BaseModel):
+    recipient_email: str
+    language: str = "EN"
+
+
+class SendInvitationResponse(BaseModel):
+    success: bool
+    message: str
+    user_exists: bool = False

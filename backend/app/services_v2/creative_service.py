@@ -884,6 +884,23 @@ def generate_creative_v3(
         placid_media_url = _ensure_placid_media_url(cover_url)
         logger.info(f"Placid media URL for creative v3: {placid_media_url[:100]}...")
         
+        # Получаем реальные доступные форматы книги
+        available_formats = []
+        for f in (getattr(book, "files", []) or []):
+            if f.s3_url:
+                fmt = getattr(f.file_format, "value", f.file_format)
+                if fmt not in available_formats:
+                    available_formats.append(fmt)
+        
+        # Формируем строку форматов
+        if available_formats:
+            formats_text = "* — " + ", ".join(available_formats)
+        else:
+            # Fallback на все форматы, если нет данных
+            formats_text = "* — PDF, EPUB, MOBI, AZW3, FB2"
+        
+        logger.info(f"Creative v3 formats for book_id={book.id}: {formats_text}")
+        
         layers_override = ov.get("layers") if ov else None
 
         if layers_override and isinstance(layers_override, dict):
@@ -895,7 +912,7 @@ def generate_creative_v3(
                     "Book_cover": {"image": placid_media_url},
                     "Ipad_screen": {"image": placid_media_url},
                     "Iphone_screen": {"image": placid_media_url},
-                    "Formats": {"text": "* — PDF, EPUB, MOBI, AZW3, FB2"},
+                    "Formats": {"text": formats_text},
                     "Button_text": {"text": "Download right now"},
                     "Title": {"text": "All formats available"},
                     "New_price": {"text": price_new},
@@ -955,8 +972,9 @@ def generate_creative_v3(
 
 def generate_all_creatives(db: Session, book_id: int, language: str, manual_payload: Optional[Dict[str, Dict[str, str]]] = None):
     """Генерирует все три креатива для книги. Пробрасывает исключения BookAI без изменений."""
+    from sqlalchemy.orm import selectinload
     logger.info(f"Starting generation of all creatives, book_id={book_id}, language={language}")
-    book = db.query(Book).get(book_id)
+    book = db.query(Book).options(selectinload(Book.files)).filter(Book.id == book_id).first()
     if not book:
         raise ValueError("Book not found")
 
@@ -989,7 +1007,8 @@ def generate_single_creative(
     target: str,
     overrides: Optional[Dict[str, Any]] = None,
 ) -> BookCreative:
-    book = db.query(Book).get(book_id)
+    from sqlalchemy.orm import selectinload
+    book = db.query(Book).options(selectinload(Book.files)).filter(Book.id == book_id).first()
     if not book:
         raise ValueError("Book not found")
 

@@ -80,6 +80,9 @@ def upload_pdf_and_generate(
         tmp_path = tmp.name
 
     key = _pdf_key(book)
+    # Генерируем имя файла для скачивания (используем slug или title книги)
+    safe_filename = f"{book.slug}.pdf".replace('"', '\\"')
+    
     s3.upload_file(
         tmp_path,
         S3_BUCKET,
@@ -88,7 +91,7 @@ def upload_pdf_and_generate(
             "ACL": "public-read",
             "ContentType": "application/pdf",
             "CacheControl": "public, max-age=14400, immutable, no-transform",
-            "ContentDisposition": "inline",
+            "ContentDisposition": f'attachment; filename="{safe_filename}"',
         },
     )
     os.unlink(tmp_path)
@@ -118,6 +121,8 @@ def upload_pdf_and_generate(
     rds.hset(fmt_k_job(book.id), mapping={
         "status": "pending",
         "created_at": datetime.utcnow().isoformat() + "Z",
+        "progress": "0",
+        "note": "awaiting calibre conversion",
     })
     rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
@@ -152,7 +157,12 @@ def start_generation(
     if not pdf:
         raise HTTPException(status_code=400, detail="No PDF file found for this book")
 
-    rds.hset(fmt_k_job(book.id), mapping={"status": "pending", "created_at": datetime.utcnow().isoformat() + "Z"})
+    rds.hset(fmt_k_job(book.id), mapping={
+        "status": "pending",
+        "created_at": datetime.utcnow().isoformat() + "Z",
+        "progress": "0",
+        "note": "awaiting calibre conversion",
+    })
     rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):
         rds.delete(_k_fmt(book.id, fmt))
@@ -669,6 +679,7 @@ def finalize_pdf_upload(
         "status": "pending",
         "created_at": datetime.utcnow().isoformat() + "Z",
         "note": "awaiting calibre conversion",
+        "progress": "0",
     })
     rds.delete(fmt_k_log(book.id))
     for fmt in ("EPUB", "MOBI", "AZW3", "FB2"):

@@ -11,6 +11,8 @@ from ..schemas_v2.wallet import (
     WalletResponse,
     WalletTransactionItem,
     ReferralReportItem, AdminAdjustRequest,
+    SendInvitationRequest,
+    SendInvitationResponse,
 )
 from ..services_v2 import wallet_service as ws
 
@@ -47,6 +49,23 @@ def wallet_transactions(
 ):
     feed = ws.get_wallet_feed(db, current_user.id)
     return [WalletTransactionItem(**row) for row in feed]
+
+
+@router.post("/send-invitation", response_model=SendInvitationResponse)
+def send_invitation(
+    req: SendInvitationRequest,
+    db: Session = Depends(get_db),
+    current_user: m.User = Depends(get_current_user),
+):
+    """Отправить email-приглашение на платформу"""
+    result = ws.send_user_invitation(
+        db,
+        current_user.id,
+        req.recipient_email,
+        req.language
+    )
+    return SendInvitationResponse(**result)
+
 
 @router.post(
     "/admin/adjust",

@@ -298,6 +298,8 @@ class BookLandingCardResponse(BaseModel):
     gallery: List[BookLandingGalleryItem] = []
     main_image: str | None = None
     book_ids: list[int] | None = None
+    available_formats: List[str] = []  # форматы всех книг лендинга
+    publication_date: Optional[str] = None  # год публикации (из первой книги)
 
 class BookLandingCardsResponse(BaseModel):
     total: int
@@ -318,8 +320,11 @@ class UserBookDetailResponse(BaseModel):
     publication_date: Optional[str] = None
     page_count: Optional[int] = None
     publishers: List[Dict[str, Any]] = []  # [{"id": int, "name": str}, ...]
+    authors: List[Dict[str, Any]] = []  # [{"id": int, "name": str, "photo": str}, ...]
+    reader_url: Optional[str] = None  # CDN URL для просмотра PDF в браузере
     files_download: List[BookFileDownload] = []
     audio_download: List[BookAudioDownload] = []
+    available_formats: List[str] = []  # ["PDF", "EPUB", ...]
 
 class AuthorRef(BaseModel):
     id: int

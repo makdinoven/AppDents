@@ -245,6 +245,17 @@ class User(Base):
         ]
 
 
+class Invitation(Base):
+    __tablename__ = 'invitations'
+    id = Column(Integer, primary_key=True)
+    sender_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    recipient_email = Column(String(255), nullable=False)
+    language = Column(String(10), default='EN')
+    created_at = Column(DateTime, server_default=func.utc(), nullable=False)
+    
+    sender = relationship("User", foreign_keys=[sender_id])
+
+
 class Purchase(Base):
     __tablename__ = 'purchases'
     id = Column(Integer, primary_key=True, index=True)

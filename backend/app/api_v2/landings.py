@@ -23,6 +23,10 @@ from ..services_v2.landing_service import get_landing_detail, create_landing, up
     get_purchases_by_language, get_landing_cards_pagination, list_landings_paginated, search_landings_paginated, \
     track_ad_visit, get_recommended_landing_cards, get_personalized_landing_cards, get_purchases_by_language_per_day, \
     open_ad_period_if_needed, AD_TTL, get_sales_totals
+from ..services_v2.book_service import (
+    get_top_book_landings_by_sales,
+    get_book_sales_totals,
+)
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TrackAdIn
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
@@ -621,6 +625,66 @@ def most_popular_landings(
     return {
         "totals": totals,   # {"sales_total": N, "ad_sales_total": M}
         "items": items
+    }
+
+
+@router.get("/most-popular/books")
+def most_popular_book_landings(
+    language: Optional[str] = Query(None),
+    limit: int = Query(10, gt=0, le=500),
+    start_date: Optional[date] = Query(None, description="Начало периода (YYYY-MM-DD)"),
+    end_date:   Optional[date] = Query(None, description="Конец периода (YYYY-MM-DD, включительно)"),
+    sort_by: str = Query("sales", description="Поле сортировки: sales | created_at"),
+    sort_dir: str = Query("desc", description="Направление: asc | desc"),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin"))
+):
+    if not start_date and not end_date:
+        sd, ed = None, None
+    elif start_date and not end_date:
+        sd, ed = start_date, None
+    elif start_date and end_date:
+        sd, ed = start_date, end_date
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date."
+        )
+
+    rows = get_top_book_landings_by_sales(
+        db=db,
+        language=language,
+        limit=limit,
+        start_date=sd,
+        end_date=ed,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+    )
+
+    items = [
+        {
+            "id": bl.id,
+            "landing_name": bl.landing_name,
+            "slug": bl.page_name,
+            "sales_count": int(sales or 0),
+            "ad_sales_count": int(ad_sales_count or 0),
+            "language": bl.language,
+            "in_advertising": bl.in_advertising,
+            "created_at": bl.created_at.isoformat() if getattr(bl, "created_at", None) else None,
+        }
+        for (bl, sales, ad_sales_count) in rows
+    ]
+
+    totals = get_book_sales_totals(
+        db=db,
+        language=language,
+        start_date=sd,
+        end_date=ed,
+    )
+
+    return {
+        "totals": totals,
+        "items": items,
     }
 
 def _client_ip(request: Request) -> str:
