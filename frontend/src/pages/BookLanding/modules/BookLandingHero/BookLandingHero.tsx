@@ -30,6 +30,8 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
     return formatIcons[format.toUpperCase()] ?? null;
   };
 
+  console.log(data);
+
   return loading ? (
     <BookHeroSkeleton type="buy" />
   ) : (
@@ -100,7 +102,6 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            {/*{!!data.sales_count && (*/}
             <p>
               <Trans
                 i18nKey={"bookLanding.salesCount"}
@@ -109,7 +110,17 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 }}
               />
             </p>
-            {/*)}*/}
+            {data.tags?.length > 0 && (
+              <p>
+                <Trans
+                  i18nKey={`${data.tags?.length > 1 ? "bookLanding.tags" : "bookLanding.tag"}`}
+                  values={{
+                    tags: data.tags?.map((tag: any) => tag)!.join(", "),
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
             <p className={s.formats_field}>
               <span>
                 <Trans i18nKey="bookLanding.availableFormats" />
