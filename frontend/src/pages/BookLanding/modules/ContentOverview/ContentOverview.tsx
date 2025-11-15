@@ -1,52 +1,47 @@
-import React, { useRef, useState } from "react";
+import React from "react";
 import s from "./ContentOverview.module.scss";
-import ContentOverviewSlide, {
-  ContentOverviewSlideRef,
-} from "./modules/ContentOverviewSlide/ContentOverviewSlide.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import ContentSliderWrapper from "./modules/ContentSliderWrapper/ContentSliderWrapper.tsx";
 import { t } from "i18next";
+import { Trans } from "react-i18next";
+import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
+import { Bookmark } from "../../../../assets/icons";
 
 interface ContentOverviewProps {
   books: any[];
-  portalParentId: string;
 }
 
 const ContentOverview: React.FC<ContentOverviewProps> = ({
   books,
-  portalParentId,
 }: ContentOverviewProps) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const slideRefs = useRef<ContentOverviewSlideRef[]>([]);
-
-  const slides = books.map((book: any, index) => (
-    <ContentOverviewSlide
-      key={index}
-      book={book}
-      parentId={portalParentId}
-      ref={(slide) => {
-        if (slide) slideRefs.current[index] = slide;
-      }}
-      isActive={activeIndex === index}
-      isSingle={!(books.length > 1)}
-    />
-  ));
-
-  const showLabels = slides.length > 1;
-
   return (
     <div id={"book-pages"} className={s.content_overview}>
       {books.length > 1 && (
         <SectionHeader name={t("bookLanding.contentOverview")} />
       )}
-      <ContentSliderWrapper
-        activeIndex={activeIndex}
-        setActiveIndex={setActiveIndex}
-        slides={slides}
-        slideRefs={slideRefs}
-        className={s.slider}
-        showLabels={showLabels}
-      />
+      <ul className={s.books}>
+        {books.map((book: any, i) => (
+          <li key={`${book.title}-${i}`} className={s.book_container}>
+            {books.length > 1 && (
+              <h3 className={s.book_title}>
+                <Bookmark />
+                <span>{book?.title}</span>
+              </h3>
+            )}
+
+            <div className={s.content}>
+              <PdfReader url={book?.preview_pdf_url} fromProfile={false} />
+              <div className={s.description}>
+                <span className={s.heading}>
+                  <SectionHeader name={t("bookLanding.description")} />
+                </span>
+                {book?.description || (
+                  <Trans i18nKey="bookLanding.noDescription" />
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

@@ -15,32 +15,18 @@ type Professor = {
 
 type props = {
   professors: Professor[];
-  source: "page" | "landing";
   loading?: boolean;
 };
 
-const ProfessorsList = ({ professors, loading, source }: props) => {
-  const getGridTemplateColumns = (count: number) => {
-    if (count === 3) return "repeat(3, 1fr)";
-    if (count === 2) return "repeat(2, 1fr)";
-    if (count === 1) return "repeat(1, 1fr)";
-    return "repeat(4, 1fr)";
-  };
-
+const ProfessorsList = ({ professors, loading }: props) => {
   return (
     <div className={s.list_wrapper}>
       {/*{loading && <LoaderOverlay />}*/}
       {professors.length > 0 ? (
-        <ul
-          style={{
-            gridTemplateColumns: `${getGridTemplateColumns(professors.length)}`,
-          }}
-          className={`${s.list} ${s[source]}`}
-        >
+        <ul className={s.list}>
           {professors.map((professor) => (
             <li key={professor.id}>
               <ProfessorCard
-                variant={professors.length < 2 ? "horizontal" : "vertical"}
                 name={professor.name}
                 photo={professor.photo}
                 description={professor.description}

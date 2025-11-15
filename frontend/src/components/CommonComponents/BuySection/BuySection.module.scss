@@ -168,7 +168,6 @@
         &:hover {
           background-color: $primary;
           color: $background-color;
-          @include transition();
           border: 1px solid transparent;
         }
 

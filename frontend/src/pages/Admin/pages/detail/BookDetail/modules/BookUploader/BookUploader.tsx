@@ -166,7 +166,7 @@ const BookUploader = ({
     ) {
       return;
     }
-    const interval = setInterval(fetchPreviews, 3000);
+    const interval = setInterval(fetchPreviews, 10000);
     return () => clearInterval(interval);
   }, [previewStatus]);
 
@@ -178,7 +178,7 @@ const BookUploader = ({
     ) {
       return;
     }
-    const interval = setInterval(fetchStatuses, 3000);
+    const interval = setInterval(fetchStatuses, 10000);
     return () => clearInterval(interval);
   }, [formatStatus]);
 

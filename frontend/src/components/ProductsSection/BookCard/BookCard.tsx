@@ -1,6 +1,5 @@
 import s from "./BookCard.module.scss";
 import { BookCardType } from "../CardsList/CardsList.tsx";
-import { BOOK_FORMATS } from "../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Path } from "../../../routes/routes.ts";
@@ -44,6 +43,7 @@ const BookCard = ({
     first_tag,
     gallery,
     main_image,
+    available_formats,
   } = book;
   const { isInCart, cartItemLoading, toggleCartItem } = useCart(
     {
@@ -150,7 +150,7 @@ const BookCard = ({
         </h4>
 
         <ul className={s.formats_list}>
-          {BOOK_FORMATS.map((f) => (
+          {available_formats.map((f) => (
             <li className={s.format_item} key={f}>
               {f}
             </li>

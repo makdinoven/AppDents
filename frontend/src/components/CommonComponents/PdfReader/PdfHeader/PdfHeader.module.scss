@@ -1,0 +1,277 @@
+.header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  width: 100%;
+  height: 50px;
+  background-color: $background-color;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  //border-bottom-right-radius: 7px;
+  //border-bottom-left-radius: 7px;
+
+  .right_side {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+
+    @media (max-width: $mobile-breakpoint) {
+      gap: 15px;
+    }
+  }
+
+  .left_side {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    color: $accent;
+    height: 100%;
+
+    .list {
+      height: 30px;
+      width: 30px;
+
+      &:hover {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+
+      svg {
+        height: 100%;
+        width: 100%;
+
+        path {
+          stroke: $accent;
+          stroke-width: 1.5px;
+          @include transition();
+        }
+      }
+    }
+
+    .page_indicator {
+      display: flex;
+      @include clamped-p2();
+      height: 100%;
+      align-items: center;
+
+      &.full_screen {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        height: 100%;
+      }
+
+      .page_input {
+        border: 2px solid $hover-color;
+        border-radius: 15px;
+        @include flex-center();
+        flex-grow: 1;
+        width: 85px;
+        max-width: 100px;
+        height: 100%;
+        padding: 10px;
+        text-align: center;
+
+        @media (max-width: $mobile-breakpoint) {
+          padding: 0;
+        }
+      }
+    }
+  }
+
+  .expand_button {
+    width: 30px;
+    height: 30px;
+
+    &.close_icon {
+      svg {
+        path {
+          fill: $accent;
+          stroke-width: 1;
+        }
+      }
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+
+      circle {
+        @include transition();
+        stroke: $accent;
+        stroke-width: 2.5;
+      }
+
+      path {
+        stroke: $accent;
+        stroke-width: 1.5px;
+        @include transition();
+      }
+    }
+
+    @media (hover: hover) {
+      &:hover {
+        &.close_icon {
+          svg {
+            path {
+              fill: $primary;
+            }
+          }
+        }
+
+        svg {
+          circle {
+            stroke: $primary;
+          }
+
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+    }
+
+    &:active {
+      svg {
+        path {
+          stroke: $tertiary;
+        }
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      width: 25px;
+      height: 25px;
+    }
+  }
+
+  .arrows_wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    button {
+      width: 35px;
+      height: 35px;
+
+      &.inactive {
+        opacity: 0.8;
+        svg {
+          circle {
+            fill: $quaternary;
+          }
+        }
+        pointer-events: none;
+        cursor: auto;
+      }
+
+      svg {
+        width: 100%;
+        height: 100%;
+
+        circle {
+          @include transition();
+          fill: $accent;
+        }
+      }
+
+      @media (hover: hover) {
+        &:hover {
+          svg {
+            circle {
+              fill: $primary;
+            }
+          }
+        }
+      }
+
+      &:active {
+        svg {
+          circle {
+            fill: $tertiary;
+          }
+        }
+      }
+
+      @media (max-width: $tablet-breakpoint) {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
+    .down {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.scales_wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
+
+  button {
+    width: 35px;
+    height: 35px;
+    @include transition();
+
+    &.inactive {
+      //opacity: 0.5;
+      cursor: auto;
+      svg {
+        path {
+          stroke: $hover-color-darken;
+        }
+      }
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+
+      path {
+        stroke: $accent;
+        stroke-width: 1px;
+        @include transition();
+      }
+    }
+
+    @media (hover: hover) {
+      &:hover:not(.inactive) {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+    }
+
+    &:active:not(.inactive) {
+      svg {
+        path {
+          stroke: $tertiary;
+        }
+      }
+    }
+
+    @media (max-width: $tablet-breakpoint) {
+      width: 30px;
+      height: 30px;
+    }
+  }
+}

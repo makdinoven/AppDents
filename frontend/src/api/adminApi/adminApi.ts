@@ -298,6 +298,12 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  getMostPopularBookLandings(params: any) {
+    return instance.get("landings/most-popular/books", {
+      params: params,
+      headers: getAuthHeaders(),
+    });
+  },
   getLanguageCoursesStats(params: any) {
     return instance.get("landings/analytics/language-stats", {
       params: params,
@@ -378,6 +384,7 @@ export const adminApi = {
   getPurchasesSourceChart(params: any) {
     return instance.get("users/analytics/purchase/source", {
       params: params,
+      headers: getAuthHeaders(),
     });
   },
   getLandingTraffic(params: any) {

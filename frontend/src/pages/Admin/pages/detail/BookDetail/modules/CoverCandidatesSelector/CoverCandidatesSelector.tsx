@@ -13,7 +13,7 @@ type CoverCandidate = {
   formData: FormData;
 };
 
-const Component = ({
+const CoverCandidatesSelector = ({
   book,
   setBook,
 }: {
@@ -109,12 +109,14 @@ const Component = ({
   };
 
   useEffect(() => {
-    if (jobStatus && jobStatus !== "success") {
-      const interval = setTimeout(() => {
-        handleGetCoverCandidatesJob();
-      }, 3000);
+    if (!jobStatus) return;
 
-      return () => clearTimeout(interval);
+    if (jobStatus !== "success") {
+      const interval = setInterval(() => {
+        handleGetCoverCandidatesJob();
+      }, 10000);
+
+      return () => clearInterval(interval);
     }
 
     if (jobStatus === "success") {
@@ -164,4 +166,4 @@ const Component = ({
   );
 };
 
-export default Component;
+export default CoverCandidatesSelector;

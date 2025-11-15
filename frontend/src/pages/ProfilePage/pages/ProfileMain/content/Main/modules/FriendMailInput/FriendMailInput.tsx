@@ -26,7 +26,7 @@ interface FriendMailInputProps {
 }
 
 const FriendMailInput = ({ closeModal }: FriendMailInputProps) => {
-  const { id, language } = useSelector((state: AppRootStateType) => state.user);
+  const { language } = useSelector((state: AppRootStateType) => state.user);
   const [loading, setLoading] = useState<boolean>(false);
   const [email, setEmail] = useState("");
 

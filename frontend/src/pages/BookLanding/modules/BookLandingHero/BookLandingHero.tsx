@@ -1,4 +1,4 @@
-import React from "react";
+import React, { JSX } from "react";
 import s from "./BookLandingHero.module.scss";
 import { Trans } from "react-i18next";
 import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
@@ -19,6 +19,18 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
   loading,
   openPayment,
 }: LandingHeroProps) => {
+  const formatIcons: Record<string, JSX.Element> = {
+    PDF: <Pdf />,
+    EPUB: <Epub />,
+    MOBI: <Mobi />,
+    AZW3: <Azw3 />,
+    FB2: <Fb2 />,
+  };
+
+  const getFormatIcon = (format: string) => {
+    return formatIcons[format.toUpperCase()] ?? null;
+  };
+
   return loading ? (
     <BookHeroSkeleton type="buy" />
   ) : (
@@ -103,11 +115,9 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 <Trans i18nKey="bookLanding.availableFormats" />
               </span>
               <span className={s.formats}>
-                <Pdf />
-                <Epub />
-                <Mobi />
-                <Azw3 />
-                <Fb2 />
+                {data.available_formats?.map((format: any) => (
+                  <span key={format}>{getFormatIcon(format)}</span>
+                ))}
               </span>
             </p>
           </div>

@@ -106,6 +106,7 @@ const Landing = () => {
   const fetchLandingData = async () => {
     setLoading(true);
     try {
+      console.log(landingPath);
       const res = await mainApi.getLanding(landingPath);
       setLanding({
         ...res.data,
@@ -124,7 +125,6 @@ const Landing = () => {
         authors,
         lessons_count,
       } = res.data;
-      console.log(id);
       const newPrice = !isWebinar ? new_price : 1;
       const oldPrice = !isWebinar ? old_price : 1;
 
@@ -323,15 +323,16 @@ const Landing = () => {
   return (
     <>
       <div className={s.landing_top}>
-        {isClient && <BackButton />}
         {isAdmin && isClient && (
           <div className={s.admin_btns}>
             <PrettyButton
+              className={s.admin_btn}
               variant="primary"
               text={"admin.landings.edit"}
               onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
             />
             <a
+              className={s.admin_btn}
               href={`${BASE_URL}${Path.landing}/${landingPath}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -339,6 +340,7 @@ const Landing = () => {
               <PrettyButton variant="default" text={"promo link"} />
             </a>
             <a
+              className={s.admin_btn}
               href={`${BASE_URL}/${Path.videoLanding}/${landingPath}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -346,6 +348,7 @@ const Landing = () => {
               <PrettyButton variant="default" text={"video link"} />
             </a>
             <a
+              className={s.admin_btn}
               href={`${BASE_URL}/${Path.freeLanding}/${landingPath}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -353,6 +356,7 @@ const Landing = () => {
               <PrettyButton variant="default" text={"promo free link"} />
             </a>
             <a
+              className={s.admin_btn}
               href={`${BASE_URL}/${Path.webinarLanding}/${landingPath}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -361,6 +365,7 @@ const Landing = () => {
             </a>
           </div>
         )}
+        {isClient && <BackButton />}
       </div>
       <div lang={landing?.language.toLowerCase()} className={s.landing}>
         {!isVideo ? (

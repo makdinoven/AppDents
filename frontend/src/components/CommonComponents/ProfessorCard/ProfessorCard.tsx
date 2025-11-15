@@ -7,7 +7,6 @@ import React from "react";
 import { NoUser } from "../../../assets";
 
 const ProfessorCard = ({
-  variant,
   name,
   photo,
   description,
@@ -16,7 +15,6 @@ const ProfessorCard = ({
   books_count,
   link,
 }: {
-  variant: "vertical" | "horizontal";
   name: string;
   photo: string;
   courses_count: number;
@@ -31,12 +29,7 @@ const ProfessorCard = ({
         <h6>{name}</h6>
       </div>
       <div className={s.professor_card}>
-        <div
-          style={{
-            flexDirection: `${variant === "horizontal" ? "row" : "column"}`,
-          }}
-          className={s.card_content}
-        >
+        <div className={s.card_content}>
           <div className={s.photo_wrapper}>
             {photo ? <img src={photo} alt="professor photo" /> : <NoUser />}
           </div>
@@ -44,12 +37,7 @@ const ProfessorCard = ({
             {(courses_count > 0 || books_count > 0) && (
               <div className={s.counts}>
                 {courses_count > 0 && (
-                  <span
-                    style={{
-                      alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
-                    }}
-                    className={s.courses_count}
-                  >
+                  <span className={s.courses_count}>
                     <Trans
                       i18nKey="professor.coursesCount"
                       count={courses_count}
@@ -58,12 +46,7 @@ const ProfessorCard = ({
                 )}
 
                 {books_count > 0 && (
-                  <span
-                    style={{
-                      alignSelf: `${variant === "horizontal" ? "flex-start" : "center"}`,
-                    }}
-                    className={s.books_count}
-                  >
+                  <span className={s.books_count}>
                     <Trans i18nKey="professor.booksCount" count={books_count} />
                   </span>
                 )}

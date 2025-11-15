@@ -15,6 +15,7 @@ import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.
 import Search from "../../../../components/ui/Search/Search.tsx";
 import { t } from "i18next";
 import { useSearchParams } from "react-router-dom";
+import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const AnalyticsAdListing = () => {
   const [searchParams] = useSearchParams();
@@ -25,6 +26,7 @@ const AnalyticsAdListing = () => {
   const [totals, setTotals] = useState<any>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [adSort, setAdSort] = useState<"ad" | "no-ad" | "all">("all");
+  const [mode, setMode] = useState<"courses" | "books">("courses");
   const {
     dateRange,
     handleStartDateChange,
@@ -37,7 +39,7 @@ const AnalyticsAdListing = () => {
 
   useEffect(() => {
     fetchMostPopularLandings();
-  }, [language, limit, dateRange, sortOrder]);
+  }, [language, limit, dateRange, sortOrder, mode]);
 
   const fetchMostPopularLandings = async () => {
     setLoading(true);
@@ -68,7 +70,11 @@ const AnalyticsAdListing = () => {
     }
 
     try {
-      const res = await adminApi.getMostPopularLandings(params);
+      const api =
+        mode === "books"
+          ? adminApi.getMostPopularBookLandings
+          : adminApi.getMostPopularLandings;
+      const res = await api(params);
       setLandings(res.data.items);
       setTotals(res.data.totals);
       setLoading(false);
@@ -94,6 +100,12 @@ const AnalyticsAdListing = () => {
 
   return (
     <>
+      <SwitchButtons
+        useTranslation={false}
+        buttonsArr={["courses", "books"]}
+        activeValue={mode}
+        handleClick={(val) => setMode(val)}
+      />
       <div className={s.analytics_options}>
         <DateRangeFilter
           startDate={dateRange.startDate}

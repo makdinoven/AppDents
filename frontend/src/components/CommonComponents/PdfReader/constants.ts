@@ -15,3 +15,6 @@ export const scales = [
   { value: 1.5, label: "150%" },
   { value: 2, label: "200%" },
 ];
+
+export const PDF_READER_FULLSCREEN_KEY = "pdf-reader-fullscreen";
+export const PDF_READER_SCALE_KEY = "pdf-reader-scale";

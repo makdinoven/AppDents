@@ -396,6 +396,7 @@
       "books": "Enjoy lifetime access to all books — study anytime, anywhere!",
       "both": "Lifetime access to all books and courses!"
     },
+    "noDescription": "No description available",
     "professorsCourses": "This professor's courses",
     "professorsBooks": "This professor's books",
     "allCourses": "All courses",
@@ -635,8 +636,7 @@
     "analytics": {
       "analytics": "Analytics",
       "size": "Size",
-      "languageCoursesStats": "Courses Lang stats",
-      "languageBooksStats": "Books Lang stats",
+      "languageStats": "Language stats",
       "adListing": "Ad listing",
       "referrals": "Referrals",
       "purchases": "Purchases",

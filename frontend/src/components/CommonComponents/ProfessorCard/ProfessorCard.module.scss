@@ -128,7 +128,7 @@
 
 .card_content {
   position: relative;
-  display: flex;
+  @include flex-column;
   align-items: center;
   flex: 1;
   gap: 20px;

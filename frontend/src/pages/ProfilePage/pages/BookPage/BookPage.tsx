@@ -1,29 +1,24 @@
 import s from "./BookPage.module.scss";
 import { useParams } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react";
+import { JSX, useCallback, useEffect, useState } from "react";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
-import {
-  BASE_URL,
-  BOOK_FORMATS,
-} from "../../../../common/helpers/commonConstants.ts";
+import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
 import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
-import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { t } from "i18next";
 import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
 import { Path } from "../../../../routes/routes.ts";
 import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import PdfReaderWrapper from "../../../../components/CommonComponents/PdfReader/PdfReaderWrapper.tsx";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
-import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
+import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
+import DownloadSection from "./DownloadSection/DownloadSection.tsx";
 import { NoPictures } from "../../../../assets";
 
 const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const pdfLink = `${BASE_URL}/api/books/${bookId}/pdf`;
 
   const fetchBookData = useCallback(async () => {
     try {
@@ -41,18 +36,16 @@ const BookPage = () => {
     }
   }, [bookId, fetchBookData]);
 
-  const handleProvideDownloadInfo = (
-    currentFormat: string,
-  ): { url: string | null; name: string | null } => {
-    if (book) {
-      const file = book.files_download?.find(
-        (format: any) => format.file_format === currentFormat,
-      );
+  const formatIcons: Record<string, JSX.Element> = {
+    PDF: <Pdf />,
+    EPUB: <Epub />,
+    MOBI: <Mobi />,
+    AZW3: <Azw3 />,
+    FB2: <Fb2 />,
+  };
 
-      return { url: file?.download_url, name: book.title };
-    }
-
-    return { url: null, name: null };
+  const getFormatIcon = (format: string) => {
+    return formatIcons[format.toUpperCase()] ?? null;
   };
 
   return (
@@ -124,44 +117,23 @@ const BookPage = () => {
                         <Trans i18nKey="bookLanding.availableFormats" />
                       </span>
                       <span className={s.formats}>
-                        <Pdf />
-                        <Epub />
-                        <Mobi />
-                        <Azw3 />
-                        <Fb2 />
+                        {book.available_formats?.map((format: any) => (
+                          <span key={format}>{getFormatIcon(format)}</span>
+                        ))}
                       </span>
                     </p>
                   </div>
-                  <BuySection
-                    type="download"
-                    formats={BOOK_FORMATS}
-                    downloadInfo={handleProvideDownloadInfo}
-                  />
+                  <DownloadSection formats={book.files_download} />
                 </div>
               </div>
             </section>
             <section id={"book-page-reader"} className={s.section_wrapper}>
               <SectionHeader name={t("profile.bookPage.readOnline")} />
 
-              <PdfReaderWrapper
+              <PdfReader
                 fromProfile
-                url={pdfLink}
-                isSlideActive={true}
+                url={`${BASE_URL}/api/books/${bookId}/pdf`}
               />
-
-              {/*{isPdfLink(pdfLink) && (*/}
-              {/*  <p className={s.pdf_text}>*/}
-              {/*    <span>*/}
-              {/*      <Trans i18nKey="profile.pdfText" />*/}
-              {/*    </span>*/}
-              {/*    <ViewLink*/}
-              {/*      className={s.pdf_link}*/}
-              {/*      text={"profile.openPdf"}*/}
-              {/*      link={pdfLink}*/}
-              {/*      isExternal={true}*/}
-              {/*    />*/}
-              {/*  </p>*/}
-              {/*)}*/}
             </section>
             {/*<section className={s.section_wrapper}>*/}
             {/*  <SectionHeader name={t("profile.bookPage.listenInAudioVerse")} />*/}

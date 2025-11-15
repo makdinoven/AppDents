@@ -15,7 +15,7 @@ const AnalyticsPurchases = () => {
   const [chartData, setChartData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [chartMode, setChartMode] = useState<"count" | "amount">("count");
-  const [chartSource, setChartSource] = useState<any>(null);
+  const [source, setSource] = useState<any>(null);
   const {
     dateRange,
     handleStartDateChange,
@@ -29,6 +29,7 @@ const AnalyticsPurchases = () => {
     const params: { start_date?: string; end_date?: string } = {
       start_date: dateRange.startDate,
       end_date: dateRange.endDate,
+      ...(source && source !== "ALL" ? { source: source } : {}),
     };
     try {
       const res = await adminApi.getPurchases(params);
@@ -48,7 +49,7 @@ const AnalyticsPurchases = () => {
       start_date: dateRange.startDate,
       end_date: dateRange.endDate,
       mode: chartMode,
-      ...(chartSource && chartSource !== "ALL" ? { source: chartSource } : {}),
+      ...(source && source !== "ALL" ? { source: source } : {}),
     };
     try {
       const res = await adminApi.getPurchasesSourceChart(params);
@@ -60,11 +61,11 @@ const AnalyticsPurchases = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, source]);
 
   useEffect(() => {
     fetchChartData();
-  }, [dateRange, chartMode, chartSource]);
+  }, [dateRange, chartMode, source]);
 
   return (
     <>
@@ -102,8 +103,8 @@ const AnalyticsPurchases = () => {
               options={PAYMENT_SOURCES_OPTIONS}
               placeholder={"Select source"}
               isMultiple={false}
-              selectedValue={chartSource}
-              onChange={({ value }) => setChartSource(value as string)}
+              selectedValue={source}
+              onChange={({ value }) => setSource(value as string)}
               valueKey={"value"}
               labelKey={"value"}
             />

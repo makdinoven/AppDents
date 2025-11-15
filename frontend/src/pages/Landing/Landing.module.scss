@@ -1,5 +1,5 @@
 .landing_top {
-  display: flex;
+  @include flex-column;
   justify-content: space-between;
 
   button {
@@ -28,10 +28,38 @@
 }
 
 .admin_btns {
-  display: flex;
+  border: 1px solid $hover-color;
+  padding: 15px;
+  border-radius: 30px;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(6, 1fr);
   gap: 10px;
-  flex-direction: column;
-  width: fit-content;
+  margin-bottom: 50px;
+
+  .admin_btn {
+    width: 100%;
+    &:nth-child(1) {
+      grid-column: 1 / 3;
+    }
+
+    &:nth-child(2) {
+      grid-column: 3 / 5;
+    }
+
+    &:nth-child(3) {
+      grid-column: 5 / 7;
+    }
+
+    &:nth-child(4) {
+      grid-column: 2 / 4;
+    }
+
+    &:nth-child(5) {
+      grid-column: 4 / 6;
+    }
+  }
+
   button {
     width: 100%;
   }
@@ -45,6 +73,12 @@
 @media (max-width: $middle-breakpoint) {
   .landing {
     gap: 100px;
+  }
+
+  .admin_btns {
+    display: flex;
+  flex-direction: column;
+    margin-bottom: 10px;
   }
 }
 
@@ -65,10 +99,5 @@
       min-height: unset;
       height: 40px;
     }
-  }
-
-  .admin_btns {
-    flex-direction: column;
-    margin-bottom: 10px;
   }
 }
