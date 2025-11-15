@@ -42,6 +42,10 @@
 
   &.invite {
     border: 1px solid $text-color;
+
+    input {
+      width: calc(100% - 10px);
+    }
   }
 }
 
