@@ -69,7 +69,7 @@ const BookLanding = () => {
             book_ids,
             book_landing_ids: [id],
             price_cents: new_price * 100,
-            from_ad: false,
+            from_ad: isPromotionLanding,
             region: language as LanguagesType,
           },
           render: {
