@@ -31,13 +31,11 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
     return formatIcons[format.toUpperCase()] ?? null;
   };
 
-  console.log(data);
-
   return loading ? (
     <BookHeroSkeleton type="buy" />
   ) : (
     <section className={s.hero}>
-      <h3>{data.landing_name}</h3>
+      <h3>{data?.landing_name}</h3>
       <div className={s.content}>
         <div
           className={`${s.left_side} ${!data.books?.[0]?.cover_url && s.no_picture}`}
@@ -104,15 +102,17 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            <p>
-              <Trans
-                i18nKey={"bookLanding.salesCount"}
-                values={{
-                  count: data.sales_count,
-                }}
-                components={[<span className={s.highlight} />]}
-              />
-            </p>
+            {data?.sales_count && data.sales_count > 100 && (
+              <p>
+                <Trans
+                  i18nKey={"bookLanding.salesCount"}
+                  values={{
+                    count: data.sales_count,
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
             {data.tags?.length > 0 && (
               <p>
                 <Trans

@@ -3,8 +3,9 @@ import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
 import initialPhoto from "../../../../assets/no-pictures.png";
-import { CircleArrow } from "../../../../assets/icons/index.ts";
+import { CircleArrow, TagIcon } from "../../../../assets/icons/index.ts";
 import LandingHeroSkeleton from "../../../../components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
+import { t } from "i18next";
 
 interface LandingHeroProps {
   data: any;
@@ -15,12 +16,20 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
-  const { photo, landing_name, authors, renderBuyButton, isWebinar } = data;
+  const {
+    photo,
+    landing_name,
+    authors,
+    renderBuyButton,
+    isWebinar,
+    tags,
+    sales,
+  } = data;
 
   const MOBILE_BREAKPOINT = 576;
 
   const [isMobile, setIsMobile] = useState(
-    window.innerWidth < MOBILE_BREAKPOINT
+    window.innerWidth < MOBILE_BREAKPOINT,
   );
 
   useEffect(() => {
@@ -80,7 +89,28 @@ const LandingHero: React.FC<LandingHeroProps> = ({
               <div className={s.arrow}>
                 <CircleArrow />
               </div>
-              <p>{authors}</p>
+              <p className={s.authors}>{authors}</p>
+              {tags?.length > 0 && (
+                <div>
+                  <TagIcon />
+                  {tags
+                    ?.map((tag: any) => {
+                      return t(tag.name);
+                    })
+                    .join(", ")}
+                </div>
+              )}
+              {sales && sales > 100 && (
+                <p className={s.sales}>
+                  <Trans
+                    i18nKey={"landing.sales"}
+                    values={{
+                      sales: sales,
+                    }}
+                    components={[<span className={s.highlight} />]}
+                  />
+                </p>
+              )}
               {renderBuyButton}
             </div>
           </div>

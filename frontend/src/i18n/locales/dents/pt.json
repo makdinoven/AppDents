@@ -246,6 +246,7 @@
     "fullWebinarProgram": "Programa completo do webinar",
     "accessFullWebinar": "O acesso ao webinar é ilimitado no tempo!",
     "instantAccessWebinar": "Obtenha acesso instantâneo ao webinar imediatamente após a compra!",
+    "sales": "Comprado <0>{{sales}}</0> vezes",
     "video": {
       "modalTitle": "Desbloqueie o curso completo",
       "buyCourseToWatch": "Compre o curso completo para continuar assistindo."

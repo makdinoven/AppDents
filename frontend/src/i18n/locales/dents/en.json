@@ -286,6 +286,7 @@
     "instantAccessFull": "Gain instant access to the course right after buying!",
     "accessFullWebinar": "Access to the webinar is unlimited in time!",
     "instantAccessWebinar": "Gain instant access to the webinar right after buying!",
+    "sales": "Purchased <0>{{sales}}</0> times",
     "video": {
       "modalTitle": "Unlock the full course",
       "buyCourseToWatch": "Buy full course to continue watching."
