@@ -21,7 +21,8 @@ PAT_BAD = (
     r'(?:/|\?|#|$)'
 )
 
-REPLACEMENT = 'https://cdn.dent-s.com/'
+# Используем S3_PUBLIC_HOST из окружения (с fallback для совместимости)
+REPLACEMENT = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com").rstrip('/') + '/'
 REGEXP_TIME_LIMIT_MS = 5000
 USE_HINT = True  # выключи, если MariaDB или MySQL < 8.0.21
 

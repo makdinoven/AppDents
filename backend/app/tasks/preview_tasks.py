@@ -34,6 +34,10 @@ REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 S3_DIR         = "previews"
 PLACEHOLDER_NAME = "placeholder.jpg"
 PLACEHOLDER_URL  = f"{S3_PUBLIC_HOST}/{S3_DIR}/{PLACEHOLDER_NAME}"
+
+# Для проверки CDN-источников (извлекаем хост из S3_PUBLIC_HOST)
+from urllib.parse import urlparse as _urlparse
+_CDN_HOST = _urlparse(S3_PUBLIC_HOST).hostname or "cdn.dent-s.com"
 NEW_TASKS_WINDOW = 300
 NEW_TASKS_LIMIT  = 30
 SAFE_CHARS = "/()[]_,-."
@@ -208,7 +212,8 @@ def preview_url_for(video_link: str) -> tuple[str | None, bool]:
         poster = _vimeo_poster(video_link)
         return (poster, False) if poster else (None, False)
 
-    if "cdn.dent-s.com" in video_link:
+    # Проверяем, что это наш CDN (используем hostname из S3_PUBLIC_HOST)
+    if _CDN_HOST in video_link:
         p = urlsplit(video_link)
         safe_path  = _sanitize_cdn_path(p.path)
         safe_query = quote(unquote(p.query), safe="=&")
