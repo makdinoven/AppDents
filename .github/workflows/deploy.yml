@@ -173,6 +173,16 @@ jobs:
                 echo "[deploy] Stopping old container: ${svc}"
                 docker compose stop "${svc}" || true
                 docker compose rm -f "${svc}" || true
+                
+                # Для frontend - дополнительно очистить orphaned контейнеры
+                if [ "${svc}" = "frontend" ]; then
+                  echo "[debug] Cleaning up orphaned frontend containers..."
+                  docker ps -a | grep -E "frontend.*3002" | awk '{print $1}' | xargs -r docker rm -f || true
+                fi
+                
+                # Пауза для освобождения портов
+                sleep 2
+                
                 # Запустить новый контейнер
                 if ! docker compose up -d --no-deps --wait "${svc}"; then
                   echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
