@@ -227,7 +227,7 @@
     "onlineBook": "Online Book",
     "annotation": "Annotation",
     "about": "About the Book",
-    "publishedDate": "Published date: <0>{{date}}</0>",
+    "publicationDate": "Publication date: <0>{{date}}</0>",
     "author": "Author: <0>{{authors}}</0>",
     "authors": "Authors: <0>{{authors}}</0>",
     "language": "Language: <0>{{language}}</0>",
@@ -246,12 +246,13 @@
       "error": "An error occurred while loading"
     },
     "pages": {
-      "count": "Pages: {{count}}",
+      "count": "Pages: <0>{{count}}</0>",
       "title": "Pages",
       "readFirstPages": "Read the first pages of the book!",
       "fullBook": "The full version of the book will be available after payment."
     },
-    "salesCount": "Sales: {{count}}"
+    "salesCount": "Sales: <0>{{count}}</0>",
+    "tags": "Tags: <0>{{tags}}</0>"
   },
 
   "landing": {
@@ -286,6 +287,7 @@
     "instantAccessFull": "Gain instant access to the course right after buying!",
     "accessFullWebinar": "Access to the webinar is unlimited in time!",
     "instantAccessWebinar": "Gain instant access to the webinar right after buying!",
+    "sales": "Purchased <0>{{sales}}</0> times",
     "video": {
       "modalTitle": "Unlock the full course",
       "buyCourseToWatch": "Buy full course to continue watching."
@@ -489,7 +491,9 @@
 
   "bookCard": {
     "tags": "Tags",
-    "authors": "Authors"
+    "authors": "Authors",
+    "publisher": "Publisher",
+    "publicationDate": "Publication date"
   },
 
   "admin": {

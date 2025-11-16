@@ -193,7 +193,7 @@
     "onlineBook": "كتاب إلكتروني",
     "annotation": "ملخص",
     "about": "عن الكتاب",
-    "publishedDate": "تاريخ النشر: <0>{{date}}</0>",
+    "publicationDate": "تاريخ النشر: <0>{{date}}</0>",
     "author": "المؤلف: <0>{{authors}}</0>",
     "authors": "المؤلفون: <0>{{authors}}</0>",
     "language": "اللغة: <0>{{language}}</0>",
@@ -212,12 +212,13 @@
       "error": "حدث خطأ أثناء التحميل"
     },
     "pages": {
-      "count": "الصفحات: {{count}}",
+      "count": "الصفحات: <0>{{count}}</0>",
       "title": "صفحات",
       "readFirstPages": "اقرأ الصفحات الأولى من الكتاب!",
       "fullBook": "النسخة الكاملة من الكتاب ستكون متاحة بعد الدفع."
     },
-    "salesCount": "المبيعات: {{count}}"
+    "salesCount": "المبيعات: <0>{{count}}</0>",
+    "tags": "العلامات: <0>{{tags}}</0>"
   },
 
   "landing": {
@@ -259,6 +260,7 @@
     "fullWebinarProgram": "البرنامج الكامل للويبينار",
     "accessFullWebinar": "الوصول إلى الويبينار غير محدود بالوقت!",
     "instantAccessWebinar": "احصل على الوصول الفوري للندوة مباشرة بعد الشراء!",
+    "sales": "تم شراؤه <0>{{sales}}</0> مرة",
     "video": {
       "modalTitle": "افتح الدورة الكاملة",
       "buyCourseToWatch": "اشترِ الدورة الكاملة لمتابعة المشاهدة."
@@ -461,6 +463,8 @@
 
   "bookCard": {
     "tags": "علامات",
-    "authors": "مؤلفون"
+    "authors": "مؤلفون",
+    "publisher": "الناشر",
+    "publicationDate": "تاريخ النشر"
   }
 }

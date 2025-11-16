@@ -193,7 +193,7 @@
     "onlineBook": "Libro en Línea",
     "annotation": "Anotación",
     "about": "Acerca del Libro",
-    "publishedDate": "Fecha de Publicación: <0>{{date}}</0>",
+    "publicationDate": "Fecha de publicación: <0>{{date}}</0>",
     "author": "Autor: <0>{{authors}}</0>",
     "authors": "Autores: <0>{{authors}}</0>",
     "language": "Idioma: <0>{{language}}</0>",
@@ -212,12 +212,13 @@
       "error": "Ocurrió un error al cargar"
     },
     "pages": {
-      "count": "Páginas: {{count}}",
+      "count": "Páginas: <0>{{count}}</0>",
       "title": "Páginas",
       "readFirstPages": "¡Lee las primeras páginas del libro!",
       "fullBook": "La versión completa del libro estará disponible después del pago."
     },
-    "salesCount": "Ventas: {{count}}"
+    "salesCount": "Ventas: <0>{{count}}</0>",
+    "tags": "Etiquetas: <0>{{tags}}</0>"
   },
 
   "landing": {
@@ -251,6 +252,7 @@
     "accessFull": "¡El acceso al curso es ilimitado en el tiempo!",
     "instantAccessFull": "¡Obtén acceso instantáneo al curso inmediatamente después de la compra!",
     "instantAccessWebinar": "¡Obtén acceso instantáneo al webinar inmediatamente después de la compra!",
+    "sales": "Comprado <0>{{sales}}</0> veces",
     "video": {
       "modalTitle": "Desbloquea el curso completo",
       "buyCourseToWatch": "Compra el curso completo para seguir viendo."
@@ -442,6 +444,8 @@
 
   "bookCard": {
     "tags": "Etiquetas",
-    "authors": "Autores"
+    "authors": "Autores",
+    "publisher": "Editorial",
+    "publicationDate": "Fecha de publicación"
   }
 }

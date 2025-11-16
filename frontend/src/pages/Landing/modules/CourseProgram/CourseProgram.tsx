@@ -24,27 +24,28 @@ const CourseProgram = ({
     return (
       <>
         {screenWidth > 576 ? (
-          <>
-            <div className={s.column}>
-              {lessons_names
-                .slice(0, Math.floor(lessons_names.length / 2))
-                .map((name: string) => (
-                  <li key={name}>{name}</li>
-                ))}
-            </div>
-            <div className={s.column}>
-              {lessons_names
-                .slice(Math.floor(lessons_names.length / 2))
-                .map((name: string) => (
-                  <li key={name}>{name}</li>
-                ))}
-            </div>
-          </>
+          lessons_names?.length > 0 && (
+            <>
+              <div className={s.column}>
+                {lessons_names
+                  .slice(0, Math.floor(lessons_names.length / 2))
+                  .map((name: string) => (
+                    <li key={name}>{name}</li>
+                  ))}
+              </div>
+              <div className={s.column}>
+                {lessons_names
+                  .slice(Math.floor(lessons_names.length / 2))
+                  .map((name: string) => (
+                    <li key={name}>{name}</li>
+                  ))}
+              </div>
+            </>
+          )
         ) : (
           <div className={s.column}>
-            {lessons_names.map((name: string) => (
-              <li key={name}>{name}</li>
-            ))}
+            {lessons_names?.length > 0 &&
+              lessons_names.map((name: string) => <li key={name}>{name}</li>)}
           </div>
         )}
       </>
