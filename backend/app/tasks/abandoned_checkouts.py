@@ -1,5 +1,6 @@
 # ────────────────────────── imports ───────────────────────────
 import logging
+import os
 from datetime import datetime, timedelta
 
 from celery.utils.log import get_task_logger
@@ -31,6 +32,10 @@ MAIL_BONUS = 5.0        # $5 – фиксированный бонус
 
 
 from sqlalchemy.orm import exc as orm_exc
+
+# Конфигурация из окружения
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://med-g.com")
+CDN_PLACEHOLDER_URL = os.getenv("CDN_PLACEHOLDER_URL", "https://cdn.med-g.com/assets/img/placeholder.png")
 
 @celery.task(
     bind=True,
@@ -206,11 +211,11 @@ def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
         getattr(landing, "preview_photo", None)
         or getattr(landing, "preview_img", None)
         or getattr(landing, "preview_image", None)
-        or "https://dent-s.com/assets/img/placeholder.png"
+        or CDN_PLACEHOLDER_URL
     )
 
     return {
-        "url":       f"https://dent-s.com/client/course/{landing.page_name}",
+        "url":       f"{FRONTEND_URL}/client/course/{landing.page_name}",
         "price":     price,
         "old_price": old,
         "lessons":   lessons_str,

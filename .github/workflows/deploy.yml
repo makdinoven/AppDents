@@ -86,9 +86,15 @@ jobs:
             echo "[info] Nginx config: ${NGINX_CONF}"
             
             cd "${DEPLOY_PATH}"
-            export COMPOSE_PROJECT_NAME="appdents_${PROJECT_NAME}"
+            # НЕ переопределяем COMPOSE_PROJECT_NAME - используем из .env
             export COMPOSE_FILE=docker-compose.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            
+            # Загружаем .env и получаем COMPOSE_PROJECT_NAME оттуда
+            if [ -f .env ]; then
+              export $(grep -v '^#' .env | grep COMPOSE_PROJECT_NAME | xargs)
+              echo "[info] Using COMPOSE_PROJECT_NAME from .env: ${COMPOSE_PROJECT_NAME:-<not set>}"
+            fi
             
             # =========================
             # 1) Обновляем репозиторий
@@ -123,11 +129,18 @@ jobs:
             # =========================
             # 4) Сборка образов
             #    - всегда собираем nginx (быстрый и безопасный reload)
-            #    - при наличии изменений — собираем их тоже
+            #    - при наличии изменений — собираем их тоже (с --no-cache для frontend)
             # =========================
             docker compose build nginx
             if [ -n "${CHANGED:-}" ]; then
-              docker compose build ${CHANGED}
+              for svc in ${CHANGED}; do
+                if [ "${svc}" = "frontend" ]; then
+                  echo "[build] Building frontend with --no-cache"
+                  docker compose build --no-cache frontend
+                else
+                  docker compose build ${svc}
+                fi
+              done
             fi
             
             # =========================
@@ -136,32 +149,48 @@ jobs:
             #    Пересоздаём ТОЛЬКО изменившиеся сервисы, без зависимостей.
             #    Если изменений нет — просто «поднимаем» nginx (на случай обновления конфига/образа)
             # =========================
-            if [ -z "${CHANGED:-}" ]; then
-              echo "[deploy] No service changes. Touch nginx only."
-              # Остановить и удалить старый контейнер nginx
-              docker compose stop nginx || true
-              docker compose rm -f nginx || true
+            
+            # =========================
+            # 5.1) Функция для очистки порта перед запуском контейнера
+            # =========================
+            cleanup_port() {
+              local port=$1
+              local service=$2
+              echo "[cleanup] Ensuring port ${port} is free for ${service}..."
               
-              # Диагностика: что занимает порты 80 и 443
-              echo "[debug] Checking what's using ports 80 and 443:"
-              sudo netstat -tulpn | grep -E ':(80|443) ' || echo "No processes found on ports 80/443"
-              echo "[debug] All Docker containers:"
-              docker ps -a
-              
-              # Найти и остановить ВСЕ контейнеры, которые используют порты 80 или 443
-              echo "[debug] Stopping all containers using ports 80/443:"
-              for container in $(docker ps -q); do
-                ports=$(docker port "$container" 2>/dev/null | grep -E ':(80|443)$' || true)
+              # Остановить все контейнеры, использующие этот порт
+              for container in $(docker ps -aq); do
+                ports=$(docker port "$container" 2>/dev/null | grep ":${port}" || true)
                 if [ -n "$ports" ]; then
-                  echo "[debug] Stopping container $container (using ports: $ports)"
-                  docker stop "$container" || true
+                  echo "[cleanup] Removing container $container (using port ${port}: $ports)"
                   docker rm -f "$container" || true
                 fi
               done
               
-              # Пауза для освобождения портов
-              echo "[debug] Waiting 3 seconds for ports to be released..."
-              sleep 3
+              # Проверить, свободен ли порт
+              if sudo netstat -tulpn | grep ":${port} " >/dev/null 2>&1; then
+                echo "[warn] Port ${port} is still in use after cleanup!"
+                sudo netstat -tulpn | grep ":${port} "
+              else
+                echo "[ok] Port ${port} is free"
+              fi
+            }
+            
+            if [ -z "${CHANGED:-}" ]; then
+              echo "[deploy] No service changes. Touch nginx only."
+              
+              # Убедиться, что все сервисы запущены
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
+              # Остановить и удалить старый контейнер nginx
+              docker compose stop nginx || true
+              docker compose rm -f nginx || true
+              
+              # Очистить порты 80 и 443 перед запуском nginx
+              cleanup_port 80 "nginx"
+              cleanup_port 443 "nginx"
+              sleep 2
               
               # Принудительно пересоздать nginx
               docker compose up -d --force-recreate --no-deps nginx
@@ -173,30 +202,41 @@ jobs:
                 echo "[deploy] Stopping old container: ${svc}"
                 docker compose stop "${svc}" || true
                 docker compose rm -f "${svc}" || true
+                
+                # Для frontend - очистить порт 3002
+                if [ "${svc}" = "frontend" ]; then
+                  cleanup_port 3002 "frontend"
+                fi
+                
+                # Для backend - очистить порт 8000
+                if [ "${svc}" = "backend" ]; then
+                  cleanup_port 8000 "backend"
+                fi
+                
+                # Пауза для освобождения портов
+                sleep 2
+                
                 # Запустить новый контейнер
                 if ! docker compose up -d --no-deps --wait "${svc}"; then
                   echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
                   docker compose up -d --no-deps "${svc}"
                 fi
               done
+              
+              # =========================
+              # 5.2) Убедиться, что ВСЕ сервисы запущены
+              # =========================
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
               # На всякий случай убедимся, что nginx на последнем образе
               docker compose stop nginx || true
               docker compose rm -f nginx || true
               
-              # Найти и остановить ВСЕ контейнеры, которые используют порты 80 или 443
-              echo "[debug] Stopping all containers using ports 80/443:"
-              for container in $(docker ps -q); do
-                ports=$(docker port "$container" 2>/dev/null | grep -E ':(80|443)$' || true)
-                if [ -n "$ports" ]; then
-                  echo "[debug] Stopping container $container (using ports: $ports)"
-                  docker stop "$container" || true
-                  docker rm -f "$container" || true
-                fi
-              done
-              
-              # Пауза для освобождения портов
-              echo "[debug] Waiting 3 seconds for ports to be released..."
-              sleep 3
+              # Очистить порты 80 и 443 перед запуском nginx
+              cleanup_port 80 "nginx"
+              cleanup_port 443 "nginx"
+              sleep 2
               
               docker compose up -d --force-recreate --no-deps nginx
             fi

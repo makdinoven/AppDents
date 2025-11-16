@@ -16,15 +16,20 @@
     padding: 40px;
     @include flex-center();
 
-    &.no_picture {
-      background-color: $accent-glass;
-      border: 2px solid $accent-glass;
-    }
-
     img {
       width: auto;
       border-radius: 15px;
       max-height: 100%;
+    }
+
+    svg {
+      height: 60%;
+      width: auto;
+      path,
+      rect {
+        stroke: $hover-color-darken-analogue;
+        stroke-width: 8px;
+      }
     }
 
     @media (max-width: $middle-breakpoint) {

@@ -171,7 +171,7 @@ def summarize_video_task(
     video_url: str,
     language_code: LangCode = "auto",
     output_language: OutLang = "auto",
-    context: str = "Нужно сделать короткую выдержку о том, про что рассказывается в стоматологическом видео.",
+    context: str = "Нужно сделать короткую выдержку о том, про что рассказывается в видео.",
     answer_format: str = "",
     final_model: Optional[str] = None,
 ) -> Dict[str, Any]:

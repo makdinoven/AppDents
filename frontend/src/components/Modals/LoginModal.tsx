@@ -47,19 +47,21 @@ const LoginModal = () => {
     <div className={s.modal}>
       <Form handleSubmit={handleSubmit(handleLogIn)}>
         <>
-          <EmailInput
-            isValidationUsed={false}
-            id="email"
-            error={errors.email?.message}
-            placeholder={t("email")}
-            {...register("email")}
-          />
-          <PasswordInput
-            id="password"
-            placeholder={t("password")}
-            {...register("password")}
-            error={errors.password?.message}
-          />
+          <div className={s.inputs}>
+            <EmailInput
+              isValidationUsed={false}
+              id="email"
+              error={errors.email?.message}
+              placeholder={t("email")}
+              {...register("email")}
+            />
+            <PasswordInput
+              id="password"
+              placeholder={t("password")}
+              {...register("password")}
+              error={errors.password?.message}
+            />
+          </div>
           <Button loading={loading} text={t("login")} type="submit" />
         </>
       </Form>

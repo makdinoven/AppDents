@@ -1,10 +1,10 @@
 import s from "./PhotoUploader.module.scss";
-import initialPhoto from "../../../assets/no-pictures.png";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../api/adminApi/adminApi.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../assets/icons";
 import LoaderOverlay from "../../ui/LoaderOverlay/LoaderOverlay.tsx";
+import { NoPictures } from "../../../assets";
 
 const PhotoUploader = ({
   id,
@@ -29,7 +29,7 @@ const PhotoUploader = ({
   url: string | undefined;
   onUpload: any;
 }) => {
-  const [preview, setPreview] = useState(url || initialPhoto);
+  const [preview, setPreview] = useState(url || null);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     if (url) {
@@ -77,7 +77,11 @@ const PhotoUploader = ({
         />
       </div>
       <div className={s.photo_preview}>
-        <img src={preview} alt="Landing main photo" />
+        {preview ? (
+          <img src={preview} alt="Landing main photo" />
+        ) : (
+          <NoPictures />
+        )}
       </div>
     </div>
   );

@@ -30,3 +30,8 @@
     }
   }
 }
+
+.inputs {
+  @include flex-column();
+  gap: 20px;
+}
