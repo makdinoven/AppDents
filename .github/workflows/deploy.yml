@@ -143,7 +143,11 @@ jobs:
               echo "[deploy] Updating changed services: ${CHANGED}"
               for svc in ${CHANGED}; do
                 echo "[deploy] Upgrading: ${svc}"
-                # Пытаемся дождаться healthcheck (если он описан)
+                # Остановить и удалить старый контейнер (чтобы освободить порты)
+                echo "[deploy] Stopping old container: ${svc}"
+                docker compose stop "${svc}" || true
+                docker compose rm -f "${svc}" || true
+                # Запустить новый контейнер
                 if ! docker compose up -d --no-deps --wait "${svc}"; then
                   echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
                   docker compose up -d --no-deps "${svc}"
