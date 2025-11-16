@@ -3,7 +3,7 @@ import { Trans } from "react-i18next";
 import Form from "../../../../../../../../components/Modals/modules/Form/Form.tsx";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../../../../../../store/store.ts";
-import { ChangePasswordType } from "../../../../../../../../api/userApi/types.ts";
+import { EnterEmailType } from "../../../../../../../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
 import {
@@ -37,7 +37,7 @@ const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
     trigger,
     setFocus,
     formState: { errors },
-  } = useForm<ChangePasswordType>({
+  } = useForm<EnterEmailType>({
     resolver: joiResolver(emailSchema),
     mode: "onTouched",
   });
@@ -68,7 +68,6 @@ const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
       await userApi.inviteFriend({ recipient_email: email, language });
       Alert(t("profile.referrals.inviteSuccess"), <CheckMark />);
     } catch {
-      setLoading(false);
       Alert(t("profile.referrals.inviteFailed"), <AlertCirceIcon />);
     } finally {
       setLoading(false);

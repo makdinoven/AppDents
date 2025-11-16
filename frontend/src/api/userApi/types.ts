@@ -13,6 +13,9 @@ export interface LoginType {
 export interface ChangePasswordType {
   email: string;
 }
+export interface EnterEmailType {
+  email: string;
+}
 
 export interface ResetPasswordType {
   password: string;
