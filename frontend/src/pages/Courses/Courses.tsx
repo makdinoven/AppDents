@@ -12,6 +12,7 @@ import { Path } from "../../routes/routes.ts";
 import { getCourses } from "../../store/actions/userActions.ts";
 import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 import CourseCardSkeletons from "../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
           cards={courses}
         />
       </ListController>
+      <CustomOrder />
       {!isFirstLoad && (
         <ProductsSection
           showSort={true}

@@ -1,0 +1,32 @@
+.custom_order_block {
+  @include flex-column();
+  align-items: flex-start;
+  width: 100%;
+
+  h2 {
+    font-size: 75px;
+  }
+}
+
+.form {
+  background-color: $primary;
+  border-radius: 40px;
+  width: 100%;
+  padding: 30px;
+  @include flex-column();
+  gap: 20px;
+  max-height: 400px;
+}
+
+.content_block {
+  @include flex-column();
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+
+  h3 {
+    @include clamped-h3();
+    text-transform: uppercase;
+    text-align: center;
+  }
+}

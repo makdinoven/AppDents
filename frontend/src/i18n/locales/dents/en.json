@@ -72,6 +72,7 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "here": "here.",
+  "customOrderText": "Looking for a specific book or course? Describe it below (add a link if you have one) — we’ll take care of the rest!",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",
