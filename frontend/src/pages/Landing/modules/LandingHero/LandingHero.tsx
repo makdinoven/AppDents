@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import s from "./LandingHero.module.scss";
 import Title from "../../../../components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
-import initialPhoto from "../../../../assets/no-pictures.png";
 import { CircleArrow, TagIcon } from "../../../../assets/icons/index.ts";
 import LandingHeroSkeleton from "../../../../components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
+import { NoPictures } from "../../../../assets";
 import { t } from "i18next";
 
 interface LandingHeroProps {
@@ -74,10 +74,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({
                   {photo ? (
                     <img src={photo} alt="Course image" />
                   ) : (
-                    <div
-                      style={{ backgroundImage: `url(${initialPhoto})` }}
-                      className={s.no_photo}
-                    ></div>
+                    <NoPictures />
                   )}
                 </div>
               </div>

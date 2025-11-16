@@ -17,6 +17,7 @@
   "forgotPassword": "Esqueceu sua senha?",
   "alreadyHaveAccount": "Já tem uma conta?",
   "passwordResetMailSent": "Uma nova senha será enviada para seu e-mail",
+  "passwordResetLabel": "Insira uma nova senha para redefinir",
   "passwordReset": "redefinição de senha",
   "reset": "redefinir",
   "update": "atualizar",
@@ -294,22 +295,30 @@
     "referral": {
       "myReferrals": "Meus indicados",
       "balance": "Seu saldo: <1>{{count}}$</1>",
-      "spend": "Gaste em qualquer curso!",
+      "spend": "Gaste-o em qualquer curso ou livro!",
       "link": "Link de convite:",
       "invite": "Convide um amigo e ganhe um bônus.",
       "friendsPurchases": "<1>50%</1> das compras dos seus amigos vão direto para o seu saldo!",
       "step_1": "1. Copie seu link pessoal abaixo.",
       "step_2": "2. Envie para um amigo via WhatsApp, Telegram, e-mail ou como preferir.",
-      "step_3": "3. O seu amigo compra qualquer curso — por exemplo, um que custa <1>$19</1>.",
+      "step_3": "3. Seu amigo compra qualquer curso ou livro — por exemplo por <1>19 $</1>.",
       "step_4": "4. Você recebe <1>50%</1> do valor pago (ex: <1>$9,50</1>) como crédito na sua carteira."
     },
 
     "main": "Principal",
+    "profile": "Perfil",
+    "settings": "Configurações",
     "user": "Usuário:",
     "referrals": {
       "email": "Email",
       "invitation": "Convite",
-      "totalCashback": "cashback total"
+      "totalCashback": "Cashback total",
+      "inviteFriend": "Convidar um amigo",
+      "enterFriendsMail": "Digite o e-mail do seu amigo para convidá-lo para o site através do seu link de referência",
+      "sendInvite": "Enviar convite",
+      "inviteSuccess": "Convite enviado com sucesso! Se o e-mail não chegar, verifique a pasta de spam.",
+      "inviteFailed": "Falha ao enviar o convite!",
+      "inviteFriendLabel": "Digite o e-mail do destinatário"
     },
     "purchaseHistory": {
       "invitedUsers": "Usuários convidados",

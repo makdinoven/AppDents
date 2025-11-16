@@ -17,6 +17,8 @@ const PasswordInput = ({
   const [visible, setVisible] = useState(false);
   const inputType = visible ? "text" : "password";
 
+  const { variant } = props as any;
+
   return (
     <>
       <Input
@@ -28,7 +30,7 @@ const PasswordInput = ({
       >
         <button
           type="button"
-          className={`${s.eye} ${error ? s.error : ""}`}
+          className={`${s.eye} ${error ? s.error : ""} ${variant && s[variant]}`}
           onClick={() => setVisible((prev) => !prev)}
           tabIndex={-1}
         >

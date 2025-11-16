@@ -17,6 +17,7 @@
   "forgotPassword": "¿Olvidaste tu contraseña?",
   "alreadyHaveAccount": "¿Ya tienes una cuenta?",
   "passwordResetMailSent": "Se enviará una nueva contraseña a tu correo electrónico",
+  "passwordResetLabel": "Introduce una nueva contraseña para restablecer",
   "passwordReset": "restablecimiento de contraseña",
   "reset": "restablecer",
   "update": "actualizar",
@@ -299,22 +300,30 @@
     "referral": {
       "myReferrals": "Mis referidos",
       "balance": "Tu saldo: <1>{{count}}$</1>",
-      "spend": "¡Gasta en cualquier curso!",
+      "spend": "¡Gástalo en cualquier curso o libro!",
       "link": "Enlace de invitación:",
       "invite": "Invita a un amigo y gana un bono.",
       "friendsPurchases": "¡<1>50%</1> de las compras de tus amigos van directamente a tu saldo!",
       "step_1": "1. Copia tu enlace personal a continuación.",
       "step_2": "2. Envíalo a un amigo por WhatsApp, Telegram, correo electrónico o como prefieras.",
-      "step_3": "3. Tu amigo compra cualquier curso — por ejemplo, uno que cuesta <1>$19</1>.",
+      "step_3": "3. Tu amigo compra cualquier curso o libro — por ejemplo por <1>19 $</1>.",
       "step_4": "4. Recibes el <1>50%</1> del pago (por ejemplo, <1>$9.50</1>) como crédito en tu billetera."
     },
 
     "main": "Principal",
+    "profile": "Perfil",
+    "settings": "Configuración",
     "user": "Usuario:",
     "referrals": {
       "email": "Correo electrónico",
       "invitation": "Invitación",
-      "totalCashback": "cashback total"
+      "totalCashback": "Cashback total",
+      "inviteFriend": "Invitar a un amigo",
+      "enterFriendsMail": "Ingrese el correo electrónico de su amigo para invitarlo al sitio a través de su enlace de referencia",
+      "sendInvite": "Enviar invitación",
+      "inviteSuccess": "¡Invitación enviada con éxito! Si el correo no llega, revise la carpeta de spam.",
+      "inviteFailed": "¡Error al enviar la invitación!",
+      "inviteFriendLabel": "Ingrese el correo del destinatario"
     },
     "purchaseHistory": {
       "invitedUsers": "Usuarios invitados",

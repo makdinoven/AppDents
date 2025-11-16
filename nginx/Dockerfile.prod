@@ -2,10 +2,14 @@ FROM nginx:stable-alpine
 
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Копируем конфиг
-COPY ./prod.conf /etc/nginx/conf.d/default.conf
+# Копируем все конфиги в образ для резерва
+# Основной конфиг всё равно будет перекрыт volume'ом при запуске
+COPY ./*.conf /etc/nginx/available-configs/
 
-# Папка под сертификаты (необязательно)
+# Создаём дефолтный конфиг (будет перезаписан через volume)
+RUN cp /etc/nginx/available-configs/dent-s.conf /etc/nginx/conf.d/default.conf || \
+    echo "server { listen 80; return 404; }" > /etc/nginx/conf.d/default.conf
+
 RUN mkdir -p /etc/nginx/certs
 
 EXPOSE 80

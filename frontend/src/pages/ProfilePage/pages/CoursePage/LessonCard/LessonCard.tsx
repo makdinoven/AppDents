@@ -2,10 +2,10 @@ import s from "./LessonCard.module.scss";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
-import initialPhoto from "../../../../../assets/no-pictures.png";
 import ViewLink from "../../../../../components/ui/ViewLink/ViewLink.tsx";
 import Button from "../../../../../components/ui/Button/Button.tsx";
 import { Lock } from "../../../../../assets/icons/index.ts";
+import { NoPictures } from "../../../../../assets";
 
 const LessonCard = ({
   isPartial = false,
@@ -44,14 +44,11 @@ const LessonCard = ({
         </div>
         {previewPhoto ? (
           <div className={s.photo}>
-            <img src={previewPhoto} alt={""} />
+            <img src={previewPhoto} alt="Preview" />
           </div>
         ) : (
           <div className={s.photo}>
-            <div
-              style={{ backgroundImage: `url(${initialPhoto})` }}
-              className={s.no_photo}
-            ></div>
+            <NoPictures />
           </div>
         )}
       </Link>

@@ -37,18 +37,35 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [check-changes]
+    strategy:
+      matrix:
+        project:
+          - name: dent-s
+            domain: dent-s.com
+            server_host_secret: TW_SERVER_HOST
+            server_user_secret: TW_SERVER_USER
+            server_ssh_key_secret: TW_SERVER_SSH_KEY
+            nginx_conf: dent-s.conf
+            deploy_path: /var/www/AppDents
+          - name: medg
+            domain: med-g.com
+            server_host_secret: MEDG_SERVER_HOST
+            server_user_secret: MEDG_SERVER_USER
+            server_ssh_key_secret: MEDG_SERVER_SSH_KEY
+            nginx_conf: med-g.conf
+            deploy_path: /var/www/MedgApp
+      fail-fast: false  # продолжаем деплой других проектов при ошибке одного
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: SSH Deploy (git pull + compose up)
+      - name: SSH Deploy [${{ matrix.project.name }}] (git pull + compose up)
         uses: appleboy/ssh-action@v1.2.2
         with:
-          # используем уже существующие TW_* секреты
-          host:     ${{ secrets.TW_SERVER_HOST }}
-          username: ${{ secrets.TW_SERVER_USER }}
-          key:      ${{ secrets.TW_SERVER_SSH_KEY }}
+          host:     ${{ secrets[matrix.project.server_host_secret] }}
+          username: ${{ secrets[matrix.project.server_user_secret] }}
+          key:      ${{ secrets[matrix.project.server_ssh_key_secret] }}
           # port:   ${{ secrets.TW_SERVER_PORT }}   # раскомментируй, если не 22
           debug: true
           command_timeout: 15m
@@ -60,10 +77,24 @@ jobs:
             # =========================
             # 0) Базовая подготовка
             # =========================
-            cd /var/www/AppDents
-            export COMPOSE_PROJECT_NAME=appdents
+            PROJECT_NAME="${{ matrix.project.name }}"
+            PROJECT_DOMAIN="${{ matrix.project.domain }}"
+            NGINX_CONF="${{ matrix.project.nginx_conf }}"
+            DEPLOY_PATH="${{ matrix.project.deploy_path }}"
+            
+            echo "[info] Deploying project: ${PROJECT_NAME} (${PROJECT_DOMAIN})"
+            echo "[info] Nginx config: ${NGINX_CONF}"
+            
+            cd "${DEPLOY_PATH}"
+            # НЕ переопределяем COMPOSE_PROJECT_NAME - используем из .env
             export COMPOSE_FILE=docker-compose.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
+            
+            # Загружаем .env и получаем COMPOSE_PROJECT_NAME оттуда
+            if [ -f .env ]; then
+              export $(grep -v '^#' .env | grep COMPOSE_PROJECT_NAME | xargs)
+              echo "[info] Using COMPOSE_PROJECT_NAME from .env: ${COMPOSE_PROJECT_NAME:-<not set>}"
+            fi
             
             # =========================
             # 1) Обновляем репозиторий
@@ -76,13 +107,14 @@ jobs:
             # 2) .env обязателен
             # =========================
             if [ ! -f .env ]; then
-              if [ -f /etc/appdents/prod.env ]; then
-                ln -sfn /etc/appdents/prod.env .env
-              else
-                echo "[env] .env missing and /etc/appdents/prod.env not found"
-                exit 1
-              fi
+              echo "[ERROR] .env file not found in ${DEPLOY_PATH}"
+              echo "Please create .env file on the server before deploying"
+              exit 1
             fi
+            
+            # Убедимся, что NGINX_CONF_PATH установлен правильно для этого проекта
+            export NGINX_CONF_PATH="./nginx/${NGINX_CONF}"
+            echo "[info] Using nginx config: ${NGINX_CONF_PATH}"
             
             # =========================
             # 3) Какие сервисы менялись
@@ -97,11 +129,18 @@ jobs:
             # =========================
             # 4) Сборка образов
             #    - всегда собираем nginx (быстрый и безопасный reload)
-            #    - при наличии изменений — собираем их тоже
+            #    - при наличии изменений — собираем их тоже (с --no-cache для frontend)
             # =========================
             docker compose build nginx
             if [ -n "${CHANGED:-}" ]; then
-              docker compose build ${CHANGED}
+              for svc in ${CHANGED}; do
+                if [ "${svc}" = "frontend" ]; then
+                  echo "[build] Building frontend with --no-cache"
+                  docker compose build --no-cache frontend
+                else
+                  docker compose build ${svc}
+                fi
+              done
             fi
             
             # =========================
@@ -110,21 +149,96 @@ jobs:
             #    Пересоздаём ТОЛЬКО изменившиеся сервисы, без зависимостей.
             #    Если изменений нет — просто «поднимаем» nginx (на случай обновления конфига/образа)
             # =========================
+            
+            # =========================
+            # 5.1) Функция для очистки порта перед запуском контейнера
+            # =========================
+            cleanup_port() {
+              local port=$1
+              local service=$2
+              echo "[cleanup] Ensuring port ${port} is free for ${service}..."
+              
+              # Остановить все контейнеры, использующие этот порт
+              for container in $(docker ps -aq); do
+                ports=$(docker port "$container" 2>/dev/null | grep ":${port}" || true)
+                if [ -n "$ports" ]; then
+                  echo "[cleanup] Removing container $container (using port ${port}: $ports)"
+                  docker rm -f "$container" || true
+                fi
+              done
+              
+              # Проверить, свободен ли порт
+              if sudo netstat -tulpn | grep ":${port} " >/dev/null 2>&1; then
+                echo "[warn] Port ${port} is still in use after cleanup!"
+                sudo netstat -tulpn | grep ":${port} "
+              else
+                echo "[ok] Port ${port} is free"
+              fi
+            }
+            
             if [ -z "${CHANGED:-}" ]; then
               echo "[deploy] No service changes. Touch nginx only."
-              docker compose up -d --no-deps nginx
+              
+              # Убедиться, что все сервисы запущены
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
+              # Остановить и удалить старый контейнер nginx
+              docker compose stop nginx || true
+              docker compose rm -f nginx || true
+              
+              # Очистить порты 80 и 443 перед запуском nginx
+              cleanup_port 80 "nginx"
+              cleanup_port 443 "nginx"
+              sleep 2
+              
+              # Принудительно пересоздать nginx
+              docker compose up -d --force-recreate --no-deps nginx
             else
               echo "[deploy] Updating changed services: ${CHANGED}"
               for svc in ${CHANGED}; do
                 echo "[deploy] Upgrading: ${svc}"
-                # Пытаемся дождаться healthcheck (если он описан)
+                # Остановить и удалить старый контейнер (чтобы освободить порты)
+                echo "[deploy] Stopping old container: ${svc}"
+                docker compose stop "${svc}" || true
+                docker compose rm -f "${svc}" || true
+                
+                # Для frontend - очистить порт 3002
+                if [ "${svc}" = "frontend" ]; then
+                  cleanup_port 3002 "frontend"
+                fi
+                
+                # Для backend - очистить порт 8000
+                if [ "${svc}" = "backend" ]; then
+                  cleanup_port 8000 "backend"
+                fi
+                
+                # Пауза для освобождения портов
+                sleep 2
+                
+                # Запустить новый контейнер
                 if ! docker compose up -d --no-deps --wait "${svc}"; then
                   echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
                   docker compose up -d --no-deps "${svc}"
                 fi
               done
+              
+              # =========================
+              # 5.2) Убедиться, что ВСЕ сервисы запущены
+              # =========================
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
               # На всякий случай убедимся, что nginx на последнем образе
-              docker compose up -d --no-deps nginx
+              docker compose stop nginx || true
+              docker compose rm -f nginx || true
+              
+              # Очистить порты 80 и 443 перед запуском nginx
+              cleanup_port 80 "nginx"
+              cleanup_port 443 "nginx"
+              sleep 2
+              
+              docker compose up -d --force-recreate --no-deps nginx
             fi
             
             # =========================
