@@ -491,7 +491,9 @@
 
   "bookCard": {
     "tags": "Tags",
-    "authors": "Authors"
+    "authors": "Authors",
+    "publisher": "Publisher",
+    "publicationDate": "Publication date"
   },
 
   "admin": {

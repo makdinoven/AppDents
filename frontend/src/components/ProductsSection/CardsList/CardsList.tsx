@@ -34,6 +34,8 @@ export type BookCardType = {
   new_price: number;
   book_ids: number[];
   available_formats: string[];
+  publishers: string[];
+  publication_date: number;
 };
 
 type CardsListProps =

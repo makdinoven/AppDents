@@ -23,7 +23,6 @@ const Books = () => {
     try {
       const paramsToSend = { ...params, mode: "page" };
       const res = await mainApi.getBookLandingCards(paramsToSend);
-
       setBooks(res.data.cards);
       setTotal(res.data.total);
       setTotalPages(res.data.total_pages);
