@@ -138,6 +138,9 @@ jobs:
             # =========================
             if [ -z "${CHANGED:-}" ]; then
               echo "[deploy] No service changes. Touch nginx only."
+              # Остановить и удалить старый контейнер nginx
+              docker compose stop nginx || true
+              docker compose rm -f nginx || true
               docker compose up -d --no-deps nginx
             else
               echo "[deploy] Updating changed services: ${CHANGED}"
@@ -154,6 +157,8 @@ jobs:
                 fi
               done
               # На всякий случай убедимся, что nginx на последнем образе
+              docker compose stop nginx || true
+              docker compose rm -f nginx || true
               docker compose up -d --no-deps nginx
             fi
             
