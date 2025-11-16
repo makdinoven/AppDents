@@ -178,6 +178,11 @@ jobs:
             
             if [ -z "${CHANGED:-}" ]; then
               echo "[deploy] No service changes. Touch nginx only."
+              
+              # Убедиться, что все сервисы запущены
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
               # Остановить и удалить старый контейнер nginx
               docker compose stop nginx || true
               docker compose rm -f nginx || true
@@ -217,6 +222,13 @@ jobs:
                   docker compose up -d --no-deps "${svc}"
                 fi
               done
+              
+              # =========================
+              # 5.2) Убедиться, что ВСЕ сервисы запущены
+              # =========================
+              echo "[deploy] Ensuring all services are up..."
+              docker compose up -d --no-recreate
+              
               # На всякий случай убедимся, что nginx на последнем образе
               docker compose stop nginx || true
               docker compose rm -f nginx || true
