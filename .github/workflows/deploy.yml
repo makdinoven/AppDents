@@ -141,7 +141,30 @@ jobs:
               # Остановить и удалить старый контейнер nginx
               docker compose stop nginx || true
               docker compose rm -f nginx || true
-              docker compose up -d --no-deps nginx
+              
+              # Диагностика: что занимает порты 80 и 443
+              echo "[debug] Checking what's using ports 80 and 443:"
+              sudo netstat -tulpn | grep -E ':(80|443) ' || echo "No processes found on ports 80/443"
+              echo "[debug] All Docker containers:"
+              docker ps -a
+              
+              # Найти и остановить ВСЕ контейнеры, которые используют порты 80 или 443
+              echo "[debug] Stopping all containers using ports 80/443:"
+              for container in $(docker ps -q); do
+                ports=$(docker port "$container" 2>/dev/null | grep -E ':(80|443)$' || true)
+                if [ -n "$ports" ]; then
+                  echo "[debug] Stopping container $container (using ports: $ports)"
+                  docker stop "$container" || true
+                  docker rm -f "$container" || true
+                fi
+              done
+              
+              # Пауза для освобождения портов
+              echo "[debug] Waiting 3 seconds for ports to be released..."
+              sleep 3
+              
+              # Принудительно пересоздать nginx
+              docker compose up -d --force-recreate --no-deps nginx
             else
               echo "[deploy] Updating changed services: ${CHANGED}"
               for svc in ${CHANGED}; do
@@ -159,7 +182,23 @@ jobs:
               # На всякий случай убедимся, что nginx на последнем образе
               docker compose stop nginx || true
               docker compose rm -f nginx || true
-              docker compose up -d --no-deps nginx
+              
+              # Найти и остановить ВСЕ контейнеры, которые используют порты 80 или 443
+              echo "[debug] Stopping all containers using ports 80/443:"
+              for container in $(docker ps -q); do
+                ports=$(docker port "$container" 2>/dev/null | grep -E ':(80|443)$' || true)
+                if [ -n "$ports" ]; then
+                  echo "[debug] Stopping container $container (using ports: $ports)"
+                  docker stop "$container" || true
+                  docker rm -f "$container" || true
+                fi
+              done
+              
+              # Пауза для освобождения портов
+              echo "[debug] Waiting 3 seconds for ports to be released..."
+              sleep 3
+              
+              docker compose up -d --force-recreate --no-deps nginx
             fi
             
             # =========================
