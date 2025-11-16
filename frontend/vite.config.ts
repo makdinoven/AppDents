@@ -5,6 +5,9 @@ import svgr from "vite-plugin-svgr"; // оставляем как есть
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const brand = env.VITE_BRAND || "dents";
+  const themeFile = brand === "medg" ? "_theme-medg.scss" : "_theme-dents.scss";
+
   return {
     plugins: [
       react(),
@@ -17,17 +20,14 @@ export default defineConfig(({ mode }) => {
       devSourcemap: false,
       preprocessorOptions: {
         scss: {
-          additionalData: `@use "${env.VITE_GLOBAL_STYLE}" as *;`,
+          additionalData: `@use "@/styles/${themeFile}" as *;`,
         },
       },
     },
     resolve: {
       alias: {
         "@": path.resolve("src"),
-        "@locales": path.resolve(
-          __dirname,
-          `src/i18n/locales/${env.VITE_BRAND}`,
-        ),
+        "@locales": path.resolve(__dirname, `src/i18n/locales`),
       },
 
       dedupe: ["react", "react-dom"],
