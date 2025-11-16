@@ -53,7 +53,7 @@ jobs:
             server_user_secret: MEDG_SERVER_USER
             server_ssh_key_secret: MEDG_SERVER_SSH_KEY
             nginx_conf: med-g.conf
-            deploy_path: /var/www/AppMedg
+            deploy_path: /var/www/MedgApp
       fail-fast: false  # продолжаем деплой других проектов при ошибке одного
     steps:
       - uses: actions/checkout@v3
