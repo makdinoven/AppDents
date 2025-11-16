@@ -463,6 +463,8 @@
 
   "bookCard": {
     "tags": "علامات",
-    "authors": "مؤلفون"
+    "authors": "مؤلفون",
+    "publisher": "الناشر",
+    "publicationDate": "تاريخ النشر"
   }
 }

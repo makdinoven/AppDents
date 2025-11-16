@@ -450,6 +450,8 @@
 
   "bookCard": {
     "tags": "Теги",
-    "authors": "Авторы"
+    "authors": "Авторы",
+    "publisher": "Издатель",
+    "publicationDate": "Дата публикации"
   }
 }

@@ -436,6 +436,8 @@
 
   "bookCard": {
     "tags": "Etiquetas",
-    "authors": "Autores"
+    "authors": "Autores",
+    "publisher": "Editora",
+    "publicationDate": "Data de publicação"
   }
 }
