@@ -37,18 +37,35 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [check-changes]
+    strategy:
+      matrix:
+        project:
+          - name: dent-s
+            domain: dent-s.com
+            server_host_secret: TW_SERVER_HOST
+            server_user_secret: TW_SERVER_USER
+            server_ssh_key_secret: TW_SERVER_SSH_KEY
+            nginx_conf: dent-s.conf
+            deploy_path: /var/www/AppDents
+          - name: medg
+            domain: med-g.com
+            server_host_secret: MEDG_SERVER_HOST
+            server_user_secret: MEDG_SERVER_USER
+            server_ssh_key_secret: MEDG_SERVER_SSH_KEY
+            nginx_conf: med-g.conf
+            deploy_path: /var/www/AppMedg
+      fail-fast: false  # продолжаем деплой других проектов при ошибке одного
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: SSH Deploy (git pull + compose up)
+      - name: SSH Deploy [${{ matrix.project.name }}] (git pull + compose up)
         uses: appleboy/ssh-action@v1.2.2
         with:
-          # используем уже существующие TW_* секреты
-          host:     ${{ secrets.TW_SERVER_HOST }}
-          username: ${{ secrets.TW_SERVER_USER }}
-          key:      ${{ secrets.TW_SERVER_SSH_KEY }}
+          host:     ${{ secrets[matrix.project.server_host_secret] }}
+          username: ${{ secrets[matrix.project.server_user_secret] }}
+          key:      ${{ secrets[matrix.project.server_ssh_key_secret] }}
           # port:   ${{ secrets.TW_SERVER_PORT }}   # раскомментируй, если не 22
           debug: true
           command_timeout: 15m
@@ -60,8 +77,16 @@ jobs:
             # =========================
             # 0) Базовая подготовка
             # =========================
-            cd /var/www/AppDents
-            export COMPOSE_PROJECT_NAME=appdents
+            PROJECT_NAME="${{ matrix.project.name }}"
+            PROJECT_DOMAIN="${{ matrix.project.domain }}"
+            NGINX_CONF="${{ matrix.project.nginx_conf }}"
+            DEPLOY_PATH="${{ matrix.project.deploy_path }}"
+            
+            echo "[info] Deploying project: ${PROJECT_NAME} (${PROJECT_DOMAIN})"
+            echo "[info] Nginx config: ${NGINX_CONF}"
+            
+            cd "${DEPLOY_PATH}"
+            export COMPOSE_PROJECT_NAME="appdents_${PROJECT_NAME}"
             export COMPOSE_FILE=docker-compose.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
             
@@ -76,13 +101,14 @@ jobs:
             # 2) .env обязателен
             # =========================
             if [ ! -f .env ]; then
-              if [ -f /etc/appdents/prod.env ]; then
-                ln -sfn /etc/appdents/prod.env .env
-              else
-                echo "[env] .env missing and /etc/appdents/prod.env not found"
-                exit 1
-              fi
+              echo "[ERROR] .env file not found in ${DEPLOY_PATH}"
+              echo "Please create .env file on the server before deploying"
+              exit 1
             fi
+            
+            # Убедимся, что NGINX_CONF_PATH установлен правильно для этого проекта
+            export NGINX_CONF_PATH="./nginx/${NGINX_CONF}"
+            echo "[info] Using nginx config: ${NGINX_CONF_PATH}"
             
             # =========================
             # 3) Какие сервисы менялись
