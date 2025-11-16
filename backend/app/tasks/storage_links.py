@@ -1,4 +1,5 @@
 import logging
+import os
 from celery import shared_task
 from sqlalchemy import text
 from sqlalchemy import exc as sa_exc
