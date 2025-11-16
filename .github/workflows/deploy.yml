@@ -123,11 +123,18 @@ jobs:
             # =========================
             # 4) Сборка образов
             #    - всегда собираем nginx (быстрый и безопасный reload)
-            #    - при наличии изменений — собираем их тоже
+            #    - при наличии изменений — собираем их тоже (с --no-cache для frontend)
             # =========================
             docker compose build nginx
             if [ -n "${CHANGED:-}" ]; then
-              docker compose build ${CHANGED}
+              for svc in ${CHANGED}; do
+                if [ "${svc}" = "frontend" ]; then
+                  echo "[build] Building frontend with --no-cache"
+                  docker compose build --no-cache frontend
+                else
+                  docker compose build ${svc}
+                fi
+              done
             fi
             
             # =========================
