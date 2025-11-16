@@ -9,6 +9,9 @@ WORKDIR /app
 # Больше памяти Node во время сборки (важно для Vite/Rollup)
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
+# ARG для выбора режима сборки (prod для dent-s, medg-prod для med-g)
+ARG BUILD_MODE=prod
+
 # Ускоряем npm за счёт кэша
 COPY package*.json ./
 RUN --mount=type=cache,target=/root/.npm \
@@ -22,7 +25,7 @@ COPY . .
 ENV DEBUG="vite:*,rollup:*"
 RUN --mount=type=cache,target=/root/.cache/vite \
     --mount=type=cache,target=/root/.cache/esbuild \
-    npm run build:prod
+    npm run build:${BUILD_MODE}
 
 ############################
 # Stage 2: Static via Nginx
