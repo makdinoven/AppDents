@@ -236,8 +236,19 @@ jobs:
             if [ -z "${CHANGED:-}" ]; then
               echo "[deploy] No service changes. Touch nginx only."
               
-              # Убедиться, что все сервисы запущены
+              # Убедиться, что все сервисы запущены, включая backend
               echo "[deploy] Ensuring all services are up..."
+              # Сначала убедимся, что backend запущен
+              echo "[deploy] Ensuring backend is running..."
+              if ! docker compose up -d backend; then
+                echo "[error] Failed to start backend!"
+                exit 1
+              fi
+              
+              # Дадим backend немного времени на запуск
+              sleep 3
+              
+              # Затем запустим все остальные сервисы
               docker compose up -d --no-recreate
               
               # Убедиться, что backend готов перед перезапуском nginx
@@ -302,16 +313,25 @@ jobs:
               fi
               
               # =========================
-              # 5.4) Убедиться, что ВСЕ сервисы запущены
+              # 5.4) Убедиться, что ВСЕ сервисы запущены, включая backend
               # =========================
               echo "[deploy] Ensuring all services are up..."
+              # Сначала убедимся, что backend запущен (даже если он не был изменен)
+              echo "[deploy] Ensuring backend is running..."
+              if ! docker compose up -d backend; then
+                echo "[error] Failed to start backend!"
+                exit 1
+              fi
+              
+              # Дадим backend немного времени на запуск
+              sleep 3
+              
+              # Затем запустим все остальные сервисы
               docker compose up -d --no-recreate
               
-              # Если backend был изменен, еще раз проверим его готовность
-              if [ "${BACKEND_CHANGED}" = "true" ]; then
-                echo "[deploy] Final backend healthcheck before nginx restart..."
-                wait_for_backend
-              fi
+              # Всегда проверяем готовность backend перед перезапуском nginx
+              echo "[deploy] Final backend healthcheck before nginx restart..."
+              wait_for_backend
               
               # На всякий случай убедимся, что nginx на последнем образе
               docker compose stop nginx || true
