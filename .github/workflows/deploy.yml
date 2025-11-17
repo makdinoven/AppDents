@@ -151,7 +151,11 @@ jobs:
                 echo "[error] Backend container not found"
                 exit 1
               fi
-              [ "$bs" != "running" ] && docker compose start "${bc}" && sleep 3
+              if [ "$bs" != "running" ]; then
+                docker compose start "${bc}"
+                sleep 3
+              fi
+              return 0
             }
             
             bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
