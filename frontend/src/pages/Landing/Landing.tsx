@@ -106,7 +106,6 @@ const Landing = () => {
   const fetchLandingData = async () => {
     setLoading(true);
     try {
-      console.log(landingPath);
       const res = await mainApi.getLanding(landingPath);
       setLanding({
         ...res.data,
@@ -114,7 +113,6 @@ const Landing = () => {
       });
       dispatch(setLanguage(res.data.language));
       mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
-      console.log(res.data);
       const {
         old_price,
         new_price,
