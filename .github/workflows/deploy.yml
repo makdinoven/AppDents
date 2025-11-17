@@ -113,8 +113,10 @@ jobs:
                 [ "$st" = "not_found" ] && r=0 && sleep 2 && a=$((a+1)) && continue
                 [ "$st" != "running" ] && r=0 && sleep 2 && a=$((a+1)) && continue
                 r=$((r+1))
-                [ $r -ge $min ] && docker port "${bc}" 2>/dev/null | grep -q "8000" && return 0
-                [ $r -ge $min ] && return 0
+                if [ $r -ge $min ]; then
+                  docker port "${bc}" 2>/dev/null | grep -q "8000" || true
+                  return 0
+                fi
                 sleep 2 && a=$((a+1))
               done
               return 1
