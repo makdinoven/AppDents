@@ -1,4 +1,4 @@
-export const CDN_ORIGIN = "https://cdn.dent-s.com";
+import { CDN_ORIGIN } from "../helpers/commonConstants.ts";
 
 /** SHA-1 для fallback слуга (как на бэке) */
 async function sha1Hex(input: string): Promise<string> {
