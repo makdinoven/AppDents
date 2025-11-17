@@ -71,6 +71,7 @@
   "firstFreeLesson": "Prima lezione gratis",
   "or": "o",
   "here": "qui.",
+  "readerFailedToLoad": "La finestra del lettore non si è caricata? Prova a leggerlo direttamente",
 
   "emailValidationTooltip": {
     "suggestion": "Forse intendevi {{suggestedEmail}}?",
