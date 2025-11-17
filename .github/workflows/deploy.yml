@@ -132,18 +132,25 @@ jobs:
                 sleep 2
               done
               if ! docker ps -a | grep -q "${bc}"; then
-                OUT=$(docker compose up -d backend 2>&1) || {
-                  echo "[error] Backend start failed" && docker compose ps mysql && exit 1
-                }
+                if ! docker compose up -d backend 2>&1; then
+                  echo "[error] Backend start failed"
+                  docker compose ps mysql
+                  exit 1
+                fi
                 sleep 5
-                docker ps -a | grep -q "${bc}" || {
-                  echo "[error] Backend not created after up" && docker compose ps -a && exit 1
-                }
+                if ! docker ps -a | grep -q "${bc}"; then
+                  echo "[error] Backend not created after up"
+                  docker compose ps -a
+                  exit 1
+                fi
               else
                 docker compose up -d backend || true
               fi
               bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
-              [ "$bs" = "not_found" ] && { echo "[error] Backend container not found" && exit 1; }
+              if [ "$bs" = "not_found" ]; then
+                echo "[error] Backend container not found"
+                exit 1
+              fi
               [ "$bs" != "running" ] && docker compose start "${bc}" && sleep 3
             }
             
@@ -155,7 +162,10 @@ jobs:
                 docker compose up -d backend
                 sleep 5
               fi
-              wait_for_backend || { echo "[error] Backend not ready" && exit 1; }
+              if ! wait_for_backend; then
+                echo "[error] Backend not ready"
+                exit 1
+              fi
               docker compose stop nginx || true
               docker compose rm -f nginx || true
               cleanup_port 80 "nginx"
@@ -180,7 +190,10 @@ jobs:
                 docker compose up -d backend
                 sleep 5
               fi
-              wait_for_backend || { echo "[error] Backend not ready" && exit 1; }
+              if ! wait_for_backend; then
+                echo "[error] Backend not ready"
+                exit 1
+              fi
               docker compose stop nginx || true
               docker compose rm -f nginx || true
               cleanup_port 80 "nginx"
@@ -190,10 +203,17 @@ jobs:
             fi
             docker compose ps
             if ! docker ps -a | grep -q "${bc}"; then
-              echo "[error] Backend missing before reload" && exit 1
+              echo "[error] Backend missing before reload"
+              exit 1
             fi
-            wait_for_backend || { echo "[error] Backend not ready for reload" && exit 1; }
-            docker compose exec -T nginx nginx -s reload || { docker compose restart nginx && sleep 3; }
+            if ! wait_for_backend; then
+              echo "[error] Backend not ready for reload"
+              exit 1
+            fi
+            if ! docker compose exec -T nginx nginx -s reload; then
+              docker compose restart nginx
+              sleep 3
+            fi
             ns=$(docker inspect -f '{{.State.Status}}' "${COMPOSE_PROJECT_NAME:-appdents}_nginx" 2>/dev/null || echo "not_found")
             [ "$ns" != "running" ] && docker compose up -d nginx && sleep 3
             docker builder prune -f || true
