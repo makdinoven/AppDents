@@ -373,13 +373,15 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
     
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
     url = f"{settings.BOOKAI_BASE_URL}{endpoint}"
-    logger.info(f"BookAI request: {url} book_id={book_id} lang={language}")
+    # Увеличиваем таймаут для v2, так как генерация может занимать больше времени
+    timeout_seconds = 180 if version == 2 else 120
+    logger.info(f"BookAI request: {url} book_id={book_id} lang={language} version={version} timeout={timeout_seconds}s")
     
     try:
         r = requests.post(
             url,
             json={"s3_url": s3_url, "language": language},
-            timeout=90,
+            timeout=timeout_seconds,
         )
         if r.status_code == 400:
             raise BookAIValidationError("bookai validation error (400)")
@@ -388,8 +390,10 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         if r.status_code >= 500:
             raise BookAIServiceUnavailableError(f"bookai service error ({r.status_code})")
         r.raise_for_status()
+        logger.info(f"BookAI response received for version={version}, book_id={book_id}, status={r.status_code}")
         try:
             texts = r.json()
+            logger.info(f"BookAI texts extracted for version={version}, book_id={book_id}, keys={list(texts.keys())}")
             cleaned_texts = {}
             for key, value in texts.items():
                 if isinstance(value, str):
@@ -411,7 +415,7 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
             raise BookAIValidationError(f"bookai http error ({status_code})")
             
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        logger.error("BookAI connection/timeout error")
+        logger.error(f"BookAI connection/timeout error for version={version}, book_id={book_id}, language={language}, timeout={timeout_seconds}s: {e}")
         raise BookAIServiceUnavailableError("bookai service unavailable")
         
     except requests.exceptions.RequestException as e:
