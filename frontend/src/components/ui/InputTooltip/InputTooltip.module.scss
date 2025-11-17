@@ -2,8 +2,8 @@
   position: absolute;
   @include flex-center;
   right: 0;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
@@ -11,6 +11,7 @@
   @include transition($property: opacity);
   z-index: 5;
   opacity: 0;
+  margin-right: 10px;
 
   &.visible {
     opacity: 1;
@@ -40,25 +41,26 @@
     border-color: $error-color;
   }
 
-  &.suggestion_tooltip, &.warning_tooltip {
+  &.suggestion_tooltip,
+  &.warning_tooltip {
     cursor: pointer;
     background-color: rgba($yellow, 0.4);
     border-color: $yellow;
   }
 
   &.visible {
-    bottom: 95%;
+    bottom: calc(100% + 5px);
     opacity: 1;
     pointer-events: auto;
   }
 }
 
-@media  (max-width: $mobile-breakpoint) {
+@media (max-width: $mobile-breakpoint) {
   .tooltip {
     padding: 4px 8px;
 
     &.visible {
-      bottom: 100%;
+      bottom: calc(100% + 3px);
     }
   }
 

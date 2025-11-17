@@ -5,7 +5,7 @@
   width: 100%;
   height: fit-content;
   gap: 40px;
-  max-height: 520px;
+  max-height: 620px;
 
   .left_side {
     position: relative;
@@ -16,15 +16,20 @@
     padding: 40px;
     @include flex-center();
 
-    &.no_picture {
-      background-color: $accent-glass;
-      border: 2px solid $accent-glass;
-    }
-
     img {
       width: auto;
       border-radius: 15px;
       max-height: 100%;
+    }
+
+    svg {
+      height: 60%;
+      width: auto;
+      path,
+      rect {
+        stroke: $hover-color-darken-analogue;
+        stroke-width: 8px;
+      }
     }
 
     @media (max-width: $middle-breakpoint) {
@@ -47,19 +52,17 @@
     min-height: 100%;
     flex: 1;
     @include flex-column();
-    gap: 50px;
+    gap: 20px;
     justify-content: space-between;
 
     @media (max-width: $middle-breakpoint) {
       width: 100%;
       max-width: 100%;
-      gap: 30px;
     }
 
     @media (max-width: $mobile-breakpoint) {
       width: 100%;
       max-width: 100%;
-      gap: 25px;
     }
 
     .info {
@@ -127,6 +130,7 @@
     }
   }
 }
+
 
 .hero {
   @include flex-column();

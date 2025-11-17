@@ -3,7 +3,6 @@ import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import ViewLink from "../../ui/ViewLink/ViewLink.tsx";
 import { Trans } from "react-i18next";
 import { Link } from "react-router-dom";
-import initialPhoto from "../../../assets/no-pictures.png";
 import AddToCartButton from "../../ui/AddToCartButton/AddToCartButton.tsx";
 import AuthorsDesc from "../../ui/AuthorsDesc/AuthorsDesc.tsx";
 import { useDispatch, useSelector } from "react-redux";
@@ -15,6 +14,7 @@ import { Path } from "../../../routes/routes.ts";
 import { useCart } from "../../../common/hooks/useCart.ts";
 import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
 import { CartItemKind } from "../../../api/cartApi/types.ts";
+import { NoPictures } from "../../../assets";
 
 export type ProductCardFlags = {
   isFree?: boolean;
@@ -165,10 +165,7 @@ const CourseCard = ({
                 </div>
               ) : (
                 <div className={s.photo}>
-                  <div
-                    style={{ backgroundImage: `url(${initialPhoto})` }}
-                    className={s.no_photo}
-                  ></div>
+                  <NoPictures />
                 </div>
               )}
             </div>

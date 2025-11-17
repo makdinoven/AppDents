@@ -11,8 +11,13 @@ import {
   REF_CODE_PARAM,
 } from "../../../../../common/helpers/commonConstants.ts";
 import { userApi } from "../../../../../api/userApi/userApi.ts";
+import { Clipboard, UserPlusIcon } from "../../../../../assets/icons";
 
-const ReferralSection = () => {
+const ReferralSection = ({
+  openInviteFriendModal,
+}: {
+  openInviteFriendModal: () => void;
+}) => {
   const [refLink, setRefLink] = useState(
     localStorage.getItem(LS_REF_LINK_KEY) || "",
   );
@@ -90,7 +95,7 @@ const ReferralSection = () => {
           <Trans
             i18nKey="profile.referral.balance"
             values={{ count: balance }}
-            components={{ 1: <span className="highlight"></span> }}
+            components={{ 1: <span className={s.highlight}></span> }}
           />
         </h4>
         <PrettyButton
@@ -111,13 +116,11 @@ const ReferralSection = () => {
             i
           </button>
         </p>
-        {/*{isStepsOpen && (*/}
         <ul className={`${s.steps} ${isStepsOpen ? s.open : ""}`}>
           {steps.map((step, i) => (
             <li key={i}>{step.step}</li>
           ))}
         </ul>
-        {/*)}*/}
         <p className={s.friends}>
           <Trans
             i18nKey={"profile.referral.friendsPurchases"}
@@ -134,12 +137,19 @@ const ReferralSection = () => {
           </span>
         </div>
 
-        <PrettyButton
-          onClick={handleCopy}
-          variant={"default_white_hover"}
-          className={s.copy_button}
-          text={!copied ? "copy" : "copied"}
-        />
+        <div className={s.buttons}>
+          <button className={s.copy_button} onClick={handleCopy}>
+            <Clipboard />
+            <Trans i18nKey={!copied ? "copy" : "copied"} />
+          </button>
+          <button
+            className={s.invite_button}
+            onClick={() => openInviteFriendModal()}
+          >
+            <UserPlusIcon />
+            <Trans i18nKey={"profile.referrals.inviteFriend"} />
+          </button>
+        </div>
       </div>
     </div>
   );

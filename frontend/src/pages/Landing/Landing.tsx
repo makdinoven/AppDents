@@ -114,6 +114,7 @@ const Landing = () => {
       });
       dispatch(setLanguage(res.data.language));
       mainApi.trackLandingVisit(res.data.id, isPromotionLanding);
+      console.log(res.data);
       const {
         old_price,
         new_price,
@@ -258,6 +259,8 @@ const Landing = () => {
     photo: !isWebinar ? landing?.preview_photo || null : firstLesson?.preview,
     renderBuyButton: renderBuyButton("default"),
     isWebinar: isWebinar,
+    tags: landing?.tags,
+    sales: landing?.sales_count,
   };
 
   const aboutData = {

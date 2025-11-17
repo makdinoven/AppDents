@@ -1,0 +1,23 @@
+@forward "./base" with (
+  $primary: #79cee7,
+  $primary-02: rgba(121, 206, 231, 0.2),
+  $primary-04: rgba(121, 206, 231, 0.4),
+  $primary-06: rgba(121, 206, 231, 0.6),
+  $primary-light: #abe9e6,
+  $primary-08: rgba(121, 206, 231, 0.8),
+  $primary-glass: rgba(121, 206, 231, 0.8),
+  $primary-accent: #6cdbfb,
+  $accent: #013443,
+  $accent-03: rgba(1, 52, 67, 0.3),
+  $accent-06: rgba(1, 52, 67, 0.6),
+  $accent-glass: rgba(1, 52, 67, 0.8),
+  $secondary: #017f74,
+  $secondary-08: rgba(1, 127, 116, 0.8),
+  $secondary-lighter: #7fdfd5,
+  $secondary-lighter-02: rgba(127, 223, 213, 0.2),
+  $secondary-lighter-04: rgba(127, 223, 213, 0.4),
+  $secondary-lighter-06: rgba(127, 223, 213, 0.6),
+  $secondary-lighter-08: rgba(127, 223, 213, 0.8),
+  $tertiary: #006d8d,
+  $tertiary-08: rgba(0, 109, 141, 0.8)
+);

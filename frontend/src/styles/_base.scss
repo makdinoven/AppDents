@@ -1,68 +1,68 @@
 $font-family:
-  "Rethink Sans",
-  -apple-system,
-  sans-serif;
+        "Rethink Sans",
+        -apple-system,
+        sans-serif;
 $second-family:
-  "Roboto",
-  -apple-system,
-  sans-serif;
+        "Roboto",
+        -apple-system,
+        sans-serif;
 
 $sm-breakpoint: 1200px;
 $middle-breakpoint: 1024px;
 $tablet-breakpoint: 768px;
 $mobile-breakpoint: 576px;
 
-$background-color: rgb(236, 247, 251);
-$background-color-01: rgba(236, 247, 251, 0.1);
-$background-color-02: rgba(236, 247, 251, 0.2);
-$background-color-04: rgba(236, 247, 251, 0.4);
-$background-color-06: rgba(236, 247, 251, 0.6);
-$background-color-08: rgba(236, 247, 251, 0.8);
-$background-color-09: rgba(236, 247, 251, 0.9);
-$cart-background: rgba(236, 247, 251, 0.4);
-$background-color-05: rgba(236, 247, 251, 0.5);
-$background-color-08: rgba(236, 247, 251, 0.8);
-$primary: rgb(136, 208, 232);
-$primary-02: rgba(136, 208, 232, 0.2);
-$primary-04: rgba(136, 208, 232, 0.4);
-$primary-06: rgba(136, 208, 232, 0.6);
-$primary-light: #d2eff9;
-$primary-08: rgba(136, 208, 232, 0.8);
-$primary-glass: rgba(136, 208, 232, 0.8);
-$primary-accent: #a0c8ea;
-$accent: rgb(34, 66, 95);
-$accent-03: rgba(34, 66, 95, 0.3);
-$accent-06: rgba(34, 66, 95, 0.6);
-$accent-glass: rgba(34, 66, 95, 0.8);
-$secondary: rgb(47, 116, 106);
-$secondary-08: rgba(47, 116, 106, 0.8);
-$secondary-lighter: #97dbbe;
-$secondary-lighter-02: rgba(153, 205, 163, 0.2);
-$secondary-lighter-04: rgba(153, 205, 163, 0.4);
-$secondary-lighter-06: rgba(153, 205, 163, 0.6);
-$secondary-lighter-08: rgba(153, 205, 163, 0.8);
-$tertiary: rgb(78, 102, 83);
-$tertiary-08: rgba(78, 102, 83, 0.8);
-$quaternary: rgb(91, 100, 105);
-$quaternary-06: rgba(91, 100, 105, 0.6);
-$text-color: $background-color;
-$text-color-accent: $accent;
-$orange: #f9652f;
-$error-color: #f92f2f;
-$green: rgb(132, 237, 192);
-$yellow: #f4f59c;
-$green-02: rgba(132, 237, 192, 0.2);
-$green-04: rgba(132, 237, 192, 0.4);
-$green-06: rgba(132, 237, 192, 0.6);
-$green-08: rgba(132, 237, 192, 0.8);
-$error-color-lighten: #fdc8c8;
-$hover-color-darken: rgba(100, 116, 139, 0.25);
-$hover-color-dark: rgba(100, 116, 139, 0.4);
-$hover-color-darken-analogue: #c9d7e1;
-$hover-color: rgba(100, 116, 139, 0.1);
-$hover-color-analogue: #e0ecf4;
-$light-grey: #dfebf3;
-$darker-grey: #d8e4ee;
+$background-color: rgb(237, 248, 255) !default;
+$background-color-01: rgba(237, 248, 255, 0.1) !default;
+$background-color-02: rgba(237, 248, 255, 0.2) !default;
+$background-color-04: rgba(237, 248, 255, 0.4) !default;
+$background-color-06: rgba(237, 248, 255, 0.6) !default;
+$background-color-08: rgba(237, 248, 255, 0.8) !default;
+$background-color-09: rgba(237, 248, 255, 0.9) !default;
+$cart-background: #edf8ff66 !default;
+$background-color-05: rgba(237, 248, 255, 0.5) !default;
+$background-color-08: rgba(237, 248, 255, 0.8) !default;
+$primary: #7fdfd5 !default;
+$primary-02: rgba(127, 223, 213, 0.2) !default;
+$primary-04: rgba(127, 223, 213, 0.4) !default;
+$primary-06: rgba(127, 223, 213, 0.6) !default;
+$primary-light: #abe9e6 !default;
+$primary-08: rgba(127, 223, 213, 0.8) !default;
+$primary-glass: rgba(127, 223, 213, 0.8) !default;
+$primary-accent: #03d3bf !default;
+$accent: #01433d !default;
+$accent-03: rgba(1, 67, 61, 0.3) !default;
+$accent-06: rgba(1, 67, 61, 0.6) !default;
+$accent-glass: rgba(1, 67, 61, 0.8) !default;
+$secondary: #006d8d !default;
+$secondary-08: rgba(0, 109, 141, 0.8) !default;
+$secondary-lighter: #79cee7 !default;
+$secondary-lighter-02: rgba(121, 206, 231, 0.2) !default;
+$secondary-lighter-04: rgba(121, 206, 231, 0.4) !default;
+$secondary-lighter-06: rgba(121, 206, 231, 0.6) !default;
+$secondary-lighter-08: rgba(121, 206, 231, 0.8) !default;
+$tertiary: #017f74 !default;
+$tertiary-08: rgba(1, 127, 116, 0.8) !default;
+$quaternary: #5b6968 !default;
+$quaternary-06: rgba(91, 105, 104, 0.6) !default;
+$text-color: $background-color !default;
+$text-color-accent: $accent !default;
+$orange: #fe8802 !default;
+$error-color: #fe0502 !default;
+$green: #90e895 !default;
+$yellow: #e8db90 !default;
+$green-02: rgba(144, 232, 149, 0.2) !default;
+$green-04: rgba(144, 232, 149, 0.4) !default;
+$green-06: rgba(144, 232, 149, 0.6) !default;
+$green-08: rgba(144, 232, 149, 0.8) !default;
+$error-color-lighten: #ffbebf !default;
+$hover-color-darken: rgba(100, 116, 139, 0.25) !default;
+$hover-color-dark: rgba(100, 116, 139, 0.4) !default;
+$hover-color-darken-analogue: #c9d7e1 !default;
+$hover-color: rgba(100, 116, 139, 0.1) !default;
+$hover-color-analogue: #e0ecf4 !default;
+$light-grey: #dfebf3 !default;
+$darker-grey: #d8e4ee !default;
 $blur: blur(10px);
 
 $font-sz-h1-desk: 95px;
@@ -442,10 +442,10 @@ $font-sz-err-mob: 14px;
   background-color: $color;
 
   background-image: linear-gradient(
-    90deg,
-    rgba(237, 248, 255, 0) 0%,
-    rgba(237, 248, 255, 1) 50%,
-    rgba(237, 248, 255, 0) 100%
+                  90deg,
+                  rgba(237, 248, 255, 0) 0%,
+                  rgba(237, 248, 255, 1) 50%,
+                  rgba(237, 248, 255, 0) 100%
   );
   background-size: 200% 100%;
   background-repeat: no-repeat;

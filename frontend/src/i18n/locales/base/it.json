@@ -17,6 +17,7 @@
   "forgotPassword": "Hai dimenticato la password?",
   "alreadyHaveAccount": "Hai già un account?",
   "passwordResetMailSent": "Una nuova password verrà inviata al tuo indirizzo email",
+  "passwordResetLabel": "Inserisci una nuova password per il reset",
   "passwordReset": "reimpostazione della password",
   "reset": "reimposta",
   "update": "aggiorna",
@@ -192,7 +193,7 @@
     "onlineBook": "Libro Online",
     "annotation": "Annotazione",
     "about": "Informazioni sul Libro",
-    "publishedDate": "Data di Pubblicazione: <0>{{date}}</0>",
+    "publicationDate": "Data di pubblicazione: <0>{{date}}</0>",
     "author": "Autore: <0>{{authors}}</0>",
     "authors": "Autori: <0>{{authors}}</0>",
     "language": "Lingua: <0>{{language}}</0>",
@@ -213,12 +214,13 @@
       "loading": "Caricamento..."
     },
     "pages": {
-      "count": "Pagine: {{count}}",
+      "count": "Pagine: <0>{{count}}</0>",
       "title": "Pagine",
       "readFirstPages": "Leggi le prime pagine del libro!",
       "fullBook": "La versione completa del libro sarà disponibile dopo il pagamento."
     },
-    "salesCount": "Vendite: {{count}}"
+    "salesCount": "Vendite: <0>{{count}}</0>",
+    "tags": "Tag: <0>{{tags}}</0>"
   },
 
   "landing": {
@@ -252,6 +254,7 @@
     "fullWebinarProgram": "Programma completo del webinar",
     "accessFullWebinar": "L'accesso al webinar è illimitato nel tempo!",
     "instantAccessWebinar": "Ottieni l'accesso immediato al webinar subito dopo l'acquisto!",
+    "sales": "Acquistato <0>{{sales}}</0> volte",
     "video": {
       "modalTitle": "Sblocca il corso completo",
       "buyCourseToWatch": "Acquista il corso completo per continuare a guardare."
@@ -299,22 +302,30 @@
     "referral": {
       "myReferrals": "I miei referenti",
       "balance": "Il tuo saldo: <1>{{count}}$</1>",
-      "spend": "Spendi su qualsiasi corso!",
+      "spend": "Spendilo per qualsiasi corso o libro!",
       "link": "Link di invito:",
       "invite": "Invita un amico e guadagna un bonus.",
       "friendsPurchases": "<1>50%</1> degli acquisti dei tuoi amici va direttamente al tuo saldo!",
       "step_1": "1. Copia il tuo link personale qui sotto.",
       "step_2": "2. Invia il link a un amico tramite WhatsApp, Telegram, email o come preferisci.",
-      "step_3": "3. Il tuo amico acquista qualsiasi corso — ad esempio uno da <1>$19</1>.",
+      "step_3": "3. Il tuo amico acquista qualsiasi corso o libro — ad esempio per <1>19 $</1>.",
       "step_4": "4. Ricevi il <1>50%</1> del pagamento (es. <1>$9,50</1>) come credito nel tuo portafoglio."
     },
 
     "main": "Home",
+    "profile": "Profilo",
+    "settings": "Impostazioni",
     "user": "Utente:",
     "referrals": {
       "email": "Email",
       "invitation": "Invito",
-      "totalCashback": "cashback totale"
+      "totalCashback": "Cashback totale",
+      "inviteFriend": "Invita un amico",
+      "enterFriendsMail": "Inserisci l'email del tuo amico per invitarlo al sito tramite il tuo link di referral",
+      "sendInvite": "Invia invito",
+      "inviteSuccess": "Invito inviato con successo! Se l'email non arriva, controlla la cartella Spam.",
+      "inviteFailed": "Invio invito non riuscito!",
+      "inviteFriendLabel": "Inserisci l'email del destinatario"
     },
     "purchaseHistory": {
       "invitedUsers": "Utenti invitati",
@@ -433,6 +444,8 @@
 
   "bookCard": {
     "tags": "Etichette",
-    "authors": "Autori"
+    "authors": "Autori",
+    "publisher": "Editore",
+    "publicationDate": "Data di pubblicazione"
   }
 }
