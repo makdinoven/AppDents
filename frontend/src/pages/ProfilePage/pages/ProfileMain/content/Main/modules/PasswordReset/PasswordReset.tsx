@@ -20,13 +20,16 @@ import { useState } from "react";
 
 const PasswordReset = () => {
   const { id } = useSelector((state: AppRootStateType) => state.user);
+  const language = useSelector(
+    (state: AppRootStateType) => state.user.language,
+  );
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ResetPasswordType>({
     resolver: joiResolver(resetPasswordSchema),
-    mode: "onTouched",
+    mode: "onSubmit",
   });
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -48,10 +51,10 @@ const PasswordReset = () => {
   return (
     <Form handleSubmit={handleSubmit(handleResetPassword)}>
       <div className={s.password_reset}>
+        <label lang={language.toLowerCase()} htmlFor="new-password">
+          <Trans i18nKey="passwordResetLabel" />
+        </label>
         <div className={s.reset_input}>
-          <label htmlFor="new-password">
-            <Trans i18nKey="passwordResetLabel" />
-          </label>
           <PasswordInput
             id="new-password"
             placeholder={t("newPassword")}
@@ -59,15 +62,16 @@ const PasswordReset = () => {
             error={errors.password?.message}
             {...{ variant: "admin" }}
           />
-        </div>
-        <div className={s.reset_button}>
-          <Button
-            text="reset"
-            type="submit"
-            variant="filled"
-            loading={loading}
-            disabled={loading}
-          />
+
+          <div className={s.reset_button}>
+            <Button
+              text="reset"
+              type="submit"
+              variant="filled"
+              loading={loading}
+              disabled={loading}
+            />
+          </div>
         </div>
       </div>
     </Form>

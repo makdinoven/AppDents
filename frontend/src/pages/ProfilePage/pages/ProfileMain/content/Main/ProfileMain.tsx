@@ -68,42 +68,45 @@ const ProfileMain = () => {
       <div key={childKey} className={s.main_content}>
         <div className={s.main_content_top}>
           <div className={s.profile}>
-            <div className={s.profile_left}>
-              <p>
+            <div className={s.profile_header}>
+              <p className={s.section_title}>
                 <Trans i18nKey="profile.profile" />
               </p>
-              <div className={s.left_content}>
-                <User className={s.user} />
-                <div className={s.profile_info}>
-                  <div className={s.mail}>
-                    <Mail />
-                    <span>
-                      <Trans i18nKey="mail" />:
-                    </span>
-                    {email}
-                  </div>
-                  <div className={s.support}>
-                    <Support />
-                    <span>
-                      <Trans i18nKey="support" />:
-                    </span>{" "}
-                    <a
-                      className={s.mail_link}
-                      href="mailto:info.dis.org@gmail.com"
-                    >
-                      info.dis.org@gmail.com
-                    </a>
-                  </div>
+              <button className={s.logout} onClick={() => handleLogout()}>
+                <LogoutIcon />
+                <Trans i18nKey="logout" />
+              </button>
+            </div>
+            <div className={s.profile_content}>
+              <User className={s.user} />
+              <div className={s.profile_info}>
+                <div className={s.mail}>
+                  <Mail />
+                  <span>
+                    <Trans i18nKey="mail" />:
+                  </span>
+                  {email}
+                </div>
+                <div className={s.support}>
+                  <Support />
+                  <span>
+                    <Trans i18nKey="support" />:
+                  </span>{" "}
+                  <a
+                    className={s.mail_link}
+                    href="mailto:info.dis.org@gmail.com"
+                  >
+                    info.dis.org@gmail.com
+                  </a>
                 </div>
               </div>
             </div>
-            <button className={s.logout} onClick={() => handleLogout()}>
-              <LogoutIcon />
-              <Trans i18nKey="logout" />
-            </button>
           </div>
           <div className={s.settings}>
-            <Trans i18nKey="profile.settings" />
+            <p className={s.section_title}>
+              <Trans i18nKey="profile.settings" />
+            </p>
+
             <PasswordReset />
           </div>
         </div>

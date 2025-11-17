@@ -313,7 +313,7 @@
       "email": "Email",
       "invitation": "Convite",
       "totalCashback": "Cashback total",
-      "inviteFriend": "Convidar um amigo",
+      "inviteFriend": "Convidar amigo",
       "enterFriendsMail": "Digite o e-mail do seu amigo para convidá-lo para o site através do seu link de referência",
       "sendInvite": "Enviar convite",
       "inviteSuccess": "Convite enviado com sucesso! Se o e-mail não chegar, verifique a pasta de spam.",
@@ -322,7 +322,7 @@
     },
     "purchaseHistory": {
       "invitedUsers": "Usuários convidados",
-      "purchases": "Histórico de compras",
+      "purchases": "Сompras",
       "purchaseSum": "Valor da compra:",
       "adminAdjust": "Bônus",
       "internalPurchase": "Pagamento",

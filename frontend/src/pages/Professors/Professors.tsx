@@ -57,11 +57,7 @@ const Professors = () => {
         SkeletonComponent={ProfessorCardSkeletons}
         loading={loading}
       >
-        <ProfessorsList
-          source={"page"}
-          professors={professors}
-          loading={loading}
-        />
+        <ProfessorsList professors={professors} loading={loading} />
       </ListController>
       {!isFirstLoad && (
         <ProductsSection

@@ -18,9 +18,9 @@ const Input: React.FC<InputProps> = ({
 }) => {
   return (
     <div
-      className={`${s.input_wrapper} ${error ? s.error : ""} ${type ? s[type] : ""} ${iconPadding ? s.padding : ""} ${variant && s[variant]}`}
+      className={`${s.input_wrapper} ${error ? s.error : ""} ${type ? s[type] : ""} ${iconPadding ? s.padding : ""} ${variant ? s[variant] : ""} `}
     >
-      <input {...props} type={type} className={variant && s[variant]} />
+      <input {...props} type={type} className={variant ? s[variant] : ""} />
 
       {children}
     </div>

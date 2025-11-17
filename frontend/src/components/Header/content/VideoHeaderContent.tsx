@@ -8,13 +8,15 @@ import { usePaymentPageHandler } from "../../../common/hooks/usePaymentPageHandl
 const VideoHeaderContent = () => {
   const { openPaymentModal } = usePaymentPageHandler();
   const oldPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.oldPrice,
+    (state: AppRootStateType) => state.payment.data?.old_price,
   );
   const newPrice = useSelector(
-    (state: AppRootStateType) => state.payment.data?.newPrice,
+    (state: AppRootStateType) => state.payment.data?.new_price,
   );
   const lessonsCount = useSelector(
-    (state: AppRootStateType) => state.payment.data?.courses[0].lessonsCount,
+    (state: AppRootStateType) =>
+      // @ts-ignore
+      state.payment?.render?.items[0].data.lessons_count,
   );
 
   function extractMaxNumber(text: string) {
