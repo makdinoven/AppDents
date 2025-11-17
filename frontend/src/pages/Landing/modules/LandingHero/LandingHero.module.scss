@@ -148,11 +148,17 @@ $arrow-w: 66px;
       margin-bottom: var(--offset);
     }
 
+    .info {
+      margin-right: 75px;
+      @include flex-column();
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 95px;
+    }
+
     .authors,
     .sales {
       @include clamped-p2();
-      margin-right: 75px;
-      margin-bottom: 10px;
 
       span {
         color: $primary;
@@ -161,7 +167,6 @@ $arrow-w: 66px;
     }
 
     div {
-      margin-bottom: 10px;
       @include flex-center();
       justify-content: flex-start;
       gap: 5px;
@@ -178,10 +183,6 @@ $arrow-w: 66px;
           fill: $primary;
         }
       }
-    }
-
-    .sales {
-      margin-bottom: 95px;
     }
 
     .arrow {
@@ -224,7 +225,7 @@ $arrow-w: 66px;
         }
       }
 
-      .sales {
+      .info {
         margin-bottom: 20px;
       }
     }

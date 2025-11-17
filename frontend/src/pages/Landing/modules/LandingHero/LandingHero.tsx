@@ -86,28 +86,30 @@ const LandingHero: React.FC<LandingHeroProps> = ({
               <div className={s.arrow}>
                 <CircleArrow />
               </div>
-              <p className={s.authors}>{authors}</p>
-              {tags?.length > 0 && (
-                <div>
-                  <TagIcon />
-                  {tags
-                    ?.map((tag: any) => {
-                      return t(tag.name);
-                    })
-                    .join(", ")}
-                </div>
-              )}
-              {sales && sales > 100 && (
-                <p className={s.sales}>
-                  <Trans
-                    i18nKey={"landing.sales"}
-                    values={{
-                      sales: sales,
-                    }}
-                    components={[<span className={s.highlight} />]}
-                  />
-                </p>
-              )}
+              <div className={s.info}>
+                <p className={s.authors}>{authors}</p>
+                {tags?.length > 0 && (
+                  <div>
+                    <TagIcon />
+                    {tags
+                      ?.map((tag: any) => {
+                        return t(tag.name);
+                      })
+                      .join(", ")}
+                  </div>
+                )}
+                {sales > 100 && (
+                  <p className={s.sales}>
+                    <Trans
+                      i18nKey={"landing.sales"}
+                      values={{
+                        sales: sales,
+                      }}
+                      components={[<span className={s.highlight} />]}
+                    />
+                  </p>
+                )}
+              </div>
               {renderBuyButton}
             </div>
           </div>
