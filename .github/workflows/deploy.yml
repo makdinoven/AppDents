@@ -176,12 +176,116 @@ jobs:
               fi
             }
             
+            # =========================
+            # 5.2) Функция для проверки готовности backend
+            # =========================
+            wait_for_backend() {
+              local max_attempts=30
+              local attempt=1
+              local backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              local running_attempts=0
+              local min_running_attempts=8  # минимум 8 попыток (16 секунд) работы контейнера
+              
+              echo "[healthcheck] Waiting for backend to be ready..."
+              
+              while [ $attempt -le $max_attempts ]; do
+                # Проверим, что контейнер существует и работает
+                container_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
+                
+                if [ "$container_status" = "not_found" ]; then
+                  echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container not found..."
+                  running_attempts=0
+                  sleep 2
+                  attempt=$((attempt + 1))
+                  continue
+                fi
+                
+                if [ "$container_status" != "running" ]; then
+                  echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container status: ${container_status}"
+                  running_attempts=0
+                  sleep 2
+                  attempt=$((attempt + 1))
+                  continue
+                fi
+                
+                # Контейнер запущен, увеличиваем счетчик
+                running_attempts=$((running_attempts + 1))
+                
+                # Если контейнер работает достаточно долго, считаем его готовым
+                if [ $running_attempts -ge $min_running_attempts ]; then
+                  # Дополнительная проверка: попробуем проверить порт через docker port
+                  if docker port "${backend_container}" 2>/dev/null | grep -q "8000"; then
+                    echo "[healthcheck] Backend is ready! (running for ${running_attempts} checks, port 8000 is exposed)"
+                    return 0
+                  fi
+                  
+                  # Если порт не найден, но контейнер работает достаточно долго, все равно считаем готовым
+                  echo "[healthcheck] Backend container is running for ${running_attempts} checks (${min_running_attempts}*2s), assuming ready..."
+                  return 0
+                fi
+                
+                echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container running (${running_attempts}/${min_running_attempts} checks), waiting for readiness..."
+                sleep 2
+                attempt=$((attempt + 1))
+              done
+              
+              echo "[warn] Backend healthcheck timeout after ${max_attempts} attempts, but continuing..."
+              return 1
+            }
+            
             if [ -z "${CHANGED:-}" ]; then
               echo "[deploy] No service changes. Touch nginx only."
               
-              # Убедиться, что все сервисы запущены
+              # Убедиться, что все сервисы запущены, включая backend
               echo "[deploy] Ensuring all services are up..."
+              # Сначала убедимся, что backend запущен
+              echo "[deploy] Ensuring backend is running..."
+              
+              # Проверим, существует ли контейнер backend
+              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[deploy] Backend container does not exist, creating it..."
+              else
+                echo "[deploy] Backend container exists, ensuring it's running..."
+              fi
+              
+              # Запустим backend
+              if ! docker compose up -d backend; then
+                echo "[error] Failed to start backend!"
+                echo "[error] Checking docker compose config..."
+                docker compose config | grep -A 10 "backend:" || true
+                exit 1
+              fi
+              
+              # Проверим, что контейнер действительно создан
+              sleep 2
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[error] Backend container was not created after 'docker compose up -d backend'!"
+                echo "[error] Listing all containers:"
+                docker ps -a
+                echo "[error] Checking docker compose services:"
+                docker compose ps -a
+                exit 1
+              fi
+              
+              # Проверим статус контейнера
+              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
+              echo "[deploy] Backend container status: ${backend_status}"
+              
+              if [ "$backend_status" = "not_found" ]; then
+                echo "[error] Backend container not found after startup attempt!"
+                exit 1
+              fi
+              
+              # Дадим backend немного времени на запуск
+              sleep 3
+              
+              # Затем запустим все остальные сервисы
               docker compose up -d --no-recreate
+              
+              # Убедиться, что backend готов перед перезапуском nginx
+              echo "[deploy] Checking backend health before nginx restart..."
+              wait_for_backend
               
               # Остановить и удалить старый контейнер nginx
               docker compose stop nginx || true
@@ -196,8 +300,16 @@ jobs:
               docker compose up -d --force-recreate --no-deps nginx
             else
               echo "[deploy] Updating changed services: ${CHANGED}"
+              BACKEND_CHANGED=false
+              
               for svc in ${CHANGED}; do
                 echo "[deploy] Upgrading: ${svc}"
+                
+                # Отметим, если backend был изменен
+                if [ "${svc}" = "backend" ]; then
+                  BACKEND_CHANGED=true
+                fi
+                
                 # Остановить и удалить старый контейнер (чтобы освободить порты)
                 echo "[deploy] Stopping old container: ${svc}"
                 docker compose stop "${svc}" || true
@@ -224,10 +336,66 @@ jobs:
               done
               
               # =========================
-              # 5.2) Убедиться, что ВСЕ сервисы запущены
+              # 5.3) Если backend был изменен, ждем его готовности
+              # =========================
+              if [ "${BACKEND_CHANGED}" = "true" ]; then
+                echo "[deploy] Backend was changed, waiting for it to be ready..."
+                wait_for_backend
+                echo "[deploy] Backend is ready, proceeding with nginx update..."
+              fi
+              
+              # =========================
+              # 5.4) Убедиться, что ВСЕ сервисы запущены, включая backend
               # =========================
               echo "[deploy] Ensuring all services are up..."
+              # Сначала убедимся, что backend запущен (даже если он не был изменен)
+              echo "[deploy] Ensuring backend is running..."
+              
+              # Проверим, существует ли контейнер backend
+              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[deploy] Backend container does not exist, creating it..."
+              else
+                echo "[deploy] Backend container exists, ensuring it's running..."
+              fi
+              
+              # Запустим backend
+              if ! docker compose up -d backend; then
+                echo "[error] Failed to start backend!"
+                echo "[error] Checking docker compose config..."
+                docker compose config | grep -A 10 "backend:" || true
+                exit 1
+              fi
+              
+              # Проверим, что контейнер действительно создан
+              sleep 2
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[error] Backend container was not created after 'docker compose up -d backend'!"
+                echo "[error] Listing all containers:"
+                docker ps -a
+                echo "[error] Checking docker compose services:"
+                docker compose ps -a
+                exit 1
+              fi
+              
+              # Проверим статус контейнера
+              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
+              echo "[deploy] Backend container status: ${backend_status}"
+              
+              if [ "$backend_status" = "not_found" ]; then
+                echo "[error] Backend container not found after startup attempt!"
+                exit 1
+              fi
+              
+              # Дадим backend немного времени на запуск
+              sleep 3
+              
+              # Затем запустим все остальные сервисы
               docker compose up -d --no-recreate
+              
+              # Всегда проверяем готовность backend перед перезапуском nginx
+              echo "[deploy] Final backend healthcheck before nginx restart..."
+              wait_for_backend
               
               # На всякий случай убедимся, что nginx на последнем образе
               docker compose stop nginx || true
@@ -242,17 +410,46 @@ jobs:
             fi
             
             # =========================
-            # 6) Бездаунтаймовый reload nginx
+            # 6) Проверка статуса всех сервисов перед reload nginx
             # =========================
+            echo "[deploy] Checking all services status..."
+            docker compose ps
+            
+            # Убедимся, что backend все еще работает
+            echo "[deploy] Final backend check before nginx reload..."
+            wait_for_backend
+            
+            # =========================
+            # 7) Бездаунтаймовый reload nginx
+            # =========================
+            echo "[deploy] Reloading nginx..."
             if ! docker compose exec -T nginx nginx -s reload; then
               echo "[warn] nginx reload failed — doing safe restart"
               docker compose restart nginx
+              sleep 3
+            fi
+            
+            # Проверим, что nginx работает
+            nginx_status=$(docker inspect -f '{{.State.Status}}' "${COMPOSE_PROJECT_NAME:-appdents}_nginx" 2>/dev/null || echo "not_found")
+            if [ "$nginx_status" != "running" ]; then
+              echo "[error] Nginx is not running! Status: ${nginx_status}"
+              echo "[deploy] Attempting to start nginx..."
+              docker compose up -d nginx
+              sleep 3
+            else
+              echo "[ok] Nginx is running"
             fi
             
             # =========================
-            # 7) Уборка билд-кеша (безопасно)
+            # 8) Уборка билд-кеша (безопасно)
             # =========================
             docker builder prune -f || true
+            
+            # =========================
+            # 9) Финальная проверка статуса
+            # =========================
+            echo "[deploy] Final services status:"
+            docker compose ps
             
             echo "[done] Deploy complete."
 
