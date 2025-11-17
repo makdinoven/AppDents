@@ -103,7 +103,7 @@ jobs:
             cleanup_port() {
               local p=$1 s=$2
               for c in $(docker ps -aq); do
-                docker port "$c" 2>/dev/null | grep ":${p}" && docker rm -f "$c" || true
+                docker port "$c" 2>/dev/null | grep -E "(0\.0\.0\.0|::):${p}($| )" && docker rm -f "$c" || true
               done
             }
             wait_for_backend() {
@@ -131,9 +131,7 @@ jobs:
                 [ "$mh" = "healthy" ] && break
                 sleep 2
               done
-              echo "[debug] Checking if backend exists..."
               if ! docker ps -a | grep -q "${bc}"; then
-                echo "[debug] Backend not found, creating..."
                 if ! docker compose up -d backend 2>&1; then
                   echo "[error] Backend start failed"
                   docker compose ps mysql
@@ -146,11 +144,9 @@ jobs:
                   exit 1
                 fi
               else
-                echo "[debug] Backend exists, ensuring it's up..."
                 docker compose up -d backend || true
               fi
               bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
-              echo "[debug] Backend status: ${bs}"
               if [ "$bs" = "not_found" ]; then
                 echo "[error] Backend container not found"
                 exit 1
@@ -165,16 +161,11 @@ jobs:
             bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
             if [ -z "${CHANGED:-}" ]; then
               ensure_backend
-              echo "[debug] Backend status after ensure_backend:"
-              docker ps -a | grep "${bc}" || echo "Backend not found!"
               docker compose up -d --no-recreate
-              echo "[debug] Backend status after docker compose up:"
-              docker ps -a | grep "${bc}" || echo "Backend not found!"
               if ! docker ps -a | grep -q "${bc}"; then
-                echo "[debug] Trying to start backend explicitly..."
+                echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
-                docker ps -a | grep "${bc}" || echo "Backend still not found!"
               fi
               if ! wait_for_backend; then
                 echo "[error] Backend not ready"
@@ -199,16 +190,11 @@ jobs:
               done
               [ "${BACKEND_CHANGED}" = "true" ] && wait_for_backend
               ensure_backend
-              echo "[debug] Backend status after ensure_backend:"
-              docker ps -a | grep "${bc}" || echo "Backend not found!"
               docker compose up -d --no-recreate
-              echo "[debug] Backend status after docker compose up:"
-              docker ps -a | grep "${bc}" || echo "Backend not found!"
               if ! docker ps -a | grep -q "${bc}"; then
-                echo "[debug] Trying to start backend explicitly..."
+                echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
-                docker ps -a | grep "${bc}" || echo "Backend still not found!"
               fi
               if ! wait_for_backend; then
                 echo "[error] Backend not ready"
