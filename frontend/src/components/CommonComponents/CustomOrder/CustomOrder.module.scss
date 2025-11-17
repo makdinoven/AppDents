@@ -4,7 +4,7 @@
   width: 100%;
 
   h2 {
-    font-size: 75px;
+    font-size: clamp(35px, 5.4vw, 75px);
     text-transform: uppercase;
     transform: translateY(5px);
   }
@@ -12,11 +12,10 @@
 
 .form {
   background-color: $primary-08;
-  border-radius: 40px;
+  border-radius: 30px;
   width: 100%;
-  padding: 30px;
+  padding: 20px;
   @include flex-column();
-  gap: 20px;
 }
 
 .content_block {
@@ -30,24 +29,39 @@
     @include clamped-h3();
     text-transform: uppercase;
     text-align: center;
+    width: 90%;
+    hyphens: auto;
+    word-break: normal;
+    overflow-wrap: break-word;
   }
 }
 
 .description_block {
   width: 100%;
   gap: 5px;
+  @include flex-column();
+  position: relative;
+
+  svg {
+    position: absolute;
+    top: 0;
+    right: 2px;
+    transform: rotate(-60deg);
+    width: 44px;
+    height: auto;
+  }
 
   label {
     color: $accent-glass;
     @include clamped-p3();
-    margin-left: 20px;
+    margin-left: 15px;
   }
 
   textarea {
     width: 100%;
     background-color: $primary-04-analogue;
     border: 2px solid $primary;
-    border-radius: 30px;
+    border-radius: 20px;
     min-height: 190px;
     @include clamped-p3();
     padding: 15px;
@@ -63,10 +77,57 @@
   color: $primary;
 }
 
+.request_btn {
+  @include flex-center();
+  gap: 10px;
+  flex-direction: row-reverse;
+  text-transform: unset;
+  padding: 10px 30px;
+  align-self: center;
+  @include clamped-p2();
+  width: 420px;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+@media (max-width: $middle-breakpoint) {
+  .form {
+    padding: 20px 15px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .form {
+    form {
+      gap: 30px !important;
+    }
+  }
+
+  .custom_order_block {
+    h2 {
+      transform: unset;
+    }
+  }
+
+  .content_block {
+    h3 {
+      @include clamped-h4();
+      width: 100%;
+    }
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .form {
-    border-radius: 30px;
-    padding: 20px;
+    border-radius: 20px;
+    padding: 15px;
+
+    form {
+      gap: 20px !important;
+    }
   }
 
   .description_block {
@@ -75,8 +136,18 @@
     }
 
     textarea {
-      border-radius: 20px;
+      border-radius: 15px;
       padding: 10px;
     }
+  }
+
+  .content_block {
+    h3 {
+      width: 100%;
+    }
+  }
+
+  .request_btn {
+    width: 90%;
   }
 }

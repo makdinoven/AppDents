@@ -30,6 +30,13 @@
   }
 }
 
+.submit_btn {
+  @include clamped-p2();
+  text-transform: unset;
+  width: fit-content;
+  padding: 5px 30px;
+}
+
 .close_modal_button {
   height: 43px;
   width: auto;
@@ -77,15 +84,6 @@
       color: $background-color-06;
       opacity: 1;
     }
-  }
-}
-
-.submit_button {
-  button {
-    outline: none !important;
-    padding: 5px 30px;
-    text-transform: unset;
-    @include clamped-p1();
   }
 }
 

@@ -99,15 +99,14 @@ const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
             {...{ variant: "invite" }}
           />
         </div>
-        <div className={s.submit_button}>
-          <Button
-            text="profile.referrals.sendInvite"
-            type="submit"
-            variant="filled"
-            loading={loading}
-            disabled={loading}
-          />
-        </div>
+        <Button
+          text="profile.referrals.sendInvite"
+          type="submit"
+          variant="filled"
+          loading={loading}
+          disabled={loading}
+          className={s.submit_btn}
+        />
       </Form>
     </div>
   );

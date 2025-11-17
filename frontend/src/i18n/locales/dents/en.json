@@ -77,7 +77,7 @@
   "customOrderText": "Looking for a specific book or course? Describe it below (add a link if you have one) — we’ll take care of the rest!",
   "describeProduct": "Describe product you want",
   "typeHere": "Type here...",
-  "request": "request",
+  "request": "Request",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",

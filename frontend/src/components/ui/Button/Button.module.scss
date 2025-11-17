@@ -1,7 +1,7 @@
 .btn {
   position: relative;
   overflow: hidden;
-  @include clamped-h3;
+  @include clamped-h3();
   @include transition;
   display: block;
   width: 100%;
@@ -10,8 +10,14 @@
   outline: 2px solid $background-color;
   outline-offset: -2px;
   border-radius: 40px;
-  padding: 5.5px;
-  min-height: clamp(40px, 10vw, 50.5px);
+  padding: 5px;
+  min-height: clamp(40px, 10vw, 50px);
+
+  svg {
+    path {
+      @include transition();
+    }
+  }
 
   &.filled {
     background-color: $background-color;
@@ -24,6 +30,18 @@
     }
   }
 
+  &.filled_dark {
+    outline-color: $accent;
+    background-color: $accent;
+    color: $text-color;
+
+    &.loading {
+      outline: unset;
+      background-color: $quaternary;
+      color: $text-color;
+    }
+  }
+
   &.disabled {
     outline: none;
     pointer-events: none;
@@ -33,7 +51,7 @@
     color: $accent;
   }
 
-  &.outlined-dark {
+  &.outlined_dark {
     outline: unset;
     border: 1.5px solid $accent;
   }
@@ -52,16 +70,26 @@
         outline: 2px solid $primary;
         color: $text-color;
 
-        .icon {
-          svg {
-            path {
-              fill: $text-color;
-            }
+        svg {
+          path {
+            fill: $text-color;
           }
         }
       }
 
-      &.outlined-dark {
+      &.filled_dark {
+        background-color: $background-color;
+        outline-color: $background-color;
+        color: $text-color-accent;
+
+        svg {
+          path {
+            stroke: $text-color-accent;
+          }
+        }
+      }
+
+      &.outlined_dark {
         background-color: $primary;
         color: $text-color;
         border-color: $primary;
@@ -69,39 +97,27 @@
     }
   }
 
-    &:active {
-      color: $primary;
-      background-color: $background-color;
+  &:active {
+    color: $primary;
+    background-color: $background-color;
 
-      &.outlined-dark {
-        background-color: $background-color;
-        color: $primary;
-      }
+    &.outlined_dark {
+      background-color: $background-color;
+      color: $primary;
     }
 
-  .icon {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    height: 32px;
-    right: 26px;
-
-    svg {
-      height: 100%;
-      width: 100%;
-      path {
-        @include transition;
+    &.filled_dark {
+      outline-color: $background-color;
+      color: $text-color-accent;
+      svg {
+        path {
+          stroke: $text-color-accent;
+        }
       }
     }
   }
 
   @media (max-width: $mobile-breakpoint) {
     outline: 1px solid $background-color;
-
-    .icon {
-      height: 30px;
-      width: 35px;
-      right: 7px;
-    }
   }
 }

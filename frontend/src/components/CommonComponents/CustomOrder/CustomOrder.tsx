@@ -6,6 +6,8 @@ import Form from "../../Modals/modules/Form/Form.tsx";
 import { t } from "i18next";
 import Button from "../../ui/Button/Button.tsx";
 import { useState } from "react";
+import { SendIcon } from "../../../assets/icons";
+import { ToothGreen } from "../../../assets";
 
 const CustomOrder = () => {
   const handleOrderSubmit = () => {};
@@ -40,14 +42,19 @@ const CustomOrder = () => {
                 placeholder={t("typeHere")}
                 {...{ register: "description-input" }}
               />
+              <ToothGreen />
             </div>
           </div>
           <Button
-            text="request"
             type="submit"
             disabled={loading}
             loading={loading}
-          />
+            icon={<SendIcon />}
+            variant="filled_dark"
+            className={s.request_btn}
+          >
+            <Trans i18nKey="request" />
+          </Button>
         </Form>
       </div>
     </div>
