@@ -240,8 +240,40 @@ jobs:
               echo "[deploy] Ensuring all services are up..."
               # Сначала убедимся, что backend запущен
               echo "[deploy] Ensuring backend is running..."
+              
+              # Проверим, существует ли контейнер backend
+              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[deploy] Backend container does not exist, creating it..."
+              else
+                echo "[deploy] Backend container exists, ensuring it's running..."
+              fi
+              
+              # Запустим backend
               if ! docker compose up -d backend; then
                 echo "[error] Failed to start backend!"
+                echo "[error] Checking docker compose config..."
+                docker compose config | grep -A 10 "backend:" || true
+                exit 1
+              fi
+              
+              # Проверим, что контейнер действительно создан
+              sleep 2
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[error] Backend container was not created after 'docker compose up -d backend'!"
+                echo "[error] Listing all containers:"
+                docker ps -a
+                echo "[error] Checking docker compose services:"
+                docker compose ps -a
+                exit 1
+              fi
+              
+              # Проверим статус контейнера
+              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
+              echo "[deploy] Backend container status: ${backend_status}"
+              
+              if [ "$backend_status" = "not_found" ]; then
+                echo "[error] Backend container not found after startup attempt!"
                 exit 1
               fi
               
@@ -318,8 +350,40 @@ jobs:
               echo "[deploy] Ensuring all services are up..."
               # Сначала убедимся, что backend запущен (даже если он не был изменен)
               echo "[deploy] Ensuring backend is running..."
+              
+              # Проверим, существует ли контейнер backend
+              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[deploy] Backend container does not exist, creating it..."
+              else
+                echo "[deploy] Backend container exists, ensuring it's running..."
+              fi
+              
+              # Запустим backend
               if ! docker compose up -d backend; then
                 echo "[error] Failed to start backend!"
+                echo "[error] Checking docker compose config..."
+                docker compose config | grep -A 10 "backend:" || true
+                exit 1
+              fi
+              
+              # Проверим, что контейнер действительно создан
+              sleep 2
+              if ! docker ps -a | grep -q "${backend_container}"; then
+                echo "[error] Backend container was not created after 'docker compose up -d backend'!"
+                echo "[error] Listing all containers:"
+                docker ps -a
+                echo "[error] Checking docker compose services:"
+                docker compose ps -a
+                exit 1
+              fi
+              
+              # Проверим статус контейнера
+              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
+              echo "[deploy] Backend container status: ${backend_status}"
+              
+              if [ "$backend_status" = "not_found" ]; then
+                echo "[error] Backend container not found after startup attempt!"
                 exit 1
               fi
               
