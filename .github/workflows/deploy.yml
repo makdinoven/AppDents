@@ -243,28 +243,62 @@ jobs:
               
               # Проверим, существует ли контейнер backend
               backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              mysql_container="${COMPOSE_PROJECT_NAME:-appdents}_mysql"
+              
+              # Убедимся, что mysql запущен и healthy (backend зависит от него)
+              echo "[deploy] Checking mysql health before starting backend..."
+              mysql_status=$(docker inspect -f '{{.State.Status}}' "${mysql_container}" 2>/dev/null || echo "not_found")
+              mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
+              
+              if [ "$mysql_status" != "running" ]; then
+                echo "[warn] MySQL is not running (status: ${mysql_status}), starting it..."
+                docker compose up -d mysql
+                sleep 5
+              fi
+              
+              if [ "$mysql_health" != "healthy" ] && [ "$mysql_health" != "no-healthcheck" ]; then
+                echo "[warn] MySQL is not healthy (health: ${mysql_health}), waiting..."
+                for i in {1..30}; do
+                  mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
+                  if [ "$mysql_health" = "healthy" ]; then
+                    echo "[ok] MySQL is now healthy"
+                    break
+                  fi
+                  sleep 2
+                done
+              fi
+              
               if ! docker ps -a | grep -q "${backend_container}"; then
                 echo "[deploy] Backend container does not exist, creating it..."
               else
                 echo "[deploy] Backend container exists, ensuring it's running..."
               fi
               
-              # Запустим backend
-              if ! docker compose up -d backend; then
+              # Запустим backend (БЕЗ --no-deps, чтобы зависимости были проверены)
+              echo "[deploy] Starting backend with dependencies..."
+              if ! docker compose up -d backend 2>&1; then
                 echo "[error] Failed to start backend!"
                 echo "[error] Checking docker compose config..."
-                docker compose config | grep -A 10 "backend:" || true
+                docker compose config | grep -A 15 "backend:" || true
+                echo "[error] Checking mysql status..."
+                docker compose ps mysql || true
+                echo "[error] Checking if mysql is healthy..."
+                docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "mysql healthcheck not available"
                 exit 1
               fi
               
               # Проверим, что контейнер действительно создан
-              sleep 2
+              sleep 3
               if ! docker ps -a | grep -q "${backend_container}"; then
                 echo "[error] Backend container was not created after 'docker compose up -d backend'!"
                 echo "[error] Listing all containers:"
-                docker ps -a
+                docker ps -a | head -20
                 echo "[error] Checking docker compose services:"
                 docker compose ps -a
+                echo "[error] Checking backend logs if container exists but not running:"
+                docker logs "${backend_container}" 2>&1 | tail -50 || echo "Container does not exist"
+                echo "[error] Trying to create backend again with verbose output:"
+                docker compose up -d --build backend 2>&1 || true
                 exit 1
               fi
               
@@ -353,28 +387,62 @@ jobs:
               
               # Проверим, существует ли контейнер backend
               backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              mysql_container="${COMPOSE_PROJECT_NAME:-appdents}_mysql"
+              
+              # Убедимся, что mysql запущен и healthy (backend зависит от него)
+              echo "[deploy] Checking mysql health before starting backend..."
+              mysql_status=$(docker inspect -f '{{.State.Status}}' "${mysql_container}" 2>/dev/null || echo "not_found")
+              mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
+              
+              if [ "$mysql_status" != "running" ]; then
+                echo "[warn] MySQL is not running (status: ${mysql_status}), starting it..."
+                docker compose up -d mysql
+                sleep 5
+              fi
+              
+              if [ "$mysql_health" != "healthy" ] && [ "$mysql_health" != "no-healthcheck" ]; then
+                echo "[warn] MySQL is not healthy (health: ${mysql_health}), waiting..."
+                for i in {1..30}; do
+                  mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
+                  if [ "$mysql_health" = "healthy" ]; then
+                    echo "[ok] MySQL is now healthy"
+                    break
+                  fi
+                  sleep 2
+                done
+              fi
+              
               if ! docker ps -a | grep -q "${backend_container}"; then
                 echo "[deploy] Backend container does not exist, creating it..."
               else
                 echo "[deploy] Backend container exists, ensuring it's running..."
               fi
               
-              # Запустим backend
-              if ! docker compose up -d backend; then
+              # Запустим backend (БЕЗ --no-deps, чтобы зависимости были проверены)
+              echo "[deploy] Starting backend with dependencies..."
+              if ! docker compose up -d backend 2>&1; then
                 echo "[error] Failed to start backend!"
                 echo "[error] Checking docker compose config..."
-                docker compose config | grep -A 10 "backend:" || true
+                docker compose config | grep -A 15 "backend:" || true
+                echo "[error] Checking mysql status..."
+                docker compose ps mysql || true
+                echo "[error] Checking if mysql is healthy..."
+                docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "mysql healthcheck not available"
                 exit 1
               fi
               
               # Проверим, что контейнер действительно создан
-              sleep 2
+              sleep 3
               if ! docker ps -a | grep -q "${backend_container}"; then
                 echo "[error] Backend container was not created after 'docker compose up -d backend'!"
                 echo "[error] Listing all containers:"
-                docker ps -a
+                docker ps -a | head -20
                 echo "[error] Checking docker compose services:"
                 docker compose ps -a
+                echo "[error] Checking backend logs if container exists but not running:"
+                docker logs "${backend_container}" 2>&1 | tail -50 || echo "Container does not exist"
+                echo "[error] Trying to create backend again with verbose output:"
+                docker compose up -d --build backend 2>&1 || true
                 exit 1
               fi
               
