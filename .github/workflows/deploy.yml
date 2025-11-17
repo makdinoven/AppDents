@@ -73,519 +73,116 @@ jobs:
             #!/usr/bin/env bash
             set -Eeuo pipefail
             set -x
-            
-            # =========================
-            # 0) Базовая подготовка
-            # =========================
             PROJECT_NAME="${{ matrix.project.name }}"
             PROJECT_DOMAIN="${{ matrix.project.domain }}"
             NGINX_CONF="${{ matrix.project.nginx_conf }}"
             DEPLOY_PATH="${{ matrix.project.deploy_path }}"
-            
-            echo "[info] Deploying project: ${PROJECT_NAME} (${PROJECT_DOMAIN})"
-            echo "[info] Nginx config: ${NGINX_CONF}"
-            
+            echo "[info] Deploying: ${PROJECT_NAME} (${NGINX_CONF})"
             cd "${DEPLOY_PATH}"
-            # НЕ переопределяем COMPOSE_PROJECT_NAME - используем из .env
             export COMPOSE_FILE=docker-compose.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
-            
-            # Загружаем .env и получаем COMPOSE_PROJECT_NAME оттуда
             if [ -f .env ]; then
               export $(grep -v '^#' .env | grep COMPOSE_PROJECT_NAME | xargs)
-              echo "[info] Using COMPOSE_PROJECT_NAME from .env: ${COMPOSE_PROJECT_NAME:-<not set>}"
             fi
-            
-            # =========================
-            # 1) Обновляем репозиторий
-            # =========================
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
             git pull --no-rebase --no-edit -s recursive -X theirs origin main
-            
-            # =========================
-            # 2) .env обязателен
-            # =========================
             if [ ! -f .env ]; then
-              echo "[ERROR] .env file not found in ${DEPLOY_PATH}"
-              echo "Please create .env file on the server before deploying"
-              exit 1
+              echo "[ERROR] .env not found" && exit 1
             fi
-            
-            # Убедимся, что NGINX_CONF_PATH установлен правильно для этого проекта
             export NGINX_CONF_PATH="./nginx/${NGINX_CONF}"
-            echo "[info] Using nginx config: ${NGINX_CONF_PATH}"
-            
-            # =========================
-            # 3) Какие сервисы менялись
-            # =========================
-            # из output джобы check-changes
             CHANGED_RAW="${{ needs.check-changes.outputs.changed_services }}"
-            # нормализуем пробелы/переводы строк
             CHANGED="$(echo "${CHANGED_RAW:-}" | xargs || true)"
-            
-            echo "[info] Changed services: '${CHANGED:-<none>}'"
-            
-            # =========================
-            # 4) Сборка образов
-            #    - всегда собираем nginx (быстрый и безопасный reload)
-            #    - при наличии изменений — собираем их тоже (с --no-cache для frontend)
-            # =========================
+            echo "[info] Changed: '${CHANGED:-<none>}'"
             docker compose build nginx
             if [ -n "${CHANGED:-}" ]; then
               for svc in ${CHANGED}; do
-                if [ "${svc}" = "frontend" ]; then
-                  echo "[build] Building frontend with --no-cache"
-                  docker compose build --no-cache frontend
-                else
-                  docker compose build ${svc}
-                fi
+                [ "${svc}" = "frontend" ] && docker compose build --no-cache frontend || docker compose build ${svc}
               done
             fi
-            
-            # =========================
-            # 5) Обновляем контейнеры
-            #    НИКАКОГО `down` и чисток сетей — сайт остаётся жить.
-            #    Пересоздаём ТОЛЬКО изменившиеся сервисы, без зависимостей.
-            #    Если изменений нет — просто «поднимаем» nginx (на случай обновления конфига/образа)
-            # =========================
-            
-            # =========================
-            # 5.1) Функция для очистки порта перед запуском контейнера
-            # =========================
             cleanup_port() {
-              local port=$1
-              local service=$2
-              echo "[cleanup] Ensuring port ${port} is free for ${service}..."
-              
-              # Остановить все контейнеры, использующие этот порт
-              for container in $(docker ps -aq); do
-                ports=$(docker port "$container" 2>/dev/null | grep ":${port}" || true)
-                if [ -n "$ports" ]; then
-                  echo "[cleanup] Removing container $container (using port ${port}: $ports)"
-                  docker rm -f "$container" || true
-                fi
+              local p=$1 s=$2
+              for c in $(docker ps -aq); do
+                docker port "$c" 2>/dev/null | grep ":${p}" && docker rm -f "$c" || true
               done
-              
-              # Проверить, свободен ли порт
-              if sudo netstat -tulpn | grep ":${port} " >/dev/null 2>&1; then
-                echo "[warn] Port ${port} is still in use after cleanup!"
-                sudo netstat -tulpn | grep ":${port} "
-              else
-                echo "[ok] Port ${port} is free"
-              fi
             }
-            
-            # =========================
-            # 5.2) Функция для проверки готовности backend
-            # =========================
             wait_for_backend() {
-              local max_attempts=30
-              local attempt=1
-              local backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
-              local running_attempts=0
-              local min_running_attempts=8  # минимум 8 попыток (16 секунд) работы контейнера
-              
-              echo "[healthcheck] Waiting for backend to be ready..."
-              
-              while [ $attempt -le $max_attempts ]; do
-                # Проверим, что контейнер существует и работает
-                container_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
-                
-                if [ "$container_status" = "not_found" ]; then
-                  echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container not found..."
-                  running_attempts=0
-                  sleep 2
-                  attempt=$((attempt + 1))
-                  continue
-                fi
-                
-                if [ "$container_status" != "running" ]; then
-                  echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container status: ${container_status}"
-                  running_attempts=0
-                  sleep 2
-                  attempt=$((attempt + 1))
-                  continue
-                fi
-                
-                # Контейнер запущен, увеличиваем счетчик
-                running_attempts=$((running_attempts + 1))
-                
-                # Если контейнер работает достаточно долго, считаем его готовым
-                if [ $running_attempts -ge $min_running_attempts ]; then
-                  # Дополнительная проверка: попробуем проверить порт через docker port
-                  if docker port "${backend_container}" 2>/dev/null | grep -q "8000"; then
-                    echo "[healthcheck] Backend is ready! (running for ${running_attempts} checks, port 8000 is exposed)"
-                    return 0
-                  fi
-                  
-                  # Если порт не найден, но контейнер работает достаточно долго, все равно считаем готовым
-                  echo "[healthcheck] Backend container is running for ${running_attempts} checks (${min_running_attempts}*2s), assuming ready..."
-                  return 0
-                fi
-                
-                echo "[healthcheck] Attempt ${attempt}/${max_attempts}: Backend container running (${running_attempts}/${min_running_attempts} checks), waiting for readiness..."
-                sleep 2
-                attempt=$((attempt + 1))
+              local max=30 a=1 bc="${COMPOSE_PROJECT_NAME:-appdents}_backend" r=0 min=8
+              while [ $a -le $max ]; do
+                st=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+                [ "$st" = "not_found" ] && r=0 && sleep 2 && a=$((a+1)) && continue
+                [ "$st" != "running" ] && r=0 && sleep 2 && a=$((a+1)) && continue
+                r=$((r+1))
+                [ $r -ge $min ] && docker port "${bc}" 2>/dev/null | grep -q "8000" && return 0
+                [ $r -ge $min ] && return 0
+                sleep 2 && a=$((a+1))
               done
-              
-              echo "[warn] Backend healthcheck timeout after ${max_attempts} attempts, but continuing..."
               return 1
+            }
+            ensure_backend() {
+              local bc="${COMPOSE_PROJECT_NAME:-appdents}_backend" mc="${COMPOSE_PROJECT_NAME:-appdents}_mysql"
+              ms=$(docker inspect -f '{{.State.Status}}' "${mc}" 2>/dev/null || echo "not_found")
+              mh=$(docker inspect -f '{{.State.Health.Status}}' "${mc}" 2>/dev/null || echo "no-healthcheck")
+              [ "$ms" != "running" ] && docker compose up -d mysql && sleep 5
+              [ "$mh" != "healthy" ] && [ "$mh" != "no-healthcheck" ] && for i in {1..30}; do
+                mh=$(docker inspect -f '{{.State.Health.Status}}' "${mc}" 2>/dev/null || echo "no-healthcheck")
+                [ "$mh" = "healthy" ] && break
+                sleep 2
+              done
+              OUT=$(docker compose up -d backend 2>&1) || {
+                echo "[error] Backend start failed" && docker compose ps mysql && exit 1
+              }
+              sleep 3
+              docker ps -a | grep -q "${bc}" || {
+                echo "[error] Backend not created" && docker compose ps -a && exit 1
+              }
+              bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              [ "$bs" = "not_found" ] && exit 1
+              sleep 3
             }
             
             if [ -z "${CHANGED:-}" ]; then
-              echo "[deploy] No service changes. Touch nginx only."
-              
-              # Убедиться, что все сервисы запущены, включая backend
-              echo "[deploy] Ensuring all services are up..."
-              # Сначала убедимся, что backend запущен
-              echo "[deploy] Ensuring backend is running..."
-              
-              # Проверим, существует ли контейнер backend
-              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
-              mysql_container="${COMPOSE_PROJECT_NAME:-appdents}_mysql"
-              
-              # Убедимся, что mysql запущен и healthy (backend зависит от него)
-              echo "[deploy] Checking mysql health before starting backend..."
-              mysql_status=$(docker inspect -f '{{.State.Status}}' "${mysql_container}" 2>/dev/null || echo "not_found")
-              mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
-              
-              if [ "$mysql_status" != "running" ]; then
-                echo "[warn] MySQL is not running (status: ${mysql_status}), starting it..."
-                docker compose up -d mysql
-                sleep 5
-              fi
-              
-              if [ "$mysql_health" != "healthy" ] && [ "$mysql_health" != "no-healthcheck" ]; then
-                echo "[warn] MySQL is not healthy (health: ${mysql_health}), waiting..."
-                for i in {1..30}; do
-                  mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
-                  if [ "$mysql_health" = "healthy" ]; then
-                    echo "[ok] MySQL is now healthy"
-                    break
-                  fi
-                  sleep 2
-                done
-              fi
-              
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[deploy] Backend container does not exist, creating it..."
-              else
-                echo "[deploy] Backend container exists, ensuring it's running..."
-              fi
-              
-              # Запустим backend (БЕЗ --no-deps, чтобы зависимости были проверены)
-              echo "[deploy] Starting backend with dependencies..."
-              BACKEND_START_OUTPUT=$(docker compose up -d backend 2>&1)
-              BACKEND_START_EXIT_CODE=$?
-              
-              echo "[deploy] Backend start command output:"
-              echo "${BACKEND_START_OUTPUT}"
-              
-              if [ $BACKEND_START_EXIT_CODE -ne 0 ]; then
-                echo "[error] Failed to start backend! Exit code: ${BACKEND_START_EXIT_CODE}"
-                echo "[error] Checking docker compose config..."
-                docker compose config | grep -A 15 "backend:" || true
-                echo "[error] Checking mysql status..."
-                docker compose ps mysql || true
-                echo "[error] Checking if mysql is healthy..."
-                docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "mysql healthcheck not available"
-                exit 1
-              fi
-              
-              # Проверим, что контейнер действительно создан
-              echo "[deploy] Waiting for backend container to be created..."
-              sleep 3
-              
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[error] CRITICAL: Backend container was not created after 'docker compose up -d backend'!"
-                echo "[error] Command output was: ${BACKEND_START_OUTPUT}"
-                echo "[error] Listing all containers:"
-                docker ps -a | head -20
-                echo "[error] Checking docker compose services:"
-                docker compose ps -a
-                echo "[error] Checking if backend service is defined:"
-                docker compose config --services | grep backend || echo "Backend service not found in config!"
-                echo "[error] Trying to create backend again with verbose output:"
-                docker compose up -d --build backend 2>&1 || true
-                echo "[error] After retry, checking containers again:"
-                docker ps -a | grep backend || echo "Still no backend container"
-                exit 1
-              fi
-              
-              echo "[ok] Backend container exists: ${backend_container}"
-              
-              # Проверим статус контейнера
-              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
-              echo "[deploy] Backend container status: ${backend_status}"
-              
-              if [ "$backend_status" = "not_found" ]; then
-                echo "[error] Backend container not found after startup attempt!"
-                exit 1
-              fi
-              
-              # Дадим backend немного времени на запуск
-              sleep 3
-              
-              # Затем запустим все остальные сервисы
+              ensure_backend
               docker compose up -d --no-recreate
-              
-              # Убедиться, что backend готов перед перезапуском nginx
-              echo "[deploy] Checking backend health before nginx restart..."
-              
-              # Строгая проверка: если backend не существует, не продолжаем
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[error] CRITICAL: Backend container does not exist! Cannot proceed with nginx restart."
-                echo "[error] Attempting emergency backend startup..."
-                docker compose up -d backend 2>&1
-                sleep 5
-                if ! docker ps -a | grep -q "${backend_container}"; then
-                  echo "[error] Failed to create backend container. Aborting deploy."
-                  docker compose ps -a
-                  exit 1
-                fi
-              fi
-              
-              # Проверяем готовность backend
-              if ! wait_for_backend; then
-                echo "[error] Backend is not ready after healthcheck. Checking status..."
-                docker ps -a | grep "${backend_container}" || echo "Backend container not found"
-                docker logs "${backend_container}" 2>&1 | tail -30 || echo "Cannot get logs"
-                echo "[error] Aborting deploy - backend is not ready"
-                exit 1
-              fi
-              
-              # Остановить и удалить старый контейнер nginx
+              bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              docker ps -a | grep -q "${bc}" || { docker compose up -d backend && sleep 5; }
+              wait_for_backend || { docker ps -a | grep "${bc}" && exit 1; }
               docker compose stop nginx || true
               docker compose rm -f nginx || true
-              
-              # Очистить порты 80 и 443 перед запуском nginx
               cleanup_port 80 "nginx"
               cleanup_port 443 "nginx"
               sleep 2
-              
-              # Принудительно пересоздать nginx
               docker compose up -d --force-recreate --no-deps nginx
             else
-              echo "[deploy] Updating changed services: ${CHANGED}"
               BACKEND_CHANGED=false
-              
               for svc in ${CHANGED}; do
-                echo "[deploy] Upgrading: ${svc}"
-                
-                # Отметим, если backend был изменен
-                if [ "${svc}" = "backend" ]; then
-                  BACKEND_CHANGED=true
-                fi
-                
-                # Остановить и удалить старый контейнер (чтобы освободить порты)
-                echo "[deploy] Stopping old container: ${svc}"
+                [ "${svc}" = "backend" ] && BACKEND_CHANGED=true
                 docker compose stop "${svc}" || true
                 docker compose rm -f "${svc}" || true
-                
-                # Для frontend - очистить порт 3002
-                if [ "${svc}" = "frontend" ]; then
-                  cleanup_port 3002 "frontend"
-                fi
-                
-                # Для backend - очистить порт 8000
-                if [ "${svc}" = "backend" ]; then
-                  cleanup_port 8000 "backend"
-                fi
-                
-                # Пауза для освобождения портов
+                [ "${svc}" = "frontend" ] && cleanup_port 3002 "frontend"
+                [ "${svc}" = "backend" ] && cleanup_port 8000 "backend"
                 sleep 2
-                
-                # Запустить новый контейнер
-                if ! docker compose up -d --no-deps --wait "${svc}"; then
-                  echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
-                  docker compose up -d --no-deps "${svc}"
-                fi
+                docker compose up -d --no-deps --wait "${svc}" || docker compose up -d --no-deps "${svc}"
               done
-              
-              # =========================
-              # 5.3) Если backend был изменен, ждем его готовности
-              # =========================
-              if [ "${BACKEND_CHANGED}" = "true" ]; then
-                echo "[deploy] Backend was changed, waiting for it to be ready..."
-                wait_for_backend
-                echo "[deploy] Backend is ready, proceeding with nginx update..."
-              fi
-              
-              # =========================
-              # 5.4) Убедиться, что ВСЕ сервисы запущены, включая backend
-              # =========================
-              echo "[deploy] Ensuring all services are up..."
-              # Сначала убедимся, что backend запущен (даже если он не был изменен)
-              echo "[deploy] Ensuring backend is running..."
-              
-              # Проверим, существует ли контейнер backend
-              backend_container="${COMPOSE_PROJECT_NAME:-appdents}_backend"
-              mysql_container="${COMPOSE_PROJECT_NAME:-appdents}_mysql"
-              
-              # Убедимся, что mysql запущен и healthy (backend зависит от него)
-              echo "[deploy] Checking mysql health before starting backend..."
-              mysql_status=$(docker inspect -f '{{.State.Status}}' "${mysql_container}" 2>/dev/null || echo "not_found")
-              mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
-              
-              if [ "$mysql_status" != "running" ]; then
-                echo "[warn] MySQL is not running (status: ${mysql_status}), starting it..."
-                docker compose up -d mysql
-                sleep 5
-              fi
-              
-              if [ "$mysql_health" != "healthy" ] && [ "$mysql_health" != "no-healthcheck" ]; then
-                echo "[warn] MySQL is not healthy (health: ${mysql_health}), waiting..."
-                for i in {1..30}; do
-                  mysql_health=$(docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "no-healthcheck")
-                  if [ "$mysql_health" = "healthy" ]; then
-                    echo "[ok] MySQL is now healthy"
-                    break
-                  fi
-                  sleep 2
-                done
-              fi
-              
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[deploy] Backend container does not exist, creating it..."
-              else
-                echo "[deploy] Backend container exists, ensuring it's running..."
-              fi
-              
-              # Запустим backend (БЕЗ --no-deps, чтобы зависимости были проверены)
-              echo "[deploy] Starting backend with dependencies..."
-              BACKEND_START_OUTPUT=$(docker compose up -d backend 2>&1)
-              BACKEND_START_EXIT_CODE=$?
-              
-              echo "[deploy] Backend start command output:"
-              echo "${BACKEND_START_OUTPUT}"
-              
-              if [ $BACKEND_START_EXIT_CODE -ne 0 ]; then
-                echo "[error] Failed to start backend! Exit code: ${BACKEND_START_EXIT_CODE}"
-                echo "[error] Checking docker compose config..."
-                docker compose config | grep -A 15 "backend:" || true
-                echo "[error] Checking mysql status..."
-                docker compose ps mysql || true
-                echo "[error] Checking if mysql is healthy..."
-                docker inspect -f '{{.State.Health.Status}}' "${mysql_container}" 2>/dev/null || echo "mysql healthcheck not available"
-                exit 1
-              fi
-              
-              # Проверим, что контейнер действительно создан
-              echo "[deploy] Waiting for backend container to be created..."
-              sleep 3
-              
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[error] CRITICAL: Backend container was not created after 'docker compose up -d backend'!"
-                echo "[error] Command output was: ${BACKEND_START_OUTPUT}"
-                echo "[error] Listing all containers:"
-                docker ps -a | head -20
-                echo "[error] Checking docker compose services:"
-                docker compose ps -a
-                echo "[error] Checking if backend service is defined:"
-                docker compose config --services | grep backend || echo "Backend service not found in config!"
-                echo "[error] Trying to create backend again with verbose output:"
-                docker compose up -d --build backend 2>&1 || true
-                echo "[error] After retry, checking containers again:"
-                docker ps -a | grep backend || echo "Still no backend container"
-                exit 1
-              fi
-              
-              echo "[ok] Backend container exists: ${backend_container}"
-              
-              # Проверим статус контейнера
-              backend_status=$(docker inspect -f '{{.State.Status}}' "${backend_container}" 2>/dev/null || echo "not_found")
-              echo "[deploy] Backend container status: ${backend_status}"
-              
-              if [ "$backend_status" = "not_found" ]; then
-                echo "[error] Backend container not found after startup attempt!"
-                exit 1
-              fi
-              
-              # Дадим backend немного времени на запуск
-              sleep 3
-              
-              # Затем запустим все остальные сервисы
+              [ "${BACKEND_CHANGED}" = "true" ] && wait_for_backend
+              ensure_backend
               docker compose up -d --no-recreate
-              
-              # Всегда проверяем готовность backend перед перезапуском nginx
-              echo "[deploy] Final backend healthcheck before nginx restart..."
-              
-              # Строгая проверка: если backend не существует, не продолжаем
-              if ! docker ps -a | grep -q "${backend_container}"; then
-                echo "[error] CRITICAL: Backend container does not exist! Cannot proceed with nginx restart."
-                echo "[error] Attempting emergency backend startup..."
-                docker compose up -d backend 2>&1
-                sleep 5
-                if ! docker ps -a | grep -q "${backend_container}"; then
-                  echo "[error] Failed to create backend container. Aborting deploy."
-                  docker compose ps -a
-                  exit 1
-                fi
-              fi
-              
-              # Проверяем готовность backend
-              if ! wait_for_backend; then
-                echo "[error] Backend is not ready after healthcheck. Checking status..."
-                docker ps -a | grep "${backend_container}" || echo "Backend container not found"
-                docker logs "${backend_container}" 2>&1 | tail -30 || echo "Cannot get logs"
-                echo "[error] Aborting deploy - backend is not ready"
-                exit 1
-              fi
-              
-              # На всякий случай убедимся, что nginx на последнем образе
+              bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
+              docker ps -a | grep -q "${bc}" || { docker compose up -d backend && sleep 5; }
+              wait_for_backend || { docker ps -a | grep "${bc}" && exit 1; }
               docker compose stop nginx || true
               docker compose rm -f nginx || true
-              
-              # Очистить порты 80 и 443 перед запуском nginx
               cleanup_port 80 "nginx"
               cleanup_port 443 "nginx"
               sleep 2
-              
               docker compose up -d --force-recreate --no-deps nginx
             fi
-            
-            # =========================
-            # 6) Проверка статуса всех сервисов перед reload nginx
-            # =========================
-            echo "[deploy] Checking all services status..."
             docker compose ps
-            
-            # Убедимся, что backend все еще работает
-            echo "[deploy] Final backend check before nginx reload..."
-            wait_for_backend
-            
-            # =========================
-            # 7) Бездаунтаймовый reload nginx
-            # =========================
-            echo "[deploy] Reloading nginx..."
-            if ! docker compose exec -T nginx nginx -s reload; then
-              echo "[warn] nginx reload failed — doing safe restart"
-              docker compose restart nginx
-              sleep 3
-            fi
-            
-            # Проверим, что nginx работает
-            nginx_status=$(docker inspect -f '{{.State.Status}}' "${COMPOSE_PROJECT_NAME:-appdents}_nginx" 2>/dev/null || echo "not_found")
-            if [ "$nginx_status" != "running" ]; then
-              echo "[error] Nginx is not running! Status: ${nginx_status}"
-              echo "[deploy] Attempting to start nginx..."
-              docker compose up -d nginx
-              sleep 3
-            else
-              echo "[ok] Nginx is running"
-            fi
-            
-            # =========================
-            # 8) Уборка билд-кеша (безопасно)
-            # =========================
+            wait_for_backend || true
+            docker compose exec -T nginx nginx -s reload || { docker compose restart nginx && sleep 3; }
+            ns=$(docker inspect -f '{{.State.Status}}' "${COMPOSE_PROJECT_NAME:-appdents}_nginx" 2>/dev/null || echo "not_found")
+            [ "$ns" != "running" ] && docker compose up -d nginx && sleep 3
             docker builder prune -f || true
-            
-            # =========================
-            # 9) Финальная проверка статуса
-            # =========================
-            echo "[deploy] Final services status:"
             docker compose ps
-            
             echo "[done] Deploy complete."
 
