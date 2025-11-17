@@ -3,6 +3,9 @@ import { useForm } from "react-hook-form";
 import { OrderDescriptionType } from "../../../api/userApi/types.ts";
 import { Trans } from "react-i18next";
 import Form from "../../Modals/modules/Form/Form.tsx";
+import { t } from "i18next";
+import Button from "../../ui/Button/Button.tsx";
+import { useState } from "react";
 
 const CustomOrder = () => {
   const handleOrderSubmit = () => {};
@@ -11,6 +14,8 @@ const CustomOrder = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<OrderDescriptionType>({ mode: "onSubmit" });
+  const [loading, setLoading] = useState(false);
+
   return (
     <div className={s.custom_order_block}>
       <h2>
@@ -26,10 +31,23 @@ const CustomOrder = () => {
               <Trans i18nKey={"customOrderText"} />
             </h3>
             <div className={s.description_block}>
-              <label></label>
-              <textarea></textarea>
+              <label htmlFor="description-input">
+                <Trans i18nKey="describeProduct" />
+              </label>
+              <textarea
+                id="description-input"
+                name="description-input"
+                placeholder={t("typeHere")}
+                {...{ register: "description-input" }}
+              />
             </div>
           </div>
+          <Button
+            text="request"
+            type="submit"
+            disabled={loading}
+            loading={loading}
+          />
         </Form>
       </div>
     </div>

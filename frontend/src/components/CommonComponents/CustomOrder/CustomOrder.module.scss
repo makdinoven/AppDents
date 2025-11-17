@@ -5,17 +5,18 @@
 
   h2 {
     font-size: 75px;
+    text-transform: uppercase;
+    transform: translateY(5px);
   }
 }
 
 .form {
-  background-color: $primary;
+  background-color: $primary-08;
   border-radius: 40px;
   width: 100%;
   padding: 30px;
   @include flex-column();
   gap: 20px;
-  max-height: 400px;
 }
 
 .content_block {
@@ -23,10 +24,59 @@
   gap: 10px;
   justify-content: center;
   align-items: center;
+  width: 100%;
 
   h3 {
     @include clamped-h3();
     text-transform: uppercase;
     text-align: center;
+  }
+}
+
+.description_block {
+  width: 100%;
+  gap: 5px;
+
+  label {
+    color: $accent-glass;
+    @include clamped-p3();
+    margin-left: 20px;
+  }
+
+  textarea {
+    width: 100%;
+    background-color: $primary-04-analogue;
+    border: 2px solid $primary;
+    border-radius: 30px;
+    min-height: 190px;
+    @include clamped-p3();
+    padding: 15px;
+    resize: none;
+
+    &::placeholder {
+      color: $tertiary;
+    }
+  }
+}
+
+.highlight {
+  color: $primary;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .form {
+    border-radius: 30px;
+    padding: 20px;
+  }
+
+  .description_block {
+    label {
+      margin-left: 10px;
+    }
+
+    textarea {
+      border-radius: 20px;
+      padding: 10px;
+    }
   }
 }
