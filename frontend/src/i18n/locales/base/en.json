@@ -1,0 +1,682 @@
+{
+  "home": "Home",
+  "pay": "Pay",
+  "buy": "Buy",
+  "buyNow": "Buy now",
+  "buyFor": "Buy for",
+  "etAl": "et al.",
+  "nothingFound": "Nothing found",
+  "searchCourses": "Search courses by title or author...",
+  "back": "Back",
+  "backToLogin": "Back to Log In",
+  "login": "Log in",
+  "signup": "Sign up",
+  "firstTimeHere": "First time here?",
+  "forgotPassword": "Forgot your password?",
+  "alreadyHaveAccount": "Already have an account?",
+  "passwordResetMailSent": "A new password will be sent to your e-mail",
+  "passwordResetLabel": "Enter new password for reset",
+  "passwordReset": "password reset",
+  "feedbackTooltip": "Can't find the course you need? Fill out the form and we'll help you.",
+  "reset": "reset",
+  "update": "update",
+  "email": "Email...",
+  "yourName": "Your name...",
+  "yourOrder": "Your order",
+  "password": "Password...",
+  "seeMore": "See more",
+  "endOfList": {
+    "course": "These are all the courses for now. More coming soon!",
+    "book": "These are all the books for now. More coming soon!"
+  },
+  "endOfListFilter": {
+    "course": "Courses filtered by «{{filter}}». That’s all for now. More are coming soon!",
+    "book": "Books filtered by «{{filter}}». That’s all for now. More are coming soon!"
+  },
+  "open": "open",
+  "view": "View",
+  "watch": "Watch",
+  "viewCourse": "View course",
+  "viewBook": "View book",
+  "watchLesson": "Watch lesson",
+  "onlineCourse": "Online course",
+  "onlineWebinar": "Online webinar",
+  "professors": "Professors",
+  "logout": "Log out",
+  "mail": "mail",
+  "daysShort": "d",
+  "successPayment": "Your purchase was successful. You will be redirected to your profile shortly, where you can access the course and start learning.",
+  "videoFailedToLoad": "Video failed to load? Try watching it directly",
+  "watchHere": "here.",
+  "total": "Total:",
+  "similarCourses": "Similar courses",
+  "similarBooks": "Similar books",
+  "emailGrant": "This email will be used to grant you access to your purchased course immediately after payment.",
+  "paymentWarn": "Once your payment is confirmed, your access details will be sent automatically to your email. If you don't receive the message in your inbox, please check your spam folder",
+  "resetPassword": "Reset password",
+  "newPassword": "Enter new password...",
+  "change": "Change",
+  "passwordChanged": "Password has been successfully changed",
+  "forgotPasswordSuccess": "Your new password has been sent to your email. You can now log in using the new password. If you don't see the message, please check your spam folder.",
+  "registrationSuccess": "Registration successful! Your password has been sent to your email. You can now log in. If you don't see the message, please check your spam folder.",
+  "showLess": "Show Less",
+  "readMore": "Read more",
+  "support": "Support",
+  "copy": "Copy",
+  "copied": "Copied!",
+  "successPaymentWithBalance": "Payment successful! You now have access to your purchase. Remaining balance: ${{balance}}.",
+  "tryCourseForFree": "Get your free webinar",
+  "get": "Get",
+  "freeWebinar": "Free webinar",
+  "free": "Free",
+  "freePaymentWarn": "You’ll be automatically logged into your personal account, where you can watch the first free lesson of the course. If it doesn’t open right away, try logging in manually using the email and password you provided.",
+  "firstFreeLesson": "First lesson for free",
+  "or": "or",
+  "here": "here.",
+
+  "emailValidationTooltip": {
+    "suggestion": "Did you mean {{suggestedEmail}}?",
+    "warning": "Please, make sure the email is correct"
+  },
+
+  "freeCourse": {
+    "freePreview": "Special offer",
+    "registerToWatch": "Register to watch",
+    "tryFirstLesson": "Try first lesson for free",
+    "fullAccess": "Get full course",
+    "title": "Full course required",
+    "get": "Get all lessons only for ${{count}}",
+    "desc": "This lesson is part of a complete course. Get full access to all lessons by purchasing the course.",
+    "discount": "Discount {{discount}}%",
+    "access": {
+      "full": "Full access",
+      "partial": "Partial access",
+      "offer": "Special offer"
+    }
+  },
+  "banner": {
+    "title": "<1>Today</1> only: <1> -{{discount}}% off!</1>"
+  },
+
+  "disabledPayment": {
+    "title": "Course purchases are temporarily suspended",
+    "date": "Payments will be unavailable from July 16 to July 26, 2025",
+    "boughtCourses": "Access to previously purchased courses remains active",
+    "sorry": "We apologize for any inconvenience caused"
+  },
+
+  "payment": {
+    "encryptedPayment": "Payment is processed via Stripe in compliance with PCI DSS Level 1 — your card data is encrypted and never stored by us.",
+    "afterPayment": "After payment, the course will be added to your account and login details sent to your email. Check Spam if you don’t receive it.",
+    "privacyAgreement": "By clicking the \"Pay\" button, you agree to receive marketing e-mails, consent to our <1>Privacy Policy.</1>"
+  },
+
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "books": "Books",
+    "professors": "Professors",
+    "cart": "Cart",
+    "search": "Search",
+    "profile": "Profile",
+    "promote": {
+      "professors": "Course professors",
+      "program": "Course program",
+      "bookPages": "Book pages",
+      "bookAuthors": "Book authors",
+      "webinarProgram": "Webinar program",
+      "webinarProfessors": "Webinar professors",
+      "faq": "FAQ"
+    }
+  },
+
+  "search": {
+    "searchCourses": "Search courses",
+    "searchPlaceholder": "Type to search...",
+    "categories": "Categories",
+    "languages": "Languages",
+    "results": {
+      "results": "Search results:",
+      "landings": "Courses",
+      "authors": "Authors",
+      "book_landings": "Books"
+    },
+    "noResults": {
+      "title": "Oops! Nothing found",
+      "description": "Please try using different words or phrases for a more effective search."
+    },
+    "landingsResult": {
+      "result": "{{count}} courses found",
+      "result_one": "{{count}} course found",
+      "result_few": "{{count}} courses found",
+      "result_many": "{{count}} courses found"
+    },
+    "book_landingsResult": {
+      "result": "{{count}} books found",
+      "result_one": "{{count}} book found",
+      "result_few": "{{count}} books found",
+      "result_many": "{{count}} books found"
+    },
+    "authorsResult": {
+      "result": "{{count}} authors found",
+      "result_one": "{{count}} author found",
+      "result_few": "{{count}} author found",
+      "result_many": "{{count}} authors found"
+    }
+  },
+
+  "main": {
+    "title": "Online <1>dental</1> school",
+    "hero.description": "Online courses for\u00A0dentists",
+    "hero.widestRange": "The <1>widest</1> range of products ",
+    "hero.chooseCourse": "Choose your course",
+    "hero.bestPrices": "Best <1>prices</1>",
+    "ourCurses": "Our courses",
+    "viewCourse": "View course",
+    "noItems": {
+      "course": "No courses found",
+      "book": "No books found"
+    },
+    "noItemsFilter": {
+      "course": "No courses found for the filter «{{filter}}».",
+      "book": "No books found for the filter «{{filter}}»."
+    }
+  },
+
+  "footer": {
+    "contacts.title": "Contacts",
+    "contacts.address": "X44G+755 - Mina Jebel Ali - Jabal Ali Industrial Second - Dubai - UAE",
+    "contacts.phoneNumber": "+971 55 633 5434",
+    "contacts.email": "dent.school.com@gmail.com",
+    "polities": "Policies",
+    "product": "Product",
+    "terms": "Terms of Use",
+    "cookie": "Cookie Policy",
+    "privacy": "Privacy Policy",
+    "home": "Home Page",
+    "tour": "Tour",
+    "templates": "Templates",
+    "copyright": "© 2025 Dent-S. All rights reserved."
+  },
+
+  "tag": {
+    "tag": "Tag",
+    "allCourses": "All",
+    "surgery": "Surgery",
+    "orthodontics": "Orthodontics",
+    "periodontology": "Periodontology",
+    "restoration": "Restoration",
+    "endodontics": "Endodontics",
+    "gnathology": "Gnathology",
+    "prosthodontics": "Prosthodontics",
+    "digital_dentistry": "Digital dentistry",
+    "pediatric_dentistry": "Pediatric dentistry",
+    "orthopedics": "Orthopedics",
+    "management": "Management",
+    "esthetic": "Esthetic",
+    "common.popular": "Popular",
+    "common.bestPrices": "Best prices",
+    "common.new": "New",
+    "common.rec": "For you"
+  },
+
+  "bookLanding": {
+    "onlineBook": "Online Book",
+    "annotation": "Annotation",
+    "about": "About the Book",
+    "publicationDate": "Publication date: <0>{{date}}</0>",
+    "author": "Author: <0>{{authors}}</0>",
+    "authors": "Authors: <0>{{authors}}</0>",
+    "language": "Language: <0>{{language}}</0>",
+    "availableFormats": "Available formats:",
+    "chooseFormat": "Choose a format and download instantly",
+    "buyText": "You can buy the <0>full edition</0> at the new price right now - <0>${{newPrice}}</0>, instead of the old price - ${{oldPrice}}",
+    "download": "Download",
+    "contentOverview": "Content overview",
+    "audioPreviewAvailable": "Listen to the audio excerpt",
+    "audioText": "<0>Audio</0> is available to give you a brief overview of the book before diving into its content.",
+    "audio": "audio",
+    "description": "Description",
+    "noDescription": "No description",
+    "publisher": "Publisher: <0>{{publisher}}</0>",
+    "pdfReader": {
+      "error": "An error occurred while loading"
+    },
+    "pages": {
+      "count": "Pages: <0>{{count}}</0>",
+      "title": "Pages",
+      "readFirstPages": "Read the first pages of the book!",
+      "fullBook": "The full version of the book will be available after payment."
+    },
+    "salesCount": "Sales: <0>{{count}}</0>",
+    "tags": "Tags: <0>{{tags}}</0>"
+  },
+
+  "landing": {
+    "by": "By",
+    "about": "About this course",
+    "instantAccess": "instant access right after payment",
+    "access": "access is not limited in time",
+    "duration": "duration:",
+    "lessons_one": "lesson",
+    "lessons_other": "lessons",
+    "professors_one": "professor",
+    "professors_other": "professors",
+    "onlineLessons": "online lessons",
+    "online": "online",
+    "discount": "discount {{count}}%",
+    "savings": "savings",
+    "courseProgram": "Course program",
+    "fullCourseProgram": "The full course program",
+    "fullWebinarProgram": "The full webinar program",
+    "buyFor": "Buy for <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "buyLessonsFor_one": "Buy {{count}} lesson for <2>${{new_price}}</2> <1>${{old_price}}</1>",
+    "buyLessonsFor_other": "Buy {{count}} lessons for <2>${{new_price}}</2> <1>${{old_price}}</1>",
+    "buyForFull": "Buy full course for <1>${{old_price}}</1> <2>${{new_price}}</2>",
+    "youCanBuyEntireCourse": "You can buy the <1>entire course</1> now at the new price <2>${{new_price}}</2>, instead of the old one - ${{old_price}}",
+    "youCanBuyEntireBook": "You can now buy the <1>entire book</1> for just <2>${{new_price}}</2>, down from ${{old_price}}.",
+    "fiveMinuteFragment": "Here you can watch a <1>five-minute fragment</1>",
+    "durationOfLesson": "Duration:",
+    "noVideoLink": "No video link or link is not valid",
+    "videoIsNotSupported": "Your browser is not supporting video",
+    "specialOffer": "Special offer",
+    "accessFull": "Access to the course is unlimited in time!",
+    "instantAccessFull": "Gain instant access to the course right after buying!",
+    "accessFullWebinar": "Access to the webinar is unlimited in time!",
+    "instantAccessWebinar": "Gain instant access to the webinar right after buying!",
+    "sales": "Purchased <0>{{sales}}</0> times",
+    "video": {
+      "modalTitle": "Unlock the full course",
+      "buyCourseToWatch": "Buy full course to continue watching."
+    },
+    "faq": {
+      "faq": "Frequently Asked Questions",
+      "1_question": "How do I access my course after purchase?",
+      "1_answer": "As soon as your payment is completed, you'll receive immediate access to your course. After payment, you will automatically be taken to your account, where you will see the course you purchased (we recommend changing your password right away so you definitely don’t forget it). You’ll also receive a receipt and enrollment confirmation via email, ensuring you have everything you need to get started. If you don’t see the email in your inbox, please check your spam folder (and any other mail folders—the sender’s name is “no-reply”). Your course materials will be available instantly, allowing you to learn at your own pace from any device.",
+      "1_question_book": "How do I access my book after purchase?",
+      "1_answer_book": "As soon as your payment is completed, you'll receive immediate access to your book. After payment, you will automatically be taken to your account, where you will see the book you purchased, and you can download it (we recommend changing your password right away so you definitely don’t forget it). You’ll also receive a receipt and purchase confirmation via email, ensuring you have everything you need to get started. If you don’t see the email in your inbox, please check your spam folder (and any other mail folders—the sender’s name is “no-reply”). Your book will be available instantly, and you can download it to read at your own pace on any device.",
+      "2_question": "Is there a time limit to complete the courses?",
+      "2_answer": "No, all of our courses are self-paced, giving you the flexibility to start, pause, and resume at any time. You will have lifetime access to the course materials, so there’s no pressure to complete them within a certain timeframe.",
+      "2_question_book": "Where can I find my purchased books if I’ve lost the files I downloaded?",
+      "2_answer_book": "All the books you purchase will remain safely stored in your personal account for as long as you need—access never expires.",
+      "3_question": "What payment methods are accepted?",
+      "3_answer": "We accept all major credit cards, including Visa, MasterCard, and American Express and nearly all global payment systems (ApplePay, GooglePay, SamsungPay etc.). \nTo process payments, we use Stripe—the most popular and reliable payment service—which securely protects your card data.",
+      "4_question": "Why are your prices cheaper?",
+      "4_answer": "At Dent-S, we believe that quality education should be available to every person on the planet, regardless of their country of residence, social status, or professional experience. The better doctors perform worldwide, the healthier and happier humanity will be as a whole. That’s why we’ve set our prices as low as possible for all the courses we offer. And thanks to you and your support, we’ll be able to expand and refine the project to create the most comprehensive library of medical information in the world!",
+      "5_question": "Can I access my courses from a mobile or tablet?",
+      "5_answer": "Yes! Our platform is fully optimized for mobile and tablet use, allowing you to access your courses on-the-go. Whether you're using a smartphone, tablet, or desktop, you can seamlessly continue your learning from any device at any time.",
+      "6_question": "Am I going to receive an invoice for my purchase?",
+      "6_answer": "If you need an invoice, please contact our support team (their contact details will be listed on your payment receipt), and we will provide one for you.",
+      "7_question": "What if I'm not satisfied with the course?",
+      "7_answer": "If you’re not satisfied with your course, we offer a course replacement or a full refund. Simply contact our support team within 15 days of purchase, and they will assist you in finding a suitable alternative or processing your refund. Your satisfaction is our priority!",
+      "8_question": "How do I contact support?",
+      "8_answer": "You can reach our support team through your personal account on the <link1>dent-s.com</link1> website, as well as via the contact email listed on the payment receipt that was sent to you.",
+      "9_question": "How do I reset my password?",
+      "9_answer": "If you need to reset your password, simply click on the <link1>Forgot your Password?</link1> link on the <link2>login page</link2>. Follow the instructions to receive an email with a link to create a new password.",
+      "10_question": "How quickly can I access this course?",
+      "10_answer": "After payment, the course becomes instantly available. You can start learning right away with no waiting.",
+      "10_question_book": "How quickly can I access the book?",
+      "10_answer_book": "After payment, the book becomes instantly available. You can start reading right away with no waiting."
+    }
+  },
+
+  "profile": {
+    "yourCourses": "Your courses",
+    "yourBooks": "Your books",
+    "noCourses": "You haven’t purchased anything yet. Start learning today — you can choose the right course <1>here</1>",
+    "noBooks": "You haven’t purchased anything yet. Start learning today — you can choose the right book <1>here</1>",
+    "nextLesson": "Next lesson",
+    "prevLesson": "Prev lesson",
+    "pdfText": "This lesson contains PDF materials instead of a video. Click the link below to open the file.",
+    "openPdf": "Open PDF materials",
+    "referral": {
+      "myReferrals": "My referrals",
+      "balance": "Your balance: <1>{{count}}$</1>",
+      "spend": "Spend on any course or book!",
+      "link": "Invite link:",
+      "invite": "Invite a friend — earn a bonus.",
+      "friendsPurchases": "<1>50%</1> of your friends’ purchases go straight to your balance!",
+      "step_1": "1. Copy your personal link below.",
+      "step_2": "2. Send it to a friend via WhatsApp, Telegram, email — whatever works for you.",
+      "step_3": "3. Your friend buys any course or book — for example, one that costs <1>$19</1>.",
+      "step_4": "4. You receive <1>50%</1> of their payment (e.g. <1>$9.50</1>) as credit in your wallet."
+    },
+    "bookPage": {
+      "readOnline": "Read online",
+      "listenInAudioVerse": "Listen in audio verse",
+      "openPdfText": "Click the <0>button</0> to access <0>online reading</0>. You can read books at any time with our web application!",
+      "openPdf": "Open online PDF reader",
+      "audioCard": {
+        "chapter": "Chapter",
+        "downloadButton": "Download instantly in MP3"
+      }
+    },
+    "main": "Main",
+    "profile": "Profile",
+    "settings": "Settings",
+    "user": "User:",
+    "referrals": {
+      "email": "Email",
+      "invitation": "Invitation",
+      "totalCashback": "Total cashback",
+      "inviteFriend": "Invite a friend",
+      "enterFriendsMail": "Enter your friend's email to invite them to the site via your referral link",
+      "sendInvite": "Send invitation",
+      "inviteSuccess": "Invitation sent successfully! If the email does not arrive, check your Spam folder.",
+      "inviteFailed": "Invitation sending failed!",
+      "inviteFriendLabel": "Enter recipient's email"
+    },
+    "purchaseHistory": {
+      "invitedUsers": "Invited users",
+      "purchases": "Purchases history",
+      "purchaseSum": "Purchase sum:",
+      "adminAdjust": "Bonus",
+      "internalPurchase": "Purchase",
+      "purchase": "Purchase",
+      "referralCashback": "Cashback",
+      "fromBalance": "from balance",
+      "fromCart": "from cart",
+      "noReferralsData": "Haven’t invited your friends yet? Learn more about our referral program on the main profile tab — share knowledge and earn bonuses!",
+      "noPurchasesData": "You haven’t purchased anything yet. Start learning today — you can choose the right course <1>here</1>"
+    }
+  },
+
+  "professor": {
+    "youCanBuyAll": {
+      "courses": "Unlock all the professor’s courses with an exclusive <1>20%</1> discount — get full access for just <1>${{new_price}}</1> instead of <2>${{old_price}}</2>!",
+      "books": "Get the complete collection of this professor’s books with an exclusive <1>20%</1> discount — only <1>${{new_price}}</1> instead of <2>${{old_price}}</2>!",
+      "both": "Get the ultimate bundle — all the professor’s courses and books — with a special <1>20%</1> discount for just <1>${{new_price}}</1> — down from <2>${{old_price}}</2>!"
+    },
+    "getAll": {
+      "courses": "Get All Courses for <1>${{new_price}}</1>",
+      "books": "Get All Books for <1>${{new_price}}</1>",
+      "both": "Get All Courses & Books for <1>${{new_price}}</1>"
+    },
+    "accessToAll": {
+      "courses": "Enjoy lifetime access to all courses — learn at your own pace!",
+      "books": "Enjoy lifetime access to all books — study anytime, anywhere!",
+      "both": "Lifetime access to all books and courses!"
+    },
+    "noDescription": "No description available",
+    "professorsCourses": "This professor's courses",
+    "professorsBooks": "This professor's books",
+    "allCourses": "All courses",
+    "allBooks": "All books",
+    "allCoursesAndBooks": "All courses & books",
+    "professors.title": "Our professors",
+    "search": "Search professors...",
+    "found": "Professors found: {{count}}",
+    "noProfessors": "No professors found",
+    "about": "About",
+    "specialization": "Specialization:",
+    "coursesCount_one": "{{count}} course",
+    "coursesCount_other": "{{count}} courses",
+    "booksCount_one": "{{count}} book",
+    "booksCount_other": "{{count}} books"
+  },
+
+  "other": {
+    "otherCourses": "Other courses",
+    "otherBooks": "Other books"
+  },
+
+  "error": {
+    "email.empty": "Enter Email",
+    "email.valid": "Enter valid email",
+    "email.required": "Email is required",
+    "password.empty": "Enter password",
+    "password.minLength": "Password must be at least 6 characters long",
+    "password.digitUppercaseLetter": "Password must contain at least one digit and one uppercase letter",
+    "password.required": "Password is required",
+    "invalid_credentials": "Incorrect Email or password",
+    "user_not_found": "User with this email is not found",
+    "email_exist": "User with this email exist",
+    "errorChangingPassword": "Error. Password was not changed."
+  },
+
+  "workingWarn": {
+    "title": "We'll Be Back Soon",
+    "first": "We're currently performing some updates to improve your learning experience.",
+    "second": "Our course platform is temporarily unavailable due to scheduled maintenance.",
+    "third": "Please check back shortly — new and improved features are on the way!",
+    "fourth": "Thank you for your patience and continued interest in our courses.",
+    "last": "— The Dent-S Team"
+  },
+
+  "pageNotFound": {
+    "num": "404",
+    "title": "Page not found",
+    "sorry": "Sorry, the page you are looking for does not exist",
+    "goBack": "Go back",
+    "backToHome": "Back to home"
+  },
+
+  "cart": {
+    "title": "Your cart",
+    "balance": "Your balance",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "total": "Total",
+    "useBalance": "Spend balance",
+    "balanceWillBeUsed": "С вашего баланса будет списана сумма ${{value}}",
+    "replenish": "Replenish balance",
+    "returnToShop": "Return to shop",
+    "inCart": "In cart",
+    "priceWithoutDiscount": "Subtotal for {{count}} courses",
+    "balanceDiscount": "From balance",
+    "currentDiscount": "Current discount",
+    "barText_1": "You now have <1>{{current}}%</1> discount.",
+    "barText_2": "Add 1 more course for <2>{{next}}%</2> !",
+    "barTextMaxDiscount": "You've reached the maximum discount of <1>{{current}}%</1>!",
+    "empty": {
+      "title": "Your cart is empty",
+      "haventAdded": "Looks like you haven’t added anything yet. Browse our catalog and add something now!"
+    }
+  },
+
+  "courses": {
+    "title": "all courses",
+    "search": "Search courses...",
+    "found": "Courses found: {{count}}"
+  },
+
+  "books": {
+    "title": "all books",
+    "search": "Search books...",
+    "found": "Books found: {{count}}"
+  },
+
+  "bookCard": {
+    "tags": "Tags",
+    "authors": "Authors",
+    "publisher": "Publisher",
+    "publicationDate": "Publication date"
+  },
+
+  "admin": {
+    "save": "Save changes",
+    "update": "edit",
+    "view": "view",
+    "open": "open",
+    "promo": "promo link",
+    "content": "content",
+    "courses": {
+      "courses": "courses",
+      "search": "Search courses...",
+      "create": "Create course",
+      "update": "Update course",
+      "name": "Course name",
+      "description": "Course description",
+      "name.placeholder": "Enter course name...",
+      "description.placeholder": "Enter course description...",
+      "notFound": "No courses found",
+      "delete": "Delete course",
+      "noSections": "No sections in this course.",
+      "found": "Courses found: {{count}}"
+    },
+    "sections": {
+      "sections": "Sections",
+      "delete": "Delete section",
+      "one": "Section",
+      "no": "No section name",
+      "add": "Add section",
+      "close": "Close section",
+      "name": "Section name",
+      "description": "Section description",
+      "name.placeholder": "Enter section name...",
+      "description.placeholder": "Enter section description...",
+      "noLessons": "No lessons in this section."
+    },
+    "lessons": {
+      "lessons": "Lessons",
+      "delete": "Delete lesson",
+      "one": "Lesson",
+      "no": "No lesson name",
+      "add": "Add lesson",
+      "close": "Close lesson",
+      "title": "Lesson name",
+      "lecturer": "Lecturer",
+      "duration": "Lesson duration",
+      "programText": "Program text",
+      "shortLink": "Short video link",
+      "fullLink": "Full video link",
+      "lecturer.placeholder": "Enter lecturer...",
+      "title.placeholder": "Enter lesson name...",
+      "duration.placeholder": "Enter lesson duration...",
+      "programText.placeholder": "Program text...",
+      "shortLink.placeholder": "Enter short video link...",
+      "fullLink.placeholder": "Enter video link..."
+    },
+    "landings": {
+      "landings": "landings",
+      "search": "Search landings...",
+      "create": "Create landing",
+      "delete": "Delete landing",
+      "edit": "Edit landing",
+      "title": "Landing title",
+      "pageName": "Page name",
+      "courseProgram": "Course program",
+      "courses": "Courses",
+      "mainImage": "Main image",
+      "duration": "Duration",
+      "lessonsCount": "Lessons count",
+      "title.placeholder": "Enter Landing title...",
+      "pageName.placeholder": "Enter page name...",
+      "courseProgram.placeholder": "Enter course program...",
+      "lessonsCount.placeholder": "Enter lessons count...",
+      "duration.placeholder": "Enter duration...",
+      "mainImage.placeholder": "Main image",
+      "mainImage.choose": "Choose main image",
+      "oldPrice": "Old price",
+      "price": "New price",
+      "salesCount": "Sales count",
+      "tags": "Tags",
+      "language": "Language",
+      "authors": "Authors",
+      "notFound": "No landings found",
+      "role": "Role",
+      "found": "Landings found: {{count}}"
+    },
+    "users": {
+      "users": "users",
+      "search": "Search users...",
+      "create": "Create user",
+      "edit": "Edit user",
+      "delete": "Delete user",
+      "notFound": "No users found",
+      "email": "E-mail",
+      "email.placeholder": "Enter user email...",
+      "password": "Password",
+      "password.placeholder": "Enter new password...",
+      "courses": "User courses",
+      "found": "Users found: {{count}}",
+      "balance": "User balance: ${{balance}}",
+      "balance.add": "Add to user balance",
+      "balance.placeholder": "Enter amount to add...",
+      "changeBalance": "Add to balance"
+    },
+    "authors": {
+      "authors": "authors",
+      "name": "Author name",
+      "name.placeholder": "Enter author name...",
+      "description": "Author description",
+      "description.placeholder": "Enter author description...",
+      "photo": "Author photo",
+      "photo.placeholder": "Choose photo",
+      "search": "Search authors...",
+      "delete": "Delete author",
+      "edit": "Edit author",
+      "create": "Create author",
+      "notFound": "No authors found",
+      "found": "Authors found: {{count}}"
+    },
+    "books": {
+      "books": "Books",
+      "search": "Search books...",
+      "create": "Create book",
+      "delete": "Delete book",
+      "edit": "Edit book",
+      "notFound": "No books found",
+      "found": "Books found: {{count}}",
+      "title": "Book title",
+      "title.placeholder": "Enter book title...",
+      "description": "Description",
+      "description.placeholder": "Enter book description...",
+      "publicationDate": "Publication date",
+      "publicationDate.placeholder": "Enter publication date..."
+    },
+    "bookLandings": {
+      "bookLandings": "book landings",
+      "search": "Search book landings...",
+      "create": "Create book landing",
+      "delete": "Delete book landing",
+      "edit": "Edit book landing",
+      "notFound": "No book landings found",
+      "found": "Book landings found: {{count}}",
+      "title": "Book landing name",
+      "title.placeholder": "Enter book landing name..."
+    },
+    "analytics": {
+      "analytics": "Analytics",
+      "size": "Size",
+      "languageStats": "Language stats",
+      "adListing": "Ad listing",
+      "referrals": "Referrals",
+      "purchases": "Purchases",
+      "userGrowth": "User growth",
+      "freewebs": "Freewebs",
+      "traffic": "Traffic"
+    },
+    "tools": {
+      "tools": "tools",
+      "clip": {
+        "title": "Clip tool",
+        "placeholder": "Enter an URL...",
+        "label": "Source video url *",
+        "getClip": "Get clip",
+        "yourClipUrl": "Your clip url:"
+      },
+      "videoSummary": {
+        "title": "Video summary tool",
+        "placeholder": "Enter an URL...",
+        "label": "Source video url *",
+        "getSummary": "Get summary",
+        "yourVideoSummary": "Your summary:",
+        "context": {
+          "label": "Summary context",
+          "placeholder": "Enter summary context.."
+        },
+        "answer": {
+          "label": "Answer format",
+          "placeholder": "Enter answer format.."
+        }
+      }
+    },
+    "adControl": {
+      "adControl": "Ad control",
+      "listing": "Main",
+      "staff": "staff",
+      "accounts": "accounts"
+    }
+  }
+}

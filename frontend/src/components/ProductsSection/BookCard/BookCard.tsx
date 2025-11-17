@@ -44,6 +44,8 @@ const BookCard = ({
     gallery,
     main_image,
     available_formats,
+    publishers,
+    publication_date,
   } = book;
   const { isInCart, cartItemLoading, toggleCartItem } = useCart(
     {
@@ -165,6 +167,21 @@ const BookCard = ({
                 {" "}
                 {formatAuthorsDesc(authors, false)}
               </span>
+            </li>
+          )}
+          {!!publishers.length && (
+            <li>
+              <Trans i18nKey={"bookCard.publisher"} />:
+              <span className={s.book_info_value}>
+                {" "}
+                {formatAuthorsDesc(publishers, false)}
+              </span>
+            </li>
+          )}
+          {!!publication_date && (
+            <li className={s.publication_date}>
+              <Trans i18nKey={"bookCard.publicationDate"} />:{" "}
+              <span className={s.book_info_value}>{publication_date}</span>
             </li>
           )}
           <li>

@@ -296,6 +296,10 @@
   }
 }
 
+.publication_date {
+  text-transform: unset !important;
+}
+
 @media (max-width: $mobile-breakpoint) {
   .card {
     gap: 6px;

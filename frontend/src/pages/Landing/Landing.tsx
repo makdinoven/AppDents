@@ -106,7 +106,6 @@ const Landing = () => {
   const fetchLandingData = async () => {
     setLoading(true);
     try {
-      console.log(landingPath);
       const res = await mainApi.getLanding(landingPath);
       setLanding({
         ...res.data,
@@ -258,6 +257,8 @@ const Landing = () => {
     photo: !isWebinar ? landing?.preview_photo || null : firstLesson?.preview,
     renderBuyButton: renderBuyButton("default"),
     isWebinar: isWebinar,
+    tags: landing?.tags,
+    sales: landing?.sales_count,
   };
 
   const aboutData = {

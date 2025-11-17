@@ -3,6 +3,7 @@ import s from "./Faq.module.scss";
 import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
 import { Trans } from "react-i18next";
 import { BackArrow } from "../../../../assets/icons/index.ts";
+import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
 
 const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -18,16 +19,13 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
     { question: "7_question", answer: { text: "7_answer", links: [""] } },
     {
       question: "8_question",
-      answer: { text: "8_answer", links: ["https://dent-s.com/"] },
+      answer: { text: "8_answer", links: [BASE_URL] },
     },
     {
       question: "9_question",
       answer: {
         text: "9_answer",
-        links: [
-          "https://dent-s.com/password-reset",
-          "https://dent-s.com/login",
-        ],
+        links: [`${BASE_URL}/password-reset`, `${BASE_URL}/login`],
       },
     },
     {
@@ -53,16 +51,13 @@ const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
     { question: "6_question", answer: { text: "6_answer", links: [""] } },
     {
       question: "8_question",
-      answer: { text: "8_answer", links: ["https://dent-s.com/"] },
+      answer: { text: "8_answer", links: [BASE_URL] },
     },
     {
       question: "9_question",
       answer: {
         text: "9_answer",
-        links: [
-          "https://dent-s.com/password-reset",
-          "https://dent-s.com/login",
-        ],
+        links: [`${BASE_URL}/password-reset`, `${BASE_URL}/login`],
       },
     },
     {

@@ -7,6 +7,7 @@ import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
 import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import { formatLanguage } from "../../../../common/helpers/helpers.ts";
 import { NoPictures } from "../../../../assets";
+import { t } from "i18next";
 
 interface LandingHeroProps {
   data: any;
@@ -35,7 +36,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
     <BookHeroSkeleton type="buy" />
   ) : (
     <section className={s.hero}>
-      <h3>{data.landing_name}</h3>
+      <h3>{data?.landing_name}</h3>
       <div className={s.content}>
         <div className={s.left_side}>
           {data.books?.[0]?.cover_url ? (
@@ -70,22 +71,22 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            {data.publication_date && (
-              <p>
-                <Trans
-                  i18nKey="bookLanding.publishedDate"
-                  values={{ date: data.publication_date }}
-                  components={[<span className={s.highlight} />]}
-                />
-              </p>
-            )}
-            {data.books[0].publisher && (
+            {data.books?.length > 0 && data.books[0].publishers?.length > 0 && (
               <p>
                 <Trans
                   i18nKey={"bookLanding.publisher"}
                   values={{
-                    publisher: data.books[0].publisher,
+                    publisher: data.books[0].publishers[0].name,
                   }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.books?.length > 0 && (
+              <p>
+                <Trans
+                  i18nKey="bookLanding.publicationDate"
+                  values={{ date: data.books[0].publication_date }}
                   components={[<span className={s.highlight} />]}
                 />
               </p>
@@ -97,19 +98,32 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                   values={{
                     count: data.total_pages,
                   }}
+                  components={[<span className={s.highlight} />]}
                 />
               </p>
             )}
-            {/*{!!data.sales_count && (*/}
-            <p>
-              <Trans
-                i18nKey={"bookLanding.salesCount"}
-                values={{
-                  count: data.sales_count,
-                }}
-              />
-            </p>
-            {/*)}*/}
+            {data?.sales_count && data.sales_count > 100 && (
+              <p>
+                <Trans
+                  i18nKey={"bookLanding.salesCount"}
+                  values={{
+                    count: data.sales_count,
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
+            {data.tags?.length > 0 && (
+              <p>
+                <Trans
+                  i18nKey="bookLanding.tags"
+                  values={{
+                    tags: data.tags?.map((tag: any) => t(tag))!.join(", "),
+                  }}
+                  components={[<span className={s.highlight} />]}
+                />
+              </p>
+            )}
             <p className={s.formats_field}>
               <span>
                 <Trans i18nKey="bookLanding.availableFormats" />

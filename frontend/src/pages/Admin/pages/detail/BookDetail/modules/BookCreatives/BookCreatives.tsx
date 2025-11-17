@@ -41,8 +41,11 @@ const BookCreatives = ({ book }: { book: any }) => {
       }
       setCreatives(res.data.items);
       setLoading(false);
-    } catch (error) {
-      Alert(`Error creating creative: ${error}`, <ErrorIcon />);
+    } catch (error: any) {
+      Alert(
+        `Error creating creative: ${error.response.data.detail}`,
+        <ErrorIcon />,
+      );
       setLoading(false);
     }
   };

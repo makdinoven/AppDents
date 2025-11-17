@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { Path } from "../../routes/routes.ts";
 import {
+  CDN_ORIGIN,
   LANGUAGES,
   LS_TOKEN_KEY,
   PAGE_SOURCES,
@@ -286,10 +287,7 @@ export const getPaymentType = (
 };
 
 export const rewriteStorageLinkToCDN = (link: string) => {
-  return link.replace(
-    /^https:\/\/[^/]+\.s3\.twcstorage\.ru/,
-    "https://cdn.dent-s.com",
-  );
+  return link.replace(/^https:\/\/[^/]+\.s3\.twcstorage\.ru/, CDN_ORIGIN);
 };
 
 export const arraysEqual = (a?: any[] | null, b?: any[] | null) => {

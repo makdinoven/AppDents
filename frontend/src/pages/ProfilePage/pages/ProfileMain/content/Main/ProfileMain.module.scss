@@ -20,36 +20,35 @@
 
 .profile,
 .settings {
+  position: relative;
   @include flex-column();
-  gap: 9px;
-  padding: 10px 20px;
-  box-shadow: 0 0 0 1px $hover-color inset;
+  gap: 10px;
+  padding: 10px 15px;
+  border: 1px solid $hover-color;
   border-radius: 20px;
   @include clamped-p3();
 }
 
+.section_title {
+  @include clamped-p2;
+  //color: $tertiary;
+  //text-transform: uppercase;
+}
+
 .profile {
   flex-grow: 1;
-  flex-direction: row;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 15px;
   position: relative;
 }
 
-.profile_left {
-  @include flex-column();
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 9px;
-}
-.left_content {
+.profile_content {
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
-  gap: 6%;
-  width: fit-content;
+  gap: 10px;
+  width: 100%;
 
   .user {
     width: 80px;
@@ -59,15 +58,18 @@
   }
 }
 
+.profile_header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
 .logout {
   @include flex-center();
   flex-direction: row;
   gap: 5px;
   flex-shrink: 0;
   @include transition();
-  position: absolute;
-  top: 10px;
-  right: 20px;
 
   svg {
     width: 20px;
@@ -155,17 +157,9 @@
   .page_content {
     gap: 60px;
   }
-  .left_content {
-    gap: 20px;
-  }
 }
 
 @media (max-width: $tablet-breakpoint) {
-  .profile,
-  .settings {
-    height: 130px;
-  }
-
   .main_content_top {
     flex-direction: column;
     gap: 5px;
@@ -188,25 +182,27 @@
     gap: 30px;
   }
 
-  .profile,
-  .settings {
-    height: 140px;
-    padding: 15px 10px;
-    border-radius: 10px;
+  .main_content {
+    gap: 5px;
   }
 
-  .left_content {
-    gap: 15px;
+  .profile,
+  .settings {
+    padding: 10px 12px;
+  }
+
+  .profile_content {
+    gap: 10px;
 
     .user {
-      width: 60px;
-      height: 60px;
+      width: 48px;
+      height: 48px;
     }
   }
 
   .mail,
   .support {
-    gap: 8px;
+    gap: 4px;
     svg {
       width: 20px;
       height: 20px;
@@ -214,7 +210,6 @@
   }
 
   .support {
-    flex-wrap: wrap;
     row-gap: 5px;
   }
 

@@ -148,10 +148,41 @@ $arrow-w: 66px;
       margin-bottom: var(--offset);
     }
 
-    p {
-      @include clamped-p2;
+    .info {
       margin-right: 75px;
+      @include flex-column();
+      align-items: flex-start;
+      gap: 10px;
       margin-bottom: 95px;
+    }
+
+    .authors,
+    .sales {
+      @include clamped-p2();
+
+      span {
+        color: $primary;
+        text-decoration: none !important;
+      }
+    }
+
+    div {
+      @include flex-center();
+      justify-content: flex-start;
+      gap: 5px;
+      @include clamped-p2();
+
+      svg {
+        height: 30px;
+        width: 30px;
+        path {
+          height: 100%;
+          width: auto;
+          stroke: none;
+          stroke-width: 1.5;
+          fill: $primary;
+        }
+      }
     }
 
     .arrow {
@@ -188,8 +219,14 @@ $arrow-w: 66px;
     }
 
     .hero_content {
-      p {
-        margin: 0 0 20px 0;
+      div {
+        svg {
+          height: 26px;
+        }
+      }
+
+      .info {
+        margin-bottom: 20px;
       }
     }
   }
@@ -272,6 +309,12 @@ $arrow-w: 66px;
         svg {
           width: 40px;
           height: 40px;
+        }
+      }
+
+      div {
+        svg {
+          height: 23px;
         }
       }
     }

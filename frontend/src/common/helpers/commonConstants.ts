@@ -15,6 +15,7 @@ import {
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+export const CDN_ORIGIN = import.meta.env.VITE_CDN_URL;
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },
