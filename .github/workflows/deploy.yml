@@ -131,24 +131,29 @@ jobs:
                 [ "$mh" = "healthy" ] && break
                 sleep 2
               done
-              OUT=$(docker compose up -d backend 2>&1) || {
-                echo "[error] Backend start failed" && docker compose ps mysql && exit 1
-              }
-              sleep 3
-              docker ps -a | grep -q "${bc}" || {
-                echo "[error] Backend not created" && docker compose ps -a && exit 1
-              }
+              if ! docker ps -a | grep -q "${bc}"; then
+                OUT=$(docker compose up -d backend 2>&1) || {
+                  echo "[error] Backend start failed" && docker compose ps mysql && exit 1
+                }
+                sleep 5
+                docker ps -a | grep -q "${bc}" || {
+                  echo "[error] Backend not created after up" && docker compose ps -a && exit 1
+                }
+              else
+                docker compose up -d backend || true
+              fi
               bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
-              [ "$bs" = "not_found" ] && exit 1
-              sleep 3
+              [ "$bs" = "not_found" ] && { echo "[error] Backend container not found" && exit 1; }
+              [ "$bs" != "running" ] && docker compose start "${bc}" && sleep 3
             }
             
             if [ -z "${CHANGED:-}" ]; then
               ensure_backend
-              docker compose up -d --no-recreate
               bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
-              docker ps -a | grep -q "${bc}" || { docker compose up -d backend && sleep 5; }
-              wait_for_backend || { docker ps -a | grep "${bc}" && exit 1; }
+              docker compose up -d --no-recreate
+              docker ps -a | grep -q "${bc}" || { echo "[error] Backend missing after up" && docker compose up -d backend && sleep 5; }
+              docker ps -a | grep -q "${bc}" || { echo "[error] Backend still missing" && docker compose ps -a && exit 1; }
+              wait_for_backend || { echo "[error] Backend not ready" && docker ps -a | grep "${bc}" && exit 1; }
               docker compose stop nginx || true
               docker compose rm -f nginx || true
               cleanup_port 80 "nginx"
@@ -168,10 +173,11 @@ jobs:
               done
               [ "${BACKEND_CHANGED}" = "true" ] && wait_for_backend
               ensure_backend
-              docker compose up -d --no-recreate
               bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
-              docker ps -a | grep -q "${bc}" || { docker compose up -d backend && sleep 5; }
-              wait_for_backend || { docker ps -a | grep "${bc}" && exit 1; }
+              docker compose up -d --no-recreate
+              docker ps -a | grep -q "${bc}" || { echo "[error] Backend missing after up" && docker compose up -d backend && sleep 5; }
+              docker ps -a | grep -q "${bc}" || { echo "[error] Backend still missing" && docker compose ps -a && exit 1; }
+              wait_for_backend || { echo "[error] Backend not ready" && docker ps -a | grep "${bc}" && exit 1; }
               docker compose stop nginx || true
               docker compose rm -f nginx || true
               cleanup_port 80 "nginx"
@@ -179,8 +185,10 @@ jobs:
               sleep 2
               docker compose up -d --force-recreate --no-deps nginx
             fi
+            bc="${COMPOSE_PROJECT_NAME:-appdents}_backend"
             docker compose ps
-            wait_for_backend || true
+            docker ps -a | grep -q "${bc}" || { echo "[error] Backend missing before reload" && exit 1; }
+            wait_for_backend || { echo "[error] Backend not ready for reload" && exit 1; }
             docker compose exec -T nginx nginx -s reload || { docker compose restart nginx && sleep 3; }
             ns=$(docker inspect -f '{{.State.Status}}' "${COMPOSE_PROJECT_NAME:-appdents}_nginx" 2>/dev/null || echo "not_found")
             [ "$ns" != "running" ] && docker compose up -d nginx && sleep 3
