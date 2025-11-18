@@ -19,6 +19,7 @@ const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const pdf_link = `${BASE_URL}/api/books/${bookId}/pdf`;
 
   const fetchBookData = useCallback(async () => {
     try {
@@ -146,10 +147,20 @@ const BookPage = () => {
             <section id={"book-page-reader"} className={s.section_wrapper}>
               <SectionHeader name={t("profile.bookPage.readOnline")} />
 
-              <PdfReader
-                fromProfile
-                url={`${BASE_URL}/api/books/${bookId}/pdf`}
-              />
+              <PdfReader fromProfile url={pdf_link} />
+              {pdf_link && (
+                <p className={s.failed_to_load}>
+                  {t("readerFailedToLoad")}{" "}
+                  <a
+                    href={pdf_link}
+                    target="_blank"
+                    className="highlight"
+                    rel="noopener noreferrer"
+                  >
+                    {t("watchHere")}
+                  </a>
+                </p>
+              )}
             </section>
             {/*<section className={s.section_wrapper}>*/}
             {/*  <SectionHeader name={t("profile.bookPage.listenInAudioVerse")} />*/}

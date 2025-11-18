@@ -72,6 +72,7 @@
   "or": "или",
   "here": "здесь.",
   "of": "из",
+  "readerFailedToLoad": "Окно чтения не загрузилось? Попробуйте открыть файл напрямую",
 
   "emailValidationTooltip": {
     "suggestion": "Возможно,Вы имели ввиду {{suggestedEmail}}?",
