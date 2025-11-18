@@ -16,6 +16,10 @@
   width: 100%;
   padding: 20px;
   @include flex-column();
+
+  form {
+    gap: 30px;
+  }
 }
 
 .content_block {
@@ -31,8 +35,6 @@
     text-align: center;
     width: 90%;
     hyphens: auto;
-    word-break: normal;
-    overflow-wrap: break-word;
   }
 }
 
@@ -44,11 +46,11 @@
 
   svg {
     position: absolute;
-    top: 0;
-    right: 2px;
-    transform: rotate(-60deg);
-    width: 44px;
-    height: auto;
+    top: -2%;
+    right: 5px;
+    transform: rotate(0deg);
+    width: 70px;
+    height: 89px;
   }
 
   label {
@@ -60,15 +62,26 @@
   textarea {
     width: 100%;
     background-color: $primary-04-analogue;
-    border: 2px solid $primary;
+    border: 1px solid $primary;
     border-radius: 20px;
     min-height: 190px;
     @include clamped-p3();
     padding: 15px;
     resize: none;
+    @include custom-scrollbar();
 
     &::placeholder {
       color: $tertiary;
+    }
+  }
+
+  &.error {
+    label {
+      color: $error-color;
+    }
+
+    textarea {
+      border-color: $error-color;
     }
   }
 }
@@ -96,6 +109,16 @@
 @media (max-width: $middle-breakpoint) {
   .form {
     padding: 20px 15px;
+  }
+
+  .description_block {
+    svg {
+      width: 50px;
+      height: 60px;
+      top: 10px;
+      right: -8px;
+      transform: rotate(-60deg);
+    }
   }
 }
 
@@ -149,5 +172,10 @@
 
   .request_btn {
     width: 90%;
+
+    svg {
+      height: 20px;
+      width: auto;
+    }
   }
 }

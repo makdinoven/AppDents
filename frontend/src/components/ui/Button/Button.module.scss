@@ -42,6 +42,18 @@
     }
   }
 
+  &.filled_light {
+    outline-color: $background-color;
+    background-color: $background-color;
+    color: $primary;
+
+    &.loading {
+      outline: unset;
+      background-color: $quaternary;
+      color: $text-color;
+    }
+  }
+
   &.disabled {
     outline: none;
     pointer-events: none;
@@ -89,6 +101,18 @@
         }
       }
 
+      &.filled_light {
+        background-color: transparent;
+        outline-color: $accent;
+        color: $text-color-accent;
+
+        svg {
+          path {
+            stroke: $text-color-accent;
+          }
+        }
+      }
+
       &.outlined_dark {
         background-color: $primary;
         color: $text-color;
@@ -104,11 +128,23 @@
     &.outlined_dark {
       background-color: $background-color;
       color: $primary;
+      border-color: $primary;
     }
 
     &.filled_dark {
       outline-color: $background-color;
       color: $text-color-accent;
+      svg {
+        path {
+          stroke: $text-color-accent;
+        }
+      }
+    }
+
+    &.filled_light {
+      outline-color: $accent;
+      color: $text-color-accent;
+      background-color: transparent;
       svg {
         path {
           stroke: $text-color-accent;

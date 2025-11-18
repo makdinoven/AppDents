@@ -83,7 +83,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
           cards={courses}
         />
       </ListController>
-      <CustomOrder />
+      {isLogged && <CustomOrder />}
       {!isFirstLoad && (
         <ProductsSection
           showSort={true}

@@ -155,7 +155,7 @@ const VideoSection = ({
               <Button
                 onClick={handleNavigateToPayment}
                 text={"buy"}
-                variant={"outlined-dark"}
+                variant={"outlined_dark"}
               />
             </div>
           </div>

@@ -431,7 +431,10 @@
     "invalid_credentials": "Incorrect Email or password",
     "user_not_found": "User with this email is not found",
     "email_exist": "User with this email exist",
-    "errorChangingPassword": "Error. Password was not changed."
+    "errorChangingPassword": "Error. Password was not changed.",
+    "description.minLength": "Description must be at least 8 characters long",
+    "description.maxLength": "Description must not exceed 1000 characters",
+    "description.required": "Description is required"
   },
 
   "workingWarn": {
@@ -491,6 +494,16 @@
     "authors": "Authors",
     "publisher": "Publisher",
     "publicationDate": "Publication date"
+  },
+
+  "orderProduct": {
+    "customOrder": "<0>Found</0> nothing?",
+    "customOrderText": "Want a specific book or course? Describe it below (add a link if you have one) — we’ll take care of the rest!",
+    "describeOrder": "Describe the product you want",
+    "typeHere": "Type here...",
+    "request": "Request",
+    "productRequestSuccess": "Your request has been successfully submitted. We will respond as soon as possible.",
+    "productRequestFailed": "The request could not be processed. Please retry in a moment."
   },
 
   "admin": {

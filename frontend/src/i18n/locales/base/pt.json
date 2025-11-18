@@ -439,5 +439,15 @@
     "authors": "Autores",
     "publisher": "Editora",
     "publicationDate": "Data de publicação"
+  },
+
+  "orderProduct": {
+    "customOrder": "<0>Não</0> encontrou nada?",
+    "customOrderText": "Quer um livro ou curso específico? Descreva abaixo (adicione um link se tiver) — nós cuidamos de tudo!",
+    "describeOrder": "Descreva o produto desejado",
+    "typeHere": "Digite aqui...",
+    "request": "Solicitar",
+    "productRequestSuccess": "Seu pedido foi enviado com sucesso. Responderemos o mais rápido possível.",
+    "productRequestFailed": "Não foi possível processar o pedido. Tente novamente em instantes."
   }
 }

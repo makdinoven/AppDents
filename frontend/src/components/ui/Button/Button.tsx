@@ -11,6 +11,7 @@ interface ButtonProps {
   type?: "button" | "submit" | "reset";
   variant?:
     | "filled"
+    | "filled_light"
     | "filled_dark"
     | "outlined"
     | "outlined_dark"
@@ -39,7 +40,7 @@ const Button = ({
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`${s.btn} ${variant ? s[variant] : ""} ${loading ? s.loading : ""} ${className ? className : ""}`}
+      className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
       {children && <span>{children}</span>}

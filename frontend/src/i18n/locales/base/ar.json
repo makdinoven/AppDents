@@ -466,5 +466,15 @@
     "authors": "مؤلفون",
     "publisher": "الناشر",
     "publicationDate": "تاريخ النشر"
+  },
+
+  "orderProduct": {
+    "customOrder": "هل <0>لم</0> تجد شيئًا؟",
+    "customOrderText": "هل تريد كتابًا أو دورة محددة؟ صف ذلك أدناه (أضف رابطًا إن وجد) — وسنتولى الباقي!",
+    "describeOrder": "صف المنتج الذي تريده",
+    "typeHere": "اكتب هنا...",
+    "request": "طلب",
+    "productRequestSuccess": "تم إرسال طلبك بنجاح. سنقوم بالرد في أقرب وقت ممكن.",
+    "productRequestFailed": "تعذر معالجة الطلب. يرجى المحاولة مرة أخرى بعد قليل."
   }
 }

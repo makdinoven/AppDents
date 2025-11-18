@@ -77,7 +77,7 @@ const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
   return (
     <div className={s.modal} ref={ref}>
       <ModalCloseButton
-        className={s.close_modal_button}
+        className={s.close_button}
         onClick={() => closeModal()}
       />
       <Form handleSubmit={handleSubmit(handleInviteFriend)}>
