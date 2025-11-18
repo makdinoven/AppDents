@@ -102,7 +102,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
                 />
               </p>
             )}
-            {data?.sales_count && data.sales_count > 100 && (
+            {data.sales_count > 100 && (
               <p>
                 <Trans
                   i18nKey={"bookLanding.salesCount"}

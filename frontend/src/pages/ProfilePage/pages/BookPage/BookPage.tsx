@@ -49,6 +49,8 @@ const BookPage = () => {
     return formatIcons[format.toUpperCase()] ?? null;
   };
 
+  console.log(book);
+
   return (
     <>
       <div className={s.book_page}>
@@ -93,21 +95,34 @@ const BookPage = () => {
                         />
                       </p>
                     )}
+                    {book.publishers?.length > 0 && (
+                      <p>
+                        <Trans
+                          i18nKey="bookLanding.publisher"
+                          values={{
+                            publisher: book.publishers
+                              ?.map((publisher: any) => publisher.name)!
+                              .join(", "),
+                          }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
                     {book.publication_date && (
                       <p>
                         <Trans
-                          i18nKey="bookLanding.publishedDate"
+                          i18nKey="bookLanding.publicationDate"
                           values={{ date: book.publication_date }}
                           components={[<span className={s.highlight} />]}
                         />
                       </p>
                     )}
-                    {book.publisher && (
+                    {book.page_count && (
                       <p>
                         <Trans
-                          i18nKey={"bookLanding.publisher"}
+                          i18nKey={"bookLanding.pages.count"}
                           values={{
-                            publisher: book.publisher,
+                            count: book.page_count,
                           }}
                           components={[<span className={s.highlight} />]}
                         />
