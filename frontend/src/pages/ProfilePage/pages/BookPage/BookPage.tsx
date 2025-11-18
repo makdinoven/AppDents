@@ -19,6 +19,7 @@ const BookPage = () => {
   const { bookId } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const pdf_link = `${BASE_URL}/api/books/${bookId}/pdf`;
 
   const fetchBookData = useCallback(async () => {
     try {
@@ -48,6 +49,8 @@ const BookPage = () => {
   const getFormatIcon = (format: string) => {
     return formatIcons[format.toUpperCase()] ?? null;
   };
+
+  console.log(book);
 
   return (
     <>
@@ -93,21 +96,34 @@ const BookPage = () => {
                         />
                       </p>
                     )}
+                    {book.publishers?.length > 0 && (
+                      <p>
+                        <Trans
+                          i18nKey="bookLanding.publisher"
+                          values={{
+                            publisher: book.publishers
+                              ?.map((publisher: any) => publisher.name)!
+                              .join(", "),
+                          }}
+                          components={[<span className={s.highlight} />]}
+                        />
+                      </p>
+                    )}
                     {book.publication_date && (
                       <p>
                         <Trans
-                          i18nKey="bookLanding.publishedDate"
+                          i18nKey="bookLanding.publicationDate"
                           values={{ date: book.publication_date }}
                           components={[<span className={s.highlight} />]}
                         />
                       </p>
                     )}
-                    {book.publisher && (
+                    {book.page_count && (
                       <p>
                         <Trans
-                          i18nKey={"bookLanding.publisher"}
+                          i18nKey={"bookLanding.pages.count"}
                           values={{
-                            publisher: book.publisher,
+                            count: book.page_count,
                           }}
                           components={[<span className={s.highlight} />]}
                         />
@@ -131,10 +147,20 @@ const BookPage = () => {
             <section id={"book-page-reader"} className={s.section_wrapper}>
               <SectionHeader name={t("profile.bookPage.readOnline")} />
 
-              <PdfReader
-                fromProfile
-                url={`${BASE_URL}/api/books/${bookId}/pdf`}
-              />
+              <PdfReader fromProfile url={pdf_link} />
+              {pdf_link && (
+                <p className={s.failed_to_load}>
+                  {t("readerFailedToLoad")}{" "}
+                  <a
+                    href={pdf_link}
+                    target="_blank"
+                    className="highlight"
+                    rel="noopener noreferrer"
+                  >
+                    {t("watchHere")}
+                  </a>
+                </p>
+              )}
             </section>
             {/*<section className={s.section_wrapper}>*/}
             {/*  <SectionHeader name={t("profile.bookPage.listenInAudioVerse")} />*/}

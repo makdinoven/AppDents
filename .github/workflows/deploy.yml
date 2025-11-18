@@ -94,10 +94,62 @@ jobs:
             CHANGED_RAW="${{ needs.check-changes.outputs.changed_services }}"
             CHANGED="$(echo "${CHANGED_RAW:-}" | xargs || true)"
             echo "[info] Changed: '${CHANGED:-<none>}'"
-            docker compose build nginx
+            
+            # Docker Hub authentication to avoid rate limits
+            docker_login_with_retry() {
+              local max_attempts=3 attempt=1 delay=5
+              while [ $attempt -le $max_attempts ]; do
+                echo "[info] Attempting Docker Hub login (attempt $attempt/$max_attempts)..."
+                if echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin 2>&1; then
+                  echo "[info] Docker Hub login successful"
+                  return 0
+                fi
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "[warn] Docker Hub login failed, retrying in ${delay}s..."
+                  sleep $delay
+                  delay=$((delay * 2))
+                fi
+                attempt=$((attempt + 1))
+              done
+              echo "[warn] Docker Hub login failed after $max_attempts attempts, continuing without auth (may hit rate limits)"
+              return 1
+            }
+            
+            # Try to login to Docker Hub (optional, but helps avoid rate limits)
+            if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_PASSWORD }}" ]; then
+              docker_login_with_retry || true
+            else
+              echo "[warn] Docker Hub credentials not configured, may hit rate limits"
+            fi
+            
+            # Retry function for docker build operations
+            docker_build_with_retry() {
+              local service=$1 max_attempts=3 attempt=1 delay=10
+              local build_cmd="docker compose build"
+              [ "$service" = "frontend" ] && build_cmd="docker compose build --no-cache frontend" || build_cmd="docker compose build ${service}"
+              
+              while [ $attempt -le $max_attempts ]; do
+                echo "[info] Building ${service} (attempt $attempt/$max_attempts)..."
+                if eval "$build_cmd" 2>&1; then
+                  echo "[info] Successfully built ${service}"
+                  return 0
+                fi
+                local exit_code=$?
+                if [ $attempt -lt $max_attempts ]; then
+                  echo "[warn] Build failed with exit code ${exit_code}, retrying in ${delay}s..."
+                  sleep $delay
+                  delay=$((delay * 2))
+                fi
+                attempt=$((attempt + 1))
+              done
+              echo "[error] Failed to build ${service} after $max_attempts attempts"
+              return 1
+            }
+            
+            docker_build_with_retry nginx
             if [ -n "${CHANGED:-}" ]; then
               for svc in ${CHANGED}; do
-                [ "${svc}" = "frontend" ] && docker compose build --no-cache frontend || docker compose build ${svc}
+                docker_build_with_retry "${svc}"
               done
             fi
             cleanup_port() {
@@ -131,14 +183,16 @@ jobs:
                 [ "$mh" = "healthy" ] && break
                 sleep 2
               done
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 if ! docker compose up -d backend 2>&1; then
                   echo "[error] Backend start failed"
                   docker compose ps mysql
                   exit 1
                 fi
                 sleep 5
-                if ! docker ps -a | grep -q "${bc}"; then
+                bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+                if [ "$bs_check" = "not_found" ]; then
                   echo "[error] Backend not created after up"
                   docker compose ps -a
                   exit 1
@@ -162,7 +216,8 @@ jobs:
             if [ -z "${CHANGED:-}" ]; then
               ensure_backend
               docker compose up -d --no-recreate
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
@@ -191,7 +246,8 @@ jobs:
               [ "${BACKEND_CHANGED}" = "true" ] && wait_for_backend
               ensure_backend
               docker compose up -d --no-recreate
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
@@ -208,7 +264,8 @@ jobs:
               docker compose up -d --force-recreate --no-deps nginx
             fi
             docker compose ps
-            if ! docker ps -a | grep -q "${bc}"; then
+            bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+            if [ "$bs" = "not_found" ]; then
               echo "[error] Backend missing before reload"
               exit 1
             fi

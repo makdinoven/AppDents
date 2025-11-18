@@ -73,6 +73,7 @@
   "firstFreeLesson": "First lesson for free",
   "or": "or",
   "here": "here.",
+  "readerFailedToLoad": "Reader window failed to load? Try reading it directly",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",
