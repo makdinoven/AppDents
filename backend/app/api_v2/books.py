@@ -1138,11 +1138,13 @@ def patch_book(
         if field in data:
             setattr(book, field, data[field])
 
-    # авторы / теги
+    # авторы / теги / издатели
     if "author_ids" in data and data["author_ids"] is not None:
         book.authors = book_service._fetch_authors(db, data["author_ids"])
     if "tag_ids" in data and data["tag_ids"] is not None:
         book.tags = book_service._fetch_tags(db, data["tag_ids"])
+    if "publisher_ids" in data and data["publisher_ids"] is not None:
+        book.publishers = book_service._fetch_publishers(db, data["publisher_ids"])
 
     db.commit()
     db.refresh(book)

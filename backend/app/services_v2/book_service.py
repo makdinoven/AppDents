@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..models.models_v2 import (
     Book, BookFile, BookAudio,
-    BookFileFormat, Author, BookLanding, User, Tag,
+    BookFileFormat, Author, BookLanding, User, Tag, Publisher,
     BookAdVisit, BookLandingAdPeriod, Purchase
 )
 from ..schemas_v2.book import (
@@ -134,6 +134,18 @@ def _fetch_tags(db: Session, ids: list[int]) -> list[Tag]:
             detail=f"Tags not found: {absent}",
         )
     return tags
+
+def _fetch_publishers(db: Session, ids: list[int]) -> list[Publisher]:
+    if not ids:
+        return []
+    publishers = db.query(Publisher).filter(Publisher.id.in_(ids)).all()
+    if len(publishers) != len(ids):
+        absent = sorted(set(ids) - {p.id for p in publishers})
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Publishers not found: {absent}",
+        )
+    return publishers
 
 def _user_owns_book(db: Session, user_id: int, book_id: int) -> bool:
     """

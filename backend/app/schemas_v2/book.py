@@ -373,6 +373,7 @@ class BookPatch(BaseModel):
     publication_date: Optional[str] = None
     author_ids: Optional[List[int]] = None
     tag_ids: Optional[List[int]] = None
+    publisher_ids: Optional[List[int]] = None
 
     @validator("cover_url", pre=True)
     def _empty_cover_to_none_patch(cls, v):
