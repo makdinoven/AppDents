@@ -131,14 +131,16 @@ jobs:
                 [ "$mh" = "healthy" ] && break
                 sleep 2
               done
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 if ! docker compose up -d backend 2>&1; then
                   echo "[error] Backend start failed"
                   docker compose ps mysql
                   exit 1
                 fi
                 sleep 5
-                if ! docker ps -a | grep -q "${bc}"; then
+                bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+                if [ "$bs_check" = "not_found" ]; then
                   echo "[error] Backend not created after up"
                   docker compose ps -a
                   exit 1
@@ -162,7 +164,8 @@ jobs:
             if [ -z "${CHANGED:-}" ]; then
               ensure_backend
               docker compose up -d --no-recreate
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
@@ -191,7 +194,8 @@ jobs:
               [ "${BACKEND_CHANGED}" = "true" ] && wait_for_backend
               ensure_backend
               docker compose up -d --no-recreate
-              if ! docker ps -a | grep -q "${bc}"; then
+              bs_check=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+              if [ "$bs_check" = "not_found" ]; then
                 echo "[warn] Backend not found, attempting to start..."
                 docker compose up -d backend
                 sleep 5
@@ -208,7 +212,8 @@ jobs:
               docker compose up -d --force-recreate --no-deps nginx
             fi
             docker compose ps
-            if ! docker ps -a | grep -q "${bc}"; then
+            bs=$(docker inspect -f '{{.State.Status}}' "${bc}" 2>/dev/null || echo "not_found")
+            if [ "$bs" = "not_found" ]; then
               echo "[error] Backend missing before reload"
               exit 1
             fi
