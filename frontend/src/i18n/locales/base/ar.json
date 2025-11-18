@@ -71,6 +71,7 @@
   "firstFreeLesson": "أول درس مجاني",
   "or": "أو",
   "here": "هنا",
+  "readerFailedToLoad": "هل فشلت نافذة القارئ في التحميل؟ حاول قراءة الملف مباشرة",
 
   "emailValidationTooltip": {
     "suggestion": "هل كنت تقصد {{suggestedEmail}}؟",
