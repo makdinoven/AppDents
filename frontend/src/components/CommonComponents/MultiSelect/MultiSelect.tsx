@@ -1,6 +1,12 @@
 import s from "./MultiSelect.module.scss";
 import Select from "react-select";
 import { t } from "i18next";
+import {
+  ACCENT_COLOR,
+  BACKGROUND_COLOR,
+  HOVER_COLOR,
+  PRIMARY_COLOR,
+} from "./config/colors.ts";
 
 interface MultiSelectProps<T> {
   id: string;
@@ -16,11 +22,6 @@ interface MultiSelectProps<T> {
   isWider?: boolean;
   centrate?: boolean;
 }
-
-const HOVER_COLOR = "rgba(100, 116, 139, 0.1)";
-const PRIMARY_COLOR = "#7FDFD5";
-const ACCENT_COLOR = "#01433D";
-const BACKGROUND_COLOR = "#EDF8FF";
 
 const MultiSelect = <T extends { [key: string]: any }>({
   id,
