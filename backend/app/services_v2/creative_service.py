@@ -374,7 +374,8 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
     url = f"{settings.BOOKAI_BASE_URL}{endpoint}"
     # Увеличиваем таймаут для v2, так как генерация может занимать больше времени
-    timeout_seconds = 180 if version == 2 else 120
+    # Теперь генерация в Celery, можем позволить длинные таймауты
+    timeout_seconds = 600 if version == 2 else 480  # 10 минут для v2, 8 минут для v1
     logger.info(f"BookAI request: {url} book_id={book_id} lang={language} version={version} timeout={timeout_seconds}s")
     
     try:
