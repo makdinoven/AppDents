@@ -1,9 +1,11 @@
 from typing import Optional, Dict, Any, List
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from celery.result import AsyncResult
 
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
@@ -20,6 +22,8 @@ from ..services_v2.creative_service import (
     PlacidServiceError,
 )
 from ..core.config import settings
+from ..celery_app import celery
+from ..tasks.creatives import get_active_task, set_active_task
 
 import requests
 
@@ -70,6 +74,22 @@ class CreativesResponse(BaseModel):
     """Ответ с креативами."""
     items: List[CreativeItemResponse]
     overall: str
+
+
+class CreativeTaskResponse(BaseModel):
+    """Ответ при постановке задачи на генерацию."""
+    task_id: str
+    status_url: str
+    status: str = "queued"
+
+
+class CreativeStatusResponse(BaseModel):
+    """Ответ о статусе задачи генерации."""
+    task_id: str
+    state: str
+    result: Optional[Dict[str, Any]] = None
+    progress: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 
 @router.post("/books/{book_id}/ai-process")
@@ -209,23 +229,23 @@ def _order_creatives_by_template(creatives: List[BookCreative]) -> List[BookCrea
     return sorted(creatives, key=lambda x: order.get(x.creative_code, 999))
 
 
-@router.get("/books/{book_id}/creatives", response_model=CreativesResponse)
+@router.get("/books/{book_id}/creatives")
 def get_or_create_creatives(
     book_id: int,
     language: str = Query(..., description="Язык креатива (RU, EN, ES, PT, AR, IT)"),
     regen: bool = Query(False, description="Принудительно перегенерировать все креативы"),
+    request: Request = None,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles("admin")),
 ):
     """
-    Получить или создать креативы для книги.
+    Получить или создать креативы для книги (асинхронный режим).
     
-    Возвращает три креатива в фиксированном порядке:
-    - v1 (TPL: kbhccvksoprg7)
-    - v2 (TPL: ktawlyumyeaw7)
-    - v3 (TPL: uoshaoahss0al)
+    Возвращает:
+    - Если креативы готовы и не требуется регенерация: 200 + CreativesResponse
+    - Если требуется генерация: 202 + CreativeTaskResponse с task_id
     
-    Каждый элемент содержит code (creative_code), status и s3_url.
+    Для проверки статуса используйте GET /books/creatives/status/{task_id}
     """
     # Берём последние версии по каждому шаблону, чтобы не отдать старые URL
     items = (
@@ -241,62 +261,70 @@ def get_or_create_creatives(
     ready = {code: x for code, x in latest_by_code.items() if x.status == CreativeStatus.READY}
     needed = {PLACID_TPL_V1, PLACID_TPL_V2, PLACID_TPL_V3}
 
+    # Если все креативы готовы и не требуется регенерация - возвращаем их
     if not regen and needed.issubset(set(ready.keys())):
         ordered = _order_creatives_by_template([ready[code] for code in needed if code in ready])
-        return {
-            "items": [
-                {
-                    "code": x.creative_code,
-                    "creative_code": x.creative_code,
-                    "status": x.status.value,
-                    "s3_url": x.s3_url or "",
-                    "payload_used": x.payload_used or {},
-                }
+        return CreativesResponse(
+            items=[
+                CreativeItemResponse(
+                    code=x.creative_code,
+                    creative_code=x.creative_code,
+                    status=x.status.value,
+                    s3_url=x.s3_url or "",
+                    payload_used=x.payload_used or {},
+                )
                 for x in ordered
             ],
-            "overall": "ready",
-        }
+            overall="ready",
+        )
 
-    # Генерация (синхронно)
+    # Нужна генерация - проверяем активную задачу
+    existing_task_id = get_active_task(book_id, language)
+    if existing_task_id:
+        # Проверяем, действительно ли задача еще выполняется
+        task_result = AsyncResult(existing_task_id, app=celery)
+        if task_result.state in ("PENDING", "STARTED", "PROGRESS"):
+            # Задача еще выполняется - возвращаем существующий task_id
+            base = str(request.base_url).rstrip("/") if request else ""
+            status_url = f"{base}/api/v2/books/creatives/status/{existing_task_id}"
+            return CreativeTaskResponse(
+                task_id=existing_task_id,
+                status_url=status_url,
+                status="processing" if task_result.state in ("STARTED", "PROGRESS") else "queued",
+            )
+
+    # Запускаем новую задачу
     try:
-        results = generate_all_creatives(db, book_id, language)
-        ordered = _order_creatives_by_template(results)
-        return {
-            "items": [
-                {
-                    "code": x.creative_code,
-                    "creative_code": x.creative_code,
-                    "status": x.status.value,
-                    "s3_url": x.s3_url or "",
-                    "payload_used": x.payload_used or {},
-                }
-                for x in ordered
-            ],
-            "overall": "ready",
-        }
-    except BookAIValidationError as e:
-        logger.error("BookAI validation error in get_or_create_creatives")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
-    except BookAIServiceUnavailableError as e:
-        logger.error("BookAI service unavailable in get_or_create_creatives")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
-    except PlacidQuotaError as e:
-        logger.error("Placid quota error in get_or_create_creatives")
-        # 402 Payment Required логичнее для недостатка кредитов
-        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
-    except PlacidServiceError as e:
-        logger.error("Placid service error in get_or_create_creatives")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
-    except ValueError as e:
-        logger.error("ValueError in get_or_create_creatives")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+        task = celery.send_task(
+            "app.tasks.creatives.generate_all_creatives_task",
+            kwargs={"book_id": book_id, "language": language, "manual_payload": None},
+            queue="book",
+        )
+        task_id = task.id
+        
+        # Сохраняем маппинг в Redis
+        set_active_task(book_id, language, task_id)
+        
+        # Формируем URL статуса
+        base = str(request.base_url).rstrip("/") if request else ""
+        status_url = f"{base}/api/v2/books/creatives/status/{task_id}"
+        
+        logger.info(f"Started creative generation task {task_id} for book_id={book_id}, language={language}")
+        
+        response = CreativeTaskResponse(
+            task_id=task_id,
+            status_url=status_url,
+            status="queued",
+        )
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=response.dict())
+        
     except Exception as e:
-        logger.error("Unexpected error in get_or_create_creatives", exc_info=True)
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
+        logger.error(f"Failed to enqueue creative generation task: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to start generation task: {str(e)}")
 
 
 
-@router.post("/books/{book_id}/creatives/manual/{target}", response_model=CreativesResponse)
+@router.post("/books/{book_id}/creatives/manual/{target}")
 def manual_single_creative(
     book_id: int,
     target: str = Path(
@@ -308,11 +336,12 @@ def manual_single_creative(
                     f"- v3 (или {PLACID_TPL_V3})"
     ),
     body: ManualCreativeFlexible = ...,
+    request: Request = None,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles("admin")),
 ):
     """
-    Ручная регенерация ОДНОГО креатива для книги.
+    Ручная регенерация ОДНОГО креатива для книги (асинхронный режим).
     
     **target** - какой креатив обновить:
     - `v1` (или `kbhccvksoprg7`) - первый шаблон
@@ -326,100 +355,222 @@ def manual_single_creative(
     - `texts` - словарь с текстовыми полями (hight_description, tag_1, tag_2, tag_3 и т.д.)
     - `layers` - полный словарь слоёв для Placid (если нужно полное переопределение)
     
-    Возвращает массив с одним элементом, содержащим code, status и s3_url обновлённого креатива.
+    Возвращает:
+    - 202 + CreativeTaskResponse с task_id для отслеживания
+    
+    Для проверки статуса используйте GET /books/creatives/status/{task_id}
     """
     overrides = body.fields or {}
+    
+    # Проверяем активную задачу для этого конкретного креатива
+    existing_task_id = get_active_task(book_id, body.language, target)
+    if existing_task_id:
+        # Проверяем, действительно ли задача еще выполняется
+        task_result = AsyncResult(existing_task_id, app=celery)
+        if task_result.state in ("PENDING", "STARTED", "PROGRESS"):
+            # Задача еще выполняется - возвращаем существующий task_id
+            base = str(request.base_url).rstrip("/") if request else ""
+            status_url = f"{base}/api/v2/books/creatives/status/{existing_task_id}"
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content=CreativeTaskResponse(
+                    task_id=existing_task_id,
+                    status_url=status_url,
+                    status="processing" if task_result.state in ("STARTED", "PROGRESS") else "queued",
+                ).dict()
+            )
+    
+    # Запускаем новую задачу
     try:
-        item = generate_single_creative(db, book_id, body.language, target, overrides=overrides)
-        return {
-            "items": [
-                {
-                    "code": item.creative_code,
-                    "creative_code": item.creative_code,
-                    "status": item.status.value,
-                    "s3_url": item.s3_url or "",
-                    "payload_used": item.payload_used or {},
-                }
-            ],
-            "overall": "ready",
-        }
-    except BookAIValidationError as e:
-        logger.error("BookAI validation error in manual_single_creative")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
-    except BookAIServiceUnavailableError as e:
-        logger.error("BookAI service unavailable in manual_single_creative")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
-    except PlacidQuotaError as e:
-        logger.error("Placid quota error in manual_single_creative")
-        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
-    except PlacidServiceError as e:
-        logger.error("Placid service error in manual_single_creative")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
-    except ValueError as e:
-        logger.error("ValueError in manual_single_creative")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+        task = celery.send_task(
+            "app.tasks.creatives.generate_single_creative_task",
+            kwargs={
+                "book_id": book_id,
+                "language": body.language,
+                "target": target,
+                "overrides": overrides,
+            },
+            queue="book",
+        )
+        task_id = task.id
+        
+        # Сохраняем маппинг в Redis
+        set_active_task(book_id, body.language, task_id, target=target)
+        
+        # Формируем URL статуса
+        base = str(request.base_url).rstrip("/") if request else ""
+        status_url = f"{base}/api/v2/books/creatives/status/{task_id}"
+        
+        logger.info(f"Started single creative generation task {task_id} for book_id={book_id}, language={body.language}, target={target}")
+        
+        response = CreativeTaskResponse(
+            task_id=task_id,
+            status_url=status_url,
+            status="queued",
+        )
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=response.dict())
+        
     except Exception as e:
-        logger.error("Unexpected error in manual_single_creative", exc_info=True)
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creative: {str(e)}")
+        logger.error(f"Failed to enqueue single creative generation task: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to start generation task: {str(e)}")
 
-@router.post("/books/{book_id}/creatives/manual", response_model=CreativesResponse)
+@router.post("/books/{book_id}/creatives/manual")
 def manual_creatives(
     book_id: int,
     body: ManualCreatives,
+    request: Request = None,
     db: Session = Depends(get_db),
     current_admin=Depends(require_roles("admin")),
 ):
     """
-    Ручная регенерация всех креативов (v1 и v2) для книги.
+    Ручная регенерация всех креативов (v1 и v2) для книги (асинхронный режим).
     
     Обновляет креативы v1 и v2 одновременно, если переданы соответствующие данные.
     Креатив v3 генерируется автоматически без ручных данных.
     
-    Возвращает все три креатива в фиксированном порядке:
-    - v1 (TPL: kbhccvksoprg7)
-    - v2 (TPL: ktawlyumyeaw7)
-    - v3 (TPL: uoshaoahss0al)
+    Возвращает:
+    - 202 + CreativeTaskResponse с task_id для отслеживания
     
-    Каждый элемент содержит code (creative_code), status и s3_url.
+    Для проверки статуса используйте GET /books/creatives/status/{task_id}
     """
     mp: Dict[str, Dict] = {}
     if body.v1:
         mp["v1"] = body.v1.dict(exclude_none=True)
     if body.v2:
         mp["v2"] = body.v2.dict(exclude_none=True)
+    
+    # Проверяем активную задачу
+    existing_task_id = get_active_task(book_id, body.language)
+    if existing_task_id:
+        # Проверяем, действительно ли задача еще выполняется
+        task_result = AsyncResult(existing_task_id, app=celery)
+        if task_result.state in ("PENDING", "STARTED", "PROGRESS"):
+            # Задача еще выполняется - возвращаем существующий task_id
+            base = str(request.base_url).rstrip("/") if request else ""
+            status_url = f"{base}/api/v2/books/creatives/status/{existing_task_id}"
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content=CreativeTaskResponse(
+                    task_id=existing_task_id,
+                    status_url=status_url,
+                    status="processing" if task_result.state in ("STARTED", "PROGRESS") else "queued",
+                ).dict()
+            )
+    
+    # Запускаем новую задачу
     try:
-        results = generate_all_creatives(db, book_id, body.language, manual_payload=mp or None)
-        ordered = _order_creatives_by_template(results)
-        return {
-            "items": [
-                {
-                    "code": x.creative_code,
-                    "creative_code": x.creative_code,
-                    "status": x.status.value,
-                    "s3_url": x.s3_url or "",
-                    "payload_used": x.payload_used or {},
-                }
-                for x in ordered
-            ],
-            "overall": "ready",
-        }
-    except BookAIValidationError as e:
-        logger.error("BookAI validation error in manual_creatives")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
-    except BookAIServiceUnavailableError as e:
-        logger.error("BookAI service unavailable in manual_creatives")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
-    except PlacidQuotaError as e:
-        logger.error("Placid quota error in manual_creatives")
-        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED, "Placid: Requires Subscription and Credits")
-    except PlacidServiceError as e:
-        logger.error("Placid service error in manual_creatives")
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Placid error: {str(e)}")
-    except ValueError as e:
-        logger.error("ValueError in manual_creatives")
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(e))
+        task = celery.send_task(
+            "app.tasks.creatives.generate_all_creatives_task",
+            kwargs={
+                "book_id": book_id,
+                "language": body.language,
+                "manual_payload": mp or None,
+            },
+            queue="book",
+        )
+        task_id = task.id
+        
+        # Сохраняем маппинг в Redis
+        set_active_task(book_id, body.language, task_id)
+        
+        # Формируем URL статуса
+        base = str(request.base_url).rstrip("/") if request else ""
+        status_url = f"{base}/api/v2/books/creatives/status/{task_id}"
+        
+        logger.info(f"Started manual creative generation task {task_id} for book_id={book_id}, language={body.language}")
+        
+        response = CreativeTaskResponse(
+            task_id=task_id,
+            status_url=status_url,
+            status="queued",
+        )
+        return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=response.dict())
+        
     except Exception as e:
-        logger.error("Unexpected error in manual_creatives", exc_info=True)
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to generate creatives: {str(e)}")
+        logger.error(f"Failed to enqueue manual creative generation task: {e}", exc_info=True)
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"Failed to start generation task: {str(e)}")
+
+
+@router.get("/books/creatives/status/{task_id}")
+def get_creative_status(
+    task_id: str,
+    current_admin=Depends(require_roles("admin")),
+):
+    """
+    Проверка статуса задачи генерации креативов.
+    
+    Возвращает:
+    - `status: "queued"` - задача в очереди
+    - `status: "processing"` - задача выполняется (с полем progress)
+    - `status: "done"` - задача завершена (с полем items и overall)
+    - `status: "error"` - произошла ошибка (с полем error)
+    """
+    result = AsyncResult(task_id, app=celery)
+    state = result.state
+    
+    if state == "PENDING":
+        return CreativeStatusResponse(
+            task_id=task_id,
+            state="queued",
+        )
+    
+    if state in ("STARTED", "PROGRESS"):
+        meta = result.info if isinstance(result.info, dict) else {}
+        return CreativeStatusResponse(
+            task_id=task_id,
+            state="processing",
+            progress=meta,
+        )
+    
+    if state == "SUCCESS":
+        data = result.get(propagate=False)
+        
+        # Проверяем формат результата
+        if isinstance(data, dict):
+            if data.get("status") == "success":
+                # Успешная генерация - возвращаем креативы
+                items = data.get("items", [])
+                return {
+                    "task_id": task_id,
+                    "state": "done",
+                    "result": {
+                        "items": items,
+                        "overall": "ready",
+                    }
+                }
+            elif data.get("status") == "error":
+                # Ошибка в процессе генерации
+                error_type = data.get("error_type", "general")
+                error_msg = data.get("error", "Unknown error")
+                
+                # Формируем понятное сообщение об ошибке
+                return CreativeStatusResponse(
+                    task_id=task_id,
+                    state="error",
+                    error=f"{error_type}: {error_msg}",
+                )
+        
+        # Неожиданный формат результата
+        return CreativeStatusResponse(
+            task_id=task_id,
+            state="done",
+            result=data,
+        )
+    
+    if state == "FAILURE":
+        err = str(result.info) if result.info else "Unknown error"
+        return CreativeStatusResponse(
+            task_id=task_id,
+            state="error",
+            error=err,
+        )
+    
+    # Прочие нестандартные статусы
+    meta = result.info if isinstance(result.info, dict) else {}
+    return CreativeStatusResponse(
+        task_id=task_id,
+        state=state.lower(),
+        progress=meta,
+    )
 
 

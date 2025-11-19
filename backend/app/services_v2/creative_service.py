@@ -374,7 +374,8 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
     endpoint = "/creative/generate-v2" if version == 2 else "/creative/generate"
     url = f"{settings.BOOKAI_BASE_URL}{endpoint}"
     # Увеличиваем таймаут для v2, так как генерация может занимать больше времени
-    timeout_seconds = 180 if version == 2 else 120
+    # Теперь генерация в Celery, можем позволить длинные таймауты
+    timeout_seconds = 600 if version == 2 else 480  # 10 минут для v2, 8 минут для v1
     logger.info(f"BookAI request: {url} book_id={book_id} lang={language} version={version} timeout={timeout_seconds}s")
     
     try:
@@ -394,12 +395,42 @@ def _bookai_texts(db: Session, book_id: int, language: str, version: int) -> Dic
         try:
             texts = r.json()
             logger.info(f"BookAI texts extracted for version={version}, book_id={book_id}, keys={list(texts.keys())}")
+            
+            # Определяем обязательные ключи в зависимости от версии
+            if version == 1:
+                required_keys = {
+                    "hight_description": "",
+                    "medium_description": "",
+                    "down_description": "",
+                    "tag_1": "",
+                    "tag_2": "",
+                    "tag_3": "",
+                }
+            elif version == 2:
+                required_keys = {
+                    "hight_description": "",
+                    "down_description": "",
+                    "tag_1": "",
+                    "tag_2": "",
+                    "tag_3": "",
+                }
+            else:
+                required_keys = {}
+            
+            # Гарантируем наличие всех обязательных ключей
             cleaned_texts = {}
             for key, value in texts.items():
                 if isinstance(value, str):
                     cleaned_texts[key] = _clean_creative_text(value)
                 else:
                     cleaned_texts[key] = value
+            
+            # Добавляем отсутствующие обязательные ключи с дефолтными значениями
+            for key, default_value in required_keys.items():
+                if key not in cleaned_texts:
+                    logger.warning(f"BookAI response missing required key '{key}' for version={version}, book_id={book_id}, using default empty string")
+                    cleaned_texts[key] = default_value
+            
             return cleaned_texts
         except (ValueError, json.JSONDecodeError) as e:
             raise BookAIServiceUnavailableError("bookai invalid json response")
