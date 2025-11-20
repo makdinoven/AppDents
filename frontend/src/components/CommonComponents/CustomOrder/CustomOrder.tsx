@@ -21,7 +21,7 @@ const CustomOrder = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<OrderDescriptionType>({
-    mode: "onChange",
+    mode: "onSubmit",
   });
   const { id, language, isLogged } = useSelector(
     (state: AppRootStateType) => state.user,
