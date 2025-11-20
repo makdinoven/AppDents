@@ -24,6 +24,7 @@ from ..celery_app import celery
 # S3/Redis
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
 S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
@@ -47,19 +48,46 @@ log = logging.getLogger(__name__)
 def _pdf_key(book: Book) -> str:
     return f"books/{book.slug}/{book.slug}.pdf"
 
-def _preview_pdf_url(book_id: int) -> str:
+def _preview_pdf_url(book_id: int, check_exists: bool = False) -> str:
     """
     Генерирует CDN-URL превью PDF (20 страниц) по book_id книги.
     Путь соответствует логике в book_previews.py: books/<id>/preview/preview_20p.pdf
+    
+    Args:
+        book_id: ID книги
+        check_exists: Если True, проверяет существование файла в S3.
+                     Возвращает пустую строку если файл не существует.
     """
     from urllib.parse import quote
     key = f"books/{book_id}/preview/preview_20p.pdf"
+    
+    if check_exists and not _check_s3_file_exists(key):
+        return ""
+    
     return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
 
 def _cdn_url(key: str) -> str:
     # кодируем path, чтобы URL был валидным (пробелы → %20 и т.д.)
     safe_key = quote(key.lstrip('/'), safe="/-._~()")
     return f"{S3_PUBLIC_HOST}/{safe_key}"
+
+def _check_s3_file_exists(key: str) -> bool:
+    """
+    Проверяет существование файла в S3 бакете.
+    Возвращает True если файл существует, False если нет.
+    """
+    try:
+        s3.head_object(Bucket=S3_BUCKET, Key=key)
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return False
+        # Для других ошибок (403, 500 и т.д.) тоже вернём False
+        log.warning("S3 head_object failed for key=%s: %s", key, e)
+        return False
+    except Exception as e:
+        log.warning("Unexpected error checking S3 file key=%s: %s", key, e)
+        return False
 
 @router.post("/{book_id}/upload-pdf", summary="Загрузить PDF книги и запустить генерацию форматов")
 def upload_pdf_and_generate(
@@ -749,7 +777,7 @@ def admin_get_book_detail(
         "cover_url": book.cover_url,
         "language": book.language,
         "publication_date": getattr(book, "publication_date", None),
-        "preview_pdf_url": _preview_pdf_url(book.id),
+        "preview_pdf_url": _preview_pdf_url(book.id, check_exists=True),
         "page_count": getattr(book, "page_count", None),
         "publisher_ids": [p.id for p in (book.publishers or [])],
 
