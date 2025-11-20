@@ -66,7 +66,12 @@ const SignUpModal = () => {
             placeholder={t("email")}
             {...register("email")}
           />
-          <Button loading={loading} text={t("signup")} type="submit" />
+          <Button
+            loading={loading}
+            text={t("signup")}
+            type="submit"
+            variant="filled_light"
+          />
         </>
       </Form>
       <div className={s.modal_bottom}>

@@ -1,42 +1,55 @@
 import s from "./Button.module.scss";
 import { Link } from "react-router-dom";
-import { Trans } from "react-i18next";
 import LoaderOverlay from "../LoaderOverlay/LoaderOverlay.tsx";
+import { Trans } from "react-i18next";
 
 interface ButtonProps {
   disabled?: any;
   loading?: boolean;
-  text: string;
   link?: string;
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
-  variant?: "filled" | "outlined" | "outlined-dark" | "disabled";
-  icon?: any;
+  variant?:
+    | "filled"
+    | "filled_light"
+    | "filled_dark"
+    | "outlined"
+    | "outlined_dark"
+    | "disabled";
+  children?: React.ReactNode;
+  text?: string;
+  icon?: React.ReactNode | null;
+  className?: string;
 }
 
 const Button = ({
   disabled,
   loading,
-  onClick,
-  text,
   link,
-  variant = "outlined",
+  onClick,
   type = "button",
+  variant = "outlined",
+  children,
+  text,
   icon,
+  className,
 }: ButtonProps) => {
   return link ? (
-    <Link className={s.btn} to={link}>
-      <Trans i18nKey={text} />
-    </Link>
+    <Link className={s.btn} to={link}></Link>
   ) : (
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`${s.btn} ${variant ? s[variant] : ""} ${loading ? s.loading : ""}`}
+      className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${disabled ? s.disabled : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
-      <Trans i18nKey={text} />
-      <span className={s.icon}>{icon && icon}</span>
+      {children && <span>{children}</span>}
+      {text && (
+        <span>
+          <Trans i18nKey={text} />
+        </span>
+      )}
+      {icon && icon}
       {loading && <LoaderOverlay />}
     </button>
   );

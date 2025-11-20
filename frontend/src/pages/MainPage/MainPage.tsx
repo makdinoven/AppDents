@@ -1,3 +1,4 @@
+import s from "./MainPage.module.scss";
 import Hero from "./Hero/Hero.tsx";
 import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +7,7 @@ import { AppDispatchType } from "../../store/store.ts";
 import { useSearchParams } from "react-router-dom";
 import { getTags } from "../../store/actions/mainActions.ts";
 import { scrollToElement } from "../../common/helpers/helpers.ts";
+import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const PAGE_SIZE = 14;
@@ -56,7 +58,7 @@ const MainPage = () => {
   };
 
   return (
-    <>
+    <div className={s.main_page}>
       <Hero onClickScroll={() => scrollToElement(coursesRef)} />
       <ProductsSection
         ref={coursesRef}
@@ -76,9 +78,9 @@ const MainPage = () => {
           handleSetActiveParam("sort", sort)
         }
       />
-
+      <CustomOrder />
       {/*<Feedback />*/}
-    </>
+    </div>
   );
 };
 

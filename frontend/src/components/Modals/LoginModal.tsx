@@ -62,7 +62,12 @@ const LoginModal = () => {
               error={errors.password?.message}
             />
           </div>
-          <Button loading={loading} text={t("login")} type="submit" />
+          <Button
+            loading={loading}
+            text={t("login")}
+            type="submit"
+            variant="filled_light"
+          />
         </>
       </Form>
       <div className={s.modal_bottom}>

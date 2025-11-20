@@ -1,0 +1,10 @@
+.main_page {
+  @include flex-column();
+  gap: 80px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .main_page {
+    gap: 50px;
+  }
+}

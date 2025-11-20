@@ -30,27 +30,36 @@
   }
 }
 
-.close_modal_button {
+.submit_btn {
+  @include clamped-p2();
+  text-transform: unset;
+  width: fit-content;
+  padding: 5px 30px;
+}
+
+.close_button {
   height: 43px;
   width: auto;
 
-  @media (hover: hover) {
-    &:hover {
+  &:hover {
+    svg {
       circle {
-        stroke: $error-color !important;
+        stroke: $error-color;
       }
       path {
-        fill: $error-color !important;
+        fill: $error-color;
       }
     }
   }
 
   &:active {
-    circle {
-      stroke: $error-color !important;
-    }
-    path {
-      fill: $error-color !important;
+    svg {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
+      }
     }
   }
 }
@@ -80,15 +89,6 @@
   }
 }
 
-.submit_button {
-  button {
-    outline: none !important;
-    padding: 5px 30px;
-    text-transform: unset;
-    @include clamped-p1();
-  }
-}
-
 @media (max-width: $tablet-breakpoint) {
   .modal {
     padding: 15px;
@@ -105,7 +105,7 @@
     width: calc(100% - 20px);
   }
 
-  .close_modal_button {
+  .close_button {
     height: 30px;
   }
 }

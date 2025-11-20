@@ -403,7 +403,10 @@
     "password.digitUppercaseLetter": "يجب أن تحتوي كلمة المرور على رقم واحد وحرف كبير على الأقل",
     "password.required": "كلمة المرور مطلوبة",
     "error.invalid_credentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-    "errorChangingPassword": "خطأ. لم يتم تغيير كلمة المرور."
+    "errorChangingPassword": "خطأ. لم يتم تغيير كلمة المرور.",
+    "description.minLength": "8 أحرف على الأقل",
+    "description.maxLength": "الحد الأقصى 1000 حرف",
+    "description.required": "الوصف مطلوب"
   },
 
   "workingWarn": {
@@ -467,5 +470,16 @@
     "authors": "مؤلفون",
     "publisher": "الناشر",
     "publicationDate": "تاريخ النشر"
+  },
+
+  "orderProduct": {
+    "customOrder": "هل <0>لم</0> تجد شيئًا؟",
+    "customOrderText": "هل تريد كتابًا أو دورة محددة؟ صف ذلك أدناه (أضف رابطًا إن وجد) — وسنتولى الباقي!",
+    "describeOrder": "صف المنتج الذي تريده",
+    "typeHere": "اكتب هنا...",
+    "request": "طلب",
+    "productRequestSuccess": "تم إرسال طلبك بنجاح. سنقوم بالرد في أقرب وقت ممكن.",
+    "productRequestFailed": "تعذر معالجة الطلب. يرجى المحاولة مرة أخرى بعد قليل.",
+    "loginText": "سجّل الدخول لفتح الوصول لطلب الكتب والدورات."
   }
 }

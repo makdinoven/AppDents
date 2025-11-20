@@ -103,4 +103,8 @@ export const userApi = {
       headers: getAuthHeaders(),
     });
   },
+
+  requestProduct(data: { user_id: number; text: string }) {
+    return instance.post("request/course-request", data);
+  },
 };

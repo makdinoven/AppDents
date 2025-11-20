@@ -9,6 +9,7 @@ import { mainApi } from "../../api/mainApi/mainApi.ts";
 import BookCardSkeletons from "../../components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
 
 const Books = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
@@ -58,13 +59,16 @@ const Books = () => {
         />
       </ListController>
       {!isFirstLoad && (
-        <ProductsSection
-          showSort={true}
-          sectionTitle={"other.otherBooks"}
-          pageSize={4}
-          productCardFlags={{ isClient: true, isOffer: true }}
-          cardType={"book"}
-        />
+        <>
+          <ProductsSection
+            showSort={true}
+            sectionTitle={"other.otherBooks"}
+            pageSize={4}
+            productCardFlags={{ isClient: true, isOffer: true }}
+            cardType={"book"}
+          />
+          <CustomOrder />
+        </>
       )}
     </div>
   );

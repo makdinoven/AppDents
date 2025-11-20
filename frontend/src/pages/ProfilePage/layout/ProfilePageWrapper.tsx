@@ -5,6 +5,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import PrettyButton from "../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { Path } from "../../../routes/routes.ts";
 import ProductsSection from "../../../components/ProductsSection/ProductsSection.tsx";
+import CustomOrder from "../../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
 
 const ProfilePageWrapper = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
@@ -21,16 +22,17 @@ const ProfilePageWrapper = () => {
           />
         </div>
       )}
+      <Outlet />
       <div className={s.profile_page_wrapper}>
-        <Outlet />
-      </div>
-      <div id={"profile_courses"}>
-        <ProductsSection
-          productCardFlags={{ isOffer: true, isClient: true }}
-          showSort={true}
-          sectionTitle={"similarCourses"}
-          pageSize={4}
-        />
+        <div id={"profile_courses"}>
+          <ProductsSection
+            productCardFlags={{ isOffer: true, isClient: true }}
+            showSort={true}
+            sectionTitle={"similarCourses"}
+            pageSize={4}
+          />
+        </div>
+        <CustomOrder />
       </div>
     </>
   );

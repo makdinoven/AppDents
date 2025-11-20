@@ -62,17 +62,14 @@ const PasswordReset = () => {
             error={errors.password?.message}
             {...{ variant: "admin" }}
           />
-
-          <div className={s.reset_button}>
-            <Button
-              text="reset"
-              type="submit"
-              variant="filled"
-              loading={loading}
-              disabled={loading}
-            />
-          </div>
         </div>
+        <Button
+          text="reset"
+          type="submit"
+          loading={loading}
+          disabled={loading}
+          className={s.reset_btn}
+        />
       </div>
     </Form>
   );

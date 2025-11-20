@@ -26,3 +26,7 @@ export interface PaymentType {
   name: string;
   password: string;
 }
+
+export interface OrderDescriptionType {
+  description: string;
+}

@@ -28,7 +28,6 @@
   text-transform: lowercase;
   @include transition();
 
-
   &:after {
     pointer-events: none;
     content: "";
@@ -44,21 +43,33 @@
   &.primary {
     color: $primary;
     &:after {
-      background: linear-gradient(90deg, rgba(0, 0, 0, 0) 0%, $background-color 30%);
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0) 0%,
+        $background-color 30%
+      );
     }
   }
 
   &.light {
     color: $background-color;
     &:after {
-      background: linear-gradient(90deg, rgba(0, 0, 0, 0), $primary-light 30%);
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0),
+        $primary-06-analogue 30%
+      );
     }
   }
 
   &.dark {
     color: $accent;
     &:after {
-      background: linear-gradient(90deg, rgba(0, 0, 0, 0), $primary-light 30%);
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0),
+        $primary-06-analogue 30%
+      );
     }
   }
 

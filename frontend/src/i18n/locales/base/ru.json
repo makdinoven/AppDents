@@ -393,7 +393,10 @@
     "password.minLength": "Пароль должен содержать не менее 6 символов",
     "password.required": "Пароль обязателен",
     "error.invalid_credentials": "Неправильный Email или пароль",
-    "errorChangingPassword": "Ошибка. Пароль не был изменён."
+    "errorChangingPassword": "Ошибка. Пароль не был изменён.",
+    "description.minLength": "Не менее 8 символов",
+    "description.maxLength": "Максимум 1000 символов",
+    "description.required": "Описание обязательно"
   },
 
   "workingWarn": {
@@ -454,5 +457,16 @@
     "authors": "Авторы",
     "publisher": "Издатель",
     "publicationDate": "Дата публикации"
+  },
+
+  "orderProduct": {
+    "customOrder": "<0>Ничего</0> не нашли?",
+    "customOrderText": "Хотите конкретную книгу или курс? Опишите ниже (добавьте ссылку, если есть) — мы всё сделаем!",
+    "describeOrder": "Опишите желаемый продукт",
+    "typeHere": "Пишите здесь...",
+    "request": "Заказать",
+    "productRequestSuccess": "Ваш запрос успешно отправлен. Мы ответим как можно скорее.",
+    "productRequestFailed": "Не удалось обработать запрос. Пожалуйста, попробуйте позже.",
+    "loginText": "Зарегистрируйтесь, чтобы открыть доступ к заказу книг и курсов."
   }
 }
