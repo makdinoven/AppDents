@@ -28,6 +28,22 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": path.resolve("src"),
         "@locales": path.resolve(__dirname, `src/i18n/locales`),
+
+        "@hero-bg": path.resolve(
+          brand === "medg"
+            ? "src/assets/hero-background-medg.webp"
+            : "src/assets/hero-background.webp",
+        ),
+        "@hero-bg-mobile": path.resolve(
+          brand === "medg"
+            ? "src/assets/hero-background-mobile-medg.webp"
+            : "src/assets/hero-background-mobile.webp",
+        ),
+        "@logo": path.resolve(
+          brand === "medg"
+            ? "src/assets/logos/logo-medg.svg?react"
+            : "src/assets/logos/logo.svg?react",
+        ),
       },
 
       dedupe: ["react", "react-dom"],

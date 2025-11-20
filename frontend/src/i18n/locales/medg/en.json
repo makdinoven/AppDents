@@ -15,5 +15,10 @@
       "4_answer": "At Med-G, we believe that quality education should be available to every person on the planet, regardless of their country of residence, social status, or professional experience. The better doctors perform worldwide, the healthier and happier humanity will be as a whole. That’s why we’ve set our prices as low as possible for all the courses we offer. And thanks to you and your support, we’ll be able to expand and refine the project to create the most comprehensive library of medical information in the world!",
       "8_answer": "You can reach our support team through your personal account on the <link1>med-g.com</link1> website, as well as via the contact email listed on the payment receipt that was sent to you."
     }
+  },
+  "tag": {
+    "plastic_surgery": "Plastic Surgery",
+    "internal_medicine": "Internal Medicine",
+    "anaesthesiology": "Anesthesiology"
   }
 }

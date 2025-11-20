@@ -1,7 +1,6 @@
 import s from "./Header.module.scss";
 import { Link, useLocation } from "react-router-dom";
 import { Path } from "../../routes/routes.ts";
-import { DentsLogo } from "../../assets/logos";
 import { useScroll } from "../../common/hooks/useScroll.ts";
 import PromoHeaderContent from "./content/PromoHeaderContent.tsx";
 import MainHeaderContent from "./content/MainHeaderContent.tsx";
@@ -14,6 +13,7 @@ import {
 } from "../../common/helpers/helpers.ts";
 import TimerBanner from "../ui/TimerBanner/TimerBanner.tsx";
 import PromoBookHeaderContent from "./content/PromoBookHeaderContent.tsx";
+import AppLogo from "@logo";
 
 const Header = () => {
   const location = useLocation();
@@ -43,7 +43,7 @@ const Header = () => {
                 className={`${s.logo} ${isPromotion ? s.logoPromo : ""}`}
                 to={Path.main}
               >
-                <DentsLogo />
+                <AppLogo />
               </Link>
             )}
 

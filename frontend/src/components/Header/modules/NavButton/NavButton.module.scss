@@ -46,6 +46,7 @@ $hoverColor: $primary;
 
     path {
       @include transition;
+      stroke: $accent;
     }
   }
 

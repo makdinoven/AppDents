@@ -77,3 +77,4 @@ export { default as Lightning } from "./lightning.svg?react";
 export { default as LightningAbout } from "./lightning-about.svg?react";
 export { default as Clipboard } from "./clipboard.svg?react";
 export { default as TagIcon } from "./tag.svg?react";
+export { default as FeedbackIcon } from "./feedback-icon.svg?react";
