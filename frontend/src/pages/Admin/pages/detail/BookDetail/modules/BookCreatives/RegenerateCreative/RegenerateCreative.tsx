@@ -33,31 +33,69 @@ const RegenerateCreative = ({
     }));
   };
 
+  const handleGetStatus = async (task_id: number) => {
+    try {
+      const res = await adminApi.getBookCreativesStatus(task_id);
+      if (res.data.state === "error") {
+        setLoading(false);
+        Alert(`Error: ${res.data.error}`, <ErrorIcon />);
+      }
+
+      if (res.data.state === "done") {
+        const items = res.data.result.items;
+        setCreatives(items);
+        Alert("Creative regenerated", <CheckMark />);
+        setLoading(false);
+      }
+
+      return res.data.state;
+    } catch (e: any) {
+      console.error("Status polling error:", e);
+      return null;
+    }
+  };
+
+  const pollStatus = async (task_id: number) => {
+    let isActive = true;
+
+    while (isActive) {
+      const newStatus = await handleGetStatus(task_id);
+
+      if (newStatus === "done" || newStatus === "error") {
+        isActive = false;
+        break;
+      }
+
+      await new Promise((res) => setTimeout(res, 10000));
+    }
+  };
+
   const handleRegenerateCreative = async (creative: Creative) => {
     const params = {
       book_id: book.id,
       target: creative.code,
     };
+
     const data = {
       language: book.language,
       fields: {
         layers: layers,
       },
     };
+
     try {
       setLoading(true);
       const res = await adminApi.createBookCreativesManual(params, data);
-      const updatedCreative = res.data.items[0];
-      setCreatives((prev: any) =>
-        prev
-          ? prev.map((item: Creative) =>
-              item.code === creative.code ? updatedCreative : item,
-            )
-          : [updatedCreative],
-      );
-      Alert("Creative  regenerated", <CheckMark />);
-      setLoading(false);
-    } catch (error) {
+      if (res.data.overall === "ready") {
+        setCreatives(res.data.items);
+        Alert("Creative regenerated", <CheckMark />);
+        setLoading(false);
+        return;
+      }
+      if (res.data.task_id) {
+        pollStatus(res.data.task_id);
+      }
+    } catch (error: any) {
       Alert(`Error regenerating creative: ${error}`, <ErrorIcon />);
       setLoading(false);
     }

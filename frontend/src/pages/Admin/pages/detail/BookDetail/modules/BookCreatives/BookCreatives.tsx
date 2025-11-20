@@ -15,9 +15,12 @@ export type Creative = {
   payload_used: { layers: any };
 };
 
+// type StatusType = "done" | "error" | "queued" | "processing";
+
 const BookCreatives = ({ book }: { book: any }) => {
   const [loading, setLoading] = useState(false);
   const [creatives, setCreatives] = useState<null | Creative[]>(null);
+  // const [status, setStatus] = useState<StatusType | null>(null);
 
   const handleGetOrCreateCreative = async (regen: boolean) => {
     if (regen) {
@@ -36,17 +39,56 @@ const BookCreatives = ({ book }: { book: any }) => {
         book.language,
         regen,
       );
-      if (regen) {
-        Alert("Creatives regenerated", <CheckMark />);
+      if (res.data.overall === "ready") {
+        setCreatives(res.data.items);
+        setLoading(false);
       }
-      setCreatives(res.data.items);
-      setLoading(false);
+
+      if (res.data.task_id) {
+        // setStatus(res.data.status);
+        pollStatus(res.data.task_id);
+      }
     } catch (error: any) {
       Alert(
         `Error creating creative: ${error.response.data.detail}`,
         <ErrorIcon />,
       );
       setLoading(false);
+    }
+  };
+
+  const handleGetStatus = async (task_id: number) => {
+    try {
+      const res = await adminApi.getBookCreativesStatus(task_id);
+      // setStatus(res.data.state);
+      if (res.data.state === "error") {
+        setLoading(false);
+        Alert(`Error: ${res.data.error}`, <ErrorIcon />);
+      }
+      if (res.data.state === "done") {
+        setCreatives(res.data.result.items);
+        Alert("Creatives generated", <CheckMark />);
+        setLoading(false);
+      }
+      return res.data.state;
+    } catch (e) {
+      console.error("Request error:", e);
+      return null;
+    }
+  };
+
+  const pollStatus = async (task_id: number) => {
+    let isActive = true;
+
+    while (isActive) {
+      const newStatus = await handleGetStatus(task_id);
+
+      if (newStatus === "done" || newStatus === "error") {
+        isActive = false;
+        break;
+      }
+
+      await new Promise((res) => setTimeout(res, 10000));
     }
   };
 

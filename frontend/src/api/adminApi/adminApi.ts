@@ -519,6 +519,11 @@ export const adminApi = {
       },
     );
   },
+  getBookCreativesStatus(task_id: number) {
+    return instance.get(`v2/books/creatives/status/${task_id}`, {
+      headers: getAuthHeaders(),
+    });
+  },
   createBookCreativesManual(
     params: { target: string; book_id: number },
     data: { language: string; fields: { layers: any } },
