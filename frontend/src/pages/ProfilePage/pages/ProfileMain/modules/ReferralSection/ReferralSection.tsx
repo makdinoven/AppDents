@@ -1,17 +1,17 @@
 import s from "./ReferralSection.module.scss";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../store/store.ts";
-import { scrollToElementById } from "../../../../../common/helpers/helpers.ts";
+import { AppRootStateType } from "../../../../../../store/store.ts";
+import { scrollToElementById } from "../../../../../../common/helpers/helpers.ts";
 import {
   BASE_URL,
   LS_REF_LINK_KEY,
   REF_CODE_PARAM,
-} from "../../../../../common/helpers/commonConstants.ts";
-import { userApi } from "../../../../../api/userApi/userApi.ts";
-import { Clipboard, UserPlusIcon } from "../../../../../assets/icons";
+} from "../../../../../../common/helpers/commonConstants.ts";
+import { userApi } from "../../../../../../api/userApi/userApi.ts";
+import { Clipboard, UserPlusIcon } from "../../../../../../assets/icons";
 
 const ReferralSection = ({
   openInviteFriendModal,

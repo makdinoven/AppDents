@@ -1,21 +1,18 @@
 import s from "./PasswordReset.module.scss";
 import { Trans } from "react-i18next";
-import Form from "../../../../../../../../components/Modals/modules/Form/Form.tsx";
+import Form from "../../../../../../components/Modals/modules/Form/Form.tsx";
 import { t } from "i18next";
-import Button from "../../../../../../../../components/ui/Button/Button.tsx";
-import { userApi } from "../../../../../../../../api/userApi/userApi.ts";
+import Button from "../../../../../../components/ui/Button/Button.tsx";
+import { userApi } from "../../../../../../api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../../../../store/store.ts";
-import { resetPasswordSchema } from "../../../../../../../../common/schemas/resetPasswordSchema.ts";
-import { ResetPasswordType } from "../../../../../../../../api/userApi/types.ts";
+import { AppRootStateType } from "../../../../../../store/store.ts";
+import { resetPasswordSchema } from "../../../../../../common/schemas/resetPasswordSchema.ts";
+import { ResetPasswordType } from "../../../../../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
-import { Alert } from "../../../../../../../../components/ui/Alert/Alert.tsx";
-import {
-  AlertCirceIcon,
-  CheckMark,
-} from "../../../../../../../../assets/icons";
-import PasswordInput from "../../../../../../../../components/ui/Inputs/PasswordInput/PasswordInput.tsx";
+import { Alert } from "../../../../../../components/ui/Alert/Alert.tsx";
+import { AlertCirceIcon, CheckMark } from "../../../../../../assets/icons";
+import PasswordInput from "../../../../../../components/ui/Inputs/PasswordInput/PasswordInput.tsx";
 import { useState } from "react";
 
 const PasswordReset = () => {

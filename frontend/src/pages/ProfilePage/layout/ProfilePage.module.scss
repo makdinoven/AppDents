@@ -28,6 +28,7 @@
   border: 1px solid $hover-color;
   border-radius: 20px;
   overflow-y: auto;
+  @include custom-scrollbar();
 }
 
 .btn {
@@ -72,6 +73,10 @@
   .btn {
     border-color: $hover-color;
     padding: 5px 2px;
+
+    &.full {
+      grid-column: 1 / -1;
+    }
   }
 }
 

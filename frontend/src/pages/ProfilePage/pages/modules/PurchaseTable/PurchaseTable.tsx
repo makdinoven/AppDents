@@ -1,16 +1,16 @@
 import { Trans } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Path } from "../../../../../../../routes/routes";
-import PurchaseItem from "./PurchaseItem/PurchaseItem";
+import { Path } from "../../../../../routes/routes.ts";
 import s from "./PurchaseTable.module.scss";
+import PurchaseItem from "./PurchaseItem/PurchaseItem.tsx";
 
-type PurchaseTableProps = {
+type HistoryTableProps = {
   content: any[];
   isReferral?: boolean;
   title: string;
 };
 
-const PurchaseTable = ({ content, isReferral, title }: PurchaseTableProps) => {
+const PurchaseTable = ({ content, isReferral, title }: HistoryTableProps) => {
   const navigate = useNavigate();
 
   return (
@@ -19,7 +19,7 @@ const PurchaseTable = ({ content, isReferral, title }: PurchaseTableProps) => {
       {content.length > 0 ? (
         <ul className={s.table}>
           {content.map((item, i) => (
-            <PurchaseItem key={i} item={item} isReferral={isReferral} />
+            <PurchaseItem key={i} item={item} />
           ))}
         </ul>
       ) : (

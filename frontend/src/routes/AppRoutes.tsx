@@ -1,7 +1,7 @@
 import MainPage from "../pages/MainPage/MainPage.tsx";
 import Layout from "../components/Layout/Layout.tsx";
 import Landing from "../pages/Landing/Landing.tsx";
-import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/content/Main/ProfileMain.tsx";
+import ProfileMain from "../pages/ProfilePage/pages/ProfileMain/ProfileMain.tsx";
 import { Path } from "./routes.ts";
 import { FC } from "react";
 import { Route, Routes, useLocation } from "react-router-dom";
@@ -55,10 +55,11 @@ import AdminBookLandingsListing from "../pages/Admin/pages/content/AdminBookLand
 import BookPage from "../pages/ProfilePage/pages/BookPage/BookPage.tsx";
 import MagicVideoTool from "../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
 import BookLandingAnalytics from "../pages/Admin/pages/analytics/LandingAnalytics/BookLandingAnalytics.tsx";
-import PurchaseHistory from "../pages/ProfilePage/pages/ProfileMain/content/PurchaseHistory/PurchaseHistory.tsx";
+import PurchaseHistory from "../pages/ProfilePage/pages/PurchaseHistory.tsx";
 import YourBooks from "../pages/ProfilePage/pages/YourBooks.tsx";
 import YourCourses from "../pages/ProfilePage/pages/YourCourses.tsx";
 import ProfilePageWrapper from "../pages/ProfilePage/layout/ProfilePageWrapper.tsx";
+import InvitedUsers from "../pages/ProfilePage/pages/InvitedUsers.tsx";
 
 export const AppRoutes: FC = () => {
   const location = useLocation();
@@ -124,6 +125,7 @@ export const AppRoutes: FC = () => {
                 path={Path.purchaseHistory}
                 element={<PurchaseHistory />}
               />
+              <Route path={Path.invitedUsers} element={<InvitedUsers />} />
             </Route>
             <Route
               path={`${Path.myCourse}/:courseId?`}

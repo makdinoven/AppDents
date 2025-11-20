@@ -2,31 +2,23 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
 import { useEffect, useRef, useState } from "react";
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../../../store/store.ts";
-import {
-  LogoutIcon,
-  Mail,
-  Support,
-  User,
-} from "../../../../../../assets/icons";
+import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import { LogoutIcon, Mail, Support, User } from "../../../../assets/icons";
 import { Trans } from "react-i18next";
 import PasswordReset from "./modules/PasswordReset/PasswordReset.tsx";
-import { Path } from "../../../../../../routes/routes.ts";
+import { Path } from "../../../../routes/routes.ts";
 import {
   getBooks,
   getCourses,
   logoutAsync,
-} from "../../../../../../store/actions/userActions.ts";
-import { clearCart } from "../../../../../../store/slices/cartSlice.ts";
-import { logout } from "../../../../../../store/slices/userSlice.ts";
-import ReferralSection from "../../ReferralSection/ReferralSection.tsx";
+} from "../../../../store/actions/userActions.ts";
+import { clearCart } from "../../../../store/slices/cartSlice.ts";
+import { logout } from "../../../../store/slices/userSlice.ts";
+import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import FriendMailInput from "./modules/FriendMailInput/FriendMailInput.tsx";
-import ModalOverlay from "../../../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
-import useOutsideClick from "../../../../../../common/hooks/useOutsideClick.ts";
-import MyContent from "../../../modules/MyContent/MyContent.tsx";
+import ModalOverlay from "../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import useOutsideClick from "../../../../common/hooks/useOutsideClick.ts";
+import MyContent from "../modules/MyContent/MyContent.tsx";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
