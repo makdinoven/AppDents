@@ -14,5 +14,10 @@
       "4_answer": "En Med-G creemos que la educación de calidad debe estar disponible para todos, sin importar el país, estatus social o experiencia profesional. Cuanto mejores sean los médicos, más sana y feliz será la humanidad. Por eso ofrecemos los precios más bajos posibles. Gracias a tu apoyo, podemos expandir y mejorar nuestro proyecto.",
       "8_answer": "Puedes contactar a soporte desde tu cuenta en <link1>med-g.com</link1> o usando el correo de contacto en tu recibo de pago."
     }
+  },
+  "tag": {
+    "plastic_surgery": "Cirugía Plástica",
+    "internal_medicine": "Medicina Interna",
+    "anaesthesiology": "Anestesiología"
   }
 }

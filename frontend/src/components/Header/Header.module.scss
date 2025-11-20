@@ -72,6 +72,8 @@
     height: 45px;
     circle {
       @include transition();
+      fill: $accent;
+      stroke: $accent;
     }
   }
 
