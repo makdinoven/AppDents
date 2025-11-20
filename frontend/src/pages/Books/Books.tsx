@@ -58,15 +58,17 @@ const Books = () => {
           cardType={"book"}
         />
       </ListController>
-      <CustomOrder />
       {!isFirstLoad && (
-        <ProductsSection
-          showSort={true}
-          sectionTitle={"other.otherBooks"}
-          pageSize={4}
-          productCardFlags={{ isClient: true, isOffer: true }}
-          cardType={"book"}
-        />
+        <>
+          <ProductsSection
+            showSort={true}
+            sectionTitle={"other.otherBooks"}
+            pageSize={4}
+            productCardFlags={{ isClient: true, isOffer: true }}
+            cardType={"book"}
+          />
+          <CustomOrder />
+        </>
       )}
     </div>
   );

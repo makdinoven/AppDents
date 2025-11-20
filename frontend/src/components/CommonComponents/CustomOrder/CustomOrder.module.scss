@@ -1,6 +1,7 @@
 .custom_order_block {
   @include flex-column();
   align-items: flex-start;
+  margin-top: 80px;
   width: 100%;
 
   h2 {
@@ -71,6 +72,7 @@
     width: 100%;
     background-color: $primary-04-analogue;
     border: 1px solid $primary;
+    @include transition();
     border-radius: 20px;
     min-height: 190px;
     @include clamped-p3();
@@ -138,6 +140,8 @@
   }
 
   .custom_order_block {
+    margin-top: 50px;
+
     h2 {
       transform: unset;
     }
