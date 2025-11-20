@@ -39,6 +39,12 @@
       outline: unset;
       background-color: $quaternary;
       color: $text-color;
+
+      svg {
+        path {
+          stroke: $text-color;
+        }
+      }
     }
   }
 
@@ -51,6 +57,12 @@
       outline: unset;
       background-color: $quaternary;
       color: $text-color-accent;
+
+      svg {
+        path {
+          stroke: $text-color-accent;
+        }
+      }
     }
   }
 
