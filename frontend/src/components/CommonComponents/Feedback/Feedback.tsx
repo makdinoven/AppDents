@@ -1,6 +1,6 @@
 import s from "./Feedback.module.scss";
-import { FeedbackLogo } from "../../../assets/logos/index";
 import { Trans } from "react-i18next";
+import { FeedbackIcon } from "../../../assets/icons";
 
 export const Feedback = () => {
   return (
@@ -9,7 +9,7 @@ export const Feedback = () => {
         <Trans i18nKey="feedbackTooltip" />
       </div>
       <div className={s.feedback_icon}>
-        <FeedbackLogo />
+        <FeedbackIcon />
       </div>
     </div>
   );

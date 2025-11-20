@@ -6,17 +6,8 @@ import ArrowButton from "../../../components/ui/ArrowButton/ArrowButton.tsx";
 import LineWrapper from "../../../components/ui/LineWrapper/LineWrapper.tsx";
 // import UniversalSlider from "../../../components/CommonComponents/UniversalSlider/UniversalSlider.tsx";
 import { CircleArrow } from "../../../assets/icons/index.ts";
-import HeroBackgroundMobile from "/src/assets/hero-background-mobile.webp";
-import HeroBackground from "/src/assets/hero-background.webp";
-
-// const slides = [
-//   <div>Слайд 1</div>,
-//   <div>Слайд 2</div>,
-//   <div>Слайд 3</div>,
-//   <div>Слайд 4</div>,
-//   <div>Слайд 5</div>,
-//   <div>Слайд 6</div>,
-// ];
+import HeroBackground from "@hero-bg";
+import HeroBackgroundMobile from "@hero-bg-mobile";
 
 const Hero = ({ onClickScroll }: { onClickScroll: () => void }) => {
   return (
