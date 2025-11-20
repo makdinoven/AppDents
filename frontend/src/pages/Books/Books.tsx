@@ -12,9 +12,7 @@ import ProductsSection from "../../components/ProductsSection/ProductsSection.ts
 import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
 
 const Books = () => {
-  const { language, isLogged } = useSelector(
-    (state: AppRootStateType) => state.user,
-  );
+  const { language } = useSelector((state: AppRootStateType) => state.user);
   const [books, setBooks] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -60,7 +58,7 @@ const Books = () => {
           cardType={"book"}
         />
       </ListController>
-      {isLogged && <CustomOrder />}
+      <CustomOrder />
       {!isFirstLoad && (
         <ProductsSection
           showSort={true}

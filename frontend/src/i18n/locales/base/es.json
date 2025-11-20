@@ -388,7 +388,10 @@
     "password.digitUppercaseLetter": "La contraseña debe contener al menos un dígito y una letra mayúscula",
     "password.required": "La contraseña es obligatoria",
     "error.invalid_credentials": "Correo electrónico o contraseña incorrectos",
-    "errorChangingPassword": "Error. La contraseña no se cambió."
+    "errorChangingPassword": "Error. La contraseña no se cambió.",
+    "description.minLength": "Al menos 8 caracteres",
+    "description.maxLength": "Límite de 1000 caracteres",
+    "description.required": "La descripción es obligatoria"
   },
 
   "workingWarn": {
@@ -457,6 +460,7 @@
     "typeHere": "Escribe aquí...",
     "request": "Solicitar",
     "productRequestSuccess": "Tu solicitud ha sido enviada correctamente. Responderemos lo antes posible.",
-    "productRequestFailed": "No se pudo procesar la solicitud. Inténtalo de nuevo en un momento."
+    "productRequestFailed": "No se pudo procesar la solicitud. Inténtalo de nuevo en un momento.",
+    "loginText": "Inicia sesión para desbloquear el acceso a pedir libros y cursos."
   }
 }

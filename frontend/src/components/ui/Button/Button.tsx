@@ -40,7 +40,7 @@ const Button = ({
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${loading ? s.loading : ""}`}
+      className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${disabled ? s.disabled : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
       {children && <span>{children}</span>}

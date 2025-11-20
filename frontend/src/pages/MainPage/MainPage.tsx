@@ -78,7 +78,7 @@ const MainPage = () => {
           handleSetActiveParam("sort", sort)
         }
       />
-      {isLogged && <CustomOrder />}
+      <CustomOrder />
       {/*<Feedback />*/}
     </div>
   );

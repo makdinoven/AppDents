@@ -23,7 +23,9 @@ const CustomOrder = () => {
   } = useForm<OrderDescriptionType>({
     mode: "onChange",
   });
-  const { id, language } = useSelector((state: AppRootStateType) => state.user);
+  const { id, language, isLogged } = useSelector(
+    (state: AppRootStateType) => state.user,
+  );
   const [loading, setLoading] = useState(false);
 
   const description = watch("description");
@@ -86,7 +88,7 @@ const CustomOrder = () => {
           </div>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !isLogged}
             loading={loading}
             icon={<SendIcon />}
             variant="filled_dark"
@@ -94,6 +96,11 @@ const CustomOrder = () => {
           >
             <Trans i18nKey="orderProduct.request" />
           </Button>
+          {!isLogged && (
+            <p>
+              <Trans i18nKey="orderProduct.loginText" />
+            </p>
+          )}
         </Form>
       </div>
     </div>

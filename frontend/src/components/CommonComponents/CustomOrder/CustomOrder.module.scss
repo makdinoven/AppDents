@@ -20,6 +20,14 @@
   form {
     gap: 30px;
   }
+
+  p {
+    @include clamped-p4();
+    text-align: center;
+    width: 90%;
+    align-self: center;
+    transform: translateY(-10px);
+  }
 }
 
 .content_block {
