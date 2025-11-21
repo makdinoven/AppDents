@@ -1,4 +1,5 @@
 import { Brand } from "../../../../common/types/commonTypes.ts";
+import { BRAND } from "../../../../common/helpers/commonConstants.ts";
 
 export const HOVER_COLOR = "rgba(100, 116, 139, 0.1)";
 const COLORS: Record<Brand, { PRIMARY: string; ACCENT: string }> = {
@@ -13,6 +14,5 @@ const COLORS: Record<Brand, { PRIMARY: string; ACCENT: string }> = {
   },
 };
 
-const brand = (import.meta.env.VITE_BRAND as Brand) || "dents";
-export const { PRIMARY: PRIMARY_COLOR, ACCENT: ACCENT_COLOR } = COLORS[brand];
+export const { PRIMARY: PRIMARY_COLOR, ACCENT: ACCENT_COLOR } = COLORS[BRAND];
 export const BACKGROUND_COLOR = "#EDF8FF";

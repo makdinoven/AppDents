@@ -13,9 +13,11 @@ import {
   RuFlag,
 } from "../../assets/icons/index.ts";
 import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
+import { Brand } from "../types/commonTypes.ts";
 
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const CDN_ORIGIN = import.meta.env.VITE_CDN_URL;
+export const BRAND = (import.meta.env.VITE_BRAND as Brand) || "dents";
 
 export const LANGUAGES = [
   { label: "English", value: "EN" },
