@@ -51,22 +51,24 @@ const PasswordReset = () => {
         <label lang={language.toLowerCase()} htmlFor="new-password">
           <Trans i18nKey="passwordResetLabel" />
         </label>
-        <div className={s.reset_input}>
-          <PasswordInput
-            id="new-password"
-            placeholder={t("newPassword")}
-            {...register("password")}
-            error={errors.password?.message}
-            {...{ variant: "admin" }}
+        <div className={s.input_button_container}>
+          <div className={s.reset_input}>
+            <PasswordInput
+              id="new-password"
+              placeholder={t("newPassword")}
+              {...register("password")}
+              error={errors.password?.message}
+              {...{ variant: "admin" }}
+            />
+          </div>
+          <Button
+            text="reset"
+            type="submit"
+            loading={loading}
+            disabled={loading}
+            className={s.reset_btn}
           />
         </div>
-        <Button
-          text="reset"
-          type="submit"
-          loading={loading}
-          disabled={loading}
-          className={s.reset_btn}
-        />
       </div>
     </Form>
   );

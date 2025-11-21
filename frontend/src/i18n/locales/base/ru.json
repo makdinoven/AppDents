@@ -330,7 +330,7 @@
       "inviteFriendLabel": "Введите почту получателя"
     },
     "purchaseHistory": {
-      "invitedUsers": "Приглашенные пользователи",
+      "invitedUsers": "Приглашения",
       "purchases": "История покупок",
       "purchaseSum": "Сумма покупки:",
       "adminAdjust": "Бонус",
