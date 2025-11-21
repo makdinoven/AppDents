@@ -36,7 +36,7 @@ const MyContent = ({
       <SectionHeader
         name={type === "course" ? "profile.yourCourses" : "profile.yourBooks"}
       />
-      {showSearch && (
+      {showSearch && items.length > 0 && (
         <Search
           id={searchKey}
           placeholder={type === "course" ? "courses.search" : "books.search"}
