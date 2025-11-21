@@ -8,11 +8,12 @@ import { t } from "i18next";
 import Button from "../../ui/Button/Button.tsx";
 import { useState } from "react";
 import { AlertCirceIcon, CheckMark, SendIcon } from "../../../assets/icons";
-import { ToothGreen } from "../../../assets";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
 import { userApi } from "../../../api/userApi/userApi.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
+import { BRAND } from "../../../common/helpers/commonConstants.ts";
+import { Caduceus, ToothGreen } from "../../../assets";
 
 const CustomOrder = () => {
   const {
@@ -83,7 +84,11 @@ const CustomOrder = () => {
                   },
                 })}
               />
-              <ToothGreen />
+              {BRAND === "dents" ? (
+                <ToothGreen />
+              ) : (
+                <Caduceus className={s[BRAND]} />
+              )}
             </div>
           </div>
           <Button
