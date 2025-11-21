@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import s from "./PurchaseItem.module.scss";
-import { AppRootStateType } from "../../../../../../../../store/store.ts";
+import { AppRootStateType } from "../../../../../../store/store.ts";
 import {
   BooksIcon,
   CashbackIcon,
@@ -10,19 +10,20 @@ import {
   CoursesIcon,
   TouchCoinIcon,
   UserPlusIcon,
-} from "../../../../../../../../assets/icons";
-import ExpandableText from "../../../../../../../../components/ui/ExpandableText/ExpandableText.tsx";
-import { Path } from "../../../../../../../../routes/routes.ts";
-import { formatIsoToLocalDatetime } from "../../../../../../../../common/helpers/helpers.ts";
+} from "../../../../../../assets/icons";
+import ExpandableText from "../../../../../../components/ui/ExpandableText/ExpandableText.tsx";
+import { Path } from "../../../../../../routes/routes.ts";
+import { formatIsoToLocalDatetime } from "../../../../../../common/helpers/helpers.ts";
 
 type PurchaseItemProps = {
   item: any;
-  isReferral?: boolean;
 };
 
-const PurchaseItem = ({ item, isReferral }: PurchaseItemProps) => {
+const PurchaseItem = ({ item }: PurchaseItemProps) => {
   const { t } = useTranslation();
   const { language } = useSelector((state: AppRootStateType) => state.user);
+  const isInvite = item.type === "invite";
+  const isCashback = item.type === "referralCashback";
 
   const {
     type,
@@ -44,7 +45,7 @@ const PurchaseItem = ({ item, isReferral }: PurchaseItemProps) => {
   const landingSlug = slug ? slug : book_landing_slug;
 
   const icon = (() => {
-    if (isReferral) return <UserPlusIcon className={s.icon} />;
+    if (isInvite) return <UserPlusIcon className={s.icon} />;
     switch (type) {
       case "purchase":
       case "internalPurchase":
@@ -59,13 +60,13 @@ const PurchaseItem = ({ item, isReferral }: PurchaseItemProps) => {
   })();
 
   // 2. заголовок
-  const title = isReferral
+  const title = isInvite
     ? t("profile.referrals.invitation")
     : t(`profile.purchaseHistory.${type}`);
 
   // 3. описание (что именно купили / кого пригласили)
   const description = (() => {
-    if (isReferral) {
+    if (isInvite || isCashback) {
       return (
         <>
           <span className={s.purchase_info_field}>{t("profile.user")}</span>{" "}
@@ -108,15 +109,6 @@ const PurchaseItem = ({ item, isReferral }: PurchaseItemProps) => {
       }
     }
 
-    if (type === "referralCashback") {
-      return (
-        <>
-          <span className={s.purchase_info_field}>{t("profile.user")}</span>{" "}
-          {email}
-        </>
-      );
-    }
-
     return null;
   })();
 
@@ -127,7 +119,7 @@ const PurchaseItem = ({ item, isReferral }: PurchaseItemProps) => {
       typeof totalCashback === "number" ? totalCashback > 0 : false;
 
     // рефералка
-    if (isReferral) {
+    if (isInvite) {
       return (
         <div className={s.amount_referral}>
           <span className={isPositiveCashback ? s.plus : s.zero}>
