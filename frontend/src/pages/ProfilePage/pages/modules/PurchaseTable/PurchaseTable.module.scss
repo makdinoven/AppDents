@@ -8,6 +8,8 @@
 }
 
 .container_title {
+  @include clamped-h3;
+  text-transform: uppercase;
   margin-left: 30px;
 }
 

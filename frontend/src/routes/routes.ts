@@ -19,6 +19,7 @@ export const Path = {
   payment: "/buy",
   profileMain: "/profile-main",
   purchaseHistory: "/purchase-history",
+  invitedUsers: "/invited-users",
   yourCourses: "/your-courses",
   yourBooks: "/your-books",
   myCourse: "/my-course",
