@@ -7,7 +7,7 @@ type Props = {
   text: string | ReactNode;
   textClassName?: string;
   lines?: number;
-  color: "primary" | "light" | "dark";
+  color: "primary" | "light" | "dark" | "primary_on_glass";
   showButton?: boolean;
   buttonClassName?: string;
 };
@@ -59,6 +59,7 @@ const ExpandableText = ({
           <button
             className={`${s.button} ${color ? s[color] : ""} ${buttonClassName}`}
             onClick={toggleExpanded}
+            type="button"
           >
             {expanded ? t("showLess") : `... ${t("seeMore")}`}
           </button>

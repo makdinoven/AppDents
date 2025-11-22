@@ -326,7 +326,8 @@
       "sendInvite": "Invia invito",
       "inviteSuccess": "Invito inviato con successo! Se l'email non arriva, controlla la cartella Spam.",
       "inviteFailed": "Invio invito non riuscito!",
-      "inviteFriendLabel": "Inserisci l'email del destinatario"
+      "inviteFriendLabel": "Inserisci l'email del destinatario",
+      "infoText": "Quando il destinatario apre l'email, segue il link e completa la registrazione o effettua un acquisto, riceverai il cashback da tutti i suoi futuri acquisti. Si prega di notare che l'email potrebbe essere finita nella cartella \"Spam\"."
     },
     "purchaseHistory": {
       "invitedUsers": "Utenti invitati",

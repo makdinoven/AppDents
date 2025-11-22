@@ -365,7 +365,8 @@
       "sendInvite": "Send invitation",
       "inviteSuccess": "Invitation sent successfully! If the email does not arrive, check your Spam folder.",
       "inviteFailed": "Invitation sending failed!",
-      "inviteFriendLabel": "Enter recipient's email"
+      "inviteFriendLabel": "Enter recipient's email",
+      "infoText": "When the recipient opens the email, follows the link, and completes the registration or makes a purchase, you will receive cashback from all their future purchases. Please note that the email may have ended up in the “Spam” folder."
     },
     "purchaseHistory": {
       "invitedUsers": "Invited users",

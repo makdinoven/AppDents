@@ -373,13 +373,7 @@ const AdControlListing = () => {
           />
         </div>
 
-        <div className={s.filters_row}>
-          <MinMaxFilter
-            label="Cycle"
-            min={cycleRange ? cycleRange.min : ""}
-            max={cycleRange ? cycleRange.max : ""}
-            onChange={(values) => setCycleRange(values)}
-          />
+        <div className={`${s.filters_row} ${s.full}`}>
           <MinMaxFilter
             label="Days in"
             min={daysRange ? daysRange.min : ""}

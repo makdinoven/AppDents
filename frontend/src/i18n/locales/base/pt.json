@@ -319,7 +319,8 @@
       "sendInvite": "Enviar convite",
       "inviteSuccess": "Convite enviado com sucesso! Se o e-mail não chegar, verifique a pasta de spam.",
       "inviteFailed": "Falha ao enviar o convite!",
-      "inviteFriendLabel": "Digite o e-mail do destinatário"
+      "inviteFriendLabel": "Digite o e-mail do destinatário",
+      "infoText": "Quando o destinatário abrir o e-mail, seguir o link e concluir o registro ou fizer uma compra, você receberá cashback de todas as compras futuras dele. Observe que o e-mail pode ter ido para a pasta \"Spam\"."
     },
     "purchaseHistory": {
       "invitedUsers": "Convidados",
