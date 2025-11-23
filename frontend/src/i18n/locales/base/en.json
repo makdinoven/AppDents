@@ -692,7 +692,8 @@
       "adControl": "Ad control",
       "listing": "Main",
       "staff": "staff",
-      "accounts": "accounts"
+      "accounts": "accounts",
+      "searchResults": "Results found: {{count}}"
     }
   }
 }

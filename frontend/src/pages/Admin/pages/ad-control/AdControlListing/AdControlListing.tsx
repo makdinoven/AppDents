@@ -20,6 +20,7 @@ import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../assets/icons";
 import { transformIdNameArrToValueNameArr } from "../../../../../common/helpers/helpers.ts";
 import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import { Trans } from "react-i18next";
 
 const adControlSearch = "ad-control-q";
 
@@ -418,6 +419,16 @@ const AdControlListing = () => {
       </div>
 
       <Search id={adControlSearch} placeholder={t("admin.landings.search")} />
+      {data?.length > 0 && (
+        <p className={s.search_results}>
+          <Trans
+            i18nKey="admin.adControl.searchResults"
+            values={{
+              count: data.length,
+            }}
+          />
+        </p>
+      )}
       <Table
         loading={loading}
         landingLinkByIdPath={

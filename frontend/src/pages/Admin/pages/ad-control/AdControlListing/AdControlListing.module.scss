@@ -77,6 +77,12 @@
   gap: 10px;
 }
 
+.search_results {
+  @include clamped-p3();
+  opacity: 0.8;
+  align-self: flex-end;
+}
+
 @media (max-width: $sm-breakpoint) {
   .sort_filters {
     grid-template-columns: 1fr;
