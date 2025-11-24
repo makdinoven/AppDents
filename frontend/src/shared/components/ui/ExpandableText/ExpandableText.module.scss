@@ -73,16 +73,34 @@
     }
   }
 
+  &.primary_on_glass {
+    color: $primary;
+    &:after {
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0),
+        $accent-08-analogue 30%
+      );
+    }
+  }
+
   @media (hover: hover) {
     &:hover {
       color: $accent;
+
+      &.primary_on_glass {
+        &:hover {
+          color: $text-color;
+        }
+      }
     }
   }
 
   &:active {
     color: $accent;
 
-    &.dark {
+    &.dark,
+    &.primary_on_glass {
       color: $text-color;
     }
   }

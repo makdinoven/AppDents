@@ -15,6 +15,7 @@ import ModalCloseButton from "../../../../../../shared/components/ui/ModalCloseB
 import { t } from "i18next";
 import { userApi } from "../../../../../../shared/api/userApi/userApi.ts";
 import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
+import ExpandableText from "../../../../../../shared/components/ui/ExpandableText/ExpandableText.tsx";
 
 interface FriendMailInputProps {
   closeModal: () => void;
@@ -96,6 +97,12 @@ const FriendMailInput = ({ closeModal, ref }: FriendMailInputProps) => {
             {...{ variant: "invite" }}
           />
         </div>
+        <ExpandableText
+          text={<Trans i18nKey="profile.referrals.infoText" />}
+          color={"primary_on_glass"}
+          textClassName={s.info_text}
+          lines={2}
+        />
         <Button
           text="profile.referrals.sendInvite"
           type="submit"

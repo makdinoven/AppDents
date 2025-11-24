@@ -19,6 +19,7 @@ import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../shared/assets/icons";
 import { transformIdNameArrToValueNameArr } from "../../../../../shared/common/helpers/helpers.ts";
 import SwitchButtons from "../../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
+import {Trans} from "react-i18next";
 
 const adControlSearch = "ad-control-q";
 
@@ -372,13 +373,7 @@ const AdControlListing = () => {
           />
         </div>
 
-        <div className={s.filters_row}>
-          <MinMaxFilter
-            label="Cycle"
-            min={cycleRange ? cycleRange.min : ""}
-            max={cycleRange ? cycleRange.max : ""}
-            onChange={(values) => setCycleRange(values)}
-          />
+        <div className={`${s.filters_row} ${s.full}`}>
           <MinMaxFilter
             label="Days in"
             min={daysRange ? daysRange.min : ""}
@@ -423,6 +418,16 @@ const AdControlListing = () => {
       </div>
 
       <Search id={adControlSearch} placeholder={t("admin.landings.search")} />
+      {data?.length > 0 && (
+        <p className={s.search_results}>
+          <Trans
+            i18nKey="admin.adControl.searchResults"
+            values={{
+              count: data.length,
+            }}
+          />
+        </p>
+      )}
       <Table
         loading={loading}
         landingLinkMode={mode === "courses" ? "landing" : "book-landing"}

@@ -66,11 +66,21 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+
+  &.full {
+    grid-template-columns: auto;
+  }
 }
 
 .filters_col {
   @include flex-column;
   gap: 10px;
+}
+
+.search_results {
+  @include clamped-p3();
+  opacity: 0.8;
+  align-self: flex-end;
 }
 
 @media (max-width: $sm-breakpoint) {
