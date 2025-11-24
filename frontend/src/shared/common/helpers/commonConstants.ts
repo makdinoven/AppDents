@@ -173,6 +173,10 @@ export const PAYMENT_SOURCES = [
   },
   { name: PAGE_SOURCES.professorListOffer, path: PATHS.PROFESSORS_LISTING },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE },
+  { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_MY_BOOKS },
+  { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_MY_COURSES },
+  { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_PURCHASE_HISTORY },
+  { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_INVITED_USERS },
   {
     name: PAGE_SOURCES.cabinetFree,
     path: PATHS.PROFILE_MY_COURSE.clearPattern, //TODO ТУТ БУДУТ БАГИ

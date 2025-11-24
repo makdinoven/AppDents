@@ -168,11 +168,11 @@ const HlsVideo: React.FC<Props> = ({
     }
   } catch {
     // если srcMp4 невалидный как URL — тоже iframe (совместимость с существующей логикой)
-    return (
-      <div className={className}>
-        <iframe src={srcMp4} width="100%" height="100%" allowFullScreen />
-      </div>
-    );
+    // return (
+    //   <div className={className}>
+    //     <iframe src={srcMp4} width="100%" height="100%" allowFullScreen />
+    //   </div>
+    // );
   }
 
   return (

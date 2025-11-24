@@ -97,7 +97,7 @@ const BookCard = ({
           book_ids,
           book_landing_ids: [id],
           price_cents: new_price * 100,
-          from_ad: false,
+          from_ad: !flags.isClient,
           region: language as LanguagesType,
         },
         render: {

@@ -1,15 +1,16 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import s from "./SuccessPayment.module.scss";
 import { useEffect } from "react";
-import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
-import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
-import { getMe } from "../../shared/store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
+import ReactPixel from "react-facebook-pixel";
 import { AppDispatchType } from "../../shared/store/store.ts";
 import { setLanguage } from "../../shared/store/slices/userSlice.ts";
-import { LS_TOKEN_KEY } from "../../shared/common/helpers/commonConstants.ts";
 import { PATHS } from "../../app/routes/routes.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import { LS_TOKEN_KEY } from "../../shared/common/helpers/commonConstants.ts";
+import { getMe } from "../../shared/store/actions/userActions.ts";
+import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 
 const SuccessPayment = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -22,6 +23,7 @@ const SuccessPayment = () => {
     if (region) {
       dispatch(setLanguage(region));
     }
+
     if (sessionId) {
       getAndSetToken();
     } else {
@@ -35,12 +37,36 @@ const SuccessPayment = () => {
         session_id: sessionId,
         region: region,
       });
+
+      const { purchase_data } = res.data;
+
+      if (purchase_data && purchase_data.amount > 0) {
+        try {
+          ReactPixel.trackCustom("Purchase", {
+            value: purchase_data.amount,
+            currency: purchase_data.currency,
+            content_ids: purchase_data.content_ids,
+            content_type: purchase_data.content_type,
+            num_items: purchase_data.num_items,
+            eventID: purchase_data.session_id,
+          });
+        } catch (pixelError) {
+          console.error(
+            "[Facebook Pixel] Failed to send Purchase event:",
+            pixelError,
+          );
+        }
+      } else {
+        console.warn(
+          "[Facebook Pixel] No purchase_data received or amount is 0",
+        );
+      }
       localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
       await dispatch(getMe());
       navigate(PATHS.PROFILE);
     } catch (error) {
       navigate(PATHS.MAIN);
-      console.error(error);
+      console.error("[SuccessPayment] Error:", error);
     }
   };
 

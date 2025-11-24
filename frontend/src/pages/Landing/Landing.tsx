@@ -119,6 +119,7 @@ const Landing = () => {
     setLoading(true);
     try {
       const res = await mainApi.getLanding(slug);
+      console.log(slug);
       setLanding({
         ...res.data,
         lessons_info: normalizeLessons(res.data.lessons_info),
