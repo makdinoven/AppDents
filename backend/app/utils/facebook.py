@@ -51,6 +51,7 @@ def _build_fb_event(
     fbc: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
+    event_source_url: str | None = None,  # ← URL страницы для лучшего attribution
 ) -> dict:
     """
     Формирует payload для Facebook Conversions API.
@@ -94,30 +95,31 @@ def _build_fb_event(
     contents = [{"id": x, "quantity": 1} for x in content_ids]
 
     # ---------- 2. финальный event ----------
-    event = {
-        "data": [
-            {
-                "event_name": event_name,
-                "event_time": event_time,
-                "event_id": event_id,
-                "action_source": "website",  # небольшой апгрейд: явный источник
-                "user_data": user_data,
-                "custom_data": {
-                    "currency": currency,
-                    "value": amount,
-                    "content_type": content_type,
-                    "content_ids": content_ids,
-                    "contents": contents,
-                    # при желании можно добавить:
-                    # "content_category": "books" if books else "courses"
-                },
-            }
-        ]
+    event_data = {
+        "event_name": event_name,
+        "event_time": event_time,
+        "event_id": event_id,
+        "action_source": "website",
+        "user_data": user_data,
+        "custom_data": {
+            "currency": currency,
+            "value": amount,
+            "content_type": content_type,
+            "content_ids": content_ids,
+            "contents": contents,
+        },
     }
+    
+    # Добавляем event_source_url если передан (улучшает attribution)
+    if event_source_url:
+        event_data["event_source_url"] = event_source_url
+    
+    event = {"data": [event_data]}
 
     logging.info(
-        "FB event built → %s | %s | amount=%s %s | courses=%s | books=%s",
-        email, event_name, amount, currency.upper(), course_ids or [], book_ids or []
+        "FB event built → %s | %s | amount=%s %s | courses=%s | books=%s | url=%s",
+        email, event_name, amount, currency.upper(), course_ids or [], book_ids or [], 
+        event_source_url or "N/A"
     )
     return event
 
@@ -138,6 +140,7 @@ def send_facebook_events(
     fbc: str | None = None,
     first_name: str | None = None,
     last_name: str | None = None,
+    event_source_url: str | None = None,  # ← URL страницы для attribution
 ) -> None:
     """
     Отправляет события Purchase и Donate в Facebook Conversions API.
@@ -166,6 +169,7 @@ def send_facebook_events(
         fbc=fbc,
         first_name=first_name,
         last_name=last_name,
+        event_source_url=event_source_url,
     )
     donate_payload = _build_fb_event(
         event_name="Donate",
@@ -183,6 +187,7 @@ def send_facebook_events(
         fbc=fbc,
         first_name=first_name,
         last_name=last_name,
+        event_source_url=event_source_url,
     )
 
     # ---------- 2. выбор Purchase-пикселей ----------
@@ -236,7 +241,7 @@ def send_facebook_events(
     def _post(pixel: dict, payload: dict, tag: str) -> None:
         try:
             resp = requests.post(
-                f"https://graph.facebook.com/v18.0/{pixel['id']}/events",
+                f"https://graph.facebook.com/v21.0/{pixel['id']}/events",
                 params={"access_token": pixel["token"]},
                 json=payload,
                 timeout=3,
@@ -333,7 +338,7 @@ def send_registration_event(
     pixel_id, token = PIXELS.get(region.upper(), PIXELS["EN"])
 
     resp = requests.post(
-        f"https://graph.facebook.com/v18.0/{pixel_id}/events",
+        f"https://graph.facebook.com/v21.0/{pixel_id}/events",
         params={"access_token": token},
         json=payload,
         timeout=3,

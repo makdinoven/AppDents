@@ -12,7 +12,7 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding, Book
+from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding, Book, Purchase
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user, add_book_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import (
@@ -352,7 +352,61 @@ def complete_purchase(
             detail="Admin users cannot use auto-login after purchase for security reasons"
         )
 
-    # 5. Генерируем Bearer-токен
+    # 5. Получаем данные покупки для Facebook Pixel (с ретраями как для user)
+    purchase = None
+    for _ in range(max_retries):
+        purchase = (
+            db.query(Purchase)
+            .filter(Purchase.user_id == user.id)
+            .order_by(Purchase.created_at.desc())
+            .first()
+        )
+        if purchase:
+            break
+        time.sleep(retry_delay)
+    
+    # 6. Формируем purchase_data для фронтенда
+    purchase_data = None
+    if purchase:
+        try:
+            # Собираем content_ids из различных источников
+            content_ids = []
+            content_type = "product"
+            
+            if purchase.landing_id:
+                content_ids.append(str(purchase.landing_id))
+                content_type = "course"
+            if purchase.course_id:
+                content_ids.append(str(purchase.course_id))
+                content_type = "course"
+            if purchase.book_landing_id:
+                content_ids.append(str(purchase.book_landing_id))
+                content_type = "book" if not content_ids else "product"
+            if purchase.book_id:
+                content_ids.append(str(purchase.book_id))
+                content_type = "book" if not content_ids else "product"
+            
+            purchase_data = {
+                "session_id": data.session_id,
+                "amount": float(purchase.amount or 0),
+                "currency": checkout_session.get("currency", "usd").upper(),
+                "content_ids": content_ids if content_ids else [],
+                "content_type": content_type,
+                "num_items": len(content_ids) if content_ids else 1,
+            }
+            logging.info("Purchase data prepared for FB Pixel: amount=%.2f, content_ids=%s", 
+                        purchase.amount, content_ids)
+        except Exception as e:
+            logging.warning("Failed to prepare purchase_data: %s", e)
+            purchase_data = None
+    else:
+        logging.warning("Purchase not found for user_id=%s (webhook may be delayed)", user.id)
+
+    # 7. Генерируем Bearer-токен
     token = create_access_token({"user_id": user.id})
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token, 
+        "token_type": "bearer",
+        "purchase_data": purchase_data  # Может быть None если покупка не найдена
+    }

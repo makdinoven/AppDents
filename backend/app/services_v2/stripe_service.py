@@ -671,6 +671,13 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     purchase_lang = (metadata.get("purchase_lang") or region).upper()
     if from_ad:
         try:
+            # Извлекаем URL источника для лучшего attribution
+            event_source_url = (
+                metadata.get("referer") or 
+                metadata.get("success_url") or 
+                session.get("success_url")
+            )
+            
             send_facebook_events(
                 region=purchase_lang,
                 email=email,
@@ -687,8 +694,9 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 last_name=last_name,
                 event_time=event_time,
                 event_id=session_id,  # используем ID сессии для дедупликации на стороне FB
+                event_source_url=event_source_url,
             )
-            logging.info("FB Purchase sent (from_ad=True)")
+            logging.info("FB Purchase sent (from_ad=True, url=%s)", event_source_url or "N/A")
         except Exception:
             logging.exception("FB sending failed (from_ad=True)")
     else:
