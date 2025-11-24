@@ -5,21 +5,21 @@ import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import EditLesson from "../modules/EditLesson/EditLesson.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import { mainApi } from "../../../../shared/api/mainApi/mainApi.ts";
 import {
   denormalizeLessons,
   normalizeLessons,
-} from "../../../../common/helpers/helpers.ts";
-import { ErrorIcon } from "../../../../assets/icons";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
+} from "../../../../shared/common/helpers/helpers.ts";
+import { ErrorIcon } from "../../../../shared/assets/icons";
+import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
 
 const LandingDetail = () => {
-  const { landingId } = useParams();
+  const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [landing, setLanding] = useState<any | null>(null);
   const [authors, setAuthors] = useState<any | null>(null);
@@ -28,16 +28,16 @@ const LandingDetail = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (landingId) {
+    if (id) {
       fetchAllData();
     }
-  }, [landingId]);
+  }, [id]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [landingRes, tagsRes, coursesRes, authorsRes] = await Promise.all([
-        adminApi.getLanding(landingId),
+        adminApi.getLanding(id),
         mainApi.getTags(),
         adminApi.getCoursesList({ size: 100000 }),
         adminApi.getAuthorsList({ size: 100000 }),
@@ -79,7 +79,7 @@ const LandingDetail = () => {
 
   const handleDeleteLanding = async () => {
     try {
-      await adminApi.deleteLanding(landingId);
+      await adminApi.deleteLanding(id);
       navigate(-1);
     } catch (error) {
       console.error("Error deleting course:", error);
@@ -112,7 +112,7 @@ const LandingDetail = () => {
       page_name: landing.page_name?.trim(),
     };
     try {
-      await adminApi.updateLanding(landingId, denormalizedLanding);
+      await adminApi.updateLanding(id, denormalizedLanding);
       navigate(-1);
     } catch (error) {
       console.error("Error updating course:", error);

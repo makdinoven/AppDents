@@ -1,18 +1,18 @@
 import s from "./Courses.module.scss";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
 import { useEffect, useState } from "react";
-import { ParamsType } from "../../api/adminApi/types.ts";
+import { ParamsType } from "../../shared/api/adminApi/types.ts";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
-import ListController from "../../components/ui/ListController/ListController.tsx";
-import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
+import ListController from "../../shared/components/ui/ListController/ListController.tsx";
+import CardsList from "../../shared/components/ProductsSection/CardsList/CardsList.tsx";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import { useNavigate } from "react-router-dom";
-import { Path } from "../../routes/routes.ts";
-import { getCourses } from "../../store/actions/userActions.ts";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import CourseCardSkeletons from "../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
-import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
+import { getCourses } from "../../shared/store/actions/userActions.ts";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
+import CourseCardSkeletons from "../../shared/components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import CustomOrder from "../../shared/components/CustomOrder/CustomOrder.tsx";
+import { PATHS } from "../../app/routes/routes.ts";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
 
   useEffect(() => {
     if (userCourses.length > 0 && isFree && !isAdmin) {
-      navigate(Path.courses);
+      navigate(PATHS.COURSES_LISTING);
     }
   }, [userCourses]);
 

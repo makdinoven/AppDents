@@ -1,25 +1,24 @@
 import s from "./AdControlListing.module.scss";
-import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES_NAME } from "../../../../../common/helpers/commonConstants.ts";
+import DateRangeFilter from "../../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES_NAME } from "../../../../../shared/common/helpers/commonConstants.ts";
 import SortOrderToggle, {
   SortDirectionType,
-} from "../../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
-import MinMaxFilter from "../../../../../components/ui/MinMaxFilter/MinMaxFilter.tsx";
-import Search from "../../../../../components/ui/Search/Search.tsx";
+} from "../../../../../shared/components/ui/SortOrderToggle/SortOrderToggle.tsx";
+import MinMaxFilter from "../../../../../shared/components/ui/MinMaxFilter/MinMaxFilter.tsx";
+import Search from "../../../../../shared/components/ui/Search/Search.tsx";
 import { t } from "i18next";
-import Table from "../../../../../components/ui/Table/Table.tsx";
-import { Path } from "../../../../../routes/routes.ts";
-import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import Table from "../../../../../shared/components/ui/Table/Table.tsx";
+import Loader from "../../../../../shared/components/ui/Loader/Loader.tsx";
 import { useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import useDebounce from "../../../../../common/hooks/useDebounce.ts";
-import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../assets/icons";
-import { transformIdNameArrToValueNameArr } from "../../../../../common/helpers/helpers.ts";
-import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import useDebounce from "../../../../../shared/common/hooks/useDebounce.ts";
+import { useDateRangeFilter } from "../../../../../shared/common/hooks/useDateRangeFilter.ts";
+import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../shared/assets/icons";
+import { transformIdNameArrToValueNameArr } from "../../../../../shared/common/helpers/helpers.ts";
+import SwitchButtons from "../../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const adControlSearch = "ad-control-q";
 
@@ -426,9 +425,7 @@ const AdControlListing = () => {
       <Search id={adControlSearch} placeholder={t("admin.landings.search")} />
       <Table
         loading={loading}
-        landingLinkByIdPath={
-          mode === "courses" ? Path.landingAnalytics : Path.bookLandingAnalytics
-        }
+        landingLinkMode={mode === "courses" ? "landing" : "book-landing"}
         showIndex={false}
         data={data}
         columnLabels={{

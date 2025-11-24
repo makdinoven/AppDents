@@ -1,7 +1,7 @@
 import s from "./PanelItem.module.scss";
 import { Link } from "react-router-dom";
-import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import ToggleCheckbox from "../../../../../../components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
+import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import ToggleCheckbox from "../../../../../../shared/components/ui/ToggleCheckbox/ToggleCheckbox.tsx";
 
 interface PanelItemType {
   name: string;

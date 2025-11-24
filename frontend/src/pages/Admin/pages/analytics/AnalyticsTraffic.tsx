@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
 import s from "./Analytics.module.scss";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import LandingAnalyticsChart from "./Charts/LandingAnalyticsChart.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES_NAME } from "../../../../common/helpers/commonConstants.ts";
-import Table from "../../../../components/ui/Table/Table.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES_NAME } from "../../../../shared/common/helpers/commonConstants.ts";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
 
 const AnalyticsTraffic = () => {
   const [loading, setLoading] = useState(false);

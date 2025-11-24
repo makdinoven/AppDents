@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import s from "./LandingHero.module.scss";
-import Title from "../../../../components/ui/Title/Title.tsx";
+import Title from "../../../../shared/components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
-import { CircleArrow, TagIcon } from "../../../../assets/icons/index.ts";
-import LandingHeroSkeleton from "../../../../components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
-import { NoPictures } from "../../../../assets";
+import { CircleArrow, TagIcon } from "../../../../shared/assets/icons/index.ts";
+import LandingHeroSkeleton from "../../../../shared/components/ui/Skeletons/LandingHeroSkeleton/LandingHeroSkeleton.tsx";
+import { NoPictures } from "../../../../shared/assets";
 import { t } from "i18next";
 
 interface LandingHeroProps {

@@ -1,8 +1,8 @@
-import PrettyButton from "../../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { useState } from "react";
-import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../../../assets/icons";
-import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../../../shared/assets/icons";
+import { adminApi } from "../../../../../../../shared/api/adminApi/adminApi.ts";
 
 const BookMetadataSelector = ({
   book,

@@ -1,10 +1,10 @@
 import s from "./BookUploader.module.scss";
-import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../../../assets/icons";
-import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../../../shared/assets/icons";
+import { adminApi } from "../../../../../../../shared/api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
-import LoaderOverlay from "../../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import ViewLink from "../../../../../../../components/ui/ViewLink/ViewLink.tsx";
+import LoaderOverlay from "../../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import ViewLink from "../../../../../../../shared/components/ui/ViewLink/ViewLink.tsx";
 
 type JobStatus = "pending" | "running" | "success" | "failed" | "skipped";
 

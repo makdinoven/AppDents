@@ -1,9 +1,9 @@
 import s from "./CollapsibleSection.module.scss";
 import AdminField from "../AdminField/AdminField.tsx";
-import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
-import { BackArrow } from "../../../../../../assets/icons";
+import { BackArrow } from "../../../../../../shared/assets/icons";
 
 const CollapsibleSection = ({
   title,

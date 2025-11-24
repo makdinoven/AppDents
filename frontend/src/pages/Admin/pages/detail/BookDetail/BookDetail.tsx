@@ -1,18 +1,18 @@
 import { useNavigate, useParams } from "react-router-dom";
-import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import Loader from "../../../../../shared/components/ui/Loader/Loader.tsx";
 import s from "../DetailPage.module.scss";
 import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../../modules/common/DetailBottom/DetailBottom.tsx";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../../assets/icons";
-import { mainApi } from "../../../../../api/mainApi/mainApi.ts";
+import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../shared/assets/icons";
+import { mainApi } from "../../../../../shared/api/mainApi/mainApi.ts";
 import { t } from "i18next";
 import AdminField from "../../modules/common/AdminField/AdminField.tsx";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
-import PhotoUploader from "../../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
+import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES } from "../../../../../shared/common/helpers/commonConstants.ts";
+import PhotoUploader from "../../../../../shared/components/PhotoUploader/PhotoUploader.tsx";
 import CoverCandidatesSelector from "./modules/CoverCandidatesSelector/CoverCandidatesSelector.tsx";
 import BookMetadataSelector from "./modules/BookMetadataSelector/BookMetadataSelector.tsx";
 import BookUploader from "./modules/BookUploader/BookUploader.tsx";
@@ -20,7 +20,7 @@ import BookCreatives from "./modules/BookCreatives/BookCreatives.tsx";
 
 const BookDetail = () => {
   const navigate = useNavigate();
-  const { bookId } = useParams();
+  const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [book, setBook] = useState<any>(null);
   const [tags, setTags] = useState<any>([]);
@@ -31,7 +31,7 @@ const BookDetail = () => {
     setLoading(true);
     try {
       const [bookRes, tagsRes, authorsRes, publishersRes] = await Promise.all([
-        adminApi.getBookDetail(bookId),
+        adminApi.getBookDetail(id),
         mainApi.getTags(),
         adminApi.getAuthorsList({ size: 100000 }),
         adminApi.getPublishers(),
@@ -51,10 +51,10 @@ const BookDetail = () => {
   };
 
   useEffect(() => {
-    if (bookId) {
+    if (id) {
       fetchAllData();
     }
-  }, [bookId]);
+  }, [id]);
 
   const handleUploadPhoto = (url: string) => {
     setBook((prev: any) => {
@@ -73,7 +73,7 @@ const BookDetail = () => {
 
   const handleSave = async () => {
     try {
-      await adminApi.updateBook(bookId, book);
+      await adminApi.updateBook(id, book);
       navigate(-1);
     } catch (error) {
       Alert(`Error updating book: ${error}`, <ErrorIcon />);
@@ -84,7 +84,7 @@ const BookDetail = () => {
     if (!confirm(`Are you sure you want to delete this book?`)) return;
 
     try {
-      await adminApi.deleteBook(bookId);
+      await adminApi.deleteBook(id);
       Alert("Book deleted", <CheckMark />);
       navigate(-1);
     } catch (error) {

@@ -1,9 +1,9 @@
 import React from "react";
 import s from "./AudioSection.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { Trans, useTranslation } from "react-i18next";
-import AudioPlayer from "../../../../components/CommonComponents/AudioPlayer/AudioPlayer.tsx";
-import { Headphones } from "../../../../assets/icons";
+import AudioPlayer from "../../../../shared/components/AudioPlayer/AudioPlayer.tsx";
+import { Headphones } from "../../../../shared/assets/icons";
 
 interface AudioSectionProps {
   title: string;

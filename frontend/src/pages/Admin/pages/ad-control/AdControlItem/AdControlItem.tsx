@@ -1,7 +1,7 @@
 import s from "./AdControlItem.module.scss";
-import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { useState } from "react";
-import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import LoaderOverlay from "../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import AdminField from "../../modules/common/AdminField/AdminField.tsx";
 
 const AdControlItem = ({

@@ -1,6 +1,6 @@
 import s from "./PhotoUploader.module.scss";
 import { useState } from "react";
-import { NoPictures } from "../../../../../../assets";
+import { NoPictures } from "../../../../../../shared/assets";
 
 const PhotoUploader = ({
   id,

@@ -6,8 +6,8 @@ import {
   ArrowX,
   BackArrow,
   CircleArrowSmall,
-} from "../../../../../assets/icons";
-import ModalOverlay from "../../../../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+} from "../../../../../shared/assets/icons";
+import ModalOverlay from "../../../../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
 type HeroSliderProps = {
   gallery: any[];
 };

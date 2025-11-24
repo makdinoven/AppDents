@@ -4,24 +4,24 @@ import { useEffect, useRef } from "react";
 import { Trans } from "react-i18next";
 import CartItem from "./CartItem/CartItem.tsx";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
 import {
   getCartPreview,
   removeCartItem,
-} from "../../store/actions/cartActions.ts";
-import { CartIcon } from "../../assets/icons/index.ts";
+} from "../../shared/store/actions/cartActions.ts";
+import { CartIcon } from "../../shared/assets/icons/index.ts";
 import CartFooter from "./CartFooter/CartFooter.tsx";
-import { cartStorage } from "../../api/cartApi/cartStorage.ts";
-import { syncCartFromStorage } from "../../store/slices/cartSlice.ts";
+import { cartStorage } from "../../shared/api/cartApi/cartStorage.ts";
+import { syncCartFromStorage } from "../../shared/store/slices/cartSlice.ts";
 import {
   CartItemBookType,
   CartItemCourseType,
   CartItemKind,
-} from "../../api/cartApi/types.ts";
-import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
-import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
-import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
-import { usePayment } from "../../common/hooks/usePayment.tsx";
+} from "../../shared/api/cartApi/types.ts";
+import ModalOverlay from "../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../shared/components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import useOutsideClick from "../../shared/common/hooks/useOutsideClick.ts";
+import { usePayment } from "../../shared/common/hooks/usePayment.tsx";
 
 const Cart = () => {
   const closeModalRef = useRef<() => void>(null);

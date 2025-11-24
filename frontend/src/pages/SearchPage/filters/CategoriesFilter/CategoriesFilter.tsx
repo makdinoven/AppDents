@@ -1,9 +1,9 @@
 import s from "./CategoriesFilter.module.scss";
-import ExtendedToggleButton from "../../../../components/ui/ExtendedToggleButton/ExtendedToggleButton.tsx";
+import ExtendedToggleButton from "../../../../shared/components/ui/ExtendedToggleButton/ExtendedToggleButton.tsx";
 import {
   SearchResultKeysType,
   SearchResultsType,
-} from "../../../../store/slices/mainSlice.ts";
+} from "../../../../shared/store/slices/mainSlice.ts";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 const CategoriesFilter = ({

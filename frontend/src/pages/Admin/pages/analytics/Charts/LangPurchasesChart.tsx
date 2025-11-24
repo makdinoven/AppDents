@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import LoaderOverlay from "../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const LangPurchasesChart = ({
   data,

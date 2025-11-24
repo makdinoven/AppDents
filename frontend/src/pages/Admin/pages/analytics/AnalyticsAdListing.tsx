@@ -1,21 +1,20 @@
 import s from "./Analytics.module.scss";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
 import {
   ANALYTICS_LIMITS,
   LANGUAGES_NAME,
-} from "../../../../common/helpers/commonConstants.ts";
-import Table from "../../../../components/ui/Table/Table.tsx";
+} from "../../../../shared/common/helpers/commonConstants.ts";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import SortOrderToggle from "../../../../components/ui/SortOrderToggle/SortOrderToggle.tsx";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
-import Search from "../../../../components/ui/Search/Search.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import SortOrderToggle from "../../../../shared/components/ui/SortOrderToggle/SortOrderToggle.tsx";
+import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
+import Search from "../../../../shared/components/ui/Search/Search.tsx";
 import { t } from "i18next";
 import { useSearchParams } from "react-router-dom";
-import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const AnalyticsAdListing = () => {
   const [searchParams] = useSearchParams();
@@ -186,7 +185,7 @@ const AnalyticsAdListing = () => {
           <Table
             loading={loading}
             data={filteredLandings}
-            landingLinkByIdPath={Path.landingAnalytics}
+            landingLinkMode={mode === "courses" ? "landing" : "book-landing"}
             columnLabels={{
               id: "ID",
               landing_name: "Name",

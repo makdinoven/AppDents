@@ -1,11 +1,11 @@
 import s from "./ResultLanding.module.scss";
 import LangLogo, {
   LanguagesType,
-} from "../../../../../../components/ui/LangLogo/LangLogo.tsx";
-import AddToCartButton from "../../../../../../components/ui/AddToCartButton/AddToCartButton.tsx";
-import { formatAuthorsDesc } from "../../../../../../common/helpers/helpers.ts";
-import { ResultLandingData } from "../../../../../../store/slices/mainSlice.ts";
-import { useCart } from "../../../../../../common/hooks/useCart.ts";
+} from "../../../../../../shared/components/ui/LangLogo/LangLogo.tsx";
+import AddToCartButton from "../../../../../../shared/components/ui/AddToCartButton/AddToCartButton.tsx";
+import { formatAuthorsDesc } from "../../../../../../shared/common/helpers/helpers.ts";
+import { ResultLandingData } from "../../../../../../shared/store/slices/mainSlice.ts";
+import { useCart } from "../../../../../../shared/common/hooks/useCart.ts";
 
 const ResultLanding = ({
   type,

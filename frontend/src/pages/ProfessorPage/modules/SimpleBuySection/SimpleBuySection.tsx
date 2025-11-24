@@ -2,9 +2,9 @@ import s from "./SimpleBuySection.module.scss";
 import {
   PaymentDataModeType,
   usePaymentPageHandler,
-} from "../../../../common/hooks/usePaymentPageHandler.ts";
+} from "../../../../shared/common/hooks/usePaymentPageHandler.ts";
 import { Trans } from "react-i18next";
-import ArrowButton from "../../../../components/ui/ArrowButton/ArrowButton.tsx";
+import ArrowButton from "../../../../shared/components/ui/ArrowButton/ArrowButton.tsx";
 import BuySectionIcons from "../BuySectionIcons/BuySectionIcons.tsx";
 
 const SimpleBuySection = ({

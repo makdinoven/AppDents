@@ -1,9 +1,9 @@
-import ModalWrapper from "../../../../../../../components/Modals/ModalWrapper/ModalWrapper.tsx";
+import ModalWrapper from "../../../../../../../shared/components/Modals/ModalWrapper/ModalWrapper.tsx";
 import s from "./CoverCandidatesSelector.module.scss";
-import PrettyButton from "../../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../../../../assets/icons";
-import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
+import PrettyButton from "../../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import { Alert } from "../../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../../../shared/assets/icons";
+import { adminApi } from "../../../../../../../shared/api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 
 type CoverCandidate = {

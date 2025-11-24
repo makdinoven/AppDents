@@ -4,16 +4,16 @@ import { t } from "i18next";
 import { Fragment } from "react";
 import { Trans } from "react-i18next";
 import { useForm } from "react-hook-form";
-import { ChangePasswordType } from "../../../api/userApi/types.ts";
+import { ChangePasswordType } from "../../../shared/api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
-import { emailSchema } from "../../../common/schemas/emailSchema.ts";
-import Form from "../../../components/Modals/modules/Form/Form.tsx";
-import { Percent } from "../../../assets/icons/index.ts";
-import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import EmailInput from "../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
-import UseBalanceOption from "../../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
+import { emailSchema } from "../../../shared/common/schemas/emailSchema.ts";
+import Form from "../../../shared/components/Modals/modules/Form/Form.tsx";
+import { Percent } from "../../../shared/assets/icons/index.ts";
+import LoaderOverlay from "../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import EmailInput from "../../../shared/components/ui/Inputs/EmailInput/EmailInput.tsx";
+import UseBalanceOption from "../../../shared/components/ui/UseBalanceOption/UseBalanceOption.tsx";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../store/store.ts";
+import { AppRootStateType } from "../../../shared/store/store.ts";
 
 type props = {
   paymentLoading?: boolean;

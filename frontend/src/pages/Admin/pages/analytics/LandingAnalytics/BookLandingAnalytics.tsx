@@ -1,26 +1,26 @@
 import { useParams } from "react-router-dom";
 import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
+import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 import {
   formatIsoToLocalDatetime,
   getFormattedDate,
   transformIdNameArrToValueNameArr,
-} from "../../../../../common/helpers/helpers.ts";
-import DateRangeFilter from "../../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import Loader from "../../../../../components/ui/Loader/Loader.tsx";
-import SwitchButtons from "../../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+} from "../../../../../shared/common/helpers/helpers.ts";
+import DateRangeFilter from "../../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import Loader from "../../../../../shared/components/ui/Loader/Loader.tsx";
+import SwitchButtons from "../../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import s from "./LandingAnalytics.module.scss";
 import LandingAnalyticsChart from "../Charts/LandingAnalyticsChart.tsx";
-import Table from "../../../../../components/ui/Table/Table.tsx";
-import { useDateRangeFilter } from "../../../../../common/hooks/useDateRangeFilter.ts";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../assets/icons";
+import Table from "../../../../../shared/components/ui/Table/Table.tsx";
+import { useDateRangeFilter } from "../../../../../shared/common/hooks/useDateRangeFilter.ts";
+import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import LoaderOverlay from "../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../shared/assets/icons";
 
 const BookLandingAnalytics = () => {
-  const { landingId } = useParams();
+  const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [chartData, setChartData] = useState<any>(null);
   const [chartMode, setChartMode] = useState<"hour" | "day">("day");
@@ -53,7 +53,7 @@ const BookLandingAnalytics = () => {
       start_date?: string;
       end_date?: string;
     } = {
-      book_landing_id: landingId!,
+      book_landing_id: id!,
       bucket: chartMode,
     };
     if (dateRange.startDate) {
@@ -116,9 +116,9 @@ const BookLandingAnalytics = () => {
   }) => {
     setAssignmentLoading(true);
     try {
-      await adminApi.putAdBookLandingAssigned(landingId!, data);
+      await adminApi.putAdBookLandingAssigned(id!, data);
 
-      await fetchAssigned(landingId!);
+      await fetchAssigned(id!);
       setAssignmentLoading(false);
     } catch (error) {
       setAssignmentLoading(false);
@@ -131,12 +131,12 @@ const BookLandingAnalytics = () => {
   }, [dateRange, chartMode]);
 
   useEffect(() => {
-    if (landingId) {
+    if (id) {
       fetchStaff();
       fetchAccounts();
-      fetchAssigned(landingId);
+      fetchAssigned(id);
     }
-  }, [landingId]);
+  }, [id]);
 
   useEffect(() => {
     if (landing?.data?.created_at) {

@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
 import s from "./Faq.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { Trans } from "react-i18next";
-import { BackArrow } from "../../../../assets/icons/index.ts";
-import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
+import { BackArrow } from "../../../../shared/assets/icons/index.ts";
+import { BASE_URL } from "../../../../shared/common/helpers/commonConstants.ts";
 
 const Faq = ({ type = "course" }: { type: "course" | "book" }) => {
   const [openIndex, setOpenIndex] = useState<number | null>(null);

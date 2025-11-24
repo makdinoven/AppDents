@@ -1,8 +1,8 @@
 import s from "./LanguagesFilter.module.scss";
-import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
+import { LANGUAGES } from "../../../../shared/common/helpers/commonConstants.ts";
 import LangLogo, {
   LanguagesType,
-} from "../../../../components/ui/LangLogo/LangLogo.tsx";
+} from "../../../../shared/components/ui/LangLogo/LangLogo.tsx";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 const LanguagesFilter = ({

@@ -1,7 +1,7 @@
 import { SectionType } from "../../../types.ts";
 import { useState } from "react";
 import CollapsibleSection from "../common/CollapsibleSection/CollapsibleSection.tsx";
-import { rewriteStorageLinkToCDN } from "../../../../../common/helpers/helpers.ts";
+import { rewriteStorageLinkToCDN } from "../../../../../shared/common/helpers/helpers.ts";
 
 const EditLesson = ({
   type = "course",

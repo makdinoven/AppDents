@@ -1,13 +1,13 @@
 import s from "./MainPage.module.scss";
 import Hero from "./Hero/Hero.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
+import { AppDispatchType } from "../../shared/store/store.ts";
 import { useSearchParams } from "react-router-dom";
-import { getTags } from "../../store/actions/mainActions.ts";
-import { scrollToElement } from "../../common/helpers/helpers.ts";
-import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
+import { getTags } from "../../shared/store/actions/mainActions.ts";
+import { scrollToElement } from "../../shared/common/helpers/helpers.ts";
+import CustomOrder from "../../shared/components/CustomOrder/CustomOrder.tsx";
 // import Feedback from "../../components/CommonComponents/Feedback/Feedback.tsx";
 
 const PAGE_SIZE = 14;

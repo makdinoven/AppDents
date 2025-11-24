@@ -1,32 +1,32 @@
 import s from "./SearchPage.module.scss";
-import Search from "../../components/ui/Search/Search.tsx";
+import Search from "../../shared/components/ui/Search/Search.tsx";
 import { useEffect, useMemo, useRef } from "react";
-import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
+import useOutsideClick from "../../shared/common/hooks/useOutsideClick.ts";
 import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
-import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
-import useDebounce from "../../common/hooks/useDebounce.ts";
-import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../shared/components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import useDebounce from "../../shared/common/hooks/useDebounce.ts";
+import ModalOverlay from "../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ResultsList from "./content/ResultsList/ResultsList.tsx";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
-import NoResults from "../../components/ui/NoResults/NoResults.tsx";
-import { globalSearch } from "../../store/actions/mainActions.ts";
+import NoResults from "../../shared/components/ui/NoResults/NoResults.tsx";
+import { globalSearch } from "../../shared/store/actions/mainActions.ts";
 import {
   clearSearch,
   ResultLandingData,
   SearchResultKeysType,
-} from "../../store/slices/mainSlice.ts";
+} from "../../shared/store/slices/mainSlice.ts";
 import LanguagesFilter from "./filters/LanguagesFilter/LanguagesFilter.tsx";
-import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
+import { LanguagesType } from "../../shared/components/ui/LangLogo/LangLogo.tsx";
 import {
   arraysEqual,
   mapCourseToResultLanding,
-} from "../../common/helpers/helpers.ts";
+} from "../../shared/common/helpers/helpers.ts";
 import CategoriesFilter from "./filters/CategoriesFilter/CategoriesFilter.tsx";
 import { t } from "i18next";
-import ResultsListSkeleton from "../../components/ui/Skeletons/ResultsListSkeleton/ResultsListSkeleton.tsx";
-import Loader from "../../components/ui/Loader/Loader.tsx";
+import ResultsListSkeleton from "../../shared/components/ui/Skeletons/ResultsListSkeleton/ResultsListSkeleton.tsx";
+import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 
 const RESULT_KEYS: SearchResultKeysType[] = [
   "landings",

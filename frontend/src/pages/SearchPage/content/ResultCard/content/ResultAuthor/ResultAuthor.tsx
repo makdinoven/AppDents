@@ -1,7 +1,7 @@
 import s from "./ResultAuthor.module.scss";
-import LangLogo from "../../../../../../components/ui/LangLogo/LangLogo.tsx";
-import { ResultAuthorData } from "../../../../../../store/slices/mainSlice.ts";
-import { Arrow, BooksIcon, CoursesIcon } from "../../../../../../assets/icons";
+import LangLogo from "../../../../../../shared/components/ui/LangLogo/LangLogo.tsx";
+import { ResultAuthorData } from "../../../../../../shared/store/slices/mainSlice.ts";
+import { Arrow, BooksIcon, CoursesIcon } from "../../../../../../shared/assets/icons";
 import { Trans } from "react-i18next";
 
 const ResultAuthor = ({

@@ -1,20 +1,19 @@
 import s from "./AdminList.module.scss";
-import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
 import PanelItem from "../PanelItem/PanelItem.tsx";
-import { Path } from "../../../../../../routes/routes.ts";
 import { useSearchParams } from "react-router-dom";
-import LoaderOverlay from "../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import { ParamsType } from "../../../../../../api/adminApi/types.ts";
-import Loader from "../../../../../../components/ui/Loader/Loader.tsx";
-import ListController from "../../../../../../components/ui/ListController/ListController.tsx";
+import LoaderOverlay from "../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
+import Loader from "../../../../../../shared/components/ui/Loader/Loader.tsx";
+import ListController from "../../../../../../shared/components/ui/ListController/ListController.tsx";
 import {
-  BASE_URL,
   FILTER_PARAM_KEYS,
   FilterKeys,
-} from "../../../../../../common/helpers/commonConstants.ts";
-import { Alert } from "../../../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../../../assets/icons";
+} from "../../../../../../shared/common/helpers/commonConstants.ts";
+import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../../../shared/assets/icons";
+import { PATHS } from "../../../../../../app/routes/routes.ts";
 
 interface AdminListProps<T> {
   data: any;
@@ -110,15 +109,15 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                 landingPath={
                   item.page_name
                     ? isBook
-                      ? `${Path.bookLandingClient}/${item.page_name}`
-                      : `/${Path.landingClient}/${item.page_name}`
+                      ? PATHS.BOOK_LANDING_CLIENT.build(item.page_name)
+                      : PATHS.LANDING_CLIENT.build(item.page_name)
                     : undefined
                 }
                 promoLandingPath={
                   item.page_name
                     ? isBook
-                      ? `${BASE_URL}${Path.bookLanding}/${item.page_name}`
-                      : `${BASE_URL}${Path.landing}/${item.page_name}`
+                      ? PATHS.BOOK_LANDING.build(item.page_name)
+                      : PATHS.LANDING.build(item.page_name)
                     : undefined
                 }
                 key={item.id}

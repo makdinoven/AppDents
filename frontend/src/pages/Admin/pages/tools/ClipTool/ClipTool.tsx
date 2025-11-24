@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import s from "./ClipTool.module.scss";
 import AdminField from "../../modules/common/AdminField/AdminField.tsx";
 import { t } from "i18next";
-import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import Loader from "../../../../../components/ui/Loader/Loader.tsx";
+import PrettyButton from "../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import Loader from "../../../../../shared/components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
+import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
 
 const ClipTool = () => {
   const [loading, setLoading] = useState(false);

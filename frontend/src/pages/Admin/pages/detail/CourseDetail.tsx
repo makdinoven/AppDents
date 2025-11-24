@@ -3,35 +3,35 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import EditSection from "../modules/EditSection/EditSection.tsx";
 import EditLesson from "../modules/EditLesson/EditLesson.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import PrettyButton from "../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
 import EditCourse from "../modules/EditCourse/EditCourse.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import {
   denormalizeCourse,
   normalizeCourse,
-} from "../../../../common/helpers/helpers.ts";
-import { ErrorIcon } from "../../../../assets/icons";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
+} from "../../../../shared/common/helpers/helpers.ts";
+import { ErrorIcon } from "../../../../shared/assets/icons";
+import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
 
 const CourseDetail = () => {
-  const { courseId } = useParams();
+  const { id } = useParams();
   const [course, setCourse] = useState<any | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (courseId) {
+    if (id) {
       fetchCourseData();
     }
-  }, [courseId]);
+  }, [id]);
 
   const fetchCourseData = async () => {
     try {
-      const res = await adminApi.getCourse(courseId);
+      const res = await adminApi.getCourse(id);
       setCourse(normalizeCourse(res.data));
     } catch (error: any) {
       Alert(
@@ -122,7 +122,7 @@ const CourseDetail = () => {
 
   const handleDeleteCourse = async () => {
     try {
-      await adminApi.deleteCourse(courseId);
+      await adminApi.deleteCourse(id);
       navigate(-1);
     } catch (error) {
       console.error("Error deleting course:", error);
@@ -131,7 +131,7 @@ const CourseDetail = () => {
 
   const handleSave = async () => {
     try {
-      await adminApi.updateCourse(courseId, denormalizeCourse(course));
+      await adminApi.updateCourse(id, denormalizeCourse(course));
       navigate(-1);
     } catch (error) {
       Alert(`Error updating course data`, <ErrorIcon />);

@@ -4,7 +4,7 @@ import {
   CartItemBookType,
   CartItemCourseType,
   CartItemKind,
-} from "../../../../api/cartApi/types.ts";
+} from "../../../../shared/api/cartApi/types.ts";
 
 const PaymentItemCard = ({
   item,

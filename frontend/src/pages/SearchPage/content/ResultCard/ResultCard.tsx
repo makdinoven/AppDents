@@ -1,14 +1,14 @@
 import s from "./ResultCard.module.scss";
-import { Path } from "../../../../routes/routes.ts";
 import { useNavigate } from "react-router-dom";
 import { JSX } from "react";
 import {
   ResultAuthorData,
   ResultBookData,
   ResultLandingData,
-} from "../../../../store/slices/mainSlice.ts";
+} from "../../../../shared/store/slices/mainSlice.ts";
 import ResultLanding from "./content/ResultLanding/ResultLanding.tsx";
 import ResultAuthor from "./content/ResultAuthor/ResultAuthor.tsx";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 type ResultCardProps =
   | { type: "landings"; data: ResultLandingData }
@@ -20,11 +20,11 @@ const ResultCard = ({ type, data }: ResultCardProps) => {
 
   const navigateToResult = () => {
     if (type === "landings") {
-      navigate(`/${Path.landingClient}/${data.page_name}`);
+      navigate(PATHS.LANDING_CLIENT.build(data.page_name));
     } else if (type === "authors") {
-      navigate(`${Path.professor}/${data.id}`);
+      navigate(PATHS.PROFESSOR_PAGE.build(data.id.toString()));
     } else if (type === "book_landings") {
-      // navigate(`/${Path.book}/${data.id}`);
+      navigate(PATHS.BOOK_LANDING_CLIENT.build(data.page_name));
     }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

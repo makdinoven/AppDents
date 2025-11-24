@@ -1,10 +1,10 @@
 import React from "react";
 import s from "./ContentOverview.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
-import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
-import { Bookmark } from "../../../../assets/icons";
+import PdfReader from "../../../../shared/components/PdfReader/PdfReader.tsx";
+import { Bookmark } from "../../../../shared/assets/icons";
 
 interface ContentOverviewProps {
   books: any[];

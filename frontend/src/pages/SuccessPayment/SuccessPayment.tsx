@@ -1,15 +1,15 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import s from "./SuccessPayment.module.scss";
 import { useEffect } from "react";
-import Loader from "../../components/ui/Loader/Loader.tsx";
+import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 import { Trans } from "react-i18next";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
-import { getMe } from "../../store/actions/userActions.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import { getMe } from "../../shared/store/actions/userActions.ts";
 import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../store/store.ts";
-import { Path } from "../../routes/routes.ts";
-import { setLanguage } from "../../store/slices/userSlice.ts";
-import { LS_TOKEN_KEY } from "../../common/helpers/commonConstants.ts";
+import { AppDispatchType } from "../../shared/store/store.ts";
+import { setLanguage } from "../../shared/store/slices/userSlice.ts";
+import { LS_TOKEN_KEY } from "../../shared/common/helpers/commonConstants.ts";
+import { PATHS } from "../../app/routes/routes.ts";
 
 const SuccessPayment = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -25,7 +25,7 @@ const SuccessPayment = () => {
     if (sessionId) {
       getAndSetToken();
     } else {
-      navigate(Path.main);
+      navigate(PATHS.MAIN);
     }
   }, [sessionId, region]);
 
@@ -37,9 +37,9 @@ const SuccessPayment = () => {
       });
       localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
       await dispatch(getMe());
-      navigate(Path.profileMain);
+      navigate(PATHS.PROFILE);
     } catch (error) {
-      navigate(Path.main);
+      navigate(PATHS.MAIN);
       console.error(error);
     }
   };

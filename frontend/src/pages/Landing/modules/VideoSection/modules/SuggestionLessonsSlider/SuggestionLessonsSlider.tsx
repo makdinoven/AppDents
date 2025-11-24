@@ -1,4 +1,4 @@
-import UniversalSlider from "../../../../../../components/CommonComponents/UniversalSlider/UniversalSlider.tsx";
+import UniversalSlider from "../../../../../../shared/components/UniversalSlider/UniversalSlider.tsx";
 import SuggestionLesson from "../SuggestionLesson/SuggestionLesson.tsx";
 
 const SuggestionLessonsSlider = ({

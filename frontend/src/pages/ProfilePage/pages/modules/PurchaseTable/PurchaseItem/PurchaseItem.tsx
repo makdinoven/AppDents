@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import s from "./PurchaseItem.module.scss";
-import { AppRootStateType } from "../../../../../../store/store.ts";
+import { AppRootStateType } from "../../../../../../shared/store/store.ts";
 import {
   BooksIcon,
   CashbackIcon,
@@ -10,10 +10,10 @@ import {
   CoursesIcon,
   TouchCoinIcon,
   UserPlusIcon,
-} from "../../../../../../assets/icons";
-import ExpandableText from "../../../../../../components/ui/ExpandableText/ExpandableText.tsx";
-import { Path } from "../../../../../../routes/routes.ts";
-import { formatIsoToLocalDatetime } from "../../../../../../common/helpers/helpers.ts";
+} from "../../../../../../shared/assets/icons";
+import ExpandableText from "../../../../../../shared/components/ui/ExpandableText/ExpandableText.tsx";
+import { formatIsoToLocalDatetime } from "../../../../../../shared/common/helpers/helpers.ts";
+import { PATHS } from "../../../../../../app/routes/routes.ts";
 
 type PurchaseItemProps = {
   item: any;
@@ -86,7 +86,11 @@ const PurchaseItem = ({ item }: PurchaseItemProps) => {
             <ExpandableText
               text={
                 <Link
-                  to={`${!isBook ? `/${Path.landingClient}` : Path.bookLandingClient}/${landingSlug}`}
+                  to={
+                    !isBook
+                      ? PATHS.LANDING_CLIENT.build(landingSlug)
+                      : PATHS.BOOK_LANDING_CLIENT.build(landingSlug)
+                  }
                   className={s.landing_name}
                 >
                   {landingName.toUpperCase()}

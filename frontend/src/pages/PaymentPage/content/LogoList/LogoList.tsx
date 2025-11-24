@@ -10,7 +10,7 @@ import {
   PaypalLogo,
   UnionPayLogo,
   VisaLogo,
-} from "../../../../assets/logos";
+} from "../../../../shared/assets/logos";
 
 const logos = [
   VisaLogo,

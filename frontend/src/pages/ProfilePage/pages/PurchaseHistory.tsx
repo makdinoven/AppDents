@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { userApi } from "../../../api/userApi/userApi.ts";
-import { Alert } from "../../../components/ui/Alert/Alert.tsx";
+import { userApi } from "../../../shared/api/userApi/userApi.ts";
+import { Alert } from "../../../shared/components/ui/Alert/Alert.tsx";
 import PurchaseTable from "./modules/PurchaseTable/PurchaseTable.tsx";
-import { getCamelCaseString } from "../../../common/helpers/helpers.ts";
-import { AlertCirceIcon } from "../../../assets/icons";
-import PurchaseItemSkeleton from "../../../components/ui/Skeletons/PurchaseItemSkeleton/PurchaseItemSkeleton.tsx";
+import { getCamelCaseString } from "../../../shared/common/helpers/helpers.ts";
+import { AlertCirceIcon } from "../../../shared/assets/icons";
+import PurchaseItemSkeleton from "../../../shared/components/ui/Skeletons/PurchaseItemSkeleton/PurchaseItemSkeleton.tsx";
 
 const PurchaseHistory: React.FC = () => {
   const [transactions, setTransactions] = useState<any[]>([]);

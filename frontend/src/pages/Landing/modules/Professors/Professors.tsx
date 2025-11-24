@@ -1,6 +1,6 @@
 import s from "./Professors.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import ProfessorsList from "../../../../components/CommonComponents/ProfessorsList/ProfessorsList.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
+import ProfessorsList from "../../../../shared/components/ProfessorsList/ProfessorsList.tsx";
 
 const Professors = ({ data }: { data: any }) => {
   return (

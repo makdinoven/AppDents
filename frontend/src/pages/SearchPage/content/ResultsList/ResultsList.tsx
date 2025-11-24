@@ -6,12 +6,12 @@ import {
   ResultBookData,
   ResultLandingData,
   SearchResultKeysType,
-} from "../../../../store/slices/mainSlice.ts";
+} from "../../../../shared/store/slices/mainSlice.ts";
 import {
   BooksIcon,
   CoursesIcon,
   ProfessorsIcon,
-} from "../../../../assets/icons";
+} from "../../../../shared/assets/icons";
 
 const ResultsList = ({
   type,

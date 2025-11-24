@@ -1,5 +1,5 @@
 import s from "./LessonsProgram.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import Lesson from "./modules/Lesson/Lesson.tsx";
 
 const LessonsProgram = ({

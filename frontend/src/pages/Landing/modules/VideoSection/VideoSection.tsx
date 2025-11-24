@@ -8,14 +8,14 @@ import {
   Glasses,
   Percent,
   PlayIcon,
-} from "../../../../assets/icons/index.ts";
+} from "../../../../shared/assets/icons/index.ts";
 import { Trans } from "react-i18next";
-import AuthorsDesc from "../../../../components/ui/AuthorsDesc/AuthorsDesc.tsx";
-import Button from "../../../../components/ui/Button/Button.tsx";
+import AuthorsDesc from "../../../../shared/components/ui/AuthorsDesc/AuthorsDesc.tsx";
+import Button from "../../../../shared/components/ui/Button/Button.tsx";
 import { useDispatch } from "react-redux";
-import { AppDispatchType } from "../../../../store/store.ts";
-import ExpandableText from "../../../../components/ui/ExpandableText/ExpandableText.tsx";
-import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
+import { AppDispatchType } from "../../../../shared/store/store.ts";
+import ExpandableText from "../../../../shared/components/ui/ExpandableText/ExpandableText.tsx";
+import { useScreenWidth } from "../../../../shared/common/hooks/useScreenWidth.ts";
 import SuggestionLessons from "./modules/SuggestionLessons/SuggestionLessons.tsx";
 import SuggestionLessonsSlider from "./modules/SuggestionLessonsSlider/SuggestionLessonsSlider.tsx";
 

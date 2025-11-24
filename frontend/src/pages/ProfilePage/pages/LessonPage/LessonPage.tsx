@@ -3,12 +3,12 @@ import { useEffect, useState } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
-import { Path } from "../../../../routes/routes.ts";
-import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
-import { Arrow } from "../../../../assets/icons/index.ts";
-import ViewLink from "../../../../components/ui/ViewLink/ViewLink.tsx";
-import { usePaymentPageHandler } from "../../../../common/hooks/usePaymentPageHandler.ts";
-import HlsVideo from "../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
+import BackButton from "../../../../shared/components/ui/BackButton/BackButton.tsx";
+import { Arrow } from "../../../../shared/assets/icons/index.ts";
+import ViewLink from "../../../../shared/components/ui/ViewLink/ViewLink.tsx";
+import { usePaymentPageHandler } from "../../../../shared/common/hooks/usePaymentPageHandler.ts";
+import HlsVideo from "../../../../shared/components/HlsVideo/HlsVideo.tsx";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 type OutletContextType = {
   course: any;
@@ -79,7 +79,7 @@ const LessonPage = () => {
   if (lesson)
     return (
       <>
-        <BackButton link={`${Path.myCourse}/${course.id}`} />
+        <BackButton link={PATHS.PROFILE_MY_COURSE.build(course.id)} />
         <div className={s.lesson_page}>
           <h3>{lesson.lesson_name}</h3>
           {isPdfLink(lesson.video_link) ? (
@@ -110,7 +110,7 @@ const LessonPage = () => {
           <div className={s.navigation_links}>
             {prevLesson && (
               <Link
-                to={`${Path.myCourse}/${course.id}/${Path.lesson}/${prevLesson.sectionId}/${prevLesson.lesson.id}`}
+                to={`${PATHS.PROFILE_MY_COURSE.build(course.id)}/${PATHS.PROFILE_COURSE_LESSON.build(prevLesson.sectionId, prevLesson.lesson.id)}`}
                 className={s.prev_link}
               >
                 <Arrow />
@@ -128,7 +128,7 @@ const LessonPage = () => {
                 </button>
               ) : (
                 <Link
-                  to={`${Path.myCourse}/${course.id}/${Path.lesson}/${nextLesson.sectionId}/${nextLesson.lesson.id}`}
+                  to={`${PATHS.PROFILE_MY_COURSE.build(course.id)}/${PATHS.PROFILE_COURSE_LESSON.build(nextLesson.sectionId, nextLesson.lesson.id)}`}
                   className={s.next_link}
                 >
                   <Trans i18nKey={"profile.nextLesson"} />

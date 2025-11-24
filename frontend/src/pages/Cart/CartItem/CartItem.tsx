@@ -1,14 +1,14 @@
 import s from "./CartItem.module.scss";
-import { TrashCan } from "../../../assets/icons/index.ts";
-import ViewLink from "../../../components/ui/ViewLink/ViewLink.tsx";
-import { Path } from "../../../routes/routes.ts";
-import LoaderOverlay from "../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import FormattedAuthorsDesc from "../../../common/helpers/FormattedAuthorsDesc.tsx";
+import { TrashCan } from "../../../shared/assets/icons/index.ts";
+import ViewLink from "../../../shared/components/ui/ViewLink/ViewLink.tsx";
+import LoaderOverlay from "../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import FormattedAuthorsDesc from "../../../shared/common/helpers/FormattedAuthorsDesc.tsx";
 import {
   CartItemBookType,
   CartItemCourseType,
   CartItemKind,
-} from "../../../api/cartApi/types.ts";
+} from "../../../shared/api/cartApi/types.ts";
+import { PATHS } from "../../../app/routes/routes.ts";
 
 interface CartItemProps {
   loading?: boolean;
@@ -70,8 +70,8 @@ const CartItem = ({
           className={s.link}
           link={
             isBook
-              ? `${Path.bookLandingClient}/${item.page_name}`
-              : `${Path.landingClient}/${item.page_name}`
+              ? PATHS.BOOK_LANDING_CLIENT.build(item.page_name)
+              : PATHS.LANDING_CLIENT.build(item.page_name)
           }
           text={`view${type.toLowerCase() === "landing" ? "Course" : type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}`}
         />

@@ -1,20 +1,20 @@
 import s from "./FriendMailInput.module.scss";
 import { Trans } from "react-i18next";
-import Form from "../../../../../../components/Modals/modules/Form/Form.tsx";
+import Form from "../../../../../../shared/components/Modals/modules/Form/Form.tsx";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../../store/store.ts";
-import { EnterEmailType } from "../../../../../../api/userApi/types.ts";
+import { AppRootStateType } from "../../../../../../shared/store/store.ts";
+import { EnterEmailType } from "../../../../../../shared/api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
-import { AlertCirceIcon, CheckMark } from "../../../../../../assets/icons";
+import { AlertCirceIcon, CheckMark } from "../../../../../../shared/assets/icons";
 import { Ref, useEffect, useState } from "react";
-import EmailInput from "../../../../../../components/ui/Inputs/EmailInput/EmailInput.tsx";
-import { emailSchema } from "../../../../../../common/schemas/emailSchema.ts";
-import Button from "../../../../../../components/ui/Button/Button.tsx";
-import ModalCloseButton from "../../../../../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import EmailInput from "../../../../../../shared/components/ui/Inputs/EmailInput/EmailInput.tsx";
+import { emailSchema } from "../../../../../../shared/common/schemas/emailSchema.ts";
+import Button from "../../../../../../shared/components/ui/Button/Button.tsx";
+import ModalCloseButton from "../../../../../../shared/components/ui/ModalCloseButton/ModalCloseButton.tsx";
 import { t } from "i18next";
-import { userApi } from "../../../../../../api/userApi/userApi.ts";
-import { Alert } from "../../../../../../components/ui/Alert/Alert.tsx";
+import { userApi } from "../../../../../../shared/api/userApi/userApi.ts";
+import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
 
 interface FriendMailInputProps {
   closeModal: () => void;

@@ -1,14 +1,14 @@
 import s from "./ProfileEntityCard.module.scss";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
-import { useScreenWidth } from "../../../../../common/hooks/useScreenWidth.ts";
-import { Arrow } from "../../../../../assets/icons";
-import CountdownTimer from "../../../../../components/ui/CountdownTimer/CountdownTimer.tsx";
-import { CheckMarkIcon } from "../../../../../assets/icons";
-import { Clock } from "../../../../../assets/icons";
-import { Dollar } from "../../../../../assets/icons";
-import { Percent } from "../../../../../assets/icons";
-import { NoPictures } from "../../../../../assets";
+import { useScreenWidth } from "../../../../../shared/common/hooks/useScreenWidth.ts";
+import { Arrow } from "../../../../../shared/assets/icons";
+import CountdownTimer from "../../../../../shared/components/ui/CountdownTimer/CountdownTimer.tsx";
+import { CheckMarkIcon } from "../../../../../shared/assets/icons";
+import { Clock } from "../../../../../shared/assets/icons";
+import { Dollar } from "../../../../../shared/assets/icons";
+import { Percent } from "../../../../../shared/assets/icons";
+import { NoPictures } from "../../../../../shared/assets";
 
 const ProfileEntityCard = ({
   isPartial = false,

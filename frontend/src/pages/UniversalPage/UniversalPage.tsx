@@ -3,8 +3,8 @@ import { useParams } from "react-router-dom";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
-import Loader from "../../components/ui/Loader/Loader.tsx";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 
 const UniversalPage = () => {
   const { pageType } = useParams();

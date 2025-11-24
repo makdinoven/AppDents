@@ -1,20 +1,20 @@
 import s from "./AdminSidebar.module.scss";
-import { BackArrow } from "../../../assets/icons";
-import { Link, useLocation } from "react-router-dom";
-import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
+import { BackArrow } from "../../../shared/assets/icons";
+import { NavLink } from "react-router-dom";
+import { useScreenWidth } from "../../../shared/common/hooks/useScreenWidth.ts";
 import { useEffect, useRef, useState } from "react";
-import useOutsideClick from "../../../common/hooks/useOutsideClick.ts";
+import useOutsideClick from "../../../shared/common/hooks/useOutsideClick.ts";
 import { Trans } from "react-i18next";
-import { ADMIN_SIDEBAR_LINKS } from "../../../common/helpers/commonConstants.ts";
 
 const AdminSidebar = ({
   isMinimized,
+  links,
   setIsMinimized,
 }: {
+  links: { label: string; innerLinks: { label: string; link: string }[] }[];
   isMinimized: boolean;
   setIsMinimized: (val: boolean) => void;
 }) => {
-  const location = useLocation();
   const screenWidth = useScreenWidth();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +61,7 @@ const AdminSidebar = ({
         </button>
 
         <ul className={s.outer_list}>
-          {ADMIN_SIDEBAR_LINKS.map((item) => (
+          {links.map((item) => (
             <li className={s.outer_list_section} key={item.label}>
               <span className={s.outer_list_item}>
                 <Trans i18nKey={item.label} />
@@ -70,14 +70,16 @@ const AdminSidebar = ({
                 <ul className={s.inner_list}>
                   {item.innerLinks.map((link) => (
                     <li key={link.label}>
-                      <Link
+                      <NavLink
                         to={link.link}
                         onClick={renderMobile ? handleCloseSidebar : undefined}
-                        className={`${s.inner_list_item} ${location.pathname === link.link ? s.active : ""}`}
+                        className={({ isActive }) =>
+                          `${s.inner_list_item} ${isActive ? s.active : ""}`
+                        }
                       >
                         <Trans i18nKey={link.label} />
                         <BackArrow className={s.arrow} />
-                      </Link>
+                      </NavLink>
                     </li>
                   ))}
                 </ul>

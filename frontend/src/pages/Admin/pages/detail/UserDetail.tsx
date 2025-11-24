@@ -3,17 +3,17 @@ import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import { t } from "i18next";
 import { UserType } from "../../types.ts";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { ROLES } from "../../../../common/helpers/commonConstants.ts";
-import Table from "../../../../components/ui/Table/Table.tsx";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../assets/icons";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { ROLES } from "../../../../shared/common/helpers/commonConstants.ts";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
+import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../shared/assets/icons";
+import PrettyButton from "../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { Trans } from "react-i18next";
 
 const UserDetail = () => {
@@ -24,19 +24,19 @@ const UserDetail = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<any>(null);
   const [books, setBooks] = useState<any>(null);
-  const { userId } = useParams();
+  const { id } = useParams();
 
   useEffect(() => {
-    if (userId) {
-      fetchAllData(userId);
+    if (id) {
+      fetchAllData(id);
     }
-  }, [userId]);
+  }, [id]);
 
-  const fetchAllData = async (userId: any) => {
+  const fetchAllData = async (id: any) => {
     setLoading(true);
     try {
       const [userRes, coursesRes, booksRes] = await Promise.all([
-        adminApi.getUser(userId),
+        adminApi.getUser(id),
         adminApi.getCoursesList({ size: 100000 }),
         adminApi.getBooksList({ size: 100000 }),
       ]);
@@ -64,7 +64,7 @@ const UserDetail = () => {
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to delete this user?`)) return;
     try {
-      await adminApi.deleteUser(userId);
+      await adminApi.deleteUser(id);
       navigate(-1);
     } catch (error) {
       console.error("Error deleting user:", error);
@@ -73,7 +73,7 @@ const UserDetail = () => {
 
   const handleSave = async () => {
     try {
-      await adminApi.updateUser(userId, user);
+      await adminApi.updateUser(id, user);
       navigate(-1);
     } catch (error) {
       console.error("Error updating user:", error);
@@ -85,7 +85,7 @@ const UserDetail = () => {
     if (isNaN(amount) || amount === 0) return;
 
     const data = {
-      user_id: Number(userId),
+      user_id: Number(id),
       amount,
       meta: { reason: "bonus" },
     };

@@ -1,7 +1,7 @@
 import s from "./AudioCard.module.scss";
-import { Headphones } from "../../../../../assets/icons";
+import { Headphones } from "../../../../../shared/assets/icons";
 import { t } from "i18next";
-import AudioPlayer from "../../../../../components/CommonComponents/AudioPlayer/AudioPlayer.tsx";
+import AudioPlayer from "../../../../../shared/components/AudioPlayer/AudioPlayer.tsx";
 
 interface AudioCardProps {
   title: string;

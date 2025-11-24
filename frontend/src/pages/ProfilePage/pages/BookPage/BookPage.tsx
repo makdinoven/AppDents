@@ -1,42 +1,42 @@
 import s from "./BookPage.module.scss";
 import { useParams } from "react-router-dom";
 import { JSX, useCallback, useEffect, useState } from "react";
-import { formatLanguage } from "../../../../common/helpers/helpers.ts";
-import { BASE_URL } from "../../../../common/helpers/commonConstants.ts";
+import { formatLanguage } from "../../../../shared/common/helpers/helpers.ts";
+import { BASE_URL } from "../../../../shared/common/helpers/commonConstants.ts";
 import { Trans } from "react-i18next";
-import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../shared/assets/icons";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { t } from "i18next";
-import BackButton from "../../../../components/ui/BackButton/BackButton.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import { mainApi } from "../../../../api/mainApi/mainApi.ts";
-import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
-import PdfReader from "../../../../components/CommonComponents/PdfReader/PdfReader.tsx";
+import BackButton from "../../../../shared/components/ui/BackButton/BackButton.tsx";
+import { mainApi } from "../../../../shared/api/mainApi/mainApi.ts";
+import BookHeroSkeleton from "../../../../shared/components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
+import PdfReader from "../../../../shared/components/PdfReader/PdfReader.tsx";
 import DownloadSection from "./DownloadSection/DownloadSection.tsx";
-import { NoPictures } from "../../../../assets";
+import { NoPictures } from "../../../../shared/assets";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 const BookPage = () => {
-  const { bookId } = useParams();
+  const { id } = useParams();
   const [book, setBook] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const pdf_link = `${BASE_URL}/api/books/${bookId}/pdf`;
+  const pdf_link = `${BASE_URL}/api/books/${id}/pdf`;
 
   const fetchBookData = useCallback(async () => {
     try {
-      const res = await mainApi.getBook(bookId);
+      const res = await mainApi.getBook(id);
       setBook(res.data);
       setLoading(false);
     } catch (error) {
       setLoading(false);
       console.error(error);
     }
-  }, [bookId]);
+  }, [id]);
 
   useEffect(() => {
-    if (bookId) {
+    if (id) {
       fetchBookData();
     }
-  }, [bookId, fetchBookData]);
+  }, [id, fetchBookData]);
 
   const formatIcons: Record<string, JSX.Element> = {
     PDF: <Pdf />,
@@ -50,8 +50,6 @@ const BookPage = () => {
     return formatIcons[format.toUpperCase()] ?? null;
   };
 
-  console.log(book);
-
   return (
     <>
       <div className={s.book_page}>
@@ -60,7 +58,7 @@ const BookPage = () => {
         ) : (
           <>
             <section className={s.hero}>
-              <BackButton link={Path.profileMain} />
+              <BackButton link={PATHS.PROFILE} />
               <h3>{book.title}</h3>
               <div className={s.content}>
                 <div className={s.left_side}>

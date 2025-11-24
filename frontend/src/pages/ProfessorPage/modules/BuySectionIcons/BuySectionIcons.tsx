@@ -1,6 +1,6 @@
 import s from "./BuySectionIcons.module.scss";
-import { BooksIcon, CoursesIcon } from "../../../../assets/icons";
-import { PaymentDataModeType } from "../../../../common/hooks/usePaymentPageHandler.ts";
+import { BooksIcon, CoursesIcon } from "../../../../shared/assets/icons";
+import { PaymentDataModeType } from "../../../../shared/common/hooks/usePaymentPageHandler.ts";
 
 const BuySectionIcons = ({
   paymentMode,

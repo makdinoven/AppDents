@@ -1,16 +1,19 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { toggleLandingVisibility } from "../../../../store/slices/adminSlice.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../shared/store/store.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import { toggleLandingVisibility } from "../../../../shared/store/slices/adminSlice.ts";
+import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import {
   createLanding,
   getLandings,
   searchLandings,
-} from "../../../../store/actions/adminActions.ts";
+} from "../../../../shared/store/actions/adminActions.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../../routes/routes.ts";
-import { INITIAL_LANDING } from "../../../../common/helpers/commonConstants.ts";
+import { INITIAL_LANDING } from "../../../../shared/common/helpers/commonConstants.ts";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 const AdminLandingsListing = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -43,7 +46,7 @@ const AdminLandingsListing = () => {
         transKey={"landings"}
         data={landings}
         itemName={"landing_name"}
-        itemLink={(landing) => `${Path.landingDetail}/${landing.id}`}
+        itemLink={(landing) => PATHS.ADMIN_LANDING_DETAIL.build(landing.id)}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createLanding(INITIAL_LANDING))}

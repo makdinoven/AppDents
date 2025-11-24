@@ -1,12 +1,12 @@
 import React, { JSX } from "react";
 import s from "./BookLandingHero.module.scss";
 import { Trans } from "react-i18next";
-import BuySection from "../../../../components/CommonComponents/BuySection/BuySection.tsx";
-import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../assets/icons";
-import { BOOK_FORMATS } from "../../../../common/helpers/commonConstants.ts";
-import BookHeroSkeleton from "../../../../components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
-import { formatLanguage } from "../../../../common/helpers/helpers.ts";
-import { NoPictures } from "../../../../assets";
+import BuySection from "../../../../shared/components/BuySection/BuySection.tsx";
+import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../shared/assets/icons";
+import { BOOK_FORMATS } from "../../../../shared/common/helpers/commonConstants.ts";
+import BookHeroSkeleton from "../../../../shared/components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
+import { formatLanguage } from "../../../../shared/common/helpers/helpers.ts";
+import { NoPictures } from "../../../../shared/assets";
 import { t } from "i18next";
 
 interface LandingHeroProps {

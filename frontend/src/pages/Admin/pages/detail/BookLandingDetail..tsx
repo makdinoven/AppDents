@@ -1,35 +1,35 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../assets/icons";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../shared/assets/icons";
 import { useEffect, useState } from "react";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import s from "./DetailPage.module.scss";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { LANGUAGES } from "../../../../shared/common/helpers/commonConstants.ts";
 import { t } from "i18next";
 import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 
 const BookLandingDetail = () => {
-  const { bookId } = useParams();
+  const { id } = useParams();
   const [loading, setLoading] = useState(false);
   const [bookLanding, setBookLanding] = useState<any>(null);
   const [books, setBooks] = useState<any | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (bookId) {
+    if (id) {
       fetchAllData();
     }
-  }, [bookId]);
+  }, [id]);
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
       const [landingRes, booksRes] = await Promise.all([
-        adminApi.getBookLanding(bookId),
+        adminApi.getBookLanding(id),
         adminApi.getBooksList({ size: 100000 }),
       ]);
       setBooks(booksRes.data.items);
@@ -48,7 +48,7 @@ const BookLandingDetail = () => {
     if (!confirm(`Are you sure you want to delete this book landing?`)) return;
 
     try {
-      await adminApi.deleteBookLanding(bookId);
+      await adminApi.deleteBookLanding(id);
       Alert("Book landing deleted", <CheckMark />);
       navigate(-1);
     } catch (error) {
@@ -66,7 +66,7 @@ const BookLandingDetail = () => {
 
   const handleSave = async () => {
     try {
-      await adminApi.updateBookLanding(bookId, bookLanding);
+      await adminApi.updateBookLanding(id, bookLanding);
       navigate(-1);
     } catch (error) {
       Alert(`Error updating book landing: ${error}`, <ErrorIcon />);

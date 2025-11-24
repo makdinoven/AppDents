@@ -1,9 +1,9 @@
 import s from "./CourseProgram.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { Trans } from "react-i18next";
 import ProgramContent from "../LessonsProgram/modules/ProgramContent/ProgramContent.tsx";
-import { useScreenWidth } from "../../../../common/hooks/useScreenWidth.ts";
-import LineWrapper from "../../../../components/ui/LineWrapper/LineWrapper.tsx";
+import { useScreenWidth } from "../../../../shared/common/hooks/useScreenWidth.ts";
+import LineWrapper from "../../../../shared/components/ui/LineWrapper/LineWrapper.tsx";
 
 const CourseProgram = ({
   data: {

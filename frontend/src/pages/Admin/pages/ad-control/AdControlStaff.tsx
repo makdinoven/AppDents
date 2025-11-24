@@ -1,10 +1,10 @@
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 import AdControlItem from "./AdControlItem/AdControlItem.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import s from "./AdControlListing/AdControlListing.module.scss";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import LoaderOverlay from "../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import PrettyButton from "../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import LoaderOverlay from "../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const AdControlStaff = () => {
   const [staffList, setStaffList] = useState<

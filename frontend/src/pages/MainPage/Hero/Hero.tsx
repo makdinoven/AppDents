@@ -1,11 +1,11 @@
 import s from "./Hero.module.scss";
 import { t } from "i18next";
-import Title from "../../../components/ui/Title/Title.tsx";
+import Title from "../../../shared/components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
-import ArrowButton from "../../../components/ui/ArrowButton/ArrowButton.tsx";
-import LineWrapper from "../../../components/ui/LineWrapper/LineWrapper.tsx";
+import ArrowButton from "../../../shared/components/ui/ArrowButton/ArrowButton.tsx";
+import LineWrapper from "../../../shared/components/ui/LineWrapper/LineWrapper.tsx";
 // import UniversalSlider from "../../../components/CommonComponents/UniversalSlider/UniversalSlider.tsx";
-import { CircleArrow } from "../../../assets/icons/index.ts";
+import { CircleArrow } from "../../../shared/assets/icons/index.ts";
 import HeroBackground from "@hero-bg";
 import HeroBackgroundMobile from "@hero-bg-mobile";
 

@@ -1,11 +1,11 @@
 import s from "./About.module.scss";
-import SectionHeader from "../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { Book, LightningAbout } from "../../../../assets/icons/index.ts";
-import { Glasses } from "../../../../assets/icons/index.ts";
-import { Percent } from "../../../../assets/icons/index.ts";
-import { Dollar } from "../../../../assets/icons/index.ts";
-import { Clock } from "../../../../assets/icons/index.ts";
-import { Calendar } from "../../../../assets/icons/index.ts";
+import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
+import { Book, LightningAbout } from "../../../../shared/assets/icons/index.ts";
+import { Glasses } from "../../../../shared/assets/icons/index.ts";
+import { Percent } from "../../../../shared/assets/icons/index.ts";
+import { Dollar } from "../../../../shared/assets/icons/index.ts";
+import { Clock } from "../../../../shared/assets/icons/index.ts";
+import { Calendar } from "../../../../shared/assets/icons/index.ts";
 
 const About = ({
   data: {

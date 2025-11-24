@@ -1,5 +1,5 @@
 import s from "./DetailBottom.module.scss";
-import PrettyButton from "../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { t } from "i18next";
 
 const DetailBottom = ({

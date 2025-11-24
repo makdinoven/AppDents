@@ -2,9 +2,9 @@ import s from "./EditLanding.module.scss";
 import AdminField from "../common/AdminField/AdminField.tsx";
 import { LandingType } from "../../../types.ts";
 import { t } from "i18next";
-import MultiSelect from "../../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import PhotoUploader from "../../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
-import { LANGUAGES } from "../../../../../common/helpers/commonConstants.ts";
+import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import PhotoUploader from "../../../../../shared/components/PhotoUploader/PhotoUploader.tsx";
+import { LANGUAGES } from "../../../../../shared/common/helpers/commonConstants.ts";
 
 const EditLanding = ({
   landing,

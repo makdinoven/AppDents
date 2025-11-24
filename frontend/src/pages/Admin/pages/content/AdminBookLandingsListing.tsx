@@ -1,16 +1,19 @@
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../shared/store/store.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import { toggleBookLandingVisibility } from "../../../../store/slices/adminSlice.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
-import { Path } from "../../../../routes/routes.ts";
-import { generateId } from "../../../../common/helpers/helpers.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import { toggleBookLandingVisibility } from "../../../../shared/store/slices/adminSlice.ts";
+import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
+import { generateId } from "../../../../shared/common/helpers/helpers.ts";
 import {
   createBookLanding,
   getBookLandings,
   searchBookLandings,
-} from "../../../../store/actions/adminActions.ts";
+} from "../../../../shared/store/actions/adminActions.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 const INITIAL_BOOK_LANDING = {
   landing_name: `New book landing ${generateId()}`,
@@ -49,7 +52,7 @@ const AdminBookLandingsListing = () => {
         transKey={"bookLandings"}
         data={bookLandings}
         itemName={"landing_name"}
-        itemLink={(book) => `${Path.bookLandingDetail}/${book.id}`}
+        itemLink={(book) => PATHS.ADMIN_BOOK_LANDING_DETAIL.build(book.id)}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createBookLanding(INITIAL_BOOK_LANDING))}

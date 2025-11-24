@@ -1,8 +1,8 @@
 import { Trans } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Path } from "../../../../../routes/routes.ts";
 import s from "./PurchaseTable.module.scss";
 import PurchaseItem from "./PurchaseItem/PurchaseItem.tsx";
+import { PATHS } from "../../../../../app/routes/routes.ts";
 
 type HistoryTableProps = {
   content: any[];
@@ -32,7 +32,7 @@ const PurchaseTable = ({ content, isReferral, title }: HistoryTableProps) => {
               components={{
                 1: (
                   <span
-                    onClick={() => navigate(Path.courses)}
+                    onClick={() => navigate(PATHS.COURSES_LISTING)}
                     className={`${s.no_data_message} ${s.link}`}
                   />
                 ),

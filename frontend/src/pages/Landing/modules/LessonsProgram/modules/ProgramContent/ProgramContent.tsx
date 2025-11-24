@@ -1,5 +1,5 @@
 import s from "./ProgramContent.module.scss";
-import { renderProgramText } from "../../../../../../common/helpers/renderProgramText.tsx";
+import { renderProgramText } from "../../../../../../shared/common/helpers/renderProgramText.tsx";
 
 const ProgramContent = ({
   programData,

@@ -1,15 +1,15 @@
 import s from "./Books.module.scss";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../store/store.ts";
+import { AppRootStateType } from "../../shared/store/store.ts";
 import { useState } from "react";
-import ListController from "../../components/ui/ListController/ListController.tsx";
-import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
-import { ParamsType } from "../../api/adminApi/types.ts";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
-import BookCardSkeletons from "../../components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
+import ListController from "../../shared/components/ui/ListController/ListController.tsx";
+import CardsList from "../../shared/components/ProductsSection/CardsList/CardsList.tsx";
+import { ParamsType } from "../../shared/api/adminApi/types.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import BookCardSkeletons from "../../shared/components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import CustomOrder from "../../components/CommonComponents/CustomOrder/CustomOrder.tsx";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
+import CustomOrder from "../../shared/components/CustomOrder/CustomOrder.tsx";
 
 const Books = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);

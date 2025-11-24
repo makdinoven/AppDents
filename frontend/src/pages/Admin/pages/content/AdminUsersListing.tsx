@@ -2,13 +2,16 @@ import {
   createUser,
   getUsers,
   searchUsers,
-} from "../../../../store/actions/adminActions.ts";
-import { INITIAL_USER } from "../../../../common/helpers/commonConstants.ts";
+} from "../../../../shared/store/actions/adminActions.ts";
+import { INITIAL_USER } from "../../../../shared/common/helpers/commonConstants.ts";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../shared/store/store.ts";
+import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { Path } from "../../../../routes/routes.ts";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 const AdminUsersListing = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -29,7 +32,7 @@ const AdminUsersListing = () => {
         transKey={"users"}
         data={users}
         itemName={"email"}
-        itemLink={(user) => `${Path.userDetail}/${user.id}`}
+        itemLink={(user) => PATHS.ADMIN_USER_DETAIL.build(user.id)}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createUser(INITIAL_USER))}

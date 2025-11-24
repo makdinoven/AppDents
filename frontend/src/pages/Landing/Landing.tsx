@@ -1,7 +1,7 @@
 import s from "./Landing.module.scss";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import {
   calculateDiscount,
   getBasePath,
@@ -11,7 +11,7 @@ import {
   getPricesData,
   keepFirstTwoWithInsert,
   normalizeLessons,
-} from "../../common/helpers/helpers.ts";
+} from "../../shared/common/helpers/helpers.ts";
 import LandingHero from "./modules/LandingHero/LandingHero.tsx";
 import { t } from "i18next";
 import About from "./modules/About/About.tsx";
@@ -20,38 +20,39 @@ import LessonsProgram from "./modules/LessonsProgram/LessonsProgram.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import Offer from "./modules/Offer/Offer.tsx";
 import { Trans } from "react-i18next";
-import ArrowButton from "../../components/ui/ArrowButton/ArrowButton.tsx";
+import ArrowButton from "../../shared/components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
-import { Path } from "../../routes/routes.ts";
-import {
-  BASE_URL,
-  PAGE_SOURCES,
-} from "../../common/helpers/commonConstants.ts";
-import { setLanguage } from "../../store/slices/userSlice.ts";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import FormattedAuthorsDesc from "../../common/helpers/FormattedAuthorsDesc.tsx";
-import PrettyButton from "../../components/ui/PrettyButton/PrettyButton.tsx";
-import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
+import { PAGE_SOURCES } from "../../shared/common/helpers/commonConstants.ts";
+import { setLanguage } from "../../shared/store/slices/userSlice.ts";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
+import FormattedAuthorsDesc from "../../shared/common/helpers/FormattedAuthorsDesc.tsx";
+import PrettyButton from "../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import BackButton from "../../shared/components/ui/BackButton/BackButton.tsx";
 import Faq from "./modules/Faq/Faq.tsx";
-import { getCourses } from "../../store/actions/userActions.ts";
+import { getCourses } from "../../shared/store/actions/userActions.ts";
 import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 import {
+  initFacebookPixel,
+  initLanguagePixel,
   initLowPricePixel,
   trackLowPricePageView,
   trackPageView,
-} from "../../common/helpers/facebookPixel.ts";
-import { setPaymentData } from "../../store/slices/paymentSlice.ts";
-import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
-import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
-import { CartItemKind } from "../../api/cartApi/types.ts";
+} from "../../shared/common/helpers/facebookPixel.ts";
+import { setPaymentData } from "../../shared/store/slices/paymentSlice.ts";
+import { usePaymentPageHandler } from "../../shared/common/hooks/usePaymentPageHandler.ts";
+import { LanguagesType } from "../../shared/components/ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../shared/api/cartApi/types.ts";
+import { PATHS } from "../../app/routes/routes.ts";
+import NotFoundPage from "../NotFoundPage/NotFoundPage.tsx";
 
 const Landing = () => {
   const { openPaymentModal } = usePaymentPageHandler();
   const [landing, setLanding] = useState<any | null>(null);
   const [firstLesson, setFirstLesson] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const { landingPath } = useParams();
+  const [errorStatus, setErrorStatus] = useState<null | number>(null);
+  const { slug } = useParams();
   const formattedAuthorsDesc = (
     <FormattedAuthorsDesc authors={landing?.authors} />
   );
@@ -62,8 +63,8 @@ const Landing = () => {
     (state: AppRootStateType) => state.user,
   );
   const isPromotionLanding =
-    location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient);
+    location.pathname.includes(PATHS.LANDING.clearPattern) &&
+    !location.pathname.includes(PATHS.LANDING_CLIENT.clearPattern);
 
   const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -73,12 +74,14 @@ const Landing = () => {
   const basePath = getBasePath(location.pathname);
   // const isFromLocalhost = window.location.origin.includes("localhost")
 
-  const isVideo = basePath === Path.videoLanding;
+  const isVideo = basePath === PATHS.LANDING_VIDEO.clearPattern;
   const isClient =
-    basePath === Path.landingClient || basePath === Path.freeLandingClient;
+    basePath === PATHS.LANDING_CLIENT.clearPattern ||
+    basePath === PATHS.LANDING_CLIENT_FREE.clearPattern;
   const isFree =
-    basePath === Path.freeLanding || basePath === Path.freeLandingClient;
-  const isWebinar = basePath === Path.webinarLanding;
+    basePath === PATHS.LANDING_FREE.clearPattern ||
+    basePath === PATHS.LANDING_CLIENT_FREE.clearPattern;
+  const isWebinar = basePath === PATHS.LANDING_WEBINAR.clearPattern;
 
   useEffect(() => {
     if (isLogged && isFree && !isAdmin) {
@@ -90,8 +93,8 @@ const Landing = () => {
     if (courses.length > 0 && isFree && !isAdmin) {
       navigate(
         isClient
-          ? `/${Path.landingClient}/${landingPath}`
-          : `${Path.landing}/${landingPath}`,
+          ? PATHS.LANDING_CLIENT.build(slug!)
+          : PATHS.LANDING.build(slug!),
       );
     }
   }, [courses]);
@@ -101,12 +104,21 @@ const Landing = () => {
       trackFacebookAd();
     }
     fetchLandingData();
-  }, [landingPath]);
+  }, [slug]);
+
+  useEffect(() => {
+    if (isPromotionLanding) {
+      if (landing) {
+        initLanguagePixel(landing.language);
+        initFacebookPixel();
+      }
+    }
+  }, [landing, isPromotionLanding]);
 
   const fetchLandingData = async () => {
     setLoading(true);
     try {
-      const res = await mainApi.getLanding(landingPath);
+      const res = await mainApi.getLanding(slug);
       setLanding({
         ...res.data,
         lessons_info: normalizeLessons(res.data.lessons_info),
@@ -157,7 +169,7 @@ const Landing = () => {
                   landing_name: !isWebinar
                     ? landing_name
                     : normalizeLessons(res.data.lessons_info)[0].name,
-                  page_name: landingPath as string,
+                  page_name: slug as string,
                   new_price: newPrice,
                   old_price: oldPrice,
                   course_ids: [id],
@@ -170,14 +182,14 @@ const Landing = () => {
         }),
       );
       setLoading(false);
-    } catch (error) {
-      console.error(error);
+    } catch (e: any) {
+      setErrorStatus(e.status);
       setLoading(false);
     }
   };
 
   const trackFacebookAd = () => {
-    mainApi.trackFacebookAd(landingPath!, getFbc(), getFbp());
+    mainApi.trackFacebookAd(slug!, getFbc(), getFbp());
     trackPageView();
   };
 
@@ -321,7 +333,7 @@ const Landing = () => {
     ...getPricesData(landing, isWebinar),
   };
 
-  return (
+  return !errorStatus && errorStatus !== 404 ? (
     <>
       <div className={s.landing_top}>
         {isAdmin && isClient && (
@@ -330,11 +342,13 @@ const Landing = () => {
               className={s.admin_btn}
               variant="primary"
               text={"admin.landings.edit"}
-              onClick={() => navigate(`${Path.landingDetail}/${landing.id}`)}
+              onClick={() =>
+                navigate(PATHS.ADMIN_LANDING_DETAIL.build(landing.id))
+              }
             />
             <a
               className={s.admin_btn}
-              href={`${BASE_URL}${Path.landing}/${landingPath}`}
+              href={PATHS.LANDING.build(slug!)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -342,7 +356,7 @@ const Landing = () => {
             </a>
             <a
               className={s.admin_btn}
-              href={`${BASE_URL}/${Path.videoLanding}/${landingPath}`}
+              href={PATHS.LANDING_VIDEO.build(slug!)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -350,7 +364,7 @@ const Landing = () => {
             </a>
             <a
               className={s.admin_btn}
-              href={`${BASE_URL}/${Path.freeLanding}/${landingPath}`}
+              href={PATHS.LANDING_FREE.build(slug!)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -358,7 +372,7 @@ const Landing = () => {
             </a>
             <a
               className={s.admin_btn}
-              href={`${BASE_URL}/${Path.webinarLanding}/${landingPath}`}
+              href={PATHS.LANDING_WEBINAR.build(slug!)}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -404,6 +418,8 @@ const Landing = () => {
         )}
       </div>
     </>
+  ) : (
+    <NotFoundPage />
   );
 };
 

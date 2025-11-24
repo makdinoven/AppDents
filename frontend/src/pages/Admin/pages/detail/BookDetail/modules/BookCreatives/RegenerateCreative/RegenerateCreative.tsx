@@ -1,12 +1,12 @@
 import s from "./RegenerateCreative.module.scss";
-import PrettyButton from "../../../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { Creative } from "../BookCreatives.tsx";
 import { useState } from "react";
-import { Alert } from "../../../../../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../../../../../assets/icons";
-import LoaderOverlay from "../../../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import { Alert } from "../../../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../../../../shared/assets/icons";
+import LoaderOverlay from "../../../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import AdminField from "../../../../../modules/common/AdminField/AdminField.tsx";
-import { adminApi } from "../../../../../../../../api/adminApi/adminApi.ts";
+import { adminApi } from "../../../../../../../../shared/api/adminApi/adminApi.ts";
 
 const RegenerateCreative = ({
   creative,

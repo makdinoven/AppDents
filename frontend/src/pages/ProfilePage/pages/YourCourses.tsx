@@ -1,8 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../../shared/store/store.ts";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { getCourses } from "../../../store/actions/userActions.ts";
+import { getCourses } from "../../../shared/store/actions/userActions.ts";
 import MyContent from "./modules/MyContent/MyContent.tsx";
 
 const YourCourses = () => {

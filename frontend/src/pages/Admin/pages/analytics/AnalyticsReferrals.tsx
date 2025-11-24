@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import s from "./Analytics.module.scss";
-import Table from "../../../../components/ui/Table/Table.tsx";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
+import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsReferrals = () => {
   // const [limit, setLimit] = useState<string>("10");

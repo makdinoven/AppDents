@@ -1,12 +1,12 @@
 import s from "./Analytics.module.scss";
-import Table from "../../../../components/ui/Table/Table.tsx";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import LangPurchasesChart from "./Charts/LangPurchasesChart.tsx";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
-import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
+import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
+import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 
 const AnalyticsLanguageStats = () => {

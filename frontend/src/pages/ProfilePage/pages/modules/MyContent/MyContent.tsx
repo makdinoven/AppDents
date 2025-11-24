@@ -1,13 +1,13 @@
 import s from "./MyContent.module.scss";
 import { Trans } from "react-i18next";
-import SectionHeader from "../../../../../components/ui/SectionHeader/SectionHeader.tsx";
-import { Path } from "../../../../../routes/routes.ts";
+import SectionHeader from "../../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../store/store.ts";
-import CourseCardSkeletons from "../../../../../components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
+import { AppRootStateType } from "../../../../../shared/store/store.ts";
+import CourseCardSkeletons from "../../../../../shared/components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import ProfileEntityCard from "../ProfileEntityCard/ProfileEntityCard.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Search from "../../../../../components/ui/Search/Search.tsx";
+import Search from "../../../../../shared/components/ui/Search/Search.tsx";
+import { PATHS } from "../../../../../app/routes/routes.ts";
 
 const MyContent = ({
   items,
@@ -59,7 +59,11 @@ const MyContent = ({
                 viewText={type === "course" ? "viewCourse" : "viewBook"}
                 name={item.name || item.title}
                 previewPhoto={item.preview || item.cover_url}
-                link={`${type === "course" ? Path.myCourse : Path.myBook}/${item.id}`}
+                link={
+                  type === "course"
+                    ? PATHS.PROFILE_MY_COURSE.build(item.id)
+                    : PATHS.PROFILE_MY_BOOK.build(item.id)
+                }
                 expires_at={item.expires_at && item.expires_at}
                 type={type}
               />
@@ -80,7 +84,11 @@ const MyContent = ({
               1: (
                 <span
                   onClick={() =>
-                    navigate(type === "course" ? Path.courses : Path.books)
+                    navigate(
+                      type === "course"
+                        ? PATHS.COURSES_LISTING
+                        : PATHS.BOOKS_LISTING,
+                    )
                   }
                   className={s.highlight}
                 />

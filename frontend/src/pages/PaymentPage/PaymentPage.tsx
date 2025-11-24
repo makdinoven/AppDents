@@ -1,32 +1,32 @@
 import { Trans } from "react-i18next";
 import s from "./PaymentPage.module.scss";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../store/store.ts";
+import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
 import { useEffect, useRef } from "react";
-import { Path } from "../../routes/routes.ts";
 import {
   BooksIcon,
   CoursesIcon,
   Mail,
   PoweredByStripeLogo,
   Shield,
-} from "../../assets/icons";
+} from "../../shared/assets/icons";
 import LogoList from "./content/LogoList/LogoList.tsx";
-import useOutsideClick from "../../common/hooks/useOutsideClick.ts";
-import ModalOverlay from "../../components/Modals/ModalOverlay/ModalOverlay.tsx";
-import ModalCloseButton from "../../components/ui/ModalCloseButton/ModalCloseButton.tsx";
-import UseBalanceOption from "../../components/ui/UseBalanceOption/UseBalanceOption.tsx";
-import { usePayment } from "../../common/hooks/usePayment.tsx";
+import useOutsideClick from "../../shared/common/hooks/useOutsideClick.ts";
+import ModalOverlay from "../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
+import ModalCloseButton from "../../shared/components/ui/ModalCloseButton/ModalCloseButton.tsx";
+import UseBalanceOption from "../../shared/components/ui/UseBalanceOption/UseBalanceOption.tsx";
+import { usePayment } from "../../shared/common/hooks/usePayment.tsx";
 import PaymentForm from "./content/PaymentForm/PaymentForm.tsx";
-import Button from "../../components/ui/Button/Button.tsx";
-import DisabledPaymentWarn from "../../components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
+import Button from "../../shared/components/ui/Button/Button.tsx";
+import DisabledPaymentWarn from "../../shared/components/ui/DisabledPaymentBanner/DisabledPaymentWarn/DisabledPaymentWarn.tsx";
 import {
   PaymentDataModeType,
   usePaymentPageHandler,
-} from "../../common/hooks/usePaymentPageHandler.ts";
-import { getLandingDataForPayment } from "../../store/actions/paymentActions.ts";
+} from "../../shared/common/hooks/usePaymentPageHandler.ts";
+import { getLandingDataForPayment } from "../../shared/store/actions/paymentActions.ts";
 import { useLocation } from "react-router-dom";
 import PaymentItemCard from "./content/PaymentItemCard/PaymentItemCard.tsx";
+import { PATHS } from "../../app/routes/routes.ts";
 
 const PaymentPage = () => {
   const validateRef = useRef<() => Promise<boolean>>(null);
@@ -51,9 +51,12 @@ const PaymentPage = () => {
   const isFree = paymentModalType === "free";
   const isOffer = paymentModalType === "offer";
   const isFromPromotionLanding =
-    location.pathname.includes(Path.landing) &&
-    !location.pathname.includes(Path.landingClient) &&
-    !location.pathname.includes(Path.courses);
+    (location.pathname.includes(PATHS.LANDING.clearPattern) &&
+      !location.pathname.includes(PATHS.LANDING_CLIENT.clearPattern) &&
+      !location.pathname.includes(PATHS.COURSES_LISTING)) ||
+    (location.pathname.includes(PATHS.BOOK_LANDING.clearPattern) &&
+      !location.pathname.includes(PATHS.BOOK_LANDING_CLIENT.clearPattern) &&
+      !location.pathname.includes(PATHS.BOOKS_LISTING));
 
   let paymentModeIcon;
 
@@ -249,7 +252,7 @@ const PaymentPage = () => {
               components={{
                 1: (
                   <a
-                    href={Path.privacyPolicy}
+                    href={PATHS.INFO_PRIVACY}
                     target="_blank"
                     rel="noopener noreferrer"
                   ></a>

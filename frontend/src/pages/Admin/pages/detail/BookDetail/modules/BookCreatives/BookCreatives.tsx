@@ -1,11 +1,11 @@
 import s from "./BookCreatives.module.scss";
-import { adminApi } from "../../../../../../../api/adminApi/adminApi.ts";
-import PrettyButton from "../../../../../../../components/ui/PrettyButton/PrettyButton.tsx";
+import { adminApi } from "../../../../../../../shared/api/adminApi/adminApi.ts";
+import PrettyButton from "../../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
 import { useState } from "react";
-import LoaderOverlay from "../../../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import LoaderOverlay from "../../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import RegenerateCreative from "./RegenerateCreative/RegenerateCreative.tsx";
-import { Alert } from "../../../../../../../components/ui/Alert/Alert.tsx";
-import { CheckMark, ErrorIcon } from "../../../../../../../assets/icons";
+import { Alert } from "../../../../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../../../shared/assets/icons";
 
 export type Creative = {
   code: string;

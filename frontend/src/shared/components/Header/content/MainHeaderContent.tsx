@@ -1,0 +1,119 @@
+import s from "../Header.module.scss";
+import {
+  AUTH_MODAL_ROUTES,
+  LS_TOKEN_KEY,
+  NAV_BUTTONS,
+} from "../../../common/helpers/commonConstants.ts";
+import NavButton from "../modules/NavButton/NavButton.tsx";
+import { SearchIcon, UserFilled } from "../../../assets/icons";
+import LanguageChanger from "../../ui/LanguageChanger/LanguageChanger.tsx";
+import { Trans } from "react-i18next";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
+import { useEffect, useRef } from "react";
+import { useTriggerRef } from "../../../common/context/TriggerRefContext.tsx";
+import { PATHS } from "../../../../app/routes/routes.ts";
+
+const MainHeaderContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isLogged = useSelector(
+    (state: AppRootStateType) => state.user.isLogged,
+  );
+  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
+  const screenWidth = useScreenWidth();
+  const showLabels = !(screenWidth > 768 && screenWidth < 1045);
+  const quantity = useSelector(
+    (state: AppRootStateType) => state.cart.quantity,
+  );
+  const { setTriggerRef } = useTriggerRef();
+  const localTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (localTriggerRef.current) {
+      setTriggerRef(localTriggerRef);
+    }
+  }, [localTriggerRef, setTriggerRef]);
+
+  const renderLoginButton = () => {
+    if (screenWidth > 768) {
+      if (!isLogged && !accessToken) {
+        return (
+          <button
+            ref={localTriggerRef}
+            onClick={() =>
+              navigate(PATHS.LOGIN, {
+                state: {
+                  backgroundLocation: location,
+                },
+              })
+            }
+            className={`${s.login_btn} ${AUTH_MODAL_ROUTES.includes(location.pathname) ? s.active : ""}`}
+          >
+            <Trans i18nKey="login" />
+          </button>
+        );
+      }
+      return (
+        <Link
+          to={PATHS.PROFILE}
+          className={`${s.profile_button} ${location.pathname === PATHS.PROFILE ? s.active : ""}`}
+        >
+          <UserFilled />
+        </Link>
+      );
+    }
+  };
+
+  return (
+    <>
+      <div className={s.nav_center}>
+        {NAV_BUTTONS.map((btn) => {
+          if (btn.text.includes("cart")) {
+            return (
+              <NavButton
+                key={btn.text}
+                icon={btn.icon}
+                text={showLabels ? btn.text : ""}
+                quantity={quantity}
+                onClick={() =>
+                  navigate(PATHS.CART, {
+                    state: { backgroundLocation: location },
+                  })
+                }
+                isActive={location.pathname === btn.link}
+              />
+            );
+          }
+
+          return (
+            <NavButton
+              key={btn.text}
+              icon={btn.icon}
+              text={showLabels ? btn.text : ""}
+              link={btn.link}
+              isActive={location.pathname === btn.link}
+            />
+          );
+        })}
+      </div>
+      <div className={s.nav_side}>
+        <NavButton
+          onClick={() =>
+            navigate(PATHS.SEARCH, {
+              state: { backgroundLocation: location },
+            })
+          }
+          icon={SearchIcon}
+          isActive={location.pathname === PATHS.SEARCH}
+        />
+        <LanguageChanger />
+        {renderLoginButton()}
+      </div>
+    </>
+  );
+};
+
+export default MainHeaderContent;

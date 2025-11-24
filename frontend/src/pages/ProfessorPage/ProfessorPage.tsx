@@ -1,45 +1,45 @@
 import s from "./ProfessorPage.module.scss";
-import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import BackButton from "../../shared/components/ui/BackButton/BackButton.tsx";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
-import CardsList from "../../components/ProductsSection/CardsList/CardsList.tsx";
-import SectionHeader from "../../components/ui/SectionHeader/SectionHeader.tsx";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import { useScreenWidth } from "../../common/hooks/useScreenWidth.ts";
-import ExpandableText from "../../components/ui/ExpandableText/ExpandableText.tsx";
-import ProfessorPageSkeleton from "../../components/ui/Skeletons/ProfessorPageSkeleton/ProfessorPageSkeleton.tsx";
-import { setPaymentData } from "../../store/slices/paymentSlice.ts";
-import { AppDispatchType } from "../../store/store.ts";
-import { PaymentDataModeType } from "../../common/hooks/usePaymentPageHandler.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import CardsList from "../../shared/components/ProductsSection/CardsList/CardsList.tsx";
+import SectionHeader from "../../shared/components/ui/SectionHeader/SectionHeader.tsx";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
+import { useScreenWidth } from "../../shared/common/hooks/useScreenWidth.ts";
+import ExpandableText from "../../shared/components/ui/ExpandableText/ExpandableText.tsx";
+import ProfessorPageSkeleton from "../../shared/components/ui/Skeletons/ProfessorPageSkeleton/ProfessorPageSkeleton.tsx";
+import { setPaymentData } from "../../shared/store/slices/paymentSlice.ts";
+import { AppDispatchType } from "../../shared/store/store.ts";
+import { PaymentDataModeType } from "../../shared/common/hooks/usePaymentPageHandler.ts";
 import {
   PAGE_SOURCES,
   PAYMENT_MODE_KEY,
-} from "../../common/helpers/commonConstants.ts";
-import { CartItemType } from "../../api/cartApi/types.ts";
+} from "../../shared/common/helpers/commonConstants.ts";
+import { CartItemType } from "../../shared/api/cartApi/types.ts";
 import SimpleBuySection from "./modules/SimpleBuySection/SimpleBuySection.tsx";
 import ProfessorBuySection from "./modules/BuySection/ProfessorBuySection.tsx";
 import { Trans } from "react-i18next";
-import { NoUser } from "../../assets";
+import { NoUser } from "../../shared/assets";
 
 const ProfessorPage = () => {
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatchType>();
   const paymentModalMode = searchParams.get(PAYMENT_MODE_KEY);
-  const { professorId } = useParams();
+  const { id } = useParams();
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const screenWidth = useScreenWidth();
 
   useEffect(() => {
     fetchProfessorData();
-  }, [professorId]);
+  }, [id]);
 
   const fetchProfessorData = async () => {
     setLoading(true);
     try {
-      const res = await mainApi.getProfessorDetail(Number(professorId));
+      const res = await mainApi.getProfessorDetail(Number(id));
       setProfessor(res.data);
       setLoading(false);
     } catch (error) {

@@ -10,8 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { formatShortDate } from "../../../../../common/helpers/helpers.ts";
-import LoaderOverlay from "../../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import { formatShortDate } from "../../../../../shared/common/helpers/helpers.ts";
+import LoaderOverlay from "../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const UserGrowthChart = ({
   loading,

@@ -1,10 +1,10 @@
 import s from "./AdControlListing/AdControlListing.module.scss";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import AdControlItem from "./AdControlItem/AdControlItem.tsx";
-import PrettyButton from "../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import LoaderOverlay from "../../../../components/ui/LoaderOverlay/LoaderOverlay.tsx";
+import PrettyButton from "../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import LoaderOverlay from "../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 
 const AdControlAccounts = () => {
   const [accountsList, setAccountsList] = useState<

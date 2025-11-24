@@ -3,12 +3,15 @@ import {
   createBook,
   getBooks,
   searchBooks,
-} from "../../../../store/actions/adminActions.ts";
-import { AppDispatchType, AppRootStateType } from "../../../../store/store.ts";
-import { Path } from "../../../../routes/routes.ts";
-import { ParamsType } from "../../../../api/adminApi/types.ts";
+} from "../../../../shared/store/actions/adminActions.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../../shared/store/store.ts";
+import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import AdminList from "../modules/common/AdminList/AdminList.tsx";
-import { generateId } from "../../../../common/helpers/helpers.ts";
+import { generateId } from "../../../../shared/common/helpers/helpers.ts";
+import { PATHS } from "../../../../app/routes/routes.ts";
 
 const AdminBooksListing = () => {
   const loading = useSelector((state: AppRootStateType) => state.admin.loading);
@@ -36,7 +39,7 @@ const AdminBooksListing = () => {
         data={books}
         transKey={"books"}
         itemName={"title"}
-        itemLink={(book) => `${Path.bookDetail}/${book.id}`}
+        itemLink={(book) => PATHS.ADMIN_BOOK_DETAIL.build(book.id)}
         loading={loading}
         onFetch={(params: ParamsType) => loadData(params)}
         onCreate={() => dispatch(createBook(INITIAL_BOOK))}

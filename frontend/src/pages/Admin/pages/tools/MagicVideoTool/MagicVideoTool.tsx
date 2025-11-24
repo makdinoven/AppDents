@@ -1,10 +1,10 @@
 import s from "./MagicVideoTool.module.scss";
-import { Alert } from "../../../../../components/ui/Alert/Alert.tsx";
-import { adminApi } from "../../../../../api/adminApi/adminApi.ts";
+import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
+import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
 import { useEffect, useState } from "react";
 import AdminField from "../../modules/common/AdminField/AdminField.tsx";
-import PrettyButton from "../../../../../components/ui/PrettyButton/PrettyButton.tsx";
-import { CheckMark, ErrorIcon } from "../../../../../assets/icons";
+import PrettyButton from "../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import { CheckMark, ErrorIcon } from "../../../../../shared/assets/icons";
 
 const MagicVideoTool = () => {
   const [loading, setLoading] = useState(false);

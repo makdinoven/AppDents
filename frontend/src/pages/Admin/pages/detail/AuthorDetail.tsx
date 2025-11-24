@@ -3,28 +3,28 @@ import DetailHeader from "../modules/common/DetailHeader/DetailHeader.tsx";
 import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
 import { t } from "i18next";
-import { LANGUAGES } from "../../../../common/helpers/commonConstants.ts";
+import { LANGUAGES } from "../../../../shared/common/helpers/commonConstants.ts";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
-import PhotoUploader from "../../../../components/CommonComponents/PhotoUploader/PhotoUploader.tsx";
+import PhotoUploader from "../../../../shared/components/PhotoUploader/PhotoUploader.tsx";
 import { AuthorType } from "../../types.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import { Alert } from "../../../../components/ui/Alert/Alert.tsx";
-import { ErrorIcon } from "../../../../assets/icons";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
+import { ErrorIcon } from "../../../../shared/assets/icons";
 
 const AuthorDetail = () => {
   const [loading, setLoading] = useState(true);
   const [author, setAuthor] = useState<AuthorType | null>(null);
   const navigate = useNavigate();
-  const { authorId } = useParams();
+  const { id } = useParams();
 
   useEffect(() => {
-    if (authorId) {
-      fetchData(authorId);
+    if (id) {
+      fetchData(id);
     }
-  }, [authorId]);
+  }, [id]);
 
   const fetchData = async (authorId: any) => {
     try {
@@ -56,7 +56,7 @@ const AuthorDetail = () => {
 
   const handleSave = async () => {
     try {
-      await adminApi.updateAuthor(authorId, author);
+      await adminApi.updateAuthor(id, author);
       navigate(-1);
     } catch (error) {
       console.error("Error updating author:", error);
@@ -66,7 +66,7 @@ const AuthorDetail = () => {
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to delete this author?`)) return;
     try {
-      await adminApi.deleteAuthor(authorId);
+      await adminApi.deleteAuthor(id);
       navigate(-1);
     } catch (error) {
       console.error("Error deleting author:", error);

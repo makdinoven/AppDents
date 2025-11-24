@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import s from "./Analytics.module.scss";
-import DateRangeFilter from "../../../../components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import { adminApi } from "../../../../api/adminApi/adminApi.ts";
-import Loader from "../../../../components/ui/Loader/Loader.tsx";
-import Table from "../../../../components/ui/Table/Table.tsx";
+import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
+import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
+import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
+import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import PurchasesSourceChart from "./Charts/PurchasesSourceChart.tsx";
-import MultiSelect from "../../../../components/CommonComponents/MultiSelect/MultiSelect.tsx";
-import { PAYMENT_SOURCES_OPTIONS } from "../../../../common/helpers/commonConstants.ts";
-import SwitchButtons from "../../../../components/ui/SwitchButtons/SwitchButtons.tsx";
-import { useDateRangeFilter } from "../../../../common/hooks/useDateRangeFilter.ts";
+import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import { PAYMENT_SOURCES_OPTIONS } from "../../../../shared/common/helpers/commonConstants.ts";
+import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
+import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
 
 const AnalyticsPurchases = () => {
   const [data, setData] = useState<any>(null);

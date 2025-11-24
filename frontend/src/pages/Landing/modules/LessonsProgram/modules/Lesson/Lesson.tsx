@@ -1,7 +1,7 @@
 import s from "./Lesson.module.scss";
 import { Trans } from "react-i18next";
 import ProgramContent from "../ProgramContent/ProgramContent.tsx";
-import HlsVideo from "../../../../../../components/CommonComponents/HlsVideo/HlsVideo.tsx";
+import HlsVideo from "../../../../../../shared/components/HlsVideo/HlsVideo.tsx";
 
 const Lesson = ({ lesson, renderBuyButton }: any) => {
   return (

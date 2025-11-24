@@ -2,11 +2,11 @@ import s from "./ProfessorBuySection.module.scss";
 import {
   PaymentDataModeType,
   usePaymentPageHandler,
-} from "../../../../common/hooks/usePaymentPageHandler.ts";
+} from "../../../../shared/common/hooks/usePaymentPageHandler.ts";
 import BuySectionIcons from "../BuySectionIcons/BuySectionIcons.tsx";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
-import { getDiscountPercent } from "../../../../common/helpers/helpers.ts";
+import { getDiscountPercent } from "../../../../shared/common/helpers/helpers.ts";
 import { useSelector } from "react-redux";
 
 const ProfessorBuySection = ({

@@ -1,48 +1,63 @@
 import s from "../Landing/Landing.module.scss";
-import BackButton from "../../components/ui/BackButton/BackButton.tsx";
+import BackButton from "../../shared/components/ui/BackButton/BackButton.tsx";
 import Faq from "../Landing/modules/Faq/Faq.tsx";
 import BookLandingHero from "./modules/BookLandingHero/BookLandingHero.tsx";
 import ContentOverview from "./modules/ContentOverview/ContentOverview.tsx";
-import BuySection from "../../components/CommonComponents/BuySection/BuySection.tsx";
+import BuySection from "../../shared/components/BuySection/BuySection.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BOOK_FORMATS } from "../../common/helpers/commonConstants.ts";
-import { mainApi } from "../../api/mainApi/mainApi.ts";
-import { setLanguage } from "../../store/slices/userSlice.ts";
+import { BOOK_FORMATS } from "../../shared/common/helpers/commonConstants.ts";
+import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
+import { setLanguage } from "../../shared/store/slices/userSlice.ts";
 import { useDispatch } from "react-redux";
-import ProductsSection from "../../components/ProductsSection/ProductsSection.tsx";
-import { setPaymentData } from "../../store/slices/paymentSlice.ts";
-import { usePaymentPageHandler } from "../../common/hooks/usePaymentPageHandler.ts";
-import { LanguagesType } from "../../components/ui/LangLogo/LangLogo.tsx";
-import { CartItemKind } from "../../api/cartApi/types.ts";
-import { Path } from "../../routes/routes.ts";
-import { getFbc, getFbp } from "../../common/helpers/helpers.ts";
-import { trackPageView } from "../../common/helpers/facebookPixel.ts";
+import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
+import { setPaymentData } from "../../shared/store/slices/paymentSlice.ts";
+import { usePaymentPageHandler } from "../../shared/common/hooks/usePaymentPageHandler.ts";
+import { LanguagesType } from "../../shared/components/ui/LangLogo/LangLogo.tsx";
+import { CartItemKind } from "../../shared/api/cartApi/types.ts";
+import { getFbc, getFbp } from "../../shared/common/helpers/helpers.ts";
+import {
+  initFacebookPixel,
+  initLanguagePixel,
+  trackPageView,
+} from "../../shared/common/helpers/facebookPixel.ts";
+import { PATHS } from "../../app/routes/routes.ts";
+import NotFoundPage from "../NotFoundPage/NotFoundPage.tsx";
 
 const BookLanding = () => {
   const { openPaymentModal } = usePaymentPageHandler();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
   const [bookData, setBookData] = useState<any>(null);
-  const { landingPath } = useParams();
+  const { slug } = useParams();
+  const [errorStatus, setErrorStatus] = useState<null | number>(null);
   const isPromotionLanding =
-    location.pathname.includes(Path.bookLanding) &&
-    !location.pathname.includes(Path.bookLandingClient);
+    location.pathname.includes(PATHS.BOOK_LANDING.clearPattern) &&
+    !location.pathname.includes(PATHS.BOOK_LANDING_CLIENT.clearPattern);
   const isFromFacebook = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
     return searchParams.has("fbclid") || isPromotionLanding;
   }, [location.search]);
 
   const trackFacebookAd = () => {
-    mainApi.trackFacebookAdBook(landingPath!, getFbc(), getFbp());
+    mainApi.trackFacebookAdBook(slug!, getFbc(), getFbp());
     trackPageView();
   };
+
+  useEffect(() => {
+    if (isPromotionLanding) {
+      if (bookData) {
+        initLanguagePixel(bookData.language);
+        initFacebookPixel();
+      }
+    }
+  }, [bookData, isPromotionLanding]);
 
   const fetchLandingData = async () => {
     setLoading(true);
     try {
-      const res = await mainApi.getBookLanding(landingPath);
+      const res = await mainApi.getBookLanding(slug);
       setBookData(res.data);
       dispatch(setLanguage(res.data.language));
       mainApi.trackBookLandingVisit(res.data.id, isPromotionLanding);
@@ -94,23 +109,23 @@ const BookLanding = () => {
         }),
       );
       setLoading(false);
-    } catch (error) {
-      console.error(error);
+    } catch (e: any) {
+      setErrorStatus(e.status);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (landingPath) {
+    if (slug) {
       if (isFromFacebook) {
         trackFacebookAd();
       }
       fetchLandingData();
     }
-  }, [landingPath]);
+  }, [slug]);
 
   const openPayment = () => {
-    openPaymentModal(landingPath, undefined, "BOOKS");
+    openPaymentModal(slug, undefined, "BOOKS");
   };
 
   const renderSections = () => {
@@ -141,11 +156,14 @@ const BookLanding = () => {
     );
   };
 
-  return (
+  return !errorStatus && errorStatus !== 404 ? (
     <>
-      <div className={s.landing_top}>
-        <BackButton />
-      </div>
+      {!isPromotionLanding && (
+        <div className={s.landing_top}>
+          <BackButton />
+        </div>
+      )}
+
       <div className={s.landing} id="portal_parent">
         {renderSections()}
         {!loading && (
@@ -153,12 +171,14 @@ const BookLanding = () => {
             showSort={true}
             sectionTitle={"other.otherBooks"}
             pageSize={4}
-            productCardFlags={{ isClient: true, isOffer: true }}
+            productCardFlags={{ isClient: !isPromotionLanding, isOffer: true }}
             cardType={"book"}
           />
         )}
       </div>
     </>
+  ) : (
+    <NotFoundPage />
   );
 };
 
