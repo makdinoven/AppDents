@@ -27,7 +27,7 @@ export const RouterProvider = () => {
   return (
     <>
       <Routes location={backgroundLocation || location}>
-        {renderRoutes(routesConfig)}
+        {renderRoutes(routesConfig(backgroundLocation !== null))}
       </Routes>
       {(backgroundLocation || isAuthModalRoute) && <AuthModalManager />}
       {isCartPage && <Cart />}

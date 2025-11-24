@@ -1,12 +1,12 @@
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../shared/store/store.ts";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import Loader from "../../../shared/components/ui/Loader/Loader.tsx";
 import { LS_TOKEN_KEY } from "../../../shared/common/helpers/commonConstants.ts";
 import { PATHS } from "../routes.ts";
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const isLogged = useSelector(
     (state: AppRootStateType) => state.user.isLogged,

@@ -36,7 +36,6 @@ import AnalyticsReferrals from "../../pages/Admin/pages/analytics/AnalyticsRefer
 import AnalyticsUserGrowth from "../../pages/Admin/pages/analytics/AnalyticsUserGrowth";
 import AnalyticsFreewebs from "../../pages/Admin/pages/analytics/AnalyticsFreewebs";
 import AnalyticsTraffic from "../../pages/Admin/pages/analytics/AnalyticsTraffic";
-
 import NotFoundPage from "../../pages/NotFoundPage/NotFoundPage";
 import ClipTool from "../../pages/Admin/pages/tools/ClipTool/ClipTool.tsx";
 import MagicVideoTool from "../../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
@@ -52,13 +51,27 @@ import AuthorDetail from "../../pages/Admin/pages/detail/AuthorDetail.tsx";
 import BookLandingDetail from "../../pages/Admin/pages/detail/BookLandingDetail..tsx";
 import UserDetail from "../../pages/Admin/pages/detail/UserDetail.tsx";
 import BookDetail from "../../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
+import { AUTH_MODAL_ROUTES } from "../../shared/common/helpers/commonConstants.ts";
 
-export const routesConfig = [
+export const routesConfig = (hasBg: boolean) => [
   {
     path: PATHS.MAIN,
     element: <MainLayout />,
     children: [
       { index: true, element: <MainPage /> },
+      ...AUTH_MODAL_ROUTES.map((p) => ({
+        path: p,
+        element: <MainPage />,
+      })),
+      !hasBg && {
+        path: PATHS.CART,
+        element: <MainPage />,
+      },
+      !hasBg && {
+        path: PATHS.SEARCH,
+        element: <MainPage />,
+      },
+
       {
         path: PATHS.COURSES_LISTING,
         element: <Courses isFree={false} />,
@@ -253,6 +266,5 @@ export const routesConfig = [
       },
     ],
   },
-
   { path: "*", element: <NotFoundPage /> },
 ];
