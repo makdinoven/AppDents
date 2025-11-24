@@ -462,6 +462,6 @@
     "request": "Solicitar",
     "productRequestSuccess": "Tu solicitud ha sido enviada correctamente. Responderemos lo antes posible.",
     "productRequestFailed": "No se pudo procesar la solicitud. Inténtalo de nuevo en un momento.",
-    "loginText": "Inicia sesión para desbloquear el acceso a pedir libros y cursos."
+    "loginText": "<0>Crea una cuenta</0> para desbloquear el acceso a pedir libros y cursos."
   }
 }
