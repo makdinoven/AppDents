@@ -506,7 +506,7 @@
     "request": "Request",
     "productRequestSuccess": "Your request has been successfully submitted. We will respond as soon as possible.",
     "productRequestFailed": "The request could not be processed. Please retry in a moment.",
-    "loginText": "Sign in to unlock access to ordering books and courses."
+    "loginText": "<0>Sign up</0> to unlock access to ordering books and courses."
   },
 
   "admin": {
