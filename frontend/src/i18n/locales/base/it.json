@@ -462,6 +462,6 @@
     "request": "Richiedi",
     "productRequestSuccess": "La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.",
     "productRequestFailed": "Non è stato possibile elaborare la richiesta. Riprova tra poco.",
-    "loginText": "Accedi per sbloccare l'accesso all'ordine di libri e corsi."
+    "loginText": "<0>Crea un account</0> per sbloccare l'accesso all'ordine di libri e corsi."
   }
 }

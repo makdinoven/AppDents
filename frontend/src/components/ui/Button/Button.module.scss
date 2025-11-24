@@ -67,16 +67,13 @@
   }
 
   &.disabled {
-    outline: none;
     pointer-events: none;
-    cursor: not-allowed;
-    border-color: $accent-06;
-    background-color: $accent-06;
-    color: $text-color-accent;
+    opacity: 0.65;
 
-    svg {
-      path {
-        stroke: $text-color-accent;
+    @media (hover: hover) {
+      &:hover {
+        background-color: $accent;
+        color: $text-color;
       }
     }
   }

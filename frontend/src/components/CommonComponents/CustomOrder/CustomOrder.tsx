@@ -6,7 +6,7 @@ import { Trans } from "react-i18next";
 import Form from "../../Modals/modules/Form/Form.tsx";
 import { t } from "i18next";
 import Button from "../../ui/Button/Button.tsx";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCirceIcon, CheckMark, SendIcon } from "../../../assets/icons";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../../store/store.ts";
@@ -14,6 +14,8 @@ import { userApi } from "../../../api/userApi/userApi.ts";
 import { Alert } from "../../ui/Alert/Alert.tsx";
 import { BRAND } from "../../../common/helpers/commonConstants.ts";
 import { Caduceus, ToothGreen } from "../../../assets";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Path } from "../../../routes/routes.ts";
 
 const CustomOrder = () => {
   const {
@@ -28,6 +30,19 @@ const CustomOrder = () => {
     (state: AppRootStateType) => state.user,
   );
   const [loading, setLoading] = useState(false);
+  const [isClickedWhileLoggedOut, setIsClickedWhileLoggedOut] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!isClickedWhileLoggedOut) return;
+
+    const removeText = setTimeout(() => {
+      setIsClickedWhileLoggedOut(false);
+    }, 2000);
+
+    return () => clearTimeout(removeText);
+  }, [isClickedWhileLoggedOut]);
 
   const description = watch("description");
 
@@ -42,6 +57,18 @@ const CustomOrder = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLoggedOutButtonClick = () => {
+    if (isLogged) return;
+
+    setIsClickedWhileLoggedOut(true);
+  };
+
+  const handleOpenAuthModal = () => {
+    navigate(Path.signUp, {
+      state: { backgroundLocation: location },
+    });
   };
 
   return (
@@ -92,18 +119,27 @@ const CustomOrder = () => {
             </div>
           </div>
           <Button
-            type="submit"
-            disabled={loading || !isLogged}
+            type={isLogged ? "submit" : "button"}
+            disabled={loading}
             loading={loading}
             icon={<SendIcon />}
             variant="filled_dark"
-            className={s.request_btn}
+            className={`${s.request_btn} ${!isLogged ? s.disabled : ""}`}
+            onClick={() => handleLoggedOutButtonClick()}
           >
             <Trans i18nKey="orderProduct.request" />
           </Button>
           {!isLogged && (
-            <p>
-              <Trans i18nKey="orderProduct.loginText" />
+            <p className={isClickedWhileLoggedOut ? s.highlight_red : ""}>
+              <Trans
+                i18nKey="orderProduct.loginText"
+                components={[
+                  <span
+                    className={s.underline}
+                    onClick={() => handleOpenAuthModal()}
+                  />,
+                ]}
+              />
             </p>
           )}
         </Form>

@@ -28,6 +28,7 @@
     width: 90%;
     align-self: center;
     transform: translateY(-10px);
+    @include transition();
   }
 }
 
@@ -114,6 +115,32 @@
     width: 24px;
     height: 24px;
   }
+
+  &.disabled,
+  &.disabled:hover {
+    cursor: default;
+    opacity: 0.65;
+    background-color: $accent;
+    color: $text-color;
+    outline-color: $accent;
+
+    svg {
+      path {
+        stroke: $text-color;
+      }
+    }
+  }
+}
+
+.highlight_red {
+  color: red;
+}
+
+.underline {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  cursor: pointer;
 }
 
 @media (max-width: $middle-breakpoint) {
