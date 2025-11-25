@@ -6,6 +6,9 @@ from ..db.database import SessionLocal
 from ..models.models_v2 import User
 from fastapi import HTTPException, status
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 INFO_EMAIL = os.getenv("INFO_EMAIL", "info.dis.org@gmail.com")
 
@@ -22,7 +25,7 @@ def get_user_email_from_db(user_id: int):
 
 async def send_course_request_email(user_id: int, text: str, domain: str = "unknown"):
     """Формирует и отправляет письмо-заявку и уведомление в Telegram.
-    При ошибке отправки бросает HTTPException(502) для корректного ответа API.
+    При ошибках отправки логирует их, но не блокирует выполнение запроса.
     """
     safe_html = sanitize_and_linkify(text)
     user_email = get_user_email_from_db(user_id)
@@ -44,19 +47,17 @@ async def send_course_request_email(user_id: int, text: str, domain: str = "unkn
     </body></html>
     """
 
+    # Пытаемся отправить email, но не блокируем выполнение при ошибке
+    email_sent = False
     try:
         ok = send_html_email(INFO_EMAIL, subject, body)
+        if ok:
+            email_sent = True
+            logger.info(f"Email sent successfully to {INFO_EMAIL} for user {user_id}")
+        else:
+            logger.warning(f"Failed to send email to {INFO_EMAIL} for user {user_id}: почтовый сервер вернул отказ")
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Не удалось отправить email (внутренняя ошибка почтового сервера).",
-        ) from e
-
-    if not ok:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Не удалось отправить email (почтовый сервер вернул отказ).",
-        )
+        logger.error(f"Failed to send email to {INFO_EMAIL} for user {user_id}: {e}", exc_info=True)
 
     # Отправляем уведомление в Telegram
     telegram_text = f"""🆕 <b>Новая заявка на курс</b>
@@ -69,6 +70,16 @@ async def send_course_request_email(user_id: int, text: str, domain: str = "unkn
 {escape(text[:500])}"""
     
     # Не блокируем выполнение при ошибке Telegram
-    await send_telegram_message(telegram_text)
+    telegram_sent = await send_telegram_message(telegram_text)
+    
+    # Логируем итоговый статус
+    if email_sent and telegram_sent:
+        logger.info(f"Course request notification sent successfully via email and Telegram for user {user_id}")
+    elif email_sent:
+        logger.info(f"Course request notification sent via email only for user {user_id}")
+    elif telegram_sent:
+        logger.info(f"Course request notification sent via Telegram only for user {user_id}")
+    else:
+        logger.warning(f"Course request notification failed for both email and Telegram for user {user_id}")
 
     return INFO_EMAIL, user_email

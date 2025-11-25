@@ -14,11 +14,8 @@ async def create_course_request(payload: CourseRequestIn, request: Request):
     # Получаем домен из заголовка Host
     domain = request.headers.get("host", "unknown")
 
-    try:
-        sent_to, user_email = await send_course_request_email(
-            payload.user_id, payload.text, domain
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    sent_to, user_email = await send_course_request_email(
+        payload.user_id, payload.text, domain
+    )
 
     return {"status": "ok", "sent_to": sent_to, "user_email": user_email}
