@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     PLACID_API_KEY: str
     PLACID_BASE_URL: str = "https://api.placid.app/api/rest"
 
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_CHAT_ID: str = ""
+
 
     class Config:
         env_file = ".env"

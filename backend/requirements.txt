@@ -33,3 +33,4 @@ pypdf>=4.0.0
 fuzzywuzzy[speedup]>=0.18.0
 assemblyai
 psutil
+python-telegram-bot>=20.0

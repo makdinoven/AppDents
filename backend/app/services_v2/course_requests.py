@@ -1,6 +1,7 @@
 from html import escape
 from ..utils.email_sender.common import send_html_email  # ✅ используем ваш существующий механизм
 from ..utils.hss_cleaner import sanitize_and_linkify
+from ..utils.telegram_sender import send_telegram_message
 from ..db.database import SessionLocal
 from ..models.models_v2 import User
 from fastapi import HTTPException, status
@@ -19,8 +20,8 @@ def get_user_email_from_db(user_id: int):
         db.close()
 
 
-def send_course_request_email(user_id: int, text: str):
-    """Формирует и отправляет письмо-заявку.
+async def send_course_request_email(user_id: int, text: str):
+    """Формирует и отправляет письмо-заявку и уведомление в Telegram.
     При ошибке отправки бросает HTTPException(502) для корректного ответа API.
     """
     safe_html = sanitize_and_linkify(text)
@@ -55,5 +56,17 @@ def send_course_request_email(user_id: int, text: str):
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Не удалось отправить email (почтовый сервер вернул отказ).",
         )
+
+    # Отправляем уведомление в Telegram
+    telegram_text = f"""🆕 <b>Новая заявка на курс</b>
+
+👤 <b>Пользователь:</b> {escape(user_email_display)}
+🆔 <b>User ID:</b> {user_id}
+
+📝 <b>Текст заявки:</b>
+{escape(text[:500])}"""
+    
+    # Не блокируем выполнение при ошибке Telegram
+    await send_telegram_message(telegram_text)
 
     return INFO_EMAIL, user_email
