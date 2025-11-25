@@ -20,7 +20,7 @@ def get_user_email_from_db(user_id: int):
         db.close()
 
 
-async def send_course_request_email(user_id: int, text: str):
+async def send_course_request_email(user_id: int, text: str, domain: str = "unknown"):
     """Формирует и отправляет письмо-заявку и уведомление в Telegram.
     При ошибке отправки бросает HTTPException(502) для корректного ответа API.
     """
@@ -28,10 +28,11 @@ async def send_course_request_email(user_id: int, text: str):
     user_email = get_user_email_from_db(user_id)
     user_email_display = user_email or f"user_id:{user_id}"
 
-    subject = f"Заявка на курс от {user_email_display}"
+    subject = f"Заявка на курс от {user_email_display} [{domain}]"
     body = f"""
     <html><body style="font-family:Arial,sans-serif;">
       <h3>Новая заявка на курс</h3>
+      <p><b>Сайт:</b> {escape(domain)}</p>
       <p><b>User:</b> {escape(user_email_display)}</p>
       <p><b>User ID:</b> {user_id}</p>
       <hr>
@@ -60,6 +61,7 @@ async def send_course_request_email(user_id: int, text: str):
     # Отправляем уведомление в Telegram
     telegram_text = f"""🆕 <b>Новая заявка на курс</b>
 
+🌐 <b>Сайт:</b> {escape(domain)}
 👤 <b>Пользователь:</b> {escape(user_email_display)}
 🆔 <b>User ID:</b> {user_id}
 
