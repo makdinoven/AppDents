@@ -60,6 +60,9 @@ class MultiselectFilter(BaseModel):
     label: str = Field(..., description="Название фильтра для UI")
     param_name: str = Field(..., description="Имя параметра для query string")
     options: List[FilterOption] = Field(default_factory=list, description="Список доступных опций")
+    has_more: bool = Field(default=False, description="Есть ли еще опции сверх лимита")
+    total_count: int = Field(default=0, description="Общее количество опций")
+    search_endpoint: Optional[str] = Field(None, description="Эндпоинт для поиска по этому фильтру")
 
     class Config:
         schema_extra = {
@@ -70,7 +73,10 @@ class MultiselectFilter(BaseModel):
                 "options": [
                     {"id": 1, "name": "Quintessence Publishing", "count": 25},
                     {"id": 2, "name": "Wiley", "count": 12}
-                ]
+                ],
+                "has_more": True,
+                "total_count": 127,
+                "search_endpoint": "/api/books/filters/publishers/search"
             }
         }
 
@@ -142,7 +148,10 @@ class CatalogFiltersMetadata(BaseModel):
                         "param_name": "publisher_ids",
                         "options": [
                             {"id": 1, "name": "Quintessence Publishing", "count": 25}
-                        ]
+                        ],
+                        "has_more": True,
+                        "total_count": 127,
+                        "search_endpoint": "/api/books/filters/publishers/search"
                     },
                     "price": {
                         "type": "range",
@@ -157,6 +166,29 @@ class CatalogFiltersMetadata(BaseModel):
                 "available_sorts": [
                     {"value": "price_asc", "label": "Цена: по возрастанию"},
                     {"value": "price_desc", "label": "Цена: по убыванию"}
+                ]
+            }
+        }
+
+
+# ═══════════════════ Схемы для поиска по фильтрам ═══════════════════
+
+class FilterSearchResponse(BaseModel):
+    """
+    Ответ при поиске по фильтру (авторы, издатели, теги).
+    
+    Используется для эндпоинтов поиска с автокомплитом.
+    """
+    total: int = Field(..., description="Общее количество найденных опций")
+    options: List[FilterOption] = Field(default_factory=list, description="Список найденных опций")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "total": 15,
+                "options": [
+                    {"id": 42, "name": "John Smith", "count": 5},
+                    {"id": 89, "name": "Jane Smith", "count": 3}
                 ]
             }
         }

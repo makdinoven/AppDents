@@ -153,7 +153,8 @@ def build_book_landing_base_query(
 def aggregate_book_filters(
     db: Session,
     base_query: Query,
-    current_filters: Dict[str, Any]
+    current_filters: Dict[str, Any],
+    filter_limit: int = 50
 ) -> CatalogFiltersMetadata:
     """
     Агрегация метаданных фильтров для книжных лендингов.
@@ -204,6 +205,19 @@ def aggregate_book_filters(
         # Подсчитываем издателей
         from ..models.models_v2 import book_landing_books
         
+        # Подсчет общего количества
+        total_publishers = (
+            db.query(func.count(func.distinct(Publisher.id)))
+            .select_from(Publisher)
+            .join(book_publishers, Publisher.id == book_publishers.c.publisher_id)
+            .join(Book, book_publishers.c.book_id == Book.id)
+            .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.id.in_(publisher_landing_ids))
+            .scalar()
+        ) or 0
+        
+        # Получаем топ-N по количеству книг
         publishers_data = (
             db.query(
                 Publisher.id,
@@ -217,7 +231,8 @@ def aggregate_book_filters(
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(publisher_landing_ids))
             .group_by(Publisher.id, Publisher.name)
-            .order_by(Publisher.name)
+            .order_by(func.count(func.distinct(BookLanding.id)).desc(), Publisher.name)
+            .limit(filter_limit)
             .all()
         )
         
@@ -227,7 +242,10 @@ def aggregate_book_filters(
             options=[
                 FilterOption(id=pub_id, name=pub_name, count=count)
                 for pub_id, pub_name, count in publishers_data
-            ]
+            ],
+            has_more=total_publishers > filter_limit,
+            total_count=total_publishers,
+            search_endpoint="/api/books/filters/publishers/search"
         )
     
     # ═══════════════════ Authors ═══════════════════
@@ -252,6 +270,19 @@ def aggregate_book_filters(
     if author_landing_ids:
         from ..models.models_v2 import book_landing_books
         
+        # Подсчет общего количества
+        total_authors = (
+            db.query(func.count(func.distinct(Author.id)))
+            .select_from(Author)
+            .join(book_authors, Author.id == book_authors.c.author_id)
+            .join(Book, book_authors.c.book_id == Book.id)
+            .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.id.in_(author_landing_ids))
+            .scalar()
+        ) or 0
+        
+        # Получаем топ-N по количеству книг
         authors_data = (
             db.query(
                 Author.id,
@@ -265,7 +296,8 @@ def aggregate_book_filters(
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(author_landing_ids))
             .group_by(Author.id, Author.name)
-            .order_by(Author.name)
+            .order_by(func.count(func.distinct(BookLanding.id)).desc(), Author.name)
+            .limit(filter_limit)
             .all()
         )
         
@@ -275,7 +307,10 @@ def aggregate_book_filters(
             options=[
                 FilterOption(id=auth_id, name=auth_name, count=count)
                 for auth_id, auth_name, count in authors_data
-            ]
+            ],
+            has_more=total_authors > filter_limit,
+            total_count=total_authors,
+            search_endpoint="/api/books/filters/authors/search"
         )
     
     # ═══════════════════ Tags ═══════════════════
@@ -300,6 +335,19 @@ def aggregate_book_filters(
     if tag_landing_ids:
         from ..models.models_v2 import book_landing_books
         
+        # Подсчет общего количества
+        total_tags = (
+            db.query(func.count(func.distinct(Tag.id)))
+            .select_from(Tag)
+            .join(book_tags, Tag.id == book_tags.c.tag_id)
+            .join(Book, book_tags.c.book_id == Book.id)
+            .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.id.in_(tag_landing_ids))
+            .scalar()
+        ) or 0
+        
+        # Получаем топ-N по количеству книг
         tags_data = (
             db.query(
                 Tag.id,
@@ -313,7 +361,8 @@ def aggregate_book_filters(
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(tag_landing_ids))
             .group_by(Tag.id, Tag.name)
-            .order_by(Tag.name)
+            .order_by(func.count(func.distinct(BookLanding.id)).desc(), Tag.name)
+            .limit(filter_limit)
             .all()
         )
         
@@ -323,7 +372,10 @@ def aggregate_book_filters(
             options=[
                 FilterOption(id=tag_id, name=tag_name, count=count)
                 for tag_id, tag_name, count in tags_data
-            ]
+            ],
+            has_more=total_tags > filter_limit,
+            total_count=total_tags,
+            search_endpoint="/api/books/filters/tags/search"
         )
     
     # ═══════════════════ Formats ═══════════════════
