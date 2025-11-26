@@ -484,15 +484,24 @@ def aggregate_book_filters(
     if pages_landing_ids:
         from ..models.models_v2 import book_landing_books
         
-        pages_range = (
+        # Сначала создаём подзапрос для подсчёта суммы страниц по каждому лендингу
+        subq = (
             db.query(
-                func.min(func.sum(func.coalesce(Book.page_count, 0))).label('min_pages'),
-                func.max(func.sum(func.coalesce(Book.page_count, 0))).label('max_pages')
+                func.sum(func.coalesce(Book.page_count, 0)).label('total_pages')
             )
             .select_from(book_landing_books)
             .join(Book, book_landing_books.c.book_id == Book.id)
             .filter(book_landing_books.c.book_landing_id.in_(pages_landing_ids))
             .group_by(book_landing_books.c.book_landing_id)
+            .subquery()
+        )
+        
+        # Теперь берём MIN и MAX от этих сумм
+        pages_range = (
+            db.query(
+                func.min(subq.c.total_pages).label('min_pages'),
+                func.max(subq.c.total_pages).label('max_pages')
+            )
             .first()
         )
         
