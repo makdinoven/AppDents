@@ -134,10 +134,10 @@ def build_book_landing_base_query(
         from ..models.models_v2 import book_landing_books
         
         subq = (
-            select([book_landing_books.c.landing_id])
+            select([book_landing_books.c.book_landing_id])
             .select_from(book_landing_books)
             .join(Book, book_landing_books.c.book_id == Book.id)
-            .group_by(book_landing_books.c.landing_id)
+            .group_by(book_landing_books.c.book_landing_id)
         )
         
         if pages_from is not None:
@@ -214,7 +214,7 @@ def aggregate_book_filters(
             .join(book_publishers, Publisher.id == book_publishers.c.publisher_id)
             .join(Book, book_publishers.c.book_id == Book.id)
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
-            .join(BookLanding, book_landing_books.c.landing_id == BookLanding.id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(publisher_landing_ids))
             .group_by(Publisher.id, Publisher.name)
             .order_by(Publisher.name)
@@ -262,7 +262,7 @@ def aggregate_book_filters(
             .join(book_authors, Author.id == book_authors.c.author_id)
             .join(Book, book_authors.c.book_id == Book.id)
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
-            .join(BookLanding, book_landing_books.c.landing_id == BookLanding.id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(author_landing_ids))
             .group_by(Author.id, Author.name)
             .order_by(Author.name)
@@ -310,7 +310,7 @@ def aggregate_book_filters(
             .join(book_tags, Tag.id == book_tags.c.tag_id)
             .join(Book, book_tags.c.book_id == Book.id)
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
-            .join(BookLanding, book_landing_books.c.landing_id == BookLanding.id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(tag_landing_ids))
             .group_by(Tag.id, Tag.name)
             .order_by(Tag.name)
@@ -356,7 +356,7 @@ def aggregate_book_filters(
             .select_from(BookFile)
             .join(Book, BookFile.book_id == Book.id)
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
-            .join(BookLanding, book_landing_books.c.landing_id == BookLanding.id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(format_landing_ids))
             .filter(BookFile.s3_url.isnot(None))
             .group_by(BookFile.file_format)
@@ -406,7 +406,7 @@ def aggregate_book_filters(
             )
             .select_from(Book)
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
-            .join(BookLanding, book_landing_books.c.landing_id == BookLanding.id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.id.in_(year_landing_ids))
             .filter(Book.publication_date.isnot(None))
             .first()
@@ -491,8 +491,8 @@ def aggregate_book_filters(
             )
             .select_from(book_landing_books)
             .join(Book, book_landing_books.c.book_id == Book.id)
-            .filter(book_landing_books.c.landing_id.in_(pages_landing_ids))
-            .group_by(book_landing_books.c.landing_id)
+            .filter(book_landing_books.c.book_landing_id.in_(pages_landing_ids))
+            .group_by(book_landing_books.c.book_landing_id)
             .first()
         )
         

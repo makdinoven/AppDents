@@ -1161,14 +1161,14 @@ def book_landing_cards_v2(
         from ..models.models_v2 import book_landing_books
         subq = (
             db.query(
-                book_landing_books.c.landing_id,
+                book_landing_books.c.book_landing_id,
                 func.sum(func.coalesce(Book.page_count, 0)).label('total_pages')
             )
             .join(Book, book_landing_books.c.book_id == Book.id)
-            .group_by(book_landing_books.c.landing_id)
+            .group_by(book_landing_books.c.book_landing_id)
             .subquery()
         )
-        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.outerjoin(subq, BookLanding.id == subq.c.book_landing_id)
         base = base.order_by(
             func.coalesce(subq.c.total_pages, 0).asc(),
             BookLanding.id.asc()
@@ -1177,14 +1177,14 @@ def book_landing_cards_v2(
         from ..models.models_v2 import book_landing_books
         subq = (
             db.query(
-                book_landing_books.c.landing_id,
+                book_landing_books.c.book_landing_id,
                 func.sum(func.coalesce(Book.page_count, 0)).label('total_pages')
             )
             .join(Book, book_landing_books.c.book_id == Book.id)
-            .group_by(book_landing_books.c.landing_id)
+            .group_by(book_landing_books.c.book_landing_id)
             .subquery()
         )
-        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.outerjoin(subq, BookLanding.id == subq.c.book_landing_id)
         base = base.order_by(
             func.coalesce(subq.c.total_pages, 0).desc(),
             BookLanding.id.desc()
@@ -1195,15 +1195,15 @@ def book_landing_cards_v2(
         # Берем минимальный год из всех книг лендинга
         subq = (
             db.query(
-                book_landing_books.c.landing_id,
+                book_landing_books.c.book_landing_id,
                 func.min(cast(func.left(Book.publication_date, 4), Integer)).label('min_year')
             )
             .join(Book, book_landing_books.c.book_id == Book.id)
             .filter(Book.publication_date.isnot(None))
-            .group_by(book_landing_books.c.landing_id)
+            .group_by(book_landing_books.c.book_landing_id)
             .subquery()
         )
-        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.outerjoin(subq, BookLanding.id == subq.c.book_landing_id)
         base = base.order_by(
             subq.c.min_year.is_(None),
             subq.c.min_year.asc(),
@@ -1213,15 +1213,15 @@ def book_landing_cards_v2(
         from ..models.models_v2 import book_landing_books
         subq = (
             db.query(
-                book_landing_books.c.landing_id,
+                book_landing_books.c.book_landing_id,
                 func.max(cast(func.left(Book.publication_date, 4), Integer)).label('max_year')
             )
             .join(Book, book_landing_books.c.book_id == Book.id)
             .filter(Book.publication_date.isnot(None))
-            .group_by(book_landing_books.c.landing_id)
+            .group_by(book_landing_books.c.book_landing_id)
             .subquery()
         )
-        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.outerjoin(subq, BookLanding.id == subq.c.book_landing_id)
         base = base.order_by(
             subq.c.max_year.is_(None),
             subq.c.max_year.desc(),
