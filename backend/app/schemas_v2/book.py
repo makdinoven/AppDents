@@ -6,7 +6,7 @@ from pydantic import AnyUrl
 from pydantic.v1 import ConfigDict
 
 
-from ..schemas_v2.common import AuthorCardResponse, TagResponse
+from ..schemas_v2.common import AuthorCardResponse, TagResponse, CatalogFiltersMetadata
 
 
 class HttpS3Url(AnyUrl):
@@ -425,3 +425,66 @@ class ApplyMetadataPayload(BaseModel):
     page_count: Optional[int] = None
     publisher_name: Optional[str] = Field(None, description="Название издателя (автоматически сопоставится с существующими или создастся новый)")
     publication_year: Optional[str] = Field(None, pattern=r"^\d{4}$", description="Год публикации (YYYY)")
+
+
+# ═══════════════════ V2 API Response с фильтрами ═══════════════════
+
+class BookLandingCardsV2Response(BaseModel):
+    """
+    Ответ V2 для эндпоинта /landing/v2/cards с поддержкой метаданных фильтров.
+    
+    Включает:
+    - Карточки книжных лендингов с пагинацией
+    - Общее количество результатов после фильтрации (для кнопки "Показать XXX результатов")
+    - Опционально: метаданные доступных фильтров и сортировок (если include_filters=true)
+    """
+    total: int = Field(..., description="Общее количество результатов после применения всех фильтров")
+    total_pages: int = Field(..., description="Общее количество страниц")
+    page: int = Field(..., description="Текущая страница")
+    size: int = Field(..., description="Размер страницы")
+    cards: List[BookLandingCardResponse] = Field(default_factory=list, description="Список карточек книжных лендингов")
+    filters: Optional[CatalogFiltersMetadata] = Field(
+        None,
+        description="Метаданные доступных фильтров и сортировок (только если include_filters=true)"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "total": 125,
+                "total_pages": 7,
+                "page": 1,
+                "size": 20,
+                "cards": [
+                    {
+                        "id": 6,
+                        "landing_name": "Successful Ceramic Veneers",
+                        "slug": "ceramic-veneers",
+                        "language": "EN",
+                        "old_price": "90",
+                        "new_price": "19",
+                        "total_pages": 245,
+                        "publishers": [{"id": 3, "name": "Hayat Dental"}],
+                        "authors": [{"id": 3083, "name": "Eslam S. Zakzouk"}],
+                        "tags": [{"id": 7, "name": "tag.prosthodontics"}],
+                        "available_formats": ["PDF", "EPUB"],
+                        "publication_date": "2023"
+                    }
+                ],
+                "filters": {
+                    "filters": {
+                        "publishers": {
+                            "type": "multiselect",
+                            "label": "Издатели",
+                            "param_name": "publisher_ids",
+                            "options": [
+                                {"id": 1, "name": "Quintessence Publishing", "count": 25}
+                            ]
+                        }
+                    },
+                    "available_sorts": [
+                        {"value": "price_asc", "label": "Цена: по возрастанию"}
+                    ]
+                }
+            }
+        }

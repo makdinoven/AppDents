@@ -5,11 +5,12 @@ import logging
 from math import ceil
 from typing import Optional, List, Dict, Union
 from datetime import datetime, date, time, timedelta
+from decimal import Decimal
 
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
-from sqlalchemy import or_, desc, func
+from sqlalchemy import or_, desc, func, cast, Integer
 from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel
 
@@ -37,13 +38,17 @@ from ..schemas_v2.book import (
     PdfUploadInitRequest,
     BookLandingOut, BookListPageResponse, BookLandingCatalogPageResponse, CatalogGalleryImage, BookLandingCatalogItem,
     TagMini, BookLandingGalleryItem, BookLandingCardResponse, BookLandingCardsResponse,
-    BookLandingCardsResponsePaginations, UserBookDetailResponse, BookAdminDetailResponse, BookPatch,
+    BookLandingCardsResponsePaginations, BookLandingCardsV2Response, UserBookDetailResponse, BookAdminDetailResponse, BookPatch,
 )
 from ..schemas_v2.landing import LandingListPageResponse, LangEnum, LandingDetailResponse, \
     TagResponse
 from ..schemas_v2.common import AuthorCardResponse
 from ..services_v2 import book_service
 from ..services_v2.book_service import paginate_like_courses, serialize_book_landing_to_course_item
+from ..services_v2.filter_aggregation_service import (
+    build_book_landing_base_query,
+    aggregate_book_filters
+)
 from ..utils.s3 import generate_presigned_url
 
 # ─────────────────────────── S3 config ───────────────────────────
@@ -953,6 +958,332 @@ def book_landing_cards(
         "size": size,
         "cards": cards,
     }
+
+
+# ═══════════════════ V2: Карточки с расширенными фильтрами ═══════════════════
+
+@router.get(
+    "/landing/v2/cards",
+    response_model=BookLandingCardsV2Response,
+    summary="V2: Карточки книжных лендингов с расширенными фильтрами и метаданными",
+    description="""
+    Версия 2 эндпоинта для получения карточек книжных лендингов.
+    
+    ## Основные возможности:
+    
+    ### Фильтрация:
+    - **language** - фильтр по языку (EN, RU, ES, IT, AR, PT)
+    - **tags** - фильтр по тегам (можно передать несколько)
+    - **formats** - фильтр по форматам файлов (PDF, EPUB, MOBI, AZW3, FB2)
+    - **publisher_ids** - фильтр по ID издателей
+    - **author_ids** - фильтр по ID авторов
+    - **year_from, year_to** - диапазон года публикации
+    - **price_from, price_to** - диапазон цены (new_price)
+    - **pages_from, pages_to** - диапазон количества страниц
+    - **q** - поисковый запрос по названию
+    
+    ### Сортировка:
+    - **price_asc** / **price_desc** - по цене
+    - **pages_asc** / **pages_desc** - по количеству страниц
+    - **year_asc** / **year_desc** - по году публикации
+    - **new_asc** / **new_desc** - по новизне на сайте (updated_at)
+    - **popular_asc** / **popular_desc** - по популярности (sales_count)
+    
+    ### Метаданные фильтров:
+    При **include_filters=true** в ответе будет дополнительное поле `filters` с метаданными:
+    - Список всех доступных издателей с количеством книг
+    - Список всех доступных авторов с количеством книг
+    - Список всех доступных тегов с количеством книг
+    - Список всех доступных форматов с количеством книг
+    - Диапазоны для цены, года публикации и количества страниц
+    - Список доступных опций сортировки
+    
+    Все counts учитывают текущие фильтры (кроме соответствующего исключенного).
+    
+    ### Примеры использования:
+    
+    1. Получить первую страницу с метаданными фильтров:
+       ```
+       GET /landing/v2/cards?page=1&size=20&include_filters=true
+       ```
+    
+    2. Фильтрация по издателю и году:
+       ```
+       GET /landing/v2/cards?publisher_ids=1&year_from=2020&year_to=2024
+       ```
+    
+    3. Поиск с сортировкой по цене:
+       ```
+       GET /landing/v2/cards?q=implant&sort=price_asc
+       ```
+    
+    4. Диапазон цены и страниц:
+       ```
+       GET /landing/v2/cards?price_from=10&price_to=50&pages_from=100&pages_to=500
+       ```
+    """,
+    tags=["public"]
+)
+def book_landing_cards_v2(
+    # Фильтры
+    language: Optional[str] = Query(
+        None,
+        description="Язык лендинга (EN, RU, ES, IT, AR, PT)",
+        regex="^(EN|RU|ES|IT|AR|PT)$"
+    ),
+    tags: Optional[List[str]] = Query(
+        None,
+        description="Фильтр по тегам (имена тегов, можно несколько)"
+    ),
+    formats: Optional[List[str]] = Query(
+        None,
+        description="Фильтр по форматам файлов (PDF, EPUB, MOBI, AZW3, FB2)"
+    ),
+    publisher_ids: Optional[List[int]] = Query(
+        None,
+        description="Фильтр по ID издателей (можно несколько)"
+    ),
+    author_ids: Optional[List[int]] = Query(
+        None,
+        description="Фильтр по ID авторов (можно несколько)"
+    ),
+    year_from: Optional[int] = Query(
+        None,
+        ge=1900,
+        le=2100,
+        description="Год публикации от (включительно)"
+    ),
+    year_to: Optional[int] = Query(
+        None,
+        ge=1900,
+        le=2100,
+        description="Год публикации до (включительно)"
+    ),
+    price_from: Optional[Decimal] = Query(
+        None,
+        ge=0,
+        description="Цена от (new_price)"
+    ),
+    price_to: Optional[Decimal] = Query(
+        None,
+        ge=0,
+        description="Цена до (new_price)"
+    ),
+    pages_from: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Количество страниц от (сумма всех книг лендинга)"
+    ),
+    pages_to: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Количество страниц до (сумма всех книг лендинга)"
+    ),
+    q: Optional[str] = Query(
+        None,
+        min_length=1,
+        description="Поиск по landing_name или page_name"
+    ),
+    # Сортировка
+    sort: Optional[str] = Query(
+        None,
+        description="Сортировка",
+        regex="^(price_asc|price_desc|pages_asc|pages_desc|year_asc|year_desc|new_asc|new_desc|popular_asc|popular_desc)$"
+    ),
+    # Пагинация
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(20, gt=0, le=100, description="Размер страницы"),
+    # Метаданные фильтров
+    include_filters: bool = Query(
+        False,
+        description="Включить метаданные фильтров в ответ (publishers, authors, tags, formats, ranges)"
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    V2 эндпоинт для получения карточек книжных лендингов с расширенными фильтрами.
+    
+    Поддерживает:
+    - Множественные фильтры (издатели, авторы, теги, форматы)
+    - Фильтры по диапазонам (цена, год, страницы)
+    - Расширенные сортировки (в обе стороны)
+    - Опциональные метаданные фильтров с актуальными counts
+    """
+    
+    # Собираем все фильтры в словарь для удобства
+    current_filters = {
+        'language': language,
+        'tags': tags,
+        'formats': formats,
+        'publisher_ids': publisher_ids,
+        'author_ids': author_ids,
+        'year_from': year_from,
+        'year_to': year_to,
+        'price_from': price_from,
+        'price_to': price_to,
+        'pages_from': pages_from,
+        'pages_to': pages_to,
+        'q': q,
+    }
+    
+    # Строим базовый запрос с применением всех фильтров
+    base = build_book_landing_base_query(
+        db=db,
+        language=language,
+        tags=tags,
+        formats=formats,
+        publisher_ids=publisher_ids,
+        author_ids=author_ids,
+        year_from=year_from,
+        year_to=year_to,
+        price_from=price_from,
+        price_to=price_to,
+        pages_from=pages_from,
+        pages_to=pages_to,
+        q=q,
+    )
+    
+    # Применяем сортировку
+    if sort == "price_asc":
+        base = base.order_by(
+            BookLanding.new_price.is_(None),
+            BookLanding.new_price.asc(),
+            BookLanding.id.asc()
+        )
+    elif sort == "price_desc":
+        base = base.order_by(
+            BookLanding.new_price.is_(None),
+            BookLanding.new_price.desc(),
+            BookLanding.id.desc()
+        )
+    elif sort == "pages_asc":
+        # Сортировка по сумме страниц - сложнее, используем подзапрос
+        from ..models.models_v2 import book_landing_books
+        subq = (
+            db.query(
+                book_landing_books.c.landing_id,
+                func.sum(func.coalesce(Book.page_count, 0)).label('total_pages')
+            )
+            .join(Book, book_landing_books.c.book_id == Book.id)
+            .group_by(book_landing_books.c.landing_id)
+            .subquery()
+        )
+        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.order_by(
+            func.coalesce(subq.c.total_pages, 0).asc(),
+            BookLanding.id.asc()
+        )
+    elif sort == "pages_desc":
+        from ..models.models_v2 import book_landing_books
+        subq = (
+            db.query(
+                book_landing_books.c.landing_id,
+                func.sum(func.coalesce(Book.page_count, 0)).label('total_pages')
+            )
+            .join(Book, book_landing_books.c.book_id == Book.id)
+            .group_by(book_landing_books.c.landing_id)
+            .subquery()
+        )
+        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.order_by(
+            func.coalesce(subq.c.total_pages, 0).desc(),
+            BookLanding.id.desc()
+        )
+    elif sort == "year_asc":
+        # Сортировка по году публикации (из первой книги)
+        from ..models.models_v2 import book_landing_books
+        # Берем минимальный год из всех книг лендинга
+        subq = (
+            db.query(
+                book_landing_books.c.landing_id,
+                func.min(cast(func.left(Book.publication_date, 4), Integer)).label('min_year')
+            )
+            .join(Book, book_landing_books.c.book_id == Book.id)
+            .filter(Book.publication_date.isnot(None))
+            .group_by(book_landing_books.c.landing_id)
+            .subquery()
+        )
+        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.order_by(
+            subq.c.min_year.is_(None),
+            subq.c.min_year.asc(),
+            BookLanding.id.asc()
+        )
+    elif sort == "year_desc":
+        from ..models.models_v2 import book_landing_books
+        subq = (
+            db.query(
+                book_landing_books.c.landing_id,
+                func.max(cast(func.left(Book.publication_date, 4), Integer)).label('max_year')
+            )
+            .join(Book, book_landing_books.c.book_id == Book.id)
+            .filter(Book.publication_date.isnot(None))
+            .group_by(book_landing_books.c.landing_id)
+            .subquery()
+        )
+        base = base.outerjoin(subq, BookLanding.id == subq.c.landing_id)
+        base = base.order_by(
+            subq.c.max_year.is_(None),
+            subq.c.max_year.desc(),
+            BookLanding.id.desc()
+        )
+    elif sort == "new_asc":
+        base = base.order_by(
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.asc(),
+            BookLanding.id.asc()
+        )
+    elif sort == "new_desc":
+        base = base.order_by(
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc()
+        )
+    elif sort == "popular_asc":
+        base = base.order_by(
+            BookLanding.sales_count.is_(None),
+            BookLanding.sales_count.asc(),
+            BookLanding.id.asc()
+        )
+    elif sort == "popular_desc":
+        base = base.order_by(
+            BookLanding.sales_count.is_(None),
+            BookLanding.sales_count.desc(),
+            BookLanding.id.desc()
+        )
+    else:
+        # Дефолтная сортировка - по новизне
+        base = base.order_by(
+            BookLanding.updated_at.is_(None),
+            BookLanding.updated_at.desc(),
+            BookLanding.id.desc()
+        )
+    
+    # Подсчитываем total (для кнопки "Показать XXX результатов")
+    total = base.order_by(None).with_entities(func.count()).scalar() or 0
+    
+    # Получаем метаданные фильтров, если запрошено
+    filters_metadata = None
+    if include_filters:
+        filters_metadata = aggregate_book_filters(
+            db=db,
+            base_query=base.order_by(None),  # Убираем сортировку для агрегации
+            current_filters=current_filters
+        )
+    
+    # Применяем пагинацию и получаем карточки
+    rows = base.offset((page - 1) * size).limit(size).all()
+    cards = [_serialize_book_card(r) for r in rows]
+    
+    # Формируем ответ
+    return BookLandingCardsV2Response(
+        total=total,
+        total_pages=ceil(total / size) if total > 0 else 0,
+        page=page,
+        size=size,
+        cards=cards,
+        filters=filters_metadata
+    )
 
 
 # ─────────────── АНАЛИТИКА КНИГ ───────────────────────────────────────────────

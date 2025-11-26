@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import Optional, List, Union, Any, Dict
+from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AuthorCardResponse(BaseModel):
@@ -17,3 +18,145 @@ class TagResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# ═══════════════════ Универсальные схемы фильтров ═══════════════════
+
+class FilterOption(BaseModel):
+    """
+    Опция для фильтра с множественным выбором.
+    
+    Используется для publishers, authors, tags, formats и т.д.
+    """
+    id: Optional[int] = Field(None, description="ID опции (для entities с БД)")
+    value: Optional[str] = Field(None, description="Значение опции (для enum-ов типа formats)")
+    name: str = Field(..., description="Отображаемое название опции")
+    count: int = Field(..., description="Количество элементов с этой опцией после применения текущих фильтров")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "id": 1,
+                "name": "Quintessence Publishing",
+                "count": 25
+            }
+        }
+
+
+class FilterTypeEnum(str, Enum):
+    """Типы фильтров для универсальной системы."""
+    MULTISELECT = "multiselect"  # Множественный выбор (чекбоксы)
+    RANGE = "range"               # Диапазон (слайдер)
+    CHECKBOX = "checkbox"         # Одиночный чекбокс
+
+
+class MultiselectFilter(BaseModel):
+    """
+    Фильтр с множественным выбором.
+    
+    Используется для publishers, authors, tags, formats.
+    """
+    type: FilterTypeEnum = FilterTypeEnum.MULTISELECT
+    label: str = Field(..., description="Название фильтра для UI")
+    param_name: str = Field(..., description="Имя параметра для query string")
+    options: List[FilterOption] = Field(default_factory=list, description="Список доступных опций")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "type": "multiselect",
+                "label": "Издатели",
+                "param_name": "publisher_ids",
+                "options": [
+                    {"id": 1, "name": "Quintessence Publishing", "count": 25},
+                    {"id": 2, "name": "Wiley", "count": 12}
+                ]
+            }
+        }
+
+
+class RangeFilter(BaseModel):
+    """
+    Фильтр диапазона (слайдер).
+    
+    Используется для price, year, pages.
+    """
+    type: FilterTypeEnum = FilterTypeEnum.RANGE
+    label: str = Field(..., description="Название фильтра для UI")
+    param_name_from: str = Field(..., description="Имя параметра 'от' для query string")
+    param_name_to: str = Field(..., description="Имя параметра 'до' для query string")
+    min: Optional[Union[int, float]] = Field(None, description="Минимальное значение")
+    max: Optional[Union[int, float]] = Field(None, description="Максимальное значение")
+    unit: Optional[str] = Field(None, description="Единица измерения (USD, pages, year)")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "type": "range",
+                "label": "Цена",
+                "param_name_from": "price_from",
+                "param_name_to": "price_to",
+                "min": 9,
+                "max": 300,
+                "unit": "USD"
+            }
+        }
+
+
+class SortOption(BaseModel):
+    """Опция сортировки."""
+    value: str = Field(..., description="Значение для query string")
+    label: str = Field(..., description="Отображаемое название")
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "value": "price_asc",
+                "label": "Цена: по возрастанию"
+            }
+        }
+
+
+class CatalogFiltersMetadata(BaseModel):
+    """
+    Метаданные всех доступных фильтров и сортировок для каталога.
+    
+    Универсальная структура, используемая для книг, курсов, авторов и т.д.
+    """
+    filters: Dict[str, Union[MultiselectFilter, RangeFilter]] = Field(
+        default_factory=dict,
+        description="Словарь фильтров по ключам (publishers, authors, tags, formats, price, year, pages)"
+    )
+    available_sorts: List[SortOption] = Field(
+        default_factory=list,
+        description="Список доступных опций сортировки"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "filters": {
+                    "publishers": {
+                        "type": "multiselect",
+                        "label": "Издатели",
+                        "param_name": "publisher_ids",
+                        "options": [
+                            {"id": 1, "name": "Quintessence Publishing", "count": 25}
+                        ]
+                    },
+                    "price": {
+                        "type": "range",
+                        "label": "Цена",
+                        "param_name_from": "price_from",
+                        "param_name_to": "price_to",
+                        "min": 9,
+                        "max": 300,
+                        "unit": "USD"
+                    }
+                },
+                "available_sorts": [
+                    {"value": "price_asc", "label": "Цена: по возрастанию"},
+                    {"value": "price_desc", "label": "Цена: по убыванию"}
+                ]
+            }
+        }
