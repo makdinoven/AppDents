@@ -5,6 +5,8 @@ from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, bo
     ad_control, book_ad_control, policy, video_repair, creatives, book_assets, summary_generator,course_request
 
 from fastapi.middleware.cors import CORSMiddleware
+from .middlewares.rate_limiter import RateLimitMiddleware
+from .middlewares.monitoring import MonitoringMiddleware
 
 from .db.database import init_db
 from .services_v2 import wallet_service
@@ -13,6 +15,7 @@ from .services_v2 import wallet_service
 def create_app() -> FastAPI:
     app = FastAPI()
 
+    # CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -20,6 +23,12 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Rate Limiting: 100 запросов в минуту с одного IP (Sliding Window)
+    app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
+    
+    # Monitoring: отслеживание ошибок и медленных запросов
+    app.add_middleware(MonitoringMiddleware)
     app.include_router(users.router, prefix="/api/users", tags=["users"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(landings.router, prefix="/api/landings", tags=["landings"])

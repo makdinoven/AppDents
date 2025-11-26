@@ -81,7 +81,8 @@ class Settings(BaseSettings):
 
     # Telegram Bot
     TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_CHAT_ID: str = ""
+    TELEGRAM_CHAT_ID: str = ""  # Для заявок на курсы
+    TELEGRAM_MONITORING_CHAT_ID: str = ""  # Для ошибок и мониторинга
 
 
     class Config:
