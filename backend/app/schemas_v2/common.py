@@ -4,6 +4,19 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
+# ═══════════════════ Контексты для фильтров ═══════════════════
+
+class FilterContext(str, Enum):
+    """
+    Контекст применения фильтра.
+    
+    Определяет, для какой сущности выполняется поиск/фильтрация.
+    """
+    BOOKS = "books"           # Каталог книг
+    COURSES = "courses"       # Каталог курсов
+    AUTHORS_PAGE = "authors"  # Страница авторов
+
+
 class AuthorCardResponse(BaseModel):
     id: int
     name: str

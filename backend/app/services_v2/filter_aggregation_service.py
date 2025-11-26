@@ -245,7 +245,7 @@ def aggregate_book_filters(
             ],
             has_more=total_publishers > filter_limit,
             total_count=total_publishers,
-            search_endpoint="/api/books/filters/publishers/search"
+            search_endpoint="/api/filters/publishers/search?context=books"
         )
     
     # ═══════════════════ Authors ═══════════════════
@@ -310,7 +310,7 @@ def aggregate_book_filters(
             ],
             has_more=total_authors > filter_limit,
             total_count=total_authors,
-            search_endpoint="/api/books/filters/authors/search"
+            search_endpoint="/api/filters/authors/search?context=books"
         )
     
     # ═══════════════════ Tags ═══════════════════
@@ -375,7 +375,7 @@ def aggregate_book_filters(
             ],
             has_more=total_tags > filter_limit,
             total_count=total_tags,
-            search_endpoint="/api/books/filters/tags/search"
+            search_endpoint="/api/filters/tags/search?context=books"
         )
     
     # ═══════════════════ Formats ═══════════════════
