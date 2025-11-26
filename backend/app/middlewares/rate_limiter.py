@@ -20,7 +20,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        # Словарь: {ip: [timestamp1, timestamp2, ...]}
+        # Словарь: {ip: [(timestamp, method, url), ...]}
         self.request_times = defaultdict(list)
         # Для очистки старых записей
         self.last_cleanup = time()
@@ -34,10 +34,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             
             # Удаляем IP, у которых все запросы старше cutoff_time
             ips_to_remove = []
-            for ip, timestamps in self.request_times.items():
-                # Удаляем старые timestamps
-                timestamps[:] = [ts for ts in timestamps if ts > cutoff_time]
-                if not timestamps:
+            for ip, requests in self.request_times.items():
+                # Удаляем старые запросы
+                requests[:] = [req for req in requests if req[0] > cutoff_time]
+                if not requests:
                     ips_to_remove.append(ip)
             
             for ip in ips_to_remove:
@@ -78,39 +78,48 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         
         client_ip = self._get_client_ip(request)
         current_time = time()
+        method = request.method
+        url = str(request.url.path)
         
-        # Получаем timestamps для этого IP
-        timestamps = self.request_times[client_ip]
+        # Получаем запросы для этого IP
+        requests = self.request_times[client_ip]
         
-        # Удаляем timestamps старше window_seconds (Sliding Window)
+        # Удаляем запросы старше window_seconds (Sliding Window)
         cutoff_time = current_time - self.window_seconds
-        timestamps[:] = [ts for ts in timestamps if ts > cutoff_time]
+        requests[:] = [req for req in requests if req[0] > cutoff_time]
         
         # Проверяем лимит
-        if len(timestamps) >= self.max_requests:
+        if len(requests) >= self.max_requests:
             # Лимит превышен
             # Вычисляем время до доступности (когда самый старый запрос выйдет из окна)
-            oldest_timestamp = timestamps[0]
+            oldest_timestamp = requests[0][0]
             time_until_available = self.window_seconds - (current_time - oldest_timestamp)
             
             # Получаем информацию о пользователе
             user_email, user_id = self._get_user_info(request)
             domain = request.headers.get("host", "unknown")
             
+            # Получаем последние 10 запросов для отправки в Telegram
+            last_requests = [
+                {"method": req[1], "url": req[2], "timestamp": req[0]}
+                for req in requests[-10:]
+            ]
+            
             # Отправляем уведомление в Telegram (неблокирующе)
             asyncio.create_task(send_rate_limit_notification(
                 client_ip=client_ip,
                 domain=domain,
-                request_count=len(timestamps),
+                request_count=len(requests),
                 max_requests=self.max_requests,
                 user_email=user_email,
                 user_id=user_id,
-                time_until_available=time_until_available
+                time_until_available=time_until_available,
+                last_requests=last_requests
             ))
             
             logger.warning(
                 f"Rate limit exceeded for IP {client_ip}: "
-                f"{len(timestamps)}/{self.max_requests} requests in {self.window_seconds}s"
+                f"{len(requests)}/{self.max_requests} requests in {self.window_seconds}s"
             )
             
             return JSONResponse(
@@ -123,7 +132,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             )
         
         # Добавляем текущий запрос
-        timestamps.append(current_time)
+        requests.append((current_time, method, url))
         
         # Пропускаем запрос дальше
         response = await call_next(request)
