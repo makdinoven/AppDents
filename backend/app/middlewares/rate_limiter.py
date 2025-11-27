@@ -16,7 +16,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Ограничивает количество запросов с одного IP до max_requests за window_seconds.
     """
     
-    def __init__(self, app, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, app, max_requests: int = 120, window_seconds: int = 60):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
