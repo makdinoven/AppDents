@@ -207,12 +207,30 @@ def aggregate_book_filters(
     # Подсчет общего количества всех издателей
     total_publishers = db.query(func.count(Publisher.id)).scalar() or 0
     
-    # Подзапрос для подсчёта count с учётом фильтров
+    # Шаг 1: Получаем топ-N издателей по ОБЩЕМУ количеству книг (без фильтров)
+    top_publishers_subq = (
+        db.query(
+            Publisher.id.label('publisher_id'),
+            func.count(func.distinct(BookLanding.id)).label('total_cnt')
+        )
+        .select_from(Publisher)
+        .join(book_publishers, Publisher.id == book_publishers.c.publisher_id)
+        .join(Book, book_publishers.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .group_by(Publisher.id)
+        .order_by(func.count(func.distinct(BookLanding.id)).desc())
+        .limit(filter_limit)
+        .subquery()
+    )
+    
+    # Шаг 2: Для этих топ-N считаем count с учётом текущих фильтров
     if publisher_landing_ids:
-        counts_subq = (
+        filtered_counts_subq = (
             db.query(
                 Publisher.id.label('publisher_id'),
-                func.count(func.distinct(BookLanding.id)).label('cnt')
+                func.count(func.distinct(BookLanding.id)).label('filtered_cnt')
             )
             .select_from(Publisher)
             .join(book_publishers, Publisher.id == book_publishers.c.publisher_id)
@@ -224,28 +242,28 @@ def aggregate_book_filters(
             .subquery()
         )
         
-        # Получаем топ-N издателей с LEFT JOIN для сохранения count=0
+        # Объединяем: берём топ-N издателей и показываем их filtered count
         publishers_data = (
             db.query(
                 Publisher.id,
                 Publisher.name,
-                func.coalesce(counts_subq.c.cnt, 0).label('count')
+                func.coalesce(filtered_counts_subq.c.filtered_cnt, 0).label('count')
             )
-            .outerjoin(counts_subq, Publisher.id == counts_subq.c.publisher_id)
-            .order_by(func.coalesce(counts_subq.c.cnt, 0).desc(), Publisher.name)
-            .limit(filter_limit)
+            .join(top_publishers_subq, Publisher.id == top_publishers_subq.c.publisher_id)
+            .outerjoin(filtered_counts_subq, Publisher.id == filtered_counts_subq.c.publisher_id)
+            .order_by(top_publishers_subq.c.total_cnt.desc(), Publisher.name)
             .all()
         )
     else:
-        # Если нет результатов фильтрации, показываем всех издателей с count=0
+        # Если нет результатов фильтрации, показываем топ-N издателей с count=0
         publishers_data = (
             db.query(
                 Publisher.id,
                 Publisher.name,
                 func.literal(0).label('count')
             )
-            .order_by(Publisher.name)
-            .limit(filter_limit)
+            .join(top_publishers_subq, Publisher.id == top_publishers_subq.c.publisher_id)
+            .order_by(top_publishers_subq.c.total_cnt.desc(), Publisher.name)
             .all()
         )
     
@@ -283,12 +301,30 @@ def aggregate_book_filters(
     # Подсчет общего количества всех авторов
     total_authors = db.query(func.count(Author.id)).scalar() or 0
     
-    # Подзапрос для подсчёта count с учётом фильтров
+    # Шаг 1: Получаем топ-N авторов по ОБЩЕМУ количеству книг (без фильтров)
+    top_authors_subq = (
+        db.query(
+            Author.id.label('author_id'),
+            func.count(func.distinct(BookLanding.id)).label('total_cnt')
+        )
+        .select_from(Author)
+        .join(book_authors, Author.id == book_authors.c.author_id)
+        .join(Book, book_authors.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .group_by(Author.id)
+        .order_by(func.count(func.distinct(BookLanding.id)).desc())
+        .limit(filter_limit)
+        .subquery()
+    )
+    
+    # Шаг 2: Для этих топ-N считаем count с учётом текущих фильтров
     if author_landing_ids:
-        counts_subq = (
+        filtered_counts_subq = (
             db.query(
                 Author.id.label('author_id'),
-                func.count(func.distinct(BookLanding.id)).label('cnt')
+                func.count(func.distinct(BookLanding.id)).label('filtered_cnt')
             )
             .select_from(Author)
             .join(book_authors, Author.id == book_authors.c.author_id)
@@ -300,28 +336,28 @@ def aggregate_book_filters(
             .subquery()
         )
         
-        # Получаем топ-N авторов с LEFT JOIN для сохранения count=0
+        # Объединяем: берём топ-N авторов и показываем их filtered count
         authors_data = (
             db.query(
                 Author.id,
                 Author.name,
-                func.coalesce(counts_subq.c.cnt, 0).label('count')
+                func.coalesce(filtered_counts_subq.c.filtered_cnt, 0).label('count')
             )
-            .outerjoin(counts_subq, Author.id == counts_subq.c.author_id)
-            .order_by(func.coalesce(counts_subq.c.cnt, 0).desc(), Author.name)
-            .limit(filter_limit)
+            .join(top_authors_subq, Author.id == top_authors_subq.c.author_id)
+            .outerjoin(filtered_counts_subq, Author.id == filtered_counts_subq.c.author_id)
+            .order_by(top_authors_subq.c.total_cnt.desc(), Author.name)
             .all()
         )
     else:
-        # Если нет результатов фильтрации, показываем всех авторов с count=0
+        # Если нет результатов фильтрации, показываем топ-N авторов с count=0
         authors_data = (
             db.query(
                 Author.id,
                 Author.name,
                 func.literal(0).label('count')
             )
-            .order_by(Author.name)
-            .limit(filter_limit)
+            .join(top_authors_subq, Author.id == top_authors_subq.c.author_id)
+            .order_by(top_authors_subq.c.total_cnt.desc(), Author.name)
             .all()
         )
     
@@ -359,12 +395,30 @@ def aggregate_book_filters(
     # Подсчет общего количества всех тегов
     total_tags = db.query(func.count(Tag.id)).scalar() or 0
     
-    # Подзапрос для подсчёта count с учётом фильтров
+    # Шаг 1: Получаем топ-N тегов по ОБЩЕМУ количеству книг (без фильтров)
+    top_tags_subq = (
+        db.query(
+            Tag.id.label('tag_id'),
+            func.count(func.distinct(BookLanding.id)).label('total_cnt')
+        )
+        .select_from(Tag)
+        .join(book_tags, Tag.id == book_tags.c.tag_id)
+        .join(Book, book_tags.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .group_by(Tag.id)
+        .order_by(func.count(func.distinct(BookLanding.id)).desc())
+        .limit(filter_limit)
+        .subquery()
+    )
+    
+    # Шаг 2: Для этих топ-N считаем count с учётом текущих фильтров
     if tag_landing_ids:
-        counts_subq = (
+        filtered_counts_subq = (
             db.query(
                 Tag.id.label('tag_id'),
-                func.count(func.distinct(BookLanding.id)).label('cnt')
+                func.count(func.distinct(BookLanding.id)).label('filtered_cnt')
             )
             .select_from(Tag)
             .join(book_tags, Tag.id == book_tags.c.tag_id)
@@ -376,28 +430,28 @@ def aggregate_book_filters(
             .subquery()
         )
         
-        # Получаем топ-N тегов с LEFT JOIN для сохранения count=0
+        # Объединяем: берём топ-N тегов и показываем их filtered count
         tags_data = (
             db.query(
                 Tag.id,
                 Tag.name,
-                func.coalesce(counts_subq.c.cnt, 0).label('count')
+                func.coalesce(filtered_counts_subq.c.filtered_cnt, 0).label('count')
             )
-            .outerjoin(counts_subq, Tag.id == counts_subq.c.tag_id)
-            .order_by(func.coalesce(counts_subq.c.cnt, 0).desc(), Tag.name)
-            .limit(filter_limit)
+            .join(top_tags_subq, Tag.id == top_tags_subq.c.tag_id)
+            .outerjoin(filtered_counts_subq, Tag.id == filtered_counts_subq.c.tag_id)
+            .order_by(top_tags_subq.c.total_cnt.desc(), Tag.name)
             .all()
         )
     else:
-        # Если нет результатов фильтрации, показываем все теги с count=0
+        # Если нет результатов фильтрации, показываем топ-N тегов с count=0
         tags_data = (
             db.query(
                 Tag.id,
                 Tag.name,
                 func.literal(0).label('count')
             )
-            .order_by(Tag.name)
-            .limit(filter_limit)
+            .join(top_tags_subq, Tag.id == top_tags_subq.c.tag_id)
+            .order_by(top_tags_subq.c.total_cnt.desc(), Tag.name)
             .all()
         )
     
