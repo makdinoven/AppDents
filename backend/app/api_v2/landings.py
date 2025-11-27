@@ -1333,8 +1333,8 @@ def site_traffic(
         lang = language.upper().strip()
         landings_q = landings_q.filter(Landing.language == lang)
         book_landings_q = book_landings_q.filter(BookLanding.language == lang)
-    landing_ids_subq = landings_q.subquery()
-    book_landing_ids_subq = book_landings_q.subquery()
+    landing_ids_subq = landings_q.scalar_subquery()
+    book_landing_ids_subq = book_landings_q.scalar_subquery()
 
     # 1) период и гранулярность (та же логика)
     start_dt, end_dt = _resolve_period(start_date, end_date)
