@@ -5,6 +5,8 @@ from collections import defaultdict
 from time import time
 import asyncio
 import logging
+from jose import jwt, JWTError
+from ..core.config import settings
 from ..utils.telegram_monitor import send_rate_limit_notification
 
 logger = logging.getLogger(__name__)
@@ -64,11 +66,28 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return "unknown"
     
     def _get_user_info(self, request: Request) -> tuple:
-        """Извлекает информацию о пользователе из request.state если есть"""
-        # FastAPI может сохранять информацию о пользователе в request.state
-        # после аутентификации через dependencies
-        user_email = getattr(request.state, "user_email", None)
-        user_id = getattr(request.state, "user_id", None)
+        """Извлекает информацию о пользователе из JWT токена напрямую"""
+        # Middleware выполняется ДО dependencies авторизации,
+        # поэтому декодируем JWT токен напрямую из заголовка Authorization
+        user_email = None
+        user_id = None
+        
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
+            token = auth_header[7:]  # Убираем "Bearer "
+            try:
+                payload = jwt.decode(
+                    token, 
+                    settings.SECRET_KEY, 
+                    algorithms=[settings.ALGORITHM]
+                )
+                user_id = payload.get("user_id")
+                user_email = payload.get("email")  # Если есть в токене
+            except JWTError:
+                pass  # Невалидный токен - пропускаем
+            except Exception as e:
+                logger.debug(f"Error decoding JWT in rate limiter: {e}")
+        
         return user_email, user_id
     
     async def dispatch(self, request: Request, call_next):
@@ -100,8 +119,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             domain = request.headers.get("host", "unknown")
             
             # Получаем последние 10 запросов для отправки в Telegram
+            # ВАЖНО: создаём копию данных на момент превышения лимита,
+            # чтобы они не изменились к моменту асинхронной отправки
+            current_request_count = len(requests)
+            snapshot_time = current_time  # Фиксируем время для расчёта "секунд назад"
             last_requests = [
-                {"method": req[1], "url": req[2], "timestamp": req[0]}
+                {
+                    "method": req[1], 
+                    "url": req[2], 
+                    "seconds_ago": int(snapshot_time - req[0])
+                }
                 for req in requests[-10:]
             ]
             
@@ -109,7 +136,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             asyncio.create_task(send_rate_limit_notification(
                 client_ip=client_ip,
                 domain=domain,
-                request_count=len(requests),
+                request_count=current_request_count,
                 max_requests=self.max_requests,
                 user_email=user_email,
                 user_id=user_id,
@@ -122,13 +149,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 f"{len(requests)}/{self.max_requests} requests in {self.window_seconds}s"
             )
             
+            # Добавляем CORS-заголовки, т.к. этот ответ не проходит через CORSMiddleware
+            # (middleware выполняются в обратном порядке)
             return JSONResponse(
                 status_code=429,
                 content={
                     "detail": "Rate limit exceeded. Try again later.",
                     "retry_after": int(time_until_available)
                 },
-                headers={"Retry-After": str(int(time_until_available))}
+                headers={
+                    "Retry-After": str(int(time_until_available)),
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Expose-Headers": "Retry-After",
+                }
             )
         
         # Добавляем текущий запрос

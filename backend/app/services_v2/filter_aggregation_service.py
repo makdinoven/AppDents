@@ -134,7 +134,7 @@ def build_book_landing_base_query(
         from ..models.models_v2 import book_landing_books
         
         subq = (
-            select([book_landing_books.c.book_landing_id])
+            select(book_landing_books.c.book_landing_id)
             .select_from(book_landing_books)
             .join(Book, book_landing_books.c.book_id == Book.id)
             .group_by(book_landing_books.c.book_landing_id)
