@@ -149,13 +149,22 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 f"{len(requests)}/{self.max_requests} requests in {self.window_seconds}s"
             )
             
+            # Добавляем CORS-заголовки, т.к. этот ответ не проходит через CORSMiddleware
+            # (middleware выполняются в обратном порядке)
             return JSONResponse(
                 status_code=429,
                 content={
                     "detail": "Rate limit exceeded. Try again later.",
                     "retry_after": int(time_until_available)
                 },
-                headers={"Retry-After": str(int(time_until_available))}
+                headers={
+                    "Retry-After": str(int(time_until_available)),
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Expose-Headers": "Retry-After",
+                }
             )
         
         # Добавляем текущий запрос
