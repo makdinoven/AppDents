@@ -131,8 +131,9 @@
   },
 
   "search": {
+    "tooLong": "Слишком длинный запрос. До 200 символов.",
     "searchCourses": "Поиск курсов",
-    "searchPlaceholder": "Введите название курса или имя автора...",
+    "searchPlaceholder": "Введите для поиска...",
     "result": "найдено {{count}} курсов",
     "result_one": "найден {{count}} курс ",
     "result_few": "найдено {{count}} курса",

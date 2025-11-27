@@ -7,6 +7,18 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
   padding-bottom: $input-wrapper-pb;
   width: 100%;
   padding-right: clamp(41px, 4vw, 63px);
+
+  &.error {
+    &::after {
+      background-color: $error-color;
+    }
+
+    &:focus-within .placeholder_label,
+    &.filled .placeholder_label {
+      color: $error-color;
+    }
+  }
+
   @include clamped-h4;
   @include horizontal-line(
     $z: 2,
@@ -21,7 +33,7 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
     @include transition;
   }
 
-  &:focus-within {
+  &:focus-within:not(.error) {
     &::after {
       background-color: $primary;
       width: 102%;
@@ -42,7 +54,6 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
     top: 0;
     color: $hover-color-dark;
     transform: none;
-    //opacity: 0.9;
   }
 
   .placeholder_label {

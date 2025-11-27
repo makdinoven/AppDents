@@ -131,8 +131,9 @@
   },
 
   "search": {
+    "tooLong": "الطلب طويل جدًا. استخدم 200 حرفًا أو أقل.",
     "searchCourses": "بحث عن الدورات",
-    "searchPlaceholder": "أدخل اسم الدورة أو اسم المؤلف...",
+    "searchPlaceholder": "اكتب للبحث...",
     "result": "تم العثور على {{count,localizedNumber}} دورات",
     "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
     "result_few": "تم العثور على {{ localizedNumber,count}} دورات",

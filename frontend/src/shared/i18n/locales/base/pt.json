@@ -131,8 +131,9 @@
   },
 
   "search": {
+    "tooLong": "Muito longo. Use 200 caracteres ou menos.",
     "searchCourses": "Buscar cursos",
-    "searchPlaceholder": "Digite o nome do curso ou nome do autor...",
+    "searchPlaceholder": "Digite para pesquisar...",
     "result": "encontrados {{count}} cursos",
     "result_one": "{{count}} curso encontrado",
     "result_few": "{{count}} cursos encontrados",
