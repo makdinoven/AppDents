@@ -74,6 +74,7 @@
   "or": "or",
   "here": "here.",
   "readerFailedToLoad": "Reader window failed to load? Try reading it directly",
+  "tooManyRequests": "⚠️ Too many requests. Please reload the page and try again in a moment",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",

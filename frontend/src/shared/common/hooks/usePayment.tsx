@@ -98,7 +98,10 @@ export const usePayment = ({
       course_ids: paymentData.course_ids,
       use_balance: isBalanceUsed,
       user_email: isLogged ? (email as string) : emailValue,
-      transfer_cart: !isLogged,
+      transfer_cart:
+        !isLogged &&
+        (cartLandingIds.cart_book_landing_ids.length > 0 ||
+          cartLandingIds.cart_landing_ids.length > 0),
       cart_landing_ids: cartLandingIds.cart_landing_ids,
       cart_book_landing_ids: cartLandingIds.cart_book_landing_ids,
       source: paymentData.source || getPaymentSource(isOffer),

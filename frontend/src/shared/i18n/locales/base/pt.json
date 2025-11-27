@@ -72,6 +72,7 @@
   "or": "ou",
   "here": "aqui.",
   "readerFailedToLoad": "A janela de leitura não carregou? Tente ler o arquivo diretamente",
+  "tooManyRequests": "⚠️ Muitas solicitações. Por favor, recarregue a página e tente novamente em instantes.",
 
   "emailValidationTooltip": {
     "suggestion": "Você quis dizer {{suggestedEmail}}?",

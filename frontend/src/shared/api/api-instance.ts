@@ -1,5 +1,7 @@
 import axios from "axios";
 import { BASE_URL } from "../common/helpers/commonConstants.ts";
+import { Alert } from "../components/ui/Alert/Alert.tsx";
+import { t } from "i18next";
 
 export const instance = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -25,6 +27,10 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
+    if (status === 429) {
+      Alert(`${t("tooManyRequests")}`);
+    }
     return Promise.reject(error);
   },
 );
