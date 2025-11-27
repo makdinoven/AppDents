@@ -6,7 +6,7 @@ import { useSearchParams } from "react-router-dom";
 import LoaderOverlay from "../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
 import Loader from "../../../../../../shared/components/ui/Loader/Loader.tsx";
-import ListController from "../../../../../../shared/components/ui/ListController/ListController.tsx";
+import ListController from "../../../../../../shared/components/list/ListController/ListController.tsx";
 import {
   FILTER_PARAM_KEYS,
   FilterKeys,
@@ -14,6 +14,7 @@ import {
 import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../../shared/assets/icons";
 import { PATHS } from "../../../../../../app/routes/routes.ts";
+import { FiltersData } from "../../../../../../shared/components/filters/types.ts";
 
 interface AdminListProps<T> {
   data: any;
@@ -25,6 +26,7 @@ interface AdminListProps<T> {
   showLanguageFilter?: boolean;
   handleToggle?: (value: number, isHidden: boolean) => void;
   showToggle?: boolean;
+  filtersData: FiltersData;
   transKey:
     | "landings"
     | "courses"
@@ -44,6 +46,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   onCreate,
   loading,
   handleToggle,
+  filtersData,
   showLanguageFilter = false,
   showToggle = false,
   transKey,
@@ -90,10 +93,13 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
       <ListController
         type={SEARCH_KEY}
         loadData={(params) => onFetch(params)}
-        total={data.total}
-        totalPages={data.total_pages}
-        size={SIZE}
-        filters={filters}
+        pagination={{
+          total: data.total,
+          total_pages: data.total_pages,
+          page: data.page,
+          size: data.size,
+        }}
+        filtersData={filtersData}
       >
         <div className={s.list}>
           {loading && (

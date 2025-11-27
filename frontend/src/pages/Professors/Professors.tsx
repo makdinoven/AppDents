@@ -3,7 +3,7 @@ import { useState } from "react";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import ProfessorsList from "../../shared/components/ProfessorsList/ProfessorsList.tsx";
 import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
-import ListController from "../../shared/components/ui/ListController/ListController.tsx";
+import ListController from "../../shared/components/list/ListController/ListController.tsx";
 import { ParamsType } from "../../shared/api/adminApi/types.ts";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../shared/store/store.ts";

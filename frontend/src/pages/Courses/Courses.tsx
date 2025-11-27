@@ -4,7 +4,7 @@ import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
 import { useEffect, useState } from "react";
 import { ParamsType } from "../../shared/api/adminApi/types.ts";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
-import ListController from "../../shared/components/ui/ListController/ListController.tsx";
+import ListController from "../../shared/components/list/ListController/ListController.tsx";
 import CardsList from "../../shared/components/ProductsSection/CardsList/CardsList.tsx";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import { useNavigate } from "react-router-dom";

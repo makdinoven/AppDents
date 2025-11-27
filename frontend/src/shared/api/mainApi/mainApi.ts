@@ -3,6 +3,7 @@ import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { PaymentApiPayload } from "../../store/slices/paymentSlice.ts";
+import { BookCardsParams } from "./types.ts";
 
 export const mainApi = {
   getTags() {
@@ -55,10 +56,6 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  getBookCards(params: any) {
-    return instance.get(`landings/cards`, { params: params });
-  },
-
   getCourseCardsRecommend(params: any) {
     return instance.get(`landings/recommend/cards`, {
       headers: getAuthHeaders(),
@@ -79,6 +76,10 @@ export const mainApi = {
 
   getBookLandingCards(params: any) {
     return instance.get(`books/landing/cards`, { params: params });
+  },
+
+  getBookLandingCardsV2(params: BookCardsParams) {
+    return instance.get(`books/landing/v2/cards`, { params: params });
   },
 
   searchCourses(params: { q: string; language: string }) {
