@@ -146,8 +146,8 @@ async def send_rate_limit_notification(
         if last_requests:
             message += "\n\n📋 <b>Последние 10 запросов:</b>\n"
             for i, req in enumerate(last_requests, 1):
-                # Форматируем timestamp в читаемый вид (секунды назад)
-                seconds_ago = int(datetime.now().timestamp() - req['timestamp'])
+                # seconds_ago уже вычислено в момент превышения лимита
+                seconds_ago = req.get('seconds_ago', 0)
                 message += f"{i}. <code>{escape(req['method'])} {escape(req['url'])}</code> ({seconds_ago}s назад)\n"
         
         message += f"\n⏰ {timestamp}"
