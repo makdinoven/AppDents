@@ -9,7 +9,7 @@
 
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, Query, selectinload
-from sqlalchemy import func, cast, Integer, and_, or_, exists, select
+from sqlalchemy import func, cast, Integer, and_, or_, exists, select, literal
 from decimal import Decimal
 
 from ..models.models_v2 import (
@@ -255,7 +255,7 @@ def aggregate_book_filters(
             db.query(
                 Publisher.id,
                 Publisher.name,
-                func.literal(0).label('count')
+                literal(0).label('count')
             )
             .join(top_publishers_subq, Publisher.id == top_publishers_subq.c.publisher_id)
             .order_by(top_publishers_subq.c.total_cnt.desc(), Publisher.name)
@@ -349,7 +349,7 @@ def aggregate_book_filters(
             db.query(
                 Author.id,
                 Author.name,
-                func.literal(0).label('count')
+                literal(0).label('count')
             )
             .join(top_authors_subq, Author.id == top_authors_subq.c.author_id)
             .order_by(top_authors_subq.c.total_cnt.desc(), Author.name)
@@ -443,7 +443,7 @@ def aggregate_book_filters(
             db.query(
                 Tag.id,
                 Tag.name,
-                func.literal(0).label('count')
+                literal(0).label('count')
             )
             .join(top_tags_subq, Tag.id == top_tags_subq.c.tag_id)
             .order_by(top_tags_subq.c.total_cnt.desc(), Tag.name)
