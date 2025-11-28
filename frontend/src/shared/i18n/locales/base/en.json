@@ -133,6 +133,7 @@
   },
 
   "search": {
+    "tooLong": "Too long. Use 200 characters or fewer.",
     "searchCourses": "Search courses",
     "searchPlaceholder": "Type to search...",
     "categories": "Categories",

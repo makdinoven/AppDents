@@ -1,6 +1,6 @@
 import s from "./SearchPage.module.scss";
 import Search from "../../shared/components/ui/Search/Search.tsx";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useOutsideClick from "../../shared/common/hooks/useOutsideClick.ts";
 import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
@@ -51,6 +51,7 @@ const SearchPage = () => {
   );
   const [searchParams] = useSearchParams();
   const closeModalRef = useRef<() => void>(null);
+  const [tooLongError, setTooLongError] = useState<string | null>(null);
   const selectedLanguagesFromStore = useSelector(
     (state: AppRootStateType) => state.main.search.selectedLanguages,
   );
@@ -97,6 +98,8 @@ const SearchPage = () => {
     !debouncedSearchValue;
 
   useEffect(() => {
+    if (tooLongError) return;
+
     if (
       debouncedSearchValue === q &&
       arraysEqual(selectedLanguagesFromStore!, selectedLanguages) &&
@@ -116,7 +119,21 @@ const SearchPage = () => {
     } else if (hasResults) {
       dispatch(clearSearch());
     }
-  }, [debouncedSearchValue, selectedLanguages, selectedCategories]);
+  }, [
+    debouncedSearchValue,
+    selectedLanguages,
+    selectedCategories,
+    tooLongError,
+  ]);
+
+  useEffect(() => {
+    if (searchValue && searchValue.length > 200) {
+      setTooLongError(t("search.tooLong"));
+      return;
+    }
+
+    setTooLongError(null);
+  }, [searchValue]);
 
   const handleClose = () => {
     dispatch(clearSearch());
@@ -144,6 +161,7 @@ const SearchPage = () => {
           </div>
           <div className={s.search_wrapper}>
             <Search
+              error={tooLongError}
               inputRef={inputRef}
               id={SEARCH_KEY}
               placeholder={"search.searchPlaceholder"}

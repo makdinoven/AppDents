@@ -131,8 +131,9 @@
   },
 
   "search": {
+    "tooLong": "Troppo lungo. Usa 200 caratteri o meno.",
     "searchCourses": "Cerca corsi",
-    "searchPlaceholder": "Inserisci il nome del corso o il nome dell'autore...",
+    "searchPlaceholder": "Digita per cercare...",
     "result": "trovati {{count}} corsi",
     "result_one": "{{count}} corso trovato",
     "result_few": "{{count}} corsi trovati",
