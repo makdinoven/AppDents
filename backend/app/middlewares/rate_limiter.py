@@ -5,6 +5,7 @@ from collections import defaultdict
 from time import time
 import asyncio
 import logging
+import re
 from jose import jwt, JWTError
 from ..core.config import settings
 from ..utils.telegram_monitor import send_rate_limit_notification
@@ -18,7 +19,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Ограничивает количество запросов с одного IP до max_requests за window_seconds.
     """
     
-    def __init__(self, app, max_requests: int = 120, window_seconds: int = 60):
+    def __init__(self, app, max_requests: int = 120, window_seconds: int = 60, excluded_paths: list = None):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
@@ -27,6 +28,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Для очистки старых записей
         self.last_cleanup = time()
         self.cleanup_interval = 300  # Очистка каждые 5 минут
+        # Пути, исключенные из rate limiting (поддерживает паттерны)
+        self.excluded_paths = excluded_paths or []
+        # Компилируем regex паттерны для исключенных путей
+        self.excluded_patterns = [re.compile(pattern) for pattern in self.excluded_paths]
         
     def _cleanup_old_entries(self):
         """Удаляет старые записи из памяти"""
@@ -47,6 +52,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             
             self.last_cleanup = current_time
             logger.debug(f"Rate limiter cleanup: removed {len(ips_to_remove)} IPs")
+    
+    def _is_excluded(self, path: str) -> bool:
+        """Проверяет, находится ли путь в списке исключений"""
+        for pattern in self.excluded_patterns:
+            if pattern.match(path):
+                return True
+        return False
     
     def _get_client_ip(self, request: Request) -> str:
         """Получает IP клиента из заголовков или напрямую"""
@@ -92,13 +104,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         """Обрабатывает каждый запрос"""
+        # Проверяем, не находится ли путь в исключениях
+        url = str(request.url.path)
+        if self._is_excluded(url):
+            # Пропускаем запрос без rate limiting
+            response = await call_next(request)
+            return response
+        
         # Периодическая очистка
         self._cleanup_old_entries()
         
         client_ip = self._get_client_ip(request)
         current_time = time()
         method = request.method
-        url = str(request.url.path)
         
         # Получаем запросы для этого IP
         requests = self.request_times[client_ip]

@@ -25,7 +25,17 @@ def create_app() -> FastAPI:
     )
     
     # Rate Limiting: 100 запросов в минуту с одного IP (Sliding Window)
-    app.add_middleware(RateLimitMiddleware, max_requests=100, window_seconds=60)
+    # Исключения: пути, которые не подлежат rate limiting
+    excluded_paths = [
+        r"^/api/books/\d+/pdf$",  # Скачивание PDF книг
+        r"^/api/validations/check-email$",  # Проверка email
+    ]
+    app.add_middleware(
+        RateLimitMiddleware, 
+        max_requests=100, 
+        window_seconds=60,
+        excluded_paths=excluded_paths
+    )
     
     # Monitoring: отслеживание ошибок и медленных запросов
     app.add_middleware(MonitoringMiddleware)
