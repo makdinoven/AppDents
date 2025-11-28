@@ -223,6 +223,49 @@ def preview_url_for(video_link: str) -> tuple[str | None, bool]:
     return None, False
 
 @shared_task(
+    name="app.tasks.preview_tasks.check_preview_url",
+    bind=True,
+    max_retries=0
+)
+def check_preview_url(self, video_link: str) -> None:
+    """
+    Проверяет, жив ли URL превью. Если мёртв — ставит на перегенерацию.
+    Вызывается асинхронно при запросе /by-page для URL, которые давно не проверялись.
+    """
+    db: Session = SessionLocal()
+    try:
+        row = db.query(LessonPreview).filter_by(video_link=video_link).first()
+        if not row or row.status != PreviewStatus.SUCCESS:
+            return
+        
+        # Проверяем URL
+        try:
+            r = requests.head(row.preview_url, timeout=REQUEST_TIMEOUT, allow_redirects=True)
+            is_alive = r.status_code == 200
+        except requests.RequestException:
+            is_alive = False
+        
+        now = datetime.utcnow()
+        row.checked_at = now
+        
+        if not is_alive:
+            logger.warning("[check_preview_url] dead url %s → reschedule", row.preview_url)
+            row.status = PreviewStatus.FAILED
+            row.updated_at = now
+            db.commit()
+            # Ставим на перегенерацию
+            generate_preview.apply_async(
+                (video_link,),
+                task_id=hashlib.sha1(video_link.encode()).hexdigest(),
+                queue="default"
+            )
+        else:
+            db.commit()
+    finally:
+        db.close()
+
+
+@shared_task(
     name="app.tasks.preview_tasks.generate_preview",
     bind=True,
     max_retries=0

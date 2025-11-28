@@ -1,17 +1,26 @@
 import copy
+import hashlib
+import json
+import os
 import uuid
 import logging
 from datetime import datetime, timedelta, time, date
 from decimal import Decimal, ROUND_HALF_UP
 
+import redis
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request, Body
 from pydantic import BaseModel
 from sqlalchemy import or_, func
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, selectinload, joinedload
 from typing import List, Optional, Dict, Literal
 from ..db.database import get_db
+
+# Redis для кэширования
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
+_rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+LANDING_CACHE_TTL = 180  # 2 минуты кэша
 from ..dependencies.auth import get_current_user, get_current_user_optional
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import User, Tag, Landing, Author, LandingVisit, Purchase, LandingAdPeriod, \
@@ -33,7 +42,7 @@ from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, Lan
     LandingListPageResponse, LangEnum, FreeAccessRequest
 from pydantic import BaseModel
 from ..schemas_v2.common import TagResponse
-from ..services_v2.preview_service import get_or_schedule_preview
+from ..services_v2.preview_service import get_or_schedule_preview, get_previews_batch
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
 from ..utils.email_sender import send_password_to_user
@@ -185,6 +194,61 @@ def get_landing_by_id(
         "is_hidden": landing.is_hidden,
     }
 
+def _build_landing_response(
+    db: Session,
+    landing: Landing,
+    lessons_out: List[dict],
+    authors_list: List[dict],
+) -> dict:
+    """Формирует финальный ответ (вынесено для переиспользования)."""
+    return {
+        "id": landing.id,
+        "page_name": landing.page_name,
+        "language": landing.language,
+        "landing_name": landing.landing_name,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_program": landing.course_program,
+        "lessons_info": lessons_out,
+        "preview_photo": landing.preview_photo,
+        "sales_count": landing.sales_count,
+        "author_ids": [a.id for a in landing.authors],
+        "course_ids": [c.id for c in landing.courses],
+        "tag_ids": [t.id for t in landing.tags],
+        "authors": authors_list,
+        "tags": [{"id": t.id, "name": t.name} for t in landing.tags],
+        "duration": landing.duration,
+        "lessons_count": landing.lessons_count,
+        "is_hidden": landing.is_hidden,
+    }
+
+
+def _get_landing_cache_key(page_name: str) -> str:
+    """Ключ кэша для лендинга."""
+    return f"landing:detail:{hashlib.md5(page_name.encode()).hexdigest()}"
+
+
+def _get_cached_landing(page_name: str) -> Optional[dict]:
+    """Попробовать получить лендинг из кэша."""
+    try:
+        key = _get_landing_cache_key(page_name)
+        data = _rds.get(key)
+        if data:
+            return json.loads(data)
+    except Exception:
+        pass
+    return None
+
+
+def _set_cached_landing(page_name: str, response: dict) -> None:
+    """Сохранить лендинг в кэш."""
+    try:
+        key = _get_landing_cache_key(page_name)
+        _rds.setex(key, LANDING_CACHE_TTL, json.dumps(response, default=str))
+    except Exception:
+        pass
+
+
 @router.get(
     "/detail/by-page/{page_name}",
     response_model=LandingDetailResponse,
@@ -202,16 +266,20 @@ def get_landing_by_page(
       ставится в очередь асинхронно; фронт сразу получает плейсхолдер.
     """
     log = logging.getLogger("landing-detail")
-    # 1. Берём лендинг + связи (авторы ➝ их лендинги ➝ курсы / теги)
+    
+    # 0. Проверяем кэш
+    cached = _get_cached_landing(page_name)
+    if cached:
+        return cached
+    
+    # 1. Берём лендинг с оптимизированными связями
+    #    Загружаем только прямые связи лендинга (без вложенных лендингов авторов)
     landing: Landing | None = (
         db.query(Landing)
           .options(
-              selectinload(Landing.authors)
-                .selectinload(Author.landings)
-                  .selectinload(Landing.courses),
-              selectinload(Landing.authors)
-                .selectinload(Author.landings)
-                  .selectinload(Landing.tags),
+              selectinload(Landing.authors),
+              selectinload(Landing.courses),
+              selectinload(Landing.tags),
           )
           .filter(Landing.page_name == page_name)
           .first()
@@ -219,7 +287,7 @@ def get_landing_by_page(
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
 
-    # 2. Приводим lessons_info → list[dict]  (как и раньше)
+    # 2. Приводим lessons_info → list[dict]
     raw_lessons = landing.lessons_info or []
     lessons_list: List[dict] = (
         [{k: v} for k, v in raw_lessons.items()]
@@ -227,83 +295,129 @@ def get_landing_by_page(
         list(raw_lessons)
     )
 
-    # 3. Добавляем превью к каждому уроку (in-place копия, чтобы не мутировать ORM)
+    # 3. Собираем все video_link'и для батчевого запроса превью
+    video_links: List[str] = []
+    for item in lessons_list:
+        if not item:
+            continue
+        key, lesson = next(iter(item.items()), (None, None))
+        if lesson and isinstance(lesson, dict):
+            video_link = lesson.get("link") or lesson.get("video_link")
+            if video_link:
+                video_links.append(video_link)
+    
+    # 4. Получаем все превью одним батч-запросом (без HTTP проверок)
+    previews_map: Dict[str, str] = {}
+    if video_links:
+        try:
+            previews_map = get_previews_batch(db, video_links)
+        except Exception:
+            log.exception("Failed batch preview fetch")
+
+    # 5. Добавляем превью к каждому уроку
     lessons_out: List[dict] = []
     for item in lessons_list:
-        key, lesson = next(iter(item.items()))
+        if not item:
+            continue
+        key, lesson = next(iter(item.items()), (None, None))
+        if lesson is None:
+            continue
         lesson_copy = copy.deepcopy(lesson)
 
-        # поддерживаем оба возможных ключа ссылки
         video_link = lesson_copy.get("link") or lesson_copy.get("video_link")
-        if video_link:
-            try:
-                lesson_copy["preview"] = get_or_schedule_preview(db, video_link)
-            except Exception:
-                log.exception("Failed preview for %s", video_link)
+        if video_link and video_link in previews_map:
+            lesson_copy["preview"] = previews_map[video_link]
 
         lessons_out.append({key: lesson_copy})
 
-    # 4. Вспомогательная обёртка для безопасного сравнения цен
-    def _safe_price(v) -> float:
-        try:
-            return float(v)
-        except Exception:
-            return float("inf")
-
-    # 5. Собираем authors_list (точно как раньше, чтобы схема не изменилась)
+    # 6. Собираем authors_list
+    #    Оптимизация: для каждого автора делаем один агрегированный запрос
+    #    вместо загрузки всех его лендингов
     authors_list: List[dict] = []
-    for a in landing.authors:
-        # 5.1 минимальная цена на каждый курс у автора
-        min_price: Dict[int, float] = {}
-        for l in a.landings:
-            p = _safe_price(l.new_price)
-            for c in l.courses:
-                if p < min_price.get(c.id, float("inf")):
-                    min_price[c.id] = p
+    
+    if landing.authors:
+        author_ids = [a.id for a in landing.authors]
+        
+        # Получаем агрегированные данные по авторам одним запросом
+        author_stats = _get_author_stats_batch(db, author_ids)
+        
+        for a in landing.authors:
+            stats = author_stats.get(a.id, {"courses_count": 0, "tags": []})
+            authors_list.append({
+                "id": a.id,
+                "name": a.name,
+                "description": a.description or "",
+                "photo": a.photo or "",
+                "language": a.language,
+                "courses_count": stats["courses_count"],
+                "tags": stats["tags"],
+            })
 
-        # 5.2 оставляем лендинги, у которых цена не выше min_price их курсов
-        kept = [
-            l for l in a.landings
-            if not any(
-                _safe_price(l.new_price) > min_price.get(c.id, _safe_price(l.new_price))
-                for c in l.courses
-            )
-        ]
+    # 7. Формируем ответ
+    response = _build_landing_response(db, landing, lessons_out, authors_list)
+    
+    # 8. Кэшируем результат
+    _set_cached_landing(page_name, response)
+    
+    return response
 
-        unique_courses = {c.id for l in kept for c in l.courses}
-        unique_tags    = sorted({t.name for l in kept for t in l.tags})
 
-        authors_list.append({
-            "id": a.id,
-            "name": a.name,
-            "description": a.description or "",
-            "photo": a.photo or "",
-            "language": a.language,
-            "courses_count": len(unique_courses),
-            "tags": unique_tags,
-        })
-
-    # 6. Финальный ответ под LandingDetailResponse
-    return {
-        "id": landing.id,
-        "page_name": landing.page_name,
-        "language": landing.language,
-        "landing_name": landing.landing_name,
-        "old_price": landing.old_price,
-        "new_price": landing.new_price,
-        "course_program": landing.course_program,
-        "lessons_info": lessons_out,          # <- уже с preview
-        "preview_photo": landing.preview_photo,
-        "sales_count": landing.sales_count,
-        "author_ids": [a.id for a in landing.authors],
-        "course_ids": [c.id for c in landing.courses],
-        "tag_ids":    [t.id for t in landing.tags],
-        "authors": authors_list,
-        "tags": [{"id": t.id, "name": t.name} for t in landing.tags],
-        "duration": landing.duration,
-        "lessons_count": landing.lessons_count,
-        "is_hidden": landing.is_hidden,
-    }
+def _get_author_stats_batch(db: Session, author_ids: List[int]) -> Dict[int, dict]:
+    """
+    Получить статистику по авторам (количество курсов и теги) оптимизированным запросом.
+    
+    Возвращает: {author_id: {"courses_count": N, "tags": [...]}}
+    """
+    if not author_ids:
+        return {}
+    
+    from ..models.models_v2 import landing_authors, landing_course, landing_tags
+    
+    result: Dict[int, dict] = {aid: {"courses_count": 0, "tags": []} for aid in author_ids}
+    
+    # Запрос для подсчёта уникальных курсов на автора
+    courses_query = (
+        db.query(
+            landing_authors.c.author_id,
+            func.count(func.distinct(landing_course.c.course_id)).label("cnt")
+        )
+        .join(Landing, Landing.id == landing_authors.c.landing_id)
+        .join(landing_course, landing_course.c.landing_id == Landing.id)
+        .filter(
+            landing_authors.c.author_id.in_(author_ids),
+            Landing.is_hidden == False
+        )
+        .group_by(landing_authors.c.author_id)
+    )
+    
+    for author_id, cnt in courses_query:
+        result[author_id]["courses_count"] = cnt
+    
+    # Запрос для получения уникальных тегов на автора
+    from ..models.models_v2 import Tag as TagModel
+    tags_query = (
+        db.query(
+            landing_authors.c.author_id,
+            TagModel.name
+        )
+        .join(Landing, Landing.id == landing_authors.c.landing_id)
+        .join(landing_tags, landing_tags.c.landing_id == Landing.id)
+        .join(TagModel, TagModel.id == landing_tags.c.tag_id)
+        .filter(
+            landing_authors.c.author_id.in_(author_ids),
+            Landing.is_hidden == False
+        )
+        .distinct()
+    )
+    
+    author_tags: Dict[int, set] = {aid: set() for aid in author_ids}
+    for author_id, tag_name in tags_query:
+        author_tags[author_id].add(tag_name)
+    
+    for author_id, tags in author_tags.items():
+        result[author_id]["tags"] = sorted(tags)
+    
+    return result
 
 @router.post("/", response_model=LandingListResponse)
 def create_new_landing(

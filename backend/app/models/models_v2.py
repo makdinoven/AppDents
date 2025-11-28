@@ -133,6 +133,7 @@ class Landing(Base):
     __table_args__ = (
         # если у тебя уже есть другие индексы — добавь этот в кортеж
         Index("ix_landings_created_at", "created_at"),
+        Index("ix_landings_page_name", "page_name"),
     )
 
 
