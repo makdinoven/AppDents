@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 
 type ListControllerProps = {
   size?: number;
-  children: React.ReactNode;
+  children: ReactNode;
   paginationSlot: ReactNode;
   filtersSlot: ReactNode;
 };

@@ -1,5 +1,6 @@
 .list_controller_container {
   @include flex-column;
+  flex: 1;
   gap: 40px;
 }
 
