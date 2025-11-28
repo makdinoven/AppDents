@@ -1,36 +1,25 @@
-import { Filter } from "../types.ts";
-import type { ListQueryParams } from "../../list/model/useListQueryParams.ts";
-import MultiSelectFilter from "./MultiselectFilter.tsx";
-import RangeFilter from "./RangeFilter.tsx";
+import { Filter } from "../types";
+import type { ListQueryParams } from "../../list/model/useListQueryParams";
+import MultiSelectFilter from "./MultiSelectFilter";
+import RangeFilter from "./RangeFilter";
 import s from "./FiltersPanel.module.scss";
 
-type FilterItemProps = {
+type Props = {
   filter: Filter;
   params: ListQueryParams;
-  setParams: (next: Partial<ListQueryParams>) => void;
+  actions: {
+    set: (next: Partial<ListQueryParams>) => void;
+    reset: (key: string) => void;
+  };
 };
 
-const FilterItem = ({ filter, params, setParams }: FilterItemProps) => {
-  const resetSingle = () => {
+const FilterItem = ({ filter, params, actions }: Props) => {
+  const reset = () => {
     if (filter.type === "range") {
-      setParams({
-        filters: {
-          ...params.filters,
-          [filter.param_name_from]: undefined,
-          [filter.param_name_to]: undefined,
-        },
-        page: 1,
-      });
-    }
-
-    if (filter.type === "multiselect") {
-      setParams({
-        filters: {
-          ...params.filters,
-          [filter.param_name]: [],
-        },
-        page: 1,
-      });
+      actions.reset(filter.from);
+      actions.reset(filter.to);
+    } else if (filter.type === "multiselect") {
+      actions.reset(filter.name);
     }
   };
 
@@ -38,22 +27,17 @@ const FilterItem = ({ filter, params, setParams }: FilterItemProps) => {
     <div className={s.filter_block}>
       <div className={s.filter_header_row}>
         <div className={s.filter_header}>{filter.label}</div>
-
-        <button className={s.reset_item_btn} onClick={resetSingle}>
+        <button onClick={reset} className={s.reset_item_btn}>
           Reset
         </button>
       </div>
 
       {filter.type === "multiselect" && (
-        <MultiSelectFilter
-          filter={filter}
-          params={params}
-          setParams={setParams}
-        />
+        <MultiSelectFilter filter={filter} params={params} actions={actions} />
       )}
 
       {filter.type === "range" && (
-        <RangeFilter filter={filter} params={params} setParams={setParams} />
+        <RangeFilter filter={filter} params={params} actions={actions} />
       )}
     </div>
   );

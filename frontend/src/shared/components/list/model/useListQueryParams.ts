@@ -3,89 +3,100 @@ import { useSearchParams } from "react-router-dom";
 
 export interface ListQueryParams {
   page: number;
-  pageSize: number;
-  filters: Record<string, any>;
+  size: number;
+  [key: string]: any;
 }
 
-interface UseListQueryParamsOptions {
+interface Options {
   defaultPage?: number;
   defaultPageSize?: number;
 }
 
-export function useListQueryParams(options?: UseListQueryParamsOptions) {
+export function useListQueryParams(options?: Options) {
   const [search, setSearch] = useSearchParams();
 
-  const pageKey = "page";
-  const sizeKey = "page-size";
+  const PAGE = "page";
+  const SIZE = "page-size";
 
   const defaultPage = options?.defaultPage ?? 1;
   const defaultPageSize = options?.defaultPageSize ?? 12;
 
+  // ----------------------------------
+  // PARSE URL
+  // ----------------------------------
   const params: ListQueryParams = useMemo(() => {
-    const page = Number(search.get(pageKey)) || defaultPage;
-    const pageSize = Number(search.get(sizeKey)) || defaultPageSize;
+    const page = Number(search.get(PAGE)) || defaultPage;
+    const size = Number(search.get(SIZE)) || defaultPageSize;
 
-    const filters: Record<string, any> = {};
+    const parsed: ListQueryParams = { page, size };
 
     search.forEach((value, key) => {
-      if (key === pageKey || key === sizeKey) return;
+      if (key === PAGE || key === SIZE) return;
 
-      if (value.includes(",")) {
-        filters[key] = value.split(",");
-      } else {
-        filters[key] = value;
-      }
+      parsed[key] = value.includes(",") ? value.split(",") : value;
     });
 
-    return { page, pageSize, filters };
+    return parsed;
   }, [search, defaultPage, defaultPageSize]);
 
-  const updateParams = useCallback(
+  // ----------------------------------
+  // ACTIONS
+  // ----------------------------------
+
+  const set = useCallback(
     (next: Partial<ListQueryParams>) => {
       const newSearch = new URLSearchParams(search);
 
-      if (next.page !== undefined) {
-        newSearch.set(pageKey, String(next.page));
-      }
+      Object.entries(next).forEach(([key, value]) => {
+        const isPageKey = key === "page" || key === "size";
 
-      if (next.pageSize !== undefined) {
-        newSearch.set(sizeKey, String(next.pageSize));
-      }
+        const emptyArray = Array.isArray(value) && value.length === 0;
+        const emptyValue =
+          value === undefined || value === null || value === "";
 
-      if (next.filters) {
-        Object.entries(next.filters).forEach(([key, value]) => {
-          const isEmptyArray = Array.isArray(value) && value.length === 0;
-          const isEmptyScalar =
-            value === undefined || value === null || value === "";
+        if (emptyArray || emptyValue) {
+          newSearch.delete(key);
+        } else if (Array.isArray(value)) {
+          newSearch.set(key, value.join(","));
+        } else {
+          newSearch.set(key, String(value));
+        }
 
-          if (isEmptyArray || isEmptyScalar) {
-            newSearch.delete(key);
-            return;
-          }
+        // any filter → reset page
+        if (!isPageKey) newSearch.set(PAGE, "1");
+      });
 
-          if (Array.isArray(value)) {
-            newSearch.set(key, value.join(","));
-          } else {
-            newSearch.set(key, String(value));
-          }
-        });
-      }
+      const onlyPageChange =
+        Object.keys(next).length === 1 && next.page !== undefined;
 
-      setSearch(newSearch);
+      setSearch(newSearch, {
+        replace: !onlyPageChange, // page = push, filters = replace
+      });
     },
     [search, setSearch],
   );
 
-  const resetParams = useCallback(() => {
-    const cleared = new URLSearchParams();
-    cleared.set(pageKey, String(defaultPage));
-    cleared.set(sizeKey, String(defaultPageSize));
-    setSearch(cleared, { replace: true });
+  const reset = useCallback(
+    (key: string) => {
+      const newSearch = new URLSearchParams(search);
+      newSearch.delete(key);
+      newSearch.set(PAGE, "1");
+
+      setSearch(newSearch, { replace: true });
+    },
+    [search, setSearch],
+  );
+
+  const resetAll = useCallback(() => {
+    const newSearch = new URLSearchParams();
+    newSearch.set(PAGE, String(defaultPage));
+    newSearch.set(SIZE, String(defaultPageSize));
+
+    setSearch(newSearch, { replace: true });
   }, [setSearch, defaultPage, defaultPageSize]);
 
   return {
     params,
-    setParams: updateParams,
-    resetParams,
+    actions: { set, reset, resetAll },
   };
 }

@@ -1,38 +1,34 @@
-export type SortOption = {
+export type UISortOption = {
   value: string;
   label: string;
 };
 
-export type MultiselectOption = {
-  id: number | null;
-  value: string | null;
-  name: string;
-  count: number;
+export type UIMultiselectOption = {
+  value: string;
+  label: string;
+  count?: number;
 };
 
-export type MultiselectFilter = {
+export type UIMultiselectFilter = {
   type: "multiselect";
   label: string;
-  param_name: string;
-  options: MultiselectOption[];
-  has_more: boolean;
-  total_count: number;
-  search_endpoint: string | null;
+  name: string;
+  options: UIMultiselectOption[];
 };
 
-export type RangeFilter = {
+export type UIRangeFilter = {
   type: "range";
   label: string;
-  param_name_from: string;
-  param_name_to: string;
+  from: string;
+  to: string;
   min: number;
   max: number;
-  unit: string;
+  unit?: string;
 };
 
-export type Filter = MultiselectFilter | RangeFilter;
+export type Filter = UIMultiselectFilter | UIRangeFilter;
 
-export type FiltersData = {
-  filters: Record<string, Filter>;
-  available_sorts: SortOption[];
+export type FiltersDataUI = {
+  filters: Filter[];
+  sorts: UISortOption[];
 };

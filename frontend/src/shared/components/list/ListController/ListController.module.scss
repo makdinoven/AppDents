@@ -3,17 +3,6 @@
   gap: 40px;
 }
 
-.results_found {
-  @include clamped-p3;
-  text-align: right;
-  opacity: 0;
-  @include transition;
-
-  &.loaded {
-    opacity: 0.8;
-  }
-}
-
 @media (max-width: $mobile-breakpoint) {
   .list_controller_container {
     gap: 25px;

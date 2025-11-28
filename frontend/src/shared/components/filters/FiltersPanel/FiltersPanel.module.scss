@@ -189,3 +189,14 @@
   }
 }
 
+.results_found {
+  @include clamped-p3;
+  text-align: right;
+  opacity: 0;
+  @include transition;
+
+  &.loaded {
+    opacity: 0.8;
+  }
+}
+
