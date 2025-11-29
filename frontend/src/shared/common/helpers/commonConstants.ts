@@ -152,7 +152,7 @@ export const PAGE_SOURCES = {
 export const PAYMENT_SOURCES = [
   { name: PAGE_SOURCES.main, path: PATHS.MAIN },
   { name: PAGE_SOURCES.cart, path: PATHS.CART },
-  { name: PAGE_SOURCES.landing, path: PATHS.LANDING_CLIENT.clearPattern }, //TODO ТУТ БУДУТ БАГИ
+  { name: PAGE_SOURCES.landing, path: PATHS.LANDING_CLIENT.clearPattern },
   { name: PAGE_SOURCES.landing, path: PATHS.LANDING.clearPattern },
   { name: PAGE_SOURCES.videoLanding, path: PATHS.LANDING_VIDEO.clearPattern },
   {
@@ -166,13 +166,18 @@ export const PAYMENT_SOURCES = [
   },
   { name: PAGE_SOURCES.professorListOffer, path: PATHS.PROFESSORS_LISTING },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE },
+  {
+    name: PAGE_SOURCES.cabinetOffer,
+    path: PATHS.PROFILE_MY_COURSE.clearPattern,
+  },
+  { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_MY_BOOK.clearPattern },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_MY_BOOKS },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_MY_COURSES },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_PURCHASE_HISTORY },
   { name: PAGE_SOURCES.cabinetOffer, path: PATHS.PROFILE_INVITED_USERS },
   {
     name: PAGE_SOURCES.cabinetFree,
-    path: PATHS.PROFILE_MY_COURSE.clearPattern, //TODO ТУТ БУДУТ БАГИ
+    path: PATHS.PROFILE_MY_COURSE.clearPattern,
   },
   { name: PAGE_SOURCES.landingOffer, path: PATHS.LANDING.clearPattern },
   { name: PAGE_SOURCES.landingOffer, path: PATHS.LANDING_CLIENT.clearPattern },

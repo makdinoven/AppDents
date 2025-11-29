@@ -73,6 +73,7 @@
   "here": "aqui.",
   "of": "de",
   "readerFailedToLoad": "A janela de leitura não carregou? Tente ler o arquivo diretamente",
+  "tooManyRequests": "⚠️ Muitas solicitações. Por favor, recarregue a página e tente novamente em instantes.",
 
   "emailValidationTooltip": {
     "suggestion": "Você quis dizer {{suggestedEmail}}?",
@@ -131,8 +132,9 @@
   },
 
   "search": {
+    "tooLong": "Muito longo. Use 200 caracteres ou menos.",
     "searchCourses": "Buscar cursos",
-    "searchPlaceholder": "Digite o nome do curso ou nome do autor...",
+    "searchPlaceholder": "Digite para pesquisar...",
     "result": "encontrados {{count}} cursos",
     "result_one": "{{count}} curso encontrado",
     "result_few": "{{count}} cursos encontrados",
@@ -456,5 +458,25 @@
     "productRequestSuccess": "Seu pedido foi enviado com sucesso. Responderemos o mais rápido possível.",
     "productRequestFailed": "Não foi possível processar o pedido. Tente novamente em instantes.",
     "loginText": "<0>Crie uma conta</0> para desbloquear o acesso a pedir livros e cursos."
+  },
+
+  "filters": {
+    "allFilters": "Todos os filtros"
+  },
+
+  "sort": {
+    "toShowFirst": "Quais itens mostrar primeiro:",
+    "keys": {
+      "price_asc": "Mais baratos primeiro",
+      "price_desc": "Mais caros primeiro",
+      "pages_asc": "Menos páginas",
+      "pages_desc": "Mais páginas",
+      "year_asc": "Edições mais antigas primeiro",
+      "year_desc": "Edições mais novas primeiro",
+      "new_asc": "Itens mais antigos primeiro",
+      "new_desc": "Itens mais novos primeiro",
+      "popular_asc": "Menos populares primeiro",
+      "popular_desc": "Mais populares primeiro"
+    }
   }
 }

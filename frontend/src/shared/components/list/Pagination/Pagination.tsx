@@ -1,8 +1,8 @@
 import s from "./Pagination.module.scss";
 import PaginationButton from "./PaginationButton/PaginationButton.tsx";
-import MultiSelect from "../../MultiSelect/MultiSelect.tsx";
 import { PAGE_SIZES } from "../../../common/helpers/commonConstants.ts";
 import { t } from "i18next";
+import MultiSelect from "../../ui/MultiSelect/MultiSelect.tsx";
 
 export type PaginationType = {
   page: number;

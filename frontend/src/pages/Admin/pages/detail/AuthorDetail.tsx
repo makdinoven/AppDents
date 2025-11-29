@@ -4,7 +4,7 @@ import DetailBottom from "../modules/common/DetailBottom/DetailBottom.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { t } from "i18next";
 import { LANGUAGES } from "../../../../shared/common/helpers/commonConstants.ts";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";

@@ -1,6 +1,6 @@
 import s from "./AdControlListing.module.scss";
 import DateRangeFilter from "../../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
-import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES_NAME } from "../../../../../shared/common/helpers/commonConstants.ts";
 import SortOrderToggle, {
   SortDirectionType,
@@ -19,7 +19,7 @@ import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../shared/assets/icons";
 import { transformIdNameArrToValueNameArr } from "../../../../../shared/common/helpers/helpers.ts";
 import SwitchButtons from "../../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
-import {Trans} from "react-i18next";
+import { Trans } from "react-i18next";
 
 const adControlSearch = "ad-control-q";
 

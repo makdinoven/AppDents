@@ -75,6 +75,7 @@
   "here": "here.",
   "of": "of",
   "readerFailedToLoad": "Reader window failed to load? Try reading it directly",
+  "tooManyRequests": "⚠️ Too many requests. Please reload the page and try again in a moment",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",
@@ -133,6 +134,7 @@
   },
 
   "search": {
+    "tooLong": "Too long. Use 200 characters or fewer.",
     "searchCourses": "Search courses",
     "searchPlaceholder": "Type to search...",
     "categories": "Categories",
@@ -508,6 +510,26 @@
     "productRequestSuccess": "Your request has been successfully submitted. We will respond as soon as possible.",
     "productRequestFailed": "The request could not be processed. Please retry in a moment.",
     "loginText": "<0>Sign up</0> to unlock access to ordering books and courses."
+  },
+
+  "sort": {
+    "toShowFirst": "Items to show first:",
+    "keys": {
+      "price_asc": "Cheaper first",
+      "price_desc": "More expensive first",
+      "pages_asc": "Fewer pages",
+      "pages_desc": "More pages",
+      "year_asc": "Older editions first",
+      "year_desc": "Newer editions first",
+      "new_asc": "Older items first",
+      "new_desc": "Newest items first",
+      "popular_asc": "Less popular first",
+      "popular_desc": "More popular first"
+    }
+  },
+
+  "filters": {
+    "allFilters": "All filters"
   },
 
   "admin": {

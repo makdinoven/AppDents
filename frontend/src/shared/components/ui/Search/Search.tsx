@@ -9,11 +9,13 @@ const Search = ({
   onFocus,
   id = "search",
   inputRef,
+  error,
 }: {
   id?: string;
   placeholder: string;
   onFocus?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
+  error?: string | null;
 }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -55,7 +57,9 @@ const Search = ({
   };
 
   return (
-    <div className={`${s.input_wrapper} ${localValue ? s.filled : ""}`}>
+    <div
+      className={`${s.input_wrapper} ${localValue ? s.filled : ""} ${error ? s.error : ""}`}
+    >
       <input
         id={id}
         type="text"
@@ -77,7 +81,7 @@ const Search = ({
       </div>
 
       <label htmlFor={id} className={s.placeholder_label}>
-        {t(placeholder)}
+        {!error ? t(placeholder) : error}
       </label>
     </div>
   );

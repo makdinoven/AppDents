@@ -73,6 +73,7 @@
   "here": "هنا",
   "of": "من",
   "readerFailedToLoad": "هل فشلت نافذة القارئ في التحميل؟ حاول قراءة الملف مباشرة",
+  "tooManyRequests": "⚠️ عدد كبير من الطلبات. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى بعد قليل.",
 
   "emailValidationTooltip": {
     "suggestion": "هل كنت تقصد {{suggestedEmail}}؟",
@@ -131,8 +132,9 @@
   },
 
   "search": {
+    "tooLong": "الطلب طويل جدًا. استخدم 200 حرفًا أو أقل.",
     "searchCourses": "بحث عن الدورات",
-    "searchPlaceholder": "أدخل اسم الدورة أو اسم المؤلف...",
+    "searchPlaceholder": "اكتب للبحث...",
     "result": "تم العثور على {{count,localizedNumber}} دورات",
     "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
     "result_few": "تم العثور على {{ localizedNumber,count}} دورات",
@@ -483,5 +485,25 @@
     "productRequestSuccess": "تم إرسال طلبك بنجاح. سنقوم بالرد في أقرب وقت ممكن.",
     "productRequestFailed": "تعذر معالجة الطلب. يرجى المحاولة مرة أخرى بعد قليل.",
     "loginText": "<0>أنشئ حسابًا</0> لفتح الوصول لطلب الكتب والدورات."
+  },
+
+  "filters": {
+    "allFilters": "جميع المرشحات"
+  },
+
+  "sort": {
+    "toShowFirst": "ما هي العناصر التي تريد عرضها أولاً:",
+    "keys": {
+      "price_asc": "الأرخص أولاً",
+      "price_desc": "الأغلى أولاً",
+      "pages_asc": "عدد صفحات أقل",
+      "pages_desc": "عدد صفحات أكثر",
+      "year_asc": "الإصدارات الأقدم أولاً",
+      "year_desc": "الإصدارات الأحدث أولاً",
+      "new_asc": "العناصر الأقدم أولاً",
+      "new_desc": "الأحدث أولاً",
+      "popular_asc": "الأقل شهرة أولاً",
+      "popular_desc": "الأكثر شهرة أولاً"
+    }
   }
 }

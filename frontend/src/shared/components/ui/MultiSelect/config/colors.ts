@@ -1,5 +1,5 @@
-import { Brand } from "../../../common/types/commonTypes.ts";
-import { BRAND } from "../../../common/helpers/commonConstants.ts";
+import { Brand } from "../../../../common/types/commonTypes.ts";
+import { BRAND } from "../../../../common/helpers/commonConstants.ts";
 
 export const HOVER_COLOR = "rgba(100, 116, 139, 0.1)";
 const COLORS: Record<Brand, { PRIMARY: string; ACCENT: string }> = {

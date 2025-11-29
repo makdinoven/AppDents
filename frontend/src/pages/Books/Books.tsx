@@ -61,7 +61,6 @@ const Books = () => {
           filters && (
             <FiltersPanel
               actions={actions}
-              searchKey={"search"}
               searchPlaceholder={`books.search`}
               filtersData={filters}
               params={params}

@@ -1,6 +1,6 @@
 import s from "./PdfHeader.module.scss";
 import {
-  Chevron,
+  ChevronCircle,
   ListIcon,
   MaximizeIcon,
   ModalClose,
@@ -9,7 +9,7 @@ import {
 } from "../../../assets/icons";
 import { t } from "i18next";
 import { scales, screenResolutionMap } from "../constants.ts";
-import MultiSelect from "../../MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../ui/MultiSelect/MultiSelect.tsx";
 import { useScreenWidth } from "../../../common/hooks/useScreenWidth.ts";
 import { useEffect, useState } from "react";
 import { usePdfReaderFullscreen } from "../hooks/usePdfReaderFullscreen.ts";
@@ -66,13 +66,13 @@ const PdfHeader = ({
         onClick={goToPrevPage}
         className={`${s.up} ${isFirstPage ? s.inactive : ""}`}
       >
-        <Chevron />
+        <ChevronCircle />
       </button>
       <button
         onClick={goToNextPage}
         className={`${s.down} ${isLastPage ? s.inactive : ""}`}
       >
-        <Chevron />
+        <ChevronCircle />
       </button>
     </div>
   );

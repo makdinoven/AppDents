@@ -10,6 +10,7 @@ export interface ListQueryParams {
 interface Options {
   defaultPage?: number;
   defaultPageSize?: number;
+  defaultSort?: string;
 }
 
 export function useListQueryParams(options?: Options) {
@@ -17,9 +18,11 @@ export function useListQueryParams(options?: Options) {
 
   const PAGE = "page";
   const SIZE = "page-size";
+  const SORT = "sort";
 
   const defaultPage = options?.defaultPage ?? 1;
   const defaultPageSize = options?.defaultPageSize ?? 12;
+  const defaultSort = options?.defaultSort ?? "popular_desc";
 
   // ----------------------------------
   // PARSE URL
@@ -27,17 +30,18 @@ export function useListQueryParams(options?: Options) {
   const params: ListQueryParams = useMemo(() => {
     const page = Number(search.get(PAGE)) || defaultPage;
     const size = Number(search.get(SIZE)) || defaultPageSize;
+    const sort = Number(search.get(SORT)) || defaultSort;
 
-    const parsed: ListQueryParams = { page, size };
+    const parsed: ListQueryParams = { page, size, sort };
 
     search.forEach((value, key) => {
-      if (key === PAGE || key === SIZE) return;
+      if (key === PAGE || key === SIZE || key === SORT) return;
 
       parsed[key] = value.includes(",") ? value.split(",") : value;
     });
 
     return parsed;
-  }, [search, defaultPage, defaultPageSize]);
+  }, [search, defaultPage, defaultPageSize, defaultSort]);
 
   // ----------------------------------
   // ACTIONS
@@ -91,9 +95,10 @@ export function useListQueryParams(options?: Options) {
     const newSearch = new URLSearchParams();
     newSearch.set(PAGE, String(defaultPage));
     newSearch.set(SIZE, String(defaultPageSize));
+    newSearch.set(SORT, String(defaultSort));
 
     setSearch(newSearch, { replace: true });
-  }, [setSearch, defaultPage, defaultPageSize]);
+  }, [setSearch, defaultPage, defaultPageSize, defaultSort]);
 
   return {
     params,

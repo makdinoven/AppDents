@@ -10,13 +10,12 @@ import { Alert } from "../../../../../../shared/components/ui/Alert/Alert";
 import { ErrorIcon } from "../../../../../../shared/assets/icons";
 import { PATHS } from "../../../../../../app/routes/routes";
 import { useEffect } from "react";
-
 import { useListQueryParams } from "../../../../../../shared/components/list/model/useListQueryParams";
-import MultiSelect from "../../../../../../shared/components/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES_NAME } from "../../../../../../shared/common/helpers/commonConstants.ts";
 import Search from "../../../../../../shared/components/ui/Search/Search.tsx";
 import useDebounce from "../../../../../../shared/common/hooks/useDebounce.ts";
 import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
+import MultiSelect from "../../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 
 interface AdminListProps<T> {
   data: any;

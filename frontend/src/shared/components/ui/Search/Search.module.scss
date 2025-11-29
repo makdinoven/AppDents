@@ -1,13 +1,25 @@
-$input-wrapper-pb: clamp(4px, 1vw, 10px);
-$input-wrapper-pt: clamp(15px, 3vw, 25px);
+$input-wrapper-pb: clamp(3px, 0.5vw, 6px);
+$input-wrapper-pt: clamp(15px, 3vw, 28px);
 
 .input_wrapper {
   position: relative;
   padding-top: $input-wrapper-pt;
   padding-bottom: $input-wrapper-pb;
   width: 100%;
-  padding-right: clamp(41px, 4vw, 63px);
-  @include clamped-h4;
+  padding-right: clamp(40px, 4vw, 62px);
+
+  &.error {
+    &::after {
+      background-color: $error-color;
+    }
+
+    &:focus-within .placeholder_label,
+    &.filled .placeholder_label {
+      color: $error-color;
+    }
+  }
+
+  @include clamped-h4();
   @include horizontal-line(
     $z: 2,
     $bottom: 0,
@@ -18,16 +30,17 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
   );
 
   &::after {
-    @include transition;
+    @include transition();
   }
 
-  &:focus-within {
+  &:focus-within:not(.error) {
     &::after {
       background-color: $primary;
       width: 102%;
     }
 
     .search_icon {
+      cursor: pointer;
       svg {
         path {
           stroke: $primary;
@@ -38,32 +51,30 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
 
   &:focus-within .placeholder_label,
   &.filled .placeholder_label {
-    @include clamped-p4;
+    @include clamped-p4();
     top: 0;
     color: $hover-color-dark;
     transform: none;
-    //opacity: 0.9;
   }
 
   .placeholder_label {
-    @include clamped-p2;
-    @include transition;
+    @include clamped-p2();
+    @include transition();
     display: flex;
     gap: 5px;
     position: absolute;
     top: $input-wrapper-pt;
     left: 0;
     pointer-events: none;
-    color: $accent;
-    opacity: 0.7;
+    color: $accent-06;
   }
 
   .search_icon {
     svg {
-      width: clamp(18px, 4vw, 29px);
-      height: clamp(18px, 4vw, 29px);
+      width: clamp(18px, 4vw, 30px);
+      height: clamp(18px, 4vw, 30px);
       path {
-        @include transition;
+        @include transition();
       }
     }
   }
@@ -82,7 +93,7 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
 
     svg {
       path {
-        stroke-width: 0.7;
+        stroke-width: 1;
       }
     }
 
@@ -95,8 +106,8 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
     }
 
     svg {
-      width: clamp(18px, 4vw, 29px);
-      height: clamp(18px, 4vw, 29px);
+      width: clamp(18px, 4vw, 30px);
+      height: clamp(18px, 4vw, 30px);
 
       path {
         @include transition;
@@ -107,4 +118,17 @@ $input-wrapper-pt: clamp(15px, 3vw, 25px);
 
 .search_input {
   width: 100%;
+  @include clamped-p2();
+}
+
+@media (max-width: $middle-breakpoint) {
+  .icons {
+    transform: translateY(-10%);
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .icons {
+    transform: translateY(-2%);
+  }
 }

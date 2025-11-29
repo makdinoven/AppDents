@@ -4,13 +4,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 35px;
-  height: 35px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   outline: 2px solid transparent;
-  outline-offset: 1.5px;
+  outline-offset: 1px;
   //overflow: hidden;
-  border: 0.5px solid $tertiary;
   @include transition();
   @include clamped-p4;
   text-align: center;
@@ -48,7 +47,7 @@
   }
 
   &.checked {
-    outline: 2.5px solid $primary;
+    outline: 2px solid $primary;
     outline-offset: 2px;
   }
 
