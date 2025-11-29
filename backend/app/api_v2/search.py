@@ -13,7 +13,7 @@ router = APIRouter()
     summary="Глобальный поиск: авторы, курсы (лендинги), книги (книжные лендинги)"
 )
 def search_v2(
-    q: str = Query(..., min_length=1, description="Поисковая строка"),
+    q: str = Query(..., min_length=1, max_length=200, description="Поисковая строка"),
     types: Optional[List[SearchTypeEnum]] = Query(
         None,
         description="Фильтр типов: authors, landings, book_landings (мультивыбор)"

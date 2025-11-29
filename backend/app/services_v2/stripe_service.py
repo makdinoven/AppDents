@@ -193,6 +193,17 @@ def create_checkout_session(
         f"{success_url}?session_id={{CHECKOUT_SESSION_ID}}&region={region}"
     )
     purchase_lang = region.upper()
+    
+    # Извлекаем slug из referer заранее для надежного определения лендинга
+    referer_slug = None
+    if referer:
+        try:
+            parsed_path = urlparse(referer).path.strip("/")
+            if parsed_path:
+                referer_slug = parsed_path.split("/")[-1]
+        except Exception as e:
+            logging.warning("Failed to parse referer slug: %s", e)
+    
     metadata: dict = {
         "course_ids": ",".join(map(str, course_ids)),
         "client_ip": client_ip,
@@ -201,6 +212,10 @@ def create_checkout_session(
         "external_id": external_id,
         "purchase_lang": purchase_lang,
     }
+    
+    # Сохраняем slug отдельно для надежного определения лендинга
+    if referer_slug:
+        metadata["referer_slug"] = referer_slug
     if fbp:
         metadata["fbp"] = fbp
     if fbc:
@@ -219,6 +234,12 @@ def create_checkout_session(
         # На всякий случай докинем книги в metadata, если роут не положил
     if book_landing_ids and "book_landing_ids" not in metadata:
         metadata["book_landing_ids"] = json.dumps(book_landing_ids)
+
+    # Обрезаем все значения метаданных до 500 символов (лимит Stripe)
+    for key, value in metadata.items():
+        if value and isinstance(value, str) and len(value) > 500:
+            metadata[key] = value[:500]
+            logging.warning("Metadata key '%s' truncated from %d to 500 chars", key, len(value))
 
     logging.info("Checkout product_name → %s", product_name)
     logging.info("Metadata for Stripe session: %s", metadata)
@@ -359,16 +380,29 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
 
     # fallback: если landing_ids пуст — пытаемся определить по referer или по первому курсу
     if not landing_ids_list:
-        referer = metadata.get("referer", "")
         landing_for_purchase = None
+        
+        # Приоритет 1: используем предварительно извлеченный slug
+        referer_slug = metadata.get("referer_slug", "")
+        if referer_slug:
+            landing_for_purchase = db.query(Landing).filter_by(page_name=referer_slug).first()
+            if landing_for_purchase:
+                logging.info("Landing определен по referer_slug: %s → %s", referer_slug, landing_for_purchase.id)
+        
+        # Приоритет 2: пробуем парсить полный referer (может быть обрезан)
+        if not landing_for_purchase:
+            referer = metadata.get("referer", "")
+            if referer:
+                try:
+                    slug = urlparse(referer).path.strip("/").split("/")[-1]
+                    if slug:
+                        landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
+                        if landing_for_purchase:
+                            logging.info("Landing определен по полному referer: %s → %s", slug, landing_for_purchase.id)
+                except Exception as e:
+                    logging.warning("Failed to parse referer in webhook: %s", e)
 
-        # пробуем по slug из referer
-        if referer:
-            slug = urlparse(referer).path.strip("/").split("/")[-1]
-            if slug:
-                landing_for_purchase = db.query(Landing).filter_by(page_name=slug).first()
-
-        # если по referer не нашли — первый лендинг первого курса
+        # Приоритет 3: первый лендинг первого курса
         if not landing_for_purchase and course_ids:
             landing_for_purchase = (
                 db.query(Landing)
@@ -376,6 +410,8 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 .filter(Course.id == course_ids[0])
                 .first()
             )
+            if landing_for_purchase:
+                logging.info("Landing определен по первому курсу: %s → %s", course_ids[0], landing_for_purchase.id)
 
         if landing_for_purchase:
             landing_ids_list = [landing_for_purchase.id]

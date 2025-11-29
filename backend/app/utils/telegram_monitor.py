@@ -115,9 +115,10 @@ async def send_rate_limit_notification(
     max_requests: int,
     user_email: str = None,
     user_id: int = None,
-    time_until_available: float = 0
+    time_until_available: float = 0,
+    last_requests: list = None
 ) -> bool:
-    """Отправляет уведомление о превышении rate limit в Telegram"""
+    """Отправляет уведомление о превышении rate limit в Telegram с последними 10 запросами"""
     if not settings.TELEGRAM_BOT_TOKEN or not settings.TELEGRAM_MONITORING_CHAT_ID:
         logger.warning("Telegram monitoring not configured, skipping rate limit notification")
         return False
@@ -139,9 +140,17 @@ async def send_rate_limit_notification(
 🌐 <b>Домен:</b> {escape(domain)}
 👤 <b>Пользователь:</b> {user_info}
 📊 <b>Запросы:</b> {request_count}/{max_requests} за последние 60 сек
-⏱️ <b>Блокировка:</b> ~{int(time_until_available)} сек (динамическая)
+⏱️ <b>Блокировка:</b> ~{int(time_until_available)} сек (динамическая)"""
 
-⏰ {timestamp}"""
+        # Добавляем информацию о последних 10 запросах
+        if last_requests:
+            message += "\n\n📋 <b>Последние 10 запросов:</b>\n"
+            for i, req in enumerate(last_requests, 1):
+                # seconds_ago уже вычислено в момент превышения лимита
+                seconds_ago = req.get('seconds_ago', 0)
+                message += f"{i}. <code>{escape(req['method'])} {escape(req['url'])}</code> ({seconds_ago}s назад)\n"
+        
+        message += f"\n⏰ {timestamp}"
         
         bot = telegram.Bot(settings.TELEGRAM_BOT_TOKEN)
         async with bot:

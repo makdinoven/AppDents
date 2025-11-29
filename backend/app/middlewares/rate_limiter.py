@@ -5,6 +5,9 @@ from collections import defaultdict
 from time import time
 import asyncio
 import logging
+import re
+from jose import jwt, JWTError
+from ..core.config import settings
 from ..utils.telegram_monitor import send_rate_limit_notification
 
 logger = logging.getLogger(__name__)
@@ -16,15 +19,19 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     Ограничивает количество запросов с одного IP до max_requests за window_seconds.
     """
     
-    def __init__(self, app, max_requests: int = 100, window_seconds: int = 60):
+    def __init__(self, app, max_requests: int = 120, window_seconds: int = 60, excluded_paths: list = None):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        # Словарь: {ip: [timestamp1, timestamp2, ...]}
+        # Словарь: {ip: [(timestamp, method, url), ...]}
         self.request_times = defaultdict(list)
         # Для очистки старых записей
         self.last_cleanup = time()
         self.cleanup_interval = 300  # Очистка каждые 5 минут
+        # Пути, исключенные из rate limiting (поддерживает паттерны)
+        self.excluded_paths = excluded_paths or []
+        # Компилируем regex паттерны для исключенных путей
+        self.excluded_patterns = [re.compile(pattern) for pattern in self.excluded_paths]
         
     def _cleanup_old_entries(self):
         """Удаляет старые записи из памяти"""
@@ -34,10 +41,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             
             # Удаляем IP, у которых все запросы старше cutoff_time
             ips_to_remove = []
-            for ip, timestamps in self.request_times.items():
-                # Удаляем старые timestamps
-                timestamps[:] = [ts for ts in timestamps if ts > cutoff_time]
-                if not timestamps:
+            for ip, requests in self.request_times.items():
+                # Удаляем старые запросы
+                requests[:] = [req for req in requests if req[0] > cutoff_time]
+                if not requests:
                     ips_to_remove.append(ip)
             
             for ip in ips_to_remove:
@@ -45,6 +52,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             
             self.last_cleanup = current_time
             logger.debug(f"Rate limiter cleanup: removed {len(ips_to_remove)} IPs")
+    
+    def _is_excluded(self, path: str) -> bool:
+        """Проверяет, находится ли путь в списке исключений"""
+        for pattern in self.excluded_patterns:
+            if pattern.match(path):
+                return True
+        return False
     
     def _get_client_ip(self, request: Request) -> str:
         """Получает IP клиента из заголовков или напрямую"""
@@ -64,66 +78,115 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return "unknown"
     
     def _get_user_info(self, request: Request) -> tuple:
-        """Извлекает информацию о пользователе из request.state если есть"""
-        # FastAPI может сохранять информацию о пользователе в request.state
-        # после аутентификации через dependencies
-        user_email = getattr(request.state, "user_email", None)
-        user_id = getattr(request.state, "user_id", None)
+        """Извлекает информацию о пользователе из JWT токена напрямую"""
+        # Middleware выполняется ДО dependencies авторизации,
+        # поэтому декодируем JWT токен напрямую из заголовка Authorization
+        user_email = None
+        user_id = None
+        
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.lower().startswith("bearer "):
+            token = auth_header[7:]  # Убираем "Bearer "
+            try:
+                payload = jwt.decode(
+                    token, 
+                    settings.SECRET_KEY, 
+                    algorithms=[settings.ALGORITHM]
+                )
+                user_id = payload.get("user_id")
+                user_email = payload.get("email")  # Если есть в токене
+            except JWTError:
+                pass  # Невалидный токен - пропускаем
+            except Exception as e:
+                logger.debug(f"Error decoding JWT in rate limiter: {e}")
+        
         return user_email, user_id
     
     async def dispatch(self, request: Request, call_next):
         """Обрабатывает каждый запрос"""
+        # Проверяем, не находится ли путь в исключениях
+        url = str(request.url.path)
+        if self._is_excluded(url):
+            # Пропускаем запрос без rate limiting
+            response = await call_next(request)
+            return response
+        
         # Периодическая очистка
         self._cleanup_old_entries()
         
         client_ip = self._get_client_ip(request)
         current_time = time()
+        method = request.method
         
-        # Получаем timestamps для этого IP
-        timestamps = self.request_times[client_ip]
+        # Получаем запросы для этого IP
+        requests = self.request_times[client_ip]
         
-        # Удаляем timestamps старше window_seconds (Sliding Window)
+        # Удаляем запросы старше window_seconds (Sliding Window)
         cutoff_time = current_time - self.window_seconds
-        timestamps[:] = [ts for ts in timestamps if ts > cutoff_time]
+        requests[:] = [req for req in requests if req[0] > cutoff_time]
         
         # Проверяем лимит
-        if len(timestamps) >= self.max_requests:
+        if len(requests) >= self.max_requests:
             # Лимит превышен
             # Вычисляем время до доступности (когда самый старый запрос выйдет из окна)
-            oldest_timestamp = timestamps[0]
+            oldest_timestamp = requests[0][0]
             time_until_available = self.window_seconds - (current_time - oldest_timestamp)
             
             # Получаем информацию о пользователе
             user_email, user_id = self._get_user_info(request)
             domain = request.headers.get("host", "unknown")
             
+            # Получаем последние 10 запросов для отправки в Telegram
+            # ВАЖНО: создаём копию данных на момент превышения лимита,
+            # чтобы они не изменились к моменту асинхронной отправки
+            current_request_count = len(requests)
+            snapshot_time = current_time  # Фиксируем время для расчёта "секунд назад"
+            last_requests = [
+                {
+                    "method": req[1], 
+                    "url": req[2], 
+                    "seconds_ago": int(snapshot_time - req[0])
+                }
+                for req in requests[-10:]
+            ]
+            
             # Отправляем уведомление в Telegram (неблокирующе)
             asyncio.create_task(send_rate_limit_notification(
                 client_ip=client_ip,
                 domain=domain,
-                request_count=len(timestamps),
+                request_count=current_request_count,
                 max_requests=self.max_requests,
                 user_email=user_email,
                 user_id=user_id,
-                time_until_available=time_until_available
+                time_until_available=time_until_available,
+                last_requests=last_requests
             ))
             
             logger.warning(
                 f"Rate limit exceeded for IP {client_ip}: "
-                f"{len(timestamps)}/{self.max_requests} requests in {self.window_seconds}s"
+                f"{len(requests)}/{self.max_requests} requests in {self.window_seconds}s"
             )
             
+            # Добавляем CORS-заголовки, т.к. этот ответ не проходит через CORSMiddleware
+            # (middleware выполняются в обратном порядке)
             return JSONResponse(
                 status_code=429,
                 content={
                     "detail": "Rate limit exceeded. Try again later.",
                     "retry_after": int(time_until_available)
                 },
-                headers={"Retry-After": str(int(time_until_available))}
+                headers={
+                    "Retry-After": str(int(time_until_available)),
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "*",
+                    "Access-Control-Allow-Headers": "*",
+                    "Access-Control-Expose-Headers": "Retry-After",
+                }
             )
         
         # Добавляем текущий запрос
-        timestamps.append(current_time)
+        requests.append((current_time, method, url))
         
         # Пропускаем запрос дальше
         response = await call_next(request)
