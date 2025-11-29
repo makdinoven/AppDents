@@ -82,7 +82,10 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const loadData = (params: ParamsType, debQ: string) => {
     const hasSearch = params.q !== undefined && params.q !== "";
     if (hasSearch && params.q === debQ) {
-      actions.set({ page: 1 });
+      if (params.page !== 1) {
+        actions.set({ page: 1 });
+        return;
+      }
       onSearch({ q: params.q });
     } else if (!hasSearch && !debQ) {
       onLoad({

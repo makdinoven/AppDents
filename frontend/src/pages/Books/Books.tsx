@@ -84,7 +84,7 @@ const Books = () => {
         }
       >
         {loading ? (
-          <BookCardSkeletons amount={12} />
+          <BookCardSkeletons amount={Number(params.size)} />
         ) : (
           <CardsList
             loading={loading}
