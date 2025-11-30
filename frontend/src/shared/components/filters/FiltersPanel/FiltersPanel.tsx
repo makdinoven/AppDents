@@ -30,6 +30,8 @@ const FiltersPanel = ({
 
   if (!filtersData) return null;
 
+  console.log("");
+
   return (
     <>
       <div className={s.filters_panel}>
