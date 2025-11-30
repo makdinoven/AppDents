@@ -18,7 +18,8 @@ interface ButtonProps {
     | "disabled";
   children?: React.ReactNode;
   text?: string;
-  icon?: React.ReactNode | null;
+  iconLeft?: React.ReactNode | null;
+  iconRight?: React.ReactNode | null;
   className?: string;
 }
 
@@ -31,7 +32,8 @@ const Button = ({
   variant = "outlined",
   children,
   text,
-  icon,
+  iconLeft,
+  iconRight,
   className,
 }: ButtonProps) => {
   return link ? (
@@ -43,13 +45,14 @@ const Button = ({
       className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${disabled ? s.disabled : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
+      {iconLeft && iconLeft}
       {children && <span>{children}</span>}
       {text && (
         <span>
           <Trans i18nKey={text} />
         </span>
       )}
-      {icon && icon}
+      {iconRight && iconRight}
       {loading && <LoaderOverlay />}
     </button>
   );

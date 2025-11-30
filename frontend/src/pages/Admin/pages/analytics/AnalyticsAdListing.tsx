@@ -1,5 +1,5 @@
 import s from "./Analytics.module.scss";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import {
   ANALYTICS_LIMITS,
   LANGUAGES_NAME,

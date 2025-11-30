@@ -2,7 +2,7 @@ import s from "./EditLanding.module.scss";
 import AdminField from "../common/AdminField/AdminField.tsx";
 import { LandingType } from "../../../types.ts";
 import { t } from "i18next";
-import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import PhotoUploader from "../../../../../shared/components/PhotoUploader/PhotoUploader.tsx";
 import { LANGUAGES } from "../../../../../shared/common/helpers/commonConstants.ts";
 

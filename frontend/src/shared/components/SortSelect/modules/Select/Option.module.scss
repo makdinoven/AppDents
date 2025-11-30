@@ -1,0 +1,67 @@
+.option {
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  text-wrap: nowrap;
+}
+
+.radio_button {
+  height: 20px;
+  width: 20px;
+  border: 1.5px solid $primary;
+  @include transition();
+  flex-shrink: 0;
+  transform: translateY(3px);
+
+  &.radio {
+    border-radius: 50%;
+  }
+
+  &.active {
+    background-color: $primary;
+  }
+
+  &.checkbox {
+    border-radius: 3px;
+    @include flex-center();
+    position: relative;
+  }
+
+  &.checkbox::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    z-index: 2;
+    width: 22px;
+    height: 22px;
+    opacity: 0;
+    @include transition();
+    border-radius: 3px;
+    background-image: url("../../../../assets/icons/check-square.svg");
+    background-position: 100% 100%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    will-change: opacity;
+  }
+
+  &.checkbox.active::after {
+    opacity: 1;
+  }
+}
+
+@media (hover: hover) {
+  .option:hover {
+    background-color: $hover-color;
+  }
+}
+
+.option:active {
+  background-color: $hover-color;
+}

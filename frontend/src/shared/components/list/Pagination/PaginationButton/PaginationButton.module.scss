@@ -77,10 +77,6 @@
   }
 
   .navButtonArrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-
     svg {
       width: 20px;
       height: 20px;
@@ -93,6 +89,6 @@
 
   .nextNavButton {
     right: 0;
-    transform: translateY(-50%) rotate(180deg);
+    transform: rotate(180deg);
   }
 }

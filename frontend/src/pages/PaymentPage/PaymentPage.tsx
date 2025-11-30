@@ -232,7 +232,7 @@ const PaymentPage = () => {
         variant={IS_PAYMENT_DISABLED ? "disabled" : "filled"}
         loading={loading}
         text={isFree ? "tryCourseForFree" : balancePrice === 0 ? "get" : "pay"}
-        icon={isFree ? null : <PoweredByStripeLogo />}
+        iconRight={isFree ? null : <PoweredByStripeLogo />}
         className={s.payment_btn}
       />
       {!isLogged && (

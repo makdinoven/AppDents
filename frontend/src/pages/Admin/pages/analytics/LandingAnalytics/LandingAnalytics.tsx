@@ -14,7 +14,7 @@ import s from "./LandingAnalytics.module.scss";
 import LandingAnalyticsChart from "../Charts/LandingAnalyticsChart.tsx";
 import Table from "../../../../../shared/components/ui/Table/Table.tsx";
 import { useDateRangeFilter } from "../../../../../shared/common/hooks/useDateRangeFilter.ts";
-import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import LoaderOverlay from "../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
 import { Alert } from "../../../../../shared/components/ui/Alert/Alert.tsx";
 import { ErrorIcon } from "../../../../../shared/assets/icons";

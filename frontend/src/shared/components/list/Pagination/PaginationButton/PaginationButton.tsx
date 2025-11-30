@@ -14,6 +14,8 @@ const PaginationButton = ({
   activePage: number;
   variant?: "next" | "prev" | "default";
 }) => {
+  const isActive = activePage === pageNumber;
+
   switch (variant) {
     case "next":
       return (
@@ -36,8 +38,8 @@ const PaginationButton = ({
     case "default":
       return (
         <button
-          onClick={onClick}
-          className={`${s.navButton} ${activePage === pageNumber ? s.activePage : ""}`}
+          onClick={isActive ? undefined : onClick}
+          className={`${s.navButton} ${isActive ? s.activePage : ""}`}
         >
           {pageNumber}
         </button>

@@ -8,7 +8,7 @@ import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
 import { t } from "i18next";
 import { UserType } from "../../types.ts";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { ROLES } from "../../../../shared/common/helpers/commonConstants.ts";
 import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";

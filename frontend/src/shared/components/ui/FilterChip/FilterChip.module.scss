@@ -1,0 +1,47 @@
+.filter_chip {
+  width: fit-content;
+  height: fit-content;
+  padding: 10px 20px;
+  @include flex-center();
+  gap: 15px;
+  background-color: $hover-color;
+  color: $text-color-accent;
+  @include clamped-p3();
+  border-radius: 10px;
+  cursor: pointer;
+  text-wrap: nowrap;
+  @include transition();
+
+  svg {
+    height: 20px;
+    @include transition($duration: 300ms);
+
+    path {
+      stroke: $text-color-accent;
+      stroke-width: 1.5;
+    }
+  }
+}
+
+@media (hover: hover) {
+  .filter_chip:hover {
+    background-color: $primary;
+    color: $tertiary;
+
+    svg {
+      path {
+        stroke: $tertiary;
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .filter_chip {
+    gap: 10px;
+    padding: 8px 10px;
+    svg {
+      width: 18px;
+    }
+  }
+}
