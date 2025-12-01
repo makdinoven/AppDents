@@ -10,7 +10,7 @@ from decimal import Decimal
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
-from sqlalchemy import or_, desc, func, cast, Integer
+from sqlalchemy import or_, desc, func, cast, Integer, Numeric as SqlNumeric
 from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel
 
@@ -1148,14 +1148,15 @@ def book_landing_cards_v2(
     )
     
     # Применяем сортировку
+    # Явный CAST к DECIMAL для корректной числовой сортировки в MySQL
     if sort == "price_asc":
         base = base.order_by(
-            BookLanding.new_price.asc(),
+            cast(BookLanding.new_price, SqlNumeric(10, 2)).asc(),
             BookLanding.id.asc()
         )
     elif sort == "price_desc":
         base = base.order_by(
-            BookLanding.new_price.desc(),
+            cast(BookLanding.new_price, SqlNumeric(10, 2)).desc(),
             BookLanding.id.desc()
         )
     elif sort == "pages_asc":
