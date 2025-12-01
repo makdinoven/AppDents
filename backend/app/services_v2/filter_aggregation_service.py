@@ -42,7 +42,7 @@ def build_book_landing_base_query(
     
     Возвращает Query, к которому можно добавить сортировку и пагинацию.
     """
-    # Базовый запрос: только публичные лендинги
+    # Базовый запрос: только публичные лендинги с установленной ценой
     base = (
         db.query(BookLanding)
         .options(
@@ -52,6 +52,7 @@ def build_book_landing_base_query(
             selectinload(BookLanding.books).selectinload(Book.files),
         )
         .filter(BookLanding.is_hidden.is_(False))
+        .filter(BookLanding.new_price.isnot(None))  # только с установленной ценой
     )
     
     # Фильтр по языку

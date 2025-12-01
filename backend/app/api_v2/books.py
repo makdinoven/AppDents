@@ -1150,13 +1150,11 @@ def book_landing_cards_v2(
     # Применяем сортировку
     if sort == "price_asc":
         base = base.order_by(
-            BookLanding.new_price.is_(None),
             BookLanding.new_price.asc(),
             BookLanding.id.asc()
         )
     elif sort == "price_desc":
         base = base.order_by(
-            BookLanding.new_price.is_(None),
             BookLanding.new_price.desc(),
             BookLanding.id.desc()
         )
