@@ -874,7 +874,7 @@ def _serialize_book_card(bl: BookLanding) -> dict:
 )
 def book_landing_cards(
     mode: str = Query("cursor", regex="^(cursor|page)$"),
-    tags: Optional[List[str]] = Query(None, description="Фильтр по тегам (имена)"),
+    tags: Optional[List[int]] = Query(None, description="Фильтр по тегам (ID)"),
     sort: Optional[str] = Query(None, description="popular | discount | new"),
     language: Optional[str] = Query(None, description="EN, RU, ES, IT, AR, PT"),
     q: Optional[str] = Query(None, min_length=1, description="Поиск по landing_name/page_name"),
@@ -905,7 +905,7 @@ def book_landing_cards(
                            (BookLanding.page_name.ilike(like)))
     if tags:
         # Ленд, где у любой книги есть любой из переданных тегов (по имени)
-        base = base.filter(BookLanding.books.any(Book.tags.any(Tag.name.in_(tags))))
+        base = base.filter(BookLanding.books.any(Book.tags.any(Tag.id.in_(tags))))
 
     # сортировка (как у курсов: popular/discount/new)
     if sort == "popular":
@@ -1035,9 +1035,9 @@ def book_landing_cards_v2(
         description="Язык лендинга (EN, RU, ES, IT, AR, PT)",
         regex="^(EN|RU|ES|IT|AR|PT)$"
     ),
-    tags: Optional[List[str]] = Query(
+    tags: Optional[List[int]] = Query(
         None,
-        description="Фильтр по тегам (имена тегов, можно несколько)"
+        description="Фильтр по тегам (ID тегов, можно несколько)"
     ),
     formats: Optional[List[str]] = Query(
         None,

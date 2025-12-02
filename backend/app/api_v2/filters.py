@@ -67,7 +67,7 @@ def search_authors_endpoint(
     limit: int = Query(20, gt=0, le=100, description="Максимальное количество результатов"),
     # Фильтры для контекста "books"
     language: Optional[str] = Query(None, regex="^(EN|RU|ES|IT|AR|PT)$", description="[books] Язык"),
-    tags: Optional[List[str]] = Query(None, description="[books] Теги"),
+    tags: Optional[List[int]] = Query(None, description="[books] ID тегов"),
     formats: Optional[List[str]] = Query(None, description="[books] Форматы"),
     publisher_ids: Optional[List[int]] = Query(None, description="[books] ID издателей"),
     year_from: Optional[int] = Query(None, ge=1900, le=2100, description="[books] Год от"),
@@ -130,7 +130,7 @@ def search_publishers_endpoint(
     limit: int = Query(20, gt=0, le=100, description="Максимальное количество результатов"),
     # Фильтры для контекста "books"
     language: Optional[str] = Query(None, regex="^(EN|RU|ES|IT|AR|PT)$", description="[books] Язык"),
-    tags: Optional[List[str]] = Query(None, description="[books] Теги"),
+    tags: Optional[List[int]] = Query(None, description="[books] ID тегов"),
     formats: Optional[List[str]] = Query(None, description="[books] Форматы"),
     author_ids: Optional[List[int]] = Query(None, description="[books] ID авторов"),
     year_from: Optional[int] = Query(None, ge=1900, le=2100, description="[books] Год от"),

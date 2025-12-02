@@ -25,7 +25,7 @@ from ..schemas_v2.common import (
 def build_book_landing_base_query(
     db: Session,
     language: Optional[str] = None,
-    tags: Optional[List[str]] = None,
+    tags: Optional[List[int]] = None,
     formats: Optional[List[str]] = None,
     publisher_ids: Optional[List[int]] = None,
     author_ids: Optional[List[int]] = None,
@@ -69,11 +69,11 @@ def build_book_landing_base_query(
             )
         )
     
-    # Фильтр по тегам (любой из переданных тегов)
+    # Фильтр по тегам (любой из переданных тегов по ID)
     if tags:
         base = base.filter(
             BookLanding.books.any(
-                Book.tags.any(Tag.name.in_(tags))
+                Book.tags.any(Tag.id.in_(tags))
             )
         )
     
