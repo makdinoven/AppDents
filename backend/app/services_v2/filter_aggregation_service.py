@@ -9,7 +9,7 @@
 
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session, Query, selectinload
-from sqlalchemy import func, cast, Integer, and_, or_, exists, select, literal
+from sqlalchemy import func, cast, Integer, and_, or_, exists, select, literal, Numeric as SqlNumeric
 from decimal import Decimal
 
 from ..models.models_v2 import (
@@ -102,21 +102,28 @@ def build_book_landing_base_query(
         )
     
     # Фильтр по году публикации
+    # Используем and_() для объединения условий внутри .any()
+    # и regexp для валидации формата (должен начинаться с 4 цифр)
     if year_from or year_to:
-        year_conditions = []
         if year_from:
             # publication_date может быть "2023" или "2023-01-01"
             base = base.filter(
                 BookLanding.books.any(
-                    Book.publication_date.isnot(None),
-                    cast(func.left(Book.publication_date, 4), Integer) >= year_from
+                    and_(
+                        Book.publication_date.isnot(None),
+                        Book.publication_date.regexp_match('^[0-9]{4}'),
+                        cast(func.left(Book.publication_date, 4), Integer) >= year_from
+                    )
                 )
             )
         if year_to:
             base = base.filter(
                 BookLanding.books.any(
-                    Book.publication_date.isnot(None),
-                    cast(func.left(Book.publication_date, 4), Integer) <= year_to
+                    and_(
+                        Book.publication_date.isnot(None),
+                        Book.publication_date.regexp_match('^[0-9]{4}'),
+                        cast(func.left(Book.publication_date, 4), Integer) <= year_to
+                    )
                 )
             )
     
@@ -533,6 +540,7 @@ def aggregate_book_filters(
     
     # ═══════════════════ Year Range (всегда показываем) ═══════════════════
     # Получаем общий диапазон годов из ВСЕХ книг (без фильтров)
+    # Добавляем проверку на валидный формат года (начинается с 4 цифр)
     year_range = (
         db.query(
             func.min(cast(func.left(Book.publication_date, 4), Integer)).label('min_year'),
@@ -543,6 +551,7 @@ def aggregate_book_filters(
         .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
         .filter(BookLanding.is_hidden.is_(False))
         .filter(Book.publication_date.isnot(None))
+        .filter(Book.publication_date.regexp_match('^[0-9]{4}'))
         .first()
     )
     
@@ -558,10 +567,11 @@ def aggregate_book_filters(
     
     # ═══════════════════ Price Range (всегда показываем) ═══════════════════
     # Получаем общий диапазон цен из ВСЕХ книжных лендингов (без фильтров)
+    # Явный CAST к DECIMAL для корректного числового сравнения (избегаем строковой сортировки)
     price_range = (
         db.query(
-            func.min(BookLanding.new_price).label('min_price'),
-            func.max(BookLanding.new_price).label('max_price')
+            func.min(cast(BookLanding.new_price, SqlNumeric(10, 2))).label('min_price'),
+            func.max(cast(BookLanding.new_price, SqlNumeric(10, 2))).label('max_price')
         )
         .filter(BookLanding.is_hidden.is_(False))
         .filter(BookLanding.new_price.isnot(None))
