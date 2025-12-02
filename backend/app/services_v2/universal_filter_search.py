@@ -112,15 +112,13 @@ def _search_authors_for_books(
     if q:
         author_query = author_query.filter(Author.name.ilike(f"%{q}%"))
     
-    # Группировка
-    author_query = author_query.group_by(Author.id, Author.name)
-    
-    # Подсчет total
+    # Подсчет total (до группировки, чтобы избежать MultipleResultsFound)
     total = author_query.with_entities(func.count(func.distinct(Author.id))).scalar() or 0
     
-    # Получаем результаты с сортировкой по популярности
+    # Группировка и получение результатов с сортировкой по популярности
     authors_data = (
         author_query
+        .group_by(Author.id, Author.name)
         .order_by(func.count(func.distinct(BookLanding.id)).desc(), Author.name)
         .limit(limit)
         .all()
@@ -245,15 +243,13 @@ def _search_publishers_for_books(
     if q:
         publisher_query = publisher_query.filter(Publisher.name.ilike(f"%{q}%"))
     
-    # Группировка
-    publisher_query = publisher_query.group_by(Publisher.id, Publisher.name)
-    
-    # Подсчет total
+    # Подсчет total (до группировки, чтобы избежать MultipleResultsFound)
     total = publisher_query.with_entities(func.count(func.distinct(Publisher.id))).scalar() or 0
     
-    # Получаем результаты с сортировкой по популярности
+    # Группировка и получение результатов с сортировкой по популярности
     publishers_data = (
         publisher_query
+        .group_by(Publisher.id, Publisher.name)
         .order_by(func.count(func.distinct(BookLanding.id)).desc(), Publisher.name)
         .limit(limit)
         .all()
@@ -347,15 +343,13 @@ def _search_tags_for_books(
     if q:
         tag_query = tag_query.filter(Tag.name.ilike(f"%{q}%"))
     
-    # Группировка
-    tag_query = tag_query.group_by(Tag.id, Tag.name)
-    
-    # Подсчет total
+    # Подсчет total (до группировки, чтобы избежать MultipleResultsFound)
     total = tag_query.with_entities(func.count(func.distinct(Tag.id))).scalar() or 0
     
-    # Получаем результаты с сортировкой по популярности
+    # Группировка и получение результатов с сортировкой по популярности
     tags_data = (
         tag_query
+        .group_by(Tag.id, Tag.name)
         .order_by(func.count(func.distinct(BookLanding.id)).desc(), Tag.name)
         .limit(limit)
         .all()
