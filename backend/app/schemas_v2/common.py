@@ -136,6 +136,35 @@ class SortOption(BaseModel):
         }
 
 
+class SelectedMultiselectValues(BaseModel):
+    """Выбранные значения для multiselect-фильтра."""
+    options: List[FilterOption] = Field(
+        default_factory=list,
+        description="Полные данные выбранных опций (id, name, count)"
+    )
+
+
+class SelectedRangeValues(BaseModel):
+    """Выбранные значения для range-фильтра."""
+    value_from: Optional[Union[int, float]] = Field(None, description="Выбранное значение 'от'")
+    value_to: Optional[Union[int, float]] = Field(None, description="Выбранное значение 'до'")
+
+
+class SelectedFilters(BaseModel):
+    """
+    Все выбранные пользователем фильтры с полными данными.
+    
+    Позволяет фронтенду отображать выбранные фильтры даже после очистки строки поиска.
+    """
+    publishers: Optional[SelectedMultiselectValues] = None
+    authors: Optional[SelectedMultiselectValues] = None
+    tags: Optional[SelectedMultiselectValues] = None
+    formats: Optional[SelectedMultiselectValues] = None
+    year: Optional[SelectedRangeValues] = None
+    price: Optional[SelectedRangeValues] = None
+    pages: Optional[SelectedRangeValues] = None
+
+
 class CatalogFiltersMetadata(BaseModel):
     """
     Метаданные всех доступных фильтров и сортировок для каталога.
@@ -149,6 +178,10 @@ class CatalogFiltersMetadata(BaseModel):
     available_sorts: List[SortOption] = Field(
         default_factory=list,
         description="Список доступных опций сортировки"
+    )
+    selected: Optional[SelectedFilters] = Field(
+        None,
+        description="Выбранные пользователем фильтры с полными данными"
     )
 
     class Config:

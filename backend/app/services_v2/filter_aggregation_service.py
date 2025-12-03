@@ -18,7 +18,8 @@ from ..models.models_v2 import (
 )
 from ..schemas_v2.common import (
     FilterOption, MultiselectFilter, RangeFilter, 
-    SortOption, CatalogFiltersMetadata
+    SortOption, CatalogFiltersMetadata,
+    SelectedFilters, SelectedMultiselectValues, SelectedRangeValues
 )
 
 
@@ -158,6 +159,31 @@ def build_book_landing_base_query(
     return base
 
 
+def _prepend_selected_options(
+    options: List[FilterOption],
+    selected_options: List[FilterOption]
+) -> List[FilterOption]:
+    """
+    Добавляет выбранные опции в начало списка, убирая дубликаты.
+    """
+    if not selected_options:
+        return options
+    
+    # Собираем ID/value выбранных опций
+    selected_ids = {opt.id for opt in selected_options if opt.id is not None}
+    selected_values = {opt.value for opt in selected_options if opt.value is not None}
+    
+    # Фильтруем существующие опции, убирая дубликаты
+    filtered_options = [
+        opt for opt in options
+        if (opt.id is None or opt.id not in selected_ids) and
+           (opt.value is None or opt.value not in selected_values)
+    ]
+    
+    # Возвращаем выбранные первыми
+    return selected_options + filtered_options
+
+
 def aggregate_book_filters(
     db: Session,
     base_query: Query,
@@ -178,6 +204,7 @@ def aggregate_book_filters(
         CatalogFiltersMetadata с заполненными фильтрами и сортировками
     """
     filters = {}
+    selected = SelectedFilters()
     
     # Получаем ID лендингов, попадающих под текущие фильтры
     filtered_landing_ids = [landing.id for landing in base_query.with_entities(BookLanding.id).all()]
@@ -270,13 +297,55 @@ def aggregate_book_filters(
             .all()
         )
     
+    # Получаем выбранные издатели из current_filters
+    selected_publisher_ids = current_filters.get('publisher_ids') or []
+    selected_publisher_options = []
+    
+    if selected_publisher_ids:
+        # Получаем полные данные по выбранным издателям с count
+        if publisher_landing_ids:
+            selected_publishers_data = (
+                db.query(
+                    Publisher.id,
+                    Publisher.name,
+                    func.count(func.distinct(BookLanding.id)).label('count')
+                )
+                .select_from(Publisher)
+                .join(book_publishers, Publisher.id == book_publishers.c.publisher_id)
+                .join(Book, book_publishers.c.book_id == Book.id)
+                .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+                .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+                .filter(Publisher.id.in_(selected_publisher_ids))
+                .filter(BookLanding.id.in_(publisher_landing_ids))
+                .group_by(Publisher.id, Publisher.name)
+                .all()
+            )
+        else:
+            selected_publishers_data = (
+                db.query(Publisher.id, Publisher.name, literal(0).label('count'))
+                .filter(Publisher.id.in_(selected_publisher_ids))
+                .all()
+            )
+        
+        selected_publisher_options = [
+            FilterOption(id=pub_id, name=pub_name, count=int(count))
+            for pub_id, pub_name, count in selected_publishers_data
+        ]
+        selected.publishers = SelectedMultiselectValues(options=selected_publisher_options)
+    
+    # Базовые опции издателей
+    base_publisher_options = [
+        FilterOption(id=pub_id, name=pub_name, count=int(count))
+        for pub_id, pub_name, count in publishers_data
+    ]
+    
+    # Добавляем выбранные в начало списка
+    final_publisher_options = _prepend_selected_options(base_publisher_options, selected_publisher_options)
+    
     filters['publishers'] = MultiselectFilter(
         label="Издатели",
         param_name="publisher_ids",
-        options=[
-            FilterOption(id=pub_id, name=pub_name, count=int(count))
-            for pub_id, pub_name, count in publishers_data
-        ],
+        options=final_publisher_options,
         has_more=total_publishers > filter_limit,
         total_count=total_publishers,
         search_endpoint="/api/filters/publishers/search?context=books"
@@ -364,13 +433,55 @@ def aggregate_book_filters(
             .all()
         )
     
+    # Получаем выбранные авторы из current_filters
+    selected_author_ids = current_filters.get('author_ids') or []
+    selected_author_options = []
+    
+    if selected_author_ids:
+        # Получаем полные данные по выбранным авторам с count
+        if author_landing_ids:
+            selected_authors_data = (
+                db.query(
+                    Author.id,
+                    Author.name,
+                    func.count(func.distinct(BookLanding.id)).label('count')
+                )
+                .select_from(Author)
+                .join(book_authors, Author.id == book_authors.c.author_id)
+                .join(Book, book_authors.c.book_id == Book.id)
+                .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+                .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+                .filter(Author.id.in_(selected_author_ids))
+                .filter(BookLanding.id.in_(author_landing_ids))
+                .group_by(Author.id, Author.name)
+                .all()
+            )
+        else:
+            selected_authors_data = (
+                db.query(Author.id, Author.name, literal(0).label('count'))
+                .filter(Author.id.in_(selected_author_ids))
+                .all()
+            )
+        
+        selected_author_options = [
+            FilterOption(id=auth_id, name=auth_name, count=int(count))
+            for auth_id, auth_name, count in selected_authors_data
+        ]
+        selected.authors = SelectedMultiselectValues(options=selected_author_options)
+    
+    # Базовые опции авторов
+    base_author_options = [
+        FilterOption(id=auth_id, name=auth_name, count=int(count))
+        for auth_id, auth_name, count in authors_data
+    ]
+    
+    # Добавляем выбранные в начало списка
+    final_author_options = _prepend_selected_options(base_author_options, selected_author_options)
+    
     filters['authors'] = MultiselectFilter(
         label="Авторы",
         param_name="author_ids",
-        options=[
-            FilterOption(id=auth_id, name=auth_name, count=int(count))
-            for auth_id, auth_name, count in authors_data
-        ],
+        options=final_author_options,
         has_more=total_authors > filter_limit,
         total_count=total_authors,
         search_endpoint="/api/filters/authors/search?context=books"
@@ -458,13 +569,55 @@ def aggregate_book_filters(
             .all()
         )
     
+    # Получаем выбранные теги из current_filters
+    selected_tag_ids = current_filters.get('tags') or []
+    selected_tag_options = []
+    
+    if selected_tag_ids:
+        # Получаем полные данные по выбранным тегам с count
+        if tag_landing_ids:
+            selected_tags_data = (
+                db.query(
+                    Tag.id,
+                    Tag.name,
+                    func.count(func.distinct(BookLanding.id)).label('count')
+                )
+                .select_from(Tag)
+                .join(book_tags, Tag.id == book_tags.c.tag_id)
+                .join(Book, book_tags.c.book_id == Book.id)
+                .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+                .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+                .filter(Tag.id.in_(selected_tag_ids))
+                .filter(BookLanding.id.in_(tag_landing_ids))
+                .group_by(Tag.id, Tag.name)
+                .all()
+            )
+        else:
+            selected_tags_data = (
+                db.query(Tag.id, Tag.name, literal(0).label('count'))
+                .filter(Tag.id.in_(selected_tag_ids))
+                .all()
+            )
+        
+        selected_tag_options = [
+            FilterOption(id=tag_id, name=tag_name, count=int(count))
+            for tag_id, tag_name, count in selected_tags_data
+        ]
+        selected.tags = SelectedMultiselectValues(options=selected_tag_options)
+    
+    # Базовые опции тегов
+    base_tag_options = [
+        FilterOption(id=tag_id, name=tag_name, count=int(count))
+        for tag_id, tag_name, count in tags_data
+    ]
+    
+    # Добавляем выбранные в начало списка
+    final_tag_options = _prepend_selected_options(base_tag_options, selected_tag_options)
+    
     filters['tags'] = MultiselectFilter(
         label="Теги",
         param_name="tags",
-        options=[
-            FilterOption(id=tag_id, name=tag_name, count=int(count))
-            for tag_id, tag_name, count in tags_data
-        ],
+        options=final_tag_options,
         has_more=total_tags > filter_limit,
         total_count=total_tags,
         search_endpoint="/api/filters/tags/search?context=books"
@@ -532,10 +685,25 @@ def aggregate_book_filters(
             for fmt in all_formats
         ]
     
+    # Получаем выбранные форматы из current_filters
+    selected_format_values = current_filters.get('formats') or []
+    selected_format_options = []
+    
+    if selected_format_values:
+        # Для форматов используем value вместо id
+        selected_format_options = [
+            opt for opt in formats_options
+            if opt.value in selected_format_values
+        ]
+        selected.formats = SelectedMultiselectValues(options=selected_format_options)
+    
+    # Добавляем выбранные в начало списка
+    final_format_options = _prepend_selected_options(formats_options, selected_format_options)
+    
     filters['formats'] = MultiselectFilter(
         label="Форматы",
         param_name="formats",
-        options=formats_options
+        options=final_format_options
     )
     
     # ═══════════════════ Year Range (всегда показываем) ═══════════════════
@@ -565,6 +733,15 @@ def aggregate_book_filters(
             unit="year"
         )
     
+    # Сохраняем выбранные значения для year
+    year_from_val = current_filters.get('year_from')
+    year_to_val = current_filters.get('year_to')
+    if year_from_val is not None or year_to_val is not None:
+        selected.year = SelectedRangeValues(
+            value_from=year_from_val,
+            value_to=year_to_val
+        )
+    
     # ═══════════════════ Price Range (всегда показываем) ═══════════════════
     # Получаем общий диапазон цен из ВСЕХ книжных лендингов (без фильтров)
     # Явный CAST к DECIMAL для корректного числового сравнения (избегаем строковой сортировки)
@@ -586,6 +763,15 @@ def aggregate_book_filters(
             min=float(price_range.min_price),
             max=float(price_range.max_price),
             unit="USD"
+        )
+    
+    # Сохраняем выбранные значения для price
+    price_from_val = current_filters.get('price_from')
+    price_to_val = current_filters.get('price_to')
+    if price_from_val is not None or price_to_val is not None:
+        selected.price = SelectedRangeValues(
+            value_from=float(price_from_val) if price_from_val is not None else None,
+            value_to=float(price_to_val) if price_to_val is not None else None
         )
     
     # ═══════════════════ Pages Range (всегда показываем) ═══════════════════
@@ -622,9 +808,25 @@ def aggregate_book_filters(
             unit="pages"
         )
     
+    # Сохраняем выбранные значения для pages
+    pages_from_val = current_filters.get('pages_from')
+    pages_to_val = current_filters.get('pages_to')
+    if pages_from_val is not None or pages_to_val is not None:
+        selected.pages = SelectedRangeValues(
+            value_from=pages_from_val,
+            value_to=pages_to_val
+        )
+    
+    # Проверяем, есть ли хотя бы один выбранный фильтр
+    has_selected = any([
+        selected.publishers, selected.authors, selected.tags, selected.formats,
+        selected.year, selected.price, selected.pages
+    ])
+    
     return CatalogFiltersMetadata(
         filters=filters,
-        available_sorts=_get_sort_options()
+        available_sorts=_get_sort_options(),
+        selected=selected if has_selected else None
     )
 
 
