@@ -302,12 +302,19 @@ def aggregate_book_filters(
     selected_publisher_options = []
     
     if selected_publisher_ids:
-        # Получаем полные данные по выбранным издателям с count
+        # Получаем полные данные по выбранным издателям
+        # Сначала получаем имена всех выбранных издателей (независимо от фильтров)
+        selected_publishers_names = {
+            row.id: row.name 
+            for row in db.query(Publisher.id, Publisher.name).filter(Publisher.id.in_(selected_publisher_ids)).all()
+        }
+        
+        # Затем получаем count с учётом текущих фильтров (кроме publisher_ids)
+        selected_publishers_counts = {}
         if publisher_landing_ids:
-            selected_publishers_data = (
+            counts_data = (
                 db.query(
                     Publisher.id,
-                    Publisher.name,
                     func.count(func.distinct(BookLanding.id)).label('count')
                 )
                 .select_from(Publisher)
@@ -317,19 +324,15 @@ def aggregate_book_filters(
                 .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
                 .filter(Publisher.id.in_(selected_publisher_ids))
                 .filter(BookLanding.id.in_(publisher_landing_ids))
-                .group_by(Publisher.id, Publisher.name)
+                .group_by(Publisher.id)
                 .all()
             )
-        else:
-            selected_publishers_data = (
-                db.query(Publisher.id, Publisher.name, literal(0).label('count'))
-                .filter(Publisher.id.in_(selected_publisher_ids))
-                .all()
-            )
+            selected_publishers_counts = {row.id: int(row.count) for row in counts_data}
         
+        # Формируем опции: для каждого выбранного издателя показываем имя и count
         selected_publisher_options = [
-            FilterOption(id=pub_id, name=pub_name, count=int(count))
-            for pub_id, pub_name, count in selected_publishers_data
+            FilterOption(id=pub_id, name=pub_name, count=selected_publishers_counts.get(pub_id, 0))
+            for pub_id, pub_name in selected_publishers_names.items()
         ]
         selected.publishers = SelectedMultiselectValues(options=selected_publisher_options)
     
@@ -438,12 +441,19 @@ def aggregate_book_filters(
     selected_author_options = []
     
     if selected_author_ids:
-        # Получаем полные данные по выбранным авторам с count
+        # Получаем полные данные по выбранным авторам
+        # Сначала получаем имена всех выбранных авторов (независимо от фильтров)
+        selected_authors_names = {
+            row.id: row.name 
+            for row in db.query(Author.id, Author.name).filter(Author.id.in_(selected_author_ids)).all()
+        }
+        
+        # Затем получаем count с учётом текущих фильтров (кроме author_ids)
+        selected_authors_counts = {}
         if author_landing_ids:
-            selected_authors_data = (
+            counts_data = (
                 db.query(
                     Author.id,
-                    Author.name,
                     func.count(func.distinct(BookLanding.id)).label('count')
                 )
                 .select_from(Author)
@@ -453,19 +463,15 @@ def aggregate_book_filters(
                 .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
                 .filter(Author.id.in_(selected_author_ids))
                 .filter(BookLanding.id.in_(author_landing_ids))
-                .group_by(Author.id, Author.name)
+                .group_by(Author.id)
                 .all()
             )
-        else:
-            selected_authors_data = (
-                db.query(Author.id, Author.name, literal(0).label('count'))
-                .filter(Author.id.in_(selected_author_ids))
-                .all()
-            )
+            selected_authors_counts = {row.id: int(row.count) for row in counts_data}
         
+        # Формируем опции: для каждого выбранного автора показываем имя и count
         selected_author_options = [
-            FilterOption(id=auth_id, name=auth_name, count=int(count))
-            for auth_id, auth_name, count in selected_authors_data
+            FilterOption(id=auth_id, name=auth_name, count=selected_authors_counts.get(auth_id, 0))
+            for auth_id, auth_name in selected_authors_names.items()
         ]
         selected.authors = SelectedMultiselectValues(options=selected_author_options)
     
@@ -574,12 +580,19 @@ def aggregate_book_filters(
     selected_tag_options = []
     
     if selected_tag_ids:
-        # Получаем полные данные по выбранным тегам с count
+        # Получаем полные данные по выбранным тегам
+        # Сначала получаем имена всех выбранных тегов (независимо от фильтров)
+        selected_tags_names = {
+            row.id: row.name 
+            for row in db.query(Tag.id, Tag.name).filter(Tag.id.in_(selected_tag_ids)).all()
+        }
+        
+        # Затем получаем count с учётом текущих фильтров (кроме tags)
+        selected_tags_counts = {}
         if tag_landing_ids:
-            selected_tags_data = (
+            counts_data = (
                 db.query(
                     Tag.id,
-                    Tag.name,
                     func.count(func.distinct(BookLanding.id)).label('count')
                 )
                 .select_from(Tag)
@@ -589,19 +602,15 @@ def aggregate_book_filters(
                 .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
                 .filter(Tag.id.in_(selected_tag_ids))
                 .filter(BookLanding.id.in_(tag_landing_ids))
-                .group_by(Tag.id, Tag.name)
+                .group_by(Tag.id)
                 .all()
             )
-        else:
-            selected_tags_data = (
-                db.query(Tag.id, Tag.name, literal(0).label('count'))
-                .filter(Tag.id.in_(selected_tag_ids))
-                .all()
-            )
+            selected_tags_counts = {row.id: int(row.count) for row in counts_data}
         
+        # Формируем опции: для каждого выбранного тега показываем имя и count
         selected_tag_options = [
-            FilterOption(id=tag_id, name=tag_name, count=int(count))
-            for tag_id, tag_name, count in selected_tags_data
+            FilterOption(id=tag_id, name=tag_name, count=selected_tags_counts.get(tag_id, 0))
+            for tag_id, tag_name in selected_tags_names.items()
         ]
         selected.tags = SelectedMultiselectValues(options=selected_tag_options)
     
