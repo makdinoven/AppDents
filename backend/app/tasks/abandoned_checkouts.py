@@ -55,13 +55,23 @@ def process_abandoned_checkouts(
 ) -> None:
     """
     Логика:
-      • максимум 7 писем (MAX_SENDS)
-      • между письмами — интервал 2 суток
-      • ПЕРВОЕ письмо:
-            - если пользователя нет → создаём → бонус 5$ → partial курс → письмо с паролем
-            - если пользователь уже существует → бонус НЕ даём, partial НЕ даём → обычное письмо
+      • максимум 7 писем
+      • между письмами — минимум 2 суток
+      • ПЕРВОЕ письмо (send_count == 0):
+            - если пользователя нет:
+                    → создаём нового (cleanup_abandoned=False)
+                    → даём бонус 5$
+                    → даём partial курс
+                    → отправляем письмо с паролем
+            - если пользователь уже есть:
+                    → НЕ даём бонус
+                    → НЕ даём partial
+                    → письмо без пароля (просто напоминание)
       • ПОСЛЕДУЮЩИЕ письма:
-            - только напоминания без бонусов
+            - только напоминания, без бонусов и partial
+      • send_count увеличивается ТОЛЬКО при успешной отправке (SMTP ОК)
+      • если письмо НЕ ушло → send_count НЕ увеличивается (повторяем)
+      • Удаление лидов при регистрации/оплате происходит в других местах.
     """
 
     db: Session = SessionLocal()
@@ -75,17 +85,18 @@ def process_abandoned_checkouts(
         )
 
         if target_email:
+            # ручной режим без ограничений по времени
             q = q.filter(AbandonedCheckout.email == target_email)
         else:
-            # авто-режим — только по интервалам
+            # авто режим — строго по интервалам
             q = q.filter(
                 or_(
-                    # Первое письмо → запись старше 3 часов
+                    # Первое письмо → запись старше 3h
                     and_(
                         AbandonedCheckout.send_count == 0,
                         AbandonedCheckout.created_at < first_cutoff,
                     ),
-                    # повторные письма → ждём ≥ 2 суток
+                    # Повторные письма → интервал 2 суток
                     and_(
                         AbandonedCheckout.send_count > 0,
                         AbandonedCheckout.last_sent_at <= now - REMINDER_INTERVAL,
@@ -105,7 +116,7 @@ def process_abandoned_checkouts(
             db.commit()
             return
 
-        # Обрабатываем лидов
+        # Обрабатываем лиды
         for lead in leads:
             try:
                 lead_id     = lead.id
@@ -117,16 +128,17 @@ def process_abandoned_checkouts(
                 logger.warning("Lead row vanished — skipping.")
                 continue
 
-            # проверяем пользователя
+            # Проверяем существование пользователя
             user = get_user_by_email(db, email)
+            email_sent = False  # важно!
 
-            # ────────────────── ПЕРВОЕ ПИСЬМО ───────────────────────────
+            # ────────────────────────── ПЕРВОЕ ПИСЬМО ───────────────────────────
             if send_count == 0:
                 course_info: dict = {}
                 password: str | None = None
 
                 if user is None:
-                    # создаём нового пользователя → только здесь будет бонус / partial
+                    # создаём юзера → только тогда бонус и partial
                     password = generate_random_password()
                     try:
                         user = create_user(
@@ -136,9 +148,10 @@ def process_abandoned_checkouts(
                             cleanup_abandoned=False,
                         )
                     except ValueError:
+                        # race: юзер появился между проверкой и create_user
                         user = get_user_by_email(db, email)
 
-                # бонус и partial — только если user создан сейчас (password != None)
+                # Если password != None → новый юзер создан в этой таске → бонус и partial
                 if password is not None and user is not None:
                     try:
                         credit_balance(
@@ -151,7 +164,7 @@ def process_abandoned_checkouts(
                     except Exception as e:
                         logger.warning("Cannot credit bonus to %s: %s", email, e)
 
-                    # partial курс
+                    # выдаём partial курс
                     course_ids = [
                         int(c) for c in raw_courses if c.strip().isdigit()
                     ]
@@ -170,7 +183,7 @@ def process_abandoned_checkouts(
                             )
                         course_info = _build_course_info(db, chosen_id)
 
-                # отправляем письмо (с паролем только если user создан в этой таске)
+                # Отправляем первое письмо (с паролем только для новых пользователей)
                 try:
                     send_abandoned_checkout_email(
                         recipient_email=email,
@@ -179,15 +192,17 @@ def process_abandoned_checkouts(
                         region=region,
                     )
                     logger.info("First abandoned mail sent to %s", email)
+                    email_sent = True
                 except Exception as err:
                     logger.error("SMTP error for %s: %s", email, err)
 
-            # ────────────────── ПОВТОРНЫЕ ПИСЬМА ────────────────────────
+            # ────────────────────────── ПОВТОРНЫЕ ПИСЬМА ─────────────────────────
             else:
                 course_info: dict = {}
                 course_ids = [
                     int(c) for c in raw_courses if c.strip().isdigit()
                 ]
+
                 if course_ids:
                     chosen_id = _choose_course(db, course_ids)
                     course_info = _build_course_info(
@@ -198,25 +213,33 @@ def process_abandoned_checkouts(
                 try:
                     send_abandoned_checkout_email(
                         recipient_email=email,
-                        password=None,      # пароль только в первом письме
+                        password=None,  # пароль только в первом письме
                         course_info=course_info,
                         region=region,
                     )
                     logger.info(
                         "Reminder #%s sent to %s", send_count + 1, email
                     )
+                    email_sent = True
                 except Exception as err:
                     logger.error(
                         "SMTP error (reminder) for %s: %s", email, err
                     )
 
-            # обновляем счётчик отправок
-            db.query(AbandonedCheckout).filter_by(id=lead_id).update(
-                {
-                    "send_count": send_count + 1,
-                    "last_sent_at": now,
-                }
-            )
+            # ─────────────────────── обновляем send_count (ТОЛЬКО УСПЕХ) ─────────
+            if email_sent:
+                db.query(AbandonedCheckout).filter_by(id=lead_id).update(
+                    {
+                        "send_count": send_count + 1,
+                        "last_sent_at": now,
+                    }
+                )
+            else:
+                logger.warning(
+                    "Email to %s NOT SENT, send_count stays at %s (retry next run)",
+                    email,
+                    send_count,
+                )
 
         db.commit()
 
@@ -227,7 +250,7 @@ def process_abandoned_checkouts(
         db.close()
 
 
-# ───────────────────────── helpers ────────────────────────────
+# ─────────────────────────── helpers ───────────────────────────
 
 def _choose_course(db: Session, course_ids: list[int] | None) -> int | None:
     """Возвращает ID наиболее «популярного» курса из списка."""
