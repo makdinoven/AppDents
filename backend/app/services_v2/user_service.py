@@ -65,8 +65,8 @@ def create_user(
     password: str,
     role: str = "user",
     invited_by: Optional[User] = None,
+    cleanup_abandoned: bool = True,   # ← НОВЫЙ параметр
 ) -> User:
-    # 1. создаём самого пользователя (ещё без commit’а)
     user = User(
         email=email,
         password=hash_password(password),
@@ -76,15 +76,14 @@ def create_user(
     user.referral_code = generate_unique_referral_code(db)
     db.add(user)
 
-    # 2. сразу удаляем все «заброшенные» лиды по e-mail
-    db.query(AbandonedCheckout) \
-      .filter(AbandonedCheckout.email == email) \
-      .delete(synchronize_session=False)
+    if cleanup_abandoned:
+        db.query(AbandonedCheckout) \
+          .filter(AbandonedCheckout.email == email) \
+          .delete(synchronize_session=False)
 
-    # 3. один общий commit
     try:
         db.commit()
-    except IntegrityError:                # если e-mail уже зарегистрирован
+    except IntegrityError:
         db.rollback()
         raise ValueError("User with this email already exists")
 

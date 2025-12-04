@@ -4,8 +4,9 @@ import os
 from datetime import datetime, timedelta
 
 from celery.utils.log import get_task_logger
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import exc as orm_exc
 
 from ..celery_app import celery
 from ..db.database import SessionLocal
@@ -23,19 +24,21 @@ from ..services_v2.user_service import (
     credit_balance,
     add_partial_course_to_user,
 )
-# ↓ новый импорт
-from ..utils.email_sender import send_abandoned_checkout_email  # <= NEW
-# ───────────────────────────────────────────────────────────────
+from ..utils.email_sender import send_abandoned_checkout_email
 
 logger = get_task_logger(__name__)
-MAIL_BONUS = 5.0        # $5 – фиксированный бонус
-
-
-from sqlalchemy.orm import exc as orm_exc
+MAIL_BONUS = 5.0  # $5 – фиксированный бонус
 
 # Конфигурация из окружения
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://med-g.com")
-CDN_PLACEHOLDER_URL = os.getenv("CDN_PLACEHOLDER_URL", "https://cdn.med-g.com/assets/img/placeholder.png")
+CDN_PLACEHOLDER_URL = os.getenv(
+    "CDN_PLACEHOLDER_URL",
+    "https://cdn.med-g.com/assets/img/placeholder.png",
+)
+
+REMINDER_INTERVAL = timedelta(days=2)
+MAX_SENDS = 5
+
 
 @celery.task(
     bind=True,
@@ -44,34 +47,52 @@ CDN_PLACEHOLDER_URL = os.getenv("CDN_PLACEHOLDER_URL", "https://cdn.med-g.com/as
 )
 def process_abandoned_checkouts(
     self,
-    batch_size: int = 30,
+    batch_size: int = 100,
     target_email: str | None = None,
 ) -> None:
     """
-    • auto-режим → берём batch_size лидов старше 3 ч;
-    • ручной режим → обрабатываем ровно один e-mail независимо от времени.
+    Новая логика:
+      • первый раз (send_count == 0):
+            - если юзера нет → создаём, даём 5$, partial, шлём письмо с паролем
+            - если юзер уже есть → шлём только письмо-напоминание без бонусов
+      • последующие разы (send_count > 0):
+            - только напоминалка без бонуса/partial/создания юзера
 
-    Каждая строка обрабатывается только одним воркером,
-    благодаря FOR UPDATE ... SKIP LOCKED.
+    Удаление из таблицы по оплате/регистрации остаётся в других местах.
     """
     db: Session = SessionLocal()
-    cutoff = datetime.utcnow() - timedelta(hours=3)
+    now = datetime.utcnow()
+    first_cutoff = now - timedelta(hours=3)
 
     try:
-        # ─── формируем и блокируем выборку ───────────────────────────────
         q = db.query(AbandonedCheckout).filter(
-            AbandonedCheckout.message_sent.is_(False)
+            AbandonedCheckout.send_count < MAX_SENDS
         )
 
         if target_email:
+            # ручной режим – по конкретному email, без ограничений по времени
             q = q.filter(AbandonedCheckout.email == target_email)
         else:
-            q = q.filter(AbandonedCheckout.created_at < cutoff)
+            # авто-режим:
+            #   • первый раз — запись старше 3 часов
+            #   • дальше — прошло 2 суток с последней отправки
+            q = q.filter(
+                or_(
+                    and_(
+                        AbandonedCheckout.send_count == 0,
+                        AbandonedCheckout.created_at < first_cutoff,
+                    ),
+                    and_(
+                        AbandonedCheckout.send_count > 0,
+                        AbandonedCheckout.last_sent_at <= now - REMINDER_INTERVAL,
+                    ),
+                )
+            )
 
         leads = (
             q.order_by(AbandonedCheckout.id)
              .limit(batch_size)
-             .with_for_update(skip_locked=True)     # ← блокировка
+             .with_for_update(skip_locked=True)
              .all()
         )
 
@@ -80,73 +101,112 @@ def process_abandoned_checkouts(
             db.commit()
             return
 
-        # ─── обработка ----------------------------------------------------
         for lead in leads:
             try:
-                # сохраняем поля пока объект «жив»
                 lead_id     = lead.id
                 email       = lead.email
                 region      = lead.region or "EN"
                 raw_courses = (lead.course_ids or "").split(",")
-
+                send_count  = lead.send_count or 0
             except orm_exc.ObjectDeletedError:
                 logger.warning("Lead row vanished before processing — skipping.")
                 continue
 
-            # 1. пользователь уже существует
-            if get_user_by_email(db, email):
-                db.query(AbandonedCheckout).filter_by(id=lead_id).update(
-                    {"message_sent": True}
-                )
-                logger.info("User %s exists — flag set, skipped.", email)
-                continue
+            user = get_user_by_email(db, email)
 
-            # 2. регистрация
-            password = generate_random_password()
-            try:
-                user = create_user(db, email, password)        # делает commit()
-            except ValueError:
-                db.query(AbandonedCheckout).filter_by(id=lead_id).update(
-                    {"message_sent": True}
-                )
-                logger.warning("Race condition on %s — marked as sent.", email)
-                continue
+            # ── ПЕРВЫЙ РАЗ ───────────────────────────────────────────────
+            if send_count == 0:
+                course_info: dict = {}
+                password: str | None = None
 
-            # 3. бонус 5 $
-            credit_balance(
-                db, user.id, MAIL_BONUS, WalletTxTypes.ADMIN_ADJUST,
-                meta={"reason": "abandoned_checkout"},
-            )  # commit() внутри
+                if user is None:
+                    # 1) создаём юзера, НО не чистим AbandonedCheckout,
+                    #    чтобы можно было слать последующие письма
+                    password = generate_random_password()
+                    try:
+                        user = create_user(
+                            db,
+                            email=email,
+                            password=password,
+                            cleanup_abandoned=False,  # <-- важный момент
+                        )
+                    except ValueError:
+                        # race: юзер уже появился
+                        user = get_user_by_email(db, email)
 
-            # 4. partial-курс
-            course_ids  = [int(c) for c in raw_courses if c.strip().isdigit()]
-            chosen_id   = _choose_course(db, course_ids)
-            course_info = {}
+                # если юзер есть (создали только что или он уже был)
+                if user is not None and send_count == 0:
+                    # 2) бонус и partial КУРС — ТОЛЬКО ПРИ ПЕРВОМ ПИСЬМЕ
+                    try:
+                        credit_balance(
+                            db,
+                            user.id,
+                            MAIL_BONUS,
+                            WalletTxTypes.ADMIN_ADJUST,
+                            meta={"reason": "abandoned_checkout"},
+                        )
+                    except Exception as e:
+                        logger.warning("Cannot credit bonus to %s: %s", email, e)
 
-            if chosen_id:
+                    course_ids = [
+                        int(c) for c in raw_courses if c.strip().isdigit()
+                    ]
+                    chosen_id = _choose_course(db, course_ids)
+                    if chosen_id:
+                        try:
+                            add_partial_course_to_user(
+                                db,
+                                user.id,
+                                chosen_id,
+                                source=FreeCourseSource.LANDING,
+                            )
+                        except ValueError as err:
+                            logger.warning(
+                                "Partial %s → %s: %s", chosen_id, email, err
+                            )
+                        course_info = _build_course_info(db, chosen_id)
+
+                # 3) письмо – первое: если есть пароль, отправляем с паролем,
+                #    иначе просто напоминалку
                 try:
-                    add_partial_course_to_user(
-                        db, user.id, chosen_id, source=FreeCourseSource.LANDING
-                    )  # commit() внутри
-                    course_info = _build_course_info(db, chosen_id)
-                except ValueError as err:
-                    logger.warning("Partial %s → %s: %s", chosen_id, email, err)
+                    send_abandoned_checkout_email(
+                        recipient_email=email,
+                        password=password,
+                        course_info=course_info,
+                        region=region,
+                    )
+                    logger.info("First abandoned mail sent to %s", email)
+                except Exception as err:
+                    logger.error("SMTP error for %s: %s", email, err)
 
-            # 5. письмо
-            try:
-                send_abandoned_checkout_email(
-                    recipient_email=email,
-                    password=password,
-                    course_info=course_info,
-                    region=region,
-                )
-                logger.info("Mail sent to %s", email)
-            except Exception as err:
-                logger.error("SMTP error for %s: %s", email, err)
+            # ── ПОВТОРНЫЕ ПИСЬМА ─────────────────────────────────────────
+            else:
+                # только напоминание, без бонусов/partial/создания юзера
+                try:
+                    course_info = {}
+                    # можно взять первый курс из списка и собрать инфу
+                    course_ids = [int(c) for c in raw_courses if c.strip().isdigit()]
+                    if course_ids:
+                        course_info = _build_course_info(db, course_ids[0])
 
-            # 6. отметка message_sent
+                    send_abandoned_checkout_email(
+                        recipient_email=email,
+                        password=None,      # пароль только в первом письме
+                        course_info=course_info,
+                        region=region,
+                    )
+                    logger.info(
+                        "Reminder #%s sent to %s", send_count + 1, email
+                    )
+                except Exception as err:
+                    logger.error("SMTP error (reminder) for %s: %s", email, err)
+
+            # ── обновляем счётчик ────────────────────────────────────────
             db.query(AbandonedCheckout).filter_by(id=lead_id).update(
-                {"message_sent": True}
+                {
+                    "send_count": send_count + 1,
+                    "last_sent_at": now,
+                }
             )
 
         db.commit()
@@ -158,11 +218,10 @@ def process_abandoned_checkouts(
         db.close()
 
 
-
-
 # ───────────────────────── helpers ────────────────────────────
+
 def _choose_course(db: Session, course_ids: list[int] | None) -> int | None:
-    """Возвращает ID наиболее «популярного» курса из списка."""
+    """Возвращает ID наиболее «популярного» курса из списка (как было раньше)."""
     if not course_ids:
         return None
     if len(course_ids) == 1:
@@ -171,7 +230,7 @@ def _choose_course(db: Session, course_ids: list[int] | None) -> int | None:
     pop_rows = (
         db.query(
             Course.id,
-            func.coalesce(func.sum(Landing.sales_count), 0).label("sales")
+            func.coalesce(func.sum(Landing.sales_count), 0).label("sales"),
         )
         .join(Landing.courses)
         .filter(Course.id.in_(course_ids))
@@ -187,26 +246,23 @@ def _choose_course(db: Session, course_ids: list[int] | None) -> int | None:
 def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
     landing: Landing | None = (
         db.query(Landing)
-          .join(Landing.courses)
-          .filter(Course.id == course_id)
-          .order_by(Landing.sales_count.desc())
-          .first()
+        .join(Landing.courses)
+        .filter(Course.id == course_id)
+        .order_by(Landing.sales_count.desc())
+        .first()
     )
     if not landing:
         return {}
 
-    # цены
     price = landing.new_price or ""
-    old   = landing.old_price or ""
-    if price and not price.startswith("$"):
+    old = landing.old_price or ""
+    if price and not str(price).startswith("$"):
         price = f"${price}"
-    if old and not old.startswith("$"):
+    if old and not str(old).startswith("$"):
         old = f"${old}"
 
-    # уроки как готовая строка
     lessons_str = landing.lessons_count or ""
 
-    # картинка — пытаемся несколько полей подряд
     img_url = (
         getattr(landing, "preview_photo", None)
         or getattr(landing, "preview_img", None)
@@ -215,10 +271,10 @@ def _build_course_info(db: Session, course_id: int) -> dict[str, str]:
     )
 
     return {
-        "url":       f"{FRONTEND_URL}/client/course/{landing.page_name}",
-        "price":     price,
+        "url": f"{FRONTEND_URL}/client/course/{landing.page_name}",
+        "price": price,
         "old_price": old,
-        "lessons":   lessons_str,
-        "title":     landing.landing_name or landing.page_name,
-        "img":       img_url,
+        "lessons": lessons_str,
+        "title": landing.landing_name or landing.page_name,
+        "img": img_url,
     }
