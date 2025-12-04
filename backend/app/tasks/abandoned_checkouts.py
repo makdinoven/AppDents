@@ -37,7 +37,7 @@ CDN_PLACEHOLDER_URL = os.getenv(
 )
 
 REMINDER_INTERVAL = timedelta(days=2)
-MAX_SENDS = 5
+MAX_SENDS = 7
 
 
 @celery.task(
