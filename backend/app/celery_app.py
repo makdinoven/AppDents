@@ -23,6 +23,7 @@ celery = Celery(
             "app.tasks.creatives",
             "app.tasks.video_summary",
             "app.tasks.clip_tasks"
+            "app.tasks.big_cart_reminder"
         ],
 )
 
@@ -53,6 +54,8 @@ celery.conf.update(
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "80/h"},
+        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "80/h"},
+
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -85,6 +88,12 @@ celery.conf.update(
                     "schedule": 3600,           # каждый час
                     "options": {"queue": "special"},
                 },
+        "process-big-cart-reminders-each-6h": {
+            "task": "app.tasks.big_cart_reminder.process_big_cart_reminders",
+            "schedule": 86400,      # 1 раз в сутки
+            "options": {"queue": "special"},
+        },
+
     },
 )
 

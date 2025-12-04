@@ -333,6 +333,10 @@ class Cart(Base):
     updated_at   = Column(DateTime, server_default=func.utc_timestamp(),
                           onupdate=func.utc_timestamp(), nullable=False)
 
+    # ⬇⬇⬇ новое для напоминаний по большой корзине
+    bigcart_send_count = Column(Integer, nullable=False, server_default="0")
+    bigcart_last_sent_at = Column(DateTime, nullable=True)
+
     user = relationship("User", back_populates="cart")
     items = relationship(
         "CartItem",
