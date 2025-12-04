@@ -170,7 +170,7 @@ def process_abandoned_checkouts(
                             )
                         course_info = _build_course_info(db, chosen_id)
 
-                # отправляем письмо (с паролем только если user создан в этой таске)
+                # отправляем письмо (с паролем только если user создан в этой таске )
                 try:
                     send_abandoned_checkout_email(
                         recipient_email=email,
