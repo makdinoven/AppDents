@@ -466,3 +466,128 @@ def send_abandoned_checkout_email(recipient_email: str, password: str, course_in
     </html>
     """
     send_html_email(recipient_email, subject, html_body=html)
+
+
+# --------------------------------------------------------------------------
+#  НАПОМИНАНИЕ О КОРЗИНЕ (большая корзина)
+# --------------------------------------------------------------------------
+def send_big_cart_reminder_email(
+    recipient_email: str,
+    region: str = "EN"
+) -> bool:
+    """
+    Напоминание о незавершённой корзине со скидкой.
+    Возвращает True при успешной отправке, False при ошибке.
+    """
+    translations = {
+        "EN": {
+            "subject": "Your cart is waiting for you!",
+            "heading": "Your Cart is Waiting!",
+            "greeting": "Hello!",
+            "line1": "You've selected some great courses but haven't completed your purchase yet.",
+            "line2": "Right now we have special discounts that won't last long.",
+            "line3": "Don't miss your chance to get these courses at the best price!",
+            "urgency": "Hurry — the offer expires soon!",
+            "button": "Complete Purchase",
+            "footer": "This is an automated message. Please do not reply."
+        },
+        "RU": {
+            "subject": "Ваша корзина ждёт вас!",
+            "heading": "Ваша корзина ждёт!",
+            "greeting": "Здравствуйте!",
+            "line1": "Вы выбрали отличные курсы, но ещё не завершили покупку.",
+            "line2": "Прямо сейчас у нас действуют специальные скидки, которые скоро закончатся.",
+            "line3": "Не упустите возможность приобрести эти курсы по лучшей цене!",
+            "urgency": "Поторопитесь — предложение скоро истекает!",
+            "button": "Завершить покупку",
+            "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте."
+        },
+        "ES": {
+            "subject": "¡Tu carrito te está esperando!",
+            "heading": "¡Tu Carrito te Espera!",
+            "greeting": "¡Hola!",
+            "line1": "Has seleccionado excelentes cursos pero aún no has completado tu compra.",
+            "line2": "Ahora mismo tenemos descuentos especiales que no durarán mucho.",
+            "line3": "¡No pierdas la oportunidad de obtener estos cursos al mejor precio!",
+            "urgency": "¡Date prisa — la oferta expira pronto!",
+            "button": "Completar compra",
+            "footer": "Este es un mensaje automático. Por favor, no responda."
+        },
+        "IT": {
+            "subject": "Il tuo carrello ti aspetta!",
+            "heading": "Il Tuo Carrello ti Aspetta!",
+            "greeting": "Ciao!",
+            "line1": "Hai selezionato ottimi corsi ma non hai ancora completato l'acquisto.",
+            "line2": "In questo momento abbiamo sconti speciali che non dureranno a lungo.",
+            "line3": "Non perdere l'occasione di acquistare questi corsi al miglior prezzo!",
+            "urgency": "Affrettati — l'offerta scade presto!",
+            "button": "Completa l'acquisto",
+            "footer": "Questo è un messaggio automatico. Si prega di non rispondere."
+        },
+        "PT": {
+            "subject": "Seu carrinho está esperando por você!",
+            "heading": "Seu Carrinho Está Esperando!",
+            "greeting": "Olá!",
+            "line1": "Você selecionou ótimos cursos, mas ainda não finalizou a compra.",
+            "line2": "Neste momento temos descontos especiais que não vão durar muito.",
+            "line3": "Não perca a chance de adquirir esses cursos pelo melhor preço!",
+            "urgency": "Corra — a oferta expira em breve!",
+            "button": "Finalizar compra",
+            "footer": "Esta é uma mensagem automática. Por favor, não responda."
+        },
+        "AR": {
+            "subject": "سلة التسوق الخاصة بك في انتظارك!",
+            "heading": "سلتك في انتظارك!",
+            "greeting": "مرحبًا!",
+            "line1": "لقد اخترت دورات رائعة لكنك لم تكمل عملية الشراء بعد.",
+            "line2": "لدينا الآن خصومات خاصة لن تستمر طويلاً.",
+            "line3": "لا تفوّت فرصة الحصول على هذه الدورات بأفضل سعر!",
+            "urgency": "أسرع — العرض ينتهي قريبًا!",
+            "button": "إتمام الشراء",
+            "footer": "هذه رسالة آلية. يرجى عدم الرد."
+        },
+    }
+
+    loc = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
+
+    html = f"""\
+<!DOCTYPE html>
+<html lang="{region.lower()}"{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{loc["subject"]}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f7f8;font-family:'Segoe UI',sans-serif;">
+  <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f7f8">
+    <tr><td align="center">
+      <a href="{MED_G_DOMAIN}/">
+        <img src="{MED_G_DOMAIN}/static/logo-medg.png" alt="Med.G" width="150" style="max-width:150px;width:100%;">
+      </a>
+    </td></tr>
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border-radius:12px;margin:30px 0;">
+        <tr>
+          <td style="padding:30px 40px;color:{MED_G_COLOR};">
+            <h2 style="margin:0 0 20px 0;font-size:28px;text-align:center;">{loc["heading"]}</h2>
+            <p style="margin:0 0 16px;font-size:18px;font-weight:600;text-align:center;">{loc["greeting"]}</p>
+            <p style="margin:0 0 16px;font-size:16px;line-height:24px;">{loc["line1"]}</p>
+            <p style="margin:0 0 16px;font-size:16px;line-height:24px;">{loc["line2"]}</p>
+            <p style="margin:0 0 16px;font-size:16px;line-height:24px;font-weight:600;">{loc["line3"]}</p>
+            <p style="margin:24px 0;font-size:18px;font-weight:700;text-align:center;background:#e0f4f4;color:{MED_G_COLOR};padding:16px;border-radius:8px;">{loc["urgency"]}</p>
+            <p style="text-align:center;margin:30px 0;">
+              <a href="{MED_G_DOMAIN}/"
+                 style="background:{MED_G_COLOR};color:#fff;padding:14px 40px;
+                 text-decoration:none;border-radius:25px;font-weight:600;font-size:16px;display:inline-block;">{loc["button"]}</a>
+            </p>
+            <p style="margin:20px 0 0;font-size:13px;color:#64748b;text-align:center;">{loc["footer"]}</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+    return send_html_email(recipient_email, loc["subject"], html_body=html)

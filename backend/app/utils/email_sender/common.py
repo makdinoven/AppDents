@@ -57,23 +57,3 @@ def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
         print("SMTP error:", repr(e))
         return False
 
-def send_big_cart_reminder_email(recipient_email: str, total_amount: float) -> bool:
-    """
-    Простая текстовая заглушка для напоминания о большой корзине.
-    Никакого отдельного HTML-шаблона — просто текст в <pre>.
-    """
-    subject = "Cart reminder"
-
-    text = (
-        "Hello!\n\n"
-        f"You have an unfinished cart with total amount: ${total_amount:.2f}.\n"
-        "This amount is higher than the average cart amount on our platform.\n\n"
-        "If you wish to complete your purchase, please log in to Dent-S.\n\n"
-        "Best regards,\n"
-        "Dent-S Team"
-    )
-
-    html_body = f"<pre>{text}</pre>"
-
-    return send_html_email(recipient_email, subject, html_body)
-
