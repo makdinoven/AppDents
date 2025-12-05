@@ -1384,3 +1384,60 @@ def send_big_cart_reminder_email(
 </html>
 """
     return send_html_email(recipient_email, loc["subject"], body_html)
+
+def send_referral_program_email(
+    recipient_email: str,
+    referral_link: str,
+    region: str = "EN",
+    bonus_percent: int = 50,
+) -> bool:
+    """
+    Письмо про реферальную программу Dent-S.
+    Сейчас это ЗАГЛУШКА ПОД ВЁРСТКУ:
+    - простой HTML;
+    - вся динамика уже на месте (ссылка, процент, язык).
+    """
+
+    subjects = {
+        "RU": "Реферальная программа Dent-S — получите бонусы за друзей",
+        "EN": "Dent-S referral program — earn bonuses for your friends",
+        "ES": "Programa de referidos Dent-S — gana bonos por tus amigos",
+        "IT": "Programma di referral Dent-S — ottieni bonus per i tuoi amici",
+    }
+    subject = subjects.get(region.upper(), subjects["EN"])
+
+    html_body = f"""
+<html>
+  <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
+    <!-- ЗАГЛУШКА ПОД ВЁРСТКУ -->
+    <div style="max-width:600px;margin:auto;background:#ffffff;padding:20px;border-radius:12px;">
+      <h2 style="margin-top:0;">Реферальная программа Dent-S</h2>
+
+      <p>
+        Приглашайте коллег и друзей — получайте до
+        <b>{bonus_percent}%</b> от их покупок на платформе.
+      </p>
+
+      <p>
+        <b>Ваша персональная ссылка:</b><br />
+        <a href="{referral_link}" target="_blank" rel="noopener noreferrer">
+          {referral_link}
+        </a>
+      </p>
+
+      <p>Как это работает:</p>
+      <ol>
+        <li>Отправьте ссылку коллеге.</li>
+        <li>Коллега регистрируется и покупает любой курс.</li>
+        <li>Вы получаете бонусы на баланс и можете оплачивать ими курсы.</li>
+      </ol>
+
+      <p style="font-size:12px;color:#6b7280;margin-top:24px;">
+        Это письмо отправлено автоматически. Если вы не хотите получать такие письма,
+        просто игнорируйте его.
+      </p>
+    </div>
+  </body>
+</html>
+"""
+    return send_html_email(recipient_email, subject, html_body)

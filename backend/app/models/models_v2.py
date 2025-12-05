@@ -882,3 +882,43 @@ class CookiePolicy(Base):
     content    = Column(Text, nullable=False)
     created_at = Column(DateTime, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(DateTime, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+class ReferralCampaignEmail(Base):
+    """
+    Логи рассылки писем по реферальной кампании.
+    Одному юзеру шлём максимум одно такое письмо.
+    """
+    __tablename__ = "referral_campaign_emails"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    email = Column(String(255), nullable=False)
+
+    status = Column(
+        String(20),
+        nullable=False,
+        default="pending",
+        server_default="pending",  # pending | sent | error
+    )
+    error_message = Column(Text)
+
+    sent_at = Column(DateTime, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.utc(),  # как у тебя в других моделях
+    )
+
+    user = relationship("User", backref="referral_campaign_emails")
+
+class SearchQuery(Base):
+    __tablename__ = "search_queries"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    query = Column(Text, nullable=False)
+    path = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
