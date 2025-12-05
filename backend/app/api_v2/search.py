@@ -7,8 +7,8 @@ from ..db.database import get_db
 from ..services_v2.search_service import search_everything
 from ..schemas_v2.search import SearchResponse, SearchTypeEnum
 
-from ..models.search_query import SearchQuery
-from ..core.analytics import send_search_to_analytics  # см. ниже, заглушка
+from ..models.models_v2 import SearchQuery
+from ..core.search_analytics import send_search_to_analytics  # см. ниже, заглушка
 
 router = APIRouter()
 
@@ -19,6 +19,7 @@ router = APIRouter()
     summary="Глобальный поиск: авторы, курсы (лендинги), книги (книжные лендинги)",
 )
 def search_v2(
+    request: Request,
     q: str = Query(
         ...,
         min_length=1,
@@ -33,7 +34,7 @@ def search_v2(
         None,
         description="Фильтр по языкам (мультивыбор): EN, RU, ES, PT, AR, IT",
     ),
-    request: Request,
+
     db: Session = Depends(get_db),
 ):
     # 1. Обычный поиск, как и раньше
