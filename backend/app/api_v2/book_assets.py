@@ -34,7 +34,11 @@ s3_client = boto3.client(
     region_name=S3_REGION,
     aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
+    config=Config(
+        signature_version="s3",
+        s3={"addressing_style": "path"},
+        max_pool_connections=50,  # увеличиваем пул соединений (по умолчанию 10)
+    ),
 )
 
 logger = logging.getLogger(__name__)
@@ -226,6 +230,8 @@ def stream_book_pdf(
     Для запросов без Range header возвращает полный файл (200 OK).
     Для Range запросов возвращает частичный контент (206 Partial Content).
     """
+    # Загружаем данные из БД и сразу извлекаем нужные значения,
+    # чтобы освободить соединение с БД до начала стриминга
     book = (
         db.query(Book)
           .options(selectinload(Book.files))
@@ -238,8 +244,14 @@ def stream_book_pdf(
     pdf_file = next((f for f in (book.files or []) if f.file_format == BookFileFormat.PDF), None)
     if not pdf_file or not pdf_file.s3_url:
         raise HTTPException(status_code=404, detail="PDF not found")
+    
+    # Извлекаем s3_url до закрытия сессии
+    s3_url = pdf_file.s3_url
+    
+    # Закрываем DB сессию ПЕРЕД стримингом, чтобы не держать соединение
+    db.close()
 
-    key = _s3_key_from_url(pdf_file.s3_url)
+    key = _s3_key_from_url(s3_url)
 
     range_header = request.headers.get("range") or request.headers.get("Range")
     logger.info(f"PDF request for book {book_id}: Range header = {range_header}")
