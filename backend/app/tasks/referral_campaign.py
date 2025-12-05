@@ -12,7 +12,7 @@ from app.services import email_sender
 from app.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
 
 # лимит за один прогон таски (если она раз в день — это и есть 200–300 писем/день)
-MAX_DAILY_REFERRAL_EMAILS = 250
+MAX_DAILY_REFERRAL_EMAILS = 300
 
 
 def _get_session() -> Session:
