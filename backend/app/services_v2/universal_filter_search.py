@@ -13,11 +13,11 @@ from sqlalchemy import func
 from decimal import Decimal
 
 from ..models.models_v2 import (
-    Author, Publisher, Tag, Book, BookLanding,
-    book_authors, book_publishers, book_tags
+    Author, Publisher, Tag, Book, BookLanding, Landing,
+    book_authors, book_publishers, book_tags, landing_authors, landing_tags
 )
 from ..schemas_v2.common import FilterSearchResponse, FilterOption, FilterContext
-from .filter_aggregation_service import build_book_landing_base_query
+from .filter_aggregation_service import build_book_landing_base_query, build_author_base_query
 
 
 # ═══════════════════ Поиск авторов ═══════════════════
@@ -279,6 +279,8 @@ def search_tags(
         return _search_tags_for_books(db, q, limit, **filters)
     elif context == FilterContext.COURSES:
         return _search_tags_for_courses(db, q, limit, **filters)
+    elif context == FilterContext.AUTHORS_PAGE:
+        return _search_tags_for_authors_page(db, q, limit, **filters)
     else:
         raise ValueError(f"Unknown context: {context}")
 
@@ -376,4 +378,121 @@ def _search_tags_for_courses(
     """
     # Заглушка для будущей реализации
     return FilterSearchResponse(total=0, options=[])
+
+
+def _search_tags_for_authors_page(
+    db: Session,
+    q: Optional[str],
+    limit: int,
+    language: Optional[str] = None,
+    courses_from: Optional[int] = None,
+    courses_to: Optional[int] = None,
+    books_from: Optional[int] = None,
+    books_to: Optional[int] = None,
+) -> FilterSearchResponse:
+    """
+    Поиск тегов для страницы авторов.
+    
+    Возвращает теги с количеством авторов, у которых есть этот тег
+    (через курсовые лендинги или книги).
+    
+    Args:
+        db: Сессия БД
+        q: Поисковый запрос по названию тега
+        limit: Максимальное количество результатов
+        language: Фильтр по языку автора
+        courses_from/courses_to: Диапазон количества курсов
+        books_from/books_to: Диапазон количества книг
+    
+    Returns:
+        FilterSearchResponse с найденными тегами и count авторов
+    """
+    from ..models.models_v2 import book_landing_books
+    
+    # Строим базовый запрос авторов без фильтра по тегам
+    base_query = build_author_base_query(
+        db=db,
+        language=language,
+        tags=None,  # Исключаем фильтр по тегам
+        courses_from=courses_from,
+        courses_to=courses_to,
+        books_from=books_from,
+        books_to=books_to,
+        q=None,
+    )
+    
+    author_ids = [a.id for a in base_query.with_entities(Author.id).all()]
+    
+    if not author_ids:
+        return FilterSearchResponse(total=0, options=[])
+    
+    # Теги приходят из двух источников: Landing.tags и Book.tags
+    # Для каждого тега считаем количество уникальных авторов
+    
+    # Теги из курсовых лендингов
+    tags_from_landings = (
+        db.query(
+            Tag.id.label('tag_id'),
+            Tag.name.label('tag_name'),
+            func.count(func.distinct(Author.id)).label('author_cnt')
+        )
+        .select_from(Tag)
+        .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+        .join(Landing, landing_tags.c.landing_id == Landing.id)
+        .join(landing_authors, Landing.id == landing_authors.c.landing_id)
+        .join(Author, landing_authors.c.author_id == Author.id)
+        .filter(Landing.is_hidden.is_(False))
+        .filter(Author.id.in_(author_ids))
+    )
+    
+    # Теги из книг
+    tags_from_books = (
+        db.query(
+            Tag.id.label('tag_id'),
+            Tag.name.label('tag_name'),
+            func.count(func.distinct(Author.id)).label('author_cnt')
+        )
+        .select_from(Tag)
+        .join(book_tags, Tag.id == book_tags.c.tag_id)
+        .join(Book, book_tags.c.book_id == Book.id)
+        .join(book_authors, Book.id == book_authors.c.book_id)
+        .join(Author, book_authors.c.author_id == Author.id)
+        .filter(Author.id.in_(author_ids))
+    )
+    
+    # Применяем поисковый запрос к обоим источникам
+    if q:
+        tags_from_landings = tags_from_landings.filter(Tag.name.ilike(f"%{q}%"))
+        tags_from_books = tags_from_books.filter(Tag.name.ilike(f"%{q}%"))
+    
+    # Группируем оба запроса
+    tags_from_landings = tags_from_landings.group_by(Tag.id, Tag.name)
+    tags_from_books = tags_from_books.group_by(Tag.id, Tag.name)
+    
+    # Объединяем результаты и суммируем counts
+    combined = tags_from_landings.union_all(tags_from_books).subquery()
+    
+    # Агрегируем по tag_id
+    tags_data = (
+        db.query(
+            combined.c.tag_id,
+            combined.c.tag_name,
+            func.sum(combined.c.author_cnt).label('count')
+        )
+        .group_by(combined.c.tag_id, combined.c.tag_name)
+        .order_by(func.sum(combined.c.author_cnt).desc(), combined.c.tag_name)
+        .limit(limit)
+        .all()
+    )
+    
+    # Подсчет total (уникальных тегов)
+    total_subq = tags_from_landings.union(tags_from_books).subquery()
+    total = db.query(func.count(func.distinct(total_subq.c.tag_id))).scalar() or 0
+    
+    options = [
+        FilterOption(id=tag_id, name=tag_name, count=int(count))
+        for tag_id, tag_name, count in tags_data
+    ]
+    
+    return FilterSearchResponse(total=total, options=options)
 
