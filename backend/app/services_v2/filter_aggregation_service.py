@@ -164,24 +164,25 @@ def _prepend_selected_options(
     selected_options: List[FilterOption]
 ) -> List[FilterOption]:
     """
-    Добавляет выбранные опции в начало списка, убирая дубликаты.
+    Добавляет в начало списка только те выбранные опции, которых НЕТ в базовом списке.
+    Опции, которые уже есть в базовом списке, остаются на своих местах.
     """
     if not selected_options:
         return options
     
-    # Собираем ID/value выбранных опций
-    selected_ids = {opt.id for opt in selected_options if opt.id is not None}
-    selected_values = {opt.value for opt in selected_options if opt.value is not None}
+    # Собираем ID/value опций, которые уже есть в базовом списке
+    existing_ids = {opt.id for opt in options if opt.id is not None}
+    existing_values = {opt.value for opt in options if opt.value is not None}
     
-    # Фильтруем существующие опции, убирая дубликаты
-    filtered_options = [
-        opt for opt in options
-        if (opt.id is None or opt.id not in selected_ids) and
-           (opt.value is None or opt.value not in selected_values)
+    # Отбираем только те выбранные опции, которых НЕТ в базовом списке
+    new_selected_options = [
+        opt for opt in selected_options
+        if (opt.id is not None and opt.id not in existing_ids) or
+           (opt.value is not None and opt.value not in existing_values)
     ]
     
-    # Возвращаем выбранные первыми
-    return selected_options + filtered_options
+    # Добавляем новые выбранные в начало, базовый список остаётся без изменений
+    return new_selected_options + options
 
 
 def aggregate_book_filters(
