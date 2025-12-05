@@ -22,8 +22,9 @@ celery = Celery(
             "app.tasks.book_covers",
             "app.tasks.creatives",
             "app.tasks.video_summary",
-            "app.tasks.clip_tasks"
-            "app.tasks.big_cart_reminder"
+            "app.tasks.clip_tasks",
+            "app.tasks.big_cart_reminder",
+            "app.tasks.referral_campaign",
         ],
 )
 
@@ -55,6 +56,7 @@ celery.conf.update(
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "80/h"},
         "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "80/h"},
+        "app.tasks.referral_campaign.process_referrers": {"rate_limit": "50/h"},
 
     },
     beat_schedule={
@@ -93,6 +95,13 @@ celery.conf.update(
             "schedule": 86400,      # 1 раз в сутки
             "options": {"queue": "special"},
         },
+        "process-referrals-each-3h": {
+            "task": "app.tasks.referral_campaign.process_referrals",
+            "schedule": 10800,
+            "options": {"queue": "special"},
+
+        }
+
 
     },
 )
@@ -125,4 +134,6 @@ celery.conf.task_routes = {
     "app.tasks.creatives.*": {"queue": "book"},
     "app.tasks.clip_tasks.*": {"queue": "default"},
     "app.tasks.video_summary.*": {"queue": "default"},
+    "app.tasks.big_cart_reminder.process_big_cart_reminders": {"queue": "special"},
+    "app.tasks.referral_campaign.process_referrers": {"queue": "special"},
 }
