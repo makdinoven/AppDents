@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 from ..schemas_v2.book import BookLandingCardResponse
+from ..schemas_v2.common import CatalogFiltersMetadata
 
 
 class AuthorSimpleResponse(BaseModel):
@@ -116,3 +117,69 @@ class AuthorsPage(BaseModel):
     page: int            # текущая страница
     size: int            # размер страницы (число элементов на странице)
     items: List[AuthorResponse]
+
+
+# ═══════════════════ V2: Карточки авторов с фильтрами ═══════════════════
+
+class AuthorCardV2Response(BaseModel):
+    """
+    Карточка автора для каталога с расширенными данными.
+    """
+    id: int
+    name: str
+    description: Optional[str] = ""
+    photo: Optional[str] = ""
+    language: Optional[str] = ""
+    courses_count: int = Field(0, description="Количество уникальных курсов")
+    books_count: int = Field(0, description="Количество книг с видимыми лендингами")
+    tags: List[str] = Field(default_factory=list, description="Теги из курсов и книг автора")
+    total_min_price: Optional[float] = Field(
+        None, 
+        description="Минимальная суммарная цена (мин. цена каждого курса + мин. цена каждой книги)"
+    )
+    popularity: int = Field(0, description="Популярность (сумма sales_count из Landing + BookLanding)")
+
+    class Config:
+        orm_mode = True
+
+
+class AuthorsCardsV2Response(BaseModel):
+    """
+    Ответ с карточками авторов, пагинацией и метаданными фильтров.
+    
+    Аналогично BookLandingCardsV2Response для книг.
+    """
+    total: int = Field(..., description="Общее количество авторов после фильтрации")
+    total_pages: int = Field(..., description="Общее количество страниц")
+    page: int = Field(..., description="Текущая страница")
+    size: int = Field(..., description="Размер страницы")
+    cards: List[AuthorCardV2Response] = Field(default_factory=list, description="Карточки авторов")
+    filters: Optional[CatalogFiltersMetadata] = Field(
+        None, 
+        description="Метаданные фильтров (если include_filters=true)"
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "total": 150,
+                "total_pages": 8,
+                "page": 1,
+                "size": 20,
+                "cards": [
+                    {
+                        "id": 1,
+                        "name": "John Smith",
+                        "description": "Expert in dental surgery",
+                        "photo": "https://example.com/photo.jpg",
+                        "language": "EN",
+                        "courses_count": 5,
+                        "books_count": 3,
+                        "tags": ["Surgery", "Implantology"],
+                        "total_min_price": 450.0,
+                        "popularity": 1250
+                    }
+                ],
+                "filters": None
+            }
+        }

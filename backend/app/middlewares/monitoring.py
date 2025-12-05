@@ -21,6 +21,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
     # Эндпоинты, исключённые из мониторинга производительности
     PERFORMANCE_EXCLUDE_PATTERNS = [
         "/api/courses/detail/",
+        "/api/books/",  # стриминг PDF и другие тяжёлые операции с книгами
     ]
     
     # Порог для медленных запросов (в секундах)

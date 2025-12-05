@@ -1,18 +1,31 @@
 import re
 import unicodedata
 from collections import defaultdict
+from math import ceil
+from typing import List, Optional, Set, Dict
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy import text
-from sqlalchemy.orm import Session
-from typing import List, Optional
+from sqlalchemy import text, func
+from sqlalchemy.orm import Session, selectinload
+
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Author
-from ..schemas_v2.author import AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage, \
-    AuthorFullDetailResponse, AuthorsPage
-from ..services_v2.author_service import get_author_detail, create_author, update_author, \
+from ..models.models_v2 import (
+    User, Author, Landing, Book, BookLanding, Tag,
+    landing_authors, landing_course, book_authors, book_landing_books,
+    landing_tags, book_tags
+)
+from ..schemas_v2.author import (
+    AuthorResponse, AuthorCreate, AuthorUpdate, AuthorResponsePage,
+    AuthorFullDetailResponse, AuthorsPage, AuthorCardV2Response, AuthorsCardsV2Response
+)
+from ..services_v2.author_service import (
+    get_author_detail, create_author, update_author,
     delete_author, get_author_full_detail, list_authors_by_page, list_authors_search_paginated
+)
+from ..services_v2.filter_aggregation_service import (
+    build_author_base_query, aggregate_author_filters
+)
 
 router = APIRouter()
 
@@ -275,4 +288,503 @@ def search_authors(
         page=page,
         size=size,
         language=language
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════ V2: Карточки авторов с фильтрами ═════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _safe_price(value) -> float:
+    """Безопасное преобразование цены в float."""
+    try:
+        return float(value) if value is not None else float("inf")
+    except (ValueError, TypeError):
+        return float("inf")
+
+
+def _calculate_author_stats(
+    db: Session,
+    author: Author,
+    lang_filter: Optional[List[str]] = None
+) -> Dict:
+    """
+    Вычисляет статистику для автора:
+    - courses_count: количество уникальных курсов
+    - books_count: количество книг с видимыми лендингами
+    - total_min_price: минимальная суммарная цена курсов + книг
+    - popularity: сумма sales_count из Landing + BookLanding
+    - tags: теги из курсов и книг
+    """
+    # Фильтруем лендинги по видимости и языку
+    visible_landings = [
+        l for l in (author.landings or [])
+        if not l.is_hidden and (not lang_filter or l.language.upper() in lang_filter)
+    ]
+    
+    # 1) Минимальная цена по каждому курсу
+    min_price_by_course: Dict[int, float] = {}
+    for l in visible_landings:
+        price = _safe_price(l.new_price)
+        for c in (l.courses or []):
+            cid = c.id
+            if cid not in min_price_by_course or price < min_price_by_course[cid]:
+                min_price_by_course[cid] = price
+    
+    # 2) Оставляем только «дешёвые» лендинги (без дубликатов по курсам)
+    kept_landings: List[Landing] = []
+    for l in visible_landings:
+        price = _safe_price(l.new_price)
+        has_cheaper_alt = any(
+            price > min_price_by_course.get(c.id, price)
+            for c in (l.courses or [])
+        )
+        if not has_cheaper_alt:
+            kept_landings.append(l)
+    
+    # 3) Уникальные курсы и теги из курсовых лендингов
+    unique_course_ids: Set[int] = {c.id for l in kept_landings for c in (l.courses or [])}
+    tags_from_landings: Set[str] = {t.name for l in kept_landings for t in (l.tags or [])}
+    
+    # 4) Книги с видимыми BookLanding
+    visible_books = []
+    min_price_by_book: Dict[int, float] = {}
+    for b in (author.books or []):
+        visible_bl = [
+            bl for bl in (b.landings or [])
+            if not bl.is_hidden and (not lang_filter or bl.language.upper() in lang_filter)
+        ]
+        if visible_bl:
+            visible_books.append(b)
+            # Минимальная цена для этой книги
+            min_bl_price = min(_safe_price(bl.new_price) for bl in visible_bl)
+            if min_bl_price != float("inf"):
+                min_price_by_book[b.id] = min_bl_price
+    
+    books_count = len(visible_books)
+    
+    # Теги из книг
+    tags_from_books: Set[str] = {t.name for b in (author.books or []) for t in (getattr(b, 'tags', []) or [])}
+    all_tags = tags_from_landings | tags_from_books
+    
+    # 5) Суммарная минимальная цена (курсы + книги)
+    total_courses_price = sum(
+        p for p in min_price_by_course.values() if p != float("inf")
+    )
+    total_books_price = sum(
+        p for p in min_price_by_book.values() if p != float("inf")
+    )
+    total_min_price = total_courses_price + total_books_price
+    
+    # 6) Популярность: сумма sales_count из Landing + BookLanding
+    popularity = 0
+    for l in kept_landings:
+        popularity += (l.sales_count or 0)
+    for b in visible_books:
+        for bl in (b.landings or []):
+            if not bl.is_hidden and (not lang_filter or bl.language.upper() in lang_filter):
+                popularity += (bl.sales_count or 0)
+    
+    return {
+        "courses_count": len(unique_course_ids),
+        "books_count": books_count,
+        "total_min_price": round(total_min_price, 2) if total_min_price > 0 else None,
+        "popularity": popularity,
+        "tags": sorted(all_tags),
+    }
+
+
+def _serialize_author_card_v2(
+    db: Session,
+    author: Author,
+    lang_filter: Optional[List[str]] = None
+) -> AuthorCardV2Response:
+    """Сериализует автора в карточку V2."""
+    stats = _calculate_author_stats(db, author, lang_filter)
+    
+    return AuthorCardV2Response(
+        id=author.id,
+        name=author.name,
+        description=author.description or "",
+        photo=author.photo or "",
+        language=author.language or "",
+        courses_count=stats["courses_count"],
+        books_count=stats["books_count"],
+        tags=stats["tags"],
+        total_min_price=stats["total_min_price"],
+        popularity=stats["popularity"],
+    )
+
+
+@router.get(
+    "/v2/cards",
+    response_model=AuthorsCardsV2Response,
+    summary="V2: Карточки авторов с расширенными фильтрами и метаданными",
+    description="""
+    Версия 2 эндпоинта для получения карточек авторов с фильтрами и сортировками.
+    
+    ## Фильтры:
+    
+    - **language** - язык автора (EN, RU, ES, IT, AR, PT)
+    - **tags** - фильтр по тегам (ID тегов из курсов и книг автора)
+    - **courses_from, courses_to** - диапазон количества курсов
+    - **books_from, books_to** - диапазон количества книг
+    - **q** - поиск по имени автора
+    
+    ## Сортировки:
+    
+    - **popular_asc / popular_desc** - по популярности (сумма sales_count)
+    - **price_asc / price_desc** - по минимальной суммарной цене курсов + книг
+    - **courses_asc / courses_desc** - по количеству курсов
+    - **books_asc / books_desc** - по количеству книг
+    - **name_asc / name_desc** - по алфавиту
+    
+    ## Метаданные фильтров:
+    
+    При **include_filters=true** в ответе будет дополнительное поле `filters` с:
+    - Список всех доступных тегов с количеством авторов
+    - Диапазоны для количества курсов и книг
+    - Список доступных опций сортировки
+    
+    ## Примеры:
+    
+    ```
+    # Получить первую страницу с метаданными фильтров
+    GET /v2/cards?page=1&size=20&include_filters=true
+    
+    # Авторы с 5+ курсами, отсортированные по популярности
+    GET /v2/cards?courses_from=5&sort=popular_desc
+    
+    # Поиск авторов по имени
+    GET /v2/cards?q=smith&sort=name_asc
+    ```
+    """,
+    tags=["public"]
+)
+def author_cards_v2(
+    # Фильтры
+    language: Optional[str] = Query(
+        None,
+        description="Язык автора (EN, RU, ES, IT, AR, PT)",
+        regex="^(EN|RU|ES|IT|AR|PT)$"
+    ),
+    tags: Optional[List[int]] = Query(
+        None,
+        description="Фильтр по тегам (ID тегов, можно несколько)"
+    ),
+    courses_from: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Минимальное количество курсов"
+    ),
+    courses_to: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Максимальное количество курсов"
+    ),
+    books_from: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Минимальное количество книг"
+    ),
+    books_to: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Максимальное количество книг"
+    ),
+    q: Optional[str] = Query(
+        None,
+        min_length=1,
+        description="Поиск по имени автора"
+    ),
+    # Сортировка
+    sort: Optional[str] = Query(
+        None,
+        description="Сортировка",
+        regex="^(popular_asc|popular_desc|price_asc|price_desc|courses_asc|courses_desc|books_asc|books_desc|name_asc|name_desc)$"
+    ),
+    # Пагинация
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(20, gt=0, le=100, description="Размер страницы"),
+    # Метаданные фильтров
+    include_filters: bool = Query(
+        False,
+        description="Включить метаданные фильтров в ответ (tags, courses range, books range)"
+    ),
+    db: Session = Depends(get_db),
+):
+    """
+    V2 эндпоинт для получения карточек авторов с расширенными фильтрами.
+    """
+    
+    # Собираем все фильтры в словарь
+    current_filters = {
+        'language': language,
+        'tags': tags,
+        'courses_from': courses_from,
+        'courses_to': courses_to,
+        'books_from': books_from,
+        'books_to': books_to,
+        'q': q,
+    }
+    
+    lang_filter = [language.upper()] if language else None
+    
+    # Строим базовый запрос с применением всех фильтров
+    base = build_author_base_query(
+        db=db,
+        language=language,
+        tags=tags,
+        courses_from=courses_from,
+        courses_to=courses_to,
+        books_from=books_from,
+        books_to=books_to,
+        q=q,
+    )
+    
+    # Для сортировки нужны подзапросы с вычисленными метриками
+    # Создаём подзапросы для popularity, price, courses_count, books_count
+    
+    # Подзапрос для popularity (сумма sales_count из Landing + BookLanding)
+    popularity_landing = (
+        db.query(
+            landing_authors.c.author_id,
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0).label('landing_popularity')
+        )
+        .select_from(landing_authors)
+        .join(Landing, landing_authors.c.landing_id == Landing.id)
+        .filter(Landing.is_hidden.is_(False))
+        .group_by(landing_authors.c.author_id)
+        .subquery()
+    )
+    
+    popularity_book = (
+        db.query(
+            book_authors.c.author_id,
+            func.coalesce(func.sum(func.coalesce(BookLanding.sales_count, 0)), 0).label('book_popularity')
+        )
+        .select_from(book_authors)
+        .join(Book, book_authors.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .group_by(book_authors.c.author_id)
+        .subquery()
+    )
+    
+    # Подзапрос для courses_count
+    courses_count_subq = (
+        db.query(
+            landing_authors.c.author_id,
+            func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
+        )
+        .select_from(landing_authors)
+        .join(Landing, landing_authors.c.landing_id == Landing.id)
+        .join(landing_course, Landing.id == landing_course.c.landing_id)
+        .filter(Landing.is_hidden.is_(False))
+        .group_by(landing_authors.c.author_id)
+        .subquery()
+    )
+    
+    # Подзапрос для books_count
+    books_count_subq = (
+        db.query(
+            book_authors.c.author_id,
+            func.count(func.distinct(Book.id)).label('books_cnt')
+        )
+        .select_from(book_authors)
+        .join(Book, book_authors.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .group_by(book_authors.c.author_id)
+        .subquery()
+    )
+    
+    # Подзапрос для min_price (сумма минимальных цен курсов + книг)
+    # Это сложнее - нужно агрегировать минимальные цены по курсам и книгам
+    # Для упрощения используем среднюю/минимальную цену лендингов
+    min_course_price_subq = (
+        db.query(
+            landing_authors.c.author_id,
+            func.coalesce(func.sum(func.cast(Landing.new_price, func.decimal(10, 2))), 0).label('courses_price')
+        )
+        .select_from(landing_authors)
+        .join(Landing, landing_authors.c.landing_id == Landing.id)
+        .filter(Landing.is_hidden.is_(False))
+        .filter(Landing.new_price.isnot(None))
+        .group_by(landing_authors.c.author_id)
+        .subquery()
+    )
+    
+    min_book_price_subq = (
+        db.query(
+            book_authors.c.author_id,
+            func.coalesce(func.sum(func.cast(BookLanding.new_price, func.decimal(10, 2))), 0).label('books_price')
+        )
+        .select_from(book_authors)
+        .join(Book, book_authors.c.book_id == Book.id)
+        .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+        .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+        .filter(BookLanding.is_hidden.is_(False))
+        .filter(BookLanding.new_price.isnot(None))
+        .group_by(book_authors.c.author_id)
+        .subquery()
+    )
+    
+    # Применяем сортировку
+    if sort == "popular_desc":
+        base = (
+            base
+            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
+            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
+            .order_by(
+                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
+                 func.coalesce(popularity_book.c.book_popularity, 0)).desc(),
+                Author.id.desc()
+            )
+        )
+    elif sort == "popular_asc":
+        base = (
+            base
+            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
+            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
+            .order_by(
+                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
+                 func.coalesce(popularity_book.c.book_popularity, 0)).asc(),
+                Author.id.asc()
+            )
+        )
+    elif sort == "price_asc":
+        base = (
+            base
+            .outerjoin(min_course_price_subq, Author.id == min_course_price_subq.c.author_id)
+            .outerjoin(min_book_price_subq, Author.id == min_book_price_subq.c.author_id)
+            .order_by(
+                (func.coalesce(min_course_price_subq.c.courses_price, 0) + 
+                 func.coalesce(min_book_price_subq.c.books_price, 0)).asc(),
+                Author.id.asc()
+            )
+        )
+    elif sort == "price_desc":
+        base = (
+            base
+            .outerjoin(min_course_price_subq, Author.id == min_course_price_subq.c.author_id)
+            .outerjoin(min_book_price_subq, Author.id == min_book_price_subq.c.author_id)
+            .order_by(
+                (func.coalesce(min_course_price_subq.c.courses_price, 0) + 
+                 func.coalesce(min_book_price_subq.c.books_price, 0)).desc(),
+                Author.id.desc()
+            )
+        )
+    elif sort == "courses_desc":
+        base = (
+            base
+            .outerjoin(courses_count_subq, Author.id == courses_count_subq.c.author_id)
+            .order_by(
+                func.coalesce(courses_count_subq.c.courses_cnt, 0).desc(),
+                Author.id.desc()
+            )
+        )
+    elif sort == "courses_asc":
+        base = (
+            base
+            .outerjoin(courses_count_subq, Author.id == courses_count_subq.c.author_id)
+            .order_by(
+                func.coalesce(courses_count_subq.c.courses_cnt, 0).asc(),
+                Author.id.asc()
+            )
+        )
+    elif sort == "books_desc":
+        base = (
+            base
+            .outerjoin(books_count_subq, Author.id == books_count_subq.c.author_id)
+            .order_by(
+                func.coalesce(books_count_subq.c.books_cnt, 0).desc(),
+                Author.id.desc()
+            )
+        )
+    elif sort == "books_asc":
+        base = (
+            base
+            .outerjoin(books_count_subq, Author.id == books_count_subq.c.author_id)
+            .order_by(
+                func.coalesce(books_count_subq.c.books_cnt, 0).asc(),
+                Author.id.asc()
+            )
+        )
+    elif sort == "name_asc":
+        base = base.order_by(Author.name.asc(), Author.id.asc())
+    elif sort == "name_desc":
+        base = base.order_by(Author.name.desc(), Author.id.desc())
+    else:
+        # Дефолтная сортировка - по популярности
+        base = (
+            base
+            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
+            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
+            .order_by(
+                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
+                 func.coalesce(popularity_book.c.book_popularity, 0)).desc(),
+                Author.id.desc()
+            )
+        )
+    
+    # Подсчитываем total
+    total = base.order_by(None).with_entities(func.count(func.distinct(Author.id))).scalar() or 0
+    
+    # Получаем метаданные фильтров, если запрошено
+    filters_metadata = None
+    if include_filters:
+        # Для агрегации строим запрос заново без подзапросов сортировки
+        base_for_filters = build_author_base_query(
+            db=db,
+            language=language,
+            tags=tags,
+            courses_from=courses_from,
+            courses_to=courses_to,
+            books_from=books_from,
+            books_to=books_to,
+            q=q,
+        )
+        filters_metadata = aggregate_author_filters(
+            db=db,
+            base_query=base_for_filters,
+            current_filters=current_filters
+        )
+    
+    # Применяем пагинацию и получаем авторов
+    # Нужно distinct чтобы избежать дубликатов из-за join-ов
+    author_ids = [
+        aid for (aid,) in 
+        base.with_entities(Author.id).distinct().offset((page - 1) * size).limit(size).all()
+    ]
+    
+    # Загружаем авторов с необходимыми связями
+    authors = (
+        db.query(Author)
+        .options(
+            selectinload(Author.landings).selectinload(Landing.courses),
+            selectinload(Author.landings).selectinload(Landing.tags),
+            selectinload(Author.books).selectinload(Book.landings),
+            selectinload(Author.books).selectinload(Book.tags),
+        )
+        .filter(Author.id.in_(author_ids))
+        .all()
+    )
+    
+    # Сохраняем порядок из запроса
+    authors_by_id = {a.id: a for a in authors}
+    ordered_authors = [authors_by_id[aid] for aid in author_ids if aid in authors_by_id]
+    
+    # Сериализуем карточки
+    cards = [_serialize_author_card_v2(db, a, lang_filter) for a in ordered_authors]
+    
+    return AuthorsCardsV2Response(
+        total=total,
+        total_pages=ceil(total / size) if total > 0 else 0,
+        page=page,
+        size=size,
+        cards=cards,
+        filters=filters_metadata
     )
