@@ -910,3 +910,15 @@ class ReferralCampaignEmail(Base):
     )
 
     user = relationship("User", backref="referral_campaign_emails")
+
+class SearchQuery(Base):
+    __tablename__ = "search_queries"
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    query = Column(Text, nullable=False)
+    path = Column(Text, nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
