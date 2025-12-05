@@ -1393,51 +1393,207 @@ def send_referral_program_email(
 ) -> bool:
     """
     Письмо про реферальную программу Dent-S.
-    Сейчас это ЗАГЛУШКА ПОД ВЁРСТКУ:
-    - простой HTML;
-    - вся динамика уже на месте (ссылка, процент, язык).
+    Информирует пользователя о возможности приглашать друзей и получать 50% кешбэк.
     """
+    site_url = "https://dent-s.com"
+    profile_url = "https://dent-s.com/profile"
 
-    subjects = {
-        "RU": "Реферальная программа Dent-S — получите бонусы за друзей",
-        "EN": "Dent-S referral program — earn bonuses for your friends",
-        "ES": "Programa de referidos Dent-S — gana bonos por tus amigos",
-        "IT": "Programma di referral Dent-S — ottieni bonus per i tuoi amici",
+    translations = {
+        "RU": {
+            "subject": "Реферальная программа Dent-S — зарабатывайте с каждой покупки друзей!",
+            "heading": "Реферальная программа",
+            "greeting": "Здравствуйте!",
+            "intro": f"У нас отличные новости! Теперь вы можете получать <strong>{bonus_percent}% кешбэка</strong> с каждой покупки ваших приглашённых друзей и коллег.",
+            "spend_info": "Накопленный кешбэк можно потратить на любые <strong>курсы и книги</strong> на нашем сайте.",
+            "how_title": "Как это работает:",
+            "steps": [
+                "Поделитесь своей реферальной ссылкой с коллегами",
+                "Они регистрируются и совершают покупки на платформе",
+                f"Вы автоматически получаете {bonus_percent}% от суммы их покупок на свой баланс",
+                "Используйте баланс для оплаты курсов и книг"
+            ],
+            "simple_title": "Всё очень просто!",
+            "simple_info": "Подробное руководство по реферальной программе доступно в вашем <strong>личном кабинете</strong>.",
+            "privacy_title": "Полная конфиденциальность",
+            "privacy_info": "Приглашённый пользователь <strong>не узнает</strong>, что вам возвращаются деньги с его покупок. Это остаётся между вами и нами.",
+            "your_link": "Ваша персональная ссылка:",
+            "btn_site": "Перейти на сайт",
+            "btn_profile": "Личный кабинет",
+            "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте на него."
+        },
+        "EN": {
+            "subject": "Dent-S Referral Program — Earn from every friend's purchase!",
+            "heading": "Referral Program",
+            "greeting": "Hello!",
+            "intro": f"Great news! You can now earn <strong>{bonus_percent}% cashback</strong> from every purchase made by your invited friends and colleagues.",
+            "spend_info": "You can spend your accumulated cashback on any <strong>courses and books</strong> on our website.",
+            "how_title": "How it works:",
+            "steps": [
+                "Share your referral link with colleagues",
+                "They register and make purchases on the platform",
+                f"You automatically receive {bonus_percent}% of their purchase amount to your balance",
+                "Use your balance to pay for courses and books"
+            ],
+            "simple_title": "It's that simple!",
+            "simple_info": "A detailed guide to the referral program is available in your <strong>personal account</strong>.",
+            "privacy_title": "Complete Privacy",
+            "privacy_info": "The invited user <strong>will not know</strong> that you receive money back from their purchases. It stays between you and us.",
+            "your_link": "Your personal link:",
+            "btn_site": "Visit Website",
+            "btn_profile": "My Account",
+            "footer": "This is an automated message. Please do not reply."
+        },
+        "ES": {
+            "subject": "Programa de referidos Dent-S — ¡Gana con cada compra de tus amigos!",
+            "heading": "Programa de Referidos",
+            "greeting": "¡Hola!",
+            "intro": f"¡Grandes noticias! Ahora puedes ganar <strong>{bonus_percent}% de cashback</strong> de cada compra realizada por tus amigos y colegas invitados.",
+            "spend_info": "Puedes gastar tu cashback acumulado en cualquier <strong>curso y libro</strong> de nuestro sitio web.",
+            "how_title": "Cómo funciona:",
+            "steps": [
+                "Comparte tu enlace de referido con colegas",
+                "Ellos se registran y hacen compras en la plataforma",
+                f"Recibes automáticamente el {bonus_percent}% del monto de sus compras en tu saldo",
+                "Usa tu saldo para pagar cursos y libros"
+            ],
+            "simple_title": "¡Así de simple!",
+            "simple_info": "Una guía detallada del programa de referidos está disponible en tu <strong>cuenta personal</strong>.",
+            "privacy_title": "Privacidad Total",
+            "privacy_info": "El usuario invitado <strong>no sabrá</strong> que recibes dinero de sus compras. Queda entre tú y nosotros.",
+            "your_link": "Tu enlace personal:",
+            "btn_site": "Visitar Sitio",
+            "btn_profile": "Mi Cuenta",
+            "footer": "Este es un mensaje automático. Por favor, no responda."
+        },
+        "IT": {
+            "subject": "Programma Referral Dent-S — Guadagna da ogni acquisto dei tuoi amici!",
+            "heading": "Programma Referral",
+            "greeting": "Ciao!",
+            "intro": f"Ottime notizie! Ora puoi guadagnare <strong>{bonus_percent}% di cashback</strong> da ogni acquisto effettuato dai tuoi amici e colleghi invitati.",
+            "spend_info": "Puoi spendere il cashback accumulato su qualsiasi <strong>corso e libro</strong> sul nostro sito.",
+            "how_title": "Come funziona:",
+            "steps": [
+                "Condividi il tuo link referral con i colleghi",
+                "Si registrano e fanno acquisti sulla piattaforma",
+                f"Ricevi automaticamente il {bonus_percent}% dell'importo dei loro acquisti sul tuo saldo",
+                "Usa il saldo per pagare corsi e libri"
+            ],
+            "simple_title": "È così semplice!",
+            "simple_info": "Una guida dettagliata al programma referral è disponibile nel tuo <strong>account personale</strong>.",
+            "privacy_title": "Privacy Totale",
+            "privacy_info": "L'utente invitato <strong>non saprà</strong> che ricevi denaro dai suoi acquisti. Resta tra te e noi.",
+            "your_link": "Il tuo link personale:",
+            "btn_site": "Visita il Sito",
+            "btn_profile": "Il Mio Account",
+            "footer": "Questo è un messaggio automatico. Si prega di non rispondere."
+        },
+        "PT": {
+            "subject": "Programa de Indicação Dent-S — Ganhe com cada compra dos seus amigos!",
+            "heading": "Programa de Indicação",
+            "greeting": "Olá!",
+            "intro": f"Ótimas notícias! Agora você pode ganhar <strong>{bonus_percent}% de cashback</strong> de cada compra feita pelos seus amigos e colegas convidados.",
+            "spend_info": "Você pode gastar seu cashback acumulado em qualquer <strong>curso e livro</strong> em nosso site.",
+            "how_title": "Como funciona:",
+            "steps": [
+                "Compartilhe seu link de indicação com colegas",
+                "Eles se cadastram e fazem compras na plataforma",
+                f"Você recebe automaticamente {bonus_percent}% do valor das compras deles em seu saldo",
+                "Use seu saldo para pagar cursos e livros"
+            ],
+            "simple_title": "É simples assim!",
+            "simple_info": "Um guia detalhado do programa de indicação está disponível em sua <strong>conta pessoal</strong>.",
+            "privacy_title": "Privacidade Total",
+            "privacy_info": "O usuário convidado <strong>não saberá</strong> que você recebe dinheiro das compras dele. Fica entre você e nós.",
+            "your_link": "Seu link pessoal:",
+            "btn_site": "Visitar Site",
+            "btn_profile": "Minha Conta",
+            "footer": "Esta é uma mensagem automática. Por favor, não responda."
+        },
+        "AR": {
+            "subject": "برنامج الإحالة Dent-S — اربح من كل عملية شراء لأصدقائك!",
+            "heading": "برنامج الإحالة",
+            "greeting": "مرحبًا!",
+            "intro": f"أخبار رائعة! يمكنك الآن كسب <strong>{bonus_percent}% استرداد نقدي</strong> من كل عملية شراء يقوم بها أصدقاؤك وزملاؤك المدعوون.",
+            "spend_info": "يمكنك إنفاق رصيدك المتراكم على أي <strong>دورات وكتب</strong> على موقعنا.",
+            "how_title": "كيف يعمل:",
+            "steps": [
+                "شارك رابط الإحالة الخاص بك مع الزملاء",
+                "يسجلون ويقومون بعمليات شراء على المنصة",
+                f"تحصل تلقائيًا على {bonus_percent}% من قيمة مشترياتهم في رصيدك",
+                "استخدم رصيدك لدفع ثمن الدورات والكتب"
+            ],
+            "simple_title": "إنها بهذه البساطة!",
+            "simple_info": "دليل مفصل لبرنامج الإحالة متاح في <strong>حسابك الشخصي</strong>.",
+            "privacy_title": "خصوصية تامة",
+            "privacy_info": "المستخدم المدعو <strong>لن يعرف</strong> أنك تحصل على أموال من مشترياته. يبقى الأمر بينك وبيننا.",
+            "your_link": "رابطك الشخصي:",
+            "btn_site": "زيارة الموقع",
+            "btn_profile": "حسابي",
+            "footer": "هذه رسالة آلية. يرجى عدم الرد."
+        },
     }
-    subject = subjects.get(region.upper(), subjects["EN"])
 
-    html_body = f"""
-<html>
-  <body style="font-family:Arial,sans-serif;background:#f4f4f4;padding:20px;">
-    <!-- ЗАГЛУШКА ПОД ВЁРСТКУ -->
-    <div style="max-width:600px;margin:auto;background:#ffffff;padding:20px;border-radius:12px;">
-      <h2 style="margin-top:0;">Реферальная программа Dent-S</h2>
+    loc = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
 
-      <p>
-        Приглашайте коллег и друзей — получайте до
-        <b>{bonus_percent}%</b> от их покупок на платформе.
-      </p>
+    steps_html = "".join([f'<li style="margin:10px 0;padding-left:8px;">{step}</li>' for step in loc["steps"]])
 
-      <p>
-        <b>Ваша персональная ссылка:</b><br />
-        <a href="{referral_link}" target="_blank" rel="noopener noreferrer">
-          {referral_link}
-        </a>
-      </p>
+    body_html = f"""\
+<!DOCTYPE html>
+<html lang="{region.lower()}"{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{loc["subject"]}</title>
+</head>
+<body style="margin:0;padding:20px;background:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+  <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center">
+      <a href="{site_url}">
+        <img src="https://cdn.dent-s.com/logo-dents.png" width="150" style="max-width:150px;width:100%;">
+      </a>
+    </td></tr>
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#edf8ff;border-radius:20px;padding:20px;box-shadow:0 0 10px rgba(0,0,0,0.08);">
+        <tr><td>
+          <h2 style="margin:0 0 16px;font-size:32px;color:#7fdfd5;font-weight:600;text-align:center;">{loc["heading"]}</h2>
+        </td></tr>
+        <tr><td style="font-size:18px;line-height:28px;font-weight:500;padding:10px;">
+          <p style="margin:0 0 16px;font-size:20px;font-weight:600;text-align:center;">{loc["greeting"]}</p>
+          <p style="margin:0 0 16px;">{loc["intro"]}</p>
+          <p style="margin:0 0 20px;">{loc["spend_info"]}</p>
 
-      <p>Как это работает:</p>
-      <ol>
-        <li>Отправьте ссылку коллеге.</li>
-        <li>Коллега регистрируется и покупает любой курс.</li>
-        <li>Вы получаете бонусы на баланс и можете оплачивать ими курсы.</li>
-      </ol>
+          <p style="margin:20px 0 12px;font-size:20px;font-weight:700;color:#01433d;">{loc["how_title"]}</p>
+          <ol style="margin:0 0 20px;padding-left:20px;line-height:26px;">
+            {steps_html}
+          </ol>
 
-      <p style="font-size:12px;color:#6b7280;margin-top:24px;">
-        Это письмо отправлено автоматически. Если вы не хотите получать такие письма,
-        просто игнорируйте его.
-      </p>
-    </div>
-  </body>
+          <div style="background:#7fdfd5;border-radius:16px;padding:20px;margin:20px 0;">
+            <p style="margin:0 0 10px;font-size:20px;font-weight:700;color:#01433d;">{loc["simple_title"]}</p>
+            <p style="margin:0;color:#01433d;">{loc["simple_info"]}</p>
+          </div>
+
+          <div style="background:#fff;border:2px solid #7fdfd5;border-radius:16px;padding:20px;margin:20px 0;">
+            <p style="margin:0 0 10px;font-size:20px;font-weight:700;color:#01433d;">{loc["privacy_title"]}</p>
+            <p style="margin:0;color:#01433d;">{loc["privacy_info"]}</p>
+          </div>
+
+          <p style="margin:24px 0 8px;font-size:16px;font-weight:600;color:#01433d;text-align:center;">{loc["your_link"]}</p>
+          <p style="margin:0 0 24px;text-align:center;">
+            <a href="{referral_link}" style="word-break:break-all;color:#017f74;font-weight:600;font-size:16px;">{referral_link}</a>
+          </p>
+
+          <p style="margin:24px 0;text-align:center;">
+            <a href="{site_url}" style="display:inline-block;padding:14px 36px;background:#01433d;color:#edf8ff;text-decoration:none;border-radius:40px;font-weight:600;font-size:16px;margin:6px;">{loc["btn_site"]}</a>
+            <a href="{profile_url}" style="display:inline-block;padding:14px 36px;background:#7fdfd5;color:#01433d;text-decoration:none;border-radius:40px;font-weight:600;font-size:16px;margin:6px;border:2px solid #01433d;">{loc["btn_profile"]}</a>
+          </p>
+
+          <p style="margin:30px 0 0;font-size:14px;color:#64748b;text-align:center;">{loc["footer"]}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
 </html>
 """
-    return send_html_email(recipient_email, subject, html_body)
+    return send_html_email(recipient_email, loc["subject"], body_html)

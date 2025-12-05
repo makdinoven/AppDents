@@ -591,3 +591,176 @@ def send_big_cart_reminder_email(
 </html>
 """
     return send_html_email(recipient_email, loc["subject"], html_body=html)
+
+
+def send_referral_program_email(
+    recipient_email: str,
+    referral_link: str,
+    region: str = "EN",
+    bonus_percent: int = 50,
+) -> bool:
+    """
+    Письмо про реферальную программу Med.G.
+    Информирует пользователя о возможности приглашать друзей и получать 50% кешбэк.
+    """
+    profile_url = f"{MED_G_DOMAIN}/profile"
+
+    translations = {
+        "EN": {
+            "subject": "Med.G Referral Program — Earn from every friend's purchase!",
+            "heading": "Referral Program",
+            "greeting": "Hello!",
+            "intro": f"Great news! You can now earn <strong>{bonus_percent}% cashback</strong> from every purchase made by your invited friends and colleagues.",
+            "spend_info": "You can spend your accumulated cashback on any <strong>courses and books</strong> on our website.",
+            "how_title": "How it works:",
+            "steps": [
+                "Share your referral link with colleagues",
+                "They register and make purchases on the platform",
+                f"You automatically receive {bonus_percent}% of their purchase amount to your balance",
+                "Use your balance to pay for courses and books"
+            ],
+            "simple_title": "It's that simple!",
+            "simple_info": "A detailed guide to the referral program is available in your <strong>personal account</strong>.",
+            "privacy_title": "Complete Privacy",
+            "privacy_info": "The invited user <strong>will not know</strong> that you receive money back from their purchases. It stays between you and us.",
+            "your_link": "Your personal link:",
+            "btn_site": "Visit Website",
+            "btn_profile": "My Account",
+            "footer": "This is an automated message. Please do not reply."
+        },
+        "IT": {
+            "subject": "Programma Referral Med.G — Guadagna da ogni acquisto dei tuoi amici!",
+            "heading": "Programma Referral",
+            "greeting": "Ciao!",
+            "intro": f"Ottime notizie! Ora puoi guadagnare <strong>{bonus_percent}% di cashback</strong> da ogni acquisto effettuato dai tuoi amici e colleghi invitati.",
+            "spend_info": "Puoi spendere il cashback accumulato su qualsiasi <strong>corso e libro</strong> sul nostro sito.",
+            "how_title": "Come funziona:",
+            "steps": [
+                "Condividi il tuo link referral con i colleghi",
+                "Si registrano e fanno acquisti sulla piattaforma",
+                f"Ricevi automaticamente il {bonus_percent}% dell'importo dei loro acquisti sul tuo saldo",
+                "Usa il saldo per pagare corsi e libri"
+            ],
+            "simple_title": "È così semplice!",
+            "simple_info": "Una guida dettagliata al programma referral è disponibile nel tuo <strong>account personale</strong>.",
+            "privacy_title": "Privacy Totale",
+            "privacy_info": "L'utente invitato <strong>non saprà</strong> che ricevi denaro dai suoi acquisti. Resta tra te e noi.",
+            "your_link": "Il tuo link personale:",
+            "btn_site": "Visita il Sito",
+            "btn_profile": "Il Mio Account",
+            "footer": "Questo è un messaggio automatico. Si prega di non rispondere."
+        },
+        "RU": {
+            "subject": "Реферальная программа Med.G — зарабатывайте с каждой покупки друзей!",
+            "heading": "Реферальная программа",
+            "greeting": "Здравствуйте!",
+            "intro": f"У нас отличные новости! Теперь вы можете получать <strong>{bonus_percent}% кешбэка</strong> с каждой покупки ваших приглашённых друзей и коллег.",
+            "spend_info": "Накопленный кешбэк можно потратить на любые <strong>курсы и книги</strong> на нашем сайте.",
+            "how_title": "Как это работает:",
+            "steps": [
+                "Поделитесь своей реферальной ссылкой с коллегами",
+                "Они регистрируются и совершают покупки на платформе",
+                f"Вы автоматически получаете {bonus_percent}% от суммы их покупок на свой баланс",
+                "Используйте баланс для оплаты курсов и книг"
+            ],
+            "simple_title": "Всё очень просто!",
+            "simple_info": "Подробное руководство по реферальной программе доступно в вашем <strong>личном кабинете</strong>.",
+            "privacy_title": "Полная конфиденциальность",
+            "privacy_info": "Приглашённый пользователь <strong>не узнает</strong>, что вам возвращаются деньги с его покупок. Это остаётся между вами и нами.",
+            "your_link": "Ваша персональная ссылка:",
+            "btn_site": "Перейти на сайт",
+            "btn_profile": "Личный кабинет",
+            "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте на него."
+        },
+        "ES": {
+            "subject": "Programa de referidos Med.G — ¡Gana con cada compra de tus amigos!",
+            "heading": "Programa de Referidos",
+            "greeting": "¡Hola!",
+            "intro": f"¡Grandes noticias! Ahora puedes ganar <strong>{bonus_percent}% de cashback</strong> de cada compra realizada por tus amigos y colegas invitados.",
+            "spend_info": "Puedes gastar tu cashback acumulado en cualquier <strong>curso y libro</strong> de nuestro sitio web.",
+            "how_title": "Cómo funciona:",
+            "steps": [
+                "Comparte tu enlace de referido con colegas",
+                "Ellos se registran y hacen compras en la plataforma",
+                f"Recibes automáticamente el {bonus_percent}% del monto de sus compras en tu saldo",
+                "Usa tu saldo para pagar cursos y libros"
+            ],
+            "simple_title": "¡Así de simple!",
+            "simple_info": "Una guía detallada del programa de referidos está disponible en tu <strong>cuenta personal</strong>.",
+            "privacy_title": "Privacidad Total",
+            "privacy_info": "El usuario invitado <strong>no sabrá</strong> que recibes dinero de sus compras. Queda entre tú y nosotros.",
+            "your_link": "Tu enlace personal:",
+            "btn_site": "Visitar Sitio",
+            "btn_profile": "Mi Cuenta",
+            "footer": "Este es un mensaje automático. Por favor, no responda."
+        },
+    }
+
+    loc = translations.get(region.upper(), translations["EN"])
+    html_dir = ' dir="rtl"' if region.upper() == "AR" else ""
+
+    steps_html = "".join([f'<li style="margin:10px 0;padding-left:8px;">{step}</li>' for step in loc["steps"]])
+
+    body_html = f"""\
+<!DOCTYPE html>
+<html lang="{region.lower()}"{html_dir}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{loc["subject"]}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f7f8;font-family:'Segoe UI',sans-serif;">
+  <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f7f8">
+    <tr><td align="center" style="padding:30px 0 20px 0;">
+      <a href="{MED_G_DOMAIN}/">
+        <img src="{MED_G_DOMAIN}/static/logo-medg.png" alt="Med.G" width="150" />
+      </a>
+    </td></tr>
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border-radius:12px;margin:0 0 30px 0;">
+        <tr>
+          <td style="padding:30px 40px;color:{MED_G_COLOR};">
+            <h2 style="margin:0 0 20px 0;font-size:28px;text-align:center;">{loc["heading"]}</h2>
+            <p style="margin:0 0 16px;font-size:18px;font-weight:600;text-align:center;">{loc["greeting"]}</p>
+            <p style="margin:0 0 16px;font-size:16px;line-height:24px;">{loc["intro"]}</p>
+            <p style="margin:0 0 20px;font-size:16px;line-height:24px;">{loc["spend_info"]}</p>
+
+            <p style="margin:20px 0 12px;font-size:18px;font-weight:700;color:{MED_G_COLOR};">{loc["how_title"]}</p>
+            <ol style="margin:0 0 20px;padding-left:20px;font-size:16px;line-height:24px;">
+              {steps_html}
+            </ol>
+
+            <div style="background:#e0f4f4;border-radius:12px;padding:20px;margin:20px 0;">
+              <p style="margin:0 0 10px;font-size:18px;font-weight:700;color:{MED_G_COLOR};">{loc["simple_title"]}</p>
+              <p style="margin:0;font-size:15px;line-height:22px;color:{MED_G_COLOR};">{loc["simple_info"]}</p>
+            </div>
+
+            <div style="background:#fff;border:2px solid {MED_G_COLOR};border-radius:12px;padding:20px;margin:20px 0;">
+              <p style="margin:0 0 10px;font-size:18px;font-weight:700;color:{MED_G_COLOR};">{loc["privacy_title"]}</p>
+              <p style="margin:0;font-size:15px;line-height:22px;color:{MED_G_COLOR};">{loc["privacy_info"]}</p>
+            </div>
+
+            <p style="margin:24px 0 8px;font-size:14px;font-weight:600;color:{MED_G_COLOR};text-align:center;">{loc["your_link"]}</p>
+            <p style="margin:0 0 24px;text-align:center;">
+              <a href="{referral_link}" style="word-break:break-all;color:{MED_G_COLOR};font-weight:600;font-size:14px;">{referral_link}</a>
+            </p>
+
+            <p style="text-align:center;margin:30px 0 20px;">
+              <a href="{MED_G_DOMAIN}/"
+                 style="display:inline-block;background:{MED_G_COLOR};color:#fff;padding:14px 32px;
+                 text-decoration:none;border-radius:25px;font-weight:600;font-size:15px;margin:6px;">{loc["btn_site"]}</a>
+              <a href="{profile_url}"
+                 style="display:inline-block;background:#fff;color:{MED_G_COLOR};padding:12px 30px;
+                 text-decoration:none;border-radius:25px;font-weight:600;font-size:15px;margin:6px;border:2px solid {MED_G_COLOR};">{loc["btn_profile"]}</a>
+            </p>
+
+            <p style="margin:20px 0 0;font-size:13px;color:#64748b;text-align:center;">{loc["footer"]}</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+"""
+    return send_html_email(recipient_email, loc["subject"], html_body=body_html)
