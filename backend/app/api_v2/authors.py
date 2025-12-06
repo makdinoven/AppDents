@@ -846,16 +846,31 @@ def author_cards_v2(
             .order_by(func.coalesce(books_subq.c.books_cnt, 0).asc(), Author.id.asc())
         )
     elif sort == "name_asc":
-        sort_query = sort_query.order_by(Author.name.asc(), Author.id.asc())
+        # Добавляем name в select и group_by для корректной сортировки в MySQL
+        # Используем trim для удаления пробелов, lower для case-insensitive сортировки
+        sort_query = sort_query.add_columns(Author.name).order_by(
+            func.lower(func.trim(Author.name)).asc(), 
+            Author.id.asc()
+        )
     elif sort == "name_desc":
-        sort_query = sort_query.order_by(Author.name.desc(), Author.id.desc())
+        sort_query = sort_query.add_columns(Author.name).order_by(
+            func.lower(func.trim(Author.name)).desc(), 
+            Author.id.desc()
+        )
     
     # Получаем отсортированные ID с пагинацией
     # Используем group_by вместо distinct для совместимости с MySQL ORDER BY
-    author_ids = [
-        aid for (aid,) in 
-        sort_query.group_by(Author.id).offset((page - 1) * size).limit(size).all()
-    ]
+    # При сортировке по имени добавляем name в group_by
+    if sort in ("name_asc", "name_desc"):
+        author_ids = [
+            aid for aid, _ in 
+            sort_query.group_by(Author.id, Author.name).offset((page - 1) * size).limit(size).all()
+        ]
+    else:
+        author_ids = [
+            aid for (aid,) in 
+            sort_query.group_by(Author.id).offset((page - 1) * size).limit(size).all()
+        ]
     
     # Получаем метаданные фильтров, если запрошено
     filters_metadata = None
