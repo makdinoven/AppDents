@@ -1490,11 +1490,11 @@ def build_landing_base_query(
     # Фильтр по цене (new_price - строка, кастим к числу)
     if price_from is not None:
         base = base.filter(
-            cast(Landing.new_price, func.DECIMAL(10, 2)) >= price_from
+            cast(Landing.new_price, SqlNumeric(10, 2)) >= price_from
         )
     if price_to is not None:
         base = base.filter(
-            cast(Landing.new_price, func.DECIMAL(10, 2)) <= price_to
+            cast(Landing.new_price, SqlNumeric(10, 2)) <= price_to
         )
     
     return base
@@ -1764,8 +1764,8 @@ def aggregate_landing_filters(
     # Явный CAST для числового сравнения
     price_range = (
         db.query(
-            func.min(cast(Landing.new_price, func.DECIMAL(10, 2))).label('min_price'),
-            func.max(cast(Landing.new_price, func.DECIMAL(10, 2))).label('max_price')
+            func.min(cast(Landing.new_price, SqlNumeric(10, 2))).label('min_price'),
+            func.max(cast(Landing.new_price, SqlNumeric(10, 2))).label('max_price')
         )
         .filter(Landing.is_hidden.is_(False))
         .filter(Landing.new_price.isnot(None))
