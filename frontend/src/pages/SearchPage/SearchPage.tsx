@@ -2,10 +2,8 @@ import s from "./SearchPage.module.scss";
 import Search from "../../shared/components/ui/Search/Search.tsx";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useOutsideClick from "../../shared/common/hooks/useOutsideClick.ts";
-import { useSearchParams } from "react-router-dom";
 import { Trans } from "react-i18next";
 import ModalCloseButton from "../../shared/components/ui/ModalCloseButton/ModalCloseButton.tsx";
-import useDebounce from "../../shared/common/hooks/useDebounce.ts";
 import ModalOverlay from "../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
 import ResultsList from "./content/ResultsList/ResultsList.tsx";
 import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
@@ -27,6 +25,7 @@ import CategoriesFilter from "./filters/CategoriesFilter/CategoriesFilter.tsx";
 import { t } from "i18next";
 import ResultsListSkeleton from "../../shared/components/ui/Skeletons/ResultsListSkeleton/ResultsListSkeleton.tsx";
 import Loader from "../../shared/components/ui/Loader/Loader.tsx";
+import { useListQueryParams } from "../../shared/components/list/model/useListQueryParams.ts";
 
 const RESULT_KEYS: SearchResultKeysType[] = [
   "landings",
@@ -36,9 +35,18 @@ const RESULT_KEYS: SearchResultKeysType[] = [
 
 const LANGS_URL_KEY = "langs";
 const TYPES_URL_KEY = "types";
+const SEARCH_KEY = "search-q";
+
+const toArray = <T extends string>(
+  raw: string | string[] | undefined,
+  fallback: T[],
+): T[] => {
+  if (!raw) return fallback;
+  if (Array.isArray(raw)) return raw as T[];
+  return [raw as T];
+};
 
 const SearchPage = () => {
-  const SEARCH_KEY = "q";
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
@@ -49,7 +57,7 @@ const SearchPage = () => {
   const searchResults = useSelector(
     (state: AppRootStateType) => state.main.search.results,
   );
-  const [searchParams] = useSearchParams();
+
   const closeModalRef = useRef<() => void>(null);
   const [tooLongError, setTooLongError] = useState<string | null>(null);
   const selectedLanguagesFromStore = useSelector(
@@ -63,8 +71,27 @@ const SearchPage = () => {
     handleClose();
   });
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const searchValue = searchParams.get(SEARCH_KEY);
-  const debouncedSearchValue = useDebounce(searchValue, 400);
+
+  const { params, actions } = useListQueryParams({ resetToFirstPage: false });
+  const searchValue = (params[SEARCH_KEY] as string | undefined) ?? "";
+
+  const selectedLanguages = useMemo(
+    () =>
+      toArray<LanguagesType>(
+        params[LANGS_URL_KEY] as string | string[] | undefined,
+        [language as LanguagesType],
+      ),
+    [params, language],
+  );
+  const selectedCategories = useMemo(
+    () =>
+      toArray<SearchResultKeysType>(
+        params[TYPES_URL_KEY] as string | string[] | undefined,
+        RESULT_KEYS,
+      ),
+    [params],
+  );
+
   const placeholderCoursesRaw = useSelector(
     (state: AppRootStateType) => state.main.courses,
   );
@@ -72,46 +99,44 @@ const SearchPage = () => {
     mapCourseToResultLanding,
   );
 
-  const selectedLanguages = useMemo(() => {
-    const langs = searchParams.getAll(LANGS_URL_KEY) as LanguagesType[];
-    return langs.length > 0 ? langs : [language as LanguagesType];
-  }, [searchParams]);
-
-  const selectedCategories = useMemo(() => {
-    const types = searchParams.getAll(TYPES_URL_KEY) as SearchResultKeysType[];
-    return types.length > 0 ? types : RESULT_KEYS;
-  }, [searchParams, language]);
-
   const hasResults =
     !!searchResults &&
     RESULT_KEYS.some(
       (key) => searchResults[key] && searchResults[key]!.length > 0,
     );
 
-  const showSkeleton = loading && !!debouncedSearchValue;
-  const showNoResults = !hasResults && !showSkeleton && !!debouncedSearchValue;
+  const showSkeleton = loading && !!searchValue;
+  const showNoResults = !hasResults && !showSkeleton && !!searchValue;
   const showPlaceholderCourses =
     !hasResults &&
     !showNoResults &&
     !!placeholderCourses.length &&
     !loading &&
-    !debouncedSearchValue;
+    !searchValue;
+
+  useEffect(() => {
+    if (searchValue && searchValue.length > 200) {
+      setTooLongError(t("search.tooLong"));
+      return;
+    }
+    setTooLongError(null);
+  }, [searchValue]);
 
   useEffect(() => {
     if (tooLongError) return;
 
     if (
-      debouncedSearchValue === q &&
-      arraysEqual(selectedLanguagesFromStore!, selectedLanguages) &&
-      arraysEqual(selectedCategoriesFromStore!, selectedCategories)
+      searchValue === q &&
+      arraysEqual(selectedLanguagesFromStore || [], selectedLanguages) &&
+      arraysEqual(selectedCategoriesFromStore || [], selectedCategories)
     ) {
       return;
     }
 
-    if (debouncedSearchValue) {
+    if (searchValue) {
       dispatch(
         globalSearch({
-          q: debouncedSearchValue.trim(),
+          q: searchValue.trim(),
           languages: selectedLanguages,
           types: selectedCategories,
         }),
@@ -120,24 +145,32 @@ const SearchPage = () => {
       dispatch(clearSearch());
     }
   }, [
-    debouncedSearchValue,
+    searchValue,
     selectedLanguages,
     selectedCategories,
     tooLongError,
+    q,
+    hasResults,
+    selectedLanguagesFromStore,
+    selectedCategoriesFromStore,
+    dispatch,
   ]);
-
-  useEffect(() => {
-    if (searchValue && searchValue.length > 200) {
-      setTooLongError(t("search.tooLong"));
-      return;
-    }
-
-    setTooLongError(null);
-  }, [searchValue]);
 
   const handleClose = () => {
     dispatch(clearSearch());
     closeModalRef.current?.();
+  };
+
+  const handleLanguagesChange = (langs: LanguagesType[]) => {
+    actions.set({
+      [LANGS_URL_KEY]: langs.length ? langs : undefined,
+    });
+  };
+
+  const handleCategoriesChange = (cats: SearchResultKeysType[]) => {
+    actions.set({
+      [TYPES_URL_KEY]: cats.length ? cats : undefined,
+    });
   };
 
   return (
@@ -159,14 +192,23 @@ const SearchPage = () => {
             </h3>
             <Loader className={`${s.loader} ${loading ? s.active : ""}`} />
           </div>
+
           <div className={s.search_wrapper}>
             <Search
+              useDebounceOnChange
               error={tooLongError}
               inputRef={inputRef}
               id={SEARCH_KEY}
               placeholder={"search.searchPlaceholder"}
+              valueFromUrl={searchValue}
+              onChangeValue={(value) =>
+                actions.set({
+                  [SEARCH_KEY]: value || undefined,
+                })
+              }
             />
           </div>
+
           <div className={s.filters_wrapper}>
             <div className={s.search_filters}>
               <p className={s.filters_label}>
@@ -179,6 +221,7 @@ const SearchPage = () => {
                 selectedCategories={selectedCategories}
                 urlKey={TYPES_URL_KEY}
                 isBtnDisabled={!hasResults}
+                onChange={handleCategoriesChange}
               />
             </div>
             <div className={s.search_filters}>
@@ -189,6 +232,7 @@ const SearchPage = () => {
                 selectedLanguages={selectedLanguages}
                 urlKey={LANGS_URL_KEY}
                 loading={loading}
+                onChange={handleLanguagesChange}
               />
             </div>
           </div>

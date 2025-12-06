@@ -11,11 +11,17 @@
   }
 }
 
+.ref_container {
+  width: 100%;
+  height: 100%;
+}
+
 .options_wrapper {
   @include flex-column();
   justify-content: flex-start;
   overflow-y: scroll;
-  height: 300px;
+  max-height: 240px;
+  padding-right: 10px;
   @include custom-scrollbar();
   width: 100%;
 }
@@ -26,15 +32,16 @@
   min-width: 100%;
   width: fit-content;
   height: fit-content;
-  padding: 15px;
+  border: 1.5px solid $hover-color;
+  padding: 10px;
   @include flex-column();
   justify-content: flex-start;
   align-items: flex-start;
   @include clamped-p3();
   color: $text-color-accent;
   background-color: $background-color;
-  border-radius: 15px;
-  box-shadow: 0 0 15px 0 $accent-04;
+  border-radius: 20px;
+  @include box-shadow();
   @include transition();
   visibility: hidden;
   opacity: 0;
@@ -42,6 +49,8 @@
 
   h6 {
     font-weight: bold;
+    color: $accent;
+    opacity: 0.3;
     margin-bottom: 8px;
   }
 
@@ -52,14 +61,29 @@
 
   &.down {
     right: 50%;
-    top: calc(100% + 10px);
+    top: calc(100% + 6px);
     transform: translateX(50%);
   }
 
   &.up {
     right: 50%;
     top: unset;
-    bottom: calc(100% + 10px);
+    bottom: calc(100% + 6px);
     transform: translateX(50%);
+  }
+
+  &.center {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &.right {
+    left: 0;
+    transform: translateX(0);
+  }
+
+  &.left {
+    right: 0;
+    transform: translateX(0);
   }
 }

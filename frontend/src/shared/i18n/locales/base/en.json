@@ -408,7 +408,7 @@
     "allCourses": "All courses",
     "allBooks": "All books",
     "allCoursesAndBooks": "All courses & books",
-    "professors.title": "Our professors",
+    "professors.title": "All professors",
     "search": "Search professors...",
     "found": "Professors found: {{count}}",
     "noProfessors": "No professors found",
@@ -529,7 +529,30 @@
   },
 
   "filters": {
-    "allFilters": "All filters"
+    "filters": "Filters",
+    "resetAll": "Reset all",
+    "allFilters": "All filters",
+    "showItems_one": "Show {{count}} item",
+    "showItems_other": "Show {{count}} items",
+    "showItems_zero": "No items",
+    "itemsFound_one": "{{count}} item found",
+    "itemsFound_other": "{{count}} items found",
+    "keys": {
+      "publisher_ids": "Publishers",
+      "author_ids": "Authors",
+      "author_ids.search": "Search authors...",
+      "tags": "Tags",
+      "formats": "Formats",
+      "range": {
+        "year": "Publication year",
+        "usd": "Price",
+        "pages": "Pages"
+      }
+    }
+  },
+
+  "pagination": {
+    "pageSize": "Page size"
   },
 
   "admin": {

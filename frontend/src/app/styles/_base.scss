@@ -65,6 +65,7 @@ $hover-color-dark: rgba(100, 116, 139, 0.4) !default;
 $hover-color-darken-analogue: #c9d7e1 !default;
 $hover-color: rgba(100, 116, 139, 0.1) !default;
 $hover-color-analogue: #e0ecf4 !default;
+$hover-color-analogue-09: rgba(224, 236, 244, 0.9) !default;
 $light-grey: #dfebf3 !default;
 $darker-grey: #d8e4ee !default;
 $blur: blur(10px);
@@ -187,7 +188,7 @@ $font-sz-err-mob: 14px;
 }
 
 @mixin container {
-  max-width: 1280px;
+  max-width: 1300px;
   min-width: 360px;
   padding: 0 20px;
   margin-left: auto;
@@ -269,7 +270,7 @@ $font-sz-err-mob: 14px;
 
   // Полоса (ползунок)
   &::-webkit-scrollbar-thumb {
-    background-color: $primary;
+    background-color: $primary-08;
     border-radius: 10px;
   }
 
@@ -280,7 +281,7 @@ $font-sz-err-mob: 14px;
 
   // Для Firefox
   scrollbar-width: thin; // толщина: auto | thin | none
-  scrollbar-color: $primary transparent; // thumb track
+  scrollbar-color: $primary-08 transparent; // thumb track
 }
 
 @mixin circle-angle(

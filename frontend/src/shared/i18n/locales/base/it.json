@@ -468,10 +468,6 @@
     "loginText": "<0>Crea un account</0> per sbloccare l'accesso all'ordine di libri e corsi."
   },
 
-  "filters": {
-    "allFilters": "Tutti i filtri"
-  },
-
   "sort": {
     "toShowFirst": "Quali articoli mostrare per primi:",
     "keys": {
@@ -486,5 +482,31 @@
       "popular_asc": "Meno popolari",
       "popular_desc": "Più popolari"
     }
+  },
+
+  "filters": {
+    "filters": "Filtri",
+    "resetAll": "Reimposta tutto",
+    "allFilters": "Tutti i filtri",
+    "showItems_one": "Mostra {{count}} elemento",
+    "showItems_other": "Mostra {{count}} elementi",
+    "showItems_zero": "Nessun elemento",
+    "itemsFound_one": "Trovato {{count}} elemento",
+    "itemsFound_other": "Trovati {{count}} elementi",
+    "keys": {
+      "publisher_ids": "Editori",
+      "author_ids": "Autori",
+      "author_ids.search": "Cerca autori...",
+      "tags": "Tag",
+      "formats": "Formati",
+      "range": {
+        "year": "Anno di pubblicazione",
+        "usd": "Prezzo",
+        "pages": "Pagine"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Dimensione della pagina"
   }
 }

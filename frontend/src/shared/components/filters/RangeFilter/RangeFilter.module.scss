@@ -1,0 +1,57 @@
+.range_container {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  @include clamped-p3;
+  align-items: center;
+}
+
+
+.range_inputs {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  @include clamped-p3;
+
+  input {
+    @include transition;
+    width: 80px;
+    border: 1px solid $hover-color-analogue;
+    background-color: $hover-color-analogue;
+    border-radius: 13px;
+    padding: 5px 10px;
+
+    &::placeholder {
+      color: $hover-color-dark;
+    }
+
+    &:focus-visible {
+      border-color: $hover-color-darken;
+    }
+  }
+}
+
+.range_separator {
+  height: 2px;
+  width: 15px;
+  border-radius: 70px;
+  background-color: $hover-color-darken-analogue;
+}
+
+//.min_max_container {
+//  @include clamped-p4;
+//  display: flex;
+//  gap: 15px;
+//}
+//
+//.min_max_val {
+//  text-align: center;
+//  @include clamped-p4;
+//  opacity: 0.5;
+//}
+
+@media (max-width: $tablet-breakpoint) {
+  .range_container {
+    justify-content: center;
+  }
+}

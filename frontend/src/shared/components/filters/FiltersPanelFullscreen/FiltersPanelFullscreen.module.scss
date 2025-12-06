@@ -1,0 +1,106 @@
+.background {
+  background-color: $hover-color-analogue-09;
+  backdrop-filter: blur(20px);
+  //width: 100%;
+  flex: 1;
+  width: 560px;
+  @include flex-column;
+  //gap: 10px;
+  box-shadow: -2px -2px 15px 0 rgba(1, 67, 61, 0.15);
+  max-height: 100%;
+  padding-left: 2px;
+  padding-bottom: 2px;
+  border-bottom-left-radius: 30px;
+  border-top-left-radius: 30px;
+  overflow: hidden;
+}
+
+.top {
+  padding: 30px 20px 20px 20px;
+  background-color: $background-color;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  @include flex-column;
+  gap: 30px;
+  border-bottom: 5px solid $hover-color-analogue;
+}
+
+.bottom {
+  padding: 20px;
+  background-color: $background-color;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  border-top: 5px solid $hover-color-analogue;
+  @include flex-column;
+}
+
+.filters_container {
+  @include flex-column;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 10px 15px 10px 5px;
+  border-radius: 15px;
+  @include custom-scrollbar;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.back_btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  @include clamped-p1;
+  @include transition;
+  font-weight: bold;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    path {
+      @include transition;
+      stroke-width: 3;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: $primary;
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .background {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .filters_container {
+    padding: 10px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .top {
+    padding: 15px;
+  }
+
+  .bottom {
+    padding: 15px;
+  }
+
+  .background {
+    border-radius: 20px;
+  }
+}

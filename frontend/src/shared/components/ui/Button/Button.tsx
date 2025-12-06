@@ -10,6 +10,7 @@ interface ButtonProps {
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
   variant?:
+    | "primary"
     | "filled"
     | "filled_light"
     | "filled_dark"

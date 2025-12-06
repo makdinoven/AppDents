@@ -13,8 +13,14 @@ import Pagination, {
 } from "../../shared/components/list/Pagination/Pagination.tsx";
 import FiltersPanel from "../../shared/components/filters/FiltersPanel/FiltersPanel.tsx";
 import { useListQueryParams } from "../../shared/components/list/model/useListQueryParams.ts";
-import { mapBackendFilters } from "../../shared/components/filters/mapBackendFilters.ts";
-import { FiltersDataUI } from "../../shared/components/filters/types.ts";
+import {
+  mapBackendFilters,
+  mapBackendSelected,
+} from "../../shared/components/filters/model/mapBackendFilters.ts";
+import {
+  FiltersDataUI,
+  SelectedUI,
+} from "../../shared/components/filters/model/types.ts";
 import BookCardSkeletons from "../../shared/components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 
 const Books = () => {
@@ -24,6 +30,9 @@ const Books = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [pagination, setPagination] = useState<PaginationType | null>(null);
   const [filters, setFilters] = useState<FiltersDataUI | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<SelectedUI[] | null>(
+    null,
+  );
   const { params, actions } = useListQueryParams();
 
   const loadBooks = async () => {
@@ -31,10 +40,12 @@ const Books = () => {
     try {
       const res = await mainApi.getBookLandingCardsV2({
         ...params,
+        language: language,
         include_filters: true,
       });
       setBooks(res.data.cards);
       setFilters(mapBackendFilters(res.data.filters));
+      setSelectedFilters(mapBackendSelected(res.data.filters.selected));
       setPagination({
         total: res.data.total,
         total_pages: res.data.total_pages,
@@ -51,18 +62,21 @@ const Books = () => {
 
   useEffect(() => {
     loadBooks();
-  }, [params]);
+  }, [params, language]);
 
   return (
     <div lang={language.toLowerCase()} className={s.books}>
-      <DetailHeader title={"books.title"} />
+      <DetailHeader showBackButton={false} title={"books.title"} />
       <ListController
         filtersSlot={
           filters && (
             <FiltersPanel
+              loading={loading}
+              totalItems={pagination?.total ? pagination.total : 0}
               actions={actions}
               searchPlaceholder={`books.search`}
               filtersData={filters}
+              selectedFilters={selectedFilters}
               params={params}
             />
           )

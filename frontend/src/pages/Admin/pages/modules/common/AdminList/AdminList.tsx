@@ -13,7 +13,6 @@ import { useEffect } from "react";
 import { useListQueryParams } from "../../../../../../shared/components/list/model/useListQueryParams";
 import { LANGUAGES_NAME } from "../../../../../../shared/common/helpers/commonConstants.ts";
 import Search from "../../../../../../shared/components/ui/Search/Search.tsx";
-import useDebounce from "../../../../../../shared/common/hooks/useDebounce.ts";
 import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
 import MultiSelect from "../../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 
@@ -56,7 +55,6 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     defaultPage: 1,
     defaultPageSize: SIZE,
   });
-  const debouncedQ = useDebounce(params.q, 500);
 
   const itemsList = data.list as T[];
   const isBook = transKey.includes("bookL");
@@ -78,15 +76,15 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
     }
   };
 
-  const loadData = (params: ParamsType, debQ: string) => {
+  const loadData = (params: ParamsType) => {
     const hasSearch = params.q !== undefined && params.q !== "";
-    if (hasSearch && params.q === debQ) {
-      if (params.page !== 1) {
-        actions.set({ page: 1 });
-        return;
-      }
+    if (hasSearch) {
+      // if (params.page !== 1) {
+      //   actions.set({ page: 1 });
+      //   return;
+      // }
       onSearch({ q: params.q });
-    } else if (!hasSearch && !debQ) {
+    } else {
       onLoad({
         ...params,
         language: params.language === "all" ? undefined : params.language,
@@ -95,8 +93,8 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   };
 
   useEffect(() => {
-    loadData(params, debouncedQ);
-  }, [params, debouncedQ]);
+    loadData(params);
+  }, [params]);
 
   return (
     <div className={s.list_container}>
@@ -124,7 +122,13 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                 onClick={handleCreateItem}
               />
             </div>
-            <Search placeholder={`admin.${transKey}.search`} id={"q"} />
+            <Search
+              valueFromUrl={params.q ?? ""}
+              onChangeValue={(val) => actions.set({ q: val })}
+              useDebounceOnChange
+              placeholder={`admin.${transKey}.search`}
+              id={"q"}
+            />
           </div>
         }
         paginationSlot={

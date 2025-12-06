@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 export interface ListQueryParams {
   page: number;
@@ -8,6 +8,7 @@ export interface ListQueryParams {
 }
 
 interface Options {
+  resetToFirstPage?: boolean;
   defaultPage?: number;
   defaultPageSize?: number;
   defaultSort?: string;
@@ -15,6 +16,7 @@ interface Options {
 
 export function useListQueryParams(options?: Options) {
   const [search, setSearch] = useSearchParams();
+  const location = useLocation();
 
   const PAGE = "page";
   const SIZE = "page-size";
@@ -24,13 +26,10 @@ export function useListQueryParams(options?: Options) {
   const defaultPageSize = options?.defaultPageSize ?? 12;
   const defaultSort = options?.defaultSort ?? "popular_desc";
 
-  // ----------------------------------
-  // PARSE URL
-  // ----------------------------------
   const params: ListQueryParams = useMemo(() => {
     const page = Number(search.get(PAGE)) || defaultPage;
     const size = Number(search.get(SIZE)) || defaultPageSize;
-    const sort = Number(search.get(SORT)) || defaultSort;
+    const sort = search.get(SORT) || defaultSort;
 
     const parsed: ListQueryParams = { page, size, sort };
 
@@ -43,16 +42,12 @@ export function useListQueryParams(options?: Options) {
     return parsed;
   }, [search, defaultPage, defaultPageSize, defaultSort]);
 
-  // ----------------------------------
-  // ACTIONS
-  // ----------------------------------
-
   const set = useCallback(
     (next: Partial<ListQueryParams>) => {
       const newSearch = new URLSearchParams(search);
 
       Object.entries(next).forEach(([key, value]) => {
-        const isPageKey = key === "page" || key === "size";
+        const isPageKey = key === "page";
 
         const emptyArray = Array.isArray(value) && value.length === 0;
         const emptyValue =
@@ -65,16 +60,17 @@ export function useListQueryParams(options?: Options) {
         } else {
           newSearch.set(key, String(value));
         }
-
-        // any filter → reset page
-        if (!isPageKey) newSearch.set(PAGE, "1");
+        if (!isPageKey && options?.resetToFirstPage) newSearch.set(PAGE, "1");
       });
 
       const onlyPageChange =
         Object.keys(next).length === 1 && next.page !== undefined;
 
       setSearch(newSearch, {
-        replace: !onlyPageChange, // page = push, filters = replace
+        replace: !onlyPageChange,
+        ...(location.state?.backgroundLocation
+          ? { state: { backgroundLocation: location.state.backgroundLocation } }
+          : {}),
       });
     },
     [search, setSearch],
@@ -91,6 +87,53 @@ export function useListQueryParams(options?: Options) {
     [search, setSearch],
   );
 
+  const resetSingle = useCallback(
+    (key: string, value?: string) => {
+      const newSearch = new URLSearchParams(search);
+      if (value !== undefined) {
+        const current = newSearch.get(key);
+
+        if (!current) {
+          return;
+        }
+
+        const arr = current.split(",").filter(Boolean);
+        const nextArr = arr.filter((v) => v !== value);
+
+        if (nextArr.length === 0) {
+          newSearch.delete(key);
+        } else {
+          newSearch.set(key, nextArr.join(","));
+        }
+      } else {
+        const rangeMap: Record<string, { from: string; to: string }> = {
+          year: { from: "year_from", to: "year_to" },
+          price: { from: "price_from", to: "price_to" },
+          pages: { from: "pages_from", to: "pages_to" },
+        };
+
+        const range = rangeMap[key];
+
+        if (range) {
+          newSearch.delete(range.from);
+          newSearch.delete(range.to);
+        } else {
+          newSearch.delete(key);
+        }
+      }
+
+      newSearch.set(PAGE, "1");
+
+      setSearch(newSearch, {
+        replace: true,
+        ...(location.state?.backgroundLocation
+          ? { state: { backgroundLocation: location.state.backgroundLocation } }
+          : {}),
+      });
+    },
+    [search, setSearch, location.state, options?.resetToFirstPage],
+  );
+
   const resetAll = useCallback(() => {
     const newSearch = new URLSearchParams();
     newSearch.set(PAGE, String(defaultPage));
@@ -102,6 +145,6 @@ export function useListQueryParams(options?: Options) {
 
   return {
     params,
-    actions: { set, reset, resetAll },
+    actions: { set, reset, resetAll, resetSingle },
   };
 }

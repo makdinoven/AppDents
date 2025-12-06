@@ -83,3 +83,4 @@ export { default as Sort } from "./sort.svg?react";
 export { default as UserStrokeIcon } from "./user-stroke.svg?react";
 export { default as FileIcon } from "./file.svg?react";
 export { default as EditIcon } from "./edit.svg?react";
+export { default as FilterIcon } from "./filter.svg?react";

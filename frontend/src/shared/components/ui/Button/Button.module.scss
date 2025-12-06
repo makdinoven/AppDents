@@ -48,6 +48,19 @@
     }
   }
 
+  &.primary {
+    background-color: $primary;
+    color: $text-color;
+
+    @media (hover: hover) {
+      &:hover {
+        outline: 2px solid $primary;
+        color: $primary;
+        background-color: $background-color;
+      }
+    }
+  }
+
   &.filled_light {
     outline-color: $background-color;
     background-color: $background-color;

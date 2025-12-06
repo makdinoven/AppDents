@@ -369,9 +369,9 @@
     "allCourses": "Все курсы",
     "allBooks": "Все книги",
     "allCoursesAndBooks": "Все курсы и книги",
-    "professors.title": "Наши преподаватели",
-    "search": "Поиск преподавателей...",
-    "found": "Преподавателей найдено: {{count}}",
+    "professors.title": "Все лекторы",
+    "search": "Поиск лекторов...",
+    "found": "Лекторов найдено: {{count}}",
     "noProfessors": "Преподаватели не найдены",
     "about": "Подробнее",
     "specialization": "Специализация:",
@@ -489,6 +489,30 @@
     }
   },
   "filters": {
-    "allFilters": "Все фильтры"
+    "filters": "Фильтры",
+    "resetAll": "Сбросить всё",
+    "allFilters": "Все фильтры",
+    "showItems_zero": "Нет элементов",
+    "showItems_one": "Показать {{count}} элемент",
+    "showItems_few": "Показать {{count}} элемента",
+    "showItems_many": "Показать {{count}} элементов",
+    "itemsFound_one": "Найден {{count}} элемент",
+    "itemsFound_few": "Найдено {{count}} элемента",
+    "itemsFound_many": "Найдено {{count}} элементов",
+    "keys": {
+      "publisher_ids": "Издательства",
+      "author_ids": "Авторы",
+      "author_ids.search": "Поиск авторов...",
+      "tags": "Теги",
+      "formats": "Форматы",
+      "range": {
+        "year": "Год издания",
+        "usd": "Цена",
+        "pages": "Страницы"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Размер страницы"
   }
 }

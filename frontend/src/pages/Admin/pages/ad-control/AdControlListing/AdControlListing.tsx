@@ -27,7 +27,7 @@ type ColorType = "green" | "orange" | "red" | "white" | "black";
 
 const AdControlListing = () => {
   const [mode, setMode] = useState<"courses" | "books">("courses");
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState<boolean>(false);
   const [language, setLanguage] = useState<string>("all");
   const [data, setData] = useState<any>(null);
@@ -246,6 +246,12 @@ const AdControlListing = () => {
     fetchStaff();
   }, []);
 
+  const handleSearch = (val: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(adControlSearch, val);
+    setSearchParams(newParams);
+  };
+
   const handleClearFilters = () => {
     const confirmed = window.confirm("Are you sure?");
     if (!confirmed) return;
@@ -417,7 +423,12 @@ const AdControlListing = () => {
         </button>
       </div>
 
-      <Search id={adControlSearch} placeholder={t("admin.landings.search")} />
+      <Search
+        valueFromUrl={searchQuery}
+        onChangeValue={handleSearch}
+        id={adControlSearch}
+        placeholder={t("admin.landings.search")}
+      />
       {data?.length > 0 && (
         <p className={s.search_results}>
           <Trans

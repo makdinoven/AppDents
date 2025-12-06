@@ -460,10 +460,6 @@
     "loginText": "<0>Crie uma conta</0> para desbloquear o acesso a pedir livros e cursos."
   },
 
-  "filters": {
-    "allFilters": "Todos os filtros"
-  },
-
   "sort": {
     "toShowFirst": "Quais itens mostrar primeiro:",
     "keys": {
@@ -478,5 +474,32 @@
       "popular_asc": "Menos populares primeiro",
       "popular_desc": "Mais populares primeiro"
     }
+  },
+
+  "filters": {
+    "filters": "Filtros",
+    "resetAll": "Redefinir tudo",
+    "allFilters": "Todos os filtros",
+    "showItems_one": "Mostrar {{count}} item",
+    "showItems_other": "Mostrar {{count}} itens",
+    "showItems_zero": "Nenhum item",
+    "itemsFound_one": "Encontrado {{count}} item",
+    "itemsFound_other": "Encontrados {{count}} itens",
+    "keys": {
+      "publisher_ids": "Editoras",
+      "author_ids": "Autores",
+      "author_ids.search": "Pesquisar autores...",
+      "tags": "Tags",
+      "formats": "Formatos",
+      "range": {
+        "year": "Ano de publicação",
+        "usd": "Preço",
+        "pages": "Páginas"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Tamanho da página"
   }
+
 }

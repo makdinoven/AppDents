@@ -487,10 +487,6 @@
     "loginText": "<0>أنشئ حسابًا</0> لفتح الوصول لطلب الكتب والدورات."
   },
 
-  "filters": {
-    "allFilters": "جميع المرشحات"
-  },
-
   "sort": {
     "toShowFirst": "ما هي العناصر التي تريد عرضها أولاً:",
     "keys": {
@@ -505,5 +501,38 @@
       "popular_asc": "الأقل شهرة أولاً",
       "popular_desc": "الأكثر شهرة أولاً"
     }
+  },
+
+  "filters": {
+    "filters": "الفلاتر",
+    "resetAll": "إعادة تعيين الكل",
+    "allFilters": "جميع الفلاتر",
+    "showItems_zero": "لا توجد عناصر",
+    "showItems_one": "عرض عنصر واحد",
+    "showItems_two": "عرض عنصرين",
+    "showItems_few": "عرض {{count}} عناصر",
+    "showItems_many": "عرض {{count}} عنصراً",
+    "showItems_other": "عرض {{count}} عنصر",
+    "itemsFound_one": "تم العثور على عنصر واحد",
+    "itemsFound_two": "تم العثور على عنصرين",
+    "itemsFound_few": "تم العثور على {{count}} عناصر",
+    "itemsFound_many": "تم العثور على {{count}} عنصراً",
+    "itemsFound_other": "تم العثور على {{count}} عنصر",
+    "keys": {
+      "publisher_ids": "الناشرون",
+      "author_ids": "المؤلفون",
+      "author_ids.search": "البحث عن مؤلفين...",
+      "tags": "الوسوم",
+      "formats": "الصيغ",
+      "range": {
+        "year": "سنة النشر",
+        "usd": "السعر",
+        "pages": "الصفحات"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "حجم الصفحة"
   }
+
 }

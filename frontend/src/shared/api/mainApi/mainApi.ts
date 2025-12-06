@@ -92,6 +92,13 @@ export const mainApi = {
       params: params,
     });
   },
+
+  getProfessorsV2(params: any) {
+    return instance.get("authors/v2/cards", {
+      params: params,
+    });
+  },
+
   searchProfessors(params: ParamsType) {
     return instance.get("authors/search", {
       params: params,

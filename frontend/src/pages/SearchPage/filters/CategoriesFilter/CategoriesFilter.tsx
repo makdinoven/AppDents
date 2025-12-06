@@ -4,45 +4,37 @@ import {
   SearchResultKeysType,
   SearchResultsType,
 } from "../../../../shared/store/slices/mainSlice.ts";
-import { useLocation, useSearchParams } from "react-router-dom";
 
 const CategoriesFilter = ({
   resultKeys,
   selectedCategories,
   loading,
   searchResults,
-  urlKey,
   isBtnDisabled,
+  onChange,
 }: {
   resultKeys: SearchResultKeysType[];
   selectedCategories: SearchResultKeysType[];
   loading: boolean;
   searchResults: SearchResultsType;
-  urlKey: string;
+  urlKey?: string;
   isBtnDisabled: boolean;
+  onChange: (cats: SearchResultKeysType[]) => void;
 }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
-
   const handleClick = (key: SearchResultKeysType) => {
     let newValue: SearchResultKeysType[];
+
     if (selectedCategories.includes(key)) {
       if (selectedCategories.length > 1) {
-        newValue = selectedCategories.filter((l) => l !== key);
+        newValue = selectedCategories.filter((k) => k !== key);
       } else {
         newValue = selectedCategories;
       }
     } else {
       newValue = [...selectedCategories, key];
     }
-    searchParams.delete(urlKey);
-    newValue.forEach((key) => searchParams.append(urlKey, key));
-    setSearchParams(searchParams, {
-      replace: true,
-      ...(location.state?.backgroundLocation
-        ? { state: { backgroundLocation: location.state.backgroundLocation } }
-        : {}),
-    });
+
+    onChange(newValue);
   };
 
   return (

@@ -2,7 +2,8 @@ import s from "./Pagination.module.scss";
 import PaginationButton from "./PaginationButton/PaginationButton.tsx";
 import { PAGE_SIZES } from "../../../common/helpers/commonConstants.ts";
 import { t } from "i18next";
-import MultiSelect from "../../ui/MultiSelect/MultiSelect.tsx";
+import Select from "../../ui/Select/Select.tsx";
+import FilterChip from "../../filters/FilterChip/FilterChip.tsx";
 
 export type PaginationType = {
   page: number;
@@ -41,16 +42,20 @@ const Pagination = ({
   return (
     <div className={s.pagination_container}>
       <div className={s.size_container}>
-        <MultiSelect
-          isSearchable={false}
-          placeholder={""}
-          isMultiple={false}
-          valueKey={"value" as const}
-          labelKey={"name" as const}
+        <Select
           options={PAGE_SIZES}
-          id={"page"}
-          selectedValue={size.toString()}
-          onChange={(e) => onSizeChange(Number(e.value as string))}
+          renderTrigger={(open) => (
+            <FilterChip
+              variant={"dropdown"}
+              text={size.toString()}
+              isActive={open}
+              className={`${s.sort_button} ${open ? s.open : ""}`}
+            />
+          )}
+          subtitle={t("pagination.pageSize")}
+          radioButtonType="radio"
+          onChange={(val) => onSizeChange(Number(val))}
+          activeValue={size.toString()}
         />
       </div>
 

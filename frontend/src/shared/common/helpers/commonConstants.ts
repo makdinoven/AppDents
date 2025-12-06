@@ -121,10 +121,10 @@ export const ANALYTICS_LIMITS = [
 ];
 
 export const PAGE_SIZES = [
-  { name: "12", value: "12" },
-  { name: "20", value: "20" },
-  { name: "50", value: "50" },
-  { name: "100", value: "100" },
+  { label: "12", value: "12" },
+  { label: "20", value: "20" },
+  { label: "50", value: "50" },
+  { label: "100", value: "100" },
 ];
 
 export const PAGE_SOURCES = {
