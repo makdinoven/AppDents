@@ -331,7 +331,7 @@ def _calculate_author_stats(
             if cid not in min_price_by_course or price < min_price_by_course[cid]:
                 min_price_by_course[cid] = price
     
-    # 2) Оставляем только «дешёвые» лендинги (без дубликатов по курсам)
+    # 2) Оставляем только «дешёвые» лендинги (без дубликатов по курсам) - для расчёта цены
     kept_landings: List[Landing] = []
     for l in visible_landings:
         price = _safe_price(l.new_price)
@@ -342,9 +342,11 @@ def _calculate_author_stats(
         if not has_cheaper_alt:
             kept_landings.append(l)
     
-    # 3) Уникальные курсы и теги из курсовых лендингов
-    unique_course_ids: Set[int] = {c.id for l in kept_landings for c in (l.courses or [])}
-    tags_from_landings: Set[str] = {t.name for l in kept_landings for t in (l.tags or [])}
+    # 3) Уникальные курсы из ВСЕХ видимых лендингов (не только kept_landings!)
+    # Это для правильного подсчёта courses_count
+    unique_course_ids: Set[int] = {c.id for l in visible_landings for c in (l.courses or [])}
+    # Теги тоже из всех видимых лендингов
+    tags_from_landings: Set[str] = {t.name for l in visible_landings for t in (l.tags or [])}
     
     # 4) Книги с видимыми BookLanding
     visible_books = []
@@ -556,7 +558,7 @@ def author_cards_v2(
     
     # Фильтр по количеству курсов
     if courses_from is not None or courses_to is not None:
-        courses_count_filter = (
+        courses_filter_q = (
             db.query(
                 landing_authors.c.author_id,
                 func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -565,9 +567,11 @@ def author_cards_v2(
             .join(Landing, landing_authors.c.landing_id == Landing.id)
             .join(landing_course, Landing.id == landing_course.c.landing_id)
             .filter(Landing.is_hidden.is_(False))
-            .group_by(landing_authors.c.author_id)
-            .subquery()
         )
+        # Фильтруем по языку лендинга, если передан language
+        if language:
+            courses_filter_q = courses_filter_q.filter(Landing.language == language.upper())
+        courses_count_filter = courses_filter_q.group_by(landing_authors.c.author_id).subquery()
         
         filter_query = filter_query.outerjoin(
             courses_count_filter, 
@@ -585,7 +589,7 @@ def author_cards_v2(
     
     # Фильтр по количеству книг
     if books_from is not None or books_to is not None:
-        books_count_filter = (
+        books_filter_q = (
             db.query(
                 book_authors.c.author_id,
                 func.count(func.distinct(Book.id)).label('books_cnt')
@@ -595,9 +599,11 @@ def author_cards_v2(
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.is_hidden.is_(False))
-            .group_by(book_authors.c.author_id)
-            .subquery()
         )
+        # Фильтруем по языку книжного лендинга, если передан language
+        if language:
+            books_filter_q = books_filter_q.filter(BookLanding.language == language.upper())
+        books_count_filter = books_filter_q.group_by(book_authors.c.author_id).subquery()
         
         filter_query = filter_query.outerjoin(
             books_count_filter,
@@ -635,7 +641,7 @@ def author_cards_v2(
     
     # Фильтры по количеству курсов для sort_query
     if courses_from is not None or courses_to is not None:
-        courses_count_sort = (
+        courses_sort_q = (
             db.query(
                 landing_authors.c.author_id,
                 func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -644,9 +650,10 @@ def author_cards_v2(
             .join(Landing, landing_authors.c.landing_id == Landing.id)
             .join(landing_course, Landing.id == landing_course.c.landing_id)
             .filter(Landing.is_hidden.is_(False))
-            .group_by(landing_authors.c.author_id)
-            .subquery()
         )
+        if language:
+            courses_sort_q = courses_sort_q.filter(Landing.language == language.upper())
+        courses_count_sort = courses_sort_q.group_by(landing_authors.c.author_id).subquery()
         
         sort_query = sort_query.outerjoin(courses_count_sort, Author.id == courses_count_sort.c.author_id)
         
@@ -657,7 +664,7 @@ def author_cards_v2(
     
     # Фильтры по количеству книг для sort_query
     if books_from is not None or books_to is not None:
-        books_count_sort = (
+        books_sort_q = (
             db.query(
                 book_authors.c.author_id,
                 func.count(func.distinct(Book.id)).label('books_cnt')
@@ -667,9 +674,10 @@ def author_cards_v2(
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.is_hidden.is_(False))
-            .group_by(book_authors.c.author_id)
-            .subquery()
         )
+        if language:
+            books_sort_q = books_sort_q.filter(BookLanding.language == language.upper())
+        books_count_sort = books_sort_q.group_by(book_authors.c.author_id).subquery()
         
         sort_query = sort_query.outerjoin(books_count_sort, Author.id == books_count_sort.c.author_id)
         
@@ -678,9 +686,9 @@ def author_cards_v2(
         if books_to is not None:
             sort_query = sort_query.filter(func.coalesce(books_count_sort.c.books_cnt, 0) <= books_to)
     
-    # Подзапросы для сортировки
+    # Подзапросы для сортировки (с учётом языка)
     # Популярность из курсовых лендингов
-    popularity_landing_subq = (
+    pop_landing_q = (
         db.query(
             landing_authors.c.author_id,
             func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0).label('landing_pop')
@@ -688,12 +696,13 @@ def author_cards_v2(
         .select_from(landing_authors)
         .join(Landing, landing_authors.c.landing_id == Landing.id)
         .filter(Landing.is_hidden.is_(False))
-        .group_by(landing_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        pop_landing_q = pop_landing_q.filter(Landing.language == language.upper())
+    popularity_landing_subq = pop_landing_q.group_by(landing_authors.c.author_id).subquery()
     
     # Популярность из книжных лендингов
-    popularity_book_subq = (
+    pop_book_q = (
         db.query(
             book_authors.c.author_id,
             func.coalesce(func.sum(func.coalesce(BookLanding.sales_count, 0)), 0).label('book_pop')
@@ -703,11 +712,12 @@ def author_cards_v2(
         .join(book_landing_books, Book.id == book_landing_books.c.book_id)
         .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
         .filter(BookLanding.is_hidden.is_(False))
-        .group_by(book_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        pop_book_q = pop_book_q.filter(BookLanding.language == language.upper())
+    popularity_book_subq = pop_book_q.group_by(book_authors.c.author_id).subquery()
     
-    courses_subq = (
+    courses_q = (
         db.query(
             landing_authors.c.author_id,
             func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -716,11 +726,12 @@ def author_cards_v2(
         .join(Landing, landing_authors.c.landing_id == Landing.id)
         .join(landing_course, Landing.id == landing_course.c.landing_id)
         .filter(Landing.is_hidden.is_(False))
-        .group_by(landing_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        courses_q = courses_q.filter(Landing.language == language.upper())
+    courses_subq = courses_q.group_by(landing_authors.c.author_id).subquery()
     
-    books_subq = (
+    books_q = (
         db.query(
             book_authors.c.author_id,
             func.count(func.distinct(Book.id)).label('books_cnt')
@@ -730,11 +741,12 @@ def author_cards_v2(
         .join(book_landing_books, Book.id == book_landing_books.c.book_id)
         .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
         .filter(BookLanding.is_hidden.is_(False))
-        .group_by(book_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        books_q = books_q.filter(BookLanding.language == language.upper())
+    books_subq = books_q.group_by(book_authors.c.author_id).subquery()
     
-    price_courses_subq = (
+    price_courses_q = (
         db.query(
             landing_authors.c.author_id,
             func.coalesce(func.sum(cast(Landing.new_price, SqlNumeric(10, 2))), 0).label('courses_price')
@@ -743,11 +755,12 @@ def author_cards_v2(
         .join(Landing, landing_authors.c.landing_id == Landing.id)
         .filter(Landing.is_hidden.is_(False))
         .filter(Landing.new_price.isnot(None))
-        .group_by(landing_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        price_courses_q = price_courses_q.filter(Landing.language == language.upper())
+    price_courses_subq = price_courses_q.group_by(landing_authors.c.author_id).subquery()
     
-    price_books_subq = (
+    price_books_q = (
         db.query(
             book_authors.c.author_id,
             func.coalesce(func.sum(cast(BookLanding.new_price, SqlNumeric(10, 2))), 0).label('books_price')
@@ -758,9 +771,10 @@ def author_cards_v2(
         .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
         .filter(BookLanding.is_hidden.is_(False))
         .filter(BookLanding.new_price.isnot(None))
-        .group_by(book_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        price_books_q = price_books_q.filter(BookLanding.language == language.upper())
+    price_books_subq = price_books_q.group_by(book_authors.c.author_id).subquery()
     
     # Применяем сортировку
     if sort == "popular_desc" or sort is None:
