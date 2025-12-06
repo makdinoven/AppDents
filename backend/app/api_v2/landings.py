@@ -49,7 +49,9 @@ from ..services_v2.filter_aggregation_service import (
     aggregate_landing_filters,
     parse_duration_to_minutes,
     calculate_landing_lessons_count,
+    count_lessons_from_sections,
 )
+from ..models.models_v2 import Course, landing_course
 from ..services_v2.preview_service import get_or_schedule_preview, get_previews_batch
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
@@ -907,6 +909,126 @@ def landing_cards_v2(
         cards=cards,
         filters=filters_metadata
     )
+
+
+@router.get("/debug/lessons-top")
+def debug_lessons_top(
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """
+    Показывает топ лендингов по количеству уроков для диагностики.
+    """
+    from collections import defaultdict
+    
+    # Получаем все лендинги с курсами
+    landings_data = (
+        db.query(Landing.id, Landing.landing_name, Landing.lessons_count, Course.id.label('course_id'), Course.sections)
+        .join(landing_course, Landing.id == landing_course.c.landing_id)
+        .join(Course, landing_course.c.course_id == Course.id)
+        .filter(Landing.is_hidden.is_(False))
+        .all()
+    )
+    
+    # Группируем и считаем
+    landing_lessons = defaultdict(lambda: {"name": "", "lessons_count_field": None, "courses_count": 0, "calculated_lessons": 0})
+    
+    for landing_id, landing_name, lessons_count_field, course_id, sections in landings_data:
+        lessons = count_lessons_from_sections(sections)
+        landing_lessons[landing_id]["name"] = landing_name
+        landing_lessons[landing_id]["lessons_count_field"] = lessons_count_field
+        landing_lessons[landing_id]["courses_count"] += 1
+        landing_lessons[landing_id]["calculated_lessons"] += lessons
+    
+    # Сортируем по calculated_lessons
+    sorted_landings = sorted(
+        landing_lessons.items(), 
+        key=lambda x: x[1]["calculated_lessons"], 
+        reverse=True
+    )[:limit]
+    
+    return {
+        "total_landings_with_courses": len(landing_lessons),
+        "top_landings": [
+            {
+                "landing_id": lid,
+                "landing_name": data["name"][:80] if data["name"] else None,
+                "lessons_count_field": data["lessons_count_field"],
+                "courses_count": data["courses_count"],
+                "calculated_lessons": data["calculated_lessons"]
+            }
+            for lid, data in sorted_landings
+        ]
+    }
+
+
+@router.get("/debug/lessons/{landing_id}")
+def debug_lessons_count(
+    landing_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    Диагностический endpoint для проверки подсчёта уроков лендинга.
+    Показывает детальную информацию по каждому курсу.
+    """
+    landing = db.query(Landing).filter(Landing.id == landing_id).first()
+    if not landing:
+        raise HTTPException(status_code=404, detail="Landing not found")
+    
+    # Получаем все курсы лендинга
+    courses_data = (
+        db.query(Course.id, Course.name, Course.sections)
+        .join(landing_course, Course.id == landing_course.c.course_id)
+        .filter(landing_course.c.landing_id == landing_id)
+        .all()
+    )
+    
+    courses_info = []
+    total_lessons = 0
+    
+    for course_id, course_name, sections in courses_data:
+        lessons_count = count_lessons_from_sections(sections)
+        total_lessons += lessons_count
+        
+        sections_info = []
+        if sections:
+            if isinstance(sections, dict):
+                for key, sec_data in sections.items():
+                    if isinstance(sec_data, dict):
+                        lessons_list = sec_data.get("lessons", [])
+                        sections_info.append({
+                            "section_key": key,
+                            "section_name": sec_data.get("section_name", "N/A"),
+                            "lessons_count": len(lessons_list) if isinstance(lessons_list, list) else 0,
+                            "sample_lesson": lessons_list[0] if lessons_list and isinstance(lessons_list, list) else None
+                        })
+            elif isinstance(sections, list):
+                for i, sec_data in enumerate(sections):
+                    if isinstance(sec_data, dict):
+                        lessons_list = sec_data.get("lessons", [])
+                        sections_info.append({
+                            "section_index": i,
+                            "section_name": sec_data.get("section_name", "N/A"),
+                            "lessons_count": len(lessons_list) if isinstance(lessons_list, list) else 0
+                        })
+        
+        courses_info.append({
+            "course_id": course_id,
+            "course_name": course_name,
+            "lessons_count": lessons_count,
+            "sections_type": type(sections).__name__ if sections else "None",
+            "sections_count": len(sections) if sections else 0,
+            "sections_detail": sections_info[:5]  # Первые 5 секций
+        })
+    
+    return {
+        "landing_id": landing_id,
+        "landing_name": landing.landing_name,
+        "lessons_count_field": landing.lessons_count,  # Значение из поля базы
+        "total_courses": len(courses_data),
+        "calculated_total_lessons": total_lessons,
+        "courses": courses_info
+    }
 
 
 @router.get("/search", response_model=LandingSearchResponse)

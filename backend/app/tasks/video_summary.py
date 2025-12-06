@@ -104,6 +104,7 @@ def _combine_answer_format(answer_format: Optional[str], target_lang: str) -> st
         "Единый абзац (2–5 предложений), без списков и нумерации; "
         "обобщённо, без деталей и конкретных параметров; "
         "без упоминания ведущего и формулировок вроде «в видео/вебинаре». "
+        "Без markdown-форматирования (никаких звёздочек **, подчёркиваний __, заголовков # и т.п.). "
         f"Ответ на языке: {target_lang}."
     )
     user_fmt = (answer_format or "").strip()
@@ -118,7 +119,14 @@ def _apply_style_guards(s: Optional[str]) -> Optional[str]:
         return s
     import re
 
-    # 1) Сносим буллеты/нумерацию построчно
+    # 1) Убираем markdown-форматирование (**, __, #, и т.п.)
+    s = re.sub(r'\*\*([^*]+)\*\*', r'\1', s)  # **bold** → bold
+    s = re.sub(r'\*([^*]+)\*', r'\1', s)       # *italic* → italic
+    s = re.sub(r'__([^_]+)__', r'\1', s)       # __bold__ → bold
+    s = re.sub(r'_([^_]+)_', r'\1', s)         # _italic_ → italic
+    s = re.sub(r'^#+\s*', '', s, flags=re.MULTILINE)  # # заголовки
+
+    # 2) Сносим буллеты/нумерацию построчно
     lines = []
     for ln in s.splitlines():
         ln = re.sub(r'^\s*[-•–—]\s*', '', ln)
@@ -126,13 +134,13 @@ def _apply_style_guards(s: Optional[str]) -> Optional[str]:
         lines.append(ln)
     s = ' '.join(l.strip() for l in lines if l.strip())
 
-    # 2) Удаляем вступления «Это видео…/В видео…/Вебинар…/Урок…» в самом начале
+    # 3) Удаляем вступления «Это видео…/В видео…/Вебинар…/Урок…» в самом начале
     s = re.sub(r'^(?:это\s+видео|в\s+видео|вебинар|урок)\s+[^.]*\.\s*', '', s, flags=re.IGNORECASE)
 
-    # 3) Убираем предложения с «Лектор/Докладчик/Автор ...»
+    # 4) Убираем предложения с «Лектор/Докладчик/Автор ...»
     s = re.sub(r'\b(?:лектор|докладчик|автор)\b[^.]*\.\s*', '', s, flags=re.IGNORECASE)
 
-    # 4) Схлопываем пробелы
+    # 5) Схлопываем пробелы
     s = re.sub(r'\s{2,}', ' ', s).strip()
     return s
 
