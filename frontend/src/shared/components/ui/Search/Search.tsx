@@ -1,8 +1,8 @@
 import s from "./Search.module.scss";
 import { t } from "i18next";
 import { ArrowX, SearchIcon } from "../../../assets/icons";
-import { useLocation, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import useDebounce from "../../../common/hooks/useDebounce";
 
 const Search = ({
   placeholder,
@@ -10,50 +10,44 @@ const Search = ({
   id = "search",
   inputRef,
   error,
+  valueFromUrl = "",
+  onChangeValue,
+  useDebounceOnChange = false,
+  debounceDelay = 400,
 }: {
   id?: string;
   placeholder: string;
   onFocus?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
   error?: string | null;
+  valueFromUrl?: string;
+  onChangeValue?: (value: string) => void;
+  useDebounceOnChange?: boolean;
+  debounceDelay?: number;
 }) => {
-  const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [localValue, setLocalValue] = useState(searchParams.get(id) || "");
+  const [localValue, setLocalValue] = useState(valueFromUrl || "");
+  const debouncedValue = useDebounce(localValue, debounceDelay);
+  useEffect(() => {
+    setLocalValue(valueFromUrl || "");
+  }, [valueFromUrl]);
 
   useEffect(() => {
-    const currentValue = searchParams.get(id) || "";
-    setLocalValue(currentValue);
-  }, [searchParams, id]);
+    if (!useDebounceOnChange) return;
+    onChangeValue?.(debouncedValue);
+  }, [debouncedValue]);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setLocalValue(newValue);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVal = e.target.value;
+    setLocalValue(newVal);
 
-    const newParams = new URLSearchParams(searchParams.toString());
-    if (newValue) {
-      newParams.set(id, newValue);
-    } else {
-      newParams.delete(id);
+    if (!useDebounceOnChange) {
+      onChangeValue?.(newVal);
     }
-    setSearchParams(newParams, {
-      replace: true,
-      ...(location.state?.backgroundLocation
-        ? { state: { backgroundLocation: location.state.backgroundLocation } }
-        : {}),
-    });
   };
 
   const handleClear = () => {
     setLocalValue("");
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.delete(id);
-    setSearchParams(newParams, {
-      replace: true,
-      ...(location.state?.backgroundLocation
-        ? { state: { backgroundLocation: location.state.backgroundLocation } }
-        : {}),
-    });
+    onChangeValue?.("");
   };
 
   return (
@@ -65,10 +59,11 @@ const Search = ({
         type="text"
         value={localValue}
         className={s.search_input}
-        onChange={onChange}
+        onChange={handleChange}
         onFocus={onFocus}
         ref={inputRef}
       />
+
       <div className={s.icons}>
         {localValue && (
           <span className={s.clear_icon} onClick={handleClear}>

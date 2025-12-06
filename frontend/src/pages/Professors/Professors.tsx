@@ -1,63 +1,121 @@
 import s from "./Professors.module.scss";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import ProfessorsList from "../../shared/components/ProfessorsList/ProfessorsList.tsx";
 import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
-import ListController from "../../shared/components/ui/ListController/ListController.tsx";
-import { ParamsType } from "../../shared/api/adminApi/types.ts";
+import ListController from "../../shared/components/list/ListController/ListController.tsx";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../shared/store/store.ts";
 import ProfessorCardSkeletons from "../../shared/components/ui/Skeletons/ProfessorCardSkeletons/ProfessorCardSkeletons.tsx";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
-
-const SIZE = 12;
+import FiltersPanel from "../../shared/components/filters/FiltersPanel/FiltersPanel.tsx";
+import Pagination, {
+  PaginationType,
+} from "../../shared/components/list/Pagination/Pagination.tsx";
+import {
+  FiltersDataUI,
+  SelectedUI,
+} from "../../shared/components/filters/model/types.ts";
+import { useListQueryParams } from "../../shared/components/list/model/useListQueryParams.ts";
+import {
+  mapBackendFilters,
+  mapBackendSelected,
+} from "../../shared/components/filters/model/mapBackendFilters.ts";
+import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 
 const Professors = () => {
-  const language = useSelector(
-    (state: AppRootStateType) => state.user.language,
-  );
+  const { language } = useSelector((state: AppRootStateType) => state.user);
   const [professors, setProfessors] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [pagination, setPagination] = useState<PaginationType | null>(null);
+  const [filters, setFilters] = useState<FiltersDataUI | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<SelectedUI[] | null>(
+    null,
+  );
+  const { params, actions } = useListQueryParams();
 
-  const loadProfessors = async ({ page, language, q, size }: ParamsType) => {
+  const loadProfessors = async () => {
     setLoading(true);
     try {
-      let res;
-      if (q) {
-        const params = { language, page, size, q };
-        res = await mainApi.searchProfessors(params);
-      } else {
-        const params = { language, page, size };
-        res = await mainApi.getProfessors(params);
-      }
-      setProfessors(res.data.items);
-      setTotal(res.data.total);
-      setTotalPages(res.data.total_pages);
-      setIsFirstLoad(false);
+      const res = await mainApi.getProfessorsV2({
+        ...params,
+        language: language,
+        include_filters: true,
+      });
+      setProfessors(res.data.cards);
+      setFilters(mapBackendFilters(res.data.filters));
+      setSelectedFilters(mapBackendSelected(res.data.filters.selected));
+      setPagination({
+        total: res.data.total,
+        total_pages: res.data.total_pages,
+        page: res.data.page,
+        size: res.data.size,
+      });
     } catch (error) {
       console.log(error);
     } finally {
+      setIsFirstLoad(false);
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadProfessors();
+  }, [params, language]);
+
+  useEffect(() => {
+    if (params.page !== 1) {
+      actions.set({ page: 1 });
+    }
+  }, [language]);
+
   return (
     <div lang={language.toLowerCase()} className={s.professors}>
-      <DetailHeader title={"professor.professors.title"} />
+      <DetailHeader
+        showBackButton={false}
+        title={"professor.professors.title"}
+      />
       <ListController
-        language={language}
-        size={SIZE}
-        type="professor"
-        loadData={(params) => loadProfessors(params)}
-        total={total}
-        totalPages={totalPages}
-        SkeletonComponent={ProfessorCardSkeletons}
-        loading={loading}
+        filtersSlot={
+          !filters && loading ? (
+            <FiltersSkeleton />
+          ) : (
+            <FiltersPanel
+              loading={loading}
+              totalItems={pagination?.total ? pagination.total : 0}
+              actions={actions}
+              searchPlaceholder={`professor.search`}
+              filtersData={filters}
+              selectedFilters={selectedFilters}
+              params={params}
+            />
+          )
+        }
+        paginationSlot={
+          pagination && (
+            <Pagination
+              onPageChange={(p) => actions.set({ page: p })}
+              onSizeChange={(s) => actions.set({ size: s })}
+              pagination={{
+                page: params.page,
+                size: params.size,
+                total: pagination.total,
+                total_pages: pagination.total_pages,
+              }}
+            />
+          )
+        }
       >
-        <ProfessorsList professors={professors} loading={loading} />
+        {loading && !selectedFilters ? (
+          <ProfessorCardSkeletons amount={Number(params.size)} />
+        ) : (
+          <ProfessorsList
+            showLoaderOverlay={loading}
+            professors={professors}
+            loading={loading}
+          />
+        )}
       </ListController>
       {!isFirstLoad && (
         <ProductsSection

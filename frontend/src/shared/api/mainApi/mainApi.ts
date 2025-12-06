@@ -1,7 +1,10 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
-import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
+import {
+  LS_TOKEN_KEY,
+  REF_CODE_LS_KEY,
+} from "../../common/helpers/commonConstants.ts";
 import { PaymentApiPayload } from "../../store/slices/paymentSlice.ts";
 
 export const mainApi = {
@@ -55,10 +58,6 @@ export const mainApi = {
     return instance.get(`landings/cards`, { params: params });
   },
 
-  getBookCards(params: any) {
-    return instance.get(`landings/cards`, { params: params });
-  },
-
   getCourseCardsRecommend(params: any) {
     return instance.get(`landings/recommend/cards`, {
       headers: getAuthHeaders(),
@@ -77,8 +76,23 @@ export const mainApi = {
     return instance.get(`landings/v1/cards`, { params: params });
   },
 
+  getLandingCardsV2(params: any) {
+    const accessToken = localStorage.getItem(LS_TOKEN_KEY);
+
+    return instance.get(`landings/v2/cards`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      params: params,
+    });
+  },
+
   getBookLandingCards(params: any) {
     return instance.get(`books/landing/cards`, { params: params });
+  },
+
+  getBookLandingCardsV2(params: any) {
+    return instance.get(`books/landing/v2/cards`, { params: params });
   },
 
   searchCourses(params: { q: string; language: string }) {
@@ -92,6 +106,13 @@ export const mainApi = {
       params: params,
     });
   },
+
+  getProfessorsV2(params: any) {
+    return instance.get("authors/v2/cards", {
+      params: params,
+    });
+  },
+
   searchProfessors(params: ParamsType) {
     return instance.get("authors/search", {
       params: params,

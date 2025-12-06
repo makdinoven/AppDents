@@ -3,7 +3,6 @@ import s from "./BookLandingHero.module.scss";
 import { Trans } from "react-i18next";
 import BuySection from "../../../../shared/components/BuySection/BuySection.tsx";
 import { Azw3, Epub, Fb2, Mobi, Pdf } from "../../../../shared/assets/icons";
-import { BOOK_FORMATS } from "../../../../shared/common/helpers/commonConstants.ts";
 import BookHeroSkeleton from "../../../../shared/components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import { formatLanguage } from "../../../../shared/common/helpers/helpers.ts";
 import { NoPictures } from "../../../../shared/assets";
@@ -138,7 +137,7 @@ const BookLandingHero: React.FC<LandingHeroProps> = ({
           <BuySection
             openPayment={openPayment}
             type="buy"
-            formats={BOOK_FORMATS}
+            formats={data.available_formats}
             oldPrice={data?.old_price}
             newPrice={data?.new_price}
           />

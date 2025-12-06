@@ -1,0 +1,45 @@
+.filter_block {
+  background-color: $background-color;
+  border-radius: 20px;
+  padding: 20px;
+  @include flex-column;
+  gap: 15px;
+}
+
+.filter_header_row {
+  @include clamped-p3;
+  text-transform: uppercase;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+
+  p {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+}
+
+.label_icon {
+  width: 25px;
+  height: 25px;
+
+  svg {
+    width: 25px;
+    height: 25px;
+
+    path {
+      stroke-width: 1.5;
+      stroke-opacity: 1;
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .filter_block {
+    padding: 15px;
+    gap: 10px;
+  }
+}

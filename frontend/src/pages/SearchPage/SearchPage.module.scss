@@ -28,7 +28,7 @@
 
 .loader {
   @include transition;
-  position: absolute;
+  position: absolute !important;
   right: 0;
   top: -15px;
   width: 45px;

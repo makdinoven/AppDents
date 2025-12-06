@@ -1,0 +1,18 @@
+.btn {
+  @include clamped-p3;
+  color: $hover-color-dark;
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 3px;
+  @include transition;
+  text-transform: capitalize;
+
+  @media (hover: hover) {
+    &:hover {
+      color: $error-color;
+    }
+  }
+
+  &:active {
+    color: $error-color;
+  }
+}

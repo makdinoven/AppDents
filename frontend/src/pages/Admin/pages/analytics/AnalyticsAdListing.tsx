@@ -1,5 +1,5 @@
 import s from "./Analytics.module.scss";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import {
   ANALYTICS_LIMITS,
   LANGUAGES_NAME,
@@ -17,7 +17,7 @@ import { useSearchParams } from "react-router-dom";
 import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 
 const AnalyticsAdListing = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [language, setLanguage] = useState<string>("EN");
   const [limit, setLimit] = useState<string>("500");
   const [landings, setLandings] = useState<any>(null);
@@ -80,6 +80,12 @@ const AnalyticsAdListing = () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleSearch = (val: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(analyticsSearch, val);
+    setSearchParams(newParams);
   };
 
   const filteredLandings = landings
@@ -179,6 +185,8 @@ const AnalyticsAdListing = () => {
       ) : (
         <>
           <Search
+            valueFromUrl={searchQuery}
+            onChangeValue={handleSearch}
             id={analyticsSearch}
             placeholder={t("admin.landings.search")}
           />

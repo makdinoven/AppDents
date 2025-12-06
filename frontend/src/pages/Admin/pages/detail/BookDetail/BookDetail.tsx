@@ -10,7 +10,7 @@ import { CheckMark, ErrorIcon } from "../../../../../shared/assets/icons";
 import { mainApi } from "../../../../../shared/api/mainApi/mainApi.ts";
 import { t } from "i18next";
 import AdminField from "../../modules/common/AdminField/AdminField.tsx";
-import MultiSelect from "../../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES } from "../../../../../shared/common/helpers/commonConstants.ts";
 import PhotoUploader from "../../../../../shared/components/PhotoUploader/PhotoUploader.tsx";
 import CoverCandidatesSelector from "./modules/CoverCandidatesSelector/CoverCandidatesSelector.tsx";

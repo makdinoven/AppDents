@@ -1,11 +1,14 @@
 import s from "./About.module.scss";
 import SectionHeader from "../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
-import { Book, LightningAbout } from "../../../../shared/assets/icons/index.ts";
-import { Glasses } from "../../../../shared/assets/icons/index.ts";
-import { Percent } from "../../../../shared/assets/icons/index.ts";
-import { Dollar } from "../../../../shared/assets/icons/index.ts";
-import { Clock } from "../../../../shared/assets/icons/index.ts";
-import { Calendar } from "../../../../shared/assets/icons/index.ts";
+import {
+  BookAbout,
+  CalendarAbout,
+  Clock,
+  DollarAbout,
+  Glasses,
+  LightningAbout,
+  Percent,
+} from "../../../../shared/assets/icons/index.ts";
 
 const About = ({
   data: {
@@ -24,11 +27,11 @@ const About = ({
 }) => {
   const aboutItems = [
     professorsCount && { Icon: Glasses, text: professorsCount },
-    lessonsCount && { Icon: Book, text: lessonsCount },
+    lessonsCount && { Icon: BookAbout, text: lessonsCount },
     duration && { Icon: Clock, text: duration },
-    access && { Icon: Calendar, text: access },
+    access && { Icon: CalendarAbout, text: access },
     discount && { Icon: Percent, text: discount },
-    savings && { Icon: Dollar, text: savings },
+    savings && { Icon: DollarAbout, text: savings },
     instantAccess && { Icon: LightningAbout, text: instantAccess },
   ].filter(Boolean);
 

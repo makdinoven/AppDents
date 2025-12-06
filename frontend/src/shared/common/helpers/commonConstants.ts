@@ -121,17 +121,10 @@ export const ANALYTICS_LIMITS = [
 ];
 
 export const PAGE_SIZES = [
-  { name: "10", value: "10" },
-  { name: "20", value: "20" },
-  { name: "50", value: "50" },
-  { name: "100", value: "100" },
-];
-
-export const PAGE_SIZES_ALTERNATE = [
-  { name: "12", value: "12" },
-  { name: "24", value: "24" },
-  { name: "60", value: "60" },
-  { name: "120", value: "120" },
+  { label: "12", value: "12" },
+  { label: "20", value: "20" },
+  { label: "50", value: "50" },
+  { label: "100", value: "100" },
 ];
 
 export const PAGE_SOURCES = {
@@ -236,7 +229,9 @@ export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
 
-export const BOOK_FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
+export const BOOK_FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"] as const;
+
+export type BookFormat = (typeof BOOK_FORMATS)[number];
 
 export const LANGUAGE_FLAGS: Record<LanguagesType, React.FC> = {
   EN: EnFlag,

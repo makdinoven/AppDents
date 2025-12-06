@@ -3,7 +3,6 @@ import {
   AppDispatchType,
   AppRootStateType,
 } from "../../../../shared/store/store.ts";
-import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import {
   createAuthor,
   getAuthors,
@@ -18,16 +17,6 @@ const AdminAuthorsListing = () => {
   const authors = useSelector((state: AppRootStateType) => state.admin.authors);
   const dispatch = useDispatch<AppDispatchType>();
 
-  const loadData = (params: ParamsType) => {
-    const newParams = { ...params, sort: "id_desc" };
-
-    if (newParams.q) {
-      dispatch(searchAuthors(newParams));
-    } else {
-      dispatch(getAuthors(newParams));
-    }
-  };
-
   return (
     <>
       <AdminList<any>
@@ -36,7 +25,12 @@ const AdminAuthorsListing = () => {
         itemName={"name"}
         itemLink={(author) => PATHS.ADMIN_AUTHOR_DETAIL.build(author.id)}
         loading={loading}
-        onFetch={(params: ParamsType) => loadData(params)}
+        onSearch={(params) =>
+          dispatch(searchAuthors({ ...params, sort: "id_desc" }))
+        }
+        onLoad={(params) =>
+          dispatch(getAuthors({ ...params, sort: "id_desc" }))
+        }
         onCreate={() => dispatch(createAuthor(INITIAL_AUTHOR))}
         showLanguageFilter={true}
       />
