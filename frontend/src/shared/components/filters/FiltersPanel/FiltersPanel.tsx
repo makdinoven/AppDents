@@ -9,10 +9,11 @@ import Search from "../../ui/Search/Search";
 import s from "./FiltersPanel.module.scss";
 import { useState } from "react";
 import { t } from "i18next";
-import { Chevron, FilterIcon } from "../../../assets/icons";
+import { ArrowX, Chevron, FilterIcon } from "../../../assets/icons";
 import FilterChip from "../FilterChip/FilterChip.tsx";
 import SortSelect from "../SortSelect/SortSelect.tsx";
 import SelectedFilters from "../SelectedFilters/SelectedFilters.tsx";
+import { Trans } from "react-i18next";
 
 type Props = {
   loading?: boolean;
@@ -58,29 +59,43 @@ const FiltersPanel = ({
           actions={actions}
         />
 
-        <div className={s.filter_controls}>
-          {filtersData.sorts.length > 0 && (
-            <SortSelect
-              selectClassName={s.select}
-              options={filtersData.sorts}
-              params={params}
-              actions={actions}
-            />
-          )}
-          <FilterChip
-            showBadge
-            badgeCount={selectedFilters?.length}
-            iconLeft={<FilterIcon />}
-            text={t("filters.allFilters")}
-            iconRight={<Chevron className={s.chevron_icon} />}
-            onClick={() => setOpen(true)}
+        {filtersData.sorts.length > 0 && (
+          <SortSelect
+            selectClassName={s.select}
+            chipClassName={s.select}
+            options={filtersData.sorts}
+            params={params}
+            actions={actions}
           />
-        </div>
+        )}
+        <FilterChip
+          showBadge
+          className={s.select}
+          badgeCount={selectedFilters?.length}
+          iconLeft={<FilterIcon />}
+          text={t("filters.allFilters")}
+          iconRight={<Chevron className={s.chevron_icon} />}
+          onClick={() => setOpen(true)}
+        />
       </div>
 
-      {/*{totalItems > 0 && (*/}
-      {/*  <Trans i18nKey={t("filters.itemsFound", { count: totalItems })} />*/}
-      {/*)}*/}
+      {totalItems > 0 && (
+        <div className={s.found_items_section}>
+          <FilterChip
+            className={`${s.reset_chip} ${selectedFilters && selectedFilters?.length > 0 ? "" : s.hidden}`}
+            variant={"selectedFilter"}
+            onClick={actions.resetAll}
+            text={
+              ""
+              // t("filters.resetAll")
+            }
+            iconLeft={<ArrowX />}
+          />
+          <p>
+            <Trans i18nKey={t("filters.itemsFound", { count: totalItems })} />
+          </p>
+        </div>
+      )}
 
       <SelectedFilters
         selected={selectedFilters}

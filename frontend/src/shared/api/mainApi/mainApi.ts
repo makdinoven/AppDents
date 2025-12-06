@@ -1,7 +1,10 @@
 import { instance } from "../api-instance.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { ParamsType } from "../adminApi/types.ts";
-import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
+import {
+  LS_TOKEN_KEY,
+  REF_CODE_LS_KEY,
+} from "../../common/helpers/commonConstants.ts";
 import { PaymentApiPayload } from "../../store/slices/paymentSlice.ts";
 
 export const mainApi = {
@@ -71,6 +74,17 @@ export const mainApi = {
 
   getLandingCards(params: any) {
     return instance.get(`landings/v1/cards`, { params: params });
+  },
+
+  getLandingCardsV2(params: any) {
+    const accessToken = localStorage.getItem(LS_TOKEN_KEY);
+
+    return instance.get(`landings/v2/cards`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      params: params,
+    });
   },
 
   getBookLandingCards(params: any) {

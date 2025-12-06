@@ -22,6 +22,7 @@ import {
   SelectedUI,
 } from "../../shared/components/filters/model/types.ts";
 import BookCardSkeletons from "../../shared/components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
+import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 
 const Books = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
@@ -52,10 +53,10 @@ const Books = () => {
         page: res.data.page,
         size: res.data.size,
       });
-      setIsFirstLoad(false);
     } catch (error) {
       console.log(error);
     } finally {
+      setIsFirstLoad(false);
       setLoading(false);
     }
   };
@@ -64,12 +65,20 @@ const Books = () => {
     loadBooks();
   }, [params, language]);
 
+  useEffect(() => {
+    if (params.page !== 1) {
+      actions.set({ page: 1 });
+    }
+  }, [language]);
+
   return (
     <div lang={language.toLowerCase()} className={s.books}>
       <DetailHeader showBackButton={false} title={"books.title"} />
       <ListController
         filtersSlot={
-          filters && (
+          !filters && loading ? (
+            <FiltersSkeleton />
+          ) : (
             <FiltersPanel
               loading={loading}
               totalItems={pagination?.total ? pagination.total : 0}
@@ -96,10 +105,11 @@ const Books = () => {
           )
         }
       >
-        {loading ? (
+        {loading && !selectedFilters ? (
           <BookCardSkeletons amount={Number(params.size)} />
         ) : (
           <CardsList
+            showLoaderOverlay={loading}
             loading={loading}
             showSeeMore={false}
             showEndOfList={false}

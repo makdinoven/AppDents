@@ -8,6 +8,7 @@ interface SelectComponentProps<T> {
   options: T[];
   params: ListQueryParams;
   selectClassName?: string;
+  chipClassName?: string;
   actions: {
     set: (next: Partial<ListQueryParams>) => void;
     reset: (key: string) => void;
@@ -19,6 +20,7 @@ const SortSelect = <T extends { [key: string]: any }>({
   options,
   params,
   selectClassName,
+  chipClassName,
   actions,
 }: SelectComponentProps<T>) => {
   const active = params.sort;
@@ -35,6 +37,7 @@ const SortSelect = <T extends { [key: string]: any }>({
       options={sortedOptions}
       renderTrigger={(open) => (
         <FilterChip
+          className={chipClassName}
           variant={"dropdown"}
           text={t(`sort.keys.${params.sort}`)}
           iconLeft={<Sort />}

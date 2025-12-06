@@ -1,26 +1,45 @@
 .filters_panel_container {
   @include flex-column;
-  gap: 30px;
+  gap: 20px;
 }
 
 .filters_panel {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 3fr 1.5fr 1fr;
   align-items: end;
-  gap: 60px;
+  gap: 20px;
 }
 
-.filter_controls {
-  justify-self: end;
-  width: max-content;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 20px;
-  justify-items: end;
+.select {
+  width: 100%;
 }
 
 .chevron_icon {
   transform: rotate(270deg);
+}
+
+.found_items_section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  p {
+    margin-left: auto;
+    border: 1px solid $hover-color;
+    padding: 7px 15px;
+    border-radius: 12px;
+    @include clamped-p3;
+  }
+}
+
+.reset_chip {
+  opacity: 1;
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 @media (max-width: $middle-breakpoint) {
@@ -35,13 +54,6 @@
     flex-direction: column-reverse;
     gap: 15px;
   }
-
-  .filter_controls {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    width: 100%;
-  }
 }
 
 @media (max-width: $mobile-breakpoint) {
@@ -51,11 +63,7 @@
 
 
   .filters_panel_container {
-    gap: 20px;
-  }
-
-  .select {
-    width: 100%;
+    gap: 15px;
   }
 
   .filter_controls {

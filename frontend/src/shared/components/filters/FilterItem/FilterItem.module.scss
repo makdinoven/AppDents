@@ -23,15 +23,14 @@
 }
 
 .label_icon {
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: 25px;
+    height: 25px;
 
     path {
-      stroke: $accent;
       stroke-width: 1.5;
       stroke-opacity: 1;
     }

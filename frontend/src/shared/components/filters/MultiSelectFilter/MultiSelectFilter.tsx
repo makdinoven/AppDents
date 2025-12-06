@@ -11,6 +11,8 @@ import { BASE_URL } from "../../../common/helpers/commonConstants.ts";
 import { t } from "i18next";
 import { mapBackendFilterOptions } from "../model/mapBackendFilters.ts";
 import { Trans } from "react-i18next";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../../store/store.ts";
 
 type Props = {
   filter: UIMultiselectFilter;
@@ -21,6 +23,7 @@ type Props = {
 };
 
 const MultiSelectFilter = ({ filter, params, actions }: Props) => {
+  const { language } = useSelector((state: AppRootStateType) => state.user);
   const raw = params[filter.name];
   const selected = Array.isArray(raw) ? raw : raw ? String(raw).split(",") : [];
   const [search, setSearch] = useState("");
@@ -32,8 +35,9 @@ const MultiSelectFilter = ({ filter, params, actions }: Props) => {
   const getOptions = async (q: string) => {
     setLoading(true);
     try {
+      console.log(filter.endpoint);
       const res = await axios.get(`${BASE_URL}${filter.endpoint}`, {
-        params: { q },
+        params: { q, language },
       });
       setRemoteOptions(mapBackendFilterOptions(res.data.options ?? []));
     } catch (e) {

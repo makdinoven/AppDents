@@ -480,7 +480,18 @@
       "new_asc": "Articoli più vecchi",
       "new_desc": "Articoli più nuovi",
       "popular_asc": "Meno popolari",
-      "popular_desc": "Più popolari"
+      "popular_desc": "Più popolari",
+      "courses_desc": "Più corsi prima",
+      "courses_asc": "Meno corsi prima",
+      "books_desc": "Più libri prima",
+      "books_asc": "Meno libri prima",
+      "name_asc": "Nome (A–Z)",
+      "name_desc": "Nome (Z–A)",
+      "recommend": "Consigliato",
+      "duration_asc": "Corto → Lungo",
+      "duration_desc": "Lungo → Corto",
+      "lessons_desc": "Più lezioni prima",
+      "lessons_asc": "Meno lezioni prima"
     }
   },
 
@@ -502,7 +513,10 @@
       "range": {
         "year": "Anno di pubblicazione",
         "usd": "Prezzo",
-        "pages": "Pagine"
+        "pages": "Pagine",
+        "books": "Numero di libri",
+        "courses": "Numero di corsi",
+        "lessons": "Numero di lezioni"
       }
     }
   },

@@ -4,15 +4,18 @@ interface FiltersSkeletonProps {
   amount?: number;
 }
 
-const FiltersSkeleton = ({ amount = 8 }: FiltersSkeletonProps) => {
+const FiltersSkeleton = ({ amount = 3 }: FiltersSkeletonProps) => {
   return (
-    <ul className={s.skeletons}>
-      {Array(amount)
-        .fill({ length: amount })
-        .map((_, index) => (
-          <li key={index} className={s.skeleton}></li>
-        ))}
-    </ul>
+    <div className={s.container}>
+      <ul className={s.skeletons}>
+        {Array(amount)
+          .fill({ length: amount })
+          .map((_, index) => (
+            <li key={index} className={s.skeleton}></li>
+          ))}
+      </ul>
+      <div className={s.count}></div>
+    </div>
   );
 };
 

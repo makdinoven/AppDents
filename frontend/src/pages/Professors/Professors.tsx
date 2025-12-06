@@ -21,6 +21,7 @@ import {
   mapBackendFilters,
   mapBackendSelected,
 } from "../../shared/components/filters/model/mapBackendFilters.ts";
+import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 
 const Professors = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
@@ -51,10 +52,10 @@ const Professors = () => {
         page: res.data.page,
         size: res.data.size,
       });
-      setIsFirstLoad(false);
     } catch (error) {
       console.log(error);
     } finally {
+      setIsFirstLoad(false);
       setLoading(false);
     }
   };
@@ -62,6 +63,12 @@ const Professors = () => {
   useEffect(() => {
     loadProfessors();
   }, [params, language]);
+
+  useEffect(() => {
+    if (params.page !== 1) {
+      actions.set({ page: 1 });
+    }
+  }, [language]);
 
   return (
     <div lang={language.toLowerCase()} className={s.professors}>
@@ -71,12 +78,14 @@ const Professors = () => {
       />
       <ListController
         filtersSlot={
-          filters && (
+          !filters && loading ? (
+            <FiltersSkeleton />
+          ) : (
             <FiltersPanel
               loading={loading}
               totalItems={pagination?.total ? pagination.total : 0}
               actions={actions}
-              searchPlaceholder={`professors.search`}
+              searchPlaceholder={`professor.search`}
               filtersData={filters}
               selectedFilters={selectedFilters}
               params={params}
@@ -98,10 +107,14 @@ const Professors = () => {
           )
         }
       >
-        {loading ? (
+        {loading && !selectedFilters ? (
           <ProfessorCardSkeletons amount={Number(params.size)} />
         ) : (
-          <ProfessorsList professors={professors} loading={loading} />
+          <ProfessorsList
+            showLoaderOverlay={loading}
+            professors={professors}
+            loading={loading}
+          />
         )}
       </ListController>
       {!isFirstLoad && (

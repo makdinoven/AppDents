@@ -3,6 +3,7 @@ import type { ListQueryParams } from "../../list/model/useListQueryParams.ts";
 import s from "./RangeFilter.module.scss";
 import { useEffect, useState } from "react";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
+import RangeFilterItem from "./RangeFilterItem/RangeFilterItem.tsx";
 
 type Props = {
   filter: UIRangeFilter;
@@ -80,38 +81,85 @@ const RangeFilter = ({ filter, params, actions }: Props) => {
     actions.set({ [filter.to]: num });
   }, [debouncedTo]);
 
+  const updateNumber = (
+    value: string,
+    setter: (v: string) => void,
+    mode: "inc" | "dec",
+    min: number,
+    max: number,
+  ) => {
+    if (mode === "dec") {
+      if (value === "" || value === null) return;
+
+      const current = Number(value);
+
+      if (current <= min) {
+        setter(""); // сброс
+      } else {
+        setter(String(current - 1));
+      }
+
+      return;
+    }
+
+    // INC
+    const current = Number(value) || min;
+    const next = Math.min(current + 1, max);
+    setter(String(next));
+  };
+
+  const incFrom = () =>
+    updateNumber(from, setFrom, "inc", filter.min, filter.max);
+
+  const decFrom = () =>
+    updateNumber(from, setFrom, "dec", filter.min, filter.max);
+
+  const incTo = () => updateNumber(to, setTo, "inc", filter.min, filter.max);
+
+  const decTo = () => updateNumber(to, setTo, "dec", filter.min, filter.max);
+
   return (
     <div className={s.range_container}>
-      <div className={s.range_inputs}>
-        <input
-          type="number"
+      <div className={s.range_items}>
+        <RangeFilterItem
           id={`filter-from-${filter.from}`}
-          min={filter.min}
-          max={filter.max}
-          placeholder={String(filter.min)}
+          min={filter.min.toString()}
+          max={filter.max.toString()}
+          placeholder={filter.min.toString()}
           value={from}
-          onChange={(e) => setFrom(e.target.value)}
+          disabledMinus={!from}
+          disabledPlus={!!from && Number(from) >= filter.max}
+          actions={{
+            change: (v) => setFrom(v),
+            inc: incFrom,
+            dec: decFrom,
+          }}
         />
 
         <span className={s.range_separator}></span>
 
-        <input
-          type="number"
+        <RangeFilterItem
           id={`filter-to-${filter.to}`}
-          min={filter.min}
-          max={filter.max}
-          placeholder={String(filter.max)}
+          min={filter.min.toString()}
+          max={filter.max.toString()}
+          placeholder={filter.max.toString()}
           value={to}
-          onChange={(e) => setTo(e.target.value)}
+          disabledMinus={!to}
+          disabledPlus={!!to && Number(to) >= filter.max}
+          actions={{
+            change: (v) => setTo(v),
+            inc: incTo,
+            dec: decTo,
+          }}
         />
       </div>
-
-      {/*{filter.min && filter.max && (*/}
-      {/*  <div className={s.min_max_container}>*/}
-      {/*    <span className={s.min_max_val}>min: {filter.min}</span>*/}
-      {/*    <span className={s.min_max_val}>max: {filter.max}</span>*/}
-      {/*  </div>*/}
-      {/*)}*/}
+      {typeof filter.min !== "undefined" &&
+        typeof filter.max !== "undefined" && (
+          <div className={s.min_max_container}>
+            <span>min: {filter.min}</span>
+            <span>max: {filter.max}</span>
+          </div>
+        )}
     </div>
   );
 };
