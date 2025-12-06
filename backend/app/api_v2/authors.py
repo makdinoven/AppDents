@@ -837,9 +837,10 @@ def author_cards_v2(
         sort_query = sort_query.order_by(Author.name.desc(), Author.id.desc())
     
     # Получаем отсортированные ID с пагинацией
+    # Используем group_by вместо distinct для совместимости с MySQL ORDER BY
     author_ids = [
         aid for (aid,) in 
-        sort_query.distinct().offset((page - 1) * size).limit(size).all()
+        sort_query.group_by(Author.id).offset((page - 1) * size).limit(size).all()
     ]
     
     # Получаем метаданные фильтров, если запрошено
