@@ -7,7 +7,10 @@ import BuySection from "../../shared/components/BuySection/BuySection.tsx";
 import Professors from "./modules/Professors/Professors.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { BOOK_FORMATS } from "../../shared/common/helpers/commonConstants.ts";
+import {
+  BOOK_FORMATS,
+  BRAND,
+} from "../../shared/common/helpers/commonConstants.ts";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
 import { setLanguage } from "../../shared/store/slices/userSlice.ts";
 import { useDispatch } from "react-redux";
@@ -18,8 +21,10 @@ import { LanguagesType } from "../../shared/components/ui/LangLogo/LangLogo.tsx"
 import { CartItemKind } from "../../shared/api/cartApi/types.ts";
 import { getFbc, getFbp } from "../../shared/common/helpers/helpers.ts";
 import {
+  initAllMedgPixel,
   initFacebookPixel,
   initLanguagePixel,
+  initPlasticSurgeryMedgPixel,
   trackPageView,
 } from "../../shared/common/helpers/facebookPixel.ts";
 import { PATHS } from "../../app/routes/routes.ts";
@@ -48,8 +53,16 @@ const BookLanding = () => {
   useEffect(() => {
     if (isPromotionLanding) {
       if (bookData) {
-        initLanguagePixel(bookData.language);
-        initFacebookPixel();
+        if (BRAND === "dents") {
+          initLanguagePixel(bookData.language);
+          initFacebookPixel();
+        } else {
+          initAllMedgPixel();
+          if (bookData.tags.includes("tag.plastic_surgery")) {
+            initPlasticSurgeryMedgPixel();
+          }
+        }
+        trackPageView();
       }
     }
   }, [bookData, isPromotionLanding]);
