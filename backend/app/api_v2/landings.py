@@ -931,12 +931,12 @@ def debug_lessons_top(
     )
     
     # Группируем и считаем
-    landing_lessons = defaultdict(lambda: {"name": "", "lessons_count_field": None, "courses_count": 0, "calculated_lessons": 0})
+    landing_lessons = defaultdict(lambda: {"name": "", "original_lessons_count": None, "courses_count": 0, "calculated_lessons": 0})
     
-    for landing_id, landing_name, lessons_count_field, course_id, sections in landings_data:
+    for landing_id, landing_name, original_lessons_count, course_id, sections in landings_data:
         lessons = count_lessons_from_sections(sections)
         landing_lessons[landing_id]["name"] = landing_name
-        landing_lessons[landing_id]["lessons_count_field"] = lessons_count_field
+        landing_lessons[landing_id]["original_lessons_count"] = original_lessons_count
         landing_lessons[landing_id]["courses_count"] += 1
         landing_lessons[landing_id]["calculated_lessons"] += lessons
     
@@ -953,9 +953,9 @@ def debug_lessons_top(
             {
                 "landing_id": lid,
                 "landing_name": data["name"][:80] if data["name"] else None,
-                "lessons_count_field": data["lessons_count_field"],
+                "original_lessons_count": data["original_lessons_count"],  # Оригинальное поле из БД (строка типа "14 lectures")
                 "courses_count": data["courses_count"],
-                "calculated_lessons": data["calculated_lessons"]
+                "calculated_lessons": data["calculated_lessons"]  # Посчитанное из JSON sections
             }
             for lid, data in sorted_landings
         ]
@@ -1024,9 +1024,9 @@ def debug_lessons_count(
     return {
         "landing_id": landing_id,
         "landing_name": landing.landing_name,
-        "lessons_count_field": landing.lessons_count,  # Значение из поля базы
+        "original_lessons_count": landing.lessons_count,  # Оригинальное поле из БД (строка типа "14 lectures")
         "total_courses": len(courses_data),
-        "calculated_total_lessons": total_lessons,
+        "calculated_total_lessons": total_lessons,  # Посчитанное из JSON sections
         "courses": courses_info
     }
 
