@@ -12,9 +12,11 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException, Request
 from sqlalchemy import or_
 from fastapi import APIRouter, Depends, Query, status, HTTPException, Request, Body
 from pydantic import BaseModel
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, cast
+from sqlalchemy.types import Numeric as SqlNumeric
 from sqlalchemy.orm import Session, selectinload, joinedload
-from typing import List, Optional, Dict, Literal
+from typing import List, Optional, Dict, Literal, Union
+from math import ceil
 from ..db.database import get_db
 
 # Redis для кэширования
@@ -39,9 +41,15 @@ from ..services_v2.book_service import (
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TrackAdIn
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
-    LandingListPageResponse, LangEnum, FreeAccessRequest
+    LandingListPageResponse, LangEnum, FreeAccessRequest, LandingCardsV2Response, LandingCardResponse
 from pydantic import BaseModel
-from ..schemas_v2.common import TagResponse
+from ..schemas_v2.common import TagResponse, CatalogFiltersMetadata
+from ..services_v2.filter_aggregation_service import (
+    build_landing_base_query,
+    aggregate_landing_filters,
+    parse_duration_to_minutes,
+    calculate_landing_lessons_count,
+)
 from ..services_v2.preview_service import get_or_schedule_preview, get_previews_batch
 from ..services_v2.user_service import add_partial_course_to_user, create_access_token, create_user, \
     generate_random_password, get_user_by_email
@@ -534,6 +542,353 @@ def get_cards(
         single_course=single_course,
     )
 
+
+# ═══════════════════ V2: Карточки с расширенными фильтрами ═══════════════════
+
+def _serialize_landing_card(landing: Landing) -> dict:
+    """
+    Сериализация лендинга в стандартную карточку (как LandingCardResponse).
+    """
+    return {
+        "id": landing.id,
+        "first_tag": landing.tags[0].name if landing.tags else None,
+        "landing_name": landing.landing_name or "",
+        "authors": [
+            {"id": a.id, "name": a.name, "photo": a.photo}
+            for a in (landing.authors or [])
+        ],
+        "slug": landing.page_name,
+        "lessons_count": landing.lessons_count,
+        "main_image": landing.preview_photo,
+        "old_price": landing.old_price,
+        "new_price": landing.new_price,
+        "course_ids": [c.id for c in (landing.courses or [])],
+    }
+
+
+def _get_landing_sort_key(landing: Landing, db: Session, sort: str):
+    """
+    Возвращает ключ сортировки для лендинга (для сортировок в памяти).
+    """
+    if sort in ("duration_asc", "duration_desc"):
+        duration_minutes = parse_duration_to_minutes(landing.duration)
+        return duration_minutes or 0
+    elif sort in ("lessons_asc", "lessons_desc"):
+        lessons_count_num = calculate_landing_lessons_count(db, landing.id)
+        return lessons_count_num or 0
+    return 0
+
+
+@router.get(
+    "/v2/cards",
+    response_model=LandingCardsV2Response,
+    summary="V2: Карточки курсовых лендингов с расширенными фильтрами и метаданными",
+    description="""
+    Версия 2 эндпоинта для получения карточек курсовых лендингов.
+    
+    ## Основные возможности:
+    
+    ### Фильтрация:
+    - **language** - фильтр по языку (EN, RU, ES, IT, AR, PT)
+    - **tags** - фильтр по тегам (ID тегов, можно несколько)
+    - **author_ids** - фильтр по ID авторов (можно несколько)
+    - **price_from, price_to** - диапазон цены (new_price)
+    - **q** - поисковый запрос по названию
+    
+    ### Сортировка:
+    - **popular_asc** / **popular_desc** - по популярности (sales_count)
+    - **price_asc** / **price_desc** - по цене
+    - **duration_asc** / **duration_desc** - по длительности курса
+    - **new_asc** / **new_desc** - по новизне (created_at)
+    - **lessons_asc** / **lessons_desc** - по количеству уроков
+    - **recommend** - персональные рекомендации (только для авторизованных!)
+    
+    ### Метаданные фильтров:
+    При **include_filters=true** в ответе будет дополнительное поле `filters` с метаданными:
+    - Список всех доступных авторов с количеством курсов
+    - Список всех доступных тегов с количеством курсов
+    - Диапазон цен
+    - Список доступных опций сортировки (включая "Рекомендации" для авторизованных)
+    
+    ### Примеры использования:
+    
+    1. Получить первую страницу с метаданными фильтров:
+       ```
+       GET /v2/cards?page=1&size=20&include_filters=true
+       ```
+    
+    2. Фильтрация по автору и тегам:
+       ```
+       GET /v2/cards?author_ids=1&tags=5&tags=10
+       ```
+    
+    3. Поиск с сортировкой по цене:
+       ```
+       GET /v2/cards?q=implant&sort=price_asc
+       ```
+    
+    4. Персональные рекомендации (требуется авторизация):
+       ```
+       GET /v2/cards?sort=recommend
+       ```
+    """,
+    tags=["public"]
+)
+def landing_cards_v2(
+    # Фильтры
+    language: Optional[str] = Query(
+        None,
+        description="Язык лендинга (EN, RU, ES, IT, AR, PT)",
+        regex="^(EN|RU|ES|IT|AR|PT)$"
+    ),
+    tags: Optional[List[int]] = Query(
+        None,
+        description="Фильтр по тегам (ID тегов, можно несколько)"
+    ),
+    author_ids: Optional[List[int]] = Query(
+        None,
+        description="Фильтр по ID авторов (можно несколько)"
+    ),
+    price_from: Optional[float] = Query(
+        None,
+        ge=0,
+        description="Цена от (new_price)"
+    ),
+    price_to: Optional[float] = Query(
+        None,
+        ge=0,
+        description="Цена до (new_price)"
+    ),
+    q: Optional[str] = Query(
+        None,
+        min_length=1,
+        description="Поиск по landing_name или page_name"
+    ),
+    # Сортировка
+    sort: Optional[str] = Query(
+        None,
+        description="Сортировка: popular_asc/desc, price_asc/desc, duration_asc/desc, new_asc/desc, lessons_asc/desc, recommend (только для авторизованных)",
+        regex="^(popular_asc|popular_desc|price_asc|price_desc|duration_asc|duration_desc|new_asc|new_desc|lessons_asc|lessons_desc|recommend)$"
+    ),
+    # Пагинация
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(20, gt=0, le=100, description="Размер страницы"),
+    # Метаданные фильтров
+    include_filters: bool = Query(
+        False,
+        description="Включить метаданные фильтров в ответ (authors, tags, price ranges, sorts)"
+    ),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """
+    V2 эндпоинт для получения карточек курсовых лендингов с расширенными фильтрами.
+    
+    Поддерживает:
+    - Множественные фильтры (авторы, теги)
+    - Фильтры по диапазону цены
+    - Расширенные сортировки (в обе стороны)
+    - Персональные рекомендации для авторизованных пользователей
+    - Опциональные метаданные фильтров с актуальными counts
+    """
+    is_authenticated = current_user is not None
+    
+    # Если запрошена сортировка "recommend", но пользователь не авторизован - ошибка
+    if sort == "recommend" and not is_authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": {
+                    "code": "AUTH_REQUIRED_FOR_RECOMMEND",
+                    "message": "Authorization required for recommendations sort",
+                    "translation_key": "error.auth_required_for_recommend",
+                    "params": {}
+                }
+            }
+        )
+    
+    # Сортировка "recommend" использует существующую логику персонализированных рекомендаций
+    if sort == "recommend" and is_authenticated:
+        # Используем существующую функцию для рекомендаций
+        result = get_recommended_landing_cards(
+            db,
+            user_id=current_user.id,
+            skip=(page - 1) * size,
+            limit=size,
+            language=language,
+        )
+        
+        # Переформатируем результат под V2 формат
+        cards = []
+        for card in result.get("cards", []):
+            # Получаем полный объект лендинга для сериализации
+            landing = db.query(Landing).options(
+                selectinload(Landing.authors),
+                selectinload(Landing.tags),
+                selectinload(Landing.courses),
+            ).filter(Landing.id == card["id"]).first()
+            if landing:
+                cards.append(_serialize_landing_card(landing))
+        
+        total = result.get("total", 0)
+        
+        # Получаем метаданные фильтров, если запрошено
+        filters_metadata = None
+        if include_filters:
+            current_filters = {
+                'language': language,
+                'tags': tags,
+                'author_ids': author_ids,
+                'price_from': price_from,
+                'price_to': price_to,
+                'q': q,
+            }
+            base = build_landing_base_query(
+                db=db,
+                language=language,
+                tags=tags,
+                author_ids=author_ids,
+                price_from=price_from,
+                price_to=price_to,
+                q=q,
+            )
+            filters_metadata = aggregate_landing_filters(
+                db=db,
+                base_query=base.order_by(None),
+                current_filters=current_filters,
+                include_recommend=is_authenticated
+            )
+        
+        return LandingCardsV2Response(
+            total=total,
+            total_pages=ceil(total / size) if total > 0 else 0,
+            page=page,
+            size=size,
+            cards=cards,
+            filters=filters_metadata
+        )
+    
+    # Собираем все фильтры в словарь
+    current_filters = {
+        'language': language,
+        'tags': tags,
+        'author_ids': author_ids,
+        'price_from': price_from,
+        'price_to': price_to,
+        'q': q,
+    }
+    
+    # Строим базовый запрос с применением всех фильтров
+    base = build_landing_base_query(
+        db=db,
+        language=language,
+        tags=tags,
+        author_ids=author_ids,
+        price_from=price_from,
+        price_to=price_to,
+        q=q,
+    )
+    
+    # Применяем сортировку
+    if sort == "price_asc":
+        base = base.order_by(
+            cast(Landing.new_price, SqlNumeric(10, 2)).asc(),
+            Landing.id.asc()
+        )
+    elif sort == "price_desc":
+        base = base.order_by(
+            cast(Landing.new_price, SqlNumeric(10, 2)).desc(),
+            Landing.id.desc()
+        )
+    elif sort == "popular_asc":
+        base = base.order_by(
+            Landing.sales_count.is_(None),
+            Landing.sales_count.asc(),
+            Landing.id.asc()
+        )
+    elif sort == "popular_desc":
+        base = base.order_by(
+            Landing.sales_count.is_(None),
+            Landing.sales_count.desc(),
+            Landing.id.desc()
+        )
+    elif sort == "new_asc":
+        base = base.order_by(
+            Landing.created_at.is_(None),
+            Landing.created_at.asc(),
+            Landing.id.asc()
+        )
+    elif sort == "new_desc":
+        base = base.order_by(
+            Landing.created_at.is_(None),
+            Landing.created_at.desc(),
+            Landing.id.desc()
+        )
+    elif sort == "duration_asc" or sort == "duration_desc":
+        # Для сортировки по длительности нужно парсить строку duration
+        # Это сложно сделать на уровне SQL, поэтому сортируем в памяти после получения
+        pass  # Обработаем после получения данных
+    elif sort == "lessons_asc" or sort == "lessons_desc":
+        # Для сортировки по урокам нужен подзапрос
+        # Создаём подзапрос для подсчёта уроков
+        # Это сложнее, так как уроки хранятся в JSON - сортируем в памяти
+        pass  # Обработаем после получения данных
+    else:
+        # Дефолтная сортировка - по новизне
+        base = base.order_by(
+            Landing.created_at.is_(None),
+            Landing.created_at.desc(),
+            Landing.id.desc()
+        )
+    
+    # Подсчитываем total
+    total = base.order_by(None).with_entities(func.count()).scalar() or 0
+    
+    # Получаем метаданные фильтров, если запрошено
+    filters_metadata = None
+    if include_filters:
+        filters_metadata = aggregate_landing_filters(
+            db=db,
+            base_query=base.order_by(None),
+            current_filters=current_filters,
+            include_recommend=is_authenticated
+        )
+    
+    # Для сортировки по duration и lessons нужна специальная обработка
+    if sort in ("duration_asc", "duration_desc", "lessons_asc", "lessons_desc"):
+        # Получаем все лендинги и сортируем в памяти
+        all_landings = base.all()
+        
+        # Собираем данные с метриками для сортировки
+        landings_with_metrics = []
+        for landing in all_landings:
+            sort_key = _get_landing_sort_key(landing, db, sort)
+            landings_with_metrics.append((landing, sort_key))
+        
+        # Сортируем
+        if sort in ("duration_asc", "lessons_asc"):
+            landings_with_metrics.sort(key=lambda x: (x[1], x[0].id))
+        else:  # duration_desc, lessons_desc
+            landings_with_metrics.sort(key=lambda x: (-x[1], -x[0].id))
+        
+        # Применяем пагинацию в памяти
+        start_idx = (page - 1) * size
+        end_idx = start_idx + size
+        paginated = landings_with_metrics[start_idx:end_idx]
+        cards = [_serialize_landing_card(landing) for landing, _ in paginated]
+    else:
+        # Стандартная пагинация через SQL
+        rows = base.offset((page - 1) * size).limit(size).all()
+        cards = [_serialize_landing_card(r) for r in rows]
+    
+    return LandingCardsV2Response(
+        total=total,
+        total_pages=ceil(total / size) if total > 0 else 0,
+        page=page,
+        size=size,
+        cards=cards,
+        filters=filters_metadata
+    )
 
 
 @router.get("/search", response_model=LandingSearchResponse)

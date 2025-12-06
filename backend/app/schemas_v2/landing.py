@@ -164,3 +164,34 @@ class FreeAccessRequest(BaseModel):
 class TrackAdIn(BaseModel):
     fbp: Optional[str] = None
     fbc: Optional[str] = None
+
+
+# ═══════════════════ V2: Расширенные карточки ═══════════════════
+
+class LandingCardsV2Response(BaseModel):
+    """
+    V2 ответ карточек лендингов с расширенными фильтрами.
+    
+    Включает:
+    - Пагинацию
+    - Карточки лендингов (стандартные LandingCardResponse)
+    - Опционально: метаданные фильтров (когда include_filters=true)
+    """
+    total: int
+    total_pages: int
+    page: int
+    size: int
+    cards: List[LandingCardResponse]
+    filters: Optional[Any] = None  # CatalogFiltersMetadata когда запрошено
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "total": 150,
+                "total_pages": 8,
+                "page": 1,
+                "size": 20,
+                "cards": [],
+                "filters": None
+            }
+        }

@@ -12,10 +12,12 @@ from sqlalchemy.orm import Session, Query, selectinload
 from sqlalchemy import func, cast, Integer, and_, or_, exists, select, literal, Numeric as SqlNumeric
 from decimal import Decimal
 
+import re
+
 from ..models.models_v2 import (
-    BookLanding, Book, Author, Tag, Publisher, Landing,
+    BookLanding, Book, Author, Tag, Publisher, Landing, Course,
     BookFile, book_authors, book_tags, book_publishers,
-    landing_authors, landing_tags, book_landing_books
+    landing_authors, landing_tags, book_landing_books, landing_course
 )
 from ..schemas_v2.common import (
     FilterOption, MultiselectFilter, RangeFilter, 
@@ -921,12 +923,12 @@ def build_author_base_query(
             )
         )
     
-    # Фильтр по количеству курсов (уникальных)
+    # Фильтр по количеству курсов (уникальных, с учётом языка лендинга)
     # Нужен подзапрос для подсчёта уникальных курсов
     if courses_from is not None or courses_to is not None:
         # Подзапрос: считаем уникальные курсы для каждого автора
         # через landing_authors → landings → landing_course → courses
-        courses_count_subq = (
+        courses_q = (
             db.query(
                 landing_authors.c.author_id,
                 func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -935,9 +937,11 @@ def build_author_base_query(
             .join(Landing, landing_authors.c.landing_id == Landing.id)
             .join(landing_course, Landing.id == landing_course.c.landing_id)
             .filter(Landing.is_hidden.is_(False))
-            .group_by(landing_authors.c.author_id)
-            .subquery()
         )
+        # Фильтруем по языку лендинга, если передан language
+        if language:
+            courses_q = courses_q.filter(Landing.language == language.upper())
+        courses_count_subq = courses_q.group_by(landing_authors.c.author_id).subquery()
         
         base = base.outerjoin(courses_count_subq, Author.id == courses_count_subq.c.author_id)
         
@@ -946,10 +950,10 @@ def build_author_base_query(
         if courses_to is not None:
             base = base.filter(func.coalesce(courses_count_subq.c.courses_cnt, 0) <= courses_to)
     
-    # Фильтр по количеству книг (с видимыми BookLanding)
+    # Фильтр по количеству книг (с видимыми BookLanding, с учётом языка)
     if books_from is not None or books_to is not None:
         # Подзапрос: считаем книги автора, у которых есть хотя бы один видимый BookLanding
-        books_count_subq = (
+        books_q = (
             db.query(
                 book_authors.c.author_id,
                 func.count(func.distinct(Book.id)).label('books_cnt')
@@ -959,9 +963,11 @@ def build_author_base_query(
             .join(book_landing_books, Book.id == book_landing_books.c.book_id)
             .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
             .filter(BookLanding.is_hidden.is_(False))
-            .group_by(book_authors.c.author_id)
-            .subquery()
         )
+        # Фильтруем по языку книжного лендинга, если передан language
+        if language:
+            books_q = books_q.filter(BookLanding.language == language.upper())
+        books_count_subq = books_q.group_by(book_authors.c.author_id).subquery()
         
         base = base.outerjoin(books_count_subq, Author.id == books_count_subq.c.author_id)
         
@@ -1206,9 +1212,10 @@ def aggregate_author_filters(
     )
     
     # ═══════════════════ Courses Range ═══════════════════
-    # Диапазон количества курсов у авторов
-    # Подзапрос для подсчёта курсов у каждого автора
-    courses_per_author = (
+    # Диапазон количества курсов у авторов (с учётом языка лендинга)
+    language = current_filters.get('language')
+    
+    courses_per_author_q = (
         db.query(
             landing_authors.c.author_id,
             func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -1217,9 +1224,10 @@ def aggregate_author_filters(
         .join(Landing, landing_authors.c.landing_id == Landing.id)
         .join(landing_course, Landing.id == landing_course.c.landing_id)
         .filter(Landing.is_hidden.is_(False))
-        .group_by(landing_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        courses_per_author_q = courses_per_author_q.filter(Landing.language == language.upper())
+    courses_per_author = courses_per_author_q.group_by(landing_authors.c.author_id).subquery()
     
     courses_range = (
         db.query(
@@ -1248,8 +1256,8 @@ def aggregate_author_filters(
         pass  # Пока не сохраняем, т.к. нет поля в SelectedFilters
     
     # ═══════════════════ Books Range ═══════════════════
-    # Диапазон количества книг у авторов
-    books_per_author = (
+    # Диапазон количества книг у авторов (с учётом языка книжного лендинга)
+    books_per_author_q = (
         db.query(
             book_authors.c.author_id,
             func.count(func.distinct(Book.id)).label('books_cnt')
@@ -1259,9 +1267,10 @@ def aggregate_author_filters(
         .join(book_landing_books, Book.id == book_landing_books.c.book_id)
         .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
         .filter(BookLanding.is_hidden.is_(False))
-        .group_by(book_authors.c.author_id)
-        .subquery()
     )
+    if language:
+        books_per_author_q = books_per_author_q.filter(BookLanding.language == language.upper())
+    books_per_author = books_per_author_q.group_by(book_authors.c.author_id).subquery()
     
     books_range = (
         db.query(
@@ -1305,4 +1314,516 @@ def _get_author_sort_options() -> List[SortOption]:
         SortOption(value="name_asc", label="По алфавиту: А-Я"),
         SortOption(value="name_desc", label="По алфавиту: Я-А"),
     ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ═══════════════════ КУРСЫ (ЛЕНДИНГИ): Фильтры и агрегация ═════════════════════
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def count_lessons_from_sections(sections: dict | list | None) -> int:
+    """
+    Подсчитывает количество уроков (lesson_name) из JSON поля sections курса.
+    
+    Структура sections может быть:
+    - dict: {"1": {"section_name": "...", "lessons": [...]}, ...}
+    - list: [{"section_name": "...", "lessons": [...]}, ...]
+    
+    Возвращает суммарное количество уроков.
+    """
+    if not sections:
+        return 0
+    
+    total = 0
+    try:
+        if isinstance(sections, dict):
+            for sec_data in sections.values():
+                if isinstance(sec_data, dict):
+                    lessons = sec_data.get("lessons", [])
+                    if isinstance(lessons, list):
+                        total += len(lessons)
+        elif isinstance(sections, list):
+            for sec_data in sections:
+                if isinstance(sec_data, dict):
+                    lessons = sec_data.get("lessons", [])
+                    if isinstance(lessons, list):
+                        total += len(lessons)
+    except Exception:
+        pass
+    
+    return total
+
+
+def parse_duration_to_minutes(duration_str: str | None) -> int:
+    """
+    Парсит строку длительности в минуты.
+    
+    Примеры:
+    - "13 h 39 min" -> 819
+    - "10 h 30 min" -> 630
+    - "20 hours" -> 1200
+    - "10 ore e 50 minuti" -> 650 (итальянский)
+    - "11 hours 54 minutes" -> 714
+    - "19 ч 38 мин" -> 1178 (русский)
+    - "19 часов 45 минут" -> 1185
+    
+    Возвращает 0 если не удалось распарсить.
+    """
+    if not duration_str:
+        return 0
+    
+    duration_str = duration_str.strip().lower()
+    
+    # Паттерны для часов в разных языках
+    hour_patterns = [
+        r'(\d+)\s*(?:h|hours?|hrs?|ч|час[а-я]*|ore?|horas?)',
+    ]
+    
+    # Паттерны для минут в разных языках
+    minute_patterns = [
+        r'(\d+)\s*(?:m|min|mins?|minutes?|мин[а-я]*|minuti?|minutos?)',
+    ]
+    
+    hours = 0
+    minutes = 0
+    
+    # Ищем часы
+    for pattern in hour_patterns:
+        match = re.search(pattern, duration_str)
+        if match:
+            hours = int(match.group(1))
+            break
+    
+    # Ищем минуты
+    for pattern in minute_patterns:
+        match = re.search(pattern, duration_str)
+        if match:
+            minutes = int(match.group(1))
+            break
+    
+    return hours * 60 + minutes
+
+
+def calculate_landing_lessons_count(db: Session, landing_id: int) -> int:
+    """
+    Подсчитывает количество уроков для лендинга через связанные курсы.
+    
+    Перебирает все курсы лендинга и суммирует уроки из JSON поля sections.
+    """
+    courses = (
+        db.query(Course.sections)
+        .join(landing_course, Course.id == landing_course.c.course_id)
+        .filter(landing_course.c.landing_id == landing_id)
+        .all()
+    )
+    
+    total = 0
+    for (sections,) in courses:
+        total += count_lessons_from_sections(sections)
+    
+    return total
+
+
+def calculate_landing_duration_minutes(db: Session, landing_id: int) -> int:
+    """
+    Возвращает длительность лендинга в минутах.
+    
+    Берёт поле duration из лендинга и парсит его.
+    """
+    landing = db.query(Landing.duration).filter(Landing.id == landing_id).first()
+    if not landing or not landing.duration:
+        return 0
+    
+    return parse_duration_to_minutes(landing.duration)
+
+
+def build_landing_base_query(
+    db: Session,
+    language: Optional[str] = None,
+    tags: Optional[List[int]] = None,
+    author_ids: Optional[List[int]] = None,
+    price_from: Optional[float] = None,
+    price_to: Optional[float] = None,
+    q: Optional[str] = None,
+) -> Query:
+    """
+    Построение базового запроса Landing с применением всех фильтров.
+    
+    Возвращает Query, к которому можно добавить сортировку и пагинацию.
+    """
+    # Базовый запрос: только публичные лендинги
+    base = (
+        db.query(Landing)
+        .options(
+            selectinload(Landing.authors),
+            selectinload(Landing.tags),
+            selectinload(Landing.courses),
+        )
+        .filter(Landing.is_hidden.is_(False))
+    )
+    
+    # Фильтр по языку
+    if language:
+        base = base.filter(Landing.language == language.upper())
+    
+    # Поиск по названию
+    if q:
+        like = f"%{q.strip()}%"
+        base = base.filter(
+            or_(
+                Landing.landing_name.ilike(like),
+                Landing.page_name.ilike(like)
+            )
+        )
+    
+    # Фильтр по тегам (любой из переданных тегов по ID)
+    if tags:
+        base = base.filter(
+            Landing.tags.any(Tag.id.in_(tags))
+        )
+    
+    # Фильтр по авторам
+    if author_ids:
+        base = base.filter(
+            Landing.authors.any(Author.id.in_(author_ids))
+        )
+    
+    # Фильтр по цене (new_price - строка, кастим к числу)
+    if price_from is not None:
+        base = base.filter(
+            cast(Landing.new_price, func.DECIMAL(10, 2)) >= price_from
+        )
+    if price_to is not None:
+        base = base.filter(
+            cast(Landing.new_price, func.DECIMAL(10, 2)) <= price_to
+        )
+    
+    return base
+
+
+def aggregate_landing_filters(
+    db: Session,
+    base_query: Query,
+    current_filters: Dict[str, Any],
+    filter_limit: int = 50,
+    include_recommend: bool = False,
+) -> CatalogFiltersMetadata:
+    """
+    Агрегация метаданных фильтров для курсовых лендингов.
+    
+    Считает количество элементов для каждого фильтра с учетом текущих фильтров.
+    
+    Args:
+        db: Сессия БД
+        base_query: Базовый запрос с примененными фильтрами
+        current_filters: Словарь текущих фильтров для исключения при агрегации
+        include_recommend: Включить сортировку "Рекомендации" (только для авторизованных)
+    
+    Returns:
+        CatalogFiltersMetadata с заполненными фильтрами и сортировками
+    """
+    filters = {}
+    selected = SelectedFilters()
+    
+    # Получаем ID лендингов, попадающих под текущие фильтры
+    filtered_landing_ids = [landing.id for landing in base_query.with_entities(Landing.id).all()]
+    
+    # ═══════════════════ Authors ═══════════════════
+    query_without_authors = build_landing_base_query(
+        db,
+        language=current_filters.get('language'),
+        tags=current_filters.get('tags'),
+        author_ids=None,  # Исключаем этот фильтр
+        price_from=current_filters.get('price_from'),
+        price_to=current_filters.get('price_to'),
+        q=current_filters.get('q'),
+    )
+    
+    author_landing_ids = [lid.id for lid in query_without_authors.with_entities(Landing.id).all()]
+    
+    # Подсчет общего количества всех авторов
+    total_authors = db.query(func.count(Author.id)).scalar() or 0
+    
+    # Топ-N авторов по ОБЩЕМУ количеству лендингов (без фильтров)
+    top_authors_subq = (
+        db.query(
+            Author.id.label('author_id'),
+            func.count(func.distinct(Landing.id)).label('total_cnt')
+        )
+        .select_from(Author)
+        .join(landing_authors, Author.id == landing_authors.c.author_id)
+        .join(Landing, landing_authors.c.landing_id == Landing.id)
+        .filter(Landing.is_hidden.is_(False))
+        .group_by(Author.id)
+        .order_by(func.count(func.distinct(Landing.id)).desc())
+        .limit(filter_limit)
+        .subquery()
+    )
+    
+    if author_landing_ids:
+        filtered_counts_subq = (
+            db.query(
+                Author.id.label('author_id'),
+                func.count(func.distinct(Landing.id)).label('filtered_cnt')
+            )
+            .select_from(Author)
+            .join(landing_authors, Author.id == landing_authors.c.author_id)
+            .join(Landing, landing_authors.c.landing_id == Landing.id)
+            .filter(Landing.id.in_(author_landing_ids))
+            .group_by(Author.id)
+            .subquery()
+        )
+        
+        authors_data = (
+            db.query(
+                Author.id,
+                Author.name,
+                func.coalesce(filtered_counts_subq.c.filtered_cnt, 0).label('count')
+            )
+            .join(top_authors_subq, Author.id == top_authors_subq.c.author_id)
+            .outerjoin(filtered_counts_subq, Author.id == filtered_counts_subq.c.author_id)
+            .order_by(top_authors_subq.c.total_cnt.desc(), Author.name)
+            .all()
+        )
+    else:
+        authors_data = (
+            db.query(
+                Author.id,
+                Author.name,
+                literal(0).label('count')
+            )
+            .join(top_authors_subq, Author.id == top_authors_subq.c.author_id)
+            .order_by(top_authors_subq.c.total_cnt.desc(), Author.name)
+            .all()
+        )
+    
+    # Получаем выбранные авторы из current_filters
+    selected_author_ids = current_filters.get('author_ids') or []
+    selected_author_options = []
+    
+    if selected_author_ids:
+        selected_authors_names = {
+            row.id: row.name 
+            for row in db.query(Author.id, Author.name).filter(Author.id.in_(selected_author_ids)).all()
+        }
+        
+        selected_authors_counts = {}
+        if author_landing_ids:
+            counts_data = (
+                db.query(
+                    Author.id,
+                    func.count(func.distinct(Landing.id)).label('count')
+                )
+                .select_from(Author)
+                .join(landing_authors, Author.id == landing_authors.c.author_id)
+                .join(Landing, landing_authors.c.landing_id == Landing.id)
+                .filter(Author.id.in_(selected_author_ids))
+                .filter(Landing.id.in_(author_landing_ids))
+                .group_by(Author.id)
+                .all()
+            )
+            selected_authors_counts = {row.id: int(row.count) for row in counts_data}
+        
+        selected_author_options = [
+            FilterOption(id=auth_id, name=auth_name, count=selected_authors_counts.get(auth_id, 0))
+            for auth_id, auth_name in selected_authors_names.items()
+        ]
+        selected.authors = SelectedMultiselectValues(options=selected_author_options)
+    
+    base_author_options = [
+        FilterOption(id=auth_id, name=auth_name, count=int(count))
+        for auth_id, auth_name, count in authors_data
+    ]
+    
+    final_author_options = _prepend_selected_options(base_author_options, selected_author_options)
+    
+    filters['authors'] = MultiselectFilter(
+        label="Авторы",
+        param_name="author_ids",
+        options=final_author_options,
+        has_more=total_authors > filter_limit,
+        total_count=total_authors,
+        search_endpoint="/api/filters/authors/search?context=courses"
+    )
+    
+    # ═══════════════════ Tags ═══════════════════
+    query_without_tags = build_landing_base_query(
+        db,
+        language=current_filters.get('language'),
+        tags=None,  # Исключаем этот фильтр
+        author_ids=current_filters.get('author_ids'),
+        price_from=current_filters.get('price_from'),
+        price_to=current_filters.get('price_to'),
+        q=current_filters.get('q'),
+    )
+    
+    tag_landing_ids = [lid.id for lid in query_without_tags.with_entities(Landing.id).all()]
+    
+    total_tags = db.query(func.count(Tag.id)).scalar() or 0
+    
+    top_tags_subq = (
+        db.query(
+            Tag.id.label('tag_id'),
+            func.count(func.distinct(Landing.id)).label('total_cnt')
+        )
+        .select_from(Tag)
+        .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+        .join(Landing, landing_tags.c.landing_id == Landing.id)
+        .filter(Landing.is_hidden.is_(False))
+        .group_by(Tag.id)
+        .order_by(func.count(func.distinct(Landing.id)).desc())
+        .limit(filter_limit)
+        .subquery()
+    )
+    
+    if tag_landing_ids:
+        filtered_counts_subq = (
+            db.query(
+                Tag.id.label('tag_id'),
+                func.count(func.distinct(Landing.id)).label('filtered_cnt')
+            )
+            .select_from(Tag)
+            .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+            .join(Landing, landing_tags.c.landing_id == Landing.id)
+            .filter(Landing.id.in_(tag_landing_ids))
+            .group_by(Tag.id)
+            .subquery()
+        )
+        
+        tags_data = (
+            db.query(
+                Tag.id,
+                Tag.name,
+                func.coalesce(filtered_counts_subq.c.filtered_cnt, 0).label('count')
+            )
+            .join(top_tags_subq, Tag.id == top_tags_subq.c.tag_id)
+            .outerjoin(filtered_counts_subq, Tag.id == filtered_counts_subq.c.tag_id)
+            .order_by(top_tags_subq.c.total_cnt.desc(), Tag.name)
+            .all()
+        )
+    else:
+        tags_data = (
+            db.query(
+                Tag.id,
+                Tag.name,
+                literal(0).label('count')
+            )
+            .join(top_tags_subq, Tag.id == top_tags_subq.c.tag_id)
+            .order_by(top_tags_subq.c.total_cnt.desc(), Tag.name)
+            .all()
+        )
+    
+    selected_tag_ids = current_filters.get('tags') or []
+    selected_tag_options = []
+    
+    if selected_tag_ids:
+        selected_tags_names = {
+            row.id: row.name 
+            for row in db.query(Tag.id, Tag.name).filter(Tag.id.in_(selected_tag_ids)).all()
+        }
+        
+        selected_tags_counts = {}
+        if tag_landing_ids:
+            counts_data = (
+                db.query(
+                    Tag.id,
+                    func.count(func.distinct(Landing.id)).label('count')
+                )
+                .select_from(Tag)
+                .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+                .join(Landing, landing_tags.c.landing_id == Landing.id)
+                .filter(Tag.id.in_(selected_tag_ids))
+                .filter(Landing.id.in_(tag_landing_ids))
+                .group_by(Tag.id)
+                .all()
+            )
+            selected_tags_counts = {row.id: int(row.count) for row in counts_data}
+        
+        selected_tag_options = [
+            FilterOption(id=tag_id, name=tag_name, count=selected_tags_counts.get(tag_id, 0))
+            for tag_id, tag_name in selected_tags_names.items()
+        ]
+        selected.tags = SelectedMultiselectValues(options=selected_tag_options)
+    
+    base_tag_options = [
+        FilterOption(id=tag_id, name=tag_name, count=int(count))
+        for tag_id, tag_name, count in tags_data
+    ]
+    
+    final_tag_options = _prepend_selected_options(base_tag_options, selected_tag_options)
+    
+    filters['tags'] = MultiselectFilter(
+        label="Теги",
+        param_name="tags",
+        options=final_tag_options,
+        has_more=total_tags > filter_limit,
+        total_count=total_tags,
+        search_endpoint="/api/filters/tags/search?context=courses"
+    )
+    
+    # ═══════════════════ Price Range ═══════════════════
+    # Явный CAST для числового сравнения
+    price_range = (
+        db.query(
+            func.min(cast(Landing.new_price, func.DECIMAL(10, 2))).label('min_price'),
+            func.max(cast(Landing.new_price, func.DECIMAL(10, 2))).label('max_price')
+        )
+        .filter(Landing.is_hidden.is_(False))
+        .filter(Landing.new_price.isnot(None))
+        .filter(Landing.new_price != '')
+        .first()
+    )
+    
+    if price_range and price_range.min_price is not None and price_range.max_price is not None:
+        filters['price'] = RangeFilter(
+            label="Цена",
+            param_name_from="price_from",
+            param_name_to="price_to",
+            min=float(price_range.min_price),
+            max=float(price_range.max_price),
+            unit="USD"
+        )
+    
+    price_from_val = current_filters.get('price_from')
+    price_to_val = current_filters.get('price_to')
+    if price_from_val is not None or price_to_val is not None:
+        selected.price = SelectedRangeValues(
+            value_from=float(price_from_val) if price_from_val is not None else None,
+            value_to=float(price_to_val) if price_to_val is not None else None
+        )
+    
+    # Проверяем, есть ли хотя бы один выбранный фильтр
+    has_selected = any([selected.authors, selected.tags, selected.price])
+    
+    return CatalogFiltersMetadata(
+        filters=filters,
+        available_sorts=_get_landing_sort_options(include_recommend=include_recommend),
+        selected=selected if has_selected else None
+    )
+
+
+def _get_landing_sort_options(include_recommend: bool = False) -> List[SortOption]:
+    """
+    Возвращает список доступных опций сортировки для курсовых лендингов.
+    
+    Args:
+        include_recommend: Включить сортировку "Рекомендации" (только для авторизованных)
+    """
+    options = [
+        SortOption(value="popular_desc", label="Популярность: по убыванию"),
+        SortOption(value="popular_asc", label="Популярность: по возрастанию"),
+        SortOption(value="price_asc", label="Цена: по возрастанию"),
+        SortOption(value="price_desc", label="Цена: по убыванию"),
+        SortOption(value="duration_asc", label="Длительность: по возрастанию"),
+        SortOption(value="duration_desc", label="Длительность: по убыванию"),
+        SortOption(value="new_asc", label="Новизна: сначала старые"),
+        SortOption(value="new_desc", label="Новизна: сначала новые"),
+        SortOption(value="lessons_asc", label="Уроков: по возрастанию"),
+        SortOption(value="lessons_desc", label="Уроков: по убыванию"),
+    ]
+    
+    # Добавляем рекомендации в начало списка, если пользователь авторизован
+    if include_recommend:
+        options.insert(0, SortOption(value="recommend", label="Рекомендации"))
+    
+    return options
 

@@ -36,8 +36,9 @@ router = APIRouter(prefix="/filters", tags=["filters"])
     Поддерживает фильтры: language, tags, formats, publisher_ids, year_from, year_to, 
     price_from, price_to, pages_from, pages_to.
     
-    ### courses - каталог курсов (будущая реализация)
-    Возвращает лекторов с количеством курсов.
+    ### courses - каталог курсов
+    Возвращает лекторов с количеством курсовых лендингов.
+    Поддерживает фильтры: language, tags, price_from, price_to.
     
     ### authors - страница авторов (будущая реализация)
     Возвращает авторов с общей статистикой.
@@ -76,7 +77,8 @@ def search_authors_endpoint(
     price_to: Optional[Decimal] = Query(None, ge=0, description="[books] Цена до"),
     pages_from: Optional[int] = Query(None, ge=0, description="[books] Страниц от"),
     pages_to: Optional[int] = Query(None, ge=0, description="[books] Страниц до"),
-    # TODO: Добавить фильтры для контекста "courses" когда будет готова логика
+    # Фильтры для контекста "courses"
+    # author_ids: используется только в tags search, не здесь
     db: Session = Depends(get_db),
 ):
     """
@@ -87,7 +89,7 @@ def search_authors_endpoint(
         context=context,
         q=q,
         limit=limit,
-        # Фильтры для books
+        # Фильтры для books и courses
         language=language,
         tags=tags,
         formats=formats,
@@ -179,8 +181,9 @@ def search_publishers_endpoint(
     Поддерживает фильтры: language, formats, publisher_ids, author_ids, year_from, year_to, 
     price_from, price_to, pages_from, pages_to.
     
-    ### courses - каталог курсов (будущая реализация)
-    Возвращает теги с количеством курсов.
+    ### courses - каталог курсов
+    Возвращает теги с количеством курсовых лендингов.
+    Поддерживает фильтры: language, author_ids, price_from, price_to.
     
     ### authors - страница авторов
     Возвращает теги с количеством авторов (из курсов и книг).

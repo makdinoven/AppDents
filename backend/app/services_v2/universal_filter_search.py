@@ -17,7 +17,7 @@ from ..models.models_v2 import (
     book_authors, book_publishers, book_tags, landing_authors, landing_tags
 )
 from ..schemas_v2.common import FilterSearchResponse, FilterOption, FilterContext
-from .filter_aggregation_service import build_book_landing_base_query, build_author_base_query
+from .filter_aggregation_service import build_book_landing_base_query, build_author_base_query, build_landing_base_query
 
 
 # ═══════════════════ Поиск авторов ═══════════════════
@@ -136,15 +136,66 @@ def _search_authors_for_courses(
     db: Session,
     q: Optional[str],
     limit: int,
+    language: Optional[str] = None,
+    tags: Optional[List[int]] = None,
+    price_from: Optional[float] = None,
+    price_to: Optional[float] = None,
     **filters
 ) -> FilterSearchResponse:
     """
     Поиск авторов (лекторов) для каталога курсов.
-    
-    TODO: Реализовать когда будет готова логика фильтрации курсов.
     """
-    # Заглушка для будущей реализации
-    return FilterSearchResponse(total=0, options=[])
+    # Строим базовый запрос без фильтра по авторам
+    base_query = build_landing_base_query(
+        db=db,
+        language=language,
+        tags=tags,
+        author_ids=None,  # Исключаем фильтр по авторам
+        price_from=price_from,
+        price_to=price_to,
+        q=None,
+    )
+    
+    landing_ids = [lid.id for lid in base_query.with_entities(Landing.id).all()]
+    
+    if not landing_ids:
+        return FilterSearchResponse(total=0, options=[])
+    
+    # Базовый запрос для авторов
+    author_query = (
+        db.query(
+            Author.id,
+            Author.name,
+            func.count(func.distinct(Landing.id)).label('count')
+        )
+        .select_from(Author)
+        .join(landing_authors, Author.id == landing_authors.c.author_id)
+        .join(Landing, landing_authors.c.landing_id == Landing.id)
+        .filter(Landing.id.in_(landing_ids))
+    )
+    
+    # Применяем поисковый запрос
+    if q:
+        author_query = author_query.filter(Author.name.ilike(f"%{q}%"))
+    
+    # Подсчет total
+    total = author_query.with_entities(func.count(func.distinct(Author.id))).scalar() or 0
+    
+    # Группировка и получение результатов с сортировкой по популярности
+    authors_data = (
+        author_query
+        .group_by(Author.id, Author.name)
+        .order_by(func.count(func.distinct(Landing.id)).desc(), Author.name)
+        .limit(limit)
+        .all()
+    )
+    
+    options = [
+        FilterOption(id=auth_id, name=auth_name, count=count)
+        for auth_id, auth_name, count in authors_data
+    ]
+    
+    return FilterSearchResponse(total=total, options=options)
 
 
 def _search_authors_for_authors_page(
@@ -369,15 +420,66 @@ def _search_tags_for_courses(
     db: Session,
     q: Optional[str],
     limit: int,
+    language: Optional[str] = None,
+    author_ids: Optional[List[int]] = None,
+    price_from: Optional[float] = None,
+    price_to: Optional[float] = None,
     **filters
 ) -> FilterSearchResponse:
     """
     Поиск тегов для каталога курсов.
-    
-    TODO: Реализовать когда будет готова логика фильтрации курсов.
     """
-    # Заглушка для будущей реализации
-    return FilterSearchResponse(total=0, options=[])
+    # Строим базовый запрос без фильтра по тегам
+    base_query = build_landing_base_query(
+        db=db,
+        language=language,
+        tags=None,  # Исключаем фильтр по тегам
+        author_ids=author_ids,
+        price_from=price_from,
+        price_to=price_to,
+        q=None,
+    )
+    
+    landing_ids = [lid.id for lid in base_query.with_entities(Landing.id).all()]
+    
+    if not landing_ids:
+        return FilterSearchResponse(total=0, options=[])
+    
+    # Базовый запрос для тегов
+    tag_query = (
+        db.query(
+            Tag.id,
+            Tag.name,
+            func.count(func.distinct(Landing.id)).label('count')
+        )
+        .select_from(Tag)
+        .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+        .join(Landing, landing_tags.c.landing_id == Landing.id)
+        .filter(Landing.id.in_(landing_ids))
+    )
+    
+    # Применяем поисковый запрос
+    if q:
+        tag_query = tag_query.filter(Tag.name.ilike(f"%{q}%"))
+    
+    # Подсчет total
+    total = tag_query.with_entities(func.count(func.distinct(Tag.id))).scalar() or 0
+    
+    # Группировка и получение результатов с сортировкой по популярности
+    tags_data = (
+        tag_query
+        .group_by(Tag.id, Tag.name)
+        .order_by(func.count(func.distinct(Landing.id)).desc(), Tag.name)
+        .limit(limit)
+        .all()
+    )
+    
+    options = [
+        FilterOption(id=tag_id, name=tag_name, count=count)
+        for tag_id, tag_name, count in tags_data
+    ]
+    
+    return FilterSearchResponse(total=total, options=options)
 
 
 def _search_tags_for_authors_page(
