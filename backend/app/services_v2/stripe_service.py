@@ -714,6 +714,30 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 session.get("success_url")
             )
             
+            # Собираем теги для логики MEDG (plastic_surgery и др.)
+            tag_names_set: set[str] = set()
+            # Теги из лендингов
+            if landing_ids_list:
+                for lid in landing_ids_list:
+                    if lid:
+                        landing_obj = db.query(Landing).filter_by(id=lid).first()
+                        if landing_obj and hasattr(landing_obj, 'tags') and landing_obj.tags:
+                            tag_names_set.update(t.name for t in landing_obj.tags if t.name)
+            # Теги из книжных лендингов
+            if book_landing_ids_list:
+                for blid in book_landing_ids_list:
+                    bl_obj = db.query(BookLanding).filter_by(id=blid).first()
+                    if bl_obj and hasattr(bl_obj, 'tags') and bl_obj.tags:
+                        tag_names_set.update(t.name for t in bl_obj.tags if t.name)
+            # Теги из книг
+            if purchased_book_ids:
+                books_with_tags = db.query(Book).filter(Book.id.in_(list(purchased_book_ids))).all()
+                for book_obj in books_with_tags:
+                    if hasattr(book_obj, 'tags') and book_obj.tags:
+                        tag_names_set.update(t.name for t in book_obj.tags if t.name)
+            
+            logging.info("FB event tags collected: %s", list(tag_names_set))
+            
             send_facebook_events(
                 region=purchase_lang,
                 email=email,
@@ -731,6 +755,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
                 event_time=event_time,
                 event_id=session_id,  # используем ID сессии для дедупликации на стороне FB
                 event_source_url=event_source_url,
+                tag_names=list(tag_names_set),  # теги для MEDG логики
             )
             logging.info("FB Purchase sent (from_ad=True, url=%s)", event_source_url or "N/A")
         except Exception:

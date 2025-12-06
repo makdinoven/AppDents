@@ -141,13 +141,14 @@ def send_facebook_events(
     first_name: str | None = None,
     last_name: str | None = None,
     event_source_url: str | None = None,  # ← URL страницы для attribution
+    tag_names: list[str] | None = None,  # ← теги лендингов/книг для MEDG логики
 ) -> None:
     """
     Отправляет события Purchase и Donate в Facebook Conversions API.
 
-    ─ Purchase ≥ 2 USD → два глобальных, LearnWorlds и регион-специфичный пиксели
-    ─ Purchase < 2 USD → **только микропиксель**
-    ─ Donate → всегда отдельный donation-пиксель
+    Логика зависит от PROJECT_BRAND:
+    ─ DENTS: текущая логика (все существующие пиксели)
+    ─ MEDG: general_med (все покупки) + cosmetology_med (только tag.plastic_surgery)
     """
     if not event_id:
         raise ValueError("event_id is required for FB deduplication")
@@ -171,74 +172,12 @@ def send_facebook_events(
         last_name=last_name,
         event_source_url=event_source_url,
     )
-    donate_payload = _build_fb_event(
-        event_name="Donate",
-        email=email,
-        amount=amount,
-        currency=currency,
-        course_ids=course_ids,
-        book_ids=book_ids,
-        client_ip=client_ip,
-        user_agent=user_agent,
-        event_time=event_time,
-        event_id=event_id,
-        external_id=external_id,
-        fbp=fbp,
-        fbc=fbc,
-        first_name=first_name,
-        last_name=last_name,
-        event_source_url=event_source_url,
-    )
 
-    # ---------- 2. выбор Purchase-пикселей ----------
-    micro_purchase = (
-        amount < 2
-        and settings.FACEBOOK_PIXEL_ID_1_DOLLAR
-        and settings.FACEBOOK_ACCESS_TOKEN_1_DOLLAR
-    )
-
-    if micro_purchase:
-        # < 2 USD — отправляем только в микропиксель
-        pixels_purchase: list[dict] = [{
-            "id":    settings.FACEBOOK_PIXEL_ID_1_DOLLAR,
-            "token": settings.FACEBOOK_ACCESS_TOKEN_1_DOLLAR,
-        }]
-        _log.info("Using MICRO FB pixel only (amount=%.2f %s)", amount, currency.upper())
-    else:
-        # ≥ 2 USD — стандартный набор
-        pixels_purchase: list[dict] = [
-            {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
-            {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_4, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_4},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_5, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_5},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_11, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_11},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_10, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_10},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_12, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_12},
-            {"id": settings.FACEBOOK_PIXEL_ID_NEW_13, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_13},
-        ]
-
-        # ─ регион-специфичный пиксель (если сконфигурирован) ─
-        REGIONAL_PURCHASE_PIXELS: dict[str, dict] = {
-            "RU": {"id": settings.FACEBOOK_PIXEL_ID_RU, "token": settings.FACEBOOK_ACCESS_TOKEN_RU},
-            "EN": {"id": settings.FACEBOOK_PIXEL_ID_EN, "token": settings.FACEBOOK_ACCESS_TOKEN_EN},
-            "ES": {"id": settings.FACEBOOK_PIXEL_ID_ES, "token": settings.FACEBOOK_ACCESS_TOKEN_ES},
-            "IT": {"id": settings.FACEBOOK_PIXEL_ID_IT, "token": settings.FACEBOOK_ACCESS_TOKEN_IT},
-        }
-        region_key = (region or "").upper()
-        regional_pixel = REGIONAL_PURCHASE_PIXELS.get(region_key)
-        if regional_pixel and regional_pixel["id"] and regional_pixel["token"]:
-            pixels_purchase.append(regional_pixel)
-        else:
-            _log.warning("Regional FB pixel is not configured for region=%s", region_key)
-
-    # ---------- 3. Donation-пиксель ----------
-    pixel_donation = {
-        "id": settings.FACEBOOK_PIXEL_ID_DONATION,
-        "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
-    }
-
-    # ---------- 4. отправка ----------
+    # ---------- 2. отправка ----------
     def _post(pixel: dict, payload: dict, tag: str) -> None:
+        if not pixel.get("id") or not pixel.get("token"):
+            _log.warning("FB %s Pixel skipped — missing id or token", tag)
+            return
         try:
             resp = requests.post(
                 f"https://graph.facebook.com/v21.0/{pixel['id']}/events",
@@ -254,12 +193,114 @@ def send_facebook_events(
         except Exception as exc:
             _log.error("FB %s Pixel %s failed: %s", tag, pixel['id'], exc, exc_info=True)
 
-    # Purchase
-    for p in pixels_purchase:
-        _post(p, purchase_payload, "Purchase")
+    # ---------- 3. Логика по бренду ----------
+    brand = getattr(settings, "PROJECT_BRAND", "DENTS").upper().strip()
+    _log.info("FB events: brand=%s, email=%s, amount=%.2f, tags=%s", brand, email, amount, tag_names or [])
 
-    # Donate
-    _post(pixel_donation, donate_payload, "Donate")
+    if brand == "MEDG":
+        # ════════════════════════════════════════════════════════════════
+        # MED-G: два пикселя
+        # ════════════════════════════════════════════════════════════════
+        
+        # 1) general_med — все покупки с рекламы
+        pixel_general = {
+            "id": getattr(settings, "FACEBOOK_PIXEL_ID_MEDG_GENERAL", ""),
+            "token": getattr(settings, "FACEBOOK_ACCESS_TOKEN_MEDG_GENERAL", ""),
+        }
+        _post(pixel_general, purchase_payload, "MEDG-General")
+
+        # 2) cosmetology_med — только если есть тег tag.plastic_surgery
+        has_plastic_surgery = any(
+            t and "plastic_surgery" in t.lower()
+            for t in (tag_names or [])
+        )
+        if has_plastic_surgery:
+            pixel_cosmetology = {
+                "id": getattr(settings, "FACEBOOK_PIXEL_ID_MEDG_COSMETOLOGY", ""),
+                "token": getattr(settings, "FACEBOOK_ACCESS_TOKEN_MEDG_COSMETOLOGY", ""),
+            }
+            _post(pixel_cosmetology, purchase_payload, "MEDG-Cosmetology")
+            _log.info("MEDG cosmetology pixel triggered (plastic_surgery tag found)")
+        else:
+            _log.info("MEDG cosmetology pixel skipped (no plastic_surgery tag)")
+
+    else:
+        # ════════════════════════════════════════════════════════════════
+        # DENTS: текущая логика без изменений
+        # ════════════════════════════════════════════════════════════════
+        
+        donate_payload = _build_fb_event(
+            event_name="Donate",
+            email=email,
+            amount=amount,
+            currency=currency,
+            course_ids=course_ids,
+            book_ids=book_ids,
+            client_ip=client_ip,
+            user_agent=user_agent,
+            event_time=event_time,
+            event_id=event_id,
+            external_id=external_id,
+            fbp=fbp,
+            fbc=fbc,
+            first_name=first_name,
+            last_name=last_name,
+            event_source_url=event_source_url,
+        )
+
+        # выбор Purchase-пикселей
+        micro_purchase = (
+            amount < 2
+            and settings.FACEBOOK_PIXEL_ID_1_DOLLAR
+            and settings.FACEBOOK_ACCESS_TOKEN_1_DOLLAR
+        )
+
+        if micro_purchase:
+            # < 2 USD — отправляем только в микропиксель
+            pixels_purchase: list[dict] = [{
+                "id":    settings.FACEBOOK_PIXEL_ID_1_DOLLAR,
+                "token": settings.FACEBOOK_ACCESS_TOKEN_1_DOLLAR,
+            }]
+            _log.info("Using MICRO FB pixel only (amount=%.2f %s)", amount, currency.upper())
+        else:
+            # ≥ 2 USD — стандартный набор
+            pixels_purchase: list[dict] = [
+                {"id": settings.FACEBOOK_PIXEL_ID,             "token": settings.FACEBOOK_ACCESS_TOKEN},
+                {"id": settings.FACEBOOK_PIXEL_ID_LEARNWORLDS, "token": settings.FACEBOOK_ACCESS_TOKEN_LEARNWORLDS},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_4, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_4},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_5, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_5},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_11, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_11},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_10, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_10},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_12, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_12},
+                {"id": settings.FACEBOOK_PIXEL_ID_NEW_13, "token": settings.FACEBOOK_ACCESS_TOKEN_NEW_13},
+            ]
+
+            # ─ регион-специфичный пиксель (если сконфигурирован) ─
+            REGIONAL_PURCHASE_PIXELS: dict[str, dict] = {
+                "RU": {"id": settings.FACEBOOK_PIXEL_ID_RU, "token": settings.FACEBOOK_ACCESS_TOKEN_RU},
+                "EN": {"id": settings.FACEBOOK_PIXEL_ID_EN, "token": settings.FACEBOOK_ACCESS_TOKEN_EN},
+                "ES": {"id": settings.FACEBOOK_PIXEL_ID_ES, "token": settings.FACEBOOK_ACCESS_TOKEN_ES},
+                "IT": {"id": settings.FACEBOOK_PIXEL_ID_IT, "token": settings.FACEBOOK_ACCESS_TOKEN_IT},
+            }
+            region_key = (region or "").upper()
+            regional_pixel = REGIONAL_PURCHASE_PIXELS.get(region_key)
+            if regional_pixel and regional_pixel["id"] and regional_pixel["token"]:
+                pixels_purchase.append(regional_pixel)
+            else:
+                _log.warning("Regional FB pixel is not configured for region=%s", region_key)
+
+        # Donation-пиксель
+        pixel_donation = {
+            "id": settings.FACEBOOK_PIXEL_ID_DONATION,
+            "token": settings.FACEBOOK_ACCESS_TOKEN_DONATION,
+        }
+
+        # Purchase
+        for p in pixels_purchase:
+            _post(p, purchase_payload, "Purchase")
+
+        # Donate
+        _post(pixel_donation, donate_payload, "Donate")
 
 
 def _build_fb_registration_event(
