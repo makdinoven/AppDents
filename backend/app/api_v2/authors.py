@@ -5,7 +5,7 @@ from math import ceil
 from typing import List, Optional, Set, Dict
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy import text, func, cast, Numeric as SqlNumeric
+from sqlalchemy import text, func, cast, Numeric as SqlNumeric, or_
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -530,26 +530,160 @@ def author_cards_v2(
     
     lang_filter = [language.upper()] if language else None
     
-    # Строим базовый запрос с применением всех фильтров
-    base = build_author_base_query(
-        db=db,
-        language=language,
-        tags=tags,
-        courses_from=courses_from,
-        courses_to=courses_to,
-        books_from=books_from,
-        books_to=books_to,
-        q=q,
-    )
+    # Получаем отфильтрованные ID авторов (без selectinload для чистоты)
+    filter_query = db.query(Author.id)
     
-    # Для сортировки нужны подзапросы с вычисленными метриками
-    # Создаём подзапросы для popularity, price, courses_count, books_count
+    # Применяем фильтры
+    if language:
+        filter_query = filter_query.filter(Author.language == language.upper())
     
-    # Подзапрос для popularity (сумма sales_count из Landing + BookLanding)
-    popularity_landing = (
+    if q:
+        like = f"%{q.strip()}%"
+        filter_query = filter_query.filter(Author.name.ilike(like))
+    
+    # Фильтр по тегам
+    if tags:
+        filter_query = filter_query.filter(
+            or_(
+                Author.landings.any(
+                    Landing.tags.any(Tag.id.in_(tags))
+                ),
+                Author.books.any(
+                    Book.tags.any(Tag.id.in_(tags))
+                )
+            )
+        )
+    
+    # Фильтр по количеству курсов
+    if courses_from is not None or courses_to is not None:
+        courses_count_filter = (
+            db.query(
+                landing_authors.c.author_id,
+                func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
+            )
+            .select_from(landing_authors)
+            .join(Landing, landing_authors.c.landing_id == Landing.id)
+            .join(landing_course, Landing.id == landing_course.c.landing_id)
+            .filter(Landing.is_hidden.is_(False))
+            .group_by(landing_authors.c.author_id)
+            .subquery()
+        )
+        
+        filter_query = filter_query.outerjoin(
+            courses_count_filter, 
+            Author.id == courses_count_filter.c.author_id
+        )
+        
+        if courses_from is not None:
+            filter_query = filter_query.filter(
+                func.coalesce(courses_count_filter.c.courses_cnt, 0) >= courses_from
+            )
+        if courses_to is not None:
+            filter_query = filter_query.filter(
+                func.coalesce(courses_count_filter.c.courses_cnt, 0) <= courses_to
+            )
+    
+    # Фильтр по количеству книг
+    if books_from is not None or books_to is not None:
+        books_count_filter = (
+            db.query(
+                book_authors.c.author_id,
+                func.count(func.distinct(Book.id)).label('books_cnt')
+            )
+            .select_from(book_authors)
+            .join(Book, book_authors.c.book_id == Book.id)
+            .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.is_hidden.is_(False))
+            .group_by(book_authors.c.author_id)
+            .subquery()
+        )
+        
+        filter_query = filter_query.outerjoin(
+            books_count_filter,
+            Author.id == books_count_filter.c.author_id
+        )
+        
+        if books_from is not None:
+            filter_query = filter_query.filter(
+                func.coalesce(books_count_filter.c.books_cnt, 0) >= books_from
+            )
+        if books_to is not None:
+            filter_query = filter_query.filter(
+                func.coalesce(books_count_filter.c.books_cnt, 0) <= books_to
+            )
+    
+    # Подсчитываем total до применения сортировки
+    total = filter_query.distinct().count()
+    
+    # Теперь строим запрос для сортировки
+    # Используем отдельный запрос чтобы избежать конфликтов с фильтрами
+    sort_query = db.query(Author.id)
+    
+    # Применяем те же фильтры
+    if language:
+        sort_query = sort_query.filter(Author.language == language.upper())
+    if q:
+        sort_query = sort_query.filter(Author.name.ilike(f"%{q.strip()}%"))
+    if tags:
+        sort_query = sort_query.filter(
+            or_(
+                Author.landings.any(Landing.tags.any(Tag.id.in_(tags))),
+                Author.books.any(Book.tags.any(Tag.id.in_(tags)))
+            )
+        )
+    
+    # Фильтры по количеству курсов для sort_query
+    if courses_from is not None or courses_to is not None:
+        courses_count_sort = (
+            db.query(
+                landing_authors.c.author_id,
+                func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
+            )
+            .select_from(landing_authors)
+            .join(Landing, landing_authors.c.landing_id == Landing.id)
+            .join(landing_course, Landing.id == landing_course.c.landing_id)
+            .filter(Landing.is_hidden.is_(False))
+            .group_by(landing_authors.c.author_id)
+            .subquery()
+        )
+        
+        sort_query = sort_query.outerjoin(courses_count_sort, Author.id == courses_count_sort.c.author_id)
+        
+        if courses_from is not None:
+            sort_query = sort_query.filter(func.coalesce(courses_count_sort.c.courses_cnt, 0) >= courses_from)
+        if courses_to is not None:
+            sort_query = sort_query.filter(func.coalesce(courses_count_sort.c.courses_cnt, 0) <= courses_to)
+    
+    # Фильтры по количеству книг для sort_query
+    if books_from is not None or books_to is not None:
+        books_count_sort = (
+            db.query(
+                book_authors.c.author_id,
+                func.count(func.distinct(Book.id)).label('books_cnt')
+            )
+            .select_from(book_authors)
+            .join(Book, book_authors.c.book_id == Book.id)
+            .join(book_landing_books, Book.id == book_landing_books.c.book_id)
+            .join(BookLanding, book_landing_books.c.book_landing_id == BookLanding.id)
+            .filter(BookLanding.is_hidden.is_(False))
+            .group_by(book_authors.c.author_id)
+            .subquery()
+        )
+        
+        sort_query = sort_query.outerjoin(books_count_sort, Author.id == books_count_sort.c.author_id)
+        
+        if books_from is not None:
+            sort_query = sort_query.filter(func.coalesce(books_count_sort.c.books_cnt, 0) >= books_from)
+        if books_to is not None:
+            sort_query = sort_query.filter(func.coalesce(books_count_sort.c.books_cnt, 0) <= books_to)
+    
+    # Подзапросы для сортировки
+    # Популярность из курсовых лендингов
+    popularity_landing_subq = (
         db.query(
             landing_authors.c.author_id,
-            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0).label('landing_popularity')
+            func.coalesce(func.sum(func.coalesce(Landing.sales_count, 0)), 0).label('landing_pop')
         )
         .select_from(landing_authors)
         .join(Landing, landing_authors.c.landing_id == Landing.id)
@@ -558,10 +692,11 @@ def author_cards_v2(
         .subquery()
     )
     
-    popularity_book = (
+    # Популярность из книжных лендингов
+    popularity_book_subq = (
         db.query(
             book_authors.c.author_id,
-            func.coalesce(func.sum(func.coalesce(BookLanding.sales_count, 0)), 0).label('book_popularity')
+            func.coalesce(func.sum(func.coalesce(BookLanding.sales_count, 0)), 0).label('book_pop')
         )
         .select_from(book_authors)
         .join(Book, book_authors.c.book_id == Book.id)
@@ -572,8 +707,7 @@ def author_cards_v2(
         .subquery()
     )
     
-    # Подзапрос для courses_count
-    courses_count_subq = (
+    courses_subq = (
         db.query(
             landing_authors.c.author_id,
             func.count(func.distinct(landing_course.c.course_id)).label('courses_cnt')
@@ -586,8 +720,7 @@ def author_cards_v2(
         .subquery()
     )
     
-    # Подзапрос для books_count
-    books_count_subq = (
+    books_subq = (
         db.query(
             book_authors.c.author_id,
             func.count(func.distinct(Book.id)).label('books_cnt')
@@ -601,10 +734,7 @@ def author_cards_v2(
         .subquery()
     )
     
-    # Подзапрос для min_price (сумма минимальных цен курсов + книг)
-    # Это сложнее - нужно агрегировать минимальные цены по курсам и книгам
-    # Для упрощения используем среднюю/минимальную цену лендингов
-    min_course_price_subq = (
+    price_courses_subq = (
         db.query(
             landing_authors.c.author_id,
             func.coalesce(func.sum(cast(Landing.new_price, SqlNumeric(10, 2))), 0).label('courses_price')
@@ -617,7 +747,7 @@ def author_cards_v2(
         .subquery()
     )
     
-    min_book_price_subq = (
+    price_books_subq = (
         db.query(
             book_authors.c.author_id,
             func.coalesce(func.sum(cast(BookLanding.new_price, SqlNumeric(10, 2))), 0).label('books_price')
@@ -633,110 +763,88 @@ def author_cards_v2(
     )
     
     # Применяем сортировку
-    if sort == "popular_desc":
-        base = (
-            base
-            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
-            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
+    if sort == "popular_desc" or sort is None:
+        sort_query = (
+            sort_query
+            .outerjoin(popularity_landing_subq, Author.id == popularity_landing_subq.c.author_id)
+            .outerjoin(popularity_book_subq, Author.id == popularity_book_subq.c.author_id)
             .order_by(
-                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
-                 func.coalesce(popularity_book.c.book_popularity, 0)).desc(),
+                (func.coalesce(popularity_landing_subq.c.landing_pop, 0) + 
+                 func.coalesce(popularity_book_subq.c.book_pop, 0)).desc(),
                 Author.id.desc()
             )
         )
     elif sort == "popular_asc":
-        base = (
-            base
-            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
-            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
+        sort_query = (
+            sort_query
+            .outerjoin(popularity_landing_subq, Author.id == popularity_landing_subq.c.author_id)
+            .outerjoin(popularity_book_subq, Author.id == popularity_book_subq.c.author_id)
             .order_by(
-                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
-                 func.coalesce(popularity_book.c.book_popularity, 0)).asc(),
+                (func.coalesce(popularity_landing_subq.c.landing_pop, 0) + 
+                 func.coalesce(popularity_book_subq.c.book_pop, 0)).asc(),
                 Author.id.asc()
             )
         )
     elif sort == "price_asc":
-        base = (
-            base
-            .outerjoin(min_course_price_subq, Author.id == min_course_price_subq.c.author_id)
-            .outerjoin(min_book_price_subq, Author.id == min_book_price_subq.c.author_id)
+        sort_query = (
+            sort_query
+            .outerjoin(price_courses_subq, Author.id == price_courses_subq.c.author_id)
+            .outerjoin(price_books_subq, Author.id == price_books_subq.c.author_id)
             .order_by(
-                (func.coalesce(min_course_price_subq.c.courses_price, 0) + 
-                 func.coalesce(min_book_price_subq.c.books_price, 0)).asc(),
+                (func.coalesce(price_courses_subq.c.courses_price, 0) + 
+                 func.coalesce(price_books_subq.c.books_price, 0)).asc(),
                 Author.id.asc()
             )
         )
     elif sort == "price_desc":
-        base = (
-            base
-            .outerjoin(min_course_price_subq, Author.id == min_course_price_subq.c.author_id)
-            .outerjoin(min_book_price_subq, Author.id == min_book_price_subq.c.author_id)
+        sort_query = (
+            sort_query
+            .outerjoin(price_courses_subq, Author.id == price_courses_subq.c.author_id)
+            .outerjoin(price_books_subq, Author.id == price_books_subq.c.author_id)
             .order_by(
-                (func.coalesce(min_course_price_subq.c.courses_price, 0) + 
-                 func.coalesce(min_book_price_subq.c.books_price, 0)).desc(),
+                (func.coalesce(price_courses_subq.c.courses_price, 0) + 
+                 func.coalesce(price_books_subq.c.books_price, 0)).desc(),
                 Author.id.desc()
             )
         )
     elif sort == "courses_desc":
-        base = (
-            base
-            .outerjoin(courses_count_subq, Author.id == courses_count_subq.c.author_id)
-            .order_by(
-                func.coalesce(courses_count_subq.c.courses_cnt, 0).desc(),
-                Author.id.desc()
-            )
+        sort_query = (
+            sort_query
+            .outerjoin(courses_subq, Author.id == courses_subq.c.author_id)
+            .order_by(func.coalesce(courses_subq.c.courses_cnt, 0).desc(), Author.id.desc())
         )
     elif sort == "courses_asc":
-        base = (
-            base
-            .outerjoin(courses_count_subq, Author.id == courses_count_subq.c.author_id)
-            .order_by(
-                func.coalesce(courses_count_subq.c.courses_cnt, 0).asc(),
-                Author.id.asc()
-            )
+        sort_query = (
+            sort_query
+            .outerjoin(courses_subq, Author.id == courses_subq.c.author_id)
+            .order_by(func.coalesce(courses_subq.c.courses_cnt, 0).asc(), Author.id.asc())
         )
     elif sort == "books_desc":
-        base = (
-            base
-            .outerjoin(books_count_subq, Author.id == books_count_subq.c.author_id)
-            .order_by(
-                func.coalesce(books_count_subq.c.books_cnt, 0).desc(),
-                Author.id.desc()
-            )
+        sort_query = (
+            sort_query
+            .outerjoin(books_subq, Author.id == books_subq.c.author_id)
+            .order_by(func.coalesce(books_subq.c.books_cnt, 0).desc(), Author.id.desc())
         )
     elif sort == "books_asc":
-        base = (
-            base
-            .outerjoin(books_count_subq, Author.id == books_count_subq.c.author_id)
-            .order_by(
-                func.coalesce(books_count_subq.c.books_cnt, 0).asc(),
-                Author.id.asc()
-            )
+        sort_query = (
+            sort_query
+            .outerjoin(books_subq, Author.id == books_subq.c.author_id)
+            .order_by(func.coalesce(books_subq.c.books_cnt, 0).asc(), Author.id.asc())
         )
     elif sort == "name_asc":
-        base = base.order_by(Author.name.asc(), Author.id.asc())
+        sort_query = sort_query.order_by(Author.name.asc(), Author.id.asc())
     elif sort == "name_desc":
-        base = base.order_by(Author.name.desc(), Author.id.desc())
-    else:
-        # Дефолтная сортировка - по популярности
-        base = (
-            base
-            .outerjoin(popularity_landing, Author.id == popularity_landing.c.author_id)
-            .outerjoin(popularity_book, Author.id == popularity_book.c.author_id)
-            .order_by(
-                (func.coalesce(popularity_landing.c.landing_popularity, 0) + 
-                 func.coalesce(popularity_book.c.book_popularity, 0)).desc(),
-                Author.id.desc()
-            )
-        )
+        sort_query = sort_query.order_by(Author.name.desc(), Author.id.desc())
     
-    # Подсчитываем total
-    total = base.order_by(None).with_entities(func.count(func.distinct(Author.id))).scalar() or 0
+    # Получаем отсортированные ID с пагинацией
+    author_ids = [
+        aid for (aid,) in 
+        sort_query.distinct().offset((page - 1) * size).limit(size).all()
+    ]
     
     # Получаем метаданные фильтров, если запрошено
     filters_metadata = None
     if include_filters:
-        # Для агрегации строим запрос заново без подзапросов сортировки
         base_for_filters = build_author_base_query(
             db=db,
             language=language,
@@ -753,13 +861,6 @@ def author_cards_v2(
             current_filters=current_filters
         )
     
-    # Применяем пагинацию и получаем авторов
-    # Нужно distinct чтобы избежать дубликатов из-за join-ов
-    author_ids = [
-        aid for (aid,) in 
-        base.with_entities(Author.id).distinct().offset((page - 1) * size).limit(size).all()
-    ]
-    
     # Загружаем авторов с необходимыми связями
     authors = (
         db.query(Author)
@@ -771,7 +872,7 @@ def author_cards_v2(
         )
         .filter(Author.id.in_(author_ids))
         .all()
-    )
+    ) if author_ids else []
     
     # Сохраняем порядок из запроса
     authors_by_id = {a.id: a for a in authors}
