@@ -5,7 +5,7 @@ from math import ceil
 from typing import List, Optional, Set, Dict
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy import text, func
+from sqlalchemy import text, func, cast, Numeric as SqlNumeric
 from sqlalchemy.orm import Session, selectinload
 
 from ..db.database import get_db
@@ -607,7 +607,7 @@ def author_cards_v2(
     min_course_price_subq = (
         db.query(
             landing_authors.c.author_id,
-            func.coalesce(func.sum(func.cast(Landing.new_price, func.decimal(10, 2))), 0).label('courses_price')
+            func.coalesce(func.sum(cast(Landing.new_price, SqlNumeric(10, 2))), 0).label('courses_price')
         )
         .select_from(landing_authors)
         .join(Landing, landing_authors.c.landing_id == Landing.id)
@@ -620,7 +620,7 @@ def author_cards_v2(
     min_book_price_subq = (
         db.query(
             book_authors.c.author_id,
-            func.coalesce(func.sum(func.cast(BookLanding.new_price, func.decimal(10, 2))), 0).label('books_price')
+            func.coalesce(func.sum(cast(BookLanding.new_price, SqlNumeric(10, 2))), 0).label('books_price')
         )
         .select_from(book_authors)
         .join(Book, book_authors.c.book_id == Book.id)
