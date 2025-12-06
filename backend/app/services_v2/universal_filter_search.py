@@ -140,6 +140,8 @@ def _search_authors_for_courses(
     tags: Optional[List[int]] = None,
     price_from: Optional[float] = None,
     price_to: Optional[float] = None,
+    lessons_from: Optional[int] = None,
+    lessons_to: Optional[int] = None,
     **filters
 ) -> FilterSearchResponse:
     """
@@ -153,6 +155,8 @@ def _search_authors_for_courses(
         author_ids=None,  # Исключаем фильтр по авторам
         price_from=price_from,
         price_to=price_to,
+        lessons_from=lessons_from,
+        lessons_to=lessons_to,
         q=None,
     )
     
@@ -424,6 +428,8 @@ def _search_tags_for_courses(
     author_ids: Optional[List[int]] = None,
     price_from: Optional[float] = None,
     price_to: Optional[float] = None,
+    lessons_from: Optional[int] = None,
+    lessons_to: Optional[int] = None,
     **filters
 ) -> FilterSearchResponse:
     """
@@ -437,6 +443,8 @@ def _search_tags_for_courses(
         author_ids=author_ids,
         price_from=price_from,
         price_to=price_to,
+        lessons_from=lessons_from,
+        lessons_to=lessons_to,
         q=None,
     )
     

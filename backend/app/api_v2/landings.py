@@ -659,6 +659,16 @@ def landing_cards_v2(
         ge=0,
         description="Цена до (new_price)"
     ),
+    lessons_from: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Количество уроков от (сумма уроков всех курсов лендинга)"
+    ),
+    lessons_to: Optional[int] = Query(
+        None,
+        ge=0,
+        description="Количество уроков до (сумма уроков всех курсов лендинга)"
+    ),
     q: Optional[str] = Query(
         None,
         min_length=1,
@@ -741,6 +751,8 @@ def landing_cards_v2(
                 'author_ids': author_ids,
                 'price_from': price_from,
                 'price_to': price_to,
+                'lessons_from': lessons_from,
+                'lessons_to': lessons_to,
                 'q': q,
             }
             base = build_landing_base_query(
@@ -750,6 +762,8 @@ def landing_cards_v2(
                 author_ids=author_ids,
                 price_from=price_from,
                 price_to=price_to,
+                lessons_from=lessons_from,
+                lessons_to=lessons_to,
                 q=q,
             )
             filters_metadata = aggregate_landing_filters(
@@ -775,6 +789,8 @@ def landing_cards_v2(
         'author_ids': author_ids,
         'price_from': price_from,
         'price_to': price_to,
+        'lessons_from': lessons_from,
+        'lessons_to': lessons_to,
         'q': q,
     }
     
@@ -786,6 +802,8 @@ def landing_cards_v2(
         author_ids=author_ids,
         price_from=price_from,
         price_to=price_to,
+        lessons_from=lessons_from,
+        lessons_to=lessons_to,
         q=q,
     )
     

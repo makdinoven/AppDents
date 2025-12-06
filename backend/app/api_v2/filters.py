@@ -78,7 +78,8 @@ def search_authors_endpoint(
     pages_from: Optional[int] = Query(None, ge=0, description="[books] Страниц от"),
     pages_to: Optional[int] = Query(None, ge=0, description="[books] Страниц до"),
     # Фильтры для контекста "courses"
-    # author_ids: используется только в tags search, не здесь
+    lessons_from: Optional[int] = Query(None, ge=0, description="[courses] Уроков от"),
+    lessons_to: Optional[int] = Query(None, ge=0, description="[courses] Уроков до"),
     db: Session = Depends(get_db),
 ):
     """
@@ -100,6 +101,8 @@ def search_authors_endpoint(
         price_to=price_to,
         pages_from=pages_from,
         pages_to=pages_to,
+        lessons_from=lessons_from,
+        lessons_to=lessons_to,
     )
 
 
@@ -212,6 +215,9 @@ def search_tags_endpoint(
     price_to: Optional[Decimal] = Query(None, ge=0, description="[books] Цена до"),
     pages_from: Optional[int] = Query(None, ge=0, description="[books] Страниц от"),
     pages_to: Optional[int] = Query(None, ge=0, description="[books] Страниц до"),
+    # Фильтры для контекста "courses"
+    lessons_from: Optional[int] = Query(None, ge=0, description="[courses] Уроков от"),
+    lessons_to: Optional[int] = Query(None, ge=0, description="[courses] Уроков до"),
     # Фильтры для контекста "authors"
     courses_from: Optional[int] = Query(None, ge=0, description="[authors] Мин. курсов"),
     courses_to: Optional[int] = Query(None, ge=0, description="[authors] Макс. курсов"),
@@ -238,6 +244,9 @@ def search_tags_endpoint(
         price_to=price_to,
         pages_from=pages_from,
         pages_to=pages_to,
+        # Фильтры для courses
+        lessons_from=lessons_from,
+        lessons_to=lessons_to,
         # Фильтры для authors
         courses_from=courses_from,
         courses_to=courses_to,

@@ -1443,6 +1443,8 @@ def build_landing_base_query(
     author_ids: Optional[List[int]] = None,
     price_from: Optional[float] = None,
     price_to: Optional[float] = None,
+    lessons_from: Optional[int] = None,
+    lessons_to: Optional[int] = None,
     q: Optional[str] = None,
 ) -> Query:
     """
@@ -1497,7 +1499,96 @@ def build_landing_base_query(
             cast(Landing.new_price, SqlNumeric(10, 2)) <= price_to
         )
     
+    # Фильтр по количеству уроков
+    # Уроки считаются из JSON поля sections связанных курсов
+    if lessons_from is not None or lessons_to is not None:
+        # Получаем ID лендингов, соответствующих фильтру по урокам
+        landing_ids_with_lessons = _get_landing_ids_by_lessons_count(
+            db, lessons_from, lessons_to
+        )
+        if landing_ids_with_lessons is not None:
+            base = base.filter(Landing.id.in_(landing_ids_with_lessons))
+    
     return base
+
+
+def _get_landing_ids_by_lessons_count(
+    db: Session,
+    lessons_from: Optional[int],
+    lessons_to: Optional[int],
+) -> Optional[List[int]]:
+    """
+    Возвращает список ID лендингов, у которых сумма уроков попадает в диапазон.
+    
+    Уроки считаются из JSON поля sections всех связанных курсов.
+    """
+    if lessons_from is None and lessons_to is None:
+        return None
+    
+    # Получаем все видимые лендинги с их курсами
+    landings_data = (
+        db.query(Landing.id, Course.sections)
+        .join(landing_course, Landing.id == landing_course.c.landing_id)
+        .join(Course, landing_course.c.course_id == Course.id)
+        .filter(Landing.is_hidden.is_(False))
+        .all()
+    )
+    
+    # Группируем по landing_id и считаем уроки
+    from collections import defaultdict
+    landing_lessons: Dict[int, int] = defaultdict(int)
+    
+    for landing_id, sections in landings_data:
+        lessons_count = count_lessons_from_sections(sections)
+        landing_lessons[landing_id] += lessons_count
+    
+    # Фильтруем по диапазону
+    result_ids = []
+    for landing_id, total_lessons in landing_lessons.items():
+        if lessons_from is not None and total_lessons < lessons_from:
+            continue
+        if lessons_to is not None and total_lessons > lessons_to:
+            continue
+        result_ids.append(landing_id)
+    
+    return result_ids
+
+
+def _calculate_lessons_range(db: Session) -> Dict[str, Optional[int]]:
+    """
+    Подсчитывает диапазон количества уроков для всех видимых лендингов.
+    
+    Возвращает: {'min': N, 'max': M}
+    """
+    from collections import defaultdict
+    
+    # Получаем все видимые лендинги с их курсами
+    landings_data = (
+        db.query(Landing.id, Course.sections)
+        .join(landing_course, Landing.id == landing_course.c.landing_id)
+        .join(Course, landing_course.c.course_id == Course.id)
+        .filter(Landing.is_hidden.is_(False))
+        .all()
+    )
+    
+    if not landings_data:
+        return {'min': None, 'max': None}
+    
+    # Группируем по landing_id и считаем уроки
+    landing_lessons: Dict[int, int] = defaultdict(int)
+    
+    for landing_id, sections in landings_data:
+        lessons_count = count_lessons_from_sections(sections)
+        landing_lessons[landing_id] += lessons_count
+    
+    if not landing_lessons:
+        return {'min': None, 'max': None}
+    
+    lessons_counts = list(landing_lessons.values())
+    return {
+        'min': min(lessons_counts),
+        'max': max(lessons_counts)
+    }
 
 
 def aggregate_landing_filters(
@@ -1535,6 +1626,8 @@ def aggregate_landing_filters(
         author_ids=None,  # Исключаем этот фильтр
         price_from=current_filters.get('price_from'),
         price_to=current_filters.get('price_to'),
+        lessons_from=current_filters.get('lessons_from'),
+        lessons_to=current_filters.get('lessons_to'),
         q=current_filters.get('q'),
     )
     
@@ -1653,6 +1746,8 @@ def aggregate_landing_filters(
         author_ids=current_filters.get('author_ids'),
         price_from=current_filters.get('price_from'),
         price_to=current_filters.get('price_to'),
+        lessons_from=current_filters.get('lessons_from'),
+        lessons_to=current_filters.get('lessons_to'),
         q=current_filters.get('q'),
     )
     
@@ -1791,8 +1886,30 @@ def aggregate_landing_filters(
             value_to=float(price_to_val) if price_to_val is not None else None
         )
     
+    # ═══════════════════ Lessons Range ═══════════════════
+    # Подсчитываем диапазон количества уроков из JSON sections курсов
+    lessons_range_data = _calculate_lessons_range(db)
+    
+    if lessons_range_data and lessons_range_data['min'] is not None and lessons_range_data['max'] is not None:
+        filters['lessons'] = RangeFilter(
+            label="Количество уроков",
+            param_name_from="lessons_from",
+            param_name_to="lessons_to",
+            min=lessons_range_data['min'],
+            max=lessons_range_data['max'],
+            unit="lessons"
+        )
+    
+    lessons_from_val = current_filters.get('lessons_from')
+    lessons_to_val = current_filters.get('lessons_to')
+    if lessons_from_val is not None or lessons_to_val is not None:
+        selected.lessons = SelectedRangeValues(
+            value_from=int(lessons_from_val) if lessons_from_val is not None else None,
+            value_to=int(lessons_to_val) if lessons_to_val is not None else None
+        )
+    
     # Проверяем, есть ли хотя бы один выбранный фильтр
-    has_selected = any([selected.authors, selected.tags, selected.price])
+    has_selected = any([selected.authors, selected.tags, selected.price, selected.lessons])
     
     return CatalogFiltersMetadata(
         filters=filters,

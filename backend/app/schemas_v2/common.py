@@ -163,6 +163,7 @@ class SelectedFilters(BaseModel):
     year: Optional[SelectedRangeValues] = None
     price: Optional[SelectedRangeValues] = None
     pages: Optional[SelectedRangeValues] = None
+    lessons: Optional[SelectedRangeValues] = None
 
 
 class CatalogFiltersMetadata(BaseModel):
