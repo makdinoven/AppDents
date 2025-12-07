@@ -543,6 +543,7 @@
     "filters": "Filters",
     "resetAll": "Reset all",
     "allFilters": "All filters",
+    "selectedFilters": "Filters: {{count}}",
     "showItems_one": "Show {{count}} item",
     "showItems_other": "Show {{count}} items",
     "showItems_zero": "No items",

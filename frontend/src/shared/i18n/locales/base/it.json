@@ -499,6 +499,7 @@
     "filters": "Filtri",
     "resetAll": "Reimposta tutto",
     "allFilters": "Tutti i filtri",
+    "selectedFilters": "Filtri: {{count}}",
     "showItems_one": "Mostra {{count}} elemento",
     "showItems_other": "Mostra {{count}} elementi",
     "showItems_zero": "Nessun elemento",

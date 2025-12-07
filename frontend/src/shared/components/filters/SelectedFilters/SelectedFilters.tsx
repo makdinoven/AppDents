@@ -105,7 +105,6 @@ const SelectedFilters = ({ selected, reset, loading = false }: Props) => {
           <Chevron className={s.scroll_icon_right} />
         </button>
       </div>
-
       <div
         className={s.selected_filters_measure}
         ref={measureRef}

@@ -489,6 +489,7 @@
 
   "filters": {
     "filters": "Filtros",
+    "selectedFilters": "Filtros: {{count}}",
     "resetAll": "Redefinir tudo",
     "allFilters": "Todos os filtros",
     "showItems_one": "Mostrar {{count}} item",

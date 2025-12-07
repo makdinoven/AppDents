@@ -35,7 +35,6 @@ const MultiSelectFilter = ({ filter, params, actions }: Props) => {
   const getOptions = async (q: string) => {
     setLoading(true);
     try {
-      console.log(filter.endpoint);
       const res = await axios.get(`${BASE_URL}${filter.endpoint}`, {
         params: { q, language },
       });
@@ -90,7 +89,7 @@ const MultiSelectFilter = ({ filter, params, actions }: Props) => {
       <div className={`${s.filter_options} ${loading ? s.loading : ""}`}>
         {loading && <LoaderOverlay />}
 
-        {visibleOptions.length === 0 && hasSearch && !loading && (
+        {visibleOptions.length === 0 && hasSearch && (
           <span className={s.nothing_found}>
             <Trans i18nKey={"nothingFound"} />
           </span>

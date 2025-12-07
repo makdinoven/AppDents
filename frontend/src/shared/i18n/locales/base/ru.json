@@ -503,6 +503,7 @@
     "filters": "Фильтры",
     "resetAll": "Сбросить всё",
     "allFilters": "Все фильтры",
+    "selectedFilters": "Фильтров: {{count}}",
     "showItems_zero": "Нет элементов",
     "showItems_one": "Показать {{count}} элемент",
     "showItems_few": "Показать {{count}} элемента",

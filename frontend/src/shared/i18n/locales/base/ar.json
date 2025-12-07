@@ -518,6 +518,7 @@
     "filters": "الفلاتر",
     "resetAll": "إعادة تعيين الكل",
     "allFilters": "جميع الفلاتر",
+    "selectedFilters": "الفلاتر: {{count}}",
     "showItems_zero": "لا توجد عناصر",
     "showItems_one": "عرض عنصر واحد",
     "showItems_two": "عرض عنصرين",

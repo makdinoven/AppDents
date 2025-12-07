@@ -79,23 +79,30 @@ const FiltersPanel = ({
         />
       </div>
 
-      {totalItems > 0 && (
-        <div className={s.found_items_section}>
-          <FilterChip
-            className={`${s.reset_chip} ${selectedFilters && selectedFilters?.length > 0 ? "" : s.hidden}`}
-            variant={"selectedFilter"}
-            onClick={actions.resetAll}
-            text={
-              ""
-              // t("filters.resetAll")
-            }
-            iconLeft={<ArrowX />}
+      <div className={s.found_items_section}>
+        <FilterChip
+          className={`${s.reset_chip} ${selectedFilters && selectedFilters?.length > 0 ? "" : s.hidden}`}
+          variant={"selectedFilter"}
+          onClick={actions.resetAll}
+          text={
+            ""
+            // t("filters.resetAll")
+          }
+          iconLeft={<ArrowX />}
+        />
+        <p
+          className={`${selectedFilters && selectedFilters?.length > 0 ? "" : s.hidden}`}
+        >
+          <Trans
+            i18nKey={t("filters.selectedFilters", {
+              count: selectedFilters?.length,
+            })}
           />
-          <p>
-            <Trans i18nKey={t("filters.itemsFound", { count: totalItems })} />
-          </p>
-        </div>
-      )}
+        </p>
+        <p className={s.elements_found}>
+          <Trans i18nKey={t("filters.itemsFound", { count: totalItems })} />
+        </p>
+      </div>
 
       <SelectedFilters
         selected={selectedFilters}
