@@ -1633,11 +1633,25 @@ def aggregate_landing_filters(
     
     author_landing_ids = [lid.id for lid in query_without_authors.with_entities(Landing.id).all()]
     
-    # Подсчет общего количества всех авторов
-    total_authors = db.query(func.count(Author.id)).scalar() or 0
+    # Получаем текущий язык для фильтрации авторов
+    current_language = current_filters.get('language')
     
-    # Топ-N авторов по ОБЩЕМУ количеству лендингов (без фильтров)
-    top_authors_subq = (
+    # Подсчет общего количества авторов (с учётом языка, если указан)
+    if current_language:
+        total_authors = (
+            db.query(func.count(func.distinct(Author.id)))
+            .select_from(Author)
+            .join(landing_authors, Author.id == landing_authors.c.author_id)
+            .join(Landing, landing_authors.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
+            .filter(Landing.language == current_language)
+            .scalar()
+        ) or 0
+    else:
+        total_authors = db.query(func.count(Author.id)).scalar() or 0
+    
+    # Топ-N авторов по количеству лендингов (с учётом языка, если указан)
+    top_authors_query = (
         db.query(
             Author.id.label('author_id'),
             func.count(func.distinct(Landing.id)).label('total_cnt')
@@ -1646,6 +1660,14 @@ def aggregate_landing_filters(
         .join(landing_authors, Author.id == landing_authors.c.author_id)
         .join(Landing, landing_authors.c.landing_id == Landing.id)
         .filter(Landing.is_hidden.is_(False))
+    )
+    
+    # Фильтруем по языку, если указан
+    if current_language:
+        top_authors_query = top_authors_query.filter(Landing.language == current_language)
+    
+    top_authors_subq = (
+        top_authors_query
         .group_by(Author.id)
         .order_by(func.count(func.distinct(Landing.id)).desc())
         .limit(filter_limit)
