@@ -9,11 +9,13 @@ import {
   REF_CODE_LS_KEY,
   REF_CODE_PARAM,
 } from "../../../shared/common/helpers/commonConstants.ts";
+import { useTranslation } from "react-i18next";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const dispatch = useDispatch<AppDispatchType>();
   const language = useSelector((state: any) => state.user.language);
   const isLogged = useSelector((state: any) => state.user.isLogged);
+  const { i18n } = useTranslation();
 
   useEffect(() => {
     dispatch(getMe());
@@ -34,5 +36,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isLogged]);
 
-  return <div lang={language.toLowerCase()}>{children}</div>;
+  return (
+    <div key={i18n.language} lang={i18n.language.toLowerCase()}>
+      {children}
+    </div>
+  );
 };
