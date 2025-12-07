@@ -23,7 +23,10 @@ import { Trans } from "react-i18next";
 import ArrowButton from "../../shared/components/ui/ArrowButton/ArrowButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
-import { PAGE_SOURCES } from "../../shared/common/helpers/commonConstants.ts";
+import {
+  BRAND,
+  PAGE_SOURCES,
+} from "../../shared/common/helpers/commonConstants.ts";
 import { setLanguage } from "../../shared/store/slices/userSlice.ts";
 import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
 import FormattedAuthorsDesc from "../../shared/common/helpers/FormattedAuthorsDesc.tsx";
@@ -33,9 +36,11 @@ import Faq from "./modules/Faq/Faq.tsx";
 import { getCourses } from "../../shared/store/actions/userActions.ts";
 import VideoSection from "./modules/VideoSection/VideoSection.tsx";
 import {
+  initAllMedgPixel,
   initFacebookPixel,
   initLanguagePixel,
   initLowPricePixel,
+  initPlasticSurgeryMedgPixel,
   trackLowPricePageView,
   trackPageView,
 } from "../../shared/common/helpers/facebookPixel.ts";
@@ -109,8 +114,18 @@ const Landing = () => {
   useEffect(() => {
     if (isPromotionLanding) {
       if (landing) {
-        initLanguagePixel(landing.language);
-        initFacebookPixel();
+        if (BRAND === "dents") {
+          initLanguagePixel(landing.language);
+          initFacebookPixel();
+        } else {
+          initAllMedgPixel();
+          if (
+            landing.tags.some((tag: any) => tag.name === "tag.plastic_surgery")
+          ) {
+            initPlasticSurgeryMedgPixel();
+          }
+        }
+        trackPageView();
       }
     }
   }, [landing, isPromotionLanding]);

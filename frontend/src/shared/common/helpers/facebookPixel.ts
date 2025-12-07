@@ -17,6 +17,9 @@ const pixelIds = [
   "820558327809579",
 ];
 
+const allMedgPixelId = "1129542362339306";
+const plasticSurgeryMedgPixelId = "1541852520494208";
+
 const languagePixelIds: Record<string, string> = {
   IT: "722350576947991",
   RU: "1250960943261191",
@@ -39,6 +42,8 @@ export const initFacebookPixel = () => {
 const lowPricePixelId = "1298218948485625";
 
 let lowPricePixelInitialized = false;
+let allMedgPixelInitialized = false;
+let plasticSurgeryMedgPixelInitialized = false;
 
 export const initLowPricePixel = () => {
   if (!lowPricePixelInitialized) {
@@ -65,4 +70,18 @@ export const initLanguagePixel = (lang: string) => {
 
 export const trackPageView = () => {
   ReactPixel.pageView();
+};
+
+export const initAllMedgPixel = () => {
+  if (!allMedgPixelInitialized) {
+    ReactPixel.init(allMedgPixelId, undefined, options);
+    allMedgPixelInitialized = true;
+  }
+};
+
+export const initPlasticSurgeryMedgPixel = () => {
+  if (!plasticSurgeryMedgPixelInitialized) {
+    ReactPixel.init(plasticSurgeryMedgPixelId, undefined, options);
+    plasticSurgeryMedgPixelInitialized = true;
+  }
 };

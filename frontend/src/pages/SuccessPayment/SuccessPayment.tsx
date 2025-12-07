@@ -8,9 +8,16 @@ import { AppDispatchType } from "../../shared/store/store.ts";
 import { setLanguage } from "../../shared/store/slices/userSlice.ts";
 import { PATHS } from "../../app/routes/routes.ts";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
-import { LS_TOKEN_KEY } from "../../shared/common/helpers/commonConstants.ts";
+import {
+  BRAND,
+  LS_TOKEN_KEY,
+} from "../../shared/common/helpers/commonConstants.ts";
 import { getMe } from "../../shared/store/actions/userActions.ts";
 import Loader from "../../shared/components/ui/Loader/Loader.tsx";
+import {
+  initAllMedgPixel,
+  initFacebookPixel,
+} from "../../shared/common/helpers/facebookPixel.ts";
 
 const SuccessPayment = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -22,6 +29,17 @@ const SuccessPayment = () => {
   useEffect(() => {
     if (region) {
       dispatch(setLanguage(region));
+    }
+
+    if (BRAND === "dents") {
+      initFacebookPixel();
+    } else {
+      initAllMedgPixel();
+      // if (
+      //     landing.tags.some((tag: any) => tag.name === tag.plastic_surgery)
+      // ) {
+      //   initPlasticSurgeryMedgPixel();
+      // }
     }
 
     if (sessionId) {
