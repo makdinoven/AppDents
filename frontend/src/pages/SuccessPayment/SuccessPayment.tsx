@@ -17,6 +17,7 @@ import Loader from "../../shared/components/ui/Loader/Loader.tsx";
 import {
   initAllMedgPixel,
   initFacebookPixel,
+  initPlasticSurgeryMedgPixel,
 } from "../../shared/common/helpers/facebookPixel.ts";
 
 const SuccessPayment = () => {
@@ -29,17 +30,6 @@ const SuccessPayment = () => {
   useEffect(() => {
     if (region) {
       dispatch(setLanguage(region));
-    }
-
-    if (BRAND === "dents") {
-      initFacebookPixel();
-    } else {
-      initAllMedgPixel();
-      // if (
-      //     landing.tags.some((tag: any) => tag.name === tag.plastic_surgery)
-      // ) {
-      //   initPlasticSurgeryMedgPixel();
-      // }
     }
 
     if (sessionId) {
@@ -57,6 +47,15 @@ const SuccessPayment = () => {
       });
 
       const { purchase_data } = res.data;
+
+      if (BRAND === "dents") {
+        initFacebookPixel();
+      } else {
+        initAllMedgPixel();
+        if (purchase_data.tags.includes("tag.plastic_surgery")) {
+          initPlasticSurgeryMedgPixel();
+        }
+      }
 
       if (purchase_data && purchase_data.amount > 0) {
         try {
