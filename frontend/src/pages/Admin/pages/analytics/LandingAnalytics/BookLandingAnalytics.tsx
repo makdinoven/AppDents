@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
 import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatIsoToLocalDatetime,
   getFormattedDate,
@@ -36,6 +36,8 @@ const BookLandingAnalytics = () => {
     totals: { all: any; range: any };
     periods: { start: string; end: string }[];
   } | null>(null);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+
   const {
     dateRange,
     handleStartDateChange,
@@ -77,6 +79,7 @@ const BookLandingAnalytics = () => {
         ),
       });
       setLoading(false);
+      setSelectedSources([]);
     } catch {
       Alert(`Error loading landing data`, <ErrorIcon />);
       setLoading(false);
@@ -146,6 +149,30 @@ const BookLandingAnalytics = () => {
       handleEndDateChange(today);
     }
   }, [landing?.data?.created_at]);
+
+  const sourceOptions =
+    chartData &&
+    Object.keys(chartData).map((key) => ({
+      value: key,
+    }));
+
+  const handleSourcesChange = ({ value }: { value: string[] | string }) => {
+    const next = Array.isArray(value) ? value : value ? [value] : [];
+    setSelectedSources(next);
+  };
+
+  const filteredChartData = useMemo(() => {
+    if (!chartData) return null;
+    if (!selectedSources.length) return chartData;
+
+    const result: Record<string, any> = {};
+    selectedSources.forEach((src) => {
+      if (chartData[src]) {
+        result[src] = chartData[src];
+      }
+    });
+    return result;
+  }, [chartData, selectedSources]);
 
   return (
     <div className={s.landing_analytics_container}>
@@ -220,11 +247,28 @@ const BookLandingAnalytics = () => {
           )}
 
           {chartData && (
-            <LandingAnalyticsChart
-              loading={loading}
-              data={chartData}
-              type={chartMode}
-            />
+            <>
+              {chartData && (
+                <div className={s.chart_filters}>
+                  <MultiSelect
+                    id={"metrics"}
+                    label={"Metrics"}
+                    options={sourceOptions || []}
+                    placeholder={"Select metrics"}
+                    isMultiple={true}
+                    selectedValue={selectedSources}
+                    onChange={handleSourcesChange}
+                    valueKey="value"
+                    labelKey="value"
+                  />
+                </div>
+              )}
+              <LandingAnalyticsChart
+                loading={loading}
+                data={filteredChartData || chartData}
+                type={chartMode}
+              />
+            </>
           )}
 
           <div className={s.info_container}>

@@ -5,7 +5,7 @@ import BackButton from "../../../../../../shared/components/ui/BackButton/BackBu
 const DetailHeader = ({
   title,
   link,
-  showBackButton,
+  showBackButton = true,
 }: {
   title: string;
   link?: string;

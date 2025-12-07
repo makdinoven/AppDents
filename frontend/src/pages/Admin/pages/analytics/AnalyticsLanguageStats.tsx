@@ -1,6 +1,6 @@
 import s from "./Analytics.module.scss";
 import Table from "../../../../shared/components/ui/Table/Table.tsx";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/DateRangeFilter.tsx";
 import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
@@ -8,6 +8,7 @@ import LangPurchasesChart from "./Charts/LangPurchasesChart.tsx";
 import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
 import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import AdminField from "../modules/common/AdminField/AdminField.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 
 const AnalyticsLanguageStats = () => {
   const [mode, setMode] = useState<"courses" | "books">("courses");
@@ -17,6 +18,8 @@ const AnalyticsLanguageStats = () => {
     "usd",
   );
   const [exchangeRate, setExchangeRate] = useState("0.85");
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+
   const {
     dateRange,
     handleStartDateChange,
@@ -50,6 +53,24 @@ const AnalyticsLanguageStats = () => {
     })),
   }));
 
+  const languageOptions =
+    languageStats?.total.map((item: any) => ({
+      value: item.language,
+    })) || [];
+
+  const filteredDaily = useMemo(() => {
+    if (!convertedDaily) return [];
+
+    if (!selectedLanguages.length) return convertedDaily;
+
+    return convertedDaily.map((day: any) => ({
+      ...day,
+      languages: day.languages.filter((lang: any) =>
+        selectedLanguages.includes(lang.language),
+      ),
+    }));
+  }, [convertedDaily, selectedLanguages]);
+
   const fetchLandingsStats = async () => {
     setLoading(true);
     const params = {
@@ -66,9 +87,15 @@ const AnalyticsLanguageStats = () => {
       const res = await api(params);
       setLanguageStats(res.data);
       setLoading(false);
+      setSelectedLanguages([]);
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleLanguagesChange = ({ value }: { value: string[] | string }) => {
+    const next = Array.isArray(value) ? value : value ? [value] : [];
+    setSelectedLanguages(next);
   };
 
   return (
@@ -147,7 +174,20 @@ const AnalyticsLanguageStats = () => {
               }}
             />
           </div>
-          <LangPurchasesChart loading={loading} data={convertedDaily} />
+
+          {languageStats && (
+            <MultiSelect
+              id={"lang_select"}
+              options={languageOptions}
+              placeholder={"Select languages"}
+              isMultiple={true}
+              selectedValue={selectedLanguages}
+              onChange={handleLanguagesChange}
+              valueKey={"value"}
+              labelKey={"value"}
+            />
+          )}
+          <LangPurchasesChart loading={loading} data={filteredDaily} />
         </div>
       )}
     </>

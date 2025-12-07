@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import DetailHeader from "../../modules/common/DetailHeader/DetailHeader.tsx";
 import { adminApi } from "../../../../../shared/api/adminApi/adminApi.ts";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatIsoToLocalDatetime,
   getFormattedDate,
@@ -36,6 +36,8 @@ const LandingAnalytics = () => {
     totals: { all: any; range: any };
     periods: { start: string; end: string }[];
   } | null>(null);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+
   const {
     dateRange,
     handleStartDateChange,
@@ -43,6 +45,10 @@ const LandingAnalytics = () => {
     selectedPreset,
     setPreset,
   } = useDateRangeFilter("custom");
+
+  useEffect(() => {
+    console.log(chartData);
+  }, [chartData]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -77,6 +83,7 @@ const LandingAnalytics = () => {
         ),
       });
       setLoading(false);
+      setSelectedSources([]);
     } catch {
       Alert(`Error loading landing data`, <ErrorIcon />);
       setLoading(false);
@@ -147,6 +154,38 @@ const LandingAnalytics = () => {
       handleEndDateChange(today);
     }
   }, [landing?.data?.created_at]);
+
+  const sourceOptions =
+    chartData &&
+    Object.keys(chartData).map((key) => ({
+      value: key,
+    }));
+  const handleSourcesChange = (payload: any) => {
+    const valueRaw =
+      Array.isArray(payload) || typeof payload === "string"
+        ? payload
+        : payload?.value;
+
+    const next = Array.isArray(valueRaw)
+      ? valueRaw
+      : valueRaw
+        ? [valueRaw]
+        : [];
+
+    setSelectedSources(next as string[]);
+  };
+  const filteredChartData = useMemo(() => {
+    if (!chartData) return null;
+    if (!selectedSources.length) return chartData;
+
+    const result: Record<string, any> = {};
+    selectedSources.forEach((src) => {
+      if (chartData[src]) {
+        result[src] = chartData[src];
+      }
+    });
+    return result;
+  }, [chartData, selectedSources]);
 
   return (
     <div className={s.landing_analytics_container}>
@@ -221,11 +260,26 @@ const LandingAnalytics = () => {
           )}
 
           {chartData && (
-            <LandingAnalyticsChart
-              loading={loading}
-              data={chartData}
-              type={chartMode}
-            />
+            <>
+              <div className={s.chart_filters}>
+                <MultiSelect
+                  id={"metrics"}
+                  label={"Metrics"}
+                  options={sourceOptions || []}
+                  placeholder={"Select metrics"}
+                  isMultiple={true}
+                  selectedValue={selectedSources}
+                  onChange={handleSourcesChange}
+                  valueKey="value"
+                  labelKey="value"
+                />
+              </div>
+              <LandingAnalyticsChart
+                loading={loading}
+                data={filteredChartData || chartData}
+                type={chartMode}
+              />
+            </>
           )}
 
           <div className={s.info_container}>
