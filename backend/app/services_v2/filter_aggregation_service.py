@@ -1916,6 +1916,8 @@ def aggregate_landing_filters(
         .filter(Landing.is_hidden.is_(False))
         .filter(Landing.new_price.isnot(None))
         .filter(Landing.new_price != '')
+        .filter(Landing.new_price != '0')  # Исключаем нулевые цены
+        .filter(cast(Landing.new_price, SqlNumeric(10, 2)) > 0)  # Дополнительная проверка
     )
     
     # Фильтруем по языку, если указан
