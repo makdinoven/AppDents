@@ -23,13 +23,19 @@ const MyContent = ({
     type === "course" ? state.user.loadingCourses : state.user.loadingBooks,
   );
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const searchValue = searchParams.get(searchKey);
   const filteredItems = items.filter((item) => {
     if (!searchValue) return true;
     const field = type === "book" ? item.title : item.name;
     return field?.toLowerCase().includes(searchValue);
   });
+
+  const handleSearch = (val: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set(searchKey, val);
+    setSearchParams(newParams);
+  };
 
   return (
     <section className={s.content}>
@@ -38,6 +44,8 @@ const MyContent = ({
       />
       {showSearch && items.length > 0 && (
         <Search
+          valueFromUrl={searchValue ?? ""}
+          onChangeValue={handleSearch}
           id={searchKey}
           placeholder={type === "course" ? "courses.search" : "books.search"}
         />

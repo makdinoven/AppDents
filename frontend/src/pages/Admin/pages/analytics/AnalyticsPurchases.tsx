@@ -5,7 +5,7 @@ import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import PurchasesSourceChart from "./Charts/PurchasesSourceChart.tsx";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { PAYMENT_SOURCES_OPTIONS } from "../../../../shared/common/helpers/commonConstants.ts";
 import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";

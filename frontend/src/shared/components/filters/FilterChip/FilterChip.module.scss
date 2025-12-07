@@ -1,0 +1,119 @@
+.filter_chip {
+  position: relative;
+  width: fit-content;
+  height: fit-content;
+  padding: 10px 20px;
+  @include flex-center();
+  gap: 15px;
+  border: 1px solid $hover-color;
+  background-color: $hover-color;
+  color: $text-color-accent;
+  @include clamped-p3();
+  align-items: center;
+  border-radius: 15px;
+  cursor: pointer;
+  text-wrap: nowrap;
+  @include transition();
+
+  &.selectedFilter {
+    background-color: $primary;
+    color: $tertiary;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      path {
+        stroke-width: 1.5;
+        stroke: $tertiary;
+      }
+    }
+  }
+
+  .dropdown_chevron {
+    @include transition($duration: 300ms);
+    &.open {
+        transform: rotateX(180deg);
+    }
+  }
+
+  svg {
+    height: 20px;
+
+    path {
+      @include transition();
+      stroke: $text-color-accent;
+      stroke-width: 1.5;
+    }
+  }
+
+  &.active {
+    background-color: $primary;
+    color: $tertiary;
+
+    svg {
+      path {
+        stroke: $tertiary;
+      }
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $primary;
+      color: $tertiary;
+
+      &.selectedFilter {
+        background-color: $background-color;
+        border-color: $error-color;
+      }
+
+      svg {
+        path {
+          stroke: $tertiary;
+        }
+      }
+    }
+  }
+}
+
+.badge {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  z-index: 2;
+  border-radius: 50%;
+  @include flex-center();
+  background-color: $tertiary;
+  color: $text-color;
+  font-size: 16px;
+  width: 30px;
+  height: 30px;
+}
+
+
+@media (max-width: $mobile-breakpoint) {
+  .filter_chip {
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+
+    &.selectedFilter {
+      width: fit-content;
+    }
+    svg {
+      width: 18px;
+
+      path {
+        stroke-width: 1;
+      }
+    }
+  }
+
+  .badge {
+    top: -7px;
+    right: -7px;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+  }
+}

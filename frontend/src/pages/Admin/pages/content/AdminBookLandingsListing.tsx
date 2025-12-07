@@ -5,7 +5,6 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import { toggleBookLandingVisibility } from "../../../../shared/store/slices/adminSlice.ts";
-import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import { generateId } from "../../../../shared/common/helpers/helpers.ts";
 import {
   createBookLanding,
@@ -38,14 +37,6 @@ const AdminBookLandingsListing = () => {
     }
   };
 
-  const loadData = (params: ParamsType) => {
-    if (params.q) {
-      dispatch(searchBookLandings(params));
-    } else {
-      dispatch(getBookLandings(params));
-    }
-  };
-
   return (
     <>
       <AdminList<any>
@@ -54,7 +45,8 @@ const AdminBookLandingsListing = () => {
         itemName={"landing_name"}
         itemLink={(book) => PATHS.ADMIN_BOOK_LANDING_DETAIL.build(book.id)}
         loading={loading}
-        onFetch={(params: ParamsType) => loadData(params)}
+        onSearch={(params) => dispatch(searchBookLandings(params))}
+        onLoad={(params) => dispatch(getBookLandings(params))}
         onCreate={() => dispatch(createBookLanding(INITIAL_BOOK_LANDING))}
         showToggle={true}
         showLanguageFilter={true}

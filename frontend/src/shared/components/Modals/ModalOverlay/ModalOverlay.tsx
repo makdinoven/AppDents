@@ -79,10 +79,10 @@ const ModalOverlay = ({
   const shouldRenderChildren = isVisibleCondition || isClosing;
 
   return (
-    <RemoveScroll>
+    <RemoveScroll forwardProps>
       <div
         onClick={closeModal}
-        className={`${s.overlay} ${s[modalPosition]} ${isClosing ? s.closing : s.open}`}
+        className={`${s.overlay} ${s[modalPosition]} ${isClosing ? s.closing : s.open} 'scroll'`}
       >
         <div
           onClick={(e) => e.stopPropagation()}

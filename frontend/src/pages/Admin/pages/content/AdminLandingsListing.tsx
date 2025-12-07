@@ -5,7 +5,6 @@ import {
 } from "../../../../shared/store/store.ts";
 import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import { toggleLandingVisibility } from "../../../../shared/store/slices/adminSlice.ts";
-import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import {
   createLanding,
   getLandings,
@@ -32,14 +31,6 @@ const AdminLandingsListing = () => {
     }
   };
 
-  const loadData = (params: ParamsType) => {
-    if (params.q) {
-      dispatch(searchLandings(params));
-    } else {
-      dispatch(getLandings(params));
-    }
-  };
-
   return (
     <>
       <AdminList<any>
@@ -48,7 +39,8 @@ const AdminLandingsListing = () => {
         itemName={"landing_name"}
         itemLink={(landing) => PATHS.ADMIN_LANDING_DETAIL.build(landing.id)}
         loading={loading}
-        onFetch={(params: ParamsType) => loadData(params)}
+        onSearch={(params) => dispatch(searchLandings(params))}
+        onLoad={(params) => dispatch(getLandings(params))}
         onCreate={() => dispatch(createLanding(INITIAL_LANDING))}
         showToggle={true}
         showLanguageFilter={true}

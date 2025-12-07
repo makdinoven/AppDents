@@ -1,0 +1,104 @@
+.selected_filters_wrapper {
+  position: relative;
+}
+
+.selected_filters_outer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 116px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 12px;
+  padding-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  @include custom-scrollbar;
+}
+
+.selected_filters_row {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.selected_filters_measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  height: 0;
+  overflow: hidden;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+/* стрелки */
+.scroll_btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 45px;
+  height: 45px;
+  border-radius: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: $background-color-08;
+  border: 1px solid $primary;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  z-index: 2;
+  opacity: 1;
+  @include box-shadow;
+
+  &.hidden {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  svg {
+    z-index: 3;
+    path {
+      stroke: $primary;
+      stroke-width: 1.5;
+      stroke-opacity: 1;
+    }
+  }
+
+  @include transition;
+
+  @media (hover: hover) {
+    &:hover {
+      background-color: $background-color-06;
+    }
+  }
+
+
+  &:active {
+    background-color: $background-color;
+  }
+}
+
+.scroll_btn_left {
+  left: 5px;
+}
+
+.scroll_btn_right {
+  right: 5px;
+}
+
+.scroll_icon_left {
+  transform: rotate(90deg);
+}
+
+.scroll_icon_right {
+  transform: rotate(270deg);
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .scroll_btn {
+    width: 35px;
+    height: 35px;
+  }
+}

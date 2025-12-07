@@ -3,7 +3,6 @@ import {
   AppDispatchType,
   AppRootStateType,
 } from "../../../../shared/store/store.ts";
-import { ParamsType } from "../../../../shared/api/adminApi/types.ts";
 import {
   createCourse,
   getCourses,
@@ -18,14 +17,6 @@ const AdminCoursesListing = () => {
   const courses = useSelector((state: AppRootStateType) => state.admin.courses);
   const dispatch = useDispatch<AppDispatchType>();
 
-  const loadData = (params: ParamsType) => {
-    if (params.q) {
-      dispatch(searchCourses(params));
-    } else {
-      dispatch(getCourses(params));
-    }
-  };
-
   return (
     <>
       <AdminList<any>
@@ -34,7 +25,8 @@ const AdminCoursesListing = () => {
         itemName={"name"}
         itemLink={(course) => PATHS.ADMIN_COURSE_DETAIL.build(course.id)}
         loading={loading}
-        onFetch={(params: ParamsType) => loadData(params)}
+        onSearch={(params) => dispatch(searchCourses(params))}
+        onLoad={(params) => dispatch(getCourses(params))}
         onCreate={() => dispatch(createCourse(INITIAL_COURSE))}
       />
     </>

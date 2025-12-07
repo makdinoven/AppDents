@@ -1,27 +1,43 @@
+.container {
+  @include flex-column;
+  gap: 20px;
+
+  @media (max-width: $tablet-breakpoint) {
+    gap: 15px;
+  }
+}
+
 .skeletons {
   width: 100%;
   height: fit-content;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  min-height: 68px;
+  grid-template-columns: 3fr 1.5fr 1fr;
+  gap: 15px;
 
-  @media (max-width: $middle-breakpoint) {
-    grid-template-columns: repeat(4, 1fr);
+  @media (max-width: $tablet-breakpoint) {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
-  @media (max-width: $mobile-breakpoint) {
-    grid-template-columns: repeat(2, 1fr);
+}
+
+.count {
+  margin-left: auto;
+  @include skeleton($pos: relative, $h: 42px, $w: 200px, $color: $light-grey);
+
+  @media (max-width: $tablet-breakpoint) {
+    @include skeleton($pos: relative, $h: 34.5px, $w: 150px, $color: $light-grey);
   }
 }
 
 .skeleton {
   @include transition();
+  align-self: flex-end;
 
-  @include skeleton($pos: relative, $h: 40px, $color: $light-grey);
+  @include skeleton($pos: relative, $h: 48px, $color: $light-grey);
 
   @media (max-width: $tablet-breakpoint) {
-    @include skeleton($pos: relative, $h: 35px, $color: $light-grey);
-  }
-  @media (max-width: $mobile-breakpoint) {
-    @include skeleton($pos: relative, $h: 30px, $color: $light-grey);
+    @include skeleton($pos: relative, $h: 38px, $color: $light-grey);
   }
 }

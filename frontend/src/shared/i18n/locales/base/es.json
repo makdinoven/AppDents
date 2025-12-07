@@ -71,6 +71,7 @@
   "firstFreeLesson": "Primera clase gratis",
   "or": "o",
   "here": "aquí.",
+  "of": "de",
   "readerFailedToLoad": "¿La ventana de lectura no se cargó? Intenta leerlo directamente",
   "tooManyRequests": "⚠️ Demasiadas solicitudes. Por favor, recarga la página e inténtalo de nuevo en un momento.",
 
@@ -465,5 +466,62 @@
     "productRequestSuccess": "Tu solicitud ha sido enviada correctamente. Responderemos lo antes posible.",
     "productRequestFailed": "No se pudo procesar la solicitud. Inténtalo de nuevo en un momento.",
     "loginText": "<0>Crea una cuenta</0> para desbloquear el acceso a pedir libros y cursos."
+  },
+
+  "sort": {
+    "toShowFirst": "Qué artículos mostrar primero:",
+    "keys": {
+      "price_asc": "Más baratos primero",
+      "price_desc": "Más caros primero",
+      "pages_asc": "Menos páginas",
+      "pages_desc": "Más páginas",
+      "year_asc": "Ediciones antiguas primero",
+      "year_desc": "Ediciones más nuevas primero",
+      "new_asc": "Artículos antiguos primero",
+      "new_desc": "Artículos nuevos primero",
+      "popular_asc": "Menos populares primero",
+      "popular_desc": "Más populares primero",
+      "courses_desc": "Más cursos primero",
+      "courses_asc": "Menos cursos primero",
+      "books_desc": "Más libros primero",
+      "books_asc": "Menos libros primero",
+      "name_asc": "Nombre (A–Z)",
+      "name_desc": "Nombre (Z–A)",
+      "recommend": "Recomendado",
+      "duration_asc": "Corto → Largo",
+      "duration_desc": "Largo → Corto",
+      "lessons_desc": "Más lecciones primero",
+      "lessons_asc": "Menos lecciones primero"
+    }
+  },
+
+  "filters": {
+    "filters": "Filtros",
+    "resetAll": "Restablecer todo",
+    "allFilters": "Todos los filtros",
+    "selectedFilters": "Filtros: {{count}}",
+    "showItems_one": "Mostrar {{count}} elemento",
+    "showItems_other": "Mostrar {{count}} elementos",
+    "showItems_zero": "No hay elementos",
+    "itemsFound_one": "Se encontró {{count}} elemento",
+    "itemsFound_other": "Se encontraron {{count}} elementos",
+    "keys": {
+      "publisher_ids": "Editoriales",
+      "author_ids": "Autores",
+      "author_ids.search": "Buscar autores...",
+      "tags": "Etiquetas",
+      "formats": "Formatos",
+      "range": {
+        "year": "Año de publicación",
+        "usd": "Precio",
+        "pages": "Páginas",
+        "books": "Cantidad de libros",
+        "courses": "Cantidad de cursos",
+        "lessons": "Cantidad de lecciones"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Tamaño de página"
   }
 }

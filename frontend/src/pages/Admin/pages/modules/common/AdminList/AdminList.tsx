@@ -1,25 +1,27 @@
 import s from "./AdminList.module.scss";
-import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
+import PrettyButton from "../../../../../../shared/components/ui/PrettyButton/PrettyButton";
 import { Trans } from "react-i18next";
-import PanelItem from "../PanelItem/PanelItem.tsx";
-import { useSearchParams } from "react-router-dom";
-import LoaderOverlay from "../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay.tsx";
-import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
-import Loader from "../../../../../../shared/components/ui/Loader/Loader.tsx";
-import ListController from "../../../../../../shared/components/ui/ListController/ListController.tsx";
-import {
-  FILTER_PARAM_KEYS,
-  FilterKeys,
-} from "../../../../../../shared/common/helpers/commonConstants.ts";
-import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
+import PanelItem from "../PanelItem/PanelItem";
+import LoaderOverlay from "../../../../../../shared/components/ui/LoaderOverlay/LoaderOverlay";
+import Loader from "../../../../../../shared/components/ui/Loader/Loader";
+import ListController from "../../../../../../shared/components/list/ListController/ListController";
+import Pagination from "../../../../../../shared/components/list/Pagination/Pagination";
+import { Alert } from "../../../../../../shared/components/ui/Alert/Alert";
 import { ErrorIcon } from "../../../../../../shared/assets/icons";
-import { PATHS } from "../../../../../../app/routes/routes.ts";
+import { PATHS } from "../../../../../../app/routes/routes";
+import { useEffect } from "react";
+import { useListQueryParams } from "../../../../../../shared/components/list/model/useListQueryParams";
+import { LANGUAGES_NAME } from "../../../../../../shared/common/helpers/commonConstants.ts";
+import Search from "../../../../../../shared/components/ui/Search/Search.tsx";
+import { ParamsType } from "../../../../../../shared/api/adminApi/types.ts";
+import MultiSelect from "../../../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 
 interface AdminListProps<T> {
   data: any;
   itemName: string;
   itemLink: (item: T) => string;
-  onFetch: (params: ParamsType) => void;
+  onLoad: (params: any) => void;
+  onSearch: (params: any) => void;
   onCreate: () => void;
   loading: boolean;
   showLanguageFilter?: boolean;
@@ -34,13 +36,14 @@ interface AdminListProps<T> {
     | "users";
 }
 
-const SIZE = 10;
+const SIZE = 12;
 
 const AdminList = <T extends { id: number; [key: string]: any }>({
   data,
   itemName,
   itemLink,
-  onFetch,
+  onLoad,
+  onSearch,
   onCreate,
   loading,
   handleToggle,
@@ -48,59 +51,102 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   showToggle = false,
   transKey,
 }: AdminListProps<T>) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const SEARCH_KEY = `admin.${transKey}`;
+  const { params, actions } = useListQueryParams({
+    defaultPage: 1,
+    defaultPageSize: SIZE,
+  });
+
   const itemsList = data.list as T[];
   const isBook = transKey.includes("bookL");
 
   const handleCreateItem = async () => {
     try {
       await onCreate();
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("page", "1");
-      newParams.delete(FILTER_PARAM_KEYS.language);
-      setSearchParams(newParams, { replace: true });
-      onFetch({
+      actions.resetAll();
+
+      onLoad({
         page: 1,
         size: SIZE,
       });
     } catch (err: any) {
       Alert(
-        `Error creating ${transKey?.slice(0, -1)}, error message: ${err.message}`,
+        `Error creating ${transKey?.slice(0, -1)}, message: ${err.message}`,
         <ErrorIcon />,
       );
     }
   };
 
-  const filters: FilterKeys[] = ["size"];
+  const loadData = (params: ParamsType) => {
+    const hasSearch = params.q !== undefined && params.q !== "";
+    if (hasSearch) {
+      // if (params.page !== 1) {
+      //   actions.set({ page: 1 });
+      //   return;
+      // }
+      onSearch({ q: params.q });
+    } else {
+      onLoad({
+        ...params,
+        language: params.language === "all" ? undefined : params.language,
+      });
+    }
+  };
 
-  if (showLanguageFilter) {
-    filters.unshift("language");
-  }
+  useEffect(() => {
+    loadData(params);
+  }, [params]);
 
   return (
     <div className={s.list_container}>
-      <div className={s.list_header}>
-        <PrettyButton
-          variant={"primary"}
-          text={`admin.${transKey}.create`}
-          onClick={handleCreateItem}
-        />
-      </div>
       <ListController
-        type={SEARCH_KEY}
-        loadData={(params) => onFetch(params)}
-        total={data.total}
-        totalPages={data.total_pages}
-        size={SIZE}
-        filters={filters}
+        filtersSlot={
+          <div className={s.filters_container}>
+            <div className={s.filters_top}>
+              {showLanguageFilter && (
+                <MultiSelect
+                  isSearchable={false}
+                  id={"language"}
+                  options={LANGUAGES_NAME}
+                  placeholder={"Choose a language"}
+                  selectedValue={params.language}
+                  isMultiple={false}
+                  onChange={(e) => actions.set({ language: e.value })}
+                  valueKey="value"
+                  labelKey="name"
+                />
+              )}
+
+              <PrettyButton
+                variant="primary"
+                text={`admin.${transKey}.create`}
+                onClick={handleCreateItem}
+              />
+            </div>
+            <Search
+              valueFromUrl={params.q ?? ""}
+              onChangeValue={(val) => actions.set({ q: val })}
+              useDebounceOnChange
+              placeholder={`admin.${transKey}.search`}
+              id={"q"}
+            />
+          </div>
+        }
+        paginationSlot={
+          <Pagination
+            onPageChange={(p) => actions.set({ page: p })}
+            onSizeChange={(s) => actions.set({ size: s })}
+            pagination={{
+              page: params.page,
+              size: params.size,
+              total: data.total,
+              total_pages: data.total_pages,
+            }}
+          />
+        }
       >
         <div className={s.list}>
-          {loading && (
-            <>
-              <LoaderOverlay />
-            </>
-          )}
+          {loading && <LoaderOverlay />}
+
           {itemsList.length > 0 ? (
             itemsList.map((item) => (
               <PanelItem

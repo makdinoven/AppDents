@@ -369,9 +369,9 @@
     "allCourses": "Все курсы",
     "allBooks": "Все книги",
     "allCoursesAndBooks": "Все курсы и книги",
-    "professors.title": "Наши преподаватели",
-    "search": "Поиск преподавателей...",
-    "found": "Преподавателей найдено: {{count}}",
+    "professors.title": "Все лекторы",
+    "search": "Поиск лекторов...",
+    "found": "Лекторов найдено: {{count}}",
     "noProfessors": "Преподаватели не найдены",
     "about": "Подробнее",
     "specialization": "Специализация:",
@@ -471,5 +471,63 @@
     "productRequestSuccess": "Ваш запрос успешно отправлен. Мы ответим как можно скорее.",
     "productRequestFailed": "Не удалось обработать запрос. Пожалуйста, попробуйте позже.",
     "loginText": "<0>Зарегистрируйтесь</0>, чтобы открыть доступ к заказу книг и курсов."
+  },
+
+  "sort": {
+    "toShowFirst": "Что отображать первым:",
+    "keys": {
+      "price_asc": "Сначала дешевле",
+      "price_desc": "Сначала дороже",
+      "pages_asc": "Меньше страниц",
+      "pages_desc": "Больше страниц",
+      "year_asc": "Сначала старые издания",
+      "year_desc": "Сначала новые издания",
+      "new_asc": "Сначала старые товары",
+      "new_desc": "Сначала новинки",
+      "popular_asc": "Менее популярные",
+      "popular_desc": "Более популярные",
+      "courses_desc": "Сначала больше курсов",
+      "courses_asc": "Сначала меньше курсов",
+      "books_desc": "Сначала больше книг",
+      "books_asc": "Сначала меньше книг",
+      "name_asc": "Имя (А–Я)",
+      "name_desc": "Имя (Я–А)",
+      "recommend": "Рекомендуемые",
+      "duration_asc": "Короткие → Длинные",
+      "duration_desc": "Длинные → Короткие",
+      "lessons_desc": "Сначала больше уроков",
+      "lessons_asc": "Сначала меньше уроков"
+    }
+  },
+  "filters": {
+    "filters": "Фильтры",
+    "resetAll": "Сбросить всё",
+    "allFilters": "Все фильтры",
+    "selectedFilters": "Фильтров: {{count}}",
+    "showItems_zero": "Нет элементов",
+    "showItems_one": "Показать {{count}} элемент",
+    "showItems_few": "Показать {{count}} элемента",
+    "showItems_many": "Показать {{count}} элементов",
+    "itemsFound_one": "Найден {{count}} элемент",
+    "itemsFound_few": "Найдено {{count}} элемента",
+    "itemsFound_many": "Найдено {{count}} элементов",
+    "keys": {
+      "publisher_ids": "Издательства",
+      "author_ids": "Авторы",
+      "author_ids.search": "Поиск авторов...",
+      "tags": "Теги",
+      "formats": "Форматы",
+      "range": {
+        "year": "Год издания",
+        "usd": "Цена",
+        "pages": "Страницы",
+        "books": "Количество книг",
+        "courses": "Количество курсов",
+        "lessons": "Количество уроков"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Размер страницы"
   }
 }
