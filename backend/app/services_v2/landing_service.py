@@ -695,6 +695,14 @@ def _unique_ip_count_recent(db, landing_id: int, now: datetime) -> int:
 from sqlalchemy import func
 
 def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+    """
+    При высокой конкуренции за блокировку row-lock:
+    - Визит ВСЕГДА записывается (это главное)
+    - Обновление флага рекламы пропускается при блокировке (eventual consistency)
+    """
+    import logging
+    log = logging.getLogger(__name__)
+    
     now = datetime.utcnow()
 
     # 1) лог визита (fbp/fbc оставляем для аналитики, но не используем в логике включения)
@@ -708,12 +716,20 @@ def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | Non
     db.flush()  # чтобы запись учлась в последующих запросах этой транзакции
 
     # 2) работаем с лендингом под блокировкой
-    landing = (
-        db.query(Landing)
-          .filter(Landing.id == landing_id)
-          .with_for_update()
-          .first()
-    )
+    try:
+        # nowait=True — не ждём освобождения блокировки, сразу ошибка при конкуренции
+        landing = (
+            db.query(Landing)
+              .filter(Landing.id == landing_id)
+              .with_for_update(nowait=True)
+              .first()
+        )
+    except OperationalError as e:
+        # Блокировка занята другим запросом — коммитим визит и выходим
+        log.warning(f"Lock contention for landing_id={landing_id}, skipping ad flag update: {e}")
+        db.commit()
+        return
+    
     if not landing:
         db.commit()  # сохраним хотя бы визит
         return

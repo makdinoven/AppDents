@@ -264,13 +264,20 @@ def track_book_landing_visit(
 
     # 2) если визит рекламный — продлеваем TTL ТОЛЬКО если реклама уже включена
     if from_ad:
+        from sqlalchemy.exc import OperationalError
         now = datetime.utcnow()
-        book_landing = (
-            db.query(BookLanding)
-              .filter(BookLanding.id == book_landing_id)
-              .with_for_update()
-              .first()
-        )
+        try:
+            book_landing = (
+                db.query(BookLanding)
+                  .filter(BookLanding.id == book_landing_id)
+                  .with_for_update(nowait=True)
+                  .first()
+            )
+        except OperationalError:
+            # Блокировка занята — коммитим визит, пропускаем TTL-обновление
+            db.commit()
+            return {"ok": True}
+        
         if book_landing and book_landing.in_advertising:
             # гарантируем открытый период, если вдруг его нет
             open_book_ad_period_if_needed(db, book_landing_id, started_by=None)

@@ -415,7 +415,13 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
     Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
     Загорает флаг только после порога уникальных IP за окно BOOK_AD_UNIQUE_IP_WINDOW.
     Если активная реклама не набирает порог — выключает её.
+    
+    При высокой конкуренции за блокировку row-lock:
+    - Визит ВСЕГДА записывается (это главное)
+    - Обновление флага рекламы пропускается при блокировке (eventual consistency)
     """
+    from sqlalchemy.exc import OperationalError
+    
     now = datetime.utcnow()
     visit = BookAdVisit(
         book_landing_id=book_landing_id,
@@ -427,12 +433,21 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
     db.add(visit)
     db.flush()
 
-    book_landing = (
-        db.query(BookLanding)
-          .filter(BookLanding.id == book_landing_id)
-          .with_for_update()
-          .first()
-    )
+    try:
+        # nowait=True — не ждём освобождения блокировки, сразу ошибка при конкуренции
+        book_landing = (
+            db.query(BookLanding)
+              .filter(BookLanding.id == book_landing_id)
+              .with_for_update(nowait=True)
+              .first()
+        )
+    except OperationalError as e:
+        # Блокировка занята другим запросом — коммитим визит и выходим
+        # Статус рекламы обновит следующий успешный запрос
+        log.warning(f"Lock contention for book_landing_id={book_landing_id}, skipping ad flag update: {e}")
+        db.commit()
+        return
+    
     if not book_landing:
         db.commit()
         return
