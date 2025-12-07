@@ -1554,22 +1554,31 @@ def _get_landing_ids_by_lessons_count(
     return result_ids
 
 
-def _calculate_lessons_range(db: Session) -> Dict[str, Optional[int]]:
+def _calculate_lessons_range(db: Session, language: Optional[str] = None) -> Dict[str, Optional[int]]:
     """
     Подсчитывает диапазон количества уроков для всех видимых лендингов.
+    
+    Args:
+        db: Сессия БД
+        language: Фильтр по языку (если указан)
     
     Возвращает: {'min': N, 'max': M}
     """
     from collections import defaultdict
     
     # Получаем все видимые лендинги с их курсами
-    landings_data = (
+    query = (
         db.query(Landing.id, Course.sections)
         .join(landing_course, Landing.id == landing_course.c.landing_id)
         .join(Course, landing_course.c.course_id == Course.id)
         .filter(Landing.is_hidden.is_(False))
-        .all()
     )
+    
+    # Фильтруем по языку, если указан
+    if language:
+        query = query.filter(Landing.language == language)
+    
+    landings_data = query.all()
     
     if not landings_data:
         return {'min': None, 'max': None}
@@ -1775,9 +1784,22 @@ def aggregate_landing_filters(
     
     tag_landing_ids = [lid.id for lid in query_without_tags.with_entities(Landing.id).all()]
     
-    total_tags = db.query(func.count(Tag.id)).scalar() or 0
+    # Подсчет общего количества тегов (с учётом языка, если указан)
+    if current_language:
+        total_tags = (
+            db.query(func.count(func.distinct(Tag.id)))
+            .select_from(Tag)
+            .join(landing_tags, Tag.id == landing_tags.c.tag_id)
+            .join(Landing, landing_tags.c.landing_id == Landing.id)
+            .filter(Landing.is_hidden.is_(False))
+            .filter(Landing.language == current_language)
+            .scalar()
+        ) or 0
+    else:
+        total_tags = db.query(func.count(Tag.id)).scalar() or 0
     
-    top_tags_subq = (
+    # Топ-N тегов (с учётом языка, если указан)
+    top_tags_query = (
         db.query(
             Tag.id.label('tag_id'),
             func.count(func.distinct(Landing.id)).label('total_cnt')
@@ -1786,6 +1808,13 @@ def aggregate_landing_filters(
         .join(landing_tags, Tag.id == landing_tags.c.tag_id)
         .join(Landing, landing_tags.c.landing_id == Landing.id)
         .filter(Landing.is_hidden.is_(False))
+    )
+    
+    if current_language:
+        top_tags_query = top_tags_query.filter(Landing.language == current_language)
+    
+    top_tags_subq = (
+        top_tags_query
         .group_by(Tag.id)
         .order_by(func.count(func.distinct(Landing.id)).desc())
         .limit(filter_limit)
@@ -1879,7 +1908,7 @@ def aggregate_landing_filters(
     
     # ═══════════════════ Price Range ═══════════════════
     # Явный CAST для числового сравнения
-    price_range = (
+    price_query = (
         db.query(
             func.min(cast(Landing.new_price, SqlNumeric(10, 2))).label('min_price'),
             func.max(cast(Landing.new_price, SqlNumeric(10, 2))).label('max_price')
@@ -1887,8 +1916,13 @@ def aggregate_landing_filters(
         .filter(Landing.is_hidden.is_(False))
         .filter(Landing.new_price.isnot(None))
         .filter(Landing.new_price != '')
-        .first()
     )
+    
+    # Фильтруем по языку, если указан
+    if current_language:
+        price_query = price_query.filter(Landing.language == current_language)
+    
+    price_range = price_query.first()
     
     if price_range and price_range.min_price is not None and price_range.max_price is not None:
         filters['price'] = RangeFilter(
@@ -1910,7 +1944,7 @@ def aggregate_landing_filters(
     
     # ═══════════════════ Lessons Range ═══════════════════
     # Подсчитываем диапазон количества уроков из JSON sections курсов
-    lessons_range_data = _calculate_lessons_range(db)
+    lessons_range_data = _calculate_lessons_range(db, language=current_language)
     
     if lessons_range_data and lessons_range_data['min'] is not None and lessons_range_data['max'] is not None:
         filters['lessons'] = RangeFilter(
