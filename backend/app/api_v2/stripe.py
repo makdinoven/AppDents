@@ -12,7 +12,7 @@ from ..db.database import get_db
 from ..dependencies.auth import get_current_user_optional
 from ..services_v2.cart_service import clear_cart
 from ..services_v2.stripe_service import create_checkout_session, handle_webhook_event, get_stripe_keys_by_region
-from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding, Book, Purchase
+from ..models.models_v2 import Course, PurchaseSource, FreeCourseSource, FreeCourseAccess, BookLanding, Book, Purchase, Landing
 from ..services_v2.user_service import get_user_by_email, create_access_token, add_course_to_user, add_book_to_user
 from ..services_v2.wallet_service import debit_balance
 from ..utils.email_sender import (
@@ -386,6 +386,27 @@ def complete_purchase(
                 content_ids.append(str(purchase.book_id))
                 content_type = "book" if not content_ids else "product"
             
+            # Собираем теги из покупки
+            tag_names: list[str] = []
+            try:
+                if purchase.landing_id:
+                    landing_obj = db.query(Landing).filter_by(id=purchase.landing_id).first()
+                    if landing_obj and hasattr(landing_obj, 'tags') and landing_obj.tags:
+                        tag_names.extend(t.name for t in landing_obj.tags if t.name)
+                if purchase.book_landing_id:
+                    bl_obj = db.query(BookLanding).filter_by(id=purchase.book_landing_id).first()
+                    if bl_obj and hasattr(bl_obj, 'tags') and bl_obj.tags:
+                        tag_names.extend(t.name for t in bl_obj.tags if t.name)
+                if purchase.book_id:
+                    book_obj = db.query(Book).filter_by(id=purchase.book_id).first()
+                    if book_obj and hasattr(book_obj, 'tags') and book_obj.tags:
+                        tag_names.extend(t.name for t in book_obj.tags if t.name)
+                # Убираем дубликаты, сохраняя порядок
+                tag_names = list(dict.fromkeys(tag_names))
+            except Exception as tag_err:
+                logging.warning("Failed to collect tags: %s", tag_err)
+                tag_names = []
+            
             purchase_data = {
                 "session_id": data.session_id,
                 "amount": float(purchase.amount or 0),
@@ -393,9 +414,10 @@ def complete_purchase(
                 "content_ids": content_ids if content_ids else [],
                 "content_type": content_type,
                 "num_items": len(content_ids) if content_ids else 1,
+                "tags": tag_names,  # теги покупки для клиента
             }
-            logging.info("Purchase data prepared for FB Pixel: amount=%.2f, content_ids=%s", 
-                        purchase.amount, content_ids)
+            logging.info("Purchase data prepared for FB Pixel: amount=%.2f, content_ids=%s, tags=%s", 
+                        purchase.amount, content_ids, tag_names)
         except Exception as e:
             logging.warning("Failed to prepare purchase_data: %s", e)
             purchase_data = None
