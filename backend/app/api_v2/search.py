@@ -13,8 +13,9 @@ from ..core.search_analytics import send_search_to_analytics
 
 router = APIRouter()
 
-MIN_LEN = 3               # минимальная длина запроса
-MIN_DELAY_SECONDS = 5     # минимальная пауза между шагами набора
+MIN_LEN = 3               # минимальная длина запроса для логирования
+MIN_DELAY_SECONDS = 5     # если меньше — обновляем последнюю запись
+
 
 @router.get(
     "/v2",
@@ -47,7 +48,7 @@ def search_v2(
         languages=languages,
     )
 
-    # 2. Слишком короткие запросы не логируем вовсе
+    # 2. Отсекаем совсем короткие запросы
     if len(q.strip()) < MIN_LEN:
         return result
 
@@ -57,50 +58,47 @@ def search_v2(
     path = str(request.url.path)
 
     now = datetime.utcnow()
-    two_minutes_ago = now - timedelta(minutes=2)
 
-    # 4. Берём последний запрос этого же IP/юзера на этот же path
-    last_filters = [SearchQuery.path == path]
+    # 4. Находим последнюю запись этого юзера/IP на этот path
+    filters = [SearchQuery.path == path]
     id_filters = []
     if user_id is not None:
         id_filters.append(SearchQuery.user_id == user_id)
     if ip_address is not None:
         id_filters.append(SearchQuery.ip_address == ip_address)
     if id_filters:
-        last_filters.append(or_(*id_filters))
+        filters.append(or_(*id_filters))
 
-    last_query = None
+    last_record = None
     if id_filters:
-        last_query = (
+        last_record = (
             db.query(SearchQuery)
-            .filter(*last_filters)
+            .filter(*filters)
             .order_by(SearchQuery.created_at.desc())
             .first()
         )
 
-    should_skip = False
+    record = None
 
-    if last_query is not None:
-        delta = now - last_query.created_at.replace(tzinfo=None)
+    if last_record is not None:
+        delta = now - last_record.created_at.replace(tzinfo=None)
 
-        # если новый запрос просто ДОПИСЫВАЕТ старый (старый префикс нового)
-        if (
-                delta.total_seconds() < MIN_DELAY_SECONDS
-                and last_query.query.startswith(q)
-        ):
-            # это шаг "удаления" букв — возможно, пропустить
-            should_skip = True
-
-        # плюс старая защита от точных дублей за 2 минуты
-        if (
-            not should_skip
-            and last_query.query == q
-            and (now - last_query.created_at.replace(tzinfo=None)) < (now - two_minutes_ago)
-        ):
-            should_skip = True
-
-    # 5. Если не решили пропустить — логируем и шлём в аналитику
-    if not should_skip:
+        if delta.total_seconds() < MIN_DELAY_SECONDS:
+            # Быстрый набор: считаем это продолжением прошлой строки.
+            # Обновляем текст запроса у последней записи на новый q.
+            last_record.query = q
+            record = last_record
+        else:
+            # Пауза достаточно большая — начинаем новую "сессию" запроса.
+            record = SearchQuery(
+                query=q,
+                path=path,
+                user_id=user_id,
+                ip_address=ip_address,
+            )
+            db.add(record)
+    else:
+        # Первая запись для этого юзера/IP
         record = SearchQuery(
             query=q,
             path=path,
@@ -108,16 +106,18 @@ def search_v2(
             ip_address=ip_address,
         )
         db.add(record)
-        db.commit()
-        db.refresh(record)
 
-        try:
-            send_search_to_analytics(
-                query=record.query,
-                path=record.path,
-                created_at=record.created_at,
-            )
-        except Exception:
-            pass
+    db.commit()
+    db.refresh(record)
+
+    # 5. Отправляем финальный вариант в аналитику
+    try:
+        send_search_to_analytics(
+            query=record.query,
+            path=record.path,
+            created_at=record.created_at,
+        )
+    except Exception:
+        pass
 
     return result
