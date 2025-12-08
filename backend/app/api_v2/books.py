@@ -31,6 +31,7 @@ from ..models.models_v2 import (
     book_publishers,
     book_tags,
 )
+from ..utils.ip_utils import is_bot_request
 from ..schemas_v2.book import (
     BookCreate,
     BookUpdate,
@@ -228,7 +229,8 @@ def track_book_ad(slug: str,
         book_landing_id=book_landing.id,
         fbp=request.cookies.get("_fbp"),
         fbc=request.cookies.get("_fbc"),
-        ip=_client_ip(request)
+        ip=_client_ip(request),
+        user_agent=request.headers.get("User-Agent"),
     )
     return {"ok": True}
 
@@ -240,18 +242,24 @@ class BookVisitIn(BaseModel):
 @router.post("/landing/{book_landing_id}/visit", status_code=201)
 def track_book_landing_visit(
     book_landing_id: int,
+    request: Request,
     payload: BookVisitIn | None = None,
     db: Session = Depends(get_db),
 ):
     """
     Отслеживает визит на книжный лендинг.
     Если from_ad=True и реклама включена, продлевает TTL и открывает период.
+    Визиты от ботов Facebook/Meta игнорируются.
     """
     from ..services_v2.book_service import open_book_ad_period_if_needed, BOOK_AD_TTL
     
     exists = db.query(BookLanding.id).filter(BookLanding.id == book_landing_id).first()
     if not exists:
         raise HTTPException(status_code=404, detail="Book landing not found")
+
+    # Фильтруем ботов (по IP и User-Agent)
+    if is_bot_request(request):
+        return {"ok": True, "skipped": "bot"}
 
     payload = payload or BookVisitIn()
     from_ad = bool(payload.from_ad)

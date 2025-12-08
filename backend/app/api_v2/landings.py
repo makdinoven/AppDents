@@ -38,6 +38,7 @@ from ..services_v2.book_service import (
     get_top_book_landings_by_sales,
     get_book_sales_totals,
 )
+from ..utils.ip_utils import is_bot_request
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TrackAdIn
 from ..schemas_v2.landing import LandingListResponse, LandingDetailResponse, LandingCreate, LandingUpdate, TagResponse, \
     LandingSearchResponse, LandingCardsResponse, LandingItemResponse, LandingCardsResponsePaginations, \
@@ -1313,7 +1314,8 @@ def track_ad(slug: str,
     fbp = payload.fbp or request.cookies.get("_fbp")
     fbc = payload.fbc or request.cookies.get("_fbc")
     ip = _client_ip(request)
-    track_ad_visit(db=db, landing_id=landing.id, fbp=fbp, fbc=fbc, ip=ip)
+    user_agent = request.headers.get("User-Agent")
+    track_ad_visit(db=db, landing_id=landing.id, fbp=fbp, fbc=fbc, ip=ip, user_agent=user_agent)
     return {"ok": True}
 
 @router.post("/free-access/{landing_id}")
@@ -1496,12 +1498,17 @@ class VisitIn(BaseModel):
 @router.post("/{landing_id}/visit", status_code=201)
 def track_landing_visit(
     landing_id: int,
+    request: Request,
     payload: VisitIn | None = None,
     db: Session = Depends(get_db),
 ):
     exists = db.query(Landing.id).filter(Landing.id == landing_id).first()
     if not exists:
         raise HTTPException(status_code=404, detail="Landing not found")
+
+    # Фильтруем ботов (по IP и User-Agent)
+    if is_bot_request(request):
+        return {"ok": True, "skipped": "bot"}
 
     payload = payload or VisitIn()
     from_ad = bool(payload.from_ad)

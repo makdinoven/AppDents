@@ -171,5 +171,7 @@ networks:
 
 volumes:
   mysql_data_preprod:
+    external: true
+    name: appdents_mysql_data_preprod
   certbot-etc:
   certbot-web:
