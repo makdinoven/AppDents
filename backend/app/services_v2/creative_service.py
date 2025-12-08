@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 PLACID_TPL_V1 = "kbhccvksoprg7"
 PLACID_TPL_V2 = "ktawlyumyeaw7"
 PLACID_TPL_V3 = "uoshaoahss0al"
-
+PLACID_TPL_V4 = "9lzxp889n80qo"
 
 def _only_for_text(lang: str) -> str:
     m = {
@@ -1076,6 +1076,127 @@ def generate_single_creative(
     if code in {"v3", PLACID_TPL_V3}:
         return generate_creative_v3(db, book, language, context_overrides=overrides)
 
+    if code in {"v4", PLACID_TPL_V4}:
+        return generate_creative_v4(db, book, language, context_overrides=overrides)
+
     raise ValueError("Unknown creative target")
+
+def generate_creative_v4(
+    db: Session,
+    book: Book,
+    language: str,
+    context_overrides: Optional[Dict[str, Any]] = None,
+) -> BookCreative:
+    try:
+        _require_book_fields(book)
+
+        bl = _min_price_landing(db, book.id, language)
+        if not bl or bl.new_price is None:
+            raise ValueError("Price not found in book_landings")
+
+        price_new = _format_price(float(bl.new_price))
+        price_old = _format_price(float(bl.old_price or 0))
+
+        ov = context_overrides or {}
+
+        # переопределение цен
+        if "price_new" in ov:
+            try:
+                price_new = _format_price(float(ov["price_new"]))
+            except Exception:
+                price_new = str(ov["price_new"])
+        if "price_old" in ov:
+            try:
+                price_old = _format_price(float(ov["price_old"]))
+            except Exception:
+                price_old = str(ov["price_old"])
+
+        cover_url = ov.get("cover_url", book.cover_url)
+        if not cover_url:
+            raise ValueError("Book cover_url is required for creative generation")
+
+        # грузим медиа в Placid, как у v3
+        placid_media_url = _ensure_placid_media_url(cover_url)
+
+        heading = ov.get("heading", book.title)
+        author = ov.get("author", getattr(book, "author", "") or "")
+        badge_text = ov.get("badge_text", "OLD PRICE:")
+        button_text = ov.get("button_text", "DOWNLOAD NOW")
+
+        layers_override = ov.get("layers") if ov else None
+
+        if layers_override and isinstance(layers_override, dict):
+            payload = {"template_uuid": PLACID_TPL_V4, "layers": layers_override}
+        else:
+            payload = {
+                "template_uuid": PLACID_TPL_V4,
+                "layers": {
+                    "PICTURE_BG_VAR": {"image": placid_media_url},
+                    "BOOK_COVER": {"image": placid_media_url},
+                    "HEADING": {"text": heading},
+                    "AUTHOR": {"text": author},
+
+                    "NEW_PRICE": {"text": price_new},
+                    "NEW_PRICE_TEXT": {"text": ov.get("new_price_text", "New:")},
+
+                    "OLD_PRCIE_TEXT": {"text": ov.get("old_price_text", "Old price:")},
+                    "OLD_PRICE": {"text": price_old},
+
+                    "TEXT_DOWNLOAD": {"text": ov.get("button_text", "DOWNLOAD NOW")},
+                },
+            }
+
+        url, err = _placid_render(payload)
+        if err:
+            msg = str(err)
+            if "Requires Subscription and Credits" in msg or "placid 403" in msg:
+                raise PlacidQuotaError(msg)
+            raise PlacidServiceError(msg)
+
+        img = _download_bytes(url)
+        key = _s3_key(book.id, PLACID_TPL_V4)
+        s3_url = _upload_to_s3(key, img)
+
+        existing = (
+            db.query(BookCreative)
+            .filter(
+                BookCreative.book_id == book.id,
+                BookCreative.language == language,
+                BookCreative.creative_code == PLACID_TPL_V4,
+            )
+            .first()
+        )
+
+        if existing:
+            existing.status = CreativeStatus.READY
+            existing.placid_image_url = url
+            existing.s3_key = key
+            existing.s3_url = s3_url
+            existing.payload_used = {"layers": payload.get("layers", {})}
+            row = existing
+        else:
+            row = BookCreative(
+                book_id=book.id,
+                language=language,
+                creative_code=PLACID_TPL_V4,
+                status=CreativeStatus.READY,
+                placid_image_url=url,
+                s3_key=key,
+                s3_url=s3_url,
+                payload_used={"layers": payload.get("layers", {})},
+            )
+            db.add(row)
+
+        db.commit()
+        return row
+
+    except Exception as e:
+        db.rollback()
+        logger.error(
+            f"Failed to generate creative v4 for book_id={book.id}, language={language}: {e}",
+            exc_info=True,
+        )
+        raise
+
 
 
