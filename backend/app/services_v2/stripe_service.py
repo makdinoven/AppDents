@@ -456,17 +456,7 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     # 9) Время события и атрибуция рекламы
     event_time = session.get("created", int(datetime.utcnow().timestamp()))
 
-    raw_from_ad = (metadata.get("from_ad", "false") or "false").lower()
-    from_ad = (raw_from_ad == "true")
-    logging.info("from_ad (из metadata) = %s", from_ad)
-
-    # Дополнительная атрибуция по IP (24-часовое окно)
-    if not from_ad:
-        if check_ad_visit_by_ip(db, client_ip):
-            from_ad = True
-            logging.info("from_ad overridden to True by IP attribution (ip=%s)", client_ip)
-
-    # 10) Персональные/тех данные
+    # 10) Персональные/тех данные (нужны для атрибуции по IP)
     full_name = (session.get("customer_details", {}) or {}).get("name", "") or ""
     parts = full_name.strip().split()
     first_name = parts[0] if parts else None
@@ -477,6 +467,16 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     external_id = metadata.get("external_id")
     fbp_value = metadata.get("fbp")
     fbc_value = metadata.get("fbc")
+
+    raw_from_ad = (metadata.get("from_ad", "false") or "false").lower()
+    from_ad = (raw_from_ad == "true")
+    logging.info("from_ad (из metadata) = %s", from_ad)
+
+    # Дополнительная атрибуция по IP (24-часовое окно)
+    if not from_ad:
+        if check_ad_visit_by_ip(db, client_ip):
+            from_ad = True
+            logging.info("from_ad overridden to True by IP attribution (ip=%s)", client_ip)
 
     # 11) Пользователь
     user = get_user_by_email(db, email)
