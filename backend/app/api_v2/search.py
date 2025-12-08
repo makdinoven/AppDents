@@ -13,6 +13,8 @@ from ..core.search_analytics import send_search_to_analytics
 
 router = APIRouter()
 
+MIN_LEN = 3               # минимальная длина запроса
+MIN_DELAY_SECONDS = 5     # минимальная пауза между шагами набора
 
 @router.get(
     "/v2",
@@ -45,38 +47,58 @@ def search_v2(
         languages=languages,
     )
 
-    # 2. Идентификаторы пользователя
-    # здесь подставь свою логику получения текущего пользователя
+    # 2. Слишком короткие запросы не логируем вовсе
+    if len(q.strip()) < MIN_LEN:
+        return result
+
+    # 3. Идентификаторы пользователя
     user_id = getattr(getattr(request, "state", None), "user_id", None)
     ip_address = request.client.host if request.client else None
     path = str(request.url.path)
 
-    # 3. Проверка дубля за последние 2 минуты для этого же user_id/IP
     now = datetime.utcnow()
     two_minutes_ago = now - timedelta(minutes=2)
 
-    should_skip = False
+    # 4. Берём последний запрос этого же IP/юзера на этот же path
+    last_filters = [SearchQuery.path == path]
     id_filters = []
     if user_id is not None:
         id_filters.append(SearchQuery.user_id == user_id)
     if ip_address is not None:
         id_filters.append(SearchQuery.ip_address == ip_address)
-
     if id_filters:
-        existing = (
+        last_filters.append(or_(*id_filters))
+
+    last_query = None
+    if id_filters:
+        last_query = (
             db.query(SearchQuery)
-            .filter(
-                SearchQuery.query == q,
-                SearchQuery.path == path,
-                SearchQuery.created_at >= two_minutes_ago,
-                or_(*id_filters),
-            )
+            .filter(*last_filters)
+            .order_by(SearchQuery.created_at.desc())
             .first()
         )
-        if existing:
+
+    should_skip = False
+
+    if last_query is not None:
+        # если сейчас пользователь просто допечатывает тот же запрос
+        # с маленькой паузой — пропускаем этот шаг
+        delta = now - last_query.created_at.replace(tzinfo=None)
+        if (
+            delta.total_seconds() < MIN_DELAY_SECONDS
+            and q.startswith(last_query.query)
+        ):
             should_skip = True
 
-    # 4. Если дубля нет — пишем запрос и шлём в аналитику
+        # плюс старая защита от точных дублей за 2 минуты
+        if (
+            not should_skip
+            and last_query.query == q
+            and (now - last_query.created_at.replace(tzinfo=None)) < (now - two_minutes_ago)
+        ):
+            should_skip = True
+
+    # 5. Если не решили пропустить — логируем и шлём в аналитику
     if not should_skip:
         record = SearchQuery(
             query=q,
@@ -95,7 +117,6 @@ def search_v2(
                 created_at=record.created_at,
             )
         except Exception:
-            # ошибки внешней аналитики не ломают поиск
             pass
 
     return result
