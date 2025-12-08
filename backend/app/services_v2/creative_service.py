@@ -1023,8 +1023,10 @@ def generate_all_creatives(db: Session, book_id: int, language: str, manual_payl
         c2 = generate_creative_v2(db, book, language, v2_payload)
         logger.info(f"Generating creative v3, book_id={book_id}")
         c3 = generate_creative_v3(db, book, language)
+        logger.info(f"Generating creative v4, book_id={book_id}")
+        c4 = generate_creative_v4(db, book, language)
         logger.info(f"All creatives generated successfully, book_id={book_id}")
-        return [c1, c2, c3]
+        return [c1, c2, c3, c4]
     except (BookAIServiceError, PlacidServiceError, ValueError) as e:
         # Пробрасываем BookAI ошибки и ValueError как есть
         logger.error(f"Error in generate_all_creatives, book_id={book_id}, language={language}: {e}")
