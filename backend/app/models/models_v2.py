@@ -910,3 +910,77 @@ class ReferralCampaignEmail(Base):
     )
 
     user = relationship("User", backref="referral_campaign_emails")
+
+
+# ───────────────── Система опросов (Surveys) ─────────────────
+
+class SurveyStatus(str, PyEnum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    CLOSED = "closed"
+
+
+class QuestionType(str, PyEnum):
+    SINGLE_CHOICE = "single_choice"
+    MULTIPLE_CHOICE = "multiple_choice"
+    FREE_TEXT = "free_text"
+
+
+class Survey(Base):
+    """Опрос пользователей."""
+    __tablename__ = "surveys"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    title_key = Column(String(100), nullable=False)       # i18n ключ
+    description_key = Column(String(100), nullable=True)  # i18n ключ
+    status = Column(
+        Enum(SurveyStatus, name="survey_status"),
+        nullable=False,
+        server_default=SurveyStatus.DRAFT.value
+    )
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    closed_at = Column(DateTime, nullable=True)
+
+    questions = relationship(
+        "SurveyQuestion",
+        back_populates="survey",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by="SurveyQuestion.order_index"
+    )
+
+
+class SurveyQuestion(Base):
+    """Вопрос в опросе."""
+    __tablename__ = "survey_questions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id"), nullable=False, index=True)
+    order_index = Column(Integer, nullable=False)
+    question_type = Column(
+        Enum(QuestionType, name="question_type"),
+        nullable=False
+    )
+    text_key = Column(String(100), nullable=False)      # i18n ключ
+    options_keys = Column(JSON, nullable=True)          # ["survey.q1.opt1", ...] для choice
+    is_required = Column(Boolean, nullable=False, server_default="1")
+
+    survey = relationship("Survey", back_populates="questions")
+
+
+class SurveyResponse(Base):
+    """Ответ пользователя на вопрос опроса."""
+    __tablename__ = "survey_responses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    question_id = Column(Integer, ForeignKey("survey_questions.id"), nullable=False)
+    answer_choice = Column(JSON, nullable=True)   # [0, 2] - индексы выбранных вариантов
+    answer_text = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_survey_response_user_survey", "user_id", "survey_id"),
+    )

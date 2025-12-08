@@ -523,5 +523,40 @@
   },
   "pagination": {
     "pageSize": "Tamaño de página"
+  },
+
+  "survey": {
+    "crowdfunding": {
+      "title": "¡Ayúdanos a mejorar! Encuesta rápida",
+      "description": "Estamos considerando una nueva función: **¡Financiación colectiva**!\n\nImagina poder solicitar cualquier curso o libro que desees. Contribuyes con cualquier cantidad desde $5, y todos los participantes obtienen acceso completo — ¡sin importar cuánto contribuyeron!\n\n**Bonus:** ¡Podrías obtener acceso incluso antes de alcanzar la meta! Tan pronto como adquiramos el material, todos los participantes lo recibirán instantáneamente.\n\nEsta encuesta toma menos de 1 minuto. ¡Tu opinión importa!",
+      "q1": {
+        "text": "¿Qué tan interesado estás en la función de financiación colectiva?",
+        "opt1": "¡Muy interesado! La usaría de inmediato",
+        "opt2": "Suena interesante, me gustaría probarla",
+        "opt3": "Quizás, necesito pensarlo",
+        "opt4": "No me interesa"
+      },
+      "q2": {
+        "text": "¿Con qué frecuencia participarías en financiación colectiva?",
+        "opt1": "Regularmente — cuando veo algo interesante",
+        "opt2": "Ocasionalmente — para cursos/libros específicos",
+        "opt3": "Raramente o nunca"
+      },
+      "q3": {
+        "text": "¿Qué contenido te gustaría ver? (selecciona todos los que apliquen)",
+        "opt1": "Cursos de video premium",
+        "opt2": "Libros electrónicos profesionales",
+        "opt3": "Webinars y masterclasses en vivo",
+        "opt4": "Materiales raros/difíciles de encontrar"
+      },
+      "q4": {
+        "text": "¿Alguna sugerencia o comentario? (opcional)"
+      }
+    },
+    "submit": "Enviar",
+    "thankYou": "¡Gracias por tu opinión!",
+    "alreadyCompleted": "Ya completaste esta encuesta",
+    "close": "Cerrar",
+    "skip": "Más tarde"
   }
 }
