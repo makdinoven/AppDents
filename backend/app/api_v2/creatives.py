@@ -16,6 +16,7 @@ from ..services_v2.creative_service import (
     PLACID_TPL_V1, 
     PLACID_TPL_V2, 
     PLACID_TPL_V3,
+    PLACID_TPL_V4,
     BookAIValidationError,
     BookAIServiceUnavailableError,
     PlacidQuotaError,
@@ -224,8 +225,8 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
 
 
 def _order_creatives_by_template(creatives: List[BookCreative]) -> List[BookCreative]:
-    """Упорядочивает креативы по шаблонам: v1, v2, v3."""
-    order = {PLACID_TPL_V1: 0, PLACID_TPL_V2: 1, PLACID_TPL_V3: 2}
+    """Упорядочивает креативы по шаблонам: v1, v2, v3,v4"""
+    order = {PLACID_TPL_V1: 0, PLACID_TPL_V2: 1, PLACID_TPL_V3: 2, PLACID_TPL_V4: 3}
     return sorted(creatives, key=lambda x: order.get(x.creative_code, 999))
 
 
@@ -259,7 +260,7 @@ def get_or_create_creatives(
         if x.creative_code not in latest_by_code:
             latest_by_code[x.creative_code] = x
     ready = {code: x for code, x in latest_by_code.items() if x.status == CreativeStatus.READY}
-    needed = {PLACID_TPL_V1, PLACID_TPL_V2, PLACID_TPL_V3}
+    needed = {PLACID_TPL_V1, PLACID_TPL_V2, PLACID_TPL_V3,PLACID_TPL_V4}
 
     # Если все креативы готовы и не требуется регенерация - возвращаем их
     if not regen and needed.issubset(set(ready.keys())):
