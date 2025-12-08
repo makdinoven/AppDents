@@ -81,13 +81,14 @@ def search_v2(
     should_skip = False
 
     if last_query is not None:
-        # если сейчас пользователь просто допечатывает тот же запрос
-        # с маленькой паузой — пропускаем этот шаг
         delta = now - last_query.created_at.replace(tzinfo=None)
+
+        # если новый запрос просто ДОПИСЫВАЕТ старый (старый префикс нового)
         if (
-            delta.total_seconds() < MIN_DELAY_SECONDS
-            and q.startswith(last_query.query)
+                delta.total_seconds() < MIN_DELAY_SECONDS
+                and last_query.query.startswith(q)
         ):
+            # это шаг "удаления" букв — возможно, пропустить
             should_skip = True
 
         # плюс старая защита от точных дублей за 2 минуты
