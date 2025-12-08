@@ -1003,3 +1003,17 @@ class SurveyResponse(Base):
     __table_args__ = (
         Index("ix_survey_response_user_survey", "user_id", "survey_id"),
     )
+
+
+class SurveyView(Base):
+    """Открытие модалки опроса пользователем (для аналитики конверсии)."""
+    __tablename__ = "survey_views"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    viewed_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_survey_view_user_survey", "user_id", "survey_id"),
+    )

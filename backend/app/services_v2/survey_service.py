@@ -6,7 +6,7 @@ from sqlalchemy import exists, and_
 from typing import List
 import logging
 
-from ..models.models_v2 import Survey, SurveyQuestion, SurveyResponse, SurveyStatus
+from ..models.models_v2 import Survey, SurveyQuestion, SurveyResponse, SurveyStatus, SurveyView
 from ..schemas_v2.survey import AnswerIn
 
 logger = logging.getLogger(__name__)
@@ -126,3 +126,16 @@ def submit_survey_responses(
     db.commit()
     logger.info(f"User {user_id} completed survey {survey.slug}")
 
+
+def record_survey_view(db: Session, survey_id: int, user_id: int) -> None:
+    """
+    Записать факт открытия модалки опроса пользователем.
+    Записывает каждое открытие (можно анализировать повторные показы).
+    """
+    view = SurveyView(
+        survey_id=survey_id,
+        user_id=user_id
+    )
+    db.add(view)
+    db.commit()
+    logger.debug(f"User {user_id} viewed survey {survey_id}")

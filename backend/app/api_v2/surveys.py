@@ -20,6 +20,7 @@ from ..services_v2.survey_service import (
     get_active_survey_by_slug,
     check_user_completed_survey,
     submit_survey_responses,
+    record_survey_view,
 )
 
 router = APIRouter()
@@ -112,3 +113,22 @@ def submit_survey(
         message_key="survey.thankYou"
     )
 
+
+@router.post("/{slug}/view")
+def track_survey_view(
+    slug: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Записать факт открытия модалки опроса (для аналитики конверсии).
+    Фронтенд вызывает этот эндпоинт при показе модалки пользователю.
+    """
+    survey = get_active_survey_by_slug(db, slug)
+    
+    if not survey:
+        raise HTTPException(status_code=404, detail="Survey not found")
+    
+    record_survey_view(db, survey.id, current_user.id)
+    
+    return {"status": "ok"}

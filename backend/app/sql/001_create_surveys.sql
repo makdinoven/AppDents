@@ -43,6 +43,17 @@ CREATE TABLE IF NOT EXISTS survey_responses (
     INDEX idx_sr_user_survey (user_id, survey_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Таблица просмотров (открытий модалки) для аналитики конверсии
+CREATE TABLE IF NOT EXISTS survey_views (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    survey_id INT NOT NULL,
+    user_id INT NOT NULL,
+    viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_sv_user_survey (user_id, survey_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- ============================================
 -- Данные первого опроса: Складчина (Crowdfunding)
