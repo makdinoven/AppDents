@@ -6,10 +6,10 @@ from celery import shared_task
 from sqlalchemy.orm import Session
 from sqlalchemy import exists
 
-from app.db.session import SessionLocal
-from app.core.config import settings
-from app.services import email_sender
-from app.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
+from ..db.database import SessionLocal
+from ..core.config import settings
+from ..utils import email_sender
+from ..models.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
 
 # лимит за один прогон таски (если она раз в день — это и есть 200–300 писем/день)
 MAX_DAILY_REFERRAL_EMAILS = 300
