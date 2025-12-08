@@ -37,6 +37,7 @@ const AnalyticsPurchases = () => {
         items: res.data.items,
         total: res.data.total,
         total_amount: res.data.total_amount,
+        total_amount_from_ad: res.data.total_amount_from_ad,
       });
       setLoading(false);
     } catch (err) {
@@ -89,6 +90,12 @@ const AnalyticsPurchases = () => {
           <p>
             Amount:
             <span className={"highlight_blue_bold"}>{data.total_amount}</span>
+          </p>
+          <p>
+            From ad:
+            <span className={"highlight_blue_bold"}>
+              {data.total_amount_from_ad}
+            </span>
           </p>
         </div>
       )}
