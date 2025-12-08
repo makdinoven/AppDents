@@ -42,4 +42,20 @@
     padding: 15px;
     gap: 10px;
   }
+
+  .filter_header_row {
+    p {
+      gap: 5px;
+    }
+  }
+
+  .label_icon {
+    width: 20px;
+    height: 20px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
 }
