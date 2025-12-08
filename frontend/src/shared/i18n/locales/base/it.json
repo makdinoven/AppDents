@@ -523,5 +523,40 @@
   },
   "pagination": {
     "pageSize": "Dimensione della pagina"
+  },
+
+  "survey": {
+    "crowdfunding": {
+      "title": "Aiutaci a migliorare! Sondaggio rapido",
+      "description": "Stiamo considerando una nuova funzione: **Crowdfunding**!\n\nImmagina di poter richiedere qualsiasi corso o libro desideri. Contribuisci con qualsiasi importo da $5, e tutti i partecipanti ottengono accesso completo — indipendentemente da quanto hanno contribuito!\n\n**Bonus:** Potresti ottenere l'accesso anche prima del raggiungimento dell'obiettivo! Non appena acquisiremo il materiale, tutti i partecipanti lo riceveranno istantaneamente.\n\nQuesto sondaggio richiede meno di 1 minuto. La tua opinione conta!",
+      "q1": {
+        "text": "Quanto sei interessato alla funzione di crowdfunding?",
+        "opt1": "Molto interessato! La userei subito",
+        "opt2": "Sembra interessante, vorrei provarla",
+        "opt3": "Forse, devo pensarci",
+        "opt4": "Non sono interessato"
+      },
+      "q2": {
+        "text": "Quanto spesso parteciperesti al crowdfunding?",
+        "opt1": "Regolarmente — quando vedo qualcosa di interessante",
+        "opt2": "Occasionalmente — per corsi/libri specifici",
+        "opt3": "Raramente o mai"
+      },
+      "q3": {
+        "text": "Quali contenuti vorresti vedere? (seleziona tutti quelli applicabili)",
+        "opt1": "Corsi video premium",
+        "opt2": "E-book professionali",
+        "opt3": "Webinar e masterclass dal vivo",
+        "opt4": "Materiali rari/difficili da trovare"
+      },
+      "q4": {
+        "text": "Suggerimenti o commenti? (opzionale)"
+      }
+    },
+    "submit": "Invia",
+    "thankYou": "Grazie per il tuo feedback!",
+    "alreadyCompleted": "Hai già completato questo sondaggio",
+    "close": "Chiudi",
+    "skip": "Più tardi"
   }
 }
