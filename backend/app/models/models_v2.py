@@ -917,8 +917,14 @@ class SearchQuery(Base):
     id = Column(BigInteger, primary_key=True, index=True)
     query = Column(Text, nullable=False)
     path = Column(Text, nullable=True)
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    ip_address = Column(String(45), nullable=True, index=True)
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
+
+    user = relationship("User", backref="search_queries")
