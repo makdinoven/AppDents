@@ -17,6 +17,7 @@ from ..schemas_v2.book import (
     BookLandingCreate, BookLandingUpdate, BookDetailResponse, BookLandingResponse, BookResponse
 )
 from ..utils.s3 import generate_presigned_url
+from ..utils.ip_utils import is_facebook_bot_ip
 
 log = logging.getLogger(__name__)
 
@@ -410,7 +411,14 @@ def _unique_ip_count_recent(db: Session, book_landing_id: int, window_end: datet
     return int(count or 0)
 
 
-def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+def track_book_ad_visit(
+    db: Session,
+    book_landing_id: int,
+    fbp: str | None,
+    fbc: str | None,
+    ip: str,
+    user_agent: str | None = None,
+):
     """
     Отслеживает визит с рекламы на книжный лендинг с метаданными (fbp, fbc, ip).
     Загорает флаг только после порога уникальных IP за окно BOOK_AD_UNIQUE_IP_WINDOW.
@@ -419,8 +427,20 @@ def track_book_ad_visit(db: Session, book_landing_id: int, fbp: str | None, fbc:
     При высокой конкуренции за блокировку row-lock:
     - Визит ВСЕГДА записывается (это главное)
     - Обновление флага рекламы пропускается при блокировке (eventual consistency)
+    - Визиты от ботов (по IP и User-Agent) игнорируются
     """
     from sqlalchemy.exc import OperationalError
+    from ..utils.ip_utils import is_bot_user_agent
+    
+    # Фильтруем ботов по User-Agent
+    if is_bot_user_agent(user_agent):
+        log.debug("Skipping book ad visit from bot User-Agent: %s", user_agent[:100] if user_agent else None)
+        return
+    
+    # Фильтруем ботов Facebook по IP
+    if is_facebook_bot_ip(ip):
+        log.debug("Skipping book ad visit from Facebook bot IP: %s", ip)
+        return
     
     now = datetime.utcnow()
     visit = BookAdVisit(

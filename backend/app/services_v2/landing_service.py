@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, Query
 from fastapi import HTTPException
 
 from .preview_service import get_or_schedule_preview
+from ..utils.ip_utils import is_facebook_bot_ip
 from ..models.models_v2 import (
     Landing,
     Author,
@@ -694,14 +695,33 @@ def _unique_ip_count_recent(db, landing_id: int, now: datetime) -> int:
 
 from sqlalchemy import func
 
-def track_ad_visit(db: Session, landing_id: int, fbp: str | None, fbc: str | None, ip: str):
+def track_ad_visit(
+    db: Session,
+    landing_id: int,
+    fbp: str | None,
+    fbc: str | None,
+    ip: str,
+    user_agent: str | None = None,
+):
     """
     При высокой конкуренции за блокировку row-lock:
     - Визит ВСЕГДА записывается (это главное)
     - Обновление флага рекламы пропускается при блокировке (eventual consistency)
+    - Визиты от ботов (по IP и User-Agent) игнорируются
     """
     import logging
+    from ..utils.ip_utils import is_bot_user_agent
     log = logging.getLogger(__name__)
+    
+    # Фильтруем ботов по User-Agent
+    if is_bot_user_agent(user_agent):
+        log.debug("Skipping ad visit from bot User-Agent: %s", user_agent[:100] if user_agent else None)
+        return
+    
+    # Фильтруем ботов Facebook по IP
+    if is_facebook_bot_ip(ip):
+        log.debug("Skipping ad visit from Facebook bot IP: %s", ip)
+        return
     
     now = datetime.utcnow()
 
