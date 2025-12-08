@@ -1,17 +1,16 @@
 .btn_wrapper {
-  position: fixed;
-  bottom: 30px;
-  right: 50px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
   background-color: $primary-04;
   backdrop-filter: blur(20px);
   padding: 2px;
-  z-index: 300;
   opacity: 0;
-  @include transition;
+  @include transition();
   border-radius: 100%;
   overflow: hidden;
-  width: 50px;
-  height: 50px;
+  height: 100%;
+  aspect-ratio: 1/1;
   cursor: pointer;
 
   &.show {
@@ -22,7 +21,6 @@
   &:active {
     .scroll_btn {
       background-color: transparent;
-      //border-color: $primary;
       svg {
         path {
           fill: $background-color;
@@ -56,7 +54,7 @@
   pointer-events: none;
 
   svg {
-    $size: 19px;
+    $size: 20px;
     width: $size;
     height: $size;
     min-width: $size;
@@ -68,14 +66,5 @@
       fill: $accent;
       stroke-width: 1;
     }
-  }
-}
-
-@media (max-width: $tablet-breakpoint) {
-  .btn_wrapper {
-    bottom: 80px;
-    right: 10px;
-    width: 42px;
-    height: 42px;
   }
 }
