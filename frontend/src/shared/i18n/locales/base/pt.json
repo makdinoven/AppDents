@@ -71,6 +71,7 @@
   "firstFreeLesson": "Primeira aula grátis",
   "or": "ou",
   "here": "aqui.",
+  "of": "de",
   "readerFailedToLoad": "A janela de leitura não carregou? Tente ler o arquivo diretamente",
   "tooManyRequests": "⚠️ Muitas solicitações. Por favor, recarregue a página e tente novamente em instantes.",
 
@@ -457,5 +458,63 @@
     "productRequestSuccess": "Seu pedido foi enviado com sucesso. Responderemos o mais rápido possível.",
     "productRequestFailed": "Não foi possível processar o pedido. Tente novamente em instantes.",
     "loginText": "<0>Crie uma conta</0> para desbloquear o acesso a pedir livros e cursos."
+  },
+
+  "sort": {
+    "toShowFirst": "Quais itens mostrar primeiro:",
+    "keys": {
+      "price_asc": "Mais baratos primeiro",
+      "price_desc": "Mais caros primeiro",
+      "pages_asc": "Menos páginas",
+      "pages_desc": "Mais páginas",
+      "year_asc": "Edições mais antigas primeiro",
+      "year_desc": "Edições mais novas primeiro",
+      "new_asc": "Itens mais antigos primeiro",
+      "new_desc": "Itens mais novos primeiro",
+      "popular_asc": "Menos populares primeiro",
+      "popular_desc": "Mais populares primeiro",
+      "courses_desc": "Mais cursos primeiro",
+      "courses_asc": "Menos cursos primeiro",
+      "books_desc": "Mais livros primeiro",
+      "books_asc": "Menos livros primeiro",
+      "name_asc": "Nome (A–Z)",
+      "name_desc": "Nome (Z–A)",
+      "recommend": "Recomendado",
+      "duration_asc": "Curto → Longo",
+      "duration_desc": "Longo → Curto",
+      "lessons_desc": "Mais aulas primeiro",
+      "lessons_asc": "Menos aulas primeiro"
+    }
+  },
+
+  "filters": {
+    "filters": "Filtros",
+    "selectedFilters": "Filtros: {{count}}",
+    "resetAll": "Redefinir tudo",
+    "allFilters": "Todos os filtros",
+    "showItems_one": "Mostrar {{count}} item",
+    "showItems_other": "Mostrar {{count}} itens",
+    "showItems_zero": "Nenhum item",
+    "itemsFound_one": "Encontrado {{count}} item",
+    "itemsFound_other": "Encontrados {{count}} itens",
+    "keys": {
+      "publisher_ids": "Editoras",
+      "author_ids": "Autores",
+      "author_ids.search": "Pesquisar autores...",
+      "tags": "Tags",
+      "formats": "Formatos",
+      "range": {
+        "year": "Ano de publicação",
+        "usd": "Preço",
+        "pages": "Páginas",
+        "books": "Quantidade de livros",
+        "courses": "Quantidade de cursos",
+        "lessons": "Quantidade de aulas"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "Tamanho da página"
   }
+
 }

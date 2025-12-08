@@ -5,7 +5,7 @@ import { adminApi } from "../../../../shared/api/adminApi/adminApi.ts";
 import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
 import Table from "../../../../shared/components/ui/Table/Table.tsx";
 import PurchasesSourceChart from "./Charts/PurchasesSourceChart.tsx";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { PAYMENT_SOURCES_OPTIONS } from "../../../../shared/common/helpers/commonConstants.ts";
 import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRangeFilter.ts";
@@ -37,6 +37,7 @@ const AnalyticsPurchases = () => {
         items: res.data.items,
         total: res.data.total,
         total_amount: res.data.total_amount,
+        total_amount_from_ad: res.data.total_amount_from_ad,
       });
       setLoading(false);
     } catch (err) {
@@ -89,6 +90,12 @@ const AnalyticsPurchases = () => {
           <p>
             Amount:
             <span className={"highlight_blue_bold"}>{data.total_amount}</span>
+          </p>
+          <p>
+            From ad:
+            <span className={"highlight_blue_bold"}>
+              {data.total_amount_from_ad}
+            </span>
           </p>
         </div>
       )}

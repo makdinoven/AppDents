@@ -1,0 +1,43 @@
+.range_container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.range_items {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-start;
+  @include clamped-p3;
+  align-items: center;
+}
+
+.range_separator {
+  height: 2px;
+  width: 15px;
+  border-radius: 70px;
+  background-color: $hover-color-darken-analogue;
+}
+
+.min_max_container {
+  flex: 1;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-end;
+  @include clamped-p5;
+  display: flex;
+  gap: 10px;
+  color: $hover-color-dark;
+
+  span {
+    text-wrap: nowrap;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .range_container {
+    flex-direction: column;
+    align-items: center;
+  }
+}

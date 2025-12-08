@@ -71,6 +71,7 @@
   "firstFreeLesson": "أول درس مجاني",
   "or": "أو",
   "here": "هنا",
+  "of": "من",
   "readerFailedToLoad": "هل فشلت نافذة القارئ في التحميل؟ حاول قراءة الملف مباشرة",
   "tooManyRequests": "⚠️ عدد كبير من الطلبات. يرجى إعادة تحميل الصفحة والمحاولة مرة أخرى بعد قليل.",
 
@@ -484,5 +485,69 @@
     "productRequestSuccess": "تم إرسال طلبك بنجاح. سنقوم بالرد في أقرب وقت ممكن.",
     "productRequestFailed": "تعذر معالجة الطلب. يرجى المحاولة مرة أخرى بعد قليل.",
     "loginText": "<0>أنشئ حسابًا</0> لفتح الوصول لطلب الكتب والدورات."
+  },
+
+  "sort": {
+    "toShowFirst": "ما هي العناصر التي تريد عرضها أولاً:",
+    "keys": {
+      "price_asc": "الأرخص أولاً",
+      "price_desc": "الأغلى أولاً",
+      "pages_asc": "عدد صفحات أقل",
+      "pages_desc": "عدد صفحات أكثر",
+      "year_asc": "الإصدارات الأقدم أولاً",
+      "year_desc": "الإصدارات الأحدث أولاً",
+      "new_asc": "العناصر الأقدم أولاً",
+      "new_desc": "الأحدث أولاً",
+      "popular_asc": "الأقل شهرة أولاً",
+      "popular_desc": "الأكثر شهرة أولاً",
+      "courses_desc": "المزيد من الدورات أولاً",
+      "courses_asc": "عدد أقل من الدورات أولاً",
+      "books_desc": "المزيد من الكتب أولاً",
+      "books_asc": "عدد أقل من الكتب أولاً",
+      "name_asc": "الاسم (A–Z)",
+      "name_desc": "الاسم (Z–A)",
+      "recommend": "مُوصى به",
+      "duration_asc": "قصير → طويل",
+      "duration_desc": "طويل → قصير",
+      "lessons_desc": "المزيد من الدروس أولاً",
+      "lessons_asc": "عدد أقل من الدروس أولاً"
+    }
+  },
+
+  "filters": {
+    "filters": "الفلاتر",
+    "resetAll": "إعادة تعيين الكل",
+    "allFilters": "جميع الفلاتر",
+    "selectedFilters": "الفلاتر: {{count}}",
+    "showItems_zero": "لا توجد عناصر",
+    "showItems_one": "عرض عنصر واحد",
+    "showItems_two": "عرض عنصرين",
+    "showItems_few": "عرض {{count}} عناصر",
+    "showItems_many": "عرض {{count}} عنصراً",
+    "showItems_other": "عرض {{count}} عنصر",
+    "itemsFound_one": "تم العثور على عنصر واحد",
+    "itemsFound_two": "تم العثور على عنصرين",
+    "itemsFound_few": "تم العثور على {{count}} عناصر",
+    "itemsFound_many": "تم العثور على {{count}} عنصراً",
+    "itemsFound_other": "تم العثور على {{count}} عنصر",
+    "keys": {
+      "publisher_ids": "الناشرون",
+      "author_ids": "المؤلفون",
+      "author_ids.search": "البحث عن مؤلفين...",
+      "tags": "الوسوم",
+      "formats": "الصيغ",
+      "range": {
+        "year": "سنة النشر",
+        "usd": "السعر",
+        "pages": "الصفحات",
+        "books": "عدد الكتب",
+        "courses": "عدد الدورات",
+        "lessons": "عدد الدروس"
+      }
+    }
+  },
+  "pagination": {
+    "pageSize": "حجم الصفحة"
   }
+
 }

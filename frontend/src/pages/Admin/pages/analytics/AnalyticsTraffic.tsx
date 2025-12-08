@@ -6,7 +6,7 @@ import DateRangeFilter from "../../../../shared/components/ui/DateRangeFilter/Da
 import SwitchButtons from "../../../../shared/components/ui/SwitchButtons/SwitchButtons.tsx";
 import LandingAnalyticsChart from "./Charts/LandingAnalyticsChart.tsx";
 import Loader from "../../../../shared/components/ui/Loader/Loader.tsx";
-import MultiSelect from "../../../../shared/components/MultiSelect/MultiSelect.tsx";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
 import { LANGUAGES_NAME } from "../../../../shared/common/helpers/commonConstants.ts";
 import Table from "../../../../shared/components/ui/Table/Table.tsx";
 

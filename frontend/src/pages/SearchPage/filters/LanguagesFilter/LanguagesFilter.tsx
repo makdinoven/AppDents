@@ -3,24 +3,23 @@ import { LANGUAGES } from "../../../../shared/common/helpers/commonConstants.ts"
 import LangLogo, {
   LanguagesType,
 } from "../../../../shared/components/ui/LangLogo/LangLogo.tsx";
-import { useLocation, useSearchParams } from "react-router-dom";
 
 const LanguagesFilter = ({
   selectedLanguages,
   loading,
-  urlKey,
+  onChange,
 }: {
   selectedLanguages: LanguagesType[];
   loading: boolean;
-  urlKey: string;
+  urlKey?: string;
+  onChange: (langs: LanguagesType[]) => void;
 }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const location = useLocation();
-
   const handleClick = (lang: LanguagesType) => {
     let newValue: LanguagesType[];
+
     if (selectedLanguages.includes(lang)) {
       if (selectedLanguages.length > 1) {
+        // не даём выключить последний язык
         newValue = selectedLanguages.filter((l) => l !== lang);
       } else {
         newValue = selectedLanguages;
@@ -28,14 +27,8 @@ const LanguagesFilter = ({
     } else {
       newValue = [...selectedLanguages, lang];
     }
-    searchParams.delete(urlKey);
-    newValue.forEach((l) => searchParams.append(urlKey, l));
-    setSearchParams(searchParams, {
-      replace: true,
-      ...(location.state?.backgroundLocation
-        ? { state: { backgroundLocation: location.state.backgroundLocation } }
-        : {}),
-    });
+
+    onChange(newValue);
   };
 
   return (

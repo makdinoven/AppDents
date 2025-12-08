@@ -1,87 +1,127 @@
 import s from "./Courses.module.scss";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../shared/store/store.ts";
+import { useSelector } from "react-redux";
+import { AppRootStateType } from "../../shared/store/store.ts";
 import { useEffect, useState } from "react";
-import { ParamsType } from "../../shared/api/adminApi/types.ts";
 import DetailHeader from "../Admin/pages/modules/common/DetailHeader/DetailHeader.tsx";
-import ListController from "../../shared/components/ui/ListController/ListController.tsx";
+import ListController from "../../shared/components/list/ListController/ListController.tsx";
 import CardsList from "../../shared/components/ProductsSection/CardsList/CardsList.tsx";
 import { mainApi } from "../../shared/api/mainApi/mainApi.ts";
-import { useNavigate } from "react-router-dom";
-import { getCourses } from "../../shared/store/actions/userActions.ts";
 import ProductsSection from "../../shared/components/ProductsSection/ProductsSection.tsx";
 import CourseCardSkeletons from "../../shared/components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import CustomOrder from "../../shared/components/CustomOrder/CustomOrder.tsx";
-import { PATHS } from "../../app/routes/routes.ts";
+import Pagination, {
+  PaginationType,
+} from "../../shared/components/list/Pagination/Pagination.tsx";
+import FiltersPanel from "../../shared/components/filters/FiltersPanel/FiltersPanel.tsx";
+import {
+  mapBackendFilters,
+  mapBackendSelected,
+} from "../../shared/components/filters/model/mapBackendFilters.ts";
+import {
+  FiltersDataUI,
+  SelectedUI,
+} from "../../shared/components/filters/model/types.ts";
+import { useListQueryParams } from "../../shared/components/list/model/useListQueryParams.ts";
+import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatchType>();
-  const { language, isLogged, role } = useSelector(
+  const { language, isLogged } = useSelector(
     (state: AppRootStateType) => state.user,
   );
-  const userCourses = useSelector(
-    (state: AppRootStateType) => state.user.courses,
-  );
   const [courses, setCourses] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const isAdmin = role === "admin";
+  const [pagination, setPagination] = useState<PaginationType | null>(null);
+  const [filters, setFilters] = useState<FiltersDataUI | null>(null);
+  const [selectedFilters, setSelectedFilters] = useState<SelectedUI[] | null>(
+    null,
+  );
+  const { params, actions } = useListQueryParams({
+    defaultSort: isLogged ? "recommend" : undefined,
+  });
 
-  useEffect(() => {
-    if (isLogged && isFree && !isAdmin) {
-      dispatch(getCourses());
-    }
-  }, [isLogged]);
-
-  useEffect(() => {
-    if (userCourses.length > 0 && isFree && !isAdmin) {
-      navigate(PATHS.COURSES_LISTING);
-    }
-  }, [userCourses]);
-
-  const loadCourses = async (params: ParamsType) => {
+  const loadCourses = async () => {
     setLoading(true);
     try {
-      const paramsToSend = { ...params, single_course: isFree };
-      const res = await mainApi.getLandingCards(paramsToSend);
-
+      const res = await mainApi.getLandingCardsV2({
+        ...params,
+        language: language,
+        include_filters: true,
+      });
       setCourses(res.data.cards);
-      setTotal(res.data.total);
-      setTotalPages(res.data.total_pages);
-      setIsFirstLoad(false);
+      setFilters(mapBackendFilters(res.data.filters));
+      setSelectedFilters(mapBackendSelected(res.data.filters.selected));
+      setPagination({
+        total: res.data.total,
+        total_pages: res.data.total_pages,
+        page: res.data.page,
+        size: res.data.size,
+      });
     } catch (error) {
       console.log(error);
     } finally {
+      setIsFirstLoad(false);
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadCourses();
+  }, [params, language]);
+
+  useEffect(() => {
+    if (params.page !== 1) {
+      actions.set({ page: 1 });
+    }
+  }, [language]);
 
   return (
     <div lang={language.toLowerCase()} className={s.courses}>
       <DetailHeader title={"courses.title"} />
       <ListController
-        language={language}
-        size={10}
-        type="courses"
-        loadData={(params) => loadCourses(params)}
-        total={total}
-        totalPages={totalPages}
-        filters={["tags", "sort", "size"]}
-        SkeletonComponent={CourseCardSkeletons}
-        skeletonProps={{ shape: true }}
-        loading={loading}
+        filtersSlot={
+          !filters && loading ? (
+            <FiltersSkeleton />
+          ) : (
+            <FiltersPanel
+              loading={loading}
+              totalItems={pagination?.total ? pagination.total : 0}
+              actions={actions}
+              searchPlaceholder={`courses.search`}
+              filtersData={filters}
+              selectedFilters={selectedFilters}
+              params={params}
+            />
+          )
+        }
+        paginationSlot={
+          pagination && (
+            <Pagination
+              onPageChange={(p) => actions.set({ page: p })}
+              onSizeChange={(s) => actions.set({ size: s })}
+              pagination={{
+                page: params.page,
+                size: params.size,
+                total: pagination.total,
+                total_pages: pagination.total_pages,
+              }}
+            />
+          )
+        }
       >
-        <CardsList
-          productCardFlags={{ isFree: isFree, isClient: true }}
-          cardType={"course"}
-          loading={loading}
-          showSeeMore={false}
-          showEndOfList={false}
-          cards={courses}
-        />
+        {loading && !selectedFilters ? (
+          <CourseCardSkeletons shape amount={Number(params.size)} />
+        ) : (
+          <CardsList
+            showLoaderOverlay={loading}
+            loading={loading}
+            showSeeMore={false}
+            showEndOfList={false}
+            cards={courses}
+            productCardFlags={{ isFree: isFree, isClient: true }}
+            cardType={"course"}
+          />
+        )}
       </ListController>
       {!isFirstLoad && (
         <>

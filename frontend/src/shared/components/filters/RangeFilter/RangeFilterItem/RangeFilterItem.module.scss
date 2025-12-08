@@ -1,0 +1,87 @@
+.input_container {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  @include clamped-p3;
+
+  input {
+    @include transition;
+    width: 80px;
+    border: 1px solid $hover-color-analogue;
+    background-color: $hover-color-analogue;
+    border-radius: 13px;
+    padding: 5px 10px;
+
+    &::placeholder {
+      color: $hover-color-dark;
+    }
+
+    &:focus-visible {
+      border-color: $hover-color-darken;
+    }
+  }
+}
+
+
+.update_number_btn {
+  width: 25px;
+  height: 25px;
+  @include flex-center;
+  @include transition;
+  @include clamped-p3-line-height;
+  background-color: $hover-color-analogue;
+  border: 1px solid $hover-color-darken-analogue;
+  border-radius: 100%;
+
+  &.inactive {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  svg {
+    path {
+      @include transition;
+      stroke: $accent;
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover:not(.inactive) {
+      background-color: $background-color;
+
+      svg {
+        path {
+          stroke: $primary;
+        }
+      }
+    }
+  }
+
+  &:active:not(.inactive) {
+    background-color: $primary;
+    svg {
+      path {
+        stroke: $background-color;
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .input_container {
+    gap: 5px;
+    input {
+      width: 70px;
+    }
+  }
+
+  .update_number_btn {
+    width: 20px;
+    height: 20px;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+}

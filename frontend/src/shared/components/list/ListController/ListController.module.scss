@@ -1,0 +1,11 @@
+.list_controller_container {
+  @include flex-column;
+  flex: 1;
+  gap: 40px;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .list_controller_container {
+    gap: 25px;
+  }
+}
