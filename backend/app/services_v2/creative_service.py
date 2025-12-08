@@ -1141,7 +1141,7 @@ def generate_creative_v4(
                     "NEW_PRICE": {"text": price_new},
                     "NEW_PRICE_TEXT": {"text": ov.get("new_price_text", "New:")},
 
-                    "OLD_PRCIE_TEXT": {"text": ov.get("old_price_text", "Old price:")},
+                    "OLD_PRICE_TEXT": {"text": ov.get("old_price_text", "Old price:")},
                     "OLD_PRICE": {"text": price_old},
 
                     "TEXT_DOWNLOAD": {"text": ov.get("button_text", "DOWNLOAD NOW")},
