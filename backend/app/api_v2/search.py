@@ -14,7 +14,7 @@ from ..core.search_analytics import send_search_to_analytics
 router = APIRouter()
 
 MIN_LEN = 3               # минимальная длина запроса для логирования
-MIN_DELAY_SECONDS = 5     # если меньше — обновляем последнюю запись
+MIN_DELAY_SECONDS = 15     # если меньше — обновляем последнюю запись
 
 
 @router.get(
