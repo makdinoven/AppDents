@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from urllib.parse import urlparse
 
@@ -18,7 +18,7 @@ from .book_service import books_in_landing
 from ..services_v2.wallet_service import debit_balance, get_cashback_percent
 from ..core.config import settings
 from ..models.models_v2 import Course, Landing, Purchase, WalletTxTypes, User, ProcessedStripeEvent, PurchaseSource, \
-    AbandonedCheckout, FreeCourseAccess, FreeCourseSource, BookLanding, Book
+    AbandonedCheckout, FreeCourseAccess, FreeCourseSource, BookLanding, Book, AdVisit, BookAdVisit
 from ..services_v2.user_service import (
     add_course_to_user,
     create_user,
@@ -73,6 +73,32 @@ def _save_lead(db: Session, session_obj: dict, email: str | None, region: str):
         logging.info("Skip lead: duplicate for session %s (email %s)",
                      session_id, email)
         return False
+
+# ───────────────────────────────────────────────────────────────
+# IP-based Ad Attribution helper
+# ───────────────────────────────────────────────────────────────
+def check_ad_visit_by_ip(db: Session, ip_address: str) -> bool:
+    """Проверяет, был ли рекламный визит с данного IP за последние 24 часа."""
+    if not ip_address or ip_address == "0.0.0.0":
+        return False
+    
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    
+    # Проверяем ad_visits (курсовые лендинги)
+    course_visit = db.query(AdVisit).filter(
+        AdVisit.ip_address == ip_address,
+        AdVisit.visited_at >= cutoff
+    ).first()
+    if course_visit:
+        return True
+    
+    # Проверяем book_ad_visits (книжные лендинги)
+    book_visit = db.query(BookAdVisit).filter(
+        BookAdVisit.ip_address == ip_address,
+        BookAdVisit.visited_at >= cutoff
+    ).first()
+    return book_visit is not None
+
 
 # Stripe helpers
 # ────────────────────────────────────────────────────────────────
@@ -433,6 +459,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
     raw_from_ad = (metadata.get("from_ad", "false") or "false").lower()
     from_ad = (raw_from_ad == "true")
     logging.info("from_ad (из metadata) = %s", from_ad)
+
+    # Дополнительная атрибуция по IP (24-часовое окно)
+    if not from_ad:
+        if check_ad_visit_by_ip(db, client_ip):
+            from_ad = True
+            logging.info("from_ad overridden to True by IP attribution (ip=%s)", client_ip)
 
     # 10) Персональные/тех данные
     full_name = (session.get("customer_details", {}) or {}).get("name", "") or ""

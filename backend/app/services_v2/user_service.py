@@ -628,6 +628,7 @@ def get_purchase_analytics(
             return {
                 "total": 0,
                 "total_amount": "0.00 $",
+                "total_amount_from_ad": "0.00 $",
                 "items": [],
             }
         base_q = base_q.filter(Purchase.source == src_enum)
@@ -642,6 +643,18 @@ def get_purchase_analytics(
         .filter(
             Purchase.created_at >= start_dt,
             Purchase.created_at <  end_dt,
+            *( [Purchase.source == src_enum] if source_filter else [] )
+        )
+        .scalar()
+    )
+
+    # Сумма покупок с рекламы (from_ad = True)
+    total_amount_from_ad_val: float | None = (
+        db.query(func.coalesce(func.sum(Purchase.amount), 0))
+        .filter(
+            Purchase.created_at >= start_dt,
+            Purchase.created_at <  end_dt,
+            Purchase.from_ad == True,
             *( [Purchase.source == src_enum] if source_filter else [] )
         )
         .scalar()
@@ -671,6 +684,7 @@ def get_purchase_analytics(
     result: Dict[str, Any] = {
         "total": total,
         "total_amount": f"{(total_amount_val or 0):.2f} $",
+        "total_amount_from_ad": f"{(total_amount_from_ad_val or 0):.2f} $",
         "items": items,
     }
     if page and size:
