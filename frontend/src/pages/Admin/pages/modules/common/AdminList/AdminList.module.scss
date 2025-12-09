@@ -27,7 +27,8 @@
 }
 
 .filters_top {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.5fr;
   align-items: center;
   gap: 10px;
 
@@ -44,6 +45,7 @@
 
 @media (max-width: $mobile-breakpoint) {
   .filters_top {
+    display: flex;
     flex-direction: column-reverse;
     align-items: unset;
   }

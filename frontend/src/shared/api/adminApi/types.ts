@@ -5,4 +5,5 @@ export interface ParamsType {
   q?: string;
   sort?: string;
   tags?: string;
+  is_hidden?: boolean | string;
 }
