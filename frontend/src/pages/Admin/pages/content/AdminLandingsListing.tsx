@@ -42,8 +42,9 @@ const AdminLandingsListing = () => {
         onSearch={(params) => dispatch(searchLandings(params))}
         onLoad={(params) => dispatch(getLandings(params))}
         onCreate={() => dispatch(createLanding(INITIAL_LANDING))}
-        showToggle={true}
-        showLanguageFilter={true}
+        showToggle
+        showVisibilityFilter
+        showLanguageFilter
         handleToggle={(id: number, isHidden: boolean) =>
           handleToggleLandingVisibility(id, isHidden)
         }
