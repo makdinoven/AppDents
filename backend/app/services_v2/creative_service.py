@@ -1006,35 +1006,56 @@ def generate_creative_v3(
 
 
 def generate_all_creatives(db: Session, book_id: int, language: str, manual_payload: Optional[Dict[str, Dict[str, str]]] = None):
-    """Генерирует все три креатива для книги. Пробрасывает исключения BookAI без изменений."""
     from sqlalchemy.orm import selectinload
+
     logger.info(f"Starting generation of all creatives, book_id={book_id}, language={language}")
     book = db.query(Book).options(selectinload(Book.files)).filter(Book.id == book_id).first()
     if not book:
         raise ValueError("Book not found")
 
+    existing = (
+        db.query(BookCreative)
+        .filter(BookCreative.book_id == book_id, BookCreative.language == language)
+        .all()
+    )
+    ready_by_code = {c.creative_code: c for c in existing if c.status == CreativeStatus.READY}
+
     v1_payload = manual_payload.get("v1") if manual_payload else None
     v2_payload = manual_payload.get("v2") if manual_payload else None
 
-    try:
+    results = []
+
+    # v1
+    if PLACID_TPL_V1 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V1])
+    else:
         logger.info(f"Generating creative v1, book_id={book_id}")
-        c1 = generate_creative_v1(db, book, language, v1_payload)
+        results.append(generate_creative_v1(db, book, language, v1_payload))
+
+    # v2
+    if PLACID_TPL_V2 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V2])
+    else:
         logger.info(f"Generating creative v2, book_id={book_id}")
-        c2 = generate_creative_v2(db, book, language, v2_payload)
+        results.append(generate_creative_v2(db, book, language, v2_payload))
+
+    # v3
+    if PLACID_TPL_V3 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V3])
+    else:
         logger.info(f"Generating creative v3, book_id={book_id}")
-        c3 = generate_creative_v3(db, book, language)
+        results.append(generate_creative_v3(db, book, language))
+
+    # v4
+    if PLACID_TPL_V4 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V4])
+    else:
         logger.info(f"Generating creative v4, book_id={book_id}")
-        c4 = generate_creative_v4(db, book, language)
-        logger.info(f"All creatives generated successfully, book_id={book_id}")
-        return [c1, c2, c3, c4]
-    except (BookAIServiceError, PlacidServiceError, ValueError) as e:
-        # Пробрасываем BookAI ошибки и ValueError как есть
-        logger.error(f"Error in generate_all_creatives, book_id={book_id}, language={language}: {e}")
-        raise
-    except Exception as e:
-        # Обертываем неожиданные ошибки
-        logger.error(f"Unexpected error in generate_all_creatives, book_id={book_id}, language={language}: {e}", exc_info=True)
-        raise
+        results.append(generate_creative_v4(db, book, language))
+
+    logger.info(f"All creatives generated / reused successfully, book_id={book_id}")
+    return results
+
 
 
 def generate_single_creative(
