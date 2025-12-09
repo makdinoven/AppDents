@@ -4,9 +4,9 @@ from celery import shared_task
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.database import SessionLocal
-from app.models_v2 import Cart, User
-from app.utils.email_sender import send_big_cart_reminder_email
+from ..db.database import SessionLocal
+from ..models.models_v2 import Cart, User
+from ..utils.email_sender import send_big_cart_reminder_email
 
 
 # через сколько часов после изменения корзины можно слать ПЕРВОЕ письмо
