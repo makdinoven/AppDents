@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta
 
 from celery import shared_task
@@ -21,6 +22,9 @@ MAX_BIG_CART_REMINDERS = 1
 
 # ограничение пачки за один прогон (~27 писем/час для 80 писем/час суммарно)
 BIG_CART_BATCH_LIMIT = 27
+
+# задержка между отправками писем (секунды) — защита от Gmail rate limit
+EMAIL_SEND_DELAY_SECONDS = 3
 
 
 @shared_task(name="app.tasks.big_cart_reminder.process_big_cart_reminders")
@@ -91,6 +95,8 @@ def process_big_cart_reminders() -> int:
                 cart.bigcart_send_count += 1
                 cart.bigcart_last_sent_at = now
                 sent_count += 1
+                # задержка между отправками для избежания Gmail rate limit
+                time.sleep(EMAIL_SEND_DELAY_SECONDS)
 
         db.commit()
         return sent_count

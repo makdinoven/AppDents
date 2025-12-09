@@ -1,13 +1,48 @@
-import requests
+import threading
+import time
 from typing import Optional
 
+import requests
+
 from ...core.config import settings
+
+
+# ─────────────────────── Rate Limiter ───────────────────────
+# Защита от Gmail rate limit: минимум MIN_INTERVAL секунд между отправками
+MIN_INTERVAL_SECONDS = 2.0  # минимальный интервал между письмами
+
+_last_send_time: float = 0.0
+_rate_limit_lock = threading.Lock()
+
+
+def _wait_for_rate_limit() -> None:
+    """
+    Ждёт, если с последней отправки прошло меньше MIN_INTERVAL_SECONDS.
+    Thread-safe для корректной работы в многопоточных Celery воркерах.
+    """
+    global _last_send_time
+
+    with _rate_limit_lock:
+        now = time.time()
+        elapsed = now - _last_send_time
+
+        if elapsed < MIN_INTERVAL_SECONDS:
+            sleep_time = MIN_INTERVAL_SECONDS - elapsed
+            time.sleep(sleep_time)
+
+        _last_send_time = time.time()
+
+
+# ────────────────────────────────────────────────────────────
 
 
 def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
     """
     Отправка HTML-писем через Mailgun API.
     Если Mailgun не настроен или не работает — fallback на SMTP.
+
+    Включён rate limiter: минимум MIN_INTERVAL_SECONDS между отправками
+    для защиты от Gmail rate limit.
     """
     # Проверяем наличие Mailgun настроек
     if settings.MAILGUN_API_KEY and settings.MAILGUN_DOMAIN:
@@ -25,7 +60,11 @@ def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
 def _send_via_mailgun(recipient_email: str, subject: str, html_body: str) -> bool:
     """
     Отправка через Mailgun HTTP API.
+    Включён rate limiter для защиты от rate limit.
     """
+    # Rate limit: ждём если слишком частые отправки
+    _wait_for_rate_limit()
+
     # Выбираем API endpoint в зависимости от региона
     if settings.MAILGUN_REGION.upper() == "EU":
         api_base = "https://api.eu.mailgun.net/v3"
@@ -67,7 +106,11 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
     """
     Fallback: SMTP-отправка HTML-писем.
     Работает с портами 25 (без TLS), 465 (SMTPS), 587 (STARTTLS).
+    Включён rate limiter для защиты от Gmail rate limit.
     """
+    # Rate limit: ждём если слишком частые отправки
+    _wait_for_rate_limit()
+
     import smtplib
     import ssl
     from email.mime.text import MIMEText

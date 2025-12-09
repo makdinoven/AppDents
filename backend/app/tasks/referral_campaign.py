@@ -1,5 +1,6 @@
 # app/tasks/referral_campaign.py
 
+import time
 from datetime import datetime
 
 from celery import shared_task
@@ -14,6 +15,9 @@ from ..utils.user_language import get_user_preferred_language
 
 # лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
 MAX_HOURLY_REFERRAL_EMAILS = 26
+
+# задержка между отправками писем (секунды) — защита от Gmail rate limit
+EMAIL_SEND_DELAY_SECONDS = 3
 
 
 def _get_session() -> Session:
@@ -87,6 +91,8 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
                     status = "sent"
                     sent_at = datetime.utcnow()
                     sent_count += 1
+                    # задержка между отправками для избежания Gmail rate limit
+                    time.sleep(EMAIL_SEND_DELAY_SECONDS)
                 else:
                     status = "error"
                     error_message = "send_html_email returned False"
