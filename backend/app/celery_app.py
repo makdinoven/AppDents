@@ -54,9 +54,9 @@ celery.conf.update(
         "app.tasks.ensure_faststart":    {"rate_limit": "50/m"},
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
-        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "80/h"},
-        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "80/h"},
-        "app.tasks.referral_campaign.process_referrers": {"rate_limit": "50/h"},
+        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "20/h"},
+        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "30/h"},
+        "app.tasks.referral_campaign.process_referrers": {"rate_limit": "20/h"},
 
     },
     beat_schedule={
