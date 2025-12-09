@@ -180,11 +180,13 @@ def _paginate(query: Query, *, page: int, size: int) -> dict:
 # ------------------ PUBLIC LIST / SEARCH ЭНД‑ПОИНТЫ -------------------------
 
 def list_landings_paginated(
-    db: Session, *, language: Optional[LangEnum], page: int = 1, size: int = 10
+    db: Session, *, language: Optional[LangEnum], is_hidden: Optional[bool] = None, page: int = 1, size: int = 10
 ) -> dict:
     q = db.query(Landing).order_by(desc(Landing.id))        # новые сверху
     if language:                                                # фильтр, если задан
         q = q.filter(Landing.language == language.value)
+    if is_hidden is not None:                                   # фильтр по скрытым/видимым
+        q = q.filter(Landing.is_hidden == is_hidden)
     return _paginate(q, page=page, size=size)
 
 
@@ -193,6 +195,7 @@ def search_landings_paginated(
     *,
     q: str,
     language: Optional[LangEnum],
+    is_hidden: Optional[bool] = None,
     page: int = 1,
     size: int = 10,
 ) -> dict:
@@ -200,6 +203,8 @@ def search_landings_paginated(
     query = _apply_common_filters(
         db.query(Landing), language=language.value if language else None, search_q=q
     )
+    if is_hidden is not None:
+        query = query.filter(Landing.is_hidden == is_hidden)
     query = _apply_sort(query, "new")
     return _paginate(query, page=page, size=size)
 
