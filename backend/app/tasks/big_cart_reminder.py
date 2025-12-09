@@ -4,7 +4,7 @@ from celery import shared_task
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.session import SessionLocal
+from app.db.database import SessionLocal
 from app.models_v2 import Cart, User
 from app.utils.email_sender import send_big_cart_reminder_email
 
