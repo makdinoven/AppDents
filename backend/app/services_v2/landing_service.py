@@ -196,8 +196,9 @@ def search_landings_paginated(
     page: int = 1,
     size: int = 10,
 ) -> dict:
+    # Не используем _base_landing_query, чтобы показывать и скрытые лендинги
     query = _apply_common_filters(
-        _base_landing_query(db), language=language.value if language else None, search_q=q
+        db.query(Landing), language=language.value if language else None, search_q=q
     )
     query = _apply_sort(query, "new")
     return _paginate(query, page=page, size=size)
