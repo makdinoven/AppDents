@@ -1168,6 +1168,7 @@ def generate_creative_v4(
                     "TEXT_DOWNLOAD": {"text": ov.get("button_text", "DOWNLOAD NOW")},
                 },
             }
+        logger.info(f"v4 payload debug for book_id={book.id}: {json.dumps(payload, ensure_ascii=False)}")
 
         url, err = _placid_render(payload)
         if err:
