@@ -8,7 +8,7 @@ from sqlalchemy import exists
 
 from ..db.database import SessionLocal
 from ..core.config import settings
-from ..services import email_sender
+from ..services_v2 import email_sender
 from ..models.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
 
 # лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
