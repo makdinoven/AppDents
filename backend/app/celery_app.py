@@ -54,10 +54,10 @@ celery.conf.update(
         "app.tasks.ensure_faststart":    {"rate_limit": "50/m"},
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
-        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "20/h"},
-        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "30/h"},
-        "app.tasks.referral_campaign.process_referrers": {"rate_limit": "20/h"},
-
+        # === Email tasks: суммарно 80 писем/час (27 + 27 + 26) ===
+        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "100/h"},
+        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "100/h"},
+        "app.tasks.referral_campaign.send_referral_campaign_batch": {"rate_limit": "100/h"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -66,43 +66,43 @@ celery.conf.update(
             "options": {"queue": "special"},
         },
         "replace-storage-links-every-1-hours": {
-                    "task": "app.tasks.storage_links.replace_storage_links",
-                    "schedule": 3600,              # 3 ч * 3600 с
-                    "options": {"queue": "special"},
-                },
+            "task": "app.tasks.storage_links.replace_storage_links",
+            "schedule": 3600,
+            "options": {"queue": "special"},
+        },
         "ensure_faststart": {
-                    "task": "app.tasks.ensure_faststart",
-                    "schedule": 10800,              # 3 ч * 3600 с
-                    "options": {"queue": "special"},
-                },
+            "task": "app.tasks.ensure_faststart",
+            "schedule": 10800,              # 3 ч * 3600 с
+            "options": {"queue": "special"},
+        },
         "ensure_hls": {
-                    "task": "app.tasks.ensure_hls",
-                    "schedule": 1800,
-                    "options": {"queue": "special"},
-                },
+            "task": "app.tasks.ensure_hls",
+            "schedule": 1800,
+            "options": {"queue": "special"},
+        },
         "recount-hls-daily": {
-                "task": "app.tasks.ensure_hls.recount_hls_counters",
-                "schedule": 86400,      # 1 раз в сутки
-                "options": {"queue": "special"},
-            },
-        "process-abandoned-checkouts-each-60m": {
-                    "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
-                    "schedule": 3600,           # каждый час
-                    "options": {"queue": "special"},
-                },
-        "process-big-cart-reminders-each-6h": {
-            "task": "app.tasks.big_cart_reminder.process_big_cart_reminders",
+            "task": "app.tasks.ensure_hls.recount_hls_counters",
             "schedule": 86400,      # 1 раз в сутки
             "options": {"queue": "special"},
         },
-        "process-referrals-each-3h": {
-            "task": "app.tasks.referral_campaign.process_referrals",
-            "schedule": 10800,
-            "options": {"queue": "special"},
-
-        }
-
-
+        # === Email tasks: каждый час, ~27 писем каждая = 80/час суммарно ===
+        "process-abandoned-checkouts-hourly": {
+            "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
+            "schedule": 3600,
+            "kwargs": {"batch_size": 27},
+            "options": {"queue": "email"},
+        },
+        "process-big-cart-reminders-hourly": {
+            "task": "app.tasks.big_cart_reminder.process_big_cart_reminders",
+            "schedule": 3600,
+            "options": {"queue": "email"},
+        },
+        "process-referrals-hourly": {
+            "task": "app.tasks.referral_campaign.send_referral_campaign_batch",
+            "schedule": 3600,
+            "kwargs": {"max_per_run": 26},
+            "options": {"queue": "email"},
+        },
     },
 )
 
@@ -118,7 +118,8 @@ celery.conf.task_queues = (
     Queue("default",      default_exc, routing_key="celery"),
     Queue("special",      default_exc, routing_key="special"),
     Queue("special_hls",  default_exc, routing_key="special_hls"),
-    Queue("book",   default_exc, routing_key="book"),
+    Queue("book",         default_exc, routing_key="book"),
+    Queue("email",        default_exc, routing_key="email"),
 )
 
 celery.conf.task_routes = {
@@ -134,6 +135,8 @@ celery.conf.task_routes = {
     "app.tasks.creatives.*": {"queue": "book"},
     "app.tasks.clip_tasks.*": {"queue": "default"},
     "app.tasks.video_summary.*": {"queue": "default"},
-    "app.tasks.big_cart_reminder.process_big_cart_reminders": {"queue": "special"},
-    "app.tasks.referral_campaign.process_referrers": {"queue": "special"},
+    # Email tasks → отдельная очередь email
+    "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"queue": "email"},
+    "app.tasks.big_cart_reminder.process_big_cart_reminders": {"queue": "email"},
+    "app.tasks.referral_campaign.send_referral_campaign_batch": {"queue": "email"},
 }

@@ -18,8 +18,8 @@ BIG_CART_INTERVAL_HOURS = 168
 # максимальное количество писем по одной корзине
 MAX_BIG_CART_REMINDERS = 1
 
-# ограничение пачки за один прогон (защита SMTP)
-BIG_CART_BATCH_LIMIT = 100
+# ограничение пачки за один прогон (~27 писем/час для 80 писем/час суммарно)
+BIG_CART_BATCH_LIMIT = 27
 
 
 @shared_task(name="app.tasks.big_cart_reminder.process_big_cart_reminders")

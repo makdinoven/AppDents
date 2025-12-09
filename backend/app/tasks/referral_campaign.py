@@ -11,21 +11,21 @@ from app.core.config import settings
 from app.services import email_sender
 from app.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
 
-# лимит за один прогон таски (если она раз в день — это и есть 200–300 писем/день)
-MAX_DAILY_REFERRAL_EMAILS = 300
+# лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
+MAX_HOURLY_REFERRAL_EMAILS = 26
 
 
 def _get_session() -> Session:
     return SessionLocal()
 
 
-@shared_task
+@shared_task(name="app.tasks.referral_campaign.send_referral_campaign_batch")
 def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
     """
     Рассылка писем про реферальную программу.
 
     Логика:
-    - берём максимум `max_per_run` (или MAX_DAILY_REFERRAL_EMAILS) пользователей;
+    - берём максимум `max_per_run` (или MAX_HOURLY_REFERRAL_EMAILS) пользователей;
     - у пользователя:
         * есть email,
         * ещё НЕ отправляли это письмо (нет ReferralCampaignEmail),
@@ -33,7 +33,7 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
         * нет отправленных инвайтов (Invitation.sender_id = user.id);
     - шлём письмо, пишем запись в ReferralCampaignEmail.
     """
-    limit = max_per_run or MAX_DAILY_REFERRAL_EMAILS
+    limit = max_per_run or MAX_HOURLY_REFERRAL_EMAILS
     db = _get_session()
 
     try:
