@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ..db.database import SessionLocal
 from ..models.models_v2 import Cart, User
 from ..utils.email_sender import send_big_cart_reminder_email
+from ..utils.user_language import get_user_preferred_language
 
 
 # через сколько часов после изменения корзины можно слать ПЕРВОЕ письмо
@@ -80,7 +81,9 @@ def process_big_cart_reminders() -> int:
                 # не знаем куда слать — просто пропускаем
                 continue
 
-            ok = send_big_cart_reminder_email(user.email, user.region or "EN")
+            # Определяем предпочитаемый язык пользователя
+            user_language = get_user_preferred_language(user, db)
+            ok = send_big_cart_reminder_email(user.email, user_language)
 
             # ❗ В отличие от прошлой таски — счётчик увеличиваем
             # ТОЛЬКО если отправка реально прошла.

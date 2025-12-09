@@ -10,6 +10,7 @@ from ..db.database import SessionLocal
 from ..core.config import settings
 from ..utils import email_sender
 from ..models.models_v2 import User, Invitation, ReferralCampaignEmail
+from ..utils.user_language import get_user_preferred_language
 
 # лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
 MAX_HOURLY_REFERRAL_EMAILS = 26
@@ -38,9 +39,6 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
 
     try:
         # выбираем всех, кому можно слать
-        subq_has_log = exists().where(ReferralCampaignEmail.user_id == User.id)
-        subq_has_registered_referrals = exists().where(User.id == User.inviter_id)  # такой вариант не подойдёт, ниже нормальный
-
         # нормальный вариант через ORM: invited_users.any() и подзапросы exists
         users_q = (
             db.query(User)
@@ -77,10 +75,12 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
             sent_at = None
 
             try:
+                # Определяем предпочитаемый язык пользователя
+                user_language = get_user_preferred_language(user, db)
                 ok = email_sender.send_referral_program_email(
                     recipient_email=user.email,
                     referral_link=referral_link,
-                    region="EN",      # при желании можно завести поле языка у юзера
+                    region=user_language,
                     bonus_percent=50,
                 )
                 if ok:
