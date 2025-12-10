@@ -5,6 +5,8 @@ import {
   CartItemCourseType,
   CartItemKind,
 } from "../../../../shared/api/cartApi/types.ts";
+import { useState } from "react";
+import { NoPictures } from "../../../../shared/assets";
 
 const PaymentItemCard = ({
   item,
@@ -19,6 +21,7 @@ const PaymentItemCard = ({
   isWebinar: boolean;
   isFree: boolean;
 }) => {
+  const [imgError, setImgError] = useState<boolean>(false);
   const { new_price, old_price, landing_name, preview_photo } = item;
   const lessons_count =
     "lessons_count" in item ? item.lessons_count : undefined;
@@ -28,9 +31,17 @@ const PaymentItemCard = ({
       className={`${s.course} ${isFree ? s.free : ""} ${itemType === "BOOK" ? s.book : ""}`}
     >
       <div
-        className={`${s.img_wrapper} ${!preview_photo ? s.no_photo : ""} ${s[itemType.toLowerCase()]}`}
+        className={`${s.img_wrapper} ${imgError || !preview_photo ? s.no_photo : ""} ${s[itemType.toLowerCase()]}`}
       >
-        {preview_photo && <img src={preview_photo} alt={`${itemType} photo`} />}
+        {preview_photo && !imgError ? (
+          <img
+            src={preview_photo}
+            onError={() => setImgError(true)}
+            alt={`${itemType} photo`}
+          />
+        ) : (
+          <NoPictures />
+        )}
       </div>
 
       <div className={s.course_info}>
