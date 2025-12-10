@@ -22,6 +22,7 @@ import {
   mapBackendSelected,
 } from "../../shared/components/filters/model/mapBackendFilters.ts";
 import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+import { useResetPageOnChange } from "../../shared/common/hooks/useResetOnPageChange.ts";
 
 const Professors = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
@@ -64,11 +65,7 @@ const Professors = () => {
     loadProfessors();
   }, [params, language]);
 
-  useEffect(() => {
-    if (params.page !== 1) {
-      actions.set({ page: 1 });
-    }
-  }, [language]);
+  useResetPageOnChange(language, actions.set);
 
   return (
     <div lang={language.toLowerCase()} className={s.professors}>

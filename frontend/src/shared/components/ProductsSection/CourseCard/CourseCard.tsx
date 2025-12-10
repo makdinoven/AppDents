@@ -15,6 +15,7 @@ import { LanguagesType } from "../../ui/LangLogo/LangLogo.tsx";
 import { CartItemKind } from "../../../api/cartApi/types.ts";
 import { NoPictures } from "../../../assets";
 import { PATHS } from "../../../../app/routes/routes.ts";
+import { useState } from "react";
 
 export type ProductCardFlags = {
   isFree?: boolean;
@@ -52,6 +53,7 @@ const CourseCard = ({
   slug,
   flags,
 }: CourseCardProps) => {
+  const [imgError, setImgError] = useState<boolean>(false);
   const { openPaymentModal } = usePaymentPageHandler();
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
@@ -163,12 +165,16 @@ const CourseCard = ({
                 className={`${s.link_btn} ${isFree ? s.free : ""}`}
                 text={"viewCourse"}
               />
-              {photo ? (
+              {photo && !imgError ? (
                 <div className={s.photo}>
-                  <img src={photo} alt="Course image" />
+                  <img
+                    src={photo}
+                    alt="Course image"
+                    onError={() => setImgError(true)}
+                  />
                 </div>
               ) : (
-                <div className={s.photo}>
+                <div className={`${s.photo} ${s.no_photo}`}>
                   <NoPictures />
                 </div>
               )}

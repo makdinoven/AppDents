@@ -115,6 +115,15 @@
   outline: 2.5px solid $secondary-lighter;
   object-fit: cover;
   background-color: $hover-color;
+
+  &.no_photo {
+    @include flex-center;
+    svg {
+      aspect-ratio: 1;
+      height: 50%;
+      width: 50%;
+    }
+  }
 }
 
 @media (max-width: $middle-breakpoint) {

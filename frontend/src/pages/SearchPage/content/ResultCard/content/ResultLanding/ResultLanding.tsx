@@ -6,6 +6,8 @@ import AddToCartButton from "../../../../../../shared/components/ui/AddToCartBut
 import { formatAuthorsDesc } from "../../../../../../shared/common/helpers/helpers.ts";
 import { ResultLandingData } from "../../../../../../shared/store/slices/mainSlice.ts";
 import { useCart } from "../../../../../../shared/common/hooks/useCart.ts";
+import { useState } from "react";
+import { NoPictures } from "../../../../../../shared/assets";
 
 const ResultLanding = ({
   type,
@@ -25,7 +27,7 @@ const ResultLanding = ({
   data: ResultLandingData;
 }) => {
   const isBookLanding = type === "book_landing";
-
+  const [imgError, setImgError] = useState<boolean>(false);
   const { isInCart, cartItemLoading, toggleCartItem } = useCart(
     {
       id,
@@ -46,14 +48,19 @@ const ResultLanding = ({
 
   return (
     <>
-      {preview_photo ? (
+      {preview_photo && !imgError ? (
         <img
           className={`${s.photo} ${isBookLanding ? s.book : ""}`}
           src={preview_photo}
+          onError={() => setImgError(true)}
           alt=""
         />
       ) : (
-        <div className={`${s.photo} ${isBookLanding ? s.book : ""}`}></div>
+        <div
+          className={`${s.photo} ${s.no_photo} ${isBookLanding ? s.book : ""}`}
+        >
+          <NoPictures />
+        </div>
       )}
       <div className={s.content}>
         <div className={s.content_header}>

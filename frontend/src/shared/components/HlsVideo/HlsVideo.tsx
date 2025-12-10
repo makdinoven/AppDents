@@ -34,7 +34,6 @@ const HlsVideo: React.FC<Props> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [useMp4Fallback, setUseMp4Fallback] = useState(!preferHls);
   const [hlsUrl, setHlsUrl] = useState<string | null>(null);
-
   // 0) внешние провайдеры — сразу iframe
 
   // 1) Резолвим реальный playlist.m3u8 (с проверкой Content-Type и #EXTM3U)

@@ -131,15 +131,38 @@
   },
 
   "search": {
-    "tooLong": "Слишком длинный запрос. До 200 символов.",
+    "tooLong": "Слишком длинно. Используйте 200 символов или меньше.",
     "searchCourses": "Поиск курсов",
-    "searchPlaceholder": "Введите для поиска...",
-    "result": "найдено {{count}} курсов",
-    "result_one": "найден {{count}} курс ",
-    "result_few": "найдено {{count}} курса",
-    "result_many": "найдено {{count}} курсов",
-    "result_zero": "Курсов не найдено"
+    "searchPlaceholder": "Введите текст для поиска...",
+    "categories": "Категории",
+    "languages": "Языки",
+    "results": {
+      "results": "Результаты поиска:",
+      "landings": "Курсы",
+      "authors": "Авторы",
+      "book_landings": "Книги"
+    },
+    "noResults": {
+      "title": "Упс! Ничего не найдено",
+      "description": "Попробуйте использовать другие слова или фразы для более точного поиска."
+    },
+    "landingsResult": {
+      "result_one": "Найден {{count}} курс",
+      "result_few": "Найдено {{count}} курса",
+      "result_many": "Найдено {{count}} курсов"
+    },
+    "book_landingsResult": {
+      "result_one": "Найдена {{count}} книга",
+      "result_few": "Найдено {{count}} книги",
+      "result_many": "Найдено {{count}} книг"
+    },
+    "authorsResult": {
+      "result_one": "Найден {{count}} автор",
+      "result_few": "Найдено {{count}} автора",
+      "result_many": "Найдено {{count}} авторов"
+    }
   },
+
 
   "main": {
     "title": "Онлайн-курсы по <1>стоматологии</1>",

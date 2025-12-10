@@ -71,6 +71,13 @@
   &.no_photo {
     background-color: $hover-color-darken;
     border-radius: 10px;
+    @include flex-center;
+
+    svg {
+      aspect-ratio: 1;
+      height: 50%;
+      width: 50%;
+    }
   }
 
   img {

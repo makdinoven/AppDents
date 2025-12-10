@@ -133,14 +133,34 @@
 
   "search": {
     "tooLong": "Muito longo. Use 200 caracteres ou menos.",
-    "searchCourses": "Buscar cursos",
+    "searchCourses": "Pesquisar cursos",
     "searchPlaceholder": "Digite para pesquisar...",
-    "result": "encontrados {{count}} cursos",
-    "result_one": "{{count}} curso encontrado",
-    "result_few": "{{count}} cursos encontrados",
-    "result_many": "encontrados {{count}} cursos",
-    "result_zero": "Nenhum curso encontrado"
+    "categories": "Categorias",
+    "languages": "Idiomas",
+    "results": {
+      "results": "Resultados da pesquisa:",
+      "landings": "Cursos",
+      "authors": "Autores",
+      "book_landings": "Livros"
+    },
+    "noResults": {
+      "title": "Ops! Nada encontrado",
+      "description": "Tente usar palavras ou frases diferentes para uma busca mais eficaz."
+    },
+    "landingsResult": {
+      "result_one": "{{count}} curso encontrado",
+      "result_other": "{{count}} cursos encontrados"
+    },
+    "book_landingsResult": {
+      "result_one": "{{count}} livro encontrado",
+      "result_other": "{{count}} livros encontrados"
+    },
+    "authorsResult": {
+      "result_one": "{{count}} autor encontrado",
+      "result_other": "{{count}} autores encontrados"
+    }
   },
+
 
   "main": {
     "title": "Escola <1>dentária</1> online",

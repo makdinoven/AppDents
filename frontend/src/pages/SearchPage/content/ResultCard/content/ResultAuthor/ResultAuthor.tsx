@@ -1,14 +1,22 @@
 import s from "./ResultAuthor.module.scss";
 import LangLogo from "../../../../../../shared/components/ui/LangLogo/LangLogo.tsx";
 import { ResultAuthorData } from "../../../../../../shared/store/slices/mainSlice.ts";
-import { Arrow, BooksIcon, CoursesIcon } from "../../../../../../shared/assets/icons";
+import {
+  Arrow,
+  BooksIcon,
+  CoursesIcon,
+} from "../../../../../../shared/assets/icons";
 import { Trans } from "react-i18next";
+import { useState } from "react";
+import { NoUser } from "../../../../../../shared/assets";
 
 const ResultAuthor = ({
   data: { language, name, photo, courses_count, books_count, description },
 }: {
   data: ResultAuthorData;
 }) => {
+  const [imgError, setImgError] = useState<boolean>(false);
+
   const counts = [
     {
       count: courses_count,
@@ -29,10 +37,17 @@ const ResultAuthor = ({
       {/*<ProfessorsIcon className={s.icon} />*/}
       <div className={s.photo_wrapper}>
         <LangLogo className={s.lang_logo} lang={language} />
-        {photo ? (
-          <img className={s.photo} src={photo} alt="author photo" />
+        {photo && !imgError ? (
+          <img
+            className={s.photo}
+            onError={() => setImgError(true)}
+            src={photo}
+            alt="author photo"
+          />
         ) : (
-          <div className={s.photo}></div>
+          <div className={`${s.photo} ${s.no_photo}`}>
+            <NoUser />
+          </div>
         )}
       </div>
       <div className={s.card_body}>

@@ -10,8 +10,8 @@ export const RouterProvider = () => {
   const location = useLocation();
   const backgroundLocation = location.state?.backgroundLocation || null;
   const isAuthModalRoute = AUTH_MODAL_ROUTES.includes(location.pathname);
-  const isCartPage = location.pathname === PATHS.CART;
-  const isSearchPage = location.pathname === PATHS.SEARCH;
+  const isCartPage = location.pathname === PATHS.CART && backgroundLocation;
+  const isSearchPage = location.pathname === PATHS.SEARCH && backgroundLocation;
 
   const renderRoutes = (configs: any) =>
     configs.map((route: any, idx: any) => {
@@ -29,7 +29,7 @@ export const RouterProvider = () => {
       <Routes location={backgroundLocation || location}>
         {renderRoutes(routesConfig(backgroundLocation !== null))}
       </Routes>
-      {(backgroundLocation || isAuthModalRoute) && <AuthModalManager />}
+      {backgroundLocation && isAuthModalRoute && <AuthModalManager />}
       {isCartPage && <Cart />}
       {isSearchPage && <SearchPage />}
     </>
