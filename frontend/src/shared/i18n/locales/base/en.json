@@ -570,6 +570,41 @@
     "pageSize": "Page size"
   },
 
+  "survey": {
+    "crowdfunding": {
+      "title": "Help Us Improve! Quick Survey",
+      "description": "We're considering a new feature: **Community Crowdfunding**!\n\nImagine being able to request any course or book you want. You contribute any amount from $5, and everyone who participated gets full access — regardless of how much they contributed!\n\n**Bonus:** You might get access even before the goal is reached! As soon as we acquire the material, all participants instantly receive it.\n\nThis survey takes less than 1 minute. Your opinion matters!",
+      "q1": {
+        "text": "How interested are you in the crowdfunding feature?",
+        "opt1": "Very interested! I'd use it right away",
+        "opt2": "Sounds interesting, I'd like to try it",
+        "opt3": "Maybe, need to think about it",
+        "opt4": "Not interested"
+      },
+      "q2": {
+        "text": "How often would you participate in crowdfunding?",
+        "opt1": "Regularly — whenever I see something interesting",
+        "opt2": "Occasionally — for specific courses/books",
+        "opt3": "Rarely or never"
+      },
+      "q3": {
+        "text": "What content would you like to see in crowdfunding? (select all that apply)",
+        "opt1": "Premium video courses",
+        "opt2": "Professional e-books",
+        "opt3": "Live webinars and masterclasses",
+        "opt4": "Rare/hard-to-find materials"
+      },
+      "q4": {
+        "text": "Any suggestions or comments? (optional)"
+      }
+    },
+    "submit": "Submit",
+    "thankYou": "Thank you for your feedback!",
+    "alreadyCompleted": "You have already completed this survey",
+    "close": "Close",
+    "skip": "Maybe later"
+  },
+
   "admin": {
     "save": "Save changes",
     "update": "edit",

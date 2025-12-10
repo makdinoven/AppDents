@@ -50,7 +50,7 @@ jobs:
           key: ${{ secrets.PREPROD_SSH_KEY }}
           port: 22
           debug: true
-          script_stop: true
+          cript_stop: true
           command_timeout: 15m
           script: |
             #!/usr/bin/env bash

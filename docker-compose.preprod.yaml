@@ -174,4 +174,6 @@ volumes:
     external: true
     name: appdents_mysql_data_preprod
   certbot-etc:
+    external: true
+    name: appdents_certbot-etc
   certbot-web:
