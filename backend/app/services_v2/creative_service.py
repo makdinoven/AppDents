@@ -39,6 +39,13 @@ def _format_price(amount: Optional[float]) -> str:
         return f"${int(amount)}"
     return f"${amount:.2f}"
 
+def _first_author_name(book: Book) -> str:
+    if not book.authors:
+        return ""
+    a = book.authors[0]
+    # если в Author есть поля first_name/last_name – собери из них
+    return (a.name or "").strip()
+
 
 def _min_price_landing(db: Session, book_id: int, language: str) -> Optional[BookLanding]:
     # выбираем BookLanding, где присутствует книга и язык совпадает; берем с минимальной new_price
@@ -1142,7 +1149,7 @@ def generate_creative_v4(
         placid_media_url = _ensure_placid_media_url(cover_url)
 
         heading = ov.get("heading", book.title)
-        author = ov.get("author", getattr(book, "author", "") or "")
+        author = ov.get("author") or _first_author_name(book)
         badge_text = ov.get("badge_text", "OLD PRICE:")
         button_text = ov.get("button_text", "DOWNLOAD NOW")
 
