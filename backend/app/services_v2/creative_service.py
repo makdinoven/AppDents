@@ -1145,9 +1145,6 @@ def generate_creative_v4(
         if not cover_url:
             raise ValueError("Book cover_url is required for creative generation")
 
-        # грузим медиа в Placid, как у v3
-        placid_media_url = _ensure_placid_media_url(cover_url)
-
         heading = ov.get("heading", book.title)
         author = ov.get("author") or _first_author_name(book)
         badge_text = ov.get("badge_text", "OLD PRICE:")
@@ -1161,8 +1158,8 @@ def generate_creative_v4(
             payload = {
                 "template_uuid": PLACID_TPL_V4,
                 "layers": {
-                    "Picture_bg_var": {"media": placid_media_url},
-                    "Book_cover": {"media": placid_media_url},
+                    "Picture_bg_var": {"media": cover_url},
+                    "Book_cover": {"media": cover_url},
                     "Heading": {"text": heading},
                     "Author": {"text": author},
                     "New_price": {"text": price_new},
