@@ -1161,8 +1161,8 @@ def generate_creative_v4(
             payload = {
                 "template_uuid": PLACID_TPL_V4,
                 "layers": {
-                    "Picture_bg_var": {"media": placid_media_url},
-                    "Book_cover": {"media": placid_media_url},
+                    "Picture_bg_var": {"image": placid_media_url},
+                    "Book_cover": {"image": placid_media_url},
                     "Heading": {"text": heading},
                     "Author": {"text": author},
                     "New_price": {"text": price_new},
