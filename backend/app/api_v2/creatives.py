@@ -330,7 +330,7 @@ def manual_single_creative(
     book_id: int,
     target: str = Path(
         ...,
-        description=f"Целевой креатив для обновления: 'v1' | 'v2' | 'v3' или конкретный creative_code.\n"
+        description=f"Целевой креатив для обновления: 'v1' | 'v2' | 'v3'| 'v4' или конкретный creative_code.\n"
                     f"Допустимые значения:\n"
                     f"- v1 (или {PLACID_TPL_V1})\n"
                     f"- v2 (или {PLACID_TPL_V2})\n"

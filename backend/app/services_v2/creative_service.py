@@ -1154,18 +1154,15 @@ def generate_creative_v4(
             payload = {
                 "template_uuid": PLACID_TPL_V4,
                 "layers": {
-                    "PICTURE_BG_VAR": {"image": placid_media_url},
-                    "BOOK_COVER": {"image": placid_media_url},
-                    "HEADING": {"text": heading},
-                    "AUTHOR": {"text": author},
-
-                    "NEW_PRICE": {"text": price_new},
-                    "NEW_PRICE_TEXT": {"text": ov.get("new_price_text", "New:")},
-
-                    "OLD_PRICE_TEXT": {"text": ov.get("old_price_text", "Old price:")},
-                    "OLD_PRICE": {"text": price_old},
-
-                    "TEXT_DOWNLOAD": {"text": ov.get("button_text", "DOWNLOAD NOW")},
+                    "Picture_bg_var": {"media": placid_media_url},
+                    "Book_cover": {"media": placid_media_url},
+                    "Heading": {"text": heading},
+                    "Author": {"text": author},
+                    "New_price": {"text": price_new},
+                    "New_price_text": {"text": ov.get("new_price_text", "New:")},
+                    "Old_price_text": {"text": ov.get("old_price_text", "Old price:")},
+                    "Old_price": {"text": price_old},
+                    "Text_download": {"text": ov.get("button_text", "DOWNLOAD NOW")},
                 },
             }
         logger.info(f"v4 payload debug for book_id={book.id}: {json.dumps(payload, ensure_ascii=False)}")
