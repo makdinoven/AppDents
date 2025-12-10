@@ -1142,9 +1142,12 @@ def generate_creative_v4(
                 price_old = str(ov["price_old"])
 
         cover_url = ov.get("cover_url", book.cover_url)
+
         if not cover_url:
             raise ValueError("Book cover_url is required for creative generation")
 
+        logger.info(f"Using cover_url for creative v4, book_id={book.id}, cover_url={cover_url[:100]}...")
+        placid_media_url = _ensure_placid_media_url(cover_url)
         heading = ov.get("heading", book.title)
         author = ov.get("author") or _first_author_name(book)
         badge_text = ov.get("badge_text", "OLD PRICE:")
@@ -1158,8 +1161,8 @@ def generate_creative_v4(
             payload = {
                 "template_uuid": PLACID_TPL_V4,
                 "layers": {
-                    "Picture_bg_var": {"media": cover_url},
-                    "Book_cover": {"media": cover_url},
+                    "Picture_bg_var": {"media": placid_media_url},
+                    "Book_cover": {"media": placid_media_url},
                     "Heading": {"text": heading},
                     "Author": {"text": author},
                     "New_price": {"text": price_new},
@@ -1180,6 +1183,7 @@ def generate_creative_v4(
 
         img = _download_bytes(url)
         key = _s3_key(book.id, PLACID_TPL_V4)
+        logger.info(f"Uploading creative v4 to S3, book_id={book.id}, key={key}")
         s3_url = _upload_to_s3(key, img)
 
         existing = (
