@@ -19,3 +19,10 @@ docker-compose.override.yml
 
 frontend/dist
 frontend/node_modules
+
+# Assets - uploaded files (keep structure but ignore content)
+assets/*
+!assets/.gitkeep
+!assets/img/
+assets/img/*
+!assets/img/.gitkeep
