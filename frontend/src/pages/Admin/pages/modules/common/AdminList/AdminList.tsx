@@ -27,6 +27,7 @@ interface AdminListProps<T> {
   showLanguageFilter?: boolean;
   handleToggle?: (value: number, isHidden: boolean) => void;
   showToggle?: boolean;
+  showVisibilityFilter?: boolean;
   transKey:
     | "landings"
     | "courses"
@@ -48,6 +49,7 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   loading,
   handleToggle,
   showLanguageFilter = false,
+  showVisibilityFilter = false,
   showToggle = false,
   transKey,
 }: AdminListProps<T>) => {
@@ -79,15 +81,15 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
   const loadData = (params: ParamsType) => {
     const hasSearch = params.q !== undefined && params.q !== "";
     if (hasSearch) {
-      // if (params.page !== 1) {
-      //   actions.set({ page: 1 });
-      //   return;
-      // }
       onSearch({ q: params.q });
     } else {
       onLoad({
         ...params,
         language: params.language === "all" ? undefined : params.language,
+        is_hidden:
+          params.is_hidden === "all" || params.is_hidden === undefined
+            ? undefined
+            : params.is_hidden === "true",
       });
     }
   };
@@ -111,6 +113,24 @@ const AdminList = <T extends { id: number; [key: string]: any }>({
                   selectedValue={params.language}
                   isMultiple={false}
                   onChange={(e) => actions.set({ language: e.value })}
+                  valueKey="value"
+                  labelKey="name"
+                />
+              )}
+
+              {showVisibilityFilter && (
+                <MultiSelect
+                  isSearchable={false}
+                  id={"visibility_filter"}
+                  options={[
+                    { value: "all", name: "All" },
+                    { value: "true", name: "Hidden" },
+                    { value: "false", name: "Visible" },
+                  ]}
+                  placeholder={"All"}
+                  selectedValue={params.is_hidden ?? "all"}
+                  isMultiple={false}
+                  onChange={(e) => actions.set({ is_hidden: e.value })}
                   valueKey="value"
                   labelKey="name"
                 />

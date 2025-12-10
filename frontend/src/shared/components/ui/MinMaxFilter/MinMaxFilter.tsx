@@ -1,6 +1,7 @@
 import s from "./MinMaxFilter.module.scss";
 import { useEffect, useRef, useState } from "react";
 import useDebounce from "../../../common/hooks/useDebounce.ts";
+import RangeFilterItem from "../../filters/RangeFilter/RangeFilterItem/RangeFilterItem.tsx";
 
 interface MinMaxFilterProps {
   label?: string;
@@ -52,38 +53,8 @@ const MinMaxFilter = ({
 
   const showBtns = localMin || localMax;
 
-  const handleStep = (field: "min" | "max", delta: number) => {
-    const currentStr = field === "min" ? localMin : localMax;
-    const currentNum = currentStr ? parseInt(currentStr, 10) : 0;
-    let newValue = currentNum + delta;
-    if (newValue <= 0) newValue = 0;
-    const newStr = newValue === 0 ? "" : String(newValue);
-
-    if (field === "min") {
-      setLocalMin(newStr);
-    } else {
-      setLocalMax(newStr);
-    }
-  };
-
-  const renderPlusMinusBtns = (field: "min" | "max") => (
-    <div className={s.plus_minus_btns}>
-      <button
-        type="button"
-        onClick={() => handleStep(field, 1)}
-        className={s.plus}
-      >
-        +
-      </button>
-      <button
-        type="button"
-        onClick={() => handleStep(field, -1)}
-        className={s.minus}
-      >
-        –
-      </button>
-    </div>
-  );
+  const minNumber = localMin ? parseInt(localMin, 10) : 0;
+  const maxNumber = localMax ? parseInt(localMax, 10) : 0;
 
   return (
     <div className={s.filter_container}>
@@ -109,27 +80,55 @@ const MinMaxFilter = ({
 
       <div className={s.inputs}>
         <div className={s.input_wrapper}>
-          <input
-            type="number"
-            value={localMin}
+          <RangeFilterItem
+            id="min"
+            min="0"
+            max={localMax || ""}
             placeholder={placeholderMin}
-            onChange={(e) => setLocalMin(e.target.value)}
-            className={s.input}
+            value={localMin}
+            disabledMinus={minNumber <= 0}
+            disabledPlus={false}
+            actions={{
+              change: (v) => setLocalMin(v),
+              dec: () => {
+                const current = localMin ? parseInt(localMin, 10) : 0;
+                const next = Math.max(current - 1, 0);
+                setLocalMin(next === 0 ? "" : String(next));
+              },
+              inc: () => {
+                const current = localMin ? parseInt(localMin, 10) : 0;
+                const next = current + 1;
+                setLocalMin(String(next));
+              },
+            }}
           />
-          {renderPlusMinusBtns("min")}
         </div>
 
         <span className={s.dash}>—</span>
 
         <div className={s.input_wrapper}>
-          <input
-            type="number"
-            value={localMax}
+          <RangeFilterItem
+            id="max"
+            min={localMin || "0"}
+            max=""
             placeholder={placeholderMax}
-            onChange={(e) => setLocalMax(e.target.value)}
-            className={s.input}
+            value={localMax}
+            disabledMinus={maxNumber <= 0}
+            disabledPlus={false}
+            actions={{
+              change: (v) => setLocalMax(v),
+              dec: () => {
+                const current = localMax ? parseInt(localMax, 10) : 0;
+                const next = Math.max(current - 1, 0);
+                setLocalMax(next === 0 ? "" : String(next));
+              },
+              inc: () => {
+                const current = localMax ? parseInt(localMax, 10) : 0;
+                const next = current + 1;
+                setLocalMax(String(next));
+              },
+            }}
           />
-          {renderPlusMinusBtns("max")}
         </div>
       </div>
     </div>

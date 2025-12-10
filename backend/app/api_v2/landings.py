@@ -73,9 +73,13 @@ def get_landing_listing(
         None,
         description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
     ),
+    is_hidden: Optional[bool] = Query(
+        None,
+        description="Фильтр по видимости: true - только скрытые, false - только видимые, null - все"
+    ),
     db: Session = Depends(get_db),
 ):
-    return list_landings_paginated(db, language=language, page=page, size=size)
+    return list_landings_paginated(db, language=language, is_hidden=is_hidden, page=page, size=size)
 
 
 @router.get(
@@ -91,9 +95,13 @@ def search_landing_listing(
         None,
         description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
     ),
+    is_hidden: Optional[bool] = Query(
+        None,
+        description="Фильтр по видимости: true - только скрытые, false - только видимые, null - все"
+    ),
     db: Session = Depends(get_db),
 ):
-    return search_landings_paginated(db, q=q, language=language, page=page, size=size)
+    return search_landings_paginated(db, q=q, language=language, is_hidden=is_hidden, page=page, size=size)
 
 
 @router.get("/detail/{landing_id}", response_model=LandingDetailResponse)

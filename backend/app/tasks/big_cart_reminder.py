@@ -1,3 +1,4 @@
+import time
 from datetime import datetime, timedelta
 
 from celery import shared_task
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..db.database import SessionLocal
 from ..models.models_v2 import Cart, User
 from ..utils.email_sender import send_big_cart_reminder_email
+from ..utils.user_language import get_user_preferred_language
 
 
 # через сколько часов после изменения корзины можно слать ПЕРВОЕ письмо
@@ -18,8 +20,11 @@ BIG_CART_INTERVAL_HOURS = 168
 # максимальное количество писем по одной корзине
 MAX_BIG_CART_REMINDERS = 1
 
-# ограничение пачки за один прогон (защита SMTP)
-BIG_CART_BATCH_LIMIT = 100
+# ограничение пачки за один прогон (~27 писем/час для 80 писем/час суммарно)
+BIG_CART_BATCH_LIMIT = 27
+
+# задержка между отправками писем (секунды) — защита от Gmail rate limit
+EMAIL_SEND_DELAY_SECONDS = 3
 
 
 @shared_task(name="app.tasks.big_cart_reminder.process_big_cart_reminders")
@@ -80,7 +85,9 @@ def process_big_cart_reminders() -> int:
                 # не знаем куда слать — просто пропускаем
                 continue
 
-            ok = send_big_cart_reminder_email(user.email, user.region or "EN")
+            # Определяем предпочитаемый язык пользователя
+            user_language = get_user_preferred_language(user, db)
+            ok = send_big_cart_reminder_email(user.email, user_language)
 
             # ❗ В отличие от прошлой таски — счётчик увеличиваем
             # ТОЛЬКО если отправка реально прошла.
@@ -88,6 +95,8 @@ def process_big_cart_reminders() -> int:
                 cart.bigcart_send_count += 1
                 cart.bigcart_last_sent_at = now
                 sent_count += 1
+                # задержка между отправками для избежания Gmail rate limit
+                time.sleep(EMAIL_SEND_DELAY_SECONDS)
 
         db.commit()
         return sent_count

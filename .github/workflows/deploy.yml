@@ -86,6 +86,9 @@ jobs:
             fi
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
+            # Reset any local changes to tracked files before pulling
+            git reset --hard HEAD
+            git clean -fd || true
             git pull --no-rebase --no-edit -s recursive -X theirs origin main
             if [ ! -f .env ]; then
               echo "[ERROR] .env not found" && exit 1

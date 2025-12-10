@@ -33,11 +33,16 @@ class Settings(BaseSettings):
     STRIPE_PMC_ES: str
     STRIPE_PMC_EN: str
 
-    EMAIL_HOST: str
+    EMAIL_HOST: str = ""
     EMAIL_PORT: int = 25
     EMAIL_USERNAME: str = ""
     EMAIL_PASSWORD: str = ""
     EMAIL_SENDER: str
+
+    # Mailgun
+    MAILGUN_API_KEY: str = ""
+    MAILGUN_DOMAIN: str = ""
+    MAILGUN_REGION: str = "EU"
 
     # Facebook
     FACEBOOK_PIXEL_ID : str

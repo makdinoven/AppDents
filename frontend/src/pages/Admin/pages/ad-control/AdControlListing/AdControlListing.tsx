@@ -263,7 +263,7 @@ const AdControlListing = () => {
     setPurchases10Range(null);
     setDaysRange(null);
     setSortBy("");
-    setLanguage("EN");
+    setLanguage("all");
     setSelectedAccount("all");
     setSelectedStaff("all");
   };

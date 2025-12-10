@@ -1,5 +1,6 @@
 # app/tasks/referral_campaign.py
 
+import time
 from datetime import datetime
 
 from celery import shared_task
@@ -9,23 +10,27 @@ from sqlalchemy import exists
 from ..db.database import SessionLocal
 from ..core.config import settings
 from ..utils import email_sender
-from ..models.models_v2 import User, Invitation, ReferralCampaignEmail  # поправь импорт под свой путь
+from ..models.models_v2 import User, Invitation, ReferralCampaignEmail
+from ..utils.user_language import get_user_preferred_language
 
-# лимит за один прогон таски (если она раз в день — это и есть 200–300 писем/день)
-MAX_DAILY_REFERRAL_EMAILS = 300
+# лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
+MAX_HOURLY_REFERRAL_EMAILS = 26
+
+# задержка между отправками писем (секунды) — защита от Gmail rate limit
+EMAIL_SEND_DELAY_SECONDS = 3
 
 
 def _get_session() -> Session:
     return SessionLocal()
 
 
-@shared_task
+@shared_task(name="app.tasks.referral_campaign.send_referral_campaign_batch")
 def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
     """
     Рассылка писем про реферальную программу.
 
     Логика:
-    - берём максимум `max_per_run` (или MAX_DAILY_REFERRAL_EMAILS) пользователей;
+    - берём максимум `max_per_run` (или MAX_HOURLY_REFERRAL_EMAILS) пользователей;
     - у пользователя:
         * есть email,
         * ещё НЕ отправляли это письмо (нет ReferralCampaignEmail),
@@ -33,14 +38,11 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
         * нет отправленных инвайтов (Invitation.sender_id = user.id);
     - шлём письмо, пишем запись в ReferralCampaignEmail.
     """
-    limit = max_per_run or MAX_DAILY_REFERRAL_EMAILS
+    limit = max_per_run or MAX_HOURLY_REFERRAL_EMAILS
     db = _get_session()
 
     try:
         # выбираем всех, кому можно слать
-        subq_has_log = exists().where(ReferralCampaignEmail.user_id == User.id)
-        subq_has_registered_referrals = exists().where(User.id == User.inviter_id)  # такой вариант не подойдёт, ниже нормальный
-
         # нормальный вариант через ORM: invited_users.any() и подзапросы exists
         users_q = (
             db.query(User)
@@ -77,16 +79,20 @@ def send_referral_campaign_batch(max_per_run: int | None = None) -> str:
             sent_at = None
 
             try:
+                # Определяем предпочитаемый язык пользователя
+                user_language = get_user_preferred_language(user, db)
                 ok = email_sender.send_referral_program_email(
                     recipient_email=user.email,
                     referral_link=referral_link,
-                    region="EN",      # при желании можно завести поле языка у юзера
+                    region=user_language,
                     bonus_percent=50,
                 )
                 if ok:
                     status = "sent"
                     sent_at = datetime.utcnow()
                     sent_count += 1
+                    # задержка между отправками для избежания Gmail rate limit
+                    time.sleep(EMAIL_SEND_DELAY_SECONDS)
                 else:
                     status = "error"
                     error_message = "send_html_email returned False"

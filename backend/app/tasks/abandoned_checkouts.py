@@ -3,6 +3,7 @@
 # ────────────────────────── imports ───────────────────────────
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 
 from celery.utils.log import get_task_logger
@@ -41,6 +42,9 @@ CDN_PLACEHOLDER_URL = os.getenv(
 
 REMINDER_INTERVAL = timedelta(days=2)   # пауза между письмами
 MAX_SENDS = 7                           # максимум писем на одного лида
+
+# задержка между отправками писем (секунды) — защита от Gmail rate limit
+EMAIL_SEND_DELAY_SECONDS = 3
 
 
 @celery.task(
@@ -193,6 +197,8 @@ def process_abandoned_checkouts(
                     )
                     logger.info("First abandoned mail sent to %s", email)
                     email_sent = True
+                    # задержка между отправками для избежания Gmail rate limit
+                    time.sleep(EMAIL_SEND_DELAY_SECONDS)
                 except Exception as err:
                     logger.error("SMTP error for %s: %s", email, err)
 
@@ -221,6 +227,8 @@ def process_abandoned_checkouts(
                         "Reminder #%s sent to %s", send_count + 1, email
                     )
                     email_sent = True
+                    # задержка между отправками для избежания Gmail rate limit
+                    time.sleep(EMAIL_SEND_DELAY_SECONDS)
                 except Exception as err:
                     logger.error(
                         "SMTP error (reminder) for %s: %s", email, err

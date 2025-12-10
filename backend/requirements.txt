@@ -34,3 +34,4 @@ fuzzywuzzy[speedup]>=0.18.0
 assemblyai
 psutil
 python-telegram-bot>=20.0
+mailgun>=0.1.0
