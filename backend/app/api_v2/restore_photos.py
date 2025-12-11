@@ -285,7 +285,7 @@ async def _process_single_photo(
         content_type = content_type_map.get(file_extension, 'image/jpeg')
         filename = photo_url.split('/')[-1]
         
-        # 4. Загружаем через HTTP запрос к роуту /upload-image
+        # 4. Загружаем через HTTP запрос к роуту /api/media/upload-image
         try:
             async with httpx.AsyncClient(timeout=60.0) as client:
                 # Готовим multipart/form-data запрос
@@ -300,7 +300,7 @@ async def _process_single_photo(
                     'Authorization': f'Bearer {auth_token}'
                 }
                 
-                upload_url = f"{api_base_url}/api/upload-image"
+                upload_url = f"{api_base_url}/api/media/upload-image"
                 response = await client.post(
                     upload_url,
                     files=files,
@@ -348,7 +348,7 @@ async def _process_single_photo(
     Для каждой фотографии:
     1. Ищет в БД (landings.preview_photo и authors.photo)
     2. Скачивает из веб-архива (с retry логикой)
-    3. Загружает через HTTP запрос к роуту /upload-image
+    3. Загружает через HTTP запрос к роуту /api/media/upload-image
     4. Автоматически обновляет ссылку в БД
     
     Требует роль admin.
@@ -370,8 +370,8 @@ async def restore_photos_from_archive(
     
     auth_token = auth_header.replace("Bearer ", "")
     
-    # Получаем базовый URL API из переменных окружения или используем localhost
-    api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+    # Базовый URL API
+    api_base_url = "https://dent-s.com"
     
     # Создаем уникальный ID задачи
     task_id = str(uuid.uuid4())
