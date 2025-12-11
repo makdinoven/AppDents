@@ -145,8 +145,8 @@ async def _process_single_photo(db: Session, photo_url: str, current_user) -> Di
                 entity_type=entity_type,
                 entity_id=entity_id,
                 file=upload_file,
-                db=db,
-                current_user=current_user
+                current_admin=current_user,
+                db=db
             )
             
             result["status"] = "success"
