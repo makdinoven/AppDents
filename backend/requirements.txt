@@ -25,6 +25,7 @@ celery
 celery[redis]
 redis
 requests
+httpx
 aiohttp
 dnspython
 email_validator
