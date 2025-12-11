@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import s from "./BuySection.module.scss";
 import { Trans, useTranslation } from "react-i18next";
 import { ToothPatch } from "../../assets";
+import { BookFormat } from "../../common/helpers/commonConstants.ts";
 
 interface BuySectionProps {
   type: "download" | "buy";
-  formats?: string[];
+  formats?: string[] | BookFormat[];
   isFullWidth?: boolean;
   oldPrice?: string;
   newPrice?: string;

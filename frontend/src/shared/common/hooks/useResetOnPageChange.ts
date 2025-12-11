@@ -8,7 +8,6 @@ export function useResetPageOnChange<T>(value: T, set: SetFn) {
   const prevValueRef = useRef<T>(value);
 
   useEffect(() => {
-    // первый рендер — ничего не делаем
     if (firstRenderRef.current) {
       firstRenderRef.current = false;
       prevValueRef.current = value;
@@ -16,7 +15,6 @@ export function useResetPageOnChange<T>(value: T, set: SetFn) {
     }
 
     if (prevValueRef.current !== value) {
-      // значение реально изменилось → сбрасываем page
       set({ page: 1 });
       prevValueRef.current = value;
     }
