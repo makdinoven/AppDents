@@ -1,11 +1,5 @@
 from pydantic import BaseModel
-from enum import Enum
-
-
-class QuestionType(str, Enum):
-    SINGLE_CHOICE = "single_choice"
-    MULTIPLE_CHOICE = "multiple_choice"
-    FREE_TEXT = "free_text"
+from ..models.models_v2 import QuestionType
 
 
 # --- Output schemas ---

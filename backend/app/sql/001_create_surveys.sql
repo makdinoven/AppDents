@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS surveys (
     slug VARCHAR(100) NOT NULL UNIQUE,
     title_key VARCHAR(100) NOT NULL,
     description_key VARCHAR(100),
-    status ENUM('draft', 'active', 'closed') NOT NULL DEFAULT 'draft',
+    status ENUM('DRAFT', 'ACTIVE', 'CLOSED') NOT NULL DEFAULT 'DRAFT',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     closed_at DATETIME,
     INDEX idx_surveys_slug (slug),
@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS survey_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     survey_id INT NOT NULL,
     order_index INT NOT NULL,
-    question_type ENUM('single_choice', 'multiple_choice', 'free_text') NOT NULL,
+    question_type ENUM('SINGLE_CHOICE', 'MULTIPLE_CHOICE', 'FREE_TEXT') NOT NULL,
     text_key VARCHAR(100) NOT NULL,
     options_keys JSON,
     is_required BOOLEAN NOT NULL DEFAULT TRUE,
@@ -60,20 +60,20 @@ CREATE TABLE IF NOT EXISTS survey_views (
 -- ============================================
 
 INSERT INTO surveys (slug, title_key, description_key, status) 
-VALUES ('crowdfunding-feature', 'survey.crowdfunding.title', 'survey.crowdfunding.description', 'active');
+VALUES ('crowdfunding-feature', 'survey.crowdfunding.title', 'survey.crowdfunding.description', 'ACTIVE');
 
 SET @survey_id = LAST_INSERT_ID();
 
 -- Вопросы опроса
 INSERT INTO survey_questions (survey_id, order_index, question_type, text_key, options_keys, is_required) VALUES
-(@survey_id, 1, 'single_choice', 'survey.crowdfunding.q1.text', 
+(@survey_id, 1, 'SINGLE_CHOICE', 'survey.crowdfunding.q1.text', 
  '["survey.crowdfunding.q1.opt1", "survey.crowdfunding.q1.opt2", "survey.crowdfunding.q1.opt3", "survey.crowdfunding.q1.opt4"]', TRUE),
  
-(@survey_id, 2, 'single_choice', 'survey.crowdfunding.q2.text', 
+(@survey_id, 2, 'SINGLE_CHOICE', 'survey.crowdfunding.q2.text', 
  '["survey.crowdfunding.q2.opt1", "survey.crowdfunding.q2.opt2", "survey.crowdfunding.q2.opt3"]', TRUE),
  
-(@survey_id, 3, 'multiple_choice', 'survey.crowdfunding.q3.text', 
+(@survey_id, 3, 'MULTIPLE_CHOICE', 'survey.crowdfunding.q3.text', 
  '["survey.crowdfunding.q3.opt1", "survey.crowdfunding.q3.opt2", "survey.crowdfunding.q3.opt3", "survey.crowdfunding.q3.opt4"]', TRUE),
  
-(@survey_id, 4, 'free_text', 'survey.crowdfunding.q4.text', NULL, FALSE);
+(@survey_id, 4, 'FREE_TEXT', 'survey.crowdfunding.q4.text', NULL, FALSE);
 

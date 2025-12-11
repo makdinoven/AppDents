@@ -934,15 +934,15 @@ class SearchQuery(Base):
 # ───────────────── Система опросов (Surveys) ─────────────────
 
 class SurveyStatus(str, PyEnum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    CLOSED = "closed"
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    CLOSED = "CLOSED"
 
 
 class QuestionType(str, PyEnum):
-    SINGLE_CHOICE = "single_choice"
-    MULTIPLE_CHOICE = "multiple_choice"
-    FREE_TEXT = "free_text"
+    SINGLE_CHOICE = "SINGLE_CHOICE"
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE"
+    FREE_TEXT = "FREE_TEXT"
 
 
 class Survey(Base):
