@@ -11,12 +11,14 @@ Body: {"photos": ["https://dent-s.com/assets/img/preview_img/photo1.png", ...]}
 import os
 import time
 import logging
+import uuid
 from io import BytesIO
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 
 import httpx
 import requests
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -28,6 +30,9 @@ from ..models.models_v2 import Landing, Author
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Хранилище для отслеживания прогресса задач (в продакшене использовать Redis)
+tasks_progress: Dict[str, Dict] = {}
 
 # URL веб-архива
 WAYBACK_TIMESTAMP = "20250809140805if_"
@@ -62,6 +67,29 @@ class RestorePhotosResponse(BaseModel):
     not_found: int
     errors: int
     results: List[PhotoResult]
+
+
+class StartTaskResponse(BaseModel):
+    """Ответ при запуске фоновой задачи."""
+    task_id: str
+    message: str
+    total_photos: int
+    check_status_url: str
+
+
+class TaskProgressResponse(BaseModel):
+    """Ответ с прогрессом выполнения задачи."""
+    task_id: str
+    status: str  # pending, processing, completed, failed
+    total: int
+    processed: int
+    success: int
+    not_found: int
+    errors: int
+    progress_percent: float
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    results: List[PhotoResult] = []
 
 
 # ─────────────── Вспомогательные функции ───────────────
@@ -142,6 +170,61 @@ def _download_from_wayback(original_url: str) -> bytes:
     
     # Если все попытки не удались, выбрасываем последнее исключение
     raise last_exception
+
+
+async def _background_restore_task(
+    task_id: str,
+    photos: List[str],
+    api_base_url: str,
+    auth_token: str,
+    db_connection_string: str
+):
+    """Фоновая задача для восстановления фотографий."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    
+    # Создаем новую сессию БД для фоновой задачи
+    engine = create_engine(db_connection_string)
+    SessionLocal = sessionmaker(bind=engine)
+    db = SessionLocal()
+    
+    try:
+        tasks_progress[task_id]["status"] = "processing"
+        tasks_progress[task_id]["started_at"] = datetime.utcnow().isoformat()
+        
+        for idx, photo_url in enumerate(photos, 1):
+            result = await _process_single_photo(
+                db=db,
+                photo_url=photo_url,
+                api_base_url=api_base_url,
+                auth_token=auth_token
+            )
+            
+            # Обновляем прогресс
+            tasks_progress[task_id]["processed"] = idx
+            tasks_progress[task_id]["results"].append(PhotoResult(**result))
+            tasks_progress[task_id]["progress_percent"] = (idx / len(photos)) * 100
+            
+            if result["status"] == "success":
+                tasks_progress[task_id]["success"] += 1
+            elif result["status"] == "not_found":
+                tasks_progress[task_id]["not_found"] += 1
+            else:
+                tasks_progress[task_id]["errors"] += 1
+            
+            logger.info(f"[Task {task_id}] Обработано {idx}/{len(photos)} фотографий")
+        
+        # Завершаем задачу
+        tasks_progress[task_id]["status"] = "completed"
+        tasks_progress[task_id]["completed_at"] = datetime.utcnow().isoformat()
+        logger.info(f"[Task {task_id}] Задача завершена успешно")
+        
+    except Exception as e:
+        tasks_progress[task_id]["status"] = "failed"
+        tasks_progress[task_id]["error"] = str(e)
+        logger.error(f"[Task {task_id}] Ошибка выполнения задачи: {str(e)}")
+    finally:
+        db.close()
 
 
 async def _process_single_photo(
@@ -255,14 +338,16 @@ async def _process_single_photo(
 
 @router.post(
     "/restore-photos",
-    response_model=RestorePhotosResponse,
-    summary="Восстановление фотографий из веб-архива",
+    response_model=StartTaskResponse,
+    summary="Запуск восстановления фотографий из веб-архива (async)",
     description="""
-    Восстанавливает фотографии из веб-архива и обновляет ссылки в БД.
+    Запускает фоновую задачу восстановления фотографий из веб-архива.
+    
+    Возвращает task_id для отслеживания прогресса через GET /restore-photos/status/{task_id}
     
     Для каждой фотографии:
     1. Ищет в БД (landings.preview_photo и authors.photo)
-    2. Скачивает из веб-архива
+    2. Скачивает из веб-архива (с retry логикой)
     3. Загружает через HTTP запрос к роуту /upload-image
     4. Автоматически обновляет ссылку в БД
     
@@ -272,10 +357,11 @@ async def _process_single_photo(
 async def restore_photos_from_archive(
     photos_request: RestorePhotosRequest,
     fastapi_request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user = Depends(require_roles("admin")),
 ):
-    """Восстанавливает фотографии из веб-архива через HTTP запросы к API."""
+    """Запускает фоновую задачу восстановления фотографий из веб-архива."""
     
     # Получаем токен авторизации из заголовков
     auth_header = fastapi_request.headers.get("Authorization")
@@ -287,35 +373,113 @@ async def restore_photos_from_archive(
     # Получаем базовый URL API из переменных окружения или используем localhost
     api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
     
-    results = []
-    stats = {
+    # Получаем connection string для БД
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        raise HTTPException(500, "DATABASE_URL не настроен")
+    
+    # Создаем уникальный ID задачи
+    task_id = str(uuid.uuid4())
+    
+    # Инициализируем прогресс задачи
+    tasks_progress[task_id] = {
+        "status": "pending",
         "total": len(photos_request.photos),
+        "processed": 0,
         "success": 0,
         "not_found": 0,
         "errors": 0,
+        "progress_percent": 0.0,
+        "results": [],
+        "started_at": None,
+        "completed_at": None,
     }
     
-    # Обрабатываем каждую фотографию
-    for photo_url in photos_request.photos:
-        result = await _process_single_photo(
-            db=db,
-            photo_url=photo_url,
-            api_base_url=api_base_url,
-            auth_token=auth_token
-        )
-        results.append(PhotoResult(**result))
-        
-        if result["status"] == "success":
-            stats["success"] += 1
-        elif result["status"] == "not_found":
-            stats["not_found"] += 1
-        else:
-            stats["errors"] += 1
-    
-    return RestorePhotosResponse(
-        total=stats["total"],
-        success=stats["success"],
-        not_found=stats["not_found"],
-        errors=stats["errors"],
-        results=results,
+    # Запускаем фоновую задачу
+    background_tasks.add_task(
+        _background_restore_task,
+        task_id=task_id,
+        photos=photos_request.photos,
+        api_base_url=api_base_url,
+        auth_token=auth_token,
+        db_connection_string=db_url
     )
+    
+    logger.info(f"[Task {task_id}] Запущена задача восстановления {len(photos_request.photos)} фотографий")
+    
+    return StartTaskResponse(
+        task_id=task_id,
+        message="Задача запущена. Используйте task_id для отслеживания прогресса.",
+        total_photos=len(photos_request.photos),
+        check_status_url=f"/api/restore-photos/status/{task_id}"
+    )
+
+
+@router.get(
+    "/restore-photos/status/{task_id}",
+    response_model=TaskProgressResponse,
+    summary="Проверка статуса задачи восстановления",
+    description="""
+    Возвращает текущий прогресс выполнения задачи восстановления фотографий.
+    
+    Статусы:
+    - pending: Задача в очереди
+    - processing: Задача выполняется
+    - completed: Задача завершена успешно
+    - failed: Задача завершена с ошибкой
+    """,
+)
+async def get_restore_task_status(
+    task_id: str,
+    current_user = Depends(require_roles("admin")),
+):
+    """Возвращает статус выполнения задачи восстановления."""
+    
+    if task_id not in tasks_progress:
+        raise HTTPException(404, f"Задача с ID {task_id} не найдена")
+    
+    task = tasks_progress[task_id]
+    
+    return TaskProgressResponse(
+        task_id=task_id,
+        status=task["status"],
+        total=task["total"],
+        processed=task["processed"],
+        success=task["success"],
+        not_found=task["not_found"],
+        errors=task["errors"],
+        progress_percent=task["progress_percent"],
+        started_at=task.get("started_at"),
+        completed_at=task.get("completed_at"),
+        results=task["results"],
+    )
+
+
+@router.get(
+    "/restore-photos/tasks",
+    response_model=List[TaskProgressResponse],
+    summary="Список всех задач восстановления",
+    description="Возвращает список всех задач восстановления фотографий (активных и завершенных).",
+)
+async def list_restore_tasks(
+    current_user = Depends(require_roles("admin")),
+):
+    """Возвращает список всех задач восстановления."""
+    
+    tasks = []
+    for task_id, task in tasks_progress.items():
+        tasks.append(TaskProgressResponse(
+            task_id=task_id,
+            status=task["status"],
+            total=task["total"],
+            processed=task["processed"],
+            success=task["success"],
+            not_found=task["not_found"],
+            errors=task["errors"],
+            progress_percent=task["progress_percent"],
+            started_at=task.get("started_at"),
+            completed_at=task.get("completed_at"),
+            results=task["results"],
+        ))
+    
+    return tasks
