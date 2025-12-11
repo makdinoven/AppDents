@@ -22,7 +22,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from ..db.database import get_db
+from ..db.database import get_db, DATABASE_URL
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import Landing, Author
 
@@ -373,11 +373,6 @@ async def restore_photos_from_archive(
     # Получаем базовый URL API из переменных окружения или используем localhost
     api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
     
-    # Получаем connection string для БД
-    db_url = os.getenv("DATABASE_URL")
-    if not db_url:
-        raise HTTPException(500, "DATABASE_URL не настроен")
-    
     # Создаем уникальный ID задачи
     task_id = str(uuid.uuid4())
     
@@ -402,7 +397,7 @@ async def restore_photos_from_archive(
         photos=photos_request.photos,
         api_base_url=api_base_url,
         auth_token=auth_token,
-        db_connection_string=db_url
+        db_connection_string=DATABASE_URL
     )
     
     logger.info(f"[Task {task_id}] Запущена задача восстановления {len(photos_request.photos)} фотографий")
