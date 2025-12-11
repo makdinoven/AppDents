@@ -190,7 +190,7 @@ async def _process_single_photo(db: Session, photo_url: str, current_user) -> Di
 async def restore_photos_from_archive(
     request: RestorePhotosRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(require_roles(["admin"])),
+    current_user = Depends(require_roles("admin")),
 ):
     """Восстанавливает фотографии из веб-архива."""
     
