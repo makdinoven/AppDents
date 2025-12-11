@@ -53,7 +53,7 @@ class RestorePhotosRequest(BaseModel):
 class PhotoResult(BaseModel):
     """Результат обработки одной фотографии."""
     original_url: str
-    status: str  # success, not_found, download_error, upload_error
+    status: str  # success, skipped, already_updated, not_found, download_error, upload_error
     message: str
     entity_type: str = None  # landing_preview или author_preview
     entity_id: int = None
@@ -64,6 +64,7 @@ class RestorePhotosResponse(BaseModel):
     """Ответ с результатами восстановления."""
     total: int
     success: int
+    skipped: int
     not_found: int
     errors: int
     results: List[PhotoResult]
@@ -84,6 +85,7 @@ class TaskProgressResponse(BaseModel):
     total: int
     processed: int
     success: int
+    skipped: int
     not_found: int
     errors: int
     progress_percent: float
@@ -207,6 +209,8 @@ async def _background_restore_task(
             
             if result["status"] == "success":
                 tasks_progress[task_id]["success"] += 1
+            elif result["status"] in ("skipped", "already_updated"):
+                tasks_progress[task_id]["skipped"] += 1
             elif result["status"] == "not_found":
                 tasks_progress[task_id]["not_found"] += 1
             else:
@@ -258,12 +262,26 @@ async def _process_single_photo(
         # 1. Поиск в БД
         entity_type, entity_id, entity_obj = _find_entity_in_db(db, photo_url)
         if not entity_type:
-            result["status"] = "not_found"
-            result["message"] = "Фотография не найдена в БД"
+            result["status"] = "skipped"
+            result["message"] = "Фотография не найдена в БД - пропущена"
             return result
         
         result["entity_type"] = entity_type
         result["entity_id"] = entity_id
+        
+        # 2. Проверяем, не обновлена ли уже фотография
+        # Если URL уже не содержит dent-s.com, значит уже загружена в CDN
+        current_photo_url = None
+        if entity_type == "landing_preview":
+            current_photo_url = entity_obj.preview_photo
+        elif entity_type == "author_preview":
+            current_photo_url = entity_obj.photo
+        
+        if current_photo_url and "dent-s.com" not in current_photo_url:
+            result["status"] = "already_updated"
+            result["message"] = f"Фотография уже обновлена (текущий URL: {current_photo_url}) - пропущена"
+            result["new_url"] = current_photo_url
+            return result
         
         # 2. Скачивание из веб-архива
         try:
@@ -382,6 +400,7 @@ async def restore_photos_from_archive(
         "total": len(photos_request.photos),
         "processed": 0,
         "success": 0,
+        "skipped": 0,
         "not_found": 0,
         "errors": 0,
         "progress_percent": 0.0,
@@ -441,6 +460,7 @@ async def get_restore_task_status(
         total=task["total"],
         processed=task["processed"],
         success=task["success"],
+        skipped=task["skipped"],
         not_found=task["not_found"],
         errors=task["errors"],
         progress_percent=task["progress_percent"],
@@ -469,6 +489,7 @@ async def list_restore_tasks(
             total=task["total"],
             processed=task["processed"],
             success=task["success"],
+            skipped=task["skipped"],
             not_found=task["not_found"],
             errors=task["errors"],
             progress_percent=task["progress_percent"],
