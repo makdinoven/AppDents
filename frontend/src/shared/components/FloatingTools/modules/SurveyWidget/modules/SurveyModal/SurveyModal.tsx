@@ -61,7 +61,7 @@ const SurveyModal = ({
                 <div key={question.id} className={s.question}>
                   <p className={errors[key]?.message ? s.error : ""}>
                     {(errors[key]?.message && t(errors[key]?.message)) ||
-                      `${question.id}. ${t(question.textKey)}`}
+                      `${question.id}. ${t(question.textKey)}${question.isRequired ? " *" : ""}`}
                   </p>
                   {question.optionsKeys &&
                     question.optionsKeys.length > 0 &&

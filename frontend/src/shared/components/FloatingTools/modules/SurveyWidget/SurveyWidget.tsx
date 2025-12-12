@@ -55,17 +55,20 @@ const SurveyWidget = ({
     handleFetchSurvey();
   }, []);
 
-  const handleOpenSurvey = async () => {
-    try {
-      const res = await userApi.surveyViewed(survey.slug);
-      if (res.status === 200) {
-        const openSurvey = new URLSearchParams(searchParams);
-        openSurvey.set(openSurveyParam, "");
-        setSearchParams(openSurvey, { replace: true });
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        userApi.surveyViewed(survey.slug);
+      } catch (error) {
+        console.error("Survey opening error:", error);
       }
-    } catch (error) {
-      console.error("Survey opening error:", error);
     }
+  }, [isOpen, survey.slug]);
+
+  const handleOpenSurvey = () => {
+    const openSurvey = new URLSearchParams(searchParams);
+    openSurvey.set(openSurveyParam, "");
+    setSearchParams(openSurvey, { replace: true });
   };
 
   const handleModalClose = () => {

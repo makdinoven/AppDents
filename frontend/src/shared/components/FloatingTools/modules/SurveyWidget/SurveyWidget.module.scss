@@ -3,6 +3,7 @@
   bottom: 0;
   right: 0;
   height: 100%;
+  width: fit-content;
   display: flex;
   flex-direction: row-reverse;
   justify-content: flex-start;
@@ -32,6 +33,10 @@
       }
     }
     &:active {
+      .btn_wrapper,
+      .survey_text {
+        background-color: $accent-075;
+      }
       .survey_btn {
         background-color: transparent;
         svg {
@@ -54,15 +59,14 @@
 .btn_wrapper {
   position: relative;
   background-color: $primary-04;
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
   padding: 2px;
   @include transition();
   border-radius: 100%;
-  overflow: hidden;
   height: 100%;
   aspect-ratio: 1/1;
+  min-width: fit-content;
   cursor: pointer;
-  z-index: 3;
 }
 
 .survey_btn {
@@ -70,11 +74,12 @@
   height: 100%;
   padding: 10px;
   @include flex-center();
-  background-color: $accent-09;
+  background-color: $accent-075;
   @include transition();
   border-radius: 100%;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   pointer-events: none;
+  backdrop-filter: blur(20px);
 
   svg {
     $size: 20px;
@@ -91,31 +96,34 @@
 
 .survey_text {
   position: relative;
-  display: flex;
-  align-items: center;
-  height: 40px;
-  padding: 2px;
-  border-radius: 30px;
-  backdrop-filter: blur(20px);
   background-color: $primary-04;
-  cursor: pointer;
+  backdrop-filter: blur(10px);
+  padding: 2px;
   @include transition();
+  border-radius: 30px;
+  height: 100%;
+  min-width: fit-content;
+  cursor: pointer;
 
   span {
-    padding: 0 15px;
-    background-color: $accent-09;
     width: 100%;
     height: 100%;
-    border-radius: 30px;
+    padding: 10px;
     @include flex-center();
+    background-color: $accent-075;
     @include transition();
+    border-radius: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    backdrop-filter: blur(20px);
+    text-wrap: nowrap;
   }
 }
 
 @media (max-width: $tablet-breakpoint) {
   .survey_widget {
     &.shift {
-      transform: translateY(-60px);
+      transform: none;
     }
   }
 }

@@ -17,23 +17,27 @@
   form {
     @include flex-center();
     flex-direction: column;
-    width: 100%;
     justify-content: flex-start;
     gap: 15px;
-    min-height: 0;
-    flex: 1;
+    max-height: 100%;
   }
 }
 
 .title {
   @include clamped-p2();
   text-transform: uppercase;
+  text-align: center;
+  padding: 0 10px;
 }
 
 .description {
-  @include clamped-p5();
+  @include clamped-p4();
   width: 100%;
   text-align: center;
+  overflow: scroll;
+  @include custom-scrollbar();
+  max-height: 100px;
+  padding-right: 10px;
 }
 
 .highlight {
@@ -45,19 +49,12 @@
 }
 
 .survey_questions {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto 1fr;
+  @include flex-column();
   width: 100%;
-  height: fit-content;
   gap: 10px;
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
-
-  & > *:last-child {
-    grid-column: 1 / -1;
-  }
+  padding-right: 10px;
+  overflow-y: auto;
+  @include custom-scrollbar();
 
   p,
   label {
@@ -96,18 +93,16 @@
   @include flex-column();
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
-  flex: 1;
+  gap: 10px;
   width: 100%;
-  min-height: 0;
 
   .question {
     width: 100%;
-    flex: 1;
-    min-height: 0;
+    height: 200px;
 
     textarea {
       width: 100%;
+      height: 100%;
       resize: none;
       background-color: $primary-04-analogue;
       border-radius: 10px;
@@ -116,8 +111,6 @@
       @include clamped-p4();
       color: $accent;
       overflow: scroll;
-      flex: 1;
-      min-height: 0;
 
       &::placeholder {
         color: $tertiary;
@@ -135,6 +128,7 @@
   height: 60px;
   @include flex-center();
   gap: 10px;
+  margin-top: 15px;
 
   svg {
     width: 24px;
@@ -214,48 +208,14 @@
   }
 }
 
-@media (max-width: $middle-breakpoint) {
-  .survey_modal {
-    form {
-      gap: 10px;
-      @include flex-column();
-      max-height: calc(100% + 20px);
-    }
-  }
-
-  .survey_questions {
-    overflow-y: auto;
-    min-height: 0;
-    flex: 1;
-    @include custom-scrollbar();
-    padding: 0 15px;
-  }
-}
-
 @media (max-width: $tablet-breakpoint) {
   .survey_modal {
     border-radius: 25px;
     padding: 15px;
 
-    form {
-      max-height: calc(100% + 15px);
-    }
-
     .description {
       @include clamped-p4();
     }
-
-    .bottom_els {
-      .question {
-        min-height: unset;
-      }
-    }
-  }
-
-  .survey_questions {
-    grid-template-rows: repeat(3, auto);
-    grid-template-columns: 1fr;
-    gap: 8px;
   }
 
   .close_button {
@@ -264,6 +224,13 @@
 
   .submit_btn {
     height: 40px;
+    margin-top: 10px;
+  }
+
+  .bottom_els {
+    .question {
+      height: 180px;
+    }
   }
 }
 

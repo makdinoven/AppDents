@@ -27,7 +27,6 @@ const FloatingTools = () => {
           }),
         );
         setSurveys(surveysResult);
-        console.log(surveysResult);
       } catch (error) {
         console.error("Error fetching surveys", error);
       }

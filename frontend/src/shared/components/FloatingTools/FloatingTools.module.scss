@@ -2,9 +2,9 @@
   position: fixed;
   bottom: 30px;
   right: 50px;
-  z-index: 1000;
+  z-index: 999;
   height: 50px;
-  width: 100%;
+  width: fit-content;
 }
 
 .content {
