@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 
 from ..core.config import settings
 from ..models.models_v2 import User, Course, Purchase, users_courses, WalletTxTypes, WalletTransaction, CartItem, Cart, \
-    PurchaseSource, FreeCourseAccess, AbandonedCheckout, FreeCourseSource, Book
+    PurchaseSource, FreeCourseAccess, AbandonedCheckout, FreeCourseSource, Book,SearchQuery
 from ..schemas_v2.user import TokenData, UserUpdateFull
 from ..utils.email_sender import send_recovery_email
 
@@ -919,3 +919,34 @@ def add_book_to_user(db: Session, user_id: int, book_id: int) -> None:
     if book not in user.books:
         user.books.append(book)
         db.commit()
+
+def get_search_top_queries(
+    db: Session,
+    start_dt: date,
+    end_dt: date,
+    limit: int = 50,
+) -> list[dict]:
+    q = (
+        db.query(
+            SearchQuery.query.label("query"),
+            func.count().label("count"),
+            func.count(func.distinct(SearchQuery.user_id)).label("unique_users"),
+        )
+        .filter(
+            SearchQuery.created_at >= start_dt,
+            SearchQuery.created_at < end_dt,
+        )
+        .group_by(SearchQuery.query)
+        .order_by(func.count().desc())
+        .limit(limit)
+    )
+
+    rows = q.all()
+    return [
+        {
+            "query": row.query,
+            "count": int(row.count),
+            "unique_users": int(row.unique_users or 0),
+        }
+        for row in rows
+    ]

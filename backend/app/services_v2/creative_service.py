@@ -39,6 +39,13 @@ def _format_price(amount: Optional[float]) -> str:
         return f"${int(amount)}"
     return f"${amount:.2f}"
 
+def _first_author_name(book: Book) -> str:
+    if not book.authors:
+        return ""
+    a = book.authors[0]
+    # если в Author есть поля first_name/last_name – собери из них
+    return (a.name or "").strip()
+
 
 def _min_price_landing(db: Session, book_id: int, language: str) -> Optional[BookLanding]:
     # выбираем BookLanding, где присутствует книга и язык совпадает; берем с минимальной new_price
@@ -1006,33 +1013,56 @@ def generate_creative_v3(
 
 
 def generate_all_creatives(db: Session, book_id: int, language: str, manual_payload: Optional[Dict[str, Dict[str, str]]] = None):
-    """Генерирует все три креатива для книги. Пробрасывает исключения BookAI без изменений."""
     from sqlalchemy.orm import selectinload
+
     logger.info(f"Starting generation of all creatives, book_id={book_id}, language={language}")
     book = db.query(Book).options(selectinload(Book.files)).filter(Book.id == book_id).first()
     if not book:
         raise ValueError("Book not found")
 
+    existing = (
+        db.query(BookCreative)
+        .filter(BookCreative.book_id == book_id, BookCreative.language == language)
+        .all()
+    )
+    ready_by_code = {c.creative_code: c for c in existing if c.status == CreativeStatus.READY}
+
     v1_payload = manual_payload.get("v1") if manual_payload else None
     v2_payload = manual_payload.get("v2") if manual_payload else None
 
-    try:
+    results = []
+
+    # v1
+    if PLACID_TPL_V1 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V1])
+    else:
         logger.info(f"Generating creative v1, book_id={book_id}")
-        c1 = generate_creative_v1(db, book, language, v1_payload)
+        results.append(generate_creative_v1(db, book, language, v1_payload))
+
+    # v2
+    if PLACID_TPL_V2 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V2])
+    else:
         logger.info(f"Generating creative v2, book_id={book_id}")
-        c2 = generate_creative_v2(db, book, language, v2_payload)
+        results.append(generate_creative_v2(db, book, language, v2_payload))
+
+    # v3
+    if PLACID_TPL_V3 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V3])
+    else:
         logger.info(f"Generating creative v3, book_id={book_id}")
-        c3 = generate_creative_v3(db, book, language)
-        logger.info(f"All creatives generated successfully, book_id={book_id}")
-        return [c1, c2, c3]
-    except (BookAIServiceError, PlacidServiceError, ValueError) as e:
-        # Пробрасываем BookAI ошибки и ValueError как есть
-        logger.error(f"Error in generate_all_creatives, book_id={book_id}, language={language}: {e}")
-        raise
-    except Exception as e:
-        # Обертываем неожиданные ошибки
-        logger.error(f"Unexpected error in generate_all_creatives, book_id={book_id}, language={language}: {e}", exc_info=True)
-        raise
+        results.append(generate_creative_v3(db, book, language))
+
+    # v4
+    if PLACID_TPL_V4 in ready_by_code:
+        results.append(ready_by_code[PLACID_TPL_V4])
+    else:
+        logger.info(f"Generating creative v4, book_id={book_id}")
+        results.append(generate_creative_v4(db, book, language))
+
+    logger.info(f"All creatives generated / reused successfully, book_id={book_id}")
+    return results
+
 
 
 def generate_single_creative(
@@ -1112,14 +1142,14 @@ def generate_creative_v4(
                 price_old = str(ov["price_old"])
 
         cover_url = ov.get("cover_url", book.cover_url)
+
         if not cover_url:
             raise ValueError("Book cover_url is required for creative generation")
 
-        # грузим медиа в Placid, как у v3
+        logger.info(f"Using cover_url for creative v4, book_id={book.id}, cover_url={cover_url[:100]}...")
         placid_media_url = _ensure_placid_media_url(cover_url)
-
         heading = ov.get("heading", book.title)
-        author = ov.get("author", getattr(book, "author", "") or "")
+        author = ov.get("author") or _first_author_name(book)
         badge_text = ov.get("badge_text", "OLD PRICE:")
         button_text = ov.get("button_text", "DOWNLOAD NOW")
 
@@ -1131,20 +1161,20 @@ def generate_creative_v4(
             payload = {
                 "template_uuid": PLACID_TPL_V4,
                 "layers": {
-                    "PICTURE_BG_VAR": {"image": placid_media_url},
-                    "BOOK_COVER": {"image": placid_media_url},
-                    "HEADING": {"text": heading},
-                    "AUTHOR": {"text": author},
-
-                    "NEW_PRICE": {"text": price_new},
-                    "NEW_PRICE_TEXT": {"text": ov.get("new_price_text", "New:")},
-
-                    "OLD_PRCIE_TEXT": {"text": ov.get("old_price_text", "Old price:")},
-                    "OLD_PRICE": {"text": price_old},
-
-                    "TEXT_DOWNLOAD": {"text": ov.get("button_text", "DOWNLOAD NOW")},
+                    "Picture_bg_var": {"image": placid_media_url},
+                    "Book_cover": {"image": placid_media_url},
+                    "Heading": {"text": heading},
+                    "Author": {"text": author},
+                    "New_price": {"text": price_new},
+                    "New_price_text": {"text": ov.get("new_price_text", "New:")},
+                    "Old_price_text": {"text": ov.get("old_price_text", "Old price:")},
+                    "Old_price": {"text": price_old},
+                    "Text_download": {"text": ov.get("button_text", "DOWNLOAD NOW")},
                 },
             }
+        logger.info(f"Creative v4 placid_media_url for book_id={book.id}: {placid_media_url!r}")
+
+        logger.info(f"v4 payload debug for book_id={book.id}: {json.dumps(payload, ensure_ascii=False)}")
 
         url, err = _placid_render(payload)
         if err:
@@ -1155,6 +1185,7 @@ def generate_creative_v4(
 
         img = _download_bytes(url)
         key = _s3_key(book.id, PLACID_TPL_V4)
+        logger.info(f"Uploading creative v4 to S3, book_id={book.id}, key={key}")
         s3_url = _upload_to_s3(key, img)
 
         existing = (

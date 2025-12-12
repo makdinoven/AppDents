@@ -118,6 +118,31 @@ services:
       - priv
       - pub
 
+  celery_worker_email:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-appdents}_celery_worker_email
+    restart: always
+    command: celery -A app.celery_app worker -l info -Q email -n email@%h --concurrency=1
+    env_file:
+      - .env
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - priv
+      - pub
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   celery_beat:
     build:
@@ -237,6 +262,6 @@ networks:
 
 volumes:
   mysql_data_prod:
-    external: true
+    name: ${MYSQL_VOLUME_NAME:-${COMPOSE_PROJECT_NAME:-appdents}_mysql_data}
   certs_data:
     name: ${COMPOSE_PROJECT_NAME:-appdents}_certs_data

@@ -48,8 +48,9 @@ const AdminBookLandingsListing = () => {
         onSearch={(params) => dispatch(searchBookLandings(params))}
         onLoad={(params) => dispatch(getBookLandings(params))}
         onCreate={() => dispatch(createBookLanding(INITIAL_BOOK_LANDING))}
-        showToggle={true}
-        showLanguageFilter={true}
+        showToggle
+        showLanguageFilter
+        showVisibilityFilter
         handleToggle={(id: number, isHidden: boolean) =>
           handleToggleBookVisibility(id, isHidden)
         }

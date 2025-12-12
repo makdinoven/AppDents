@@ -312,6 +312,10 @@ def list_book_landings_like_courses(
     language: Optional[LangEnum] = Query(
         None, description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
     ),
+    is_hidden: Optional[bool] = Query(
+        None,
+        description="Фильтр по видимости: true - только скрытые, false - только видимые, null - все"
+    ),
     db: Session = Depends(get_db),
 ):
     q = (
@@ -321,6 +325,8 @@ def list_book_landings_like_courses(
     )
     if language:
         q = q.filter(BookLanding.language == language.value)
+    if is_hidden is not None:
+        q = q.filter(BookLanding.is_hidden == is_hidden)
 
     return paginate_like_courses(q, page=page, size=size,
                                   serializer=serialize_book_landing_to_course_item)
@@ -337,6 +343,10 @@ def search_book_landings_like_courses(
     size: int = Query(10, gt=0),
     language: Optional[LangEnum] = Query(
         None, description="Фильтр по языку: EN, RU, ES, IT, AR, PT"
+    ),
+    is_hidden: Optional[bool] = Query(
+        None,
+        description="Фильтр по видимости: true - только скрытые, false - только видимые, null - все"
     ),
     db: Session = Depends(get_db),
 ):
@@ -356,6 +366,8 @@ def search_book_landings_like_courses(
     )
     if language:
         query = query.filter(BookLanding.language == language.value)
+    if is_hidden is not None:
+        query = query.filter(BookLanding.is_hidden == is_hidden)
 
     return paginate_like_courses(query, page=page, size=size,
                                   serializer=serialize_book_landing_to_course_item)
