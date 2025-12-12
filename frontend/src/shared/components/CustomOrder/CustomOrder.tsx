@@ -6,7 +6,7 @@ import { Trans } from "react-i18next";
 import Form from "../Modals/modules/Form/Form.tsx";
 import { t } from "i18next";
 import Button from "../ui/Button/Button.tsx";
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import { AlertCirceIcon, CheckMark, SendIcon } from "../../assets/icons";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
@@ -14,8 +14,8 @@ import { userApi } from "../../api/userApi/userApi.ts";
 import { Alert } from "../ui/Alert/Alert.tsx";
 import { BRAND } from "../../common/helpers/commonConstants.ts";
 import { Caduceus, ToothGreen } from "../../assets";
-import {PATHS} from "../../../app/routes/routes.ts";
-import {useLocation, useNavigate} from "react-router-dom";
+import { PATHS } from "../../../app/routes/routes.ts";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const CustomOrder = () => {
   const {
@@ -98,7 +98,7 @@ const CustomOrder = () => {
               <textarea
                 id="description"
                 maxLength={1000}
-                placeholder={t("orderProduct.typeHere")}
+                placeholder={t("typeHere")}
                 {...register("description", {
                   required: t("error.description.required"),
                   minLength: {
@@ -122,7 +122,7 @@ const CustomOrder = () => {
             type={isLogged ? "submit" : "button"}
             disabled={loading}
             loading={loading}
-            icon={<SendIcon />}
+            iconLeft={<SendIcon />}
             variant="filled_dark"
             className={`${s.request_btn} ${!isLogged ? s.disabled : ""}`}
             onClick={() => handleLoggedOutButtonClick()}

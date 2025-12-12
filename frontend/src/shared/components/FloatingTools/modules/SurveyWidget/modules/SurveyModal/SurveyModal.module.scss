@@ -1,0 +1,277 @@
+.survey_modal {
+  display: flex;
+  flex-direction: column;
+  max-width: 1040px;
+  margin: 0 auto;
+  background-color: $accent-glass;
+  border-radius: 40px;
+  overflow: hidden;
+  height: 100%;
+  -webkit-box-shadow: 0 5px 5px -4px $accent-03;
+  -moz-box-shadow: 0 5px 5px -4px $accent-03;
+  box-shadow: 0 5px 5px -4px $accent-03;
+  padding: 20px 30px;
+  color: $text-color;
+  backdrop-filter: blur(10px);
+
+  form {
+    @include flex-center();
+    flex-direction: column;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 15px;
+    min-height: 0;
+    flex: 1;
+  }
+}
+
+.title {
+  @include clamped-p2();
+  text-transform: uppercase;
+}
+
+.description {
+  @include clamped-p5();
+  width: 100%;
+  text-align: center;
+}
+
+.highlight {
+  color: $primary;
+}
+
+.error {
+  color: $error-color !important;
+}
+
+.survey_questions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  width: 100%;
+  height: fit-content;
+  gap: 10px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+
+  & > *:last-child {
+    grid-column: 1 / -1;
+  }
+
+  p,
+  label {
+    @include clamped-p4();
+    color: $accent-glass;
+    margin-bottom: 5px;
+  }
+
+  .option {
+    @include clamped-p5();
+    width: 100%;
+    padding: 10px 5px;
+    border-radius: 8px;
+
+    div {
+      border-color: $tertiary-08;
+      height: 15px;
+      width: 15px;
+    }
+  }
+}
+
+.active {
+  background-color: $tertiary-08;
+}
+
+.question {
+  background-color: $primary-08-analogue;
+  border-radius: 15px;
+  padding: 10px;
+  color: $text-color-accent;
+  @include flex-column();
+}
+
+.bottom_els {
+  @include flex-column();
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+
+  .question {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+
+    textarea {
+      width: 100%;
+      resize: none;
+      background-color: $primary-04-analogue;
+      border-radius: 10px;
+      border: 1px solid $primary;
+      padding: 10px;
+      @include clamped-p4();
+      color: $accent;
+      overflow: scroll;
+      flex: 1;
+      min-height: 0;
+
+      &::placeholder {
+        color: $tertiary;
+      }
+    }
+  }
+}
+
+.submit_btn {
+  width: 100%;
+  max-width: 500px;
+  text-transform: capitalize;
+  justify-self: center;
+  @include clamped-p2();
+  height: 60px;
+  @include flex-center();
+  gap: 10px;
+
+  svg {
+    width: 24px;
+    height: 24px;
+
+    path {
+      stroke: $accent;
+      @include transition();
+      fill: unset !important;
+    }
+  }
+
+  &:active {
+    svg {
+      path {
+        stroke: $primary !important;
+      }
+    }
+  }
+}
+
+.close_button {
+  height: 33px;
+  width: auto;
+
+  &:hover {
+    svg {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
+      }
+    }
+  }
+
+  &:active {
+    svg {
+      circle {
+        stroke: $error-color;
+      }
+      path {
+        fill: $error-color;
+      }
+    }
+  }
+}
+
+@media (hover: hover) {
+  .survey_questions {
+    .option {
+      &:hover {
+        background-color: $primary-accent-06;
+      }
+
+      &:active {
+        background-color: $primary-accent-06;
+      }
+    }
+  }
+
+  .submit_btn {
+    &:hover {
+      svg {
+        path {
+          stroke: $text-color;
+        }
+      }
+    }
+    &:active {
+      svg {
+        path {
+          stroke: $text-color !important;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $middle-breakpoint) {
+  .survey_modal {
+    form {
+      gap: 10px;
+      @include flex-column();
+      max-height: calc(100% + 20px);
+    }
+  }
+
+  .survey_questions {
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    @include custom-scrollbar();
+    padding: 0 15px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .survey_modal {
+    border-radius: 25px;
+    padding: 15px;
+
+    form {
+      max-height: calc(100% + 15px);
+    }
+
+    .description {
+      @include clamped-p4();
+    }
+
+    .bottom_els {
+      .question {
+        min-height: unset;
+      }
+    }
+  }
+
+  .survey_questions {
+    grid-template-rows: repeat(3, auto);
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .close_button {
+    height: 24px;
+  }
+
+  .submit_btn {
+    height: 40px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .submit_btn {
+    svg {
+      height: 20px;
+      width: auto;
+    }
+  }
+}

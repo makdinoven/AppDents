@@ -26,11 +26,15 @@
 }
 
 .radio_button {
+  position: relative;
+  @include flex-center();
   height: 20px;
   width: 20px;
   border: 1.5px solid $primary;
   @include transition();
   flex-shrink: 0;
+  border-radius: 3px;
+  overflow: hidden;
 
   &.radio {
     border-radius: 50%;
@@ -40,32 +44,13 @@
     background-color: $primary;
   }
 
-  &.checkbox {
-    border-radius: 3px;
-    @include flex-center();
-    position: relative;
-  }
-
-  &.checkbox::after {
-    content: "";
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    z-index: 2;
-    width: 22px;
-    height: 22px;
-    opacity: 0;
-    @include transition();
-    border-radius: 3px;
-    background-image: url("../../../assets/icons/check-square.svg");
-    background-position: 100% 100%;
-    background-size: cover;
-    background-repeat: no-repeat;
-    will-change: opacity;
-  }
-
-  &.checkbox.active::after {
-    opacity: 1;
+  svg {
+    width: 70%;
+    height: 70%;
+    path {
+      stroke: $text-color;
+      stroke-width: 4px;
+    }
   }
 }
 

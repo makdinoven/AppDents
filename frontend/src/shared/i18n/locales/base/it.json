@@ -74,6 +74,7 @@
   "of": "di",
   "readerFailedToLoad": "La finestra del lettore non si è caricata? Prova a leggerlo direttamente",
   "tooManyRequests": "⚠️ Troppe richieste. Ricarica la pagina e riprova tra un momento.",
+  "typeHere": "Scrivi qui...",
 
   "emailValidationTooltip": {
     "suggestion": "Forse intendevi {{suggestedEmail}}?",
@@ -397,7 +398,10 @@
     "errorChangingPassword": "Errore. La password non è stata cambiata.",
     "description.minLength": "Almeno 8 caratteri",
     "description.maxLength": "Limite di 1000 caratteri",
-    "description.required": "La descrizione è obbligatoria"
+    "description.required": "La descrizione è obbligatoria",
+    "survey.required": "La risposta è obbligatoria",
+    "survey.min": "Minimo 10 caratteri",
+    "survey.max": "Massimo 1000 caratteri"
   },
 
   "workingWarn": {
@@ -461,7 +465,6 @@
     "customOrder": "<0>Non</0> hai trovato nulla?",
     "customOrderText": "Vuoi un libro o un corso specifico? Descrivilo qui sotto (aggiungi un link se ne hai uno) — pensiamo noi al resto!",
     "describeOrder": "Descrivi il prodotto che desideri",
-    "typeHere": "Scrivi qui...",
     "request": "Richiedi",
     "productRequestSuccess": "La tua richiesta è stata inviata con successo. Ti risponderemo al più presto.",
     "productRequestFailed": "Non è stato possibile elaborare la richiesta. Riprova tra poco.",
@@ -526,9 +529,9 @@
   },
 
   "survey": {
+    "title": "Aiutaci a migliorare! Sondaggio rapido",
     "crowdfunding": {
-      "title": "Aiutaci a migliorare! Sondaggio rapido",
-      "description": "Stiamo considerando una nuova funzione: **Crowdfunding**!\n\nImmagina di poter richiedere qualsiasi corso o libro desideri. Contribuisci con qualsiasi importo da $5, e tutti i partecipanti ottengono accesso completo — indipendentemente da quanto hanno contribuito!\n\n**Bonus:** Potresti ottenere l'accesso anche prima del raggiungimento dell'obiettivo! Non appena acquisiremo il materiale, tutti i partecipanti lo riceveranno istantaneamente.\n\nQuesto sondaggio richiede meno di 1 minuto. La tua opinione conta!",
+      "description": "Stiamo considerando una nuova funzione: <0>Crowdfunding</0>!\n\nImmagina di poter richiedere qualsiasi corso o libro desideri. Contribuisci con qualsiasi importo da $5, e tutti i partecipanti ottengono accesso completo — indipendentemente da quanto hanno contribuito!\n\n<0>Bonus:</0> Potresti ottenere l'accesso anche prima del raggiungimento dell'obiettivo! Non appena acquisiremo il materiale, tutti i partecipanti lo riceveranno istantaneamente.\n\nQuesto sondaggio richiede meno di 1 minuto. La tua opinione conta!",
       "q1": {
         "text": "Quanto sei interessato alla funzione di crowdfunding?",
         "opt1": "Molto interessato! La userei subito",

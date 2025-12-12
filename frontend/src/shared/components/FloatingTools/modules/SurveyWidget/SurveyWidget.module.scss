@@ -16,6 +16,39 @@
   &.shift {
     transform: translateX(-65px);
   }
+
+  @media (hover: hover) {
+    &:hover {
+      .survey_btn {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+
+      .survey_text {
+        color: $primary;
+      }
+    }
+    &:active {
+      .survey_btn {
+        background-color: transparent;
+        svg {
+          path {
+            stroke: $background-color;
+          }
+        }
+      }
+
+      .survey_text {
+        color: $text-color;
+        span {
+          background-color: transparent;
+        }
+      }
+    }
+  }
 }
 
 .btn_wrapper {
@@ -30,29 +63,6 @@
   aspect-ratio: 1/1;
   cursor: pointer;
   z-index: 3;
-
-  &:active {
-    .survey_btn {
-      background-color: transparent;
-      svg {
-        path {
-          stroke: $background-color;
-        }
-      }
-    }
-  }
-
-  @media (hover: hover) {
-    &:hover {
-      .survey_btn {
-        svg {
-          path {
-            stroke: $primary;
-          }
-        }
-      }
-    }
-  }
 }
 
 .survey_btn {
@@ -88,6 +98,8 @@
   border-radius: 30px;
   backdrop-filter: blur(20px);
   background-color: $primary-04;
+  cursor: pointer;
+  @include transition();
 
   span {
     padding: 0 15px;
@@ -96,6 +108,7 @@
     height: 100%;
     border-radius: 30px;
     @include flex-center();
+    @include transition();
   }
 }
 

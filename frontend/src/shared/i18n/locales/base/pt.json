@@ -74,6 +74,7 @@
   "of": "de",
   "readerFailedToLoad": "A janela de leitura não carregou? Tente ler o arquivo diretamente",
   "tooManyRequests": "⚠️ Muitas solicitações. Por favor, recarregue a página e tente novamente em instantes.",
+  "typeHere": "Digite aqui...",
 
   "emailValidationTooltip": {
     "suggestion": "Você quis dizer {{suggestedEmail}}?",
@@ -389,7 +390,10 @@
     "errorChangingPassword": "Erro. A senha não foi alterada.",
     "description.minLength": "Pelo menos 8 caracteres",
     "description.maxLength": "Limite de 1000 caracteres",
-    "description.required": "A descrição é obrigatória"
+    "description.required": "A descrição é obrigatória",
+    "survey.required": "A resposta é obrigatória",
+    "survey.min": "Mínimo de 10 caracteres",
+    "survey.max": "Máximo de 1000 caracteres"
   },
 
   "workingWarn": {
@@ -453,7 +457,6 @@
     "customOrder": "<0>Não</0> encontrou nada?",
     "customOrderText": "Quer um livro ou curso específico? Descreva abaixo (adicione um link se tiver) — nós cuidamos de tudo!",
     "describeOrder": "Descreva o produto desejado",
-    "typeHere": "Digite aqui...",
     "request": "Solicitar",
     "productRequestSuccess": "Seu pedido foi enviado com sucesso. Responderemos o mais rápido possível.",
     "productRequestFailed": "Não foi possível processar o pedido. Tente novamente em instantes.",
@@ -518,9 +521,9 @@
   },
 
   "survey": {
+    "title": "Ajude-nos a melhorar! Pesquisa rápida",
     "crowdfunding": {
-      "title": "Ajude-nos a melhorar! Pesquisa rápida",
-      "description": "Estamos considerando um novo recurso: **Financiamento coletivo**!\n\nImagine poder solicitar qualquer curso ou livro que você deseja. Você contribui com qualquer valor a partir de $5, e todos os participantes ganham acesso completo — independente de quanto contribuíram!\n\n**Bônus:** Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\n\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
+      "description": "Estamos considerando um novo recurso: <0>Financiamento coletivo</0>!\n\nImagine poder solicitar qualquer curso ou livro que você deseja. Você contribui com qualquer valor a partir de $5, e todos os participantes ganham acesso completo — independente de quanto contribuíram!\n\n<0>Bônus:</0> Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\n\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
       "q1": {
         "text": "Quão interessado você está no recurso de financiamento coletivo?",
         "opt1": "Muito interessado! Usaria imediatamente",
