@@ -162,7 +162,6 @@
     }
   },
 
-
   "main": {
     "title": "Escuela <1>dental</1> en línea",
     "hero.widestRange": "La <1>más amplia</1> gama de productos",
@@ -551,7 +550,7 @@
   "survey": {
     "title": "¡Ayúdanos a mejorar! Encuesta rápida",
     "crowdfunding": {
-      "description": "Estamos considerando una nueva función: <0>¡Financiación colectiva</0>!\n\nImagina poder solicitar cualquier curso o libro que desees. Contribuyes con cualquier cantidad desde $5, y todos los participantes obtienen acceso completo — ¡sin importar cuánto contribuyeron!\n\n<0>Bonus:</0> ¡Podrías obtener acceso incluso antes de alcanzar la meta! Tan pronto como adquiramos el material, todos los participantes lo recibirán instantáneamente.\n\nEsta encuesta toma menos de 1 minuto. ¡Tu opinión importa!",
+      "description": "Estamos considerando una nueva función: <0>¡Financiación colectiva</0>!\nImagina poder solicitar cualquier curso o libro que desees. Contribuyes con cualquier cantidad desde $5, y todos los participantes obtienen acceso completo — ¡sin importar cuánto contribuyeron!\n<0>Bonus:</0> ¡Podrías obtener acceso incluso antes de alcanzar la meta! Tan pronto como adquiramos el material, todos los participantes lo recibirán instantáneamente.\nEsta encuesta toma menos de 1 minuto. ¡Tu opinión importa!",
       "q1": {
         "text": "¿Qué tan interesado estás en la función de financiación colectiva?",
         "opt1": "¡Muy interesado! La usaría de inmediato",

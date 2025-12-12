@@ -162,7 +162,6 @@
     }
   },
 
-
   "main": {
     "title": "Escola <1>dentária</1> online",
     "hero.widestRange": "A <1>mais ampla</1> gama de produtos",
@@ -543,7 +542,7 @@
   "survey": {
     "title": "Ajude-nos a melhorar! Pesquisa rápida",
     "crowdfunding": {
-      "description": "Estamos considerando um novo recurso: <0>Financiamento coletivo</0>!\n\nImagine poder solicitar qualquer curso ou livro que você deseja. Você contribui com qualquer valor a partir de $5, e todos os participantes ganham acesso completo — independente de quanto contribuíram!\n\n<0>Bônus:</0> Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\n\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
+      "description": "Estamos considerando um novo recurso: <0>Financiamento coletivo</0>!\nImagine poder solicitar qualquer curso ou livro que você deseja. Você contribui com qualquer valor a partir de $5, e todos os participantes ganham acesso completo — independente de quanto contribuíram!\n<0>Bônus:</0> Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
       "q1": {
         "text": "Quão interessado você está no recurso de financiamento coletivo?",
         "opt1": "Muito interessado! Usaria imediatamente",

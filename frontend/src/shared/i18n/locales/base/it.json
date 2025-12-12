@@ -162,7 +162,6 @@
     }
   },
 
-
   "main": {
     "title": "Scuola <1>dentale</1> online",
     "hero.widestRange": "La <1>più ampia</1> gamma di prodotti",
@@ -551,7 +550,7 @@
   "survey": {
     "title": "Aiutaci a migliorare! Sondaggio rapido",
     "crowdfunding": {
-      "description": "Stiamo considerando una nuova funzione: <0>Crowdfunding</0>!\n\nImmagina di poter richiedere qualsiasi corso o libro desideri. Contribuisci con qualsiasi importo da $5, e tutti i partecipanti ottengono accesso completo — indipendentemente da quanto hanno contribuito!\n\n<0>Bonus:</0> Potresti ottenere l'accesso anche prima del raggiungimento dell'obiettivo! Non appena acquisiremo il materiale, tutti i partecipanti lo riceveranno istantaneamente.\n\nQuesto sondaggio richiede meno di 1 minuto. La tua opinione conta!",
+      "description": "Stiamo considerando una nuova funzione: <0>Crowdfunding</0>!\nImmagina di poter richiedere qualsiasi corso o libro desideri. Contribuisci con qualsiasi importo da $5, e tutti i partecipanti ottengono accesso completo — indipendentemente da quanto hanno contribuito!\n<0>Bonus:</0> Potresti ottenere l'accesso anche prima del raggiungimento dell'obiettivo! Non appena acquisiremo il materiale, tutti i partecipanti lo riceveranno istantaneamente.\nQuesto sondaggio richiede meno di 1 minuto. La tua opinione conta!",
       "q1": {
         "text": "Quanto sei interessato alla funzione di crowdfunding?",
         "opt1": "Molto interessato! La userei subito",

@@ -31,13 +31,10 @@
 }
 
 .description {
-  @include clamped-p4();
+  @include clamped-p3();
   width: 100%;
-  text-align: center;
-  overflow: scroll;
-  @include custom-scrollbar();
-  max-height: 100px;
-  padding-right: 10px;
+  text-align: left;
+  white-space: pre-line;
 }
 
 .highlight {
@@ -212,10 +209,6 @@
   .survey_modal {
     border-radius: 25px;
     padding: 15px;
-
-    .description {
-      @include clamped-p4();
-    }
   }
 
   .close_button {
