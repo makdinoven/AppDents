@@ -55,6 +55,7 @@ class MigrationDetail(BaseModel):
     """Детали обработки одной записи."""
     dump_page_name: str
     dump_course_name: str
+    dump_photo_preview: Optional[str] = None  # Полная ссылка на фото из дампа
     matched_landing_id: Optional[int] = None
     matched_landing_name: Optional[str] = None
     fuzzy_score: Optional[float] = None
@@ -266,9 +267,18 @@ async def _process_single_record(
     dump_course_name = record.get("course_name", "")
     dump_preview_photo = record.get("preview_photo", "")
     
+    # Формируем полную ссылку на фото из дампа
+    dump_photo_url = None
+    if dump_preview_photo:
+        photo_path = dump_preview_photo.replace("\\", "/")
+        if not photo_path.startswith("/"):
+            photo_path = "/" + photo_path
+        dump_photo_url = f"https://dent-s.com{photo_path}"
+    
     detail = {
         "dump_page_name": dump_page_name,
         "dump_course_name": dump_course_name,
+        "dump_photo_preview": dump_photo_url,
         "matched_landing_id": None,
         "matched_landing_name": None,
         "fuzzy_score": None,
@@ -474,6 +484,10 @@ async def start_migration(
     description="""
     Возвращает текущий прогресс выполнения задачи миграции фотографий.
     
+    Результаты отсортированы:
+    - Сначала ошибки (failed)
+    - Затем по возрастанию fuzzy_score (самый низкий вверху)
+    
     Статусы:
     - pending: Задача в очереди
     - processing: Задача выполняется
@@ -492,6 +506,15 @@ async def get_migration_status(
     
     task = tasks_progress[task_id]
     
+    # Сортируем детали: ошибки вверху, затем по fuzzy_score (низкий вверху)
+    sorted_details = sorted(
+        task["details"],
+        key=lambda x: (
+            0 if x.get("action") == "failed" else 1,  # Ошибки первыми
+            x.get("fuzzy_score") if x.get("fuzzy_score") is not None else 999  # По возрастанию score
+        )
+    )
+    
     return TaskProgressResponse(
         task_id=task_id,
         status=task["status"],
@@ -499,7 +522,7 @@ async def get_migration_status(
         stats=task["stats"],
         started_at=task.get("started_at"),
         completed_at=task.get("completed_at"),
-        details=task["details"],
+        details=sorted_details,
     )
 
 
@@ -516,6 +539,15 @@ async def list_migration_tasks(
     
     tasks = []
     for task_id, task in tasks_progress.items():
+        # Сортируем детали: ошибки вверху, затем по fuzzy_score (низкий вверху)
+        sorted_details = sorted(
+            task["details"],
+            key=lambda x: (
+                0 if x.get("action") == "failed" else 1,  # Ошибки первыми
+                x.get("fuzzy_score") if x.get("fuzzy_score") is not None else 999  # По возрастанию score
+            )
+        )
+        
         tasks.append(TaskProgressResponse(
             task_id=task_id,
             status=task["status"],
@@ -523,7 +555,7 @@ async def list_migration_tasks(
             stats=task["stats"],
             started_at=task.get("started_at"),
             completed_at=task.get("completed_at"),
-            details=task["details"],
+            details=sorted_details,
         ))
     
     return tasks
