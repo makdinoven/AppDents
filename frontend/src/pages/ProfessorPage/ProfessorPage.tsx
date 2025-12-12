@@ -31,6 +31,7 @@ const ProfessorPage = () => {
   const [professor, setProfessor] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const screenWidth = useScreenWidth();
+  const [imgError, setImgError] = useState<boolean>(false);
 
   useEffect(() => {
     fetchProfessorData();
@@ -188,8 +189,12 @@ const ProfessorPage = () => {
                   <div className={s.card_header}></div>
                   <div className={s.card_body}>
                     <div className={s.photo}>
-                      {professor.photo ? (
-                        <img src={professor.photo} alt="Professor image" />
+                      {professor.photo && !imgError ? (
+                        <img
+                          src={professor.photo}
+                          onError={() => setImgError(true)}
+                          alt="Professor image"
+                        />
                       ) : (
                         <NoUser />
                       )}

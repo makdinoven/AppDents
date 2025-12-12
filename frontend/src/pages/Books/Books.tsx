@@ -23,6 +23,7 @@ import {
 } from "../../shared/components/filters/model/types.ts";
 import BookCardSkeletons from "../../shared/components/ui/Skeletons/BookCardSkeletons/BookCardSkeletons.tsx";
 import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+import { useResetPageOnChange } from "../../shared/common/hooks/useResetOnPageChange.ts";
 
 const Books = () => {
   const { language } = useSelector((state: AppRootStateType) => state.user);
@@ -65,11 +66,7 @@ const Books = () => {
     loadBooks();
   }, [params, language]);
 
-  useEffect(() => {
-    if (params.page !== 1) {
-      actions.set({ page: 1 });
-    }
-  }, [language]);
+  useResetPageOnChange(language, actions.set);
 
   return (
     <div lang={language.toLowerCase()} className={s.books}>

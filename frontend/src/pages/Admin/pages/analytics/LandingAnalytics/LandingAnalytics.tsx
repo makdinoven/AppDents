@@ -46,10 +46,6 @@ const LandingAnalytics = () => {
     setPreset,
   } = useDateRangeFilter("custom");
 
-  useEffect(() => {
-    console.log(chartData);
-  }, [chartData]);
-
   const fetchData = async () => {
     setLoading(true);
 

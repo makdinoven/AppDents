@@ -9,6 +9,8 @@ import {
   CartItemKind,
 } from "../../../shared/api/cartApi/types.ts";
 import { PATHS } from "../../../app/routes/routes.ts";
+import { useState } from "react";
+import { NoPictures } from "../../../shared/assets";
 
 interface CartItemProps {
   loading?: boolean;
@@ -25,6 +27,8 @@ const CartItem = ({
   onDelete,
   language,
 }: CartItemProps) => {
+  const [imgError, setImgError] = useState<boolean>(false);
+
   const visibleAuthors = item?.authors
     ?.slice(0, 3)
     .filter((author) => author.photo);
@@ -39,10 +43,16 @@ const CartItem = ({
 
       <div className={s.item_middle}>
         <div
-          className={`${s.img_wrapper} ${!item.preview_photo ? s.no_photo : ""} ${s[type.toLowerCase()]}`}
+          className={`${s.img_wrapper} ${imgError ? s.no_photo : ""} ${s[type.toLowerCase()]}`}
         >
-          {item?.preview_photo && (
-            <img src={item.preview_photo} alt={`${type} photo`} />
+          {item?.preview_photo && !imgError ? (
+            <img
+              src={item.preview_photo}
+              onError={() => setImgError(true)}
+              alt={`${type} photo`}
+            />
+          ) : (
+            <NoPictures />
           )}
         </div>
         <div className={s.text_wrapper}>

@@ -57,10 +57,16 @@
   }
 
   &.no_photo {
+    @include flex-center;
     width: 185px;
     height: 104px;
     border-radius: 10px !important;
     background-color: $accent-03;
+
+    svg {
+      width: 50%;
+      height: 50%;
+    }
   }
 }
 

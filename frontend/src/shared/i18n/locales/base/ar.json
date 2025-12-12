@@ -133,15 +133,47 @@
   },
 
   "search": {
-    "tooLong": "الطلب طويل جدًا. استخدم 200 حرفًا أو أقل.",
-    "searchCourses": "بحث عن الدورات",
+    "tooLong": "النص طويل جدًا. استخدم 200 حرفًا أو أقل.",
+    "searchCourses": "البحث عن الدورات",
     "searchPlaceholder": "اكتب للبحث...",
-    "result": "تم العثور على {{count,localizedNumber}} دورات",
-    "result_one": "تم العثور على دورة واحدة {{count,localizedNumber}}",
-    "result_few": "تم العثور على {{ localizedNumber,count}} دورات",
-    "result_many": "تم العثور على {{count,localizedNumber}} دورات",
-    "result_zero": "لم يتم العثور على دورات"
+    "categories": "الفئات",
+    "languages": "اللغات",
+    "results": {
+      "results": "نتائج البحث:",
+      "landings": "الدورات",
+      "authors": "المؤلفون",
+      "book_landings": "الكتب"
+    },
+    "noResults": {
+      "title": "عفوًا! لم يتم العثور على شيء",
+      "description": "جرّب استخدام كلمات أو عبارات مختلفة للحصول على نتيجة أفضل."
+    },
+    "landingsResult": {
+      "result_zero": "لم يتم العثور على أي دورات",
+      "result_one": "تم العثور على {{count}} دورة",
+      "result_two": "تم العثور على دورتين {{count}}",
+      "result_few": "تم العثور على {{count}} دورات",
+      "result_many": "تم العثور على {{count}} دورة",
+      "result_other": "تم العثور على {{count}} دورة"
+    },
+    "book_landingsResult": {
+      "result_zero": "لم يتم العثور على أي كتب",
+      "result_one": "تم العثور على {{count}} كتاب",
+      "result_two": "تم العثور على كتابين {{count}}",
+      "result_few": "تم العثور على {{count}} كتب",
+      "result_many": "تم العثور على {{count}} كتابًا",
+      "result_other": "تم العثور على {{count}} كتاب"
+    },
+    "authorsResult": {
+      "result_zero": "لم يتم العثور على أي مؤلفين",
+      "result_one": "تم العثور على {{count}} مؤلف",
+      "result_two": "تم العثور على مؤلفين {{count}}",
+      "result_few": "تم العثور على {{count}} مؤلفين",
+      "result_many": "تم العثور على {{count}} مؤلفًا",
+      "result_other": "تم العثور على {{count}} مؤلف"
+    }
   },
+
 
   "main": {
     "title": "مدرسة <1>أسنان</1> عبر الإنترنت",

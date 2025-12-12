@@ -136,12 +136,32 @@
     "tooLong": "Troppo lungo. Usa 200 caratteri o meno.",
     "searchCourses": "Cerca corsi",
     "searchPlaceholder": "Digita per cercare...",
-    "result": "trovati {{count}} corsi",
-    "result_one": "{{count}} corso trovato",
-    "result_few": "{{count}} corsi trovati",
-    "result_many": "trovati {{count}} corsi",
-    "result_zero": "Nessun corso trovato"
+    "categories": "Categorie",
+    "languages": "Lingue",
+    "results": {
+      "results": "Risultati della ricerca:",
+      "landings": "Corsi",
+      "authors": "Autori",
+      "book_landings": "Libri"
+    },
+    "noResults": {
+      "title": "Ops! Nessun risultato",
+      "description": "Prova a usare parole o frasi diverse per una ricerca più efficace."
+    },
+    "landingsResult": {
+      "result_one": "{{count}} corso trovato",
+      "result_other": "{{count}} corsi trovati"
+    },
+    "book_landingsResult": {
+      "result_one": "{{count}} libro trovato",
+      "result_other": "{{count}} libri trovati"
+    },
+    "authorsResult": {
+      "result_one": "{{count}} autore trovato",
+      "result_other": "{{count}} autori trovati"
+    }
   },
+
 
   "main": {
     "title": "Scuola <1>dentale</1> online",

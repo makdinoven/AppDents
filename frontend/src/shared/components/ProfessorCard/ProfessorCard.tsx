@@ -3,7 +3,7 @@ import ViewLink from "../ui/ViewLink/ViewLink.tsx";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { t } from "i18next";
-import React from "react";
+import React, { useState } from "react";
 import { NoUser } from "../../assets";
 
 const ProfessorCard = ({
@@ -23,6 +23,8 @@ const ProfessorCard = ({
   description: string;
   link: string;
 }) => {
+  const [imgError, setImgError] = useState<boolean>(false);
+
   return (
     <Link to={link} className={s.card_wrapper}>
       <div className={s.card_header}>
@@ -31,7 +33,15 @@ const ProfessorCard = ({
       <div className={s.professor_card}>
         <div className={s.card_content}>
           <div className={s.photo_wrapper}>
-            {photo ? <img src={photo} alt="professor photo" /> : <NoUser />}
+            {photo && !imgError ? (
+              <img
+                src={photo}
+                onError={() => setImgError(true)}
+                alt="professor photo"
+              />
+            ) : (
+              <NoUser />
+            )}
           </div>
           <div className={s.description_wrapper}>
             {(courses_count > 0 || books_count > 0) && (

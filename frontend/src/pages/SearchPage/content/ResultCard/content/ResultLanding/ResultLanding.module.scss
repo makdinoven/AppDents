@@ -37,6 +37,14 @@
   height: 110px;
   background-color: $hover-color;
 
+  &.no_photo {
+    @include flex-center;
+    svg {
+      aspect-ratio: 1;
+      height: 80%;
+    }
+  }
+
   &.book {
     border-radius: 10px;
     background-color: unset;

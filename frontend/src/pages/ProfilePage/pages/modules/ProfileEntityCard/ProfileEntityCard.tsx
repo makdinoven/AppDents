@@ -2,13 +2,16 @@ import s from "./ProfileEntityCard.module.scss";
 import { Link } from "react-router-dom";
 import { Trans } from "react-i18next";
 import { useScreenWidth } from "../../../../../shared/common/hooks/useScreenWidth.ts";
-import { Arrow } from "../../../../../shared/assets/icons";
+import {
+  Arrow,
+  CheckMarkIcon,
+  Clock,
+  Dollar,
+  Percent,
+} from "../../../../../shared/assets/icons";
 import CountdownTimer from "../../../../../shared/components/ui/CountdownTimer/CountdownTimer.tsx";
-import { CheckMarkIcon } from "../../../../../shared/assets/icons";
-import { Clock } from "../../../../../shared/assets/icons";
-import { Dollar } from "../../../../../shared/assets/icons";
-import { Percent } from "../../../../../shared/assets/icons";
 import { NoPictures } from "../../../../../shared/assets";
+import { useState } from "react";
 
 const ProfileEntityCard = ({
   isPartial = false,
@@ -30,6 +33,7 @@ const ProfileEntityCard = ({
   expires_at?: string;
   type?: "book" | "course";
 }) => {
+  const [imgError, setImgError] = useState<boolean>(false);
   const screenWidth = useScreenWidth();
   const isCourse = type === "course";
 
@@ -44,11 +48,16 @@ const ProfileEntityCard = ({
   };
 
   const renderCover = () => {
-    const cover = previewPhoto ? (
-      <img src={previewPhoto} alt={isCourse ? "Course image" : "Book image"} />
-    ) : (
-      <NoPictures className={s.no_photo} />
-    );
+    const cover =
+      previewPhoto && !imgError ? (
+        <img
+          src={previewPhoto}
+          onError={() => setImgError(true)}
+          alt={isCourse ? "Course image" : "Book image"}
+        />
+      ) : (
+        <NoPictures className={s.no_photo} />
+      );
 
     return !isCourse ? <div className={s.cover_container}>{cover}</div> : cover;
   };

@@ -88,7 +88,8 @@ jobs:
             git config --local pull.rebase false
             # Reset any local changes to tracked files before pulling
             git reset --hard HEAD
-            git clean -fd || true
+            # Exclude assets folder from clean to preserve uploaded images
+            git clean -fd -e assets/ || true
             git pull --no-rebase --no-edit -s recursive -X theirs origin main
             if [ ! -f .env ]; then
               echo "[ERROR] .env not found" && exit 1

@@ -89,11 +89,11 @@ export const INITIAL_USER = {
   role: "user",
 };
 
-export const PAYMENT_PAGE_KEY = "BUY";
+export const PAYMENT_PAGE_KEY = "_BUY";
 
-export const PAYMENT_TYPE_KEY = "PT";
+export const PAYMENT_TYPE_KEY = "_PT";
 
-export const PAYMENT_MODE_KEY = "PM";
+export const PAYMENT_MODE_KEY = "_PM";
 
 export const SORT_FILTERS = [
   { name: "tag.common.rec", value: "recommend" },
@@ -229,7 +229,7 @@ export const LS_TOKEN_KEY = "access_token";
 
 export const LS_REF_LINK_KEY = "DENTS_REF_LINK";
 
-export const BOOK_FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"] as const;
+export const BOOK_FORMATS = ["PDF", "EPUB", "MOBI", "AZW3", "FB2"];
 
 export type BookFormat = (typeof BOOK_FORMATS)[number];
 

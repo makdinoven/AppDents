@@ -23,6 +23,7 @@ import {
 } from "../../shared/components/filters/model/types.ts";
 import { useListQueryParams } from "../../shared/components/list/model/useListQueryParams.ts";
 import FiltersSkeleton from "../../shared/components/ui/Skeletons/FiltersSkeleton/FiltersSkeleton.tsx";
+import { useResetPageOnChange } from "../../shared/common/hooks/useResetOnPageChange.ts";
 
 const Courses = ({ isFree }: { isFree: boolean }) => {
   const { language, isLogged } = useSelector(
@@ -69,11 +70,7 @@ const Courses = ({ isFree }: { isFree: boolean }) => {
     loadCourses();
   }, [params, language]);
 
-  useEffect(() => {
-    if (params.page !== 1) {
-      actions.set({ page: 1 });
-    }
-  }, [language]);
+  useResetPageOnChange(language, actions.set);
 
   return (
     <div lang={language.toLowerCase()} className={s.courses}>

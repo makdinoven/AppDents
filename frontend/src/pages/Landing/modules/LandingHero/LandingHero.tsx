@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import s from "./LandingHero.module.scss";
 import Title from "../../../../shared/components/ui/Title/Title.tsx";
 import { Trans } from "react-i18next";
@@ -16,6 +16,7 @@ const LandingHero: React.FC<LandingHeroProps> = ({
   data,
   loading,
 }: LandingHeroProps) => {
+  const [imgError, setImgError] = useState<boolean>(false);
   const {
     photo,
     landing_name,
@@ -71,8 +72,12 @@ const LandingHero: React.FC<LandingHeroProps> = ({
               ) : null}
               <div className={s.card_body}>
                 <div className={s.photo}>
-                  {photo ? (
-                    <img src={photo} alt="Course image" />
+                  {photo && !imgError ? (
+                    <img
+                      src={photo}
+                      onError={() => setImgError(true)}
+                      alt="Course image"
+                    />
                   ) : (
                     <NoPictures />
                   )}
