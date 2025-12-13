@@ -542,7 +542,7 @@
   "survey": {
     "title": "Ajude-nos a melhorar! Pesquisa rápida",
     "crowdfunding": {
-      "description": "Estamos considerando um novo recurso: <0>Financiamento coletivo</0>!\nImagine poder solicitar qualquer curso ou livro que você deseja. Você contribui com qualquer valor a partir de $5, e todos os participantes ganham acesso completo — independente de quanto contribuíram!\n<0>Bônus:</0> Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
+      "description": "Estamos considerando um novo recurso: <0>Financiamento coletivo</0>!\nImagine poder solicitar qualquer curso ou livro que você deseja. Será uma <0>arrecadação coletiva</0> onde todos os usuários do site poderão contribuir. Cada contribuição (a partir de $5) preenche a barra de progresso e quando o valor total for atingido — <0>todos os participantes ganham acesso</0> ao material, independente do tamanho de sua contribuição!\n<0>Bônus:</0> Você pode ter acesso mesmo antes da meta ser atingida! Assim que adquirirmos o material, todos os participantes o receberão instantaneamente.\nEsta pesquisa leva menos de 1 minuto. Sua opinião importa!",
       "q1": {
         "text": "Quão interessado você está no recurso de financiamento coletivo?",
         "opt1": "Muito interessado! Usaria imediatamente",

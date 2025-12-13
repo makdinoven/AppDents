@@ -576,7 +576,7 @@
   "survey": {
     "title": "Help Us Improve! Quick Survey",
     "crowdfunding": {
-      "description": "We're considering a new feature: <0>Community Crowdfunding</0>!\nImagine being able to request any course or book you want. You contribute any amount from $5, and everyone who participated gets full access — regardless of how much they contributed!\n<0>Bonus:</0> You might get access even before the goal is reached! As soon as we acquire the material, all participants instantly receive it.\nThis survey takes less than 1 minute. Your opinion matters!",
+      "description": "We're considering a new feature: <0>Community Crowdfunding</0>!\nImagine being able to request any course or book you want. This will be a <0>collective fundraiser</0> where all site users can contribute. Each contribution (from $5) fills the progress bar, and when the full amount is raised — <0>all participants get access</0> to the material, regardless of their contribution size!\n<0>Bonus:</0> You might get access even before the goal is reached! As soon as we acquire the material, all participants instantly receive it.\nThis survey takes less than 1 minute. Your opinion matters!",
       "q1": {
         "text": "How interested are you in the crowdfunding feature?",
         "opt1": "Very interested! I'd use it right away",
