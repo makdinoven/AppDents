@@ -89,3 +89,4 @@ export { default as EditIcon } from "./edit.svg?react";
 export { default as FilterIcon } from "./filter.svg?react";
 export { default as PlusIcon } from "./plus.svg?react";
 export { default as MinusIcon } from "./minus.svg?react";
+export { default as Interaction } from "./interaction.svg?react";

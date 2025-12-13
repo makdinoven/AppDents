@@ -9,7 +9,6 @@ from ..db.database import get_db
 from ..services_v2.search_service import search_everything
 from ..schemas_v2.search import SearchResponse, SearchTypeEnum
 from ..models.models_v2 import SearchQuery
-from ..core.search_analytics import send_search_to_analytics
 
 router = APIRouter()
 
@@ -109,15 +108,5 @@ def search_v2(
 
     db.commit()
     db.refresh(record)
-
-    # 5. Отправляем финальный вариант в аналитику
-    try:
-        send_search_to_analytics(
-            query=record.query,
-            path=record.path,
-            created_at=record.created_at,
-        )
-    except Exception:
-        pass
 
     return result

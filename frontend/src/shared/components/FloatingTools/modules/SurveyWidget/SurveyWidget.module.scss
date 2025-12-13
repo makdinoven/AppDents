@@ -1,0 +1,129 @@
+.survey_widget {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  width: fit-content;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  align-items: center;
+  will-change: transform;
+  @include transition();
+  @include clamped-p6();
+  color: $text-color;
+  gap: 5px;
+
+  &.shift {
+    transform: translateX(-65px);
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      .survey_btn {
+        svg {
+          path {
+            stroke: $primary;
+          }
+        }
+      }
+
+      .survey_text {
+        color: $primary;
+      }
+    }
+    &:active {
+      .btn_wrapper,
+      .survey_text {
+        background-color: $accent-075;
+      }
+      .survey_btn {
+        background-color: transparent;
+        svg {
+          path {
+            stroke: $background-color;
+          }
+        }
+      }
+
+      .survey_text {
+        color: $text-color;
+        span {
+          background-color: transparent;
+        }
+      }
+    }
+  }
+}
+
+.btn_wrapper {
+  position: relative;
+  background-color: $primary-04;
+  backdrop-filter: blur(10px);
+  padding: 2px;
+  @include transition();
+  border-radius: 100%;
+  height: 100%;
+  aspect-ratio: 1/1;
+  min-width: fit-content;
+  cursor: pointer;
+}
+
+.survey_btn {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  @include flex-center();
+  background-color: $accent-075;
+  @include transition();
+  border-radius: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  backdrop-filter: blur(20px);
+
+  svg {
+    $size: 20px;
+    width: $size;
+    height: $size;
+
+    path {
+      @include transition();
+      stroke: $background-color-09;
+      stroke-width: 2;
+    }
+  }
+}
+
+.survey_text {
+  position: relative;
+  background-color: $primary-04;
+  backdrop-filter: blur(10px);
+  padding: 2px;
+  @include transition();
+  border-radius: 30px;
+  height: 100%;
+  min-width: fit-content;
+  cursor: pointer;
+
+  span {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    @include flex-center();
+    background-color: $accent-075;
+    @include transition();
+    border-radius: 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    backdrop-filter: blur(20px);
+    text-wrap: nowrap;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .survey_widget {
+    &.shift {
+      transform: none;
+    }
+  }
+}

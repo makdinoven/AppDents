@@ -3,6 +3,7 @@ import { ChangePasswordType, SignUpType } from "./types.ts";
 import { getAuthHeaders } from "../../common/helpers/helpers.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { cartStorage } from "../cartApi/cartStorage.ts";
+import { AnswerType } from "../../components/FloatingTools/types.ts";
 
 export const userApi = {
   getMe() {
@@ -106,5 +107,29 @@ export const userApi = {
 
   requestProduct(data: { user_id: number; text: string }) {
     return instance.post("request/course-request", data);
+  },
+
+  getSurveys() {
+    return instance.get("/surveys/pending", { headers: getAuthHeaders() });
+  },
+
+  surveyViewed(slug: string) {
+    return instance.post(
+      `/surveys/${slug}/view`,
+      {},
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+  },
+  submitSurvey(slug: string, data: { answers: AnswerType[] }) {
+    return instance.post(`/surveys/${slug}/submit`, data, {
+      headers: getAuthHeaders(),
+    });
+  },
+  getSurvey(slug: string) {
+    return instance.get(`/surveys/${slug}`, {
+      headers: getAuthHeaders(),
+    });
   },
 };

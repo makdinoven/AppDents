@@ -330,11 +330,12 @@ def manual_single_creative(
     book_id: int,
     target: str = Path(
         ...,
-        description=f"Целевой креатив для обновления: 'v1' | 'v2' | 'v3' или конкретный creative_code.\n"
+        description=f"Целевой креатив для обновления: 'v1' | 'v2' | 'v3'| 'v4' или конкретный creative_code.\n"
                     f"Допустимые значения:\n"
                     f"- v1 (или {PLACID_TPL_V1})\n"
                     f"- v2 (или {PLACID_TPL_V2})\n"
-                    f"- v3 (или {PLACID_TPL_V3})"
+                    f"- v3 (или {PLACID_TPL_V3})\n"
+                    f"- v4 (или {PLACID_TPL_V4})"
     ),
     body: ManualCreativeFlexible = ...,
     request: Request = None,
@@ -348,6 +349,7 @@ def manual_single_creative(
     - `v1` (или `kbhccvksoprg7`) - первый шаблон
     - `v2` (или `ktawlyumyeaw7`) - второй шаблон  
     - `v3` (или `uoshaoahss0al`) - третий шаблон
+    - `v4` (или `9lzxp889n80qo`) - четвертый шаблон
     
     **body.fields** - словарь произвольных переопределений:
     - `price_new`, `price_old` - цены

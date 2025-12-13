@@ -3,8 +3,8 @@ import Header from "../../../shared/components/Header/Header.tsx";
 import Footer from "../../../shared/components/Footer/Footer.tsx";
 import s from "./Layout.module.scss";
 import MobileMenu from "../../../shared/components/ui/MobileMenu/MobileMenu.tsx";
-import ScrollToTopButton from "../../../shared/components/ui/ScrollToTopButton/ScrollToTopButton.tsx";
 import PaymentPage from "../../../pages/PaymentPage/PaymentPage.tsx";
+import FloatingTools from "../../../shared/components/FloatingTools/FloatingTools.tsx";
 
 const MainLayout = () => {
   return (
@@ -15,7 +15,7 @@ const MainLayout = () => {
       </main>
       <PaymentPage />
       <Footer />
-      <ScrollToTopButton />
+      <FloatingTools />
       <MobileMenu />
     </div>
   );
