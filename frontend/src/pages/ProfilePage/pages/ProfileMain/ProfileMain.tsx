@@ -123,7 +123,10 @@ const ProfileMain = () => {
         customHandleClose={handleModalClose}
         onInitClose={(fn) => (closeModalRef.current = fn)}
       >
-        <FriendMailInput closeModal={handleModalClose} ref={modalRef} />
+        <FriendMailInput
+          closeModal={() => closeModalRef.current?.()}
+          ref={modalRef}
+        />
       </ModalOverlay>
     </div>
   );

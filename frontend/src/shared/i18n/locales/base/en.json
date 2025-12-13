@@ -76,6 +76,7 @@
   "of": "of",
   "readerFailedToLoad": "Reader window failed to load? Try reading it directly",
   "tooManyRequests": "⚠️ Too many requests. Please reload the page and try again in a moment",
+  "typeHere": "Type here...",
 
   "emailValidationTooltip": {
     "suggestion": "Did you mean {{suggestedEmail}}?",
@@ -439,7 +440,10 @@
     "errorChangingPassword": "Error. Password was not changed.",
     "description.minLength": "At least 8 characters",
     "description.maxLength": "Limit 1000 chars",
-    "description.required": "Description is required"
+    "description.required": "Description is required",
+    "survey.required": "Answer is required",
+    "survey.min": "Minimum 10 characters",
+    "survey.max": "Maximum 1000 characters"
   },
 
   "workingWarn": {
@@ -505,7 +509,6 @@
     "customOrder": "<0>Found</0> nothing?",
     "customOrderText": "Want a specific book or course? Describe it below (add a link if you have one) — we’ll take care of the rest!",
     "describeOrder": "Describe the product you want",
-    "typeHere": "Type here...",
     "request": "Request",
     "productRequestSuccess": "Your request has been successfully submitted. We will respond as soon as possible.",
     "productRequestFailed": "The request could not be processed. Please retry in a moment.",
@@ -571,9 +574,9 @@
   },
 
   "survey": {
+    "title": "Help Us Improve! Quick Survey",
     "crowdfunding": {
-      "title": "Help Us Improve! Quick Survey",
-      "description": "We're considering a new feature: **Community Crowdfunding**!\n\nImagine being able to request any course or book you want. You contribute any amount from $5, and everyone who participated gets full access — regardless of how much they contributed!\n\n**Bonus:** You might get access even before the goal is reached! As soon as we acquire the material, all participants instantly receive it.\n\nThis survey takes less than 1 minute. Your opinion matters!",
+      "description": "We're considering a new feature: <0>Community Crowdfunding</0>!\nImagine being able to request any course or book you want. You contribute any amount from $5, and everyone who participated gets full access — regardless of how much they contributed!\n<0>Bonus:</0> You might get access even before the goal is reached! As soon as we acquire the material, all participants instantly receive it.\nThis survey takes less than 1 minute. Your opinion matters!",
       "q1": {
         "text": "How interested are you in the crowdfunding feature?",
         "opt1": "Very interested! I'd use it right away",

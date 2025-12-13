@@ -98,7 +98,7 @@ const CustomOrder = () => {
               <textarea
                 id="description"
                 maxLength={1000}
-                placeholder={t("orderProduct.typeHere")}
+                placeholder={t("typeHere")}
                 {...register("description", {
                   required: t("error.description.required"),
                   minLength: {

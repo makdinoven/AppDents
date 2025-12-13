@@ -74,6 +74,7 @@
   "of": "de",
   "readerFailedToLoad": "¿La ventana de lectura no se cargó? Intenta leerlo directamente",
   "tooManyRequests": "⚠️ Demasiadas solicitudes. Por favor, recarga la página e inténtalo de nuevo en un momento.",
+  "typeHere": "Escribe aquí...",
 
   "emailValidationTooltip": {
     "suggestion": "¿Quisiste decir {{suggestedEmail}}?",
@@ -160,7 +161,6 @@
       "result_other": "{{count}} autores encontrados"
     }
   },
-
 
   "main": {
     "title": "Escuela <1>dental</1> en línea",
@@ -415,7 +415,10 @@
     "errorChangingPassword": "Error. La contraseña no se cambió.",
     "description.minLength": "Al menos 8 caracteres",
     "description.maxLength": "Límite de 1000 caracteres",
-    "description.required": "La descripción es obligatoria"
+    "description.required": "La descripción es obligatoria",
+    "survey.required": "La respuesta es obligatoria",
+    "survey.min": "Mínimo 10 caracteres",
+    "survey.max": "Máximo 1000 caracteres"
   },
 
   "workingWarn": {
@@ -481,7 +484,6 @@
     "customOrder": "¿<0>No</0> encontraste nada?",
     "customOrderText": "¿Quieres un libro o curso específico? Descríbelo abajo (agrega un enlace si tienes uno) — ¡nos encargamos de todo!",
     "describeOrder": "Describe el producto que deseas",
-    "typeHere": "Escribe aquí...",
     "request": "Solicitar",
     "productRequestSuccess": "Tu solicitud ha sido enviada correctamente. Responderemos lo antes posible.",
     "productRequestFailed": "No se pudo procesar la solicitud. Inténtalo de nuevo en un momento.",
@@ -546,9 +548,9 @@
   },
 
   "survey": {
+    "title": "¡Ayúdanos a mejorar! Encuesta rápida",
     "crowdfunding": {
-      "title": "¡Ayúdanos a mejorar! Encuesta rápida",
-      "description": "Estamos considerando una nueva función: **¡Financiación colectiva**!\n\nImagina poder solicitar cualquier curso o libro que desees. Contribuyes con cualquier cantidad desde $5, y todos los participantes obtienen acceso completo — ¡sin importar cuánto contribuyeron!\n\n**Bonus:** ¡Podrías obtener acceso incluso antes de alcanzar la meta! Tan pronto como adquiramos el material, todos los participantes lo recibirán instantáneamente.\n\nEsta encuesta toma menos de 1 minuto. ¡Tu opinión importa!",
+      "description": "Estamos considerando una nueva función: <0>¡Financiación colectiva</0>!\nImagina poder solicitar cualquier curso o libro que desees. Contribuyes con cualquier cantidad desde $5, y todos los participantes obtienen acceso completo — ¡sin importar cuánto contribuyeron!\n<0>Bonus:</0> ¡Podrías obtener acceso incluso antes de alcanzar la meta! Tan pronto como adquiramos el material, todos los participantes lo recibirán instantáneamente.\nEsta encuesta toma menos de 1 minuto. ¡Tu opinión importa!",
       "q1": {
         "text": "¿Qué tan interesado estás en la función de financiación colectiva?",
         "opt1": "¡Muy interesado! La usaría de inmediato",

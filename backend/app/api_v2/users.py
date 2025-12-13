@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, joinedload, aliased, selectinload
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, Purchase, Course, Landing, landing_course, Book
+from ..models.models_v2 import User, Purchase, Course, Landing, landing_course, Book,SearchQuery
 from ..schemas_v2.course import CourseListResponse
 from ..schemas_v2.user import ForgotPasswordRequest, UserCreateAdmin, UserShortResponse, UserDetailedResponse, \
     UserUpdateFull, UserDetailResponse, UserListPageResponse
@@ -26,7 +26,7 @@ from ..services_v2.user_service import (
     get_user_by_email, search_users_by_email, update_user_role, update_user_password, add_course_to_user,
     remove_course_from_user, delete_user, update_user_full, get_user_by_id, list_users_paginated,
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
-    get_free_course_stats, get_purchases_by_source_timeseries
+    get_free_course_stats, get_purchases_by_source_timeseries,get_search_top_queries
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 from ..utils.s3 import generate_presigned_url
@@ -735,6 +735,41 @@ def free_course_stats(
         end_date=end_date,
         limit=limit,
     )
+
+@router.get("/analytics/search/top")
+def search_top_queries(
+    start_date: dt.date | None = Query(
+        None, description="Дата начала (YYYY-MM-DD)."
+    ),
+    end_date: dt.date | None = Query(
+        None, description="Дата конца (YYYY-MM-DD, включительно)."
+    ),
+    limit: int = Query(
+        50, gt=0, le=500, description="Сколько запросов вернуть"
+    ),
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_roles("admin")),
+):
+    now = dt.datetime.utcnow()
+
+    if start_date is None and end_date is None:
+        start_dt = dt.datetime.min
+        end_dt = now
+    elif start_date is not None and end_date is None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
+        end_dt = now
+    elif start_date is not None and end_date is not None:
+        start_dt = dt.datetime.combine(start_date, dt.time.min)
+        end_dt = dt.datetime.combine(end_date + dt.timedelta(days=1), dt.time.min)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Если указываете end_date, нужно обязательно передать start_date.",
+        )
+
+    items = get_search_top_queries(db, start_dt, end_dt, limit=limit)
+    return {"items": items, "count": len(items)}
+
 
 @router.get("/me/books", summary="Купленные книги пользователя (короткий список)")
 def get_user_books(
