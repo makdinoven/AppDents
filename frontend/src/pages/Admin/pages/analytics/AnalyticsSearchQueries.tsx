@@ -8,6 +8,8 @@ import { useDateRangeFilter } from "../../../../shared/common/hooks/useDateRange
 import Search from "../../../../shared/components/ui/Search/Search.tsx";
 import { t } from "i18next";
 import { useSearchParams } from "react-router-dom";
+import MultiSelect from "../../../../shared/components/ui/MultiSelect/MultiSelect.tsx";
+import { ANALYTICS_LIMITS } from "../../../../shared/common/helpers/commonConstants.ts";
 
 const AnalyticsSearchQueries = () => {
   const [data, setData] = useState<any>(null);
@@ -22,13 +24,24 @@ const AnalyticsSearchQueries = () => {
   } = useDateRangeFilter("today");
   const queriesSearch = "queries-search";
   const searchQuery = searchParams.get(queriesSearch)?.toLowerCase() || "";
+  const [limit, setLimit] = useState<string>("500");
 
   const fetchData = async () => {
     setLoading(true);
-    const params = {
-      start_date: dateRange.startDate,
-      end_date: dateRange.endDate,
+    const params: {
+      limit: string;
+      start_date?: string;
+      end_date?: string;
+    } = {
+      limit,
     };
+
+    if (dateRange.startDate) {
+      params.start_date = dateRange.startDate;
+    }
+    if (dateRange.endDate) {
+      params.end_date = dateRange.endDate;
+    }
 
     try {
       const res = await adminApi.getSearchQueries(params);
@@ -41,7 +54,7 @@ const AnalyticsSearchQueries = () => {
 
   useEffect(() => {
     fetchData();
-  }, [dateRange]);
+  }, [dateRange, limit]);
 
   const handleSearch = (val: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -64,6 +77,17 @@ const AnalyticsSearchQueries = () => {
           setPreset={setPreset}
           onEndDateChange={handleEndDateChange}
           onStartDateChange={handleStartDateChange}
+        />
+        <MultiSelect
+          isSearchable={false}
+          id={"limits"}
+          options={ANALYTICS_LIMITS}
+          placeholder={""}
+          selectedValue={limit}
+          isMultiple={false}
+          onChange={(e) => setLimit(e.value as string)}
+          valueKey="value"
+          labelKey="name"
         />
       </div>
 

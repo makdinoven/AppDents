@@ -536,7 +536,7 @@ export const adminApi = {
       },
     );
   },
-  getSearchQueries(params: { start_date: string; end_date: string }) {
+  getSearchQueries(params: any) {
     return instance.get("users/analytics/search/top", {
       params,
       headers: getAuthHeaders(),
