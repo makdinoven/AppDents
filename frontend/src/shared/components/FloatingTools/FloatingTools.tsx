@@ -14,8 +14,10 @@ const FloatingTools = () => {
   const [currentSurveyIndex, setCurrentSurveyIndex] = useState(0);
   const currentSurvey = surveys[currentSurveyIndex];
   const { isLogged } = useSelector((state: AppRootStateType) => state.user);
+  const showSurvey = isLogged && currentSurvey;
 
   useEffect(() => {
+    if (!isLogged) return;
     const handleFetchSurveys = async () => {
       try {
         const res = await userApi.getSurveys();
@@ -33,13 +35,16 @@ const FloatingTools = () => {
     };
 
     handleFetchSurveys();
-  }, []);
+  }, [isLogged]);
 
   return (
     <div className={s.floating_tools}>
       <div className={s.content}>
-        <ScrollToTopButton isVisible={isScrolled} />
-        {isLogged && currentSurvey && (
+        <ScrollToTopButton
+          isVisible={isScrolled}
+          className={showSurvey ? s.translate : ""}
+        />
+        {showSurvey && (
           <SurveyWidget
             survey={currentSurvey}
             onComplete={() => setCurrentSurveyIndex((i) => i + 1)}
