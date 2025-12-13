@@ -146,6 +146,7 @@ export const PATHS = {
   ADMIN_ANALYTICS_USER_GROWTH: `${ADMIN_PREFIX}/analytics/user-growth`,
   ADMIN_ANALYTICS_FREEWEBS: `${ADMIN_PREFIX}/analytics/freewebs`,
   ADMIN_ANALYTICS_TRAFFIC: `${ADMIN_PREFIX}/analytics/traffic`,
+  ADMIN_ANALYTICS_SEARCH_QUERIES: `${ADMIN_PREFIX}/analytics/search-queries`,
 
   ADMIN_AD_CONTOL_LISTING: `${ADMIN_PREFIX}/ad-control/landings-listing`,
   ADMIN_AD_CONTROL_ACCOUNTS: `${ADMIN_PREFIX}/ad-control/ad-accounts-listing`,
