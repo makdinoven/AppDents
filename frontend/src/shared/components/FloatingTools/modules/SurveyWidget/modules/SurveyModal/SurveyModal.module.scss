@@ -30,13 +30,6 @@
   padding: 0 10px;
 }
 
-.description {
-  @include clamped-p3();
-  width: 100%;
-  text-align: left;
-  white-space: pre-line;
-}
-
 .highlight {
   color: $primary;
 }
@@ -71,6 +64,14 @@
       height: 15px;
       width: 15px;
     }
+  }
+
+  .description {
+    @include clamped-p3();
+    width: 100%;
+    text-align: left;
+    white-space: pre-line;
+    color: $text-color;
   }
 }
 

@@ -5,13 +5,11 @@ import Form from "../../../../../Modals/modules/Form/Form.tsx";
 import Option from "../../../../../ui/Select/Option.tsx";
 import Button from "../../../../../ui/Button/Button.tsx";
 import { SendIcon } from "../../../../../../assets/icons";
-import { Ref, useRef } from "react";
+import { Ref } from "react";
 import { QuestionKey } from "./surveyFormType.ts";
 import ModalCloseButton from "../../../../../ui/ModalCloseButton/ModalCloseButton.tsx";
 import { useSurveyQuestions } from "./hooks/useSurveyQuestions.ts";
 import { useSurveyForm } from "./hooks/useSurveyForm.tsx";
-import ExpandableText from "../../../../../ui/ExpandableText/ExpandableText.tsx";
-import { useScreenWidth } from "../../../../../../common/hooks/useScreenWidth.ts";
 
 interface SurveyModalProps {
   surveyData: any;
@@ -38,23 +36,6 @@ const SurveyModal = ({
     handleChoiceChange,
     handleInputChange,
   } = useSurveyForm({ surveyData, questionsForSchema, onComplete });
-  const descRef = useRef<HTMLDivElement>(null);
-  const TABLET_BREAKPOINT = 768;
-  const screenWidth = useScreenWidth();
-
-  const renderDescription = () => {
-    const text = (
-      <Trans
-        i18nKey={surveyData.descriptionKey}
-        components={[<span className={s.highlight} />]}
-      />
-    );
-    return screenWidth > TABLET_BREAKPOINT ? (
-      text
-    ) : (
-      <ExpandableText text={text} color="primary_on_glass" ref={descRef} />
-    );
-  };
 
   return (
     <div className={s.survey_modal} ref={modalRef}>
@@ -66,10 +47,14 @@ const SurveyModal = ({
         <p className={s.title}>
           <Trans i18nKey={surveyData.titleKey} />
         </p>
-        <div className={s.description} ref={descRef}>
-          {renderDescription()}
-        </div>
+
         <ul className={s.survey_questions}>
+          <p className={s.description}>
+            <Trans
+              i18nKey={surveyData.descriptionKey}
+              components={[<span className={s.highlight} />]}
+            />
+          </p>
           {choiceQuestions.length > 0 &&
             choiceQuestions.map((question: any) => {
               const key = `_q${question.id}` as QuestionKey;
