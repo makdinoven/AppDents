@@ -33,7 +33,6 @@ const AnalyticsSearchQueries = () => {
     try {
       const res = await adminApi.getSearchQueries(params);
       setData(res.data);
-      console.log(res.data);
       setLoading(false);
     } catch (err) {
       console.error(err);
