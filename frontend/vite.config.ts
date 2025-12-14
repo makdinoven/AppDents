@@ -6,7 +6,13 @@ import svgr from "vite-plugin-svgr"; // оставляем как есть
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const brand = env.VITE_BRAND || "dents";
-  const themeFile = brand === "medg" ? "_theme-medg.scss" : "_theme-dents.scss";
+  const buildMode = env.VITE_MODE || "prod";
+  const themeFile =
+    brand === "medg"
+      ? "_theme-medg.scss"
+      : buildMode === "prod"
+        ? "_theme-dents.scss"
+        : "_theme-dents-preprod.scss";
 
   return {
     plugins: [
