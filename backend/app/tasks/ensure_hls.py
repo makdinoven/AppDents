@@ -166,7 +166,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
       B) фолбэк: полная перекодировка (x264 + AAC)
     """
     fast_cmd = [
-        "ffmpeg", "-v", "error", "-y",
+        "ffmpeg", "-v", "fatal", "-y",
         "-threads", "1",
         "-i", in_mp4,
 
@@ -192,7 +192,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
         logger.warning("[HLS] fast path (vcopy+aac) failed (%s) — fallback to full re-encode", e)
 
     full_cmd = [
-        "ffmpeg", "-v", "error", "-y",
+        "ffmpeg", "-v", "fatal", "-y",
         "-threads", "1",
         "-i", in_mp4,
 
@@ -267,7 +267,7 @@ def _mark_hls_error(key: str, note: str) -> None:
 def _ffprobe_streams(path: str) -> dict:
     """Возвращает {'vcodec': 'h264'|'hevc'|..., 'acodec': 'aac'|'mp3'|...}."""
     cmd = [
-        "ffprobe", "-v", "error",
+        "ffprobe", "-v", "fatal",
         "-select_streams", "v:0", "-show_entries", "stream=codec_name",
         "-of", "json", path
     ]
@@ -280,7 +280,7 @@ def _ffprobe_streams(path: str) -> dict:
         pass
 
     cmd = [
-        "ffprobe", "-v", "error",
+        "ffprobe", "-v", "fatal",
         "-select_streams", "a:0", "-show_entries", "stream=codec_name",
         "-of", "json", path
     ]

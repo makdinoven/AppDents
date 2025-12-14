@@ -148,7 +148,7 @@ def _make_presigned(bucket: str, key: str, ttl: int = 3600) -> str:
 def _ffprobe_duration_url(url: str, timeout: int = 25) -> Tuple[Optional[float], Optional[str]]:
     try:
         cp = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_format", "-of", "json", url],
+            ["ffprobe", "-v", "fatal", "-show_format", "-of", "json", url],
             capture_output=True, timeout=timeout
         )
         if cp.returncode != 0:
@@ -162,7 +162,7 @@ def _ffprobe_duration_url(url: str, timeout: int = 25) -> Tuple[Optional[float],
 def _ffprobe_duration_file(path: str, timeout: int = 25) -> Optional[float]:
     try:
         cp = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_format", "-of", "json", path],
+            ["ffprobe", "-v", "fatal", "-show_format", "-of", "json", path],
             capture_output=True, timeout=timeout
         )
         if cp.returncode != 0:
@@ -229,7 +229,7 @@ def _ffprobe_codecs(url_or_path: str, timeout: int = 20) -> Tuple[Optional[str],
     a = v = None
     try:
         p = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+            ["ffprobe", "-v", "fatal", "-select_streams", "a:0",
              "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
         )
@@ -242,7 +242,7 @@ def _ffprobe_codecs(url_or_path: str, timeout: int = 20) -> Tuple[Optional[str],
         pass
     try:
         p2 = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+            ["ffprobe", "-v", "fatal", "-select_streams", "v:0",
              "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
         )
@@ -379,7 +379,7 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int, audio_codec: Optional[str])
     cmd = [
         "nice", "-n", "10",
         "ffmpeg",
-        "-hide_banner", "-nostdin", "-loglevel", "error",
+        "-hide_banner", "-nostdin", "-loglevel", "fatal",
         "-threads", "1",
 
         # сетевые страховки
@@ -579,7 +579,7 @@ def _ffmpeg_local_clip(src_path: str, dst_path: str):
 
     a_codec, _ = _ffprobe_codecs(src_path, timeout=15)
     cmd = [
-        "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "error",
+        "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "fatal",
         "-threads", "2",
         "-i", src_path,
         "-t", "300",

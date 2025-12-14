@@ -149,7 +149,7 @@ def ffprobe_json_bytes(data: bytes) -> Optional[dict]:
 
 def ffprobe_json_path(path_or_url: str) -> Optional[dict]:
     proc = subprocess.run(
-        ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", path_or_url],
+        ["ffprobe", "-v", "fatal", "-print_format", "json", "-show_streams", "-show_format", path_or_url],
         capture_output=True, text=True
     )
     if proc.returncode != 0:
@@ -493,7 +493,7 @@ def _make_hls_copy_aac(in_url: str, out_dir: str, timeout: int) -> None:
     segpat = os.path.join(out_dir, "segment_%05d.ts")
 
     cmd = [
-        "ffmpeg", "-v", "error", "-nostdin", "-y",
+        "ffmpeg", "-v", "fatal", "-nostdin", "-y",
         "-threads", "1",
         "-i", in_url,
         "-map", "0:v:0",
@@ -518,7 +518,7 @@ def _make_hls_full_reencode(in_url: str, out_dir: str, timeout: int) -> None:
     segpat = os.path.join(out_dir, "segment_%05d.ts")
 
     cmd = [
-        "ffmpeg", "-v", "error", "-nostdin", "-y",
+        "ffmpeg", "-v", "fatal", "-nostdin", "-y",
         "-threads", "1",
         "-i", in_url,
         "-map", "0:v:0",
