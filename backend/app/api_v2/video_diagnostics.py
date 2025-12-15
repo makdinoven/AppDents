@@ -458,11 +458,14 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
         )
 
 
-def check_hls_segments_cdn(playlist_key: str, sample_count: int = 3, timeout: int = 15) -> DiagnosticResult:
+def check_hls_segments_cdn(playlist_key: str, sample_count: int = 5, timeout: int = 20) -> DiagnosticResult:
     """
     Проверяет доступность HLS сегментов через CDN с реальным GET запросом.
-    Это выявляет проблемы типа ERR_HTTP2_PROTOCOL_ERROR, rate limiting и т.д.
+    Делает "стресс-тест": несколько запросов подряд для выявления rate limiting.
     """
+    import time
+    import concurrent.futures
+    
     try:
         # Читаем плейлист из S3
         try:
@@ -519,92 +522,147 @@ def check_hls_segments_cdn(playlist_key: str, sample_count: int = 3, timeout: in
                 details={"resolved_key": resolved_key}
             )
         
-        # Берём первые несколько сегментов (важно проверить segment_001, segment_002 и т.д.)
-        # так как проблемы часто возникают после первого сегмента
-        sample_indices = []
-        if len(segments) >= 1:
-            sample_indices.append(0)  # segment_000
-        if len(segments) >= 2:
-            sample_indices.append(1)  # segment_001 - часто проблемный!
-        if len(segments) >= 3:
-            sample_indices.append(2)  # segment_002
-        if len(segments) > 10:
-            sample_indices.append(len(segments) // 2)  # середина
+        # Берём первые 5-7 сегментов подряд - это имитирует начало воспроизведения
+        # Проблемы часто возникают после первого сегмента при rate limiting
+        sample_indices = list(range(min(sample_count, len(segments))))
         
         base_dir = resolved_key.rsplit("/", 1)[0] if "/" in resolved_key else ""
         
-        results = []
-        errors = []
-        
-        for idx in sample_indices[:sample_count]:
+        def check_segment(idx: int) -> dict:
+            """Проверяет один сегмент через CDN."""
             seg_name = segments[idx]
             seg_key = f"{base_dir}/{seg_name}" if base_dir else seg_name
             seg_cdn_url = safe_cdn_url(seg_key)
             
             try:
-                # Делаем Range request чтобы не качать весь сегмент
-                # Запрашиваем только первые 64KB
-                headers = {"Range": "bytes=0-65535"}
-                resp = requests.get(seg_cdn_url, headers=headers, timeout=timeout, stream=True)
+                # Делаем полный GET запрос (не Range) чтобы лучше имитировать браузер
+                # Но читаем только первые 256KB чтобы не качать всё
+                start_time = time.time()
+                resp = requests.get(seg_cdn_url, timeout=timeout, stream=True)
                 
-                # 200 или 206 (Partial Content) - оба OK
                 if resp.status_code in (200, 206):
-                    # Читаем немного данных чтобы убедиться что соединение работает
-                    chunk = resp.raw.read(1024)
-                    resp.close()
+                    # Читаем 256KB данных - это больше чем Range request
+                    # и лучше показывает реальное поведение
+                    bytes_read = 0
+                    try:
+                        for chunk in resp.iter_content(chunk_size=65536):
+                            bytes_read += len(chunk)
+                            if bytes_read >= 262144:  # 256KB
+                                break
+                    finally:
+                        resp.close()
                     
-                    results.append({
+                    elapsed = time.time() - start_time
+                    return {
                         "index": idx,
                         "name": seg_name,
                         "status": "ok",
                         "http_status": resp.status_code,
                         "content_length": resp.headers.get("Content-Length"),
-                    })
+                        "bytes_read": bytes_read,
+                        "time_sec": round(elapsed, 2),
+                    }
                 else:
-                    errors.append(seg_name)
-                    results.append({
+                    resp.close()
+                    return {
                         "index": idx,
                         "name": seg_name,
                         "status": "error",
                         "http_status": resp.status_code,
                         "error": f"HTTP {resp.status_code}"
-                    })
+                    }
                     
             except requests.Timeout:
-                errors.append(seg_name)
-                results.append({
+                return {
                     "index": idx,
                     "name": seg_name,
                     "status": "timeout",
                     "error": f"Timeout after {timeout}s"
-                })
+                }
             except requests.RequestException as e:
-                errors.append(seg_name)
                 error_type = type(e).__name__
-                results.append({
+                return {
                     "index": idx,
                     "name": seg_name,
                     "status": "error",
                     "error": f"{error_type}: {str(e)[:100]}"
-                })
+                }
         
-        if errors:
+        # Сначала делаем последовательные запросы (как при воспроизведении)
+        results = []
+        errors = []
+        
+        for idx in sample_indices:
+            result = check_segment(idx)
+            results.append(result)
+            if result["status"] != "ok":
+                errors.append(result["name"])
+            # Небольшая пауза между запросами - как при реальном воспроизведении
+            time.sleep(0.1)
+        
+        # Теперь делаем параллельный тест (3 запроса одновременно)
+        # Это имитирует поведение браузера с prefetch
+        parallel_results = []
+        parallel_errors = []
+        
+        if len(segments) > sample_count + 3:
+            parallel_indices = [sample_count, sample_count + 1, sample_count + 2]
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+                futures = {executor.submit(check_segment, idx): idx for idx in parallel_indices}
+                for future in concurrent.futures.as_completed(futures, timeout=timeout + 5):
+                    try:
+                        result = future.result()
+                        parallel_results.append(result)
+                        if result["status"] != "ok":
+                            parallel_errors.append(result["name"])
+                    except Exception as e:
+                        parallel_results.append({
+                            "index": futures[future],
+                            "status": "error",
+                            "error": f"Future error: {str(e)[:50]}"
+                        })
+                        parallel_errors.append(f"segment_{futures[future]}")
+        
+        all_errors = errors + parallel_errors
+        
+        if all_errors:
             return DiagnosticResult(
                 status="error",
-                message=f"{len(errors)} of {len(sample_indices)} segments FAILED via CDN",
+                message=f"{len(all_errors)} segments FAILED via CDN (sequential: {len(errors)}, parallel: {len(parallel_errors)})",
                 details={
-                    "sampled": results,
+                    "sequential_results": results,
+                    "parallel_results": parallel_results,
                     "total_segments": len(segments),
                     "resolved_key": resolved_key,
-                    "failed_segments": errors,
-                    "note": "Segments exist in S3 but fail to load via CDN. May indicate HTTP/2 issues or rate limiting."
+                    "failed_segments": all_errors,
+                    "note": "Segments fail to load via CDN. May indicate rate limiting or HTTP/2 issues."
+                }
+            )
+        
+        # Проверяем время ответа - если слишком долго, это тоже проблема
+        slow_segments = [r for r in results if r.get("time_sec", 0) > 5]
+        if slow_segments:
+            return DiagnosticResult(
+                status="warning",
+                message=f"Segments load but {len(slow_segments)} are slow (>5s)",
+                details={
+                    "sequential_results": results,
+                    "parallel_results": parallel_results,
+                    "total_segments": len(segments),
+                    "slow_segments": slow_segments,
+                    "note": "Some segments take too long to load. May cause playback issues."
                 }
             )
         
         return DiagnosticResult(
             status="ok",
-            message=f"All {len(sample_indices)} segments load OK via CDN",
-            details={"sampled": results, "total_segments": len(segments)}
+            message=f"All {len(results) + len(parallel_results)} segments load OK via CDN",
+            details={
+                "sequential_results": results,
+                "parallel_results": parallel_results,
+                "total_segments": len(segments)
+            }
         )
         
     except Exception as e:
@@ -1024,6 +1082,14 @@ def diagnose_video(video_url: str) -> VideoHealth:
                 f"Сегменты HLS недоступны через CDN ({len(failed_segments)} ошибок). "
                 "Возможные причины: HTTP/2 ошибки, rate limiting, проблемы с CDN. "
                 "Попробуйте 'Force Rebuild' для пересоздания HLS."
+            )
+            break
+        elif "segments_cdn" in key and check.status == "warning":
+            slow_count = len(check.details.get("slow_segments", []))
+            health.recommendations.append(
+                f"Сегменты HLS загружаются слишком медленно ({slow_count} сегментов >5s). "
+                "Это может вызывать остановки при воспроизведении. "
+                "Возможные причины: rate limiting, перегрузка S3/CDN."
             )
             break
     

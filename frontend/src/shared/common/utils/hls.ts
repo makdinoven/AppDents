@@ -23,6 +23,32 @@ export async function slugForHls(stem: string): Promise<string> {
   return hex.slice(0, 60);
 }
 
+/** 
+ * Стабильный слаг (как stable_slug на бэке): 
+ * truncate до 60 + короткий sha1-хвост для длинных имён 
+ */
+async function stableSlugForHls(stem: string): Promise<string> {
+  const nfkd = stem.normalize("NFKD");
+  const noDiacritics = nfkd.replace(/[\u0300-\u036f]/g, "");
+  const asciiOnly = noDiacritics.replace(/[^\x00-\x7F]/g, "");
+  const base = asciiOnly
+    .replace(/[^A-Za-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  
+  if (!base) {
+    const hex = await sha1Hex(stem);
+    return hex.slice(0, 60);
+  }
+  
+  if (base.length <= 60) return base;
+  
+  // Для длинных имён добавляем sha1-хвост как на бэке
+  const suffix = (await sha1Hex(stem)).slice(0, 8);
+  const keep = 60 - 1 - suffix.length; // место под "-{suffix}"
+  return `${base.slice(0, keep)}-${suffix}`;
+}
+
 /** Кандидаты путей к m3u8 из mp4-URL с учётом нарезок */
 async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
   let u: URL;
@@ -41,24 +67,39 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
 
   const basePath = parts.map(encodeURIComponent).join("/");
 
-  // slug #1 — как есть
+  // Генерируем все возможные слуги
+  const slugCandidates: string[] = [];
+
+  // slug #1 — legacy (как есть, max 60)
   const slug1 = await slugForHls(stem);
+  slugCandidates.push(slug1);
 
-  // slug #2 — для нарезок: отрежем хвост "_clip_<uuid-hex>"
-  // clip_tasks создаёт .../<stem>_clip_<uuid.hex>.mp4
-  const stem2 = stem.replace(/_clip_[0-9a-f]{32}$/i, "");
-  const slug2 = stem2 !== stem ? await slugForHls(stem2) : null;
+  // slug #2 — stable (с sha1-хвостом для длинных имён)
+  const slug2 = await stableSlugForHls(stem);
+  if (slug2 !== slug1) slugCandidates.push(slug2);
 
-  // slug #3 — агрессивный: только a-z0-9 (помогает при нестандартных символах)
+  // slug #3 — для нарезок: отрежем хвост "_clip_<uuid-hex>"
+  const stem3 = stem.replace(/_clip_[0-9a-f]{32}$/i, "");
+  if (stem3 !== stem) {
+    const slug3a = await slugForHls(stem3);
+    const slug3b = await stableSlugForHls(stem3);
+    slugCandidates.push(slug3a);
+    if (slug3b !== slug3a) slugCandidates.push(slug3b);
+  }
+
+  // slug #4 — агрессивный: только a-z0-9 (помогает при нестандартных символах)
   const onlyAZ = stem
     .replace(/[^A-Za-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
-  const slug3 = await slugForHls(onlyAZ);
+  if (onlyAZ && onlyAZ !== slug1) {
+    const slug4 = await slugForHls(onlyAZ);
+    if (!slugCandidates.includes(slug4)) slugCandidates.push(slug4);
+  }
 
   const uniq = Array.from(
     new Set(
-      [slug1, slug2, slug3]
+      slugCandidates
         .filter(Boolean)
         .map((s) => `${CDN_ORIGIN}/${basePath}/.hls/${s}/playlist.m3u8`),
     ),
@@ -66,29 +107,90 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
   return uniq;
 }
 
-/** Проверка, что URL действительно HLS-плейлист */
-async function probePlaylist(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, {
-      method: "GET",
-      mode: "cors",
-      credentials: "omit",
-      cache: "no-store",
-    });
-    if (!res.ok) return false;
+/** 
+ * Проверка, что URL действительно HLS-плейлист 
+ * С retry логикой для обработки временных ошибок CDN
+ */
+async function probePlaylist(url: string, retries: number = 3): Promise<boolean> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+      
+      const res = await fetch(url, {
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
 
-    const ct = (res.headers.get("content-type") || "").toLowerCase();
-    if (!ct.includes("mpegurl")) return false;
+      // Ошибки CDN которые можно retry
+      const retryableStatuses = [520, 521, 522, 523, 524, 502, 503, 504];
+      if (retryableStatuses.includes(res.status) && attempt < retries) {
+        console.warn(`[HLS] CDN error ${res.status} for ${url}, retry ${attempt + 1}/${retries}`);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1))); // Backoff
+        continue;
+      }
 
-    const text = await res.text();
-    if (!text.trimStart().startsWith("#EXTM3U")) return false;
+      if (!res.ok) {
+        console.log(`[HLS] Probe failed for ${url}: HTTP ${res.status}`);
+        return false;
+      }
 
-    // ⚡️ Доп. проверка: есть ли сегменты > 0
-    const hasSegments = /#EXTINF:\s*(?!0(\.0+)?)/.test(text);
-    return hasSegments;
-  } catch {
-    return false;
+      const ct = (res.headers.get("content-type") || "").toLowerCase();
+      // Принимаем разные варианты content-type для HLS
+      const validContentTypes = ["mpegurl", "x-mpegurl", "vnd.apple", "application/octet-stream"];
+      const hasValidContentType = validContentTypes.some(t => ct.includes(t));
+      
+      // Если content-type не HLS - проверяем содержимое
+      const text = await res.text();
+      
+      if (!text.trimStart().startsWith("#EXTM3U")) {
+        console.log(`[HLS] Invalid playlist (no #EXTM3U) for ${url}`);
+        return false;
+      }
+
+      // Если content-type неправильный но содержимое валидное - логируем предупреждение
+      if (!hasValidContentType) {
+        console.warn(`[HLS] Unexpected content-type "${ct}" for ${url}, but content is valid HLS`);
+      }
+
+      // ⚡️ Валидация плейлиста
+      const isMasterPlaylist = text.includes("#EXT-X-STREAM-INF:");
+      const hasSegments = /#EXTINF:\s*[\d.]+/.test(text);
+      const hasEndlist = text.includes("#EXT-X-ENDLIST");
+      
+      // Master playlist или Media playlist с сегментами
+      if (isMasterPlaylist || hasSegments) {
+        console.log(`[HLS] Valid playlist found: ${url} (master: ${isMasterPlaylist}, segments: ${hasSegments}, endlist: ${hasEndlist})`);
+        return true;
+      }
+
+      // Плейлист-alias (ссылается на другой плейлист)
+      const lines = text.split("\n").filter(l => l.trim() && !l.trim().startsWith("#"));
+      const hasM3u8Link = lines.some(l => l.trim().endsWith(".m3u8"));
+      if (hasM3u8Link) {
+        console.log(`[HLS] Alias playlist found: ${url}`);
+        return true;
+      }
+
+      console.log(`[HLS] Invalid playlist structure for ${url}`);
+      return false;
+    } catch (err) {
+      // Сетевая ошибка или таймаут - пробуем retry
+      if (attempt < retries) {
+        console.warn(`[HLS] Network error for ${url}, retry ${attempt + 1}/${retries}:`, err);
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      console.error(`[HLS] Final probe error for ${url}:`, err);
+      return false;
+    }
   }
+  return false;
 }
 
 /** Резолв реального m3u8 (или null) */
@@ -96,9 +198,18 @@ export async function resolveHlsUrl(mp4Url: string): Promise<string | null> {
   const cands = await candidatesForPlaylist(mp4Url);
   if (!cands) return null;
 
-  // пробуем по очереди
-  for (const u of cands) {
-    if (await probePlaylist(u)) return u;
+  // Пробуем все кандидаты параллельно для ускорения
+  const results = await Promise.all(
+    cands.map(async (u) => {
+      const ok = await probePlaylist(u);
+      return ok ? u : null;
+    })
+  );
+
+  // Возвращаем первый успешный
+  for (const r of results) {
+    if (r) return r;
   }
+  
   return null;
 }
