@@ -94,7 +94,14 @@ def s3_get_text(key: str) -> Optional[str]:
 
 def s3_put_text(key: str, text: str, content_type: str = "application/vnd.apple.mpegurl") -> None:
     # Важно: после записи инвалидация кэша head()
-    s3.put_object(Bucket=S3_BUCKET, Key=key, Body=text.encode("utf-8"), ContentType=content_type)
+    s3.put_object(
+        Bucket=S3_BUCKET,
+        Key=key,
+        Body=text.encode("utf-8"),
+        ContentType=content_type,
+        CacheControl="public, max-age=3600",
+        ACL='public-read'  # Делаем файлы публичными
+    )
     try:
         _s3_head_cached.cache_clear()
     except Exception:
@@ -618,8 +625,17 @@ def _upload_dir_to_s3(local_dir: str, s3_dir_key: str) -> None:
             rel   = os.path.relpath(local, local_dir).replace("\\", "/")
             key   = f"{s3_dir_key.rstrip('/')}/{rel}"
             ct    = "application/vnd.apple.mpegurl" if f.endswith(".m3u8") else "video/MP2T"
+            # Кэширование: плейлисты - 1 час, сегменты - 1 день
+            cc    = "public, max-age=3600" if f.endswith(".m3u8") else "public, max-age=86400"
             with open(local, "rb") as fp:
-                s3.put_object(Bucket=S3_BUCKET, Key=key, Body=fp.read(), ContentType=ct)
+                s3.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=key,
+                    Body=fp.read(),
+                    ContentType=ct,
+                    CacheControl=cc,
+                    ACL='public-read'  # ВАЖНО: делаем файлы публичными!
+                )
     try:
         _s3_head_cached.cache_clear()
     except Exception:
@@ -700,6 +716,7 @@ def write_status_json(hls_dir_key: str, data: dict) -> None:
         Body=json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8"),
         ContentType="application/json",
         CacheControl="public, max-age=60",
+        ACL='public-read'  # Делаем файлы публичными
     )
     try:
         _s3_head_cached.cache_clear()

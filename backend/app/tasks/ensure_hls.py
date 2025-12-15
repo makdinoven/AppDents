@@ -956,3 +956,135 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
     }
     self.update_state(state="SUCCESS" if result["status"] == "ok" else "FAILURE", meta=result)
     return result
+
+
+@shared_task(bind=True, max_retries=1, time_limit=3600, soft_time_limit=3000)
+def force_rebuild_hls_task(self, video_url: str) -> Dict[str, Any]:
+    """
+    Принудительная пересборка HLS:
+    1. Удаляет ВСЕ HLS файлы (включая с %20 в именах)
+    2. Сбрасывает метаданные HLS
+    3. Генерирует новый HLS с правильными путями
+    """
+    t0 = time.time()
+    s3_key = key_from_url(video_url)
+    deleted_files = []
+    errors = []
+    
+    self.update_state(state="PROGRESS", meta={"step": "cleanup", "message": "Deleting old HLS files..."})
+    
+    # 1) Находим и удаляем ВСЕ HLS файлы
+    base_dir = s3_key.rsplit("/", 1)[0] if "/" in s3_key else ""
+    
+    # Проверяем несколько вариантов prefix (с пробелами и с %20)
+    prefixes_to_check = [f"{base_dir}/.hls/"]
+    if " " in base_dir:
+        encoded_base = base_dir.replace(" ", "%20")
+        prefixes_to_check.append(f"{encoded_base}/.hls/")
+    
+    for hls_prefix in prefixes_to_check:
+        try:
+            paginator = _s3_v4().get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    try:
+                        s3.delete_object(Bucket=S3_BUCKET, Key=key)
+                        deleted_files.append(key)
+                    except Exception as e:
+                        logger.warning(f"Failed to delete {key}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to list prefix {hls_prefix}: {e}")
+    
+    self.update_state(state="PROGRESS", meta={
+        "step": "cleanup_done", 
+        "deleted_count": len(deleted_files),
+        "message": f"Deleted {len(deleted_files)} files"
+    })
+    
+    # 2) Сбрасываем метаданные HLS на MP4
+    try:
+        s3.copy_object(
+            Bucket=S3_BUCKET,
+            CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
+            Key=s3_key,
+            Metadata={"hls": "false"},
+            MetadataDirective="REPLACE",
+            ContentType="video/mp4"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to reset metadata: {e}")
+        errors.append(f"Metadata reset: {e}")
+    
+    # 3) Генерируем новый HLS
+    self.update_state(state="PROGRESS", meta={"step": "rebuild", "message": "Generating new HLS..."})
+    
+    try:
+        # Используем ту же логику что и validate_and_fix_hls, но форсируем rebuild
+        paths: HLSPaths = discover_hls_for_src(s3_key)
+        
+        # Выбираем директорию для нового HLS (new_pl_key)
+        hls_dir_key = paths.new_pl_key.rsplit("/", 1)[0] if paths.new_pl_key else None
+        
+        if hls_dir_key:
+            fix_rebuild_hls(
+                src_mp4_key=s3_key,
+                hls_dir_key=hls_dir_key,
+                ffmpeg_timeout=1800,
+                prefer_in_url=True,
+                forbid_full_reencode=True,
+            )
+            
+            # Создаём alias если нужен
+            if paths.legacy_pl_key and paths.new_pl_key:
+                legacy_dir = paths.legacy_pl_key.rsplit("/", 1)[0]
+                new_url = url_from_key(paths.new_pl_key)
+                alias_content = f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-STREAM-INF:BANDWIDTH=2000000\n{new_url}\n"
+                s3.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=paths.legacy_pl_key,
+                    Body=alias_content.encode("utf-8"),
+                    ContentType="application/vnd.apple.mpegurl",
+                    CacheControl="public, max-age=60",
+                    ACL='public-read'  # Делаем файлы публичными
+                )
+            
+            # Записываем статус
+            write_status_json(hls_dir_key, {
+                "rebuilt_at": datetime.utcnow().isoformat(),
+                "src_mp4_key": s3_key,
+                "deleted_old_files": len(deleted_files),
+            })
+            
+            # Обновляем метаданные MP4
+            s3.copy_object(
+                Bucket=S3_BUCKET,
+                CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
+                Key=s3_key,
+                Metadata={"hls": "true"},
+                MetadataDirective="REPLACE",
+                ContentType="video/mp4"
+            )
+        else:
+            errors.append("Could not determine HLS directory")
+            
+    except Exception as e:
+        logger.exception(f"Force rebuild failed: {e}")
+        errors.append(f"Rebuild: {type(e).__name__}: {e}")
+    
+    elapsed = int(time.time() - t0)
+    result = {
+        "status": "ok" if not errors else "error",
+        "deleted_files": deleted_files,
+        "deleted_count": len(deleted_files),
+        "errors": errors,
+        "duration_sec": elapsed,
+        "src_mp4_key": s3_key,
+        "new_hls_key": paths.new_pl_key if 'paths' in dir() else None,
+    }
+    
+    self.update_state(
+        state="SUCCESS" if not errors else "FAILURE",
+        meta=result
+    )
+    return result

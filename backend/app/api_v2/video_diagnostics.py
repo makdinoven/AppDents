@@ -458,6 +458,80 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
         )
 
 
+def check_hls_acl(playlist_keys: List[str], sample_count: int = 3) -> DiagnosticResult:
+    """
+    Проверяет ACL нескольких HLS файлов.
+    Возвращает ошибку если файлы не публичные.
+    """
+    if not playlist_keys:
+        return DiagnosticResult(
+            status="warning",
+            message="No HLS playlists to check ACL",
+            details={}
+        )
+    
+    checked = []
+    private_files = []
+    errors = []
+    
+    for pl_key in playlist_keys[:sample_count]:
+        try:
+            # Получаем ACL файла
+            acl_response = s3.get_object_acl(Bucket=S3_BUCKET, Key=pl_key)
+            grants = acl_response.get("Grants", [])
+            
+            # Проверяем есть ли public-read grant
+            is_public = False
+            for grant in grants:
+                grantee = grant.get("Grantee", {})
+                permission = grant.get("Permission", "")
+                # AllUsers URI означает публичный доступ
+                if grantee.get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers":
+                    if permission in ("READ", "FULL_CONTROL"):
+                        is_public = True
+                        break
+            
+            checked.append({
+                "key": pl_key,
+                "is_public": is_public,
+                "grants_count": len(grants)
+            })
+            
+            if not is_public:
+                private_files.append(pl_key)
+                
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            errors.append({"key": pl_key, "error": code})
+        except Exception as e:
+            errors.append({"key": pl_key, "error": str(e)})
+    
+    if private_files:
+        return DiagnosticResult(
+            status="error",
+            message=f"{len(private_files)} of {len(checked)} HLS files are PRIVATE",
+            details={
+                "private_files": private_files[:5],
+                "checked": checked,
+                "errors": errors,
+                "recommendation": "Use 'Fix ACL' button to make HLS files public"
+            }
+        )
+    
+    if errors:
+        return DiagnosticResult(
+            status="warning",
+            message=f"ACL check had {len(errors)} errors",
+            details={"errors": errors, "checked": checked}
+        )
+    
+    return DiagnosticResult(
+        status="ok",
+        message=f"All {len(checked)} checked HLS files are public",
+        details={"checked": checked}
+    )
+
+
 def check_video_codecs(url: str) -> DiagnosticResult:
     """Проверяет кодеки видео через ffprobe (если доступен)."""
     try:
@@ -653,6 +727,9 @@ def diagnose_video(video_url: str) -> VideoHealth:
             # Проверяем доступность через CDN
             pl_cdn_url = safe_cdn_url(pl_key)
             health.checks[f"hls_cdn_{pl_name}"] = check_cdn_access(pl_cdn_url)
+        
+        # 4.1. Проверка ACL HLS файлов
+        health.checks["hls_acl"] = check_hls_acl(hls_playlists)
     else:
         health.checks["hls_found"] = DiagnosticResult(
             status="warning",
@@ -674,6 +751,10 @@ def diagnose_video(video_url: str) -> VideoHealth:
         if "MISSING" in check.message:
             return True  # Target playlist/segments отсутствуют
         if "target playlist missing" in check.details.get("note", "").lower():
+            return True
+        
+        # Приватные HLS файлы - критическая ошибка
+        if key == "hls_acl" and "PRIVATE" in check.message:
             return True
         
         # Alias плейлисты которые работают - не ошибка
@@ -762,6 +843,14 @@ def diagnose_video(video_url: str) -> VideoHealth:
         if details.get("issues"):
             for issue in details["issues"]:
                 health.recommendations.append(f"Проблема с кодеками: {issue}")
+    
+    # Проверяем ACL HLS файлов
+    if health.checks.get("hls_acl"):
+        acl_check = health.checks["hls_acl"]
+        if acl_check.status == "error" and "PRIVATE" in acl_check.message:
+            health.recommendations.append(
+                "HLS файлы приватные и недоступны через CDN. Нажмите 'Fix ACL' для исправления."
+            )
     
     return health
 
@@ -980,6 +1069,7 @@ def full_repair_endpoint(
     1. Применяет faststart (если нужно)
     2. Пересобирает HLS
     3. Создаёт alias'ы
+    4. Исправляет ACL на public-read
     """
     from ..tasks.ensure_hls import validate_and_fix_hls
     from ..tasks.fast_start import process_faststart_video
@@ -1005,11 +1095,16 @@ def full_repair_endpoint(
     )
     tasks.append({"type": "hls_repair", "task_id": hls_task.id})
     
+    # 3. Fix ACL для существующих HLS файлов (синхронно, быстро)
+    acl_result = _fix_hls_acl_for_video(req.video_url, dry_run=False)
+    acl_fixed = acl_result.get("summary", {}).get("fixed", 0)
+    
     return {
         "status": "queued",
         "s3_key": s3_key,
         "tasks": tasks,
-        "message": "Full repair started. This may take several minutes."
+        "acl_fixed": acl_fixed,
+        "message": f"Full repair started. ACL fixed for {acl_fixed} existing files. HLS rebuild may take several minutes."
     }
 
 
@@ -1024,8 +1119,9 @@ def force_rebuild_hls_endpoint(
     2. Запускает свежую генерацию HLS
     
     Используйте когда HLS файлы повреждены или имеют проблемы с кодировкой путей.
+    Всё выполняется асинхронно через Celery.
     """
-    from ..tasks.ensure_hls import validate_and_fix_hls
+    from ..tasks.ensure_hls import force_rebuild_hls_task
     
     s3_key = key_from_url(req.video_url)
     
@@ -1034,61 +1130,17 @@ def force_rebuild_hls_endpoint(
     if check.status == "error":
         raise HTTPException(status_code=404, detail=f"Video not found: {check.message}")
     
-    # Находим и удаляем ВСЕ HLS файлы для этого видео
-    base_dir = s3_key.rsplit("/", 1)[0] if "/" in s3_key else ""
-    deleted_files = []
-    
-    # Пробуем несколько вариантов prefix (с пробелами и с %20)
-    prefixes_to_check = [
-        f"{base_dir}/.hls/",  # С пробелами
-    ]
-    # Добавляем вариант с %20
-    if " " in base_dir:
-        encoded_base = base_dir.replace(" ", "%20")
-        prefixes_to_check.append(f"{encoded_base}/.hls/")
-    
-    for hls_prefix in prefixes_to_check:
-        try:
-            paginator = s3_v4.get_paginator("list_objects_v2")
-            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
-                for obj in page.get("Contents", []):
-                    key = obj["Key"]
-                    # Удаляем только файлы связанные с этим видео
-                    # (по slug в пути)
-                    try:
-                        s3.delete_object(Bucket=S3_BUCKET, Key=key)
-                        deleted_files.append(key)
-                    except Exception as e:
-                        logger.warning(f"Failed to delete {key}: {e}")
-        except Exception as e:
-            logger.warning(f"Failed to list prefix {hls_prefix}: {e}")
-    
-    # Сбрасываем метаданные HLS
-    try:
-        s3.copy_object(
-            Bucket=S3_BUCKET,
-            CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
-            Key=s3_key,
-            Metadata={"hls": "false"},
-            MetadataDirective="REPLACE",
-            ContentType="video/mp4"
-        )
-    except Exception as e:
-        logger.warning(f"Failed to reset metadata: {e}")
-    
-    # Запускаем rebuild HLS
-    hls_task = validate_and_fix_hls.apply_async(
-        args=[{"video_url": req.video_url}],
+    # Запускаем асинхронную задачу
+    task = force_rebuild_hls_task.apply_async(
+        args=[req.video_url],
         queue="special_hls"
     )
     
     return {
         "status": "queued",
         "s3_key": s3_key,
-        "deleted_files": deleted_files,
-        "deleted_count": len(deleted_files),
-        "task_id": hls_task.id,
-        "message": f"Deleted {len(deleted_files)} HLS files. Rebuild task queued."
+        "task_id": task.id,
+        "message": "Force rebuild task queued. Old HLS will be deleted and new one generated."
     }
 
 
@@ -1293,4 +1345,482 @@ def list_all_hls_endpoint(
         })
     
     return results
+
+
+# ============= МАССОВАЯ МИГРАЦИЯ %20 → пробелы =============
+
+@router.post("/fix-encoded-paths")
+def fix_encoded_paths_endpoint(
+    dry_run: bool = True,
+    folder_prefix: str = "",
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Находит все HLS файлы с %20 в именах и копирует их с правильными именами (с пробелами).
+    
+    Это исправляет проблему когда файлы были созданы с URL-encoded именами.
+    
+    Args:
+        dry_run: True - только показать что будет сделано, False - реально копировать
+        folder_prefix: Ограничить поиск определённой папкой (например "Spark MasterCoip")
+    
+    Returns:
+        Список файлов которые были/будут скопированы
+    """
+    results = {
+        "dry_run": dry_run,
+        "folder_prefix": folder_prefix,
+        "files_with_encoded_names": [],
+        "files_to_copy": [],
+        "copied": [],
+        "errors": [],
+        "already_exists": [],
+    }
+    
+    # Ищем все файлы с %20 в именах
+    prefix = folder_prefix if folder_prefix else ""
+    
+    try:
+        paginator = s3_v4.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix, MaxKeys=1000):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                
+                # Проверяем есть ли %20 или другие encoded символы в ключе
+                if "%20" in key or "%2F" in key or "%25" in key:
+                    decoded_key = unquote(key)
+                    
+                    # Пропускаем если decoded == encoded (нет реальных encoded символов)
+                    if decoded_key == key:
+                        continue
+                    
+                    results["files_with_encoded_names"].append({
+                        "encoded": key,
+                        "decoded": decoded_key,
+                        "size": obj.get("Size", 0),
+                    })
+                    
+                    # Проверяем существует ли файл с правильным именем
+                    try:
+                        s3.head_object(Bucket=S3_BUCKET, Key=decoded_key)
+                        results["already_exists"].append(decoded_key)
+                    except ClientError:
+                        # Файла с правильным именем нет - нужно скопировать
+                        results["files_to_copy"].append({
+                            "from": key,
+                            "to": decoded_key,
+                        })
+                        
+                        if not dry_run:
+                            try:
+                                # Копируем файл
+                                s3.copy_object(
+                                    Bucket=S3_BUCKET,
+                                    CopySource={"Bucket": S3_BUCKET, "Key": key},
+                                    Key=decoded_key,
+                                    MetadataDirective="COPY"
+                                )
+                                results["copied"].append(decoded_key)
+                            except Exception as e:
+                                results["errors"].append({
+                                    "key": key,
+                                    "error": str(e)
+                                })
+    except Exception as e:
+        results["errors"].append({"error": f"Listing failed: {e}"})
+    
+    results["summary"] = {
+        "total_encoded_files": len(results["files_with_encoded_names"]),
+        "to_copy": len(results["files_to_copy"]),
+        "already_fixed": len(results["already_exists"]),
+        "copied": len(results["copied"]),
+        "errors": len(results["errors"]),
+    }
+    
+    return results
+
+
+@router.post("/fix-hls-master-playlists")
+def fix_hls_master_playlists_endpoint(
+    dry_run: bool = True,
+    folder_prefix: str = "",
+    use_double_encoding: bool = True,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Находит все master playlists и исправляет URL внутри них.
+    
+    Args:
+        dry_run: True - только показать что будет сделано
+        folder_prefix: Ограничить поиск папкой
+        use_double_encoding: True - заменить %20 на %2520 (CDN декодирует в %20)
+                            False - заменить %20 на пробелы
+    """
+    results = {
+        "dry_run": dry_run,
+        "folder_prefix": folder_prefix,
+        "playlists_checked": 0,
+        "playlists_with_encoded_urls": [],
+        "fixed": [],
+        "errors": [],
+    }
+    
+    prefix = f"{folder_prefix}/.hls/" if folder_prefix else ".hls/"
+    # Также ищем с encoded prefix
+    encoded_prefix = prefix.replace(" ", "%20") if " " in prefix else None
+    
+    prefixes_to_check = [prefix]
+    if encoded_prefix and encoded_prefix != prefix:
+        prefixes_to_check.append(encoded_prefix)
+    
+    for search_prefix in prefixes_to_check:
+        try:
+            paginator = s3_v4.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=search_prefix, MaxKeys=1000):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    
+                    if not key.endswith("playlist.m3u8"):
+                        continue
+                    
+                    results["playlists_checked"] += 1
+                    
+                    try:
+                        # Читаем плейлист
+                        resp = s3.get_object(Bucket=S3_BUCKET, Key=key)
+                        content = resp["Body"].read().decode("utf-8", errors="replace")
+                        
+                        # Проверяем есть ли %20 в URL внутри плейлиста (но не %2520)
+                        if "%20" not in content or "%2520" in content:
+                            continue
+                        
+                        # Это master/alias playlist с encoded URL
+                        if use_double_encoding:
+                            # Двойное кодирование: %20 → %2520
+                            # CDN декодирует %25 → %, получается %20, S3 найдёт файл
+                            new_content = content.replace("%20", "%2520")
+                        else:
+                            # Обычная замена на пробелы
+                            new_content = content.replace("%20", " ")
+                        
+                        results["playlists_with_encoded_urls"].append({
+                            "key": key,
+                            "original_snippet": content[:200],
+                            "fixed_snippet": new_content[:200],
+                        })
+                        
+                        if not dry_run:
+                            try:
+                                s3.put_object(
+                                    Bucket=S3_BUCKET,
+                                    Key=key,
+                                    Body=new_content.encode("utf-8"),
+                                    ContentType="application/vnd.apple.mpegurl",
+                                    CacheControl="public, max-age=60"
+                                )
+                                results["fixed"].append(key)
+                            except Exception as e:
+                                results["errors"].append({
+                                    "key": key,
+                                    "error": str(e)
+                                })
+                    except Exception as e:
+                        results["errors"].append({
+                            "key": key,
+                            "error": f"Read error: {e}"
+                        })
+        except Exception as e:
+            results["errors"].append({"prefix": search_prefix, "error": str(e)})
+    
+    results["summary"] = {
+        "playlists_checked": results["playlists_checked"],
+        "need_fixing": len(results["playlists_with_encoded_urls"]),
+        "fixed": len(results["fixed"]),
+        "errors": len(results["errors"]),
+    }
+    
+    return results
+
+
+@router.post("/fix-all-hls-aliases")
+def fix_all_hls_aliases_endpoint(
+    dry_run: bool = True,
+    use_double_encoding: bool = True,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Исправляет ВСЕ HLS alias плейлисты во всём бакете.
+    
+    Находит все playlist.m3u8 которые содержат %20 в URL и:
+    - use_double_encoding=True: заменяет %20 на %2520 (CDN декодирует обратно в %20)
+    - use_double_encoding=False: заменяет %20 на пробелы
+    
+    Это СИСТЕМНОЕ исправление - запустить один раз.
+    """
+    results = {
+        "dry_run": dry_run,
+        "use_double_encoding": use_double_encoding,
+        "total_playlists": 0,
+        "aliases_with_encoded_urls": 0,
+        "fixed": [],
+        "errors": [],
+        "skipped": [],
+    }
+    
+    try:
+        # Листим ВСЕ .hls/ папки в бакете
+        paginator = s3_v4.get_paginator("list_objects_v2")
+        
+        for page in paginator.paginate(Bucket=S3_BUCKET, MaxKeys=1000):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                
+                # Только playlist.m3u8 файлы
+                if not key.endswith("playlist.m3u8"):
+                    continue
+                if "/.hls/" not in key:
+                    continue
+                    
+                results["total_playlists"] += 1
+                
+                try:
+                    # Читаем плейлист
+                    resp = s3.get_object(Bucket=S3_BUCKET, Key=key)
+                    content = resp["Body"].read().decode("utf-8", errors="replace")
+                    
+                    # Проверяем - это alias? (содержит URL, а не сегменты)
+                    lines = [l.strip() for l in content.split("\n") if l.strip() and not l.strip().startswith("#")]
+                    
+                    # Alias содержит URL (http) а не имена сегментов (.ts)
+                    is_alias = any(l.startswith("http") for l in lines)
+                    if not is_alias:
+                        continue
+                    
+                    # Проверяем есть ли %20 (но не %2520 - уже исправлено)
+                    if "%20" not in content:
+                        continue
+                    if "%2520" in content:
+                        results["skipped"].append({"key": key, "reason": "already fixed"})
+                        continue
+                    
+                    results["aliases_with_encoded_urls"] += 1
+                    
+                    # Исправляем
+                    if use_double_encoding:
+                        new_content = content.replace("%20", "%2520")
+                    else:
+                        new_content = content.replace("%20", " ")
+                    
+                    if not dry_run:
+                        s3.put_object(
+                            Bucket=S3_BUCKET,
+                            Key=key,
+                            Body=new_content.encode("utf-8"),
+                            ContentType="application/vnd.apple.mpegurl",
+                            CacheControl="public, max-age=60"
+                        )
+                        results["fixed"].append(key)
+                    else:
+                        results["fixed"].append({"key": key, "would_fix": True})
+                        
+                except Exception as e:
+                    results["errors"].append({"key": key, "error": str(e)})
+                    
+    except Exception as e:
+        results["errors"].append({"error": f"Listing failed: {e}"})
+    
+    results["summary"] = {
+        "total_playlists": results["total_playlists"],
+        "aliases_needing_fix": results["aliases_with_encoded_urls"],
+        "fixed": len(results["fixed"]),
+        "skipped": len(results["skipped"]),
+        "errors": len(results["errors"]),
+    }
+    
+    return results
+
+
+@router.post("/fix-hls-permissions")
+def fix_hls_permissions_endpoint(
+    folder_prefix: str = "",
+    dry_run: bool = True,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Исправляет права доступа для HLS файлов - делает их публичными.
+    
+    Находит все файлы в .hls/ папках и устанавливает public-read ACL.
+    """
+    results = {
+        "dry_run": dry_run,
+        "folder_prefix": folder_prefix,
+        "files_found": 0,
+        "files_fixed": [],
+        "errors": [],
+    }
+    
+    # Формируем prefix для поиска
+    if folder_prefix:
+        # Пробуем оба варианта - с пробелами и с %20
+        prefixes = [f"{folder_prefix}/.hls/"]
+        if " " in folder_prefix:
+            prefixes.append(f"{folder_prefix.replace(' ', '%20')}/.hls/")
+    else:
+        prefixes = [".hls/"]
+    
+    processed_keys = set()
+    
+    for prefix in prefixes:
+        try:
+            paginator = s3_v4.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=prefix, MaxKeys=1000):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    
+                    if key in processed_keys:
+                        continue
+                    processed_keys.add(key)
+                    
+                    results["files_found"] += 1
+                    
+                    if not dry_run:
+                        try:
+                            # Устанавливаем public-read ACL
+                            s3.put_object_acl(
+                                Bucket=S3_BUCKET,
+                                Key=key,
+                                ACL='public-read'
+                            )
+                            results["files_fixed"].append(key)
+                        except Exception as e:
+                            results["errors"].append({
+                                "key": key,
+                                "error": str(e)
+                            })
+                    else:
+                        results["files_fixed"].append({"key": key, "would_fix": True})
+                        
+        except Exception as e:
+            results["errors"].append({"prefix": prefix, "error": str(e)})
+    
+    results["summary"] = {
+        "files_found": results["files_found"],
+        "fixed": len(results["files_fixed"]),
+        "errors": len(results["errors"]),
+    }
+    
+    return results
+
+
+class FixVideoAclRequest(BaseModel):
+    video_url: str
+    dry_run: bool = False  # По умолчанию сразу исправляем
+
+
+def _fix_hls_acl_for_video(video_url: str, dry_run: bool = False) -> Dict[str, Any]:
+    """
+    Исправляет ACL для всех HLS файлов конкретного видео.
+    Возвращает словарь с результатами.
+    """
+    s3_key = key_from_url(video_url)
+    base_dir = s3_key.rsplit("/", 1)[0] if "/" in s3_key else ""
+    hls_prefix = f"{base_dir}/.hls/" if base_dir else ".hls/"
+    
+    results = {
+        "video_url": video_url,
+        "s3_key": s3_key,
+        "hls_prefix": hls_prefix,
+        "dry_run": dry_run,
+        "files_found": 0,
+        "files_fixed": [],
+        "already_public": [],
+        "errors": [],
+    }
+    
+    # Собираем все HLS файлы для этого видео
+    # Используем slug'и для фильтрации
+    expected_slugs = _compute_slugs_for_mp4(s3_key)
+    
+    try:
+        paginator = s3_v4.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix, MaxKeys=1000):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                
+                # Проверяем соответствует ли этот файл нашему видео
+                # Извлекаем slug из пути: base/.hls/{slug}/...
+                parts = key.replace(hls_prefix, "").split("/")
+                if not parts:
+                    continue
+                slug_dir = parts[0]
+                
+                # Проверяем соответствие slug
+                is_matching = any(
+                    slug_dir.startswith(exp) or exp.startswith(slug_dir.rstrip("-0123456789abcdef")[:20])
+                    for exp in expected_slugs
+                )
+                
+                if not is_matching:
+                    continue
+                
+                results["files_found"] += 1
+                
+                # Проверяем текущий ACL
+                try:
+                    acl_response = s3.get_object_acl(Bucket=S3_BUCKET, Key=key)
+                    grants = acl_response.get("Grants", [])
+                    
+                    is_public = any(
+                        grant.get("Grantee", {}).get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers"
+                        and grant.get("Permission") in ("READ", "FULL_CONTROL")
+                        for grant in grants
+                    )
+                    
+                    if is_public:
+                        results["already_public"].append(key)
+                        continue
+                    
+                    # Нужно исправить ACL
+                    if not dry_run:
+                        s3.put_object_acl(
+                            Bucket=S3_BUCKET,
+                            Key=key,
+                            ACL='public-read'
+                        )
+                        results["files_fixed"].append(key)
+                    else:
+                        results["files_fixed"].append({"key": key, "would_fix": True})
+                        
+                except Exception as e:
+                    results["errors"].append({"key": key, "error": str(e)})
+                    
+    except Exception as e:
+        results["errors"].append({"error": f"Listing failed: {e}"})
+    
+    results["summary"] = {
+        "files_found": results["files_found"],
+        "already_public": len(results["already_public"]),
+        "fixed": len(results["files_fixed"]),
+        "errors": len(results["errors"]),
+    }
+    
+    return results
+
+
+@router.post("/fix-video-acl")
+def fix_video_acl_endpoint(
+    req: FixVideoAclRequest,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Исправляет ACL (делает public-read) для всех HLS файлов конкретного видео.
+    
+    Args:
+        video_url: URL видео
+        dry_run: True - только показать что будет исправлено, False - реально исправить
+    
+    Returns:
+        Информация о найденных и исправленных файлах
+    """
+    return _fix_hls_acl_for_video(req.video_url, req.dry_run)
 
