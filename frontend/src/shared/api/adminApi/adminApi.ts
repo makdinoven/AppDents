@@ -536,4 +536,10 @@ export const adminApi = {
       },
     );
   },
+  getSearchQueries(params: any) {
+    return instance.get("users/analytics/search/top", {
+      params,
+      headers: getAuthHeaders(),
+    });
+  },
 };

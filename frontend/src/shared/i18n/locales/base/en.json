@@ -760,7 +760,8 @@
       "purchases": "Purchases",
       "userGrowth": "User growth",
       "freewebs": "Freewebs",
-      "traffic": "Traffic"
+      "traffic": "Traffic",
+      "searchQueries": "Search queries"
     },
     "tools": {
       "tools": "tools",
