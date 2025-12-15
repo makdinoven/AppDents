@@ -369,8 +369,53 @@ def check_video_codecs(url: str) -> DiagnosticResult:
         )
 
 
-def find_hls_playlists(mp4_key: str) -> List[str]:
-    """Находит все HLS плейлисты для данного MP4."""
+def _compute_slugs_for_mp4(mp4_key: str) -> List[str]:
+    """Вычисляет возможные слуги для MP4 файла (как на бэке)."""
+    import hashlib
+    import unicodedata
+    import re
+    from pathlib import Path
+    
+    fname = mp4_key.rsplit("/", 1)[-1] if "/" in mp4_key else mp4_key
+    stem = Path(fname).stem
+    
+    SLUG_MAX = 60
+    
+    def legacy_slug(name: str) -> str:
+        ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+        base = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-").lower()
+        if not base:
+            return hashlib.sha1(name.encode()).hexdigest()[:SLUG_MAX]
+        return base[:SLUG_MAX]
+    
+    def stable_slug(name: str) -> str:
+        ascii_name = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+        base = re.sub(r"[^A-Za-z0-9]+", "-", ascii_name).strip("-").lower()
+        if not base:
+            return hashlib.sha1(name.encode()).hexdigest()[:SLUG_MAX]
+        if len(base) <= SLUG_MAX:
+            return base
+        suffix = hashlib.sha1(name.encode()).hexdigest()[:8]
+        keep = SLUG_MAX - 1 - len(suffix)
+        return f"{base[:keep]}-{suffix}"
+    
+    slugs = []
+    slugs.append(legacy_slug(stem))
+    stable = stable_slug(stem)
+    if stable not in slugs:
+        slugs.append(stable)
+    
+    return slugs
+
+
+def find_hls_playlists(mp4_key: str, only_matching: bool = True) -> List[str]:
+    """
+    Находит HLS плейлисты для данного MP4.
+    
+    Args:
+        mp4_key: S3 ключ MP4 файла
+        only_matching: Если True, возвращает только плейлисты, соответствующие slug'у видео
+    """
     base_dir = mp4_key.rsplit("/", 1)[0] if "/" in mp4_key else ""
     hls_prefix = f"{base_dir}/.hls/" if base_dir else ".hls/"
     
@@ -385,7 +430,25 @@ def find_hls_playlists(mp4_key: str) -> List[str]:
     except Exception as e:
         logger.warning(f"Failed to list HLS playlists: {e}")
     
-    return playlists
+    if not only_matching:
+        return playlists
+    
+    # Фильтруем по slug'ам, соответствующим этому MP4
+    expected_slugs = _compute_slugs_for_mp4(mp4_key)
+    
+    matching = []
+    for pl in playlists:
+        # Извлекаем slug из пути: base/.hls/{slug}/playlist.m3u8
+        parts = pl.split("/")
+        if len(parts) >= 2 and parts[-1] == "playlist.m3u8":
+            slug_dir = parts[-2]
+            # Проверяем, начинается ли slug_dir с одного из ожидаемых слугов
+            for expected in expected_slugs:
+                if slug_dir.startswith(expected) or expected.startswith(slug_dir.rstrip("-0123456789abcdef")[:20]):
+                    matching.append(pl)
+                    break
+    
+    return matching if matching else playlists[:5]  # Fallback: первые 5 если ничего не нашли
 
 
 def diagnose_video(video_url: str) -> VideoHealth:
@@ -739,4 +802,189 @@ def check_moov_endpoint(
         "cdn_url": cdn_url,
         **asdict(result)
     }
+
+
+def _is_broken_playlist(playlist_key: str) -> tuple[bool, str]:
+    """
+    Проверяет, является ли HLS плейлист битым/неполным.
+    Возвращает (is_broken, reason).
+    """
+    try:
+        obj = s3.get_object(Bucket=S3_BUCKET, Key=playlist_key)
+        content = obj["Body"].read().decode("utf-8", errors="replace")
+        
+        if not content.strip().startswith("#EXTM3U"):
+            return True, "Invalid playlist (no #EXTM3U)"
+        
+        # Считаем сегменты
+        segments = []
+        total_duration = 0.0
+        for line in content.strip().split("\n"):
+            line = line.strip()
+            if line.startswith("#EXTINF:"):
+                try:
+                    dur = float(line.split(":")[1].split(",")[0])
+                    total_duration += dur
+                except:
+                    pass
+            elif line and not line.startswith("#"):
+                if line.endswith(".ts") or line.endswith(".m4s"):
+                    segments.append(line)
+        
+        # Проверяем, это master playlist (указывает на другой плейлист)
+        is_master = any(
+            l.strip().endswith(".m3u8") or "playlist.m3u8" in l
+            for l in content.split("\n") 
+            if l.strip() and not l.strip().startswith("#")
+        )
+        
+        if is_master:
+            return False, "Master/alias playlist"
+        
+        if len(segments) == 0:
+            return True, "No segments"
+        
+        if total_duration < 1.0:
+            return True, f"Too short ({total_duration:.1f}s)"
+        
+        # Проверяем доступность первого сегмента
+        base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
+        first_seg_key = f"{base_dir}/{segments[0]}" if base_dir else segments[0]
+        
+        try:
+            s3.head_object(Bucket=S3_BUCKET, Key=first_seg_key)
+        except ClientError:
+            return True, f"First segment missing: {segments[0]}"
+        
+        return False, f"OK ({len(segments)} segments, {total_duration:.1f}s)"
+        
+    except ClientError as e:
+        return True, f"Cannot read: {e.response['Error']['Code']}"
+    except Exception as e:
+        return True, f"Error: {type(e).__name__}"
+
+
+class CleanupHlsRequest(BaseModel):
+    video_url: str
+    dry_run: bool = True  # По умолчанию только показываем, что будет удалено
+
+
+@router.post("/cleanup-hls")
+def cleanup_hls_endpoint(
+    req: CleanupHlsRequest,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Находит и удаляет битые/пустые HLS плейлисты для видео.
+    
+    dry_run=True (по умолчанию): только показывает, что будет удалено
+    dry_run=False: реально удаляет
+    """
+    s3_key = key_from_url(req.video_url)
+    
+    # Находим все плейлисты (не только matching)
+    all_playlists = find_hls_playlists(s3_key, only_matching=False)
+    matching_playlists = find_hls_playlists(s3_key, only_matching=True)
+    
+    results = {
+        "video_url": req.video_url,
+        "s3_key": s3_key,
+        "dry_run": req.dry_run,
+        "total_playlists_in_folder": len(all_playlists),
+        "matching_this_video": len(matching_playlists),
+        "playlists": [],
+        "to_delete": [],
+        "deleted": [],
+        "kept": [],
+    }
+    
+    # Анализируем каждый matching плейлист
+    for pl_key in matching_playlists:
+        is_broken, reason = _is_broken_playlist(pl_key)
+        slug = pl_key.split("/")[-2] if "/" in pl_key else "unknown"
+        
+        info = {
+            "key": pl_key,
+            "slug": slug,
+            "is_broken": is_broken,
+            "reason": reason,
+        }
+        results["playlists"].append(info)
+        
+        if is_broken and "Master/alias" not in reason:
+            results["to_delete"].append(pl_key)
+            
+            if not req.dry_run:
+                # Удаляем плейлист и его сегменты
+                try:
+                    # Удаляем все файлы в папке slug
+                    hls_dir = pl_key.rsplit("/", 1)[0] + "/"
+                    paginator = s3.get_paginator("list_objects_v2")
+                    objects_to_delete = []
+                    
+                    for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_dir):
+                        for obj in page.get("Contents", []):
+                            objects_to_delete.append({"Key": obj["Key"]})
+                    
+                    if objects_to_delete:
+                        # Удаляем батчами по 1000
+                        for i in range(0, len(objects_to_delete), 1000):
+                            batch = objects_to_delete[i:i+1000]
+                            s3.delete_objects(Bucket=S3_BUCKET, Delete={"Objects": batch})
+                        
+                        results["deleted"].append({
+                            "key": pl_key,
+                            "deleted_objects": len(objects_to_delete)
+                        })
+                except Exception as e:
+                    logger.error(f"Failed to delete {pl_key}: {e}")
+                    results["deleted"].append({
+                        "key": pl_key,
+                        "error": str(e)
+                    })
+        else:
+            results["kept"].append(pl_key)
+    
+    return results
+
+
+@router.get("/list-all-hls")
+def list_all_hls_endpoint(
+    video_url: str = Query(..., description="URL видео"),
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Показывает все HLS плейлисты в папке видео с их статусом.
+    """
+    s3_key = key_from_url(video_url)
+    expected_slugs = _compute_slugs_for_mp4(s3_key)
+    
+    # Все плейлисты в папке
+    all_playlists = find_hls_playlists(s3_key, only_matching=False)
+    
+    results = {
+        "video_url": video_url,
+        "s3_key": s3_key,
+        "expected_slugs": expected_slugs,
+        "total_playlists": len(all_playlists),
+        "playlists": [],
+    }
+    
+    for pl_key in all_playlists:
+        slug = pl_key.split("/")[-2] if "/" in pl_key else "unknown"
+        is_matching = any(
+            slug.startswith(exp) or exp.startswith(slug.rstrip("-0123456789abcdef")[:20])
+            for exp in expected_slugs
+        )
+        is_broken, reason = _is_broken_playlist(pl_key)
+        
+        results["playlists"].append({
+            "key": pl_key,
+            "slug": slug,
+            "matches_video": is_matching,
+            "is_broken": is_broken,
+            "status": reason,
+        })
+    
+    return results
 
