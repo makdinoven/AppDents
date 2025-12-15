@@ -116,7 +116,12 @@ services:
       options: {max-size: "100m", max-file: "10"}
 
   # ───────────────────────────── Frontend ───────────────────────────
-
+  frontend:
+    build: {context: ./frontend, dockerfile: Dockerfile.preprod}
+    container_name: frontend_preprod
+    restart: always
+    ports: ["3002:80"]
+    networks: [pub]
 
   # ───────────────────────────── Adminer ────────────────────────────
   adminer:
