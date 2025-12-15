@@ -458,6 +458,163 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
         )
 
 
+def check_hls_segments_cdn(playlist_key: str, sample_count: int = 3, timeout: int = 15) -> DiagnosticResult:
+    """
+    Проверяет доступность HLS сегментов через CDN с реальным GET запросом.
+    Это выявляет проблемы типа ERR_HTTP2_PROTOCOL_ERROR, rate limiting и т.д.
+    """
+    try:
+        # Читаем плейлист из S3
+        try:
+            obj = s3.get_object(Bucket=S3_BUCKET, Key=playlist_key)
+            content = obj["Body"].read().decode("utf-8", errors="replace")
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            return DiagnosticResult(
+                status="error",
+                message=f"Cannot read playlist: {code}",
+                details={"playlist_key": playlist_key}
+            )
+        
+        resolved_key = playlist_key
+        
+        # Проверяем, является ли это alias'ом
+        m3u8_target = None
+        for line in content.strip().split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#") and line.endswith(".m3u8"):
+                m3u8_target = line
+                break
+        
+        if m3u8_target:
+            # Резолвим alias
+            if m3u8_target.startswith("http://") or m3u8_target.startswith("https://"):
+                target_key = key_from_url(m3u8_target)
+            else:
+                base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
+                target_key = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
+            
+            try:
+                obj = s3.get_object(Bucket=S3_BUCKET, Key=target_key)
+                content = obj["Body"].read().decode("utf-8", errors="replace")
+                resolved_key = target_key
+            except ClientError:
+                return DiagnosticResult(
+                    status="error",
+                    message="Alias target not found",
+                    details={"alias": playlist_key, "target": m3u8_target}
+                )
+        
+        # Собираем сегменты
+        segments = []
+        for line in content.strip().split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#") and (line.endswith(".ts") or line.endswith(".m4s")):
+                segments.append(line)
+        
+        if not segments:
+            return DiagnosticResult(
+                status="warning",
+                message="No segments to check via CDN",
+                details={"resolved_key": resolved_key}
+            )
+        
+        # Берём первые несколько сегментов (важно проверить segment_001, segment_002 и т.д.)
+        # так как проблемы часто возникают после первого сегмента
+        sample_indices = []
+        if len(segments) >= 1:
+            sample_indices.append(0)  # segment_000
+        if len(segments) >= 2:
+            sample_indices.append(1)  # segment_001 - часто проблемный!
+        if len(segments) >= 3:
+            sample_indices.append(2)  # segment_002
+        if len(segments) > 10:
+            sample_indices.append(len(segments) // 2)  # середина
+        
+        base_dir = resolved_key.rsplit("/", 1)[0] if "/" in resolved_key else ""
+        
+        results = []
+        errors = []
+        
+        for idx in sample_indices[:sample_count]:
+            seg_name = segments[idx]
+            seg_key = f"{base_dir}/{seg_name}" if base_dir else seg_name
+            seg_cdn_url = safe_cdn_url(seg_key)
+            
+            try:
+                # Делаем Range request чтобы не качать весь сегмент
+                # Запрашиваем только первые 64KB
+                headers = {"Range": "bytes=0-65535"}
+                resp = requests.get(seg_cdn_url, headers=headers, timeout=timeout, stream=True)
+                
+                # 200 или 206 (Partial Content) - оба OK
+                if resp.status_code in (200, 206):
+                    # Читаем немного данных чтобы убедиться что соединение работает
+                    chunk = resp.raw.read(1024)
+                    resp.close()
+                    
+                    results.append({
+                        "index": idx,
+                        "name": seg_name,
+                        "status": "ok",
+                        "http_status": resp.status_code,
+                        "content_length": resp.headers.get("Content-Length"),
+                    })
+                else:
+                    errors.append(seg_name)
+                    results.append({
+                        "index": idx,
+                        "name": seg_name,
+                        "status": "error",
+                        "http_status": resp.status_code,
+                        "error": f"HTTP {resp.status_code}"
+                    })
+                    
+            except requests.Timeout:
+                errors.append(seg_name)
+                results.append({
+                    "index": idx,
+                    "name": seg_name,
+                    "status": "timeout",
+                    "error": f"Timeout after {timeout}s"
+                })
+            except requests.RequestException as e:
+                errors.append(seg_name)
+                error_type = type(e).__name__
+                results.append({
+                    "index": idx,
+                    "name": seg_name,
+                    "status": "error",
+                    "error": f"{error_type}: {str(e)[:100]}"
+                })
+        
+        if errors:
+            return DiagnosticResult(
+                status="error",
+                message=f"{len(errors)} of {len(sample_indices)} segments FAILED via CDN",
+                details={
+                    "sampled": results,
+                    "total_segments": len(segments),
+                    "resolved_key": resolved_key,
+                    "failed_segments": errors,
+                    "note": "Segments exist in S3 but fail to load via CDN. May indicate HTTP/2 issues or rate limiting."
+                }
+            )
+        
+        return DiagnosticResult(
+            status="ok",
+            message=f"All {len(sample_indices)} segments load OK via CDN",
+            details={"sampled": results, "total_segments": len(segments)}
+        )
+        
+    except Exception as e:
+        return DiagnosticResult(
+            status="error",
+            message=f"CDN segment check failed: {type(e).__name__}",
+            details={"error": str(e)}
+        )
+
+
 def check_hls_acl(playlist_keys: List[str], sample_count: int = 3) -> DiagnosticResult:
     """
     Проверяет ACL нескольких HLS файлов.
@@ -727,6 +884,9 @@ def diagnose_video(video_url: str) -> VideoHealth:
             # Проверяем доступность через CDN
             pl_cdn_url = safe_cdn_url(pl_key)
             health.checks[f"hls_cdn_{pl_name}"] = check_cdn_access(pl_cdn_url)
+            
+            # Проверяем доступность сегментов через CDN (выявляет HTTP/2 ошибки и rate limiting)
+            health.checks[f"hls_segments_cdn_{pl_name}"] = check_hls_segments_cdn(pl_key)
         
         # 4.1. Проверка ACL HLS файлов
         health.checks["hls_acl"] = check_hls_acl(hls_playlists)
@@ -755,6 +915,10 @@ def diagnose_video(video_url: str) -> VideoHealth:
         
         # Приватные HLS файлы - критическая ошибка
         if key == "hls_acl" and "PRIVATE" in check.message:
+            return True
+        
+        # Сегменты недоступны через CDN - критическая ошибка
+        if "segments_cdn" in key and "FAILED via CDN" in check.message:
             return True
         
         # Alias плейлисты которые работают - не ошибка
@@ -851,6 +1015,17 @@ def diagnose_video(video_url: str) -> VideoHealth:
             health.recommendations.append(
                 "HLS файлы приватные и недоступны через CDN. Нажмите 'Fix ACL' для исправления."
             )
+    
+    # Проверяем доступность сегментов через CDN
+    for key, check in health.checks.items():
+        if "segments_cdn" in key and check.status == "error":
+            failed_segments = check.details.get("failed_segments", [])
+            health.recommendations.append(
+                f"Сегменты HLS недоступны через CDN ({len(failed_segments)} ошибок). "
+                "Возможные причины: HTTP/2 ошибки, rate limiting, проблемы с CDN. "
+                "Попробуйте 'Force Rebuild' для пересоздания HLS."
+            )
+            break
     
     return health
 
