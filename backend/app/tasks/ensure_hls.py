@@ -85,10 +85,13 @@ def _s3_v4():
 # ───────────────────────────── HELPERS ───────────────────────────────────────
 def _copy_with_metadata(key: str, meta: dict) -> None:
     """Copy the object onto itself, replacing metadata (UTF-8–safe)."""
+    # ВАЖНО: когда CopySource передаётся как словарь, ключ должен быть БЕЗ URL encoding.
+    # boto3 сам выполнит нужное кодирование. quote() здесь вызывал ошибку NoSuchKey
+    # для файлов с пробелами/спецсимволами в имени.
     _s3_copy.copy_object(
         Bucket=S3_BUCKET,
         Key=key,
-        CopySource={"Bucket": S3_BUCKET, "Key": quote(key, safe="")},
+        CopySource={"Bucket": S3_BUCKET, "Key": key},
         Metadata=meta,
         MetadataDirective="REPLACE",
         ACL="public-read",
@@ -400,6 +403,32 @@ def ensure_hls() -> None:
 
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _ensure_legacy_alias(legacy_pl_key: str, new_pl_key: str, new_pl_url: str, key: str) -> None:
+    """
+    Гарантируем, что legacy alias существует и указывает на canonical.
+    Это критично: фронтенд ищет плейлист по legacy slug!
+    """
+    if legacy_pl_key == new_pl_key:
+        return  # slug'и совпадают, alias не нужен
+
+    # Проверяем, существует ли legacy alias
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=legacy_pl_key)
+        body = resp["Body"].read(500).decode("utf-8", errors="ignore")
+        # Если это уже alias (содержит ссылку на canonical) — всё ок
+        if new_pl_url in body or new_pl_key in body:
+            return
+        # Если это полноценный плейлист (с сегментами) — перезаписываем на alias
+    except ClientError as e:
+        if e.response["Error"]["Code"] not in ("NoSuchKey", "404"):
+            raise
+        # Не существует — создадим
+
+    # Создаём/перезаписываем alias
+    put_alias_master(legacy_pl_key, new_pl_url)
+    logger.info("[HLS] created legacy alias: %s → %s", legacy_pl_key, new_pl_url)
+
+
 @shared_task(name="app.tasks.process_hls_video", rate_limit=RATE_LIMIT_HLS)
 def process_hls_video(key: str) -> None:
     try:
@@ -408,15 +437,25 @@ def process_hls_video(key: str) -> None:
         new_pl_key    = f"{new_prefix}playlist.m3u8"
         new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
 
-        # Ранний выход — ТОЛЬКО если есть канонический
+        # Проверяем, есть ли canonical
+        canonical_exists = False
         try:
             s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
+            canonical_exists = True
+        except ClientError:
+            pass
+
+        if canonical_exists:
+            # Canonical есть — но ОБЯЗАТЕЛЬНО проверяем/создаём legacy alias!
+            try:
+                _ensure_legacy_alias(legacy_pl_key, new_pl_key, new_pl_url, key)
+            except ClientError as e:
+                logger.error("[HLS] CRITICAL: failed to ensure legacy alias for %s: %s", key, e)
             _mark_hls_ready(key)
             logger.info("[HLS] already exists (canonical) for %s", key)
             return
-        except ClientError:
-            pass  # нет canonical → строим
 
+        # Нет canonical → строим HLS
         with tempfile.TemporaryDirectory() as tmp:
             in_mp4   = os.path.join(tmp, "in.mp4")
             seg_pat  = os.path.join(tmp, "segment_%03d.ts")
@@ -441,17 +480,96 @@ def process_hls_video(key: str) -> None:
 
         _mark_hls_ready(key)
 
-        # Перезаписываем legacy на alias-master → укажет на canonical
-        if legacy_pl_key != new_pl_key:
-            try:
-                put_alias_master(legacy_pl_key, new_pl_url)
-            except ClientError as e:
-                logger.warning("[HLS] put alias failed for %s → %s: %s", key, legacy_pl_key, e)
+        # Создаём legacy alias → укажет на canonical (критично для фронтенда!)
+        try:
+            _ensure_legacy_alias(legacy_pl_key, new_pl_key, new_pl_url, key)
+        except ClientError as e:
+            logger.error("[HLS] CRITICAL: failed to create legacy alias for %s: %s", key, e)
 
         logger.info("[HLS] ready → %s", new_pl_url)
 
     finally:
         rds.srem(R_SET_QUEUED, key)
+
+
+@shared_task(name="app.tasks.ensure_hls.fix_missing_legacy_aliases")
+def fix_missing_legacy_aliases(limit: int = 200) -> dict:
+    """
+    Находит все mp4, у которых есть canonical HLS, но нет legacy alias.
+    Создаёт недостающие alias'ы.
+
+    Это нужно для исправления видео, которые были сконвертированы,
+    но фронтенд не может их найти (ищет по legacy slug).
+
+    Оптимизировано для минимальной нагрузки:
+    - Сначала фильтруем локально (только файлы с разными slug'ами)
+    - Потом делаем S3 запросы с паузами
+    """
+    fixed = 0
+    checked = 0
+    skipped_same_slug = 0
+    s3_checks = 0
+    errors = []
+
+    for key in _each_mp4_objects():
+        if "/.hls/" in key:
+            continue
+
+        checked += 1
+        if checked > limit:
+            break
+
+        legacy_prefix, new_prefix = hls_prefixes_for(key)
+
+        # Пропускаем если slug'и совпадают (alias не нужен) — БЕЗ S3 запросов!
+        if legacy_prefix == new_prefix:
+            skipped_same_slug += 1
+            continue
+
+        legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+        new_pl_key    = f"{new_prefix}playlist.m3u8"
+        new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
+
+        # Throttling: пауза каждые 10 S3 запросов
+        s3_checks += 1
+        if s3_checks % 10 == 0:
+            time.sleep(0.1)  # 100ms пауза
+
+        # Проверяем: есть ли canonical?
+        try:
+            s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
+        except ClientError:
+            continue  # нет canonical — пропускаем
+
+        # Проверяем: есть ли корректный legacy alias?
+        try:
+            resp = s3.get_object(Bucket=S3_BUCKET, Key=legacy_pl_key)
+            body = resp["Body"].read(500).decode("utf-8", errors="ignore")
+            if new_pl_url in body or new_pl_key in body:
+                continue  # alias уже есть и корректен
+        except ClientError as e:
+            if e.response["Error"]["Code"] not in ("NoSuchKey", "404"):
+                errors.append(f"get {legacy_pl_key}: {e}")
+                continue
+
+        # Создаём alias
+        try:
+            put_alias_master(legacy_pl_key, new_pl_url)
+            fixed += 1
+            logger.info("[HLS][FIX] created missing alias: %s → %s", legacy_pl_key, new_pl_url)
+        except ClientError as e:
+            errors.append(f"put {legacy_pl_key}: {e}")
+
+    result = {
+        "checked": checked,
+        "skipped_same_slug": skipped_same_slug,
+        "s3_checks": s3_checks,
+        "fixed": fixed,
+        "errors": errors[:20]
+    }
+    logger.info("[HLS][FIX] done: checked=%d skipped_same_slug=%d s3_checks=%d fixed=%d errors=%d",
+                checked, skipped_same_slug, s3_checks, fixed, len(errors))
+    return result
 
 
 # Клиент только для листинга — V4
