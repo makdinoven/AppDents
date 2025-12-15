@@ -1017,3 +1017,45 @@ class SurveyView(Base):
     __table_args__ = (
         Index("ix_survey_view_user_survey", "user_id", "survey_id"),
     )
+
+
+# ───────────────── Email Suppression (Bounce Management) ─────────────────
+
+class SuppressionType(str, PyEnum):
+    """Тип suppression для email адресов."""
+    HARD_BOUNCE = "hard_bounce"      # 5.x.x ошибки → навсегда
+    SOFT_BOUNCE = "soft_bounce"      # 4.x.x ошибки → счетчик
+    COMPLAINT = "complaint"          # жалобы на спам → навсегда
+    UNSUBSCRIBE = "unsubscribe"      # отписка → навсегда
+    INVALID = "invalid"              # невалидный при проверке → навсегда
+
+
+class EmailSuppression(Base):
+    """
+    Suppression list для email адресов.
+    
+    Логика soft bounce:
+    - При каждом 4.x.x bounce: увеличиваем soft_bounce_count, обновляем last_soft_bounce_at
+    - Если soft_bounce_count >= 3 за последние 7 дней → меняем type на HARD_BOUNCE
+    - При проверке: пропускаем если type != SOFT_BOUNCE ИЛИ (type == SOFT_BOUNCE И soft_bounce_count >= 3)
+    """
+    __tablename__ = "email_suppressions"
+
+    email = Column(String(255), primary_key=True)
+    type = Column(
+        Enum(SuppressionType, name="suppression_type"),
+        nullable=False
+    )
+    code = Column(String(20), nullable=True)              # "5.1.1", "550"
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.utc_timestamp(), nullable=False)
+    source = Column(String(50), nullable=True)            # "mailgun_webhook", "validation", "manual"
+
+    # Для soft bounce счетчика
+    soft_bounce_count = Column(Integer, nullable=False, server_default="0")
+    last_soft_bounce_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_email_suppressions_type", "type"),
+        Index("ix_email_suppressions_created_at", "created_at"),
+    )
