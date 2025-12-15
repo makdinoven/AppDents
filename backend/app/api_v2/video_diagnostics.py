@@ -205,29 +205,43 @@ def check_hls_playlist(key: str) -> DiagnosticResult:
         
         if m3u8_target:
             # Это alias - резолвим целевой плейлист
+            # ВАЖНО: S3 может хранить ключи с %20 или с пробелами - пробуем оба варианта
             if m3u8_target.startswith("http://") or m3u8_target.startswith("https://"):
-                target_key = key_from_url(m3u8_target)
+                target_key_decoded = key_from_url(m3u8_target)  # с пробелами
+                # Также пробуем URL path напрямую (с %20)
+                parsed = urlparse(m3u8_target)
+                target_key_encoded = parsed.path.lstrip("/")
             else:
                 base_dir = key.rsplit("/", 1)[0] if "/" in key else ""
-                target_key = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
+                target_key_decoded = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
+                target_key_encoded = target_key_decoded  # для относительных путей - то же самое
             
-            # Пробуем прочитать целевой плейлист
-            try:
-                obj = s3.get_object(Bucket=S3_BUCKET, Key=target_key)
-                content = obj["Body"].read().decode("utf-8", errors="replace")
-                resolved_key = target_key
-                is_alias = True
-            except ClientError:
-                # Целевой плейлист не найден
+            # Пробуем прочитать целевой плейлист - сначала decoded, потом encoded
+            target_key = None
+            for try_key in [target_key_decoded, target_key_encoded]:
+                if not try_key:
+                    continue
+                try:
+                    obj = s3.get_object(Bucket=S3_BUCKET, Key=try_key)
+                    content = obj["Body"].read().decode("utf-8", errors="replace")
+                    resolved_key = try_key
+                    target_key = try_key
+                    is_alias = True
+                    break
+                except ClientError:
+                    continue
+            
+            if not target_key:
+                # Целевой плейлист не найден ни с каким ключом - ЭТО ОШИБКА!
                 return DiagnosticResult(
-                    status="ok",
-                    message=f"Alias → target not found in S3",
+                    status="error",
+                    message=f"Alias → target playlist MISSING in S3",
                     details={
                         "is_alias": True,
                         "alias_key": key,
                         "target": m3u8_target,
-                        "target_key": target_key,
-                        "note": "Alias exists but target playlist missing"
+                        "tried_keys": [target_key_decoded, target_key_encoded],
+                        "note": "Alias exists but target playlist missing - HLS BROKEN, needs Full Repair"
                     }
                 )
         
@@ -331,23 +345,42 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
         
         if m3u8_target:
             # Это alias - резолвим целевой плейлист
+            # ВАЖНО: S3 может хранить ключи с %20 или с пробелами - пробуем оба варианта
             if m3u8_target.startswith("http://") or m3u8_target.startswith("https://"):
-                target_key = key_from_url(m3u8_target)
+                target_key_decoded = key_from_url(m3u8_target)
+                parsed = urlparse(m3u8_target)
+                target_key_encoded = parsed.path.lstrip("/")
             else:
                 base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
-                target_key = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
+                target_key_decoded = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
+                target_key_encoded = target_key_decoded
             
-            # Пробуем прочитать целевой плейлист
-            try:
-                obj = s3.get_object(Bucket=S3_BUCKET, Key=target_key)
-                content = obj["Body"].read().decode("utf-8", errors="replace")
-                resolved_key = target_key
-                is_alias = True
-            except ClientError:
+            # Пробуем прочитать целевой плейлист - сначала decoded, потом encoded
+            target_key = None
+            for try_key in [target_key_decoded, target_key_encoded]:
+                if not try_key:
+                    continue
+                try:
+                    obj = s3.get_object(Bucket=S3_BUCKET, Key=try_key)
+                    content = obj["Body"].read().decode("utf-8", errors="replace")
+                    resolved_key = try_key
+                    target_key = try_key
+                    is_alias = True
+                    break
+                except ClientError:
+                    continue
+            
+            if not target_key:
+                # Целевой плейлист не найден - ОШИБКА!
                 return DiagnosticResult(
-                    status="ok",
-                    message=f"Alias playlist → target not accessible",
-                    details={"is_alias": True, "target": m3u8_target, "target_key": target_key}
+                    status="error",
+                    message=f"Alias → target segments MISSING",
+                    details={
+                        "is_alias": True, 
+                        "target": m3u8_target, 
+                        "tried_keys": [target_key_decoded, target_key_encoded],
+                        "note": "Target playlist missing - no segments available"
+                    }
                 )
         
         segments = []
@@ -636,26 +669,27 @@ def diagnose_video(video_url: str) -> VideoHealth:
     def is_real_error(key: str, check: DiagnosticResult) -> bool:
         if check.status != "error":
             return False
-        # Alias плейлисты - не ошибка
-        if check.details.get("is_alias"):
+        
+        # КРИТИЧЕСКИЕ ошибки - всегда считаются реальными
+        if "MISSING" in check.message:
+            return True  # Target playlist/segments отсутствуют
+        if "target playlist missing" in check.details.get("note", "").lower():
+            return True
+        
+        # Alias плейлисты которые работают - не ошибка
+        if check.details.get("is_alias") and "MISSING" not in check.message:
             return False
-        # Если сегменты показывают alias - это OK
-        if "segments" in key and "Alias playlist" in check.message:
+        # Если сегменты показывают работающий alias - это OK
+        if "segments" in key and "Alias playlist" in check.message and "MISSING" not in check.message:
             return False
-        if "segments" in key and "alias" in check.message.lower():
-            return False
+        
         # Если HLS playlist не найден в S3, но CDN работает - это может быть кэш
-        if "playlist" in key and "not found" in check.message.lower():
-            # Проверяем есть ли соответствующая CDN проверка
+        # НО только если это не alias с отсутствующим target
+        if "playlist" in key and "not found" in check.message.lower() and "MISSING" not in check.message:
             cdn_key = key.replace("playlist", "cdn")
             if cdn_key in health.checks and health.checks[cdn_key].status == "ok":
                 return False  # CDN работает - значит HLS функционирует
-        if "segments" in key and ("not found" in check.message.lower() or "NoSuchKey" in check.message):
-            # Проверяем есть ли соответствующая CDN проверка
-            pl_name = key.replace("hls_segments_", "")
-            cdn_key = f"hls_cdn_{pl_name}"
-            if cdn_key in health.checks and health.checks[cdn_key].status == "ok":
-                return False  # CDN работает
+        
         return True
     
     def is_real_warning(key: str, check: DiagnosticResult) -> bool:
@@ -703,18 +737,24 @@ def diagnose_video(video_url: str) -> VideoHealth:
     if health.checks.get("hls_found", DiagnosticResult("error", "")).status == "warning":
         health.recommendations.append("HLS плейлисты не найдены. Используйте Magic Button для генерации.")
     
-    # Проверяем только реальные ошибки сегментов (не alias и не те что работают через CDN)
+    # Проверяем критические ошибки HLS: alias с отсутствующим target
+    for key, check in health.checks.items():
+        if check.status == "error" and "MISSING" in check.message:
+            health.recommendations.append(
+                "HLS alias указывает на отсутствующий плейлист. Требуется Full Repair для пересборки HLS."
+            )
+            break
+    
+    # Проверяем только реальные ошибки сегментов
     for key, check in health.checks.items():
         if "segments" in key and check.status == "error":
-            # Пропускаем если это alias
-            if check.details.get("is_alias") or "alias" in check.message.lower():
+            # Если уже добавили рекомендацию про MISSING - пропускаем
+            if "MISSING" in check.message:
                 continue
-            # Пропускаем если CDN работает
-            pl_name = key.replace("hls_segments_", "")
-            cdn_key = f"hls_cdn_{pl_name}"
-            if cdn_key in health.checks and health.checks[cdn_key].status == "ok":
+            # Пропускаем если это работающий alias
+            if check.details.get("is_alias") and "MISSING" not in check.message:
                 continue
-            health.recommendations.append(f"Некоторые HLS сегменты отсутствуют. Требуется пересборка через Magic Button.")
+            health.recommendations.append(f"Некоторые HLS сегменты отсутствуют. Требуется пересборка через Full Repair.")
             break
     
     if health.checks.get("codecs"):
