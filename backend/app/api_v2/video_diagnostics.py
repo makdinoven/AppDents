@@ -166,9 +166,12 @@ def check_cdn_access(url: str, timeout: int = 10) -> DiagnosticResult:
 
 
 def check_hls_playlist(key: str) -> DiagnosticResult:
-    """Проверяет HLS playlist и считает сегменты."""
+    """Проверяет HLS playlist и считает сегменты. Следует по alias'ам."""
     try:
-        obj = s3.get_object(Bucket=S3_BUCKET, Key=key)
+        # Резолвим alias если нужно
+        resolved_key, is_alias = _resolve_alias_playlist(key)
+        
+        obj = s3.get_object(Bucket=S3_BUCKET, Key=resolved_key)
         content = obj["Body"].read().decode("utf-8", errors="replace")
         
         if not content.strip().startswith("#EXTM3U"):
@@ -178,13 +181,17 @@ def check_hls_playlist(key: str) -> DiagnosticResult:
                 details={"first_100_chars": content[:100]}
             )
         
-        # Считаем сегменты
+        # Считаем реальные сегменты (.ts, .m4s)
         segments = []
+        m3u8_refs = []
         lines = content.strip().split("\n")
-        for i, line in enumerate(lines):
+        for line in lines:
             line = line.strip()
             if line and not line.startswith("#"):
-                segments.append(line)
+                if line.endswith(".ts") or line.endswith(".m4s"):
+                    segments.append(line)
+                elif line.endswith(".m3u8"):
+                    m3u8_refs.append(line)
         
         # Проверяем наличие #EXT-X-ENDLIST
         has_endlist = "#EXT-X-ENDLIST" in content
@@ -199,13 +206,28 @@ def check_hls_playlist(key: str) -> DiagnosticResult:
                 except:
                     pass
         
+        # Если это alias (указывает на другой m3u8)
+        if m3u8_refs and not segments:
+            return DiagnosticResult(
+                status="ok",
+                message=f"Alias playlist → {m3u8_refs[0][:60]}...",
+                details={
+                    "is_alias": True,
+                    "target": m3u8_refs[0],
+                    "resolved_key": resolved_key,
+                    "original_key": key if is_alias else None,
+                }
+            )
+        
         return DiagnosticResult(
             status="ok" if segments else "warning",
-            message=f"Found {len(segments)} segments, {total_duration:.1f}s total",
+            message=f"Found {len(segments)} segments, {total_duration:.1f}s total" + (" (via alias)" if is_alias else ""),
             details={
                 "segment_count": len(segments),
                 "total_duration_sec": total_duration,
                 "has_endlist": has_endlist,
+                "is_alias": is_alias,
+                "resolved_key": resolved_key if is_alias else None,
                 "segments": segments[:10] if len(segments) <= 10 else segments[:5] + ["..."] + segments[-5:],
             }
         )
@@ -224,10 +246,50 @@ def check_hls_playlist(key: str) -> DiagnosticResult:
         )
 
 
-def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticResult:
-    """Проверяет доступность нескольких HLS сегментов."""
+def _resolve_alias_playlist(playlist_key: str, depth: int = 0) -> tuple[str, bool]:
+    """
+    Если плейлист это alias (указывает на другой .m3u8), возвращает целевой ключ.
+    Возвращает (resolved_key, is_alias).
+    """
+    if depth > 3:
+        return playlist_key, False
+    
     try:
         obj = s3.get_object(Bucket=S3_BUCKET, Key=playlist_key)
+        content = obj["Body"].read().decode("utf-8", errors="replace")
+        
+        # Ищем строки не начинающиеся с # (это либо сегменты, либо ссылки на плейлисты)
+        targets = []
+        for line in content.strip().split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                targets.append(line)
+        
+        # Если есть ровно одна строка и это .m3u8 - это alias
+        if len(targets) == 1 and targets[0].endswith(".m3u8"):
+            target = targets[0]
+            # Преобразуем в S3 key
+            if target.startswith("http://") or target.startswith("https://"):
+                target_key = key_from_url(target)
+            else:
+                base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
+                target_key = f"{base_dir}/{target}" if base_dir else target
+            
+            # Рекурсивно проверяем целевой плейлист
+            return _resolve_alias_playlist(target_key, depth + 1)
+        
+        return playlist_key, depth > 0
+    except:
+        return playlist_key, False
+
+
+def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticResult:
+    """Проверяет доступность нескольких HLS сегментов. Следует по alias'ам."""
+    try:
+        # Резолвим alias если нужно
+        resolved_key, is_alias = _resolve_alias_playlist(playlist_key)
+        
+        obj = s3.get_object(Bucket=S3_BUCKET, Key=resolved_key)
         content = obj["Body"].read().decode("utf-8", errors="replace")
         
         segments = []
@@ -237,10 +299,20 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
                 segments.append(line)
         
         if not segments:
+            # Проверим, не alias ли это на другой плейлист
+            m3u8_refs = [l.strip() for l in content.split("\n") 
+                        if l.strip() and not l.strip().startswith("#") and l.strip().endswith(".m3u8")]
+            if m3u8_refs:
+                return DiagnosticResult(
+                    status="ok",
+                    message=f"Alias playlist pointing to: {m3u8_refs[0][:50]}...",
+                    details={"is_alias": True, "target": m3u8_refs[0], "resolved_key": resolved_key}
+                )
+            
             return DiagnosticResult(
                 status="error",
                 message="No segments found in playlist",
-                details={}
+                details={"resolved_key": resolved_key, "is_alias": is_alias}
             )
         
         # Берём первый, средний и последний сегмент
@@ -250,7 +322,7 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
         if len(segments) > 2:
             sample_indices.append(len(segments) - 1)
         
-        base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
+        base_dir = resolved_key.rsplit("/", 1)[0] if "/" in resolved_key else ""
         
         results = []
         errors = []
@@ -279,13 +351,13 @@ def check_hls_segments(playlist_key: str, sample_count: int = 3) -> DiagnosticRe
             return DiagnosticResult(
                 status="error",
                 message=f"{len(errors)} of {len(sample_indices)} sampled segments missing",
-                details={"sampled": results, "total_segments": len(segments)}
+                details={"sampled": results, "total_segments": len(segments), "resolved_key": resolved_key}
             )
         
         return DiagnosticResult(
             status="ok",
-            message=f"All {len(sample_indices)} sampled segments accessible",
-            details={"sampled": results, "total_segments": len(segments)}
+            message=f"All {len(sample_indices)} sampled segments accessible" + (" (via alias)" if is_alias else ""),
+            details={"sampled": results, "total_segments": len(segments), "resolved_key": resolved_key, "is_alias": is_alias}
         )
     except Exception as e:
         return DiagnosticResult(
@@ -500,8 +572,28 @@ def diagnose_video(video_url: str) -> VideoHealth:
     health.checks["codecs"] = check_video_codecs(cdn_url)
     
     # Определяем общий статус и рекомендации
-    errors = sum(1 for c in health.checks.values() if c.status == "error")
-    warnings = sum(1 for c in health.checks.values() if c.status == "warning")
+    # НЕ считаем ошибкой: alias плейлисты, таймауты ffprobe
+    def is_real_error(key: str, check: DiagnosticResult) -> bool:
+        if check.status != "error":
+            return False
+        # Alias плейлисты - не ошибка
+        if check.details.get("is_alias"):
+            return False
+        # Если сегменты показывают alias - это OK
+        if "segments" in key and "Alias playlist" in check.message:
+            return False
+        return True
+    
+    def is_real_warning(key: str, check: DiagnosticResult) -> bool:
+        if check.status != "warning":
+            return False
+        # ffprobe timeout для больших файлов - не критично
+        if "codecs" in key and "timed out" in check.message:
+            return False
+        return True
+    
+    errors = sum(1 for k, c in health.checks.items() if is_real_error(k, c))
+    warnings = sum(1 for k, c in health.checks.items() if is_real_warning(k, c))
     
     if errors > 0:
         health.overall_status = "broken"
@@ -517,7 +609,7 @@ def diagnose_video(video_url: str) -> VideoHealth:
     
     if health.checks.get("s3_mp4"):
         details = health.checks["s3_mp4"].details
-        if details.get("faststart") != "true":
+        if details.get("faststart") != "true" and details.get("faststart") != "unknown":
             health.recommendations.append("Видео не имеет faststart метаданных. Рекомендуется перезалить с -movflags +faststart.")
         if details.get("hls") != "true":
             health.recommendations.append("HLS не помечен как готовый. Используйте Magic Button для генерации.")
@@ -525,8 +617,12 @@ def diagnose_video(video_url: str) -> VideoHealth:
     if health.checks.get("hls_found", DiagnosticResult("error", "")).status == "warning":
         health.recommendations.append("HLS плейлисты не найдены. Используйте Magic Button для генерации.")
     
+    # Проверяем только реальные ошибки сегментов (не alias)
     for key, check in health.checks.items():
         if "segments" in key and check.status == "error":
+            # Пропускаем если это alias
+            if check.details.get("is_alias") or "Alias" in check.message:
+                continue
             health.recommendations.append(f"Некоторые HLS сегменты отсутствуют. Требуется пересборка через Magic Button.")
             break
     
