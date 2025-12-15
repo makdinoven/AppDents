@@ -100,8 +100,24 @@ def s3_put_text(key: str, text: str, content_type: str = "application/vnd.apple.
     except Exception:
         pass
 
-def url_from_key(key: str) -> str:
-    # Ключи иногда содержат пробелы — CDN это переваривает.
+def url_from_key(key: str, encode: bool = False) -> str:
+    """
+    Создаёт CDN URL из S3 key.
+    
+    Args:
+        key: S3 ключ (может содержать пробелы и спецсимволы)
+        encode: Если True, кодирует URL (безопаснее для браузеров/CDN)
+    
+    Note:
+        По умолчанию НЕ кодируем, т.к. Timeweb CDN принимает пробелы.
+        Но для HLS плейлистов и сегментов лучше использовать encode=True.
+    """
+    if encode:
+        from urllib.parse import quote
+        # Кодируем каждый сегмент пути отдельно
+        parts = key.split("/")
+        encoded_parts = [quote(part, safe="") for part in parts]
+        return f"{S3_PUBLIC_HOST}/{'/'.join(encoded_parts)}"
     return f"{S3_PUBLIC_HOST}/{key}"
 
 # =============== HLS parsing ==============
