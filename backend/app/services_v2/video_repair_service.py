@@ -138,8 +138,44 @@ def parse_variant_paths(master_text: str) -> List[str]:
             last_inf = False
     return variants
 
+
+def is_alias_playlist(master_text: str) -> Optional[str]:
+    """
+    Проверяет, является ли плейлист alias'ом (указывает на другой .m3u8).
+    Возвращает URL/путь целевого плейлиста или None.
+    """
+    variants = parse_variant_paths(master_text)
+    if len(variants) == 1:
+        v = variants[0]
+        # Если это полный URL или путь к .m3u8
+        if v.endswith(".m3u8"):
+            return v
+    return None
+
+
+def resolve_alias_to_key(alias_target: str, alias_key: str) -> Optional[str]:
+    """
+    Преобразует целевой путь alias'а в S3 ключ.
+    """
+    # Если это абсолютный URL
+    if alias_target.startswith("http://") or alias_target.startswith("https://"):
+        return key_from_url(alias_target)
+    
+    # Если это относительный путь
+    base = alias_key.rsplit("/", 1)[0] if "/" in alias_key else ""
+    return f"{base}/{alias_target}" if base else alias_target
+
+
 def join_hls_path(master_key: str, rel: str) -> str:
-    # master_key: path/to/playlist.m3u8, rel: variant/720p.m3u8
+    """
+    Соединяет базовый путь master плейлиста с относительным путём.
+    Обрабатывает абсолютные URL корректно.
+    """
+    # Если rel это абсолютный URL - конвертируем в S3 key
+    if rel.startswith("http://") or rel.startswith("https://"):
+        return key_from_url(rel)
+    
+    # Относительный путь
     base = master_key.rsplit("/", 1)[0]
     return f"{base}/{rel}"
 
@@ -182,12 +218,21 @@ def has_audio(meta: dict) -> bool:
 
 # =============== Smart checks =============
 
-def _check_master_core(master_key: str) -> Tuple[CheckResult, List[str]]:
+def _check_master_core(master_key: str, follow_alias: bool = True, depth: int = 0) -> Tuple[CheckResult, List[str]]:
     """
     Базовая проверка master + сбор variant-путей (как относительных, так и абсолютных ключей).
     Возвращает (CheckResult, абсолютные variant-keys).
+    
+    Если плейлист это alias (указывает на другой .m3u8), следуем по ссылке.
     """
     res = CheckResult()
+    
+    # Защита от бесконечных циклов
+    if depth > 3:
+        res.problems.append(Problem.MISSING_MASTER)
+        res.details["error"] = "too many alias redirects"
+        return res, []
+    
     if not s3_exists(master_key):
         res.problems.append(Problem.MISSING_MASTER)
         res.details["missing_master"] = master_key
@@ -198,6 +243,22 @@ def _check_master_core(master_key: str) -> Tuple[CheckResult, List[str]]:
         res.problems.append(Problem.MISSING_MASTER)
         res.details["corrupt_master"] = "not an M3U8"
         return res, []
+
+    # Проверяем, является ли это alias'ом
+    alias_target = is_alias_playlist(master_text)
+    if alias_target and follow_alias:
+        target_key = resolve_alias_to_key(alias_target, master_key)
+        res.details["is_alias"] = "true"
+        res.details["alias_target"] = target_key
+        
+        if target_key and s3_exists(target_key):
+            # Рекурсивно проверяем целевой плейлист
+            return _check_master_core(target_key, follow_alias=True, depth=depth + 1)
+        else:
+            # Целевой плейлист не существует
+            res.problems.append(Problem.MISSING_VARIANT)
+            res.details["alias_target_missing"] = target_key or alias_target
+            return res, []
 
     variants_rel = parse_variant_paths(master_text)
     res.details["variants_total"] = str(len(variants_rel))
@@ -315,9 +376,11 @@ def fix_mark_ready(db_session, video_id: int) -> None:
 def key_from_url(url: str) -> str:
     """
     Превращаем публичный URL CDN в S3 key.
+    Важно: декодируем URL-encoded символы (%20 -> пробел).
+    
     Пример:
-      https://cdn.dent-s.com/Es Okeson full/dir/file.mp4
-      -> Es Okeson full/dir/file.mp4
+      https://cdn.dent-s.com/Spark%20MasterCoip/file.mp4
+      -> Spark MasterCoip/file.mp4
     """
     prefix = S3_PUBLIC_HOST.rstrip("/") + "/"
     if url.startswith(prefix):
@@ -325,7 +388,8 @@ def key_from_url(url: str) -> str:
     else:
         parsed = urllib.parse.urlparse(url)
         key = parsed.path.lstrip("/")
-    return key
+    # ВАЖНО: декодируем %20, %2F и другие URL-encoded символы
+    return urllib.parse.unquote(key)
 
 def discover_hls_for_src(src_mp4_key: str) -> HLSPaths:
     """
@@ -437,16 +501,11 @@ def build_fix_plan(
         plan.notes["reason"] = "missing/corrupt master"
         return plan, checks
 
-    # c) нет ни одного живого variant → выбираем: если второй мастер есть — алиас, иначе rebuild
+    # c) нет ни одного живого variant → ВСЕГДА rebuild
+    # Раньше мы надеялись на alias, но это не работает если целевой плейлист не имеет сегментов
     if Problem.MISSING_VARIANT in problems:
-        if new_exists and not legacy_exists:
-            # уже добавили алиас выше; этого достаточно
-            plan.notes["reason"] = "variants missing, alias will expose valid new"
-            plan.to_apply.append(Fix.WRITE_STATUS)
-            return plan, checks
-        # альтернатив нет → rebuild
         plan.to_apply.append(Fix.REBUILD_HLS)
-        plan.notes["reason"] = "no variants at all"
+        plan.notes["reason"] = "no variants/segments - need full rebuild"
         return plan, checks
 
     # d) сегменты не читаются на выбранном variant → пробовали все; если альтернативный master есть — алиас; если нет — rebuild
