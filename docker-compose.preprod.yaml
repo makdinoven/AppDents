@@ -117,11 +117,16 @@ services:
 
   # ───────────────────────────── Frontend ───────────────────────────
   frontend:
-    build: {context: ./frontend, dockerfile: Dockerfile.preprod}
+    build:
+      context: ./frontend        # папка с фронтом
+      dockerfile: Dockerfile.preprod  # лежит в ./frontend
     container_name: frontend_preprod
     restart: always
-    ports: ["3002:80"]
-    networks: [pub]
+    ports:
+      - "3002:80"
+    networks:
+      - pub
+
 
   # ───────────────────────────── Adminer ────────────────────────────
   adminer:
