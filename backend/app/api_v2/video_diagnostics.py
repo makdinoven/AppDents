@@ -19,8 +19,8 @@ from botocore.exceptions import ClientError
 from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..dependencies.auth import require_roles
-from ..models.models_v2 import User
+from ..dependencies.role_checker import require_roles
+from ..models.models import User
 
 logger = logging.getLogger(__name__)
 
