@@ -32,7 +32,7 @@ jobs:
             set -Eeuo pipefail
             set -x
 
-            cd /var/www/AppDents
+            cd var/www/AppDents
 
             export COMPOSE_PROJECT_NAME=appdents
             export COMPOSE_FILE=docker-compose.preprod.yaml
