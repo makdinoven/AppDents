@@ -1013,6 +1013,85 @@ def full_repair_endpoint(
     }
 
 
+@router.post("/force-rebuild-hls")
+def force_rebuild_hls_endpoint(
+    req: DiagnoseRequest,
+    current_admin: User = Depends(require_roles("admin"))
+) -> Dict[str, Any]:
+    """
+    Принудительная пересборка HLS:
+    1. Удаляет ВСЕ HLS файлы для видео (включая с %20 в именах)
+    2. Запускает свежую генерацию HLS
+    
+    Используйте когда HLS файлы повреждены или имеют проблемы с кодировкой путей.
+    """
+    from ..tasks.ensure_hls import validate_and_fix_hls
+    
+    s3_key = key_from_url(req.video_url)
+    
+    # Проверяем существование MP4
+    check = check_s3_object(s3_key)
+    if check.status == "error":
+        raise HTTPException(status_code=404, detail=f"Video not found: {check.message}")
+    
+    # Находим и удаляем ВСЕ HLS файлы для этого видео
+    base_dir = s3_key.rsplit("/", 1)[0] if "/" in s3_key else ""
+    deleted_files = []
+    
+    # Пробуем несколько вариантов prefix (с пробелами и с %20)
+    prefixes_to_check = [
+        f"{base_dir}/.hls/",  # С пробелами
+    ]
+    # Добавляем вариант с %20
+    if " " in base_dir:
+        encoded_base = base_dir.replace(" ", "%20")
+        prefixes_to_check.append(f"{encoded_base}/.hls/")
+    
+    for hls_prefix in prefixes_to_check:
+        try:
+            paginator = s3_v4.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    # Удаляем только файлы связанные с этим видео
+                    # (по slug в пути)
+                    try:
+                        s3.delete_object(Bucket=S3_BUCKET, Key=key)
+                        deleted_files.append(key)
+                    except Exception as e:
+                        logger.warning(f"Failed to delete {key}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to list prefix {hls_prefix}: {e}")
+    
+    # Сбрасываем метаданные HLS
+    try:
+        s3.copy_object(
+            Bucket=S3_BUCKET,
+            CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
+            Key=s3_key,
+            Metadata={"hls": "false"},
+            MetadataDirective="REPLACE",
+            ContentType="video/mp4"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to reset metadata: {e}")
+    
+    # Запускаем rebuild HLS
+    hls_task = validate_and_fix_hls.apply_async(
+        args=[{"video_url": req.video_url}],
+        queue="special_hls"
+    )
+    
+    return {
+        "status": "queued",
+        "s3_key": s3_key,
+        "deleted_files": deleted_files,
+        "deleted_count": len(deleted_files),
+        "task_id": hls_task.id,
+        "message": f"Deleted {len(deleted_files)} HLS files. Rebuild task queued."
+    }
+
+
 @router.get("/check-moov")
 def check_moov_endpoint(
     video_url: str = Query(..., description="URL видео"),
