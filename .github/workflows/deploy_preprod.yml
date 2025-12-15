@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: SSH Deploy (git pull + compose up --build)
+      - name: SSH Deploy (preprod)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.PREPROD_SERVER_HOST }}
@@ -26,7 +26,6 @@ jobs:
           key: ${{ secrets.PREPROD_SSH_KEY }}
           port: 22
           debug: true
-          script_stop: true
           command_timeout: 30m
           script: |
             #!/usr/bin/env bash
@@ -39,12 +38,12 @@ jobs:
             export COMPOSE_FILE=docker-compose.preprod.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
 
-            # 1) Обновляем код
+            # 1) git pull
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
             git pull --no-rebase --no-edit -s recursive -X theirs origin preprod
 
-            # 2) Готовим .env (preprod -> prod -> ошибка)
+            # 2) .env
             if [ ! -f .env ]; then
               if [ -f /etc/appdents/preprod.env ]; then
                 ln -sfn /etc/appdents/preprod.env .env
@@ -56,13 +55,11 @@ jobs:
               fi
             fi
 
-            # 3) Билдим все сервисы (скорость не важна)
-            docker compose build
+            # 3) билдим и поднимаем все сервисы
+            docker compose -f docker-compose.preprod.yaml build
+            docker compose -f docker-compose.preprod.yaml up -d
 
-            # 4) Поднимаем все сервисы на новых образах
-            docker compose up -d
-
-            # 5) Чистим билд-кэш
+            # 4) чистим кэш
             docker builder prune -f || true
 
             echo "[done] Preprod deploy complete."
