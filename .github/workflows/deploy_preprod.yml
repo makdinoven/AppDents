@@ -56,8 +56,9 @@ jobs:
             fi
 
             # 3) билдим и поднимаем все сервисы
-            docker compose -f docker-compose.preprod.yaml build
             docker compose -f docker-compose.preprod.yaml down --remove-orphans
+            docker compose -f docker-compose.preprod.yaml build
+            
             docker compose -f docker-compose.preprod.yaml up -d
 
             # 4) чистим кэш
