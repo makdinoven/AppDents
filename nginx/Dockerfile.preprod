@@ -55,7 +55,7 @@ jobs:
               fi
             fi
 
-            # 3) билдим и поднимаем все сервисы (одним действием)
+            # 3) билдим и поднимаем все сервисы (одним действием))
             docker compose -f docker-compose.preprod.yaml down --remove-orphans
             docker compose -f docker-compose.preprod.yaml build
             docker compose -f docker-compose.preprod.yaml up -d
