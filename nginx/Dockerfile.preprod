@@ -10,39 +10,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      changed_services: ${{ steps.prepare.outputs.changed_services }}
-    steps:
-      - uses: actions/checkout@v3
-      - id: changes
-        uses: dorny/paths-filter@v2
-        with:
-          filters: |
-            backend:
-              - 'backend/**'
-            frontend:
-              - 'frontend/**'
-            nginx:
-              - 'nginx/**'
-      - id: prepare
-        run: |
-          SERVICES=""
-          if [ "${{ steps.changes.outputs.backend }}" = "true" ]; then SERVICES="$SERVICES backend"; fi
-          if [ "${{ steps.changes.outputs.frontend }}" = "true" ]; then SERVICES="$SERVICES frontend"; fi
-          if [ "${{ steps.changes.outputs.nginx }}" = "true" ]; then SERVICES="$SERVICES nginx"; fi
-          echo "changed_services=$SERVICES" >> "$GITHUB_OUTPUT"
-
   deploy:
     runs-on: ubuntu-latest
-    needs: [check-changes]
+
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: SSH Deploy (git pull + compose up --build)
+      - name: SSH Deploy (preprod)
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.PREPROD_SERVER_HOST }}
@@ -50,31 +26,24 @@ jobs:
           key: ${{ secrets.PREPROD_SSH_KEY }}
           port: 22
           debug: true
-          script_stop: true
-          command_timeout: 15m
+          command_timeout: 30m
           script: |
             #!/usr/bin/env bash
             set -Eeuo pipefail
             set -x
-            
-            # =========================
-            # 0) Базовая подготовка
-            # =========================
+
             cd var/www/AppDents
-            export COMPOSE_PROJECT_NAME=appdents
+
+            export COMPOSE_PROJECT_NAME=appdents_preprod
             export COMPOSE_FILE=docker-compose.preprod.yaml
             export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
-            
-            # =========================
-            # 1) Обновляем репозиторий (ветка preprod)
-            # =========================
+
+            # 1) git pull
             git config --local core.hooksPath /dev/null || true
             git config --local pull.rebase false
             git pull --no-rebase --no-edit -s recursive -X theirs origin preprod
-            
-            # =========================
-            # 2) .env обязателен (preprod → prod как запасной)
-            # =========================
+
+            # 2) .env
             if [ ! -f .env ]; then
               if [ -f /etc/appdents/preprod.env ]; then
                 ln -sfn /etc/appdents/preprod.env .env
@@ -85,56 +54,13 @@ jobs:
                 exit 1
               fi
             fi
-            
-            # =========================
-            # 3) Какие сервисы менялись (из job outputs)
-            # =========================
-            CHANGED_RAW="${{ needs.check-changes.outputs.changed_services }}"
-            CHANGED="$(echo "${CHANGED_RAW:-}" | xargs || true)"   # нормализуем пробелы
-            echo "[info] Changed services: '${CHANGED:-<none>}'"
-            
-            # =========================
-            # 4) Сборка образов
-            #    - всегда собираем nginx
-            #    - при наличии изменений — собираем их тоже
-            # =========================
-            docker compose build nginx
-            if [ -n "${CHANGED:-}" ]; then
-              docker compose build ${CHANGED}
-            fi
-            
-            # =========================
-            # 5) Обновляем контейнеры БЕЗ даунтайма
-            #    - не трогаем зависимости (Redis/DB) → сессии живут
-            #    - если изменений нет — обновим только nginx
-            # =========================
-            if [ -z "${CHANGED:-}" ]; then
-              echo "[deploy] No service changes. Touch nginx only."
-              docker compose up -d --no-deps nginx
-            else
-              echo "[deploy] Updating changed services: ${CHANGED}"
-              for svc in ${CHANGED}; do
-                echo "[deploy] Upgrading: ${svc}"
-                if ! docker compose up -d --no-deps --wait "${svc}"; then
-                  echo "[warn] ${svc}: '--wait' недоступен (нет healthcheck?). Пробуем без него."
-                  docker compose up -d --no-deps "${svc}"
-                fi
-              done
-              # Убедимся, что nginx поднят на последнем образе
-              docker compose up -d --no-deps nginx
-            fi
-            
-            # =========================
-            # 6) Бездаунтаймовый reload nginx
-            # =========================
-            if ! docker compose exec -T nginx nginx -s reload; then
-              echo "[warn] nginx reload failed — doing safe restart"
-              docker compose restart nginx
-            fi
-            
-            # =========================
-            # 7) Чистка билд-кэша (безопасно)
-            # =========================
+
+            # 3) билдим и поднимаем все сервисы (одним действием)
+            docker compose -f docker-compose.preprod.yaml down --remove-orphans
+            docker compose -f docker-compose.preprod.yaml build
+            docker compose -f docker-compose.preprod.yaml up -d
+
+            # 4) чистим кэш
             docker builder prune -f || true
-            
+
             echo "[done] Preprod deploy complete."
