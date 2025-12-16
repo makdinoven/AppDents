@@ -34,7 +34,7 @@ def apply_watermark(
 
         # Отступы от правого и нижнего краёв
         margin_right = rect.width * 0.03  # 3% от ширины
-        margin_bottom = rect.height * 0.04  # 4% от высоты # отступ 20pt от нижнего края
+        margin_bottom = rect.height * 0.02  # 4% от высоты # отступ 20pt от нижнего края
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
         y1 = rect.height - margin_bottom
