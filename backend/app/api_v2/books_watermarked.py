@@ -47,11 +47,11 @@ MED_G_LOGO  = ICON_DIR / "logo-medg.png"
 SITE_CONFIG = {
     "dent-s": {
         "logo": DENT_S_LOGO,
-        "text": "Dent-s.com Dental Online School",
+        "text": "dent-s.com Dental Online School",
     },
     "med-g": {
         "logo": MED_G_LOGO,
-        "text": "Med-g.com Medical Group",
+        "text": "med-g.com Medical Group",
     },
 }
 
