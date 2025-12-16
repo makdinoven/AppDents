@@ -29,12 +29,13 @@ def apply_watermark(
         rect = page.rect
 
         # размер логотипа: 25% ширины страницы
-        logo_width = rect.width * 0.12
-        logo_height = logo_width
+        # фиксированные размеры логотипа
+        logo_width = 120  # ширина логотипа
+        logo_height = 120  # высота логотипа
 
-        # Отступы от правого и нижнего краёв
-        margin_right = 20  # 20 pt от правого края
-        margin_bottom = 20  # 20 pt от нижнего края
+        # фиксированные отступы от правого и нижнего краёв
+        margin_right = 30  # отступ от правого края
+        margin_bottom = 30  # отступ от нижнего края
 
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
@@ -42,6 +43,13 @@ def apply_watermark(
         y0 = y1 - logo_height
 
         logo_rect = fitz.Rect(x0, y0, x1, y1)
+
+        page.insert_image(
+            logo_rect,
+            pixmap=logo_pix,
+            keep_proportion=True,
+            overlay=True,
+        )
 
         # вставляем картинку поверх текста
         page.insert_image(
