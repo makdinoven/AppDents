@@ -36,4 +36,4 @@ assemblyai
 psutil
 python-telegram-bot>=20.0
 mailgun>=0.1.0
-fitz
+PyMuPDF
