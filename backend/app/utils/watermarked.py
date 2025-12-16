@@ -33,12 +33,14 @@ def apply_watermark(
         logo_height = logo_width
 
         # Отступы от правого и нижнего краёв
-        margin_right = rect.width * 0.03  # 3% от ширины
-        margin_bottom = rect.height * 0.02  # 4% от высоты # отступ 20pt от нижнего края
+        margin_right = 20  # 20 pt от правого края
+        margin_bottom = 20  # 20 pt от нижнего края
+
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
         y1 = rect.height - margin_bottom
         y0 = y1 - logo_height
+
         logo_rect = fitz.Rect(x0, y0, x1, y1)
 
         # вставляем картинку поверх текста
