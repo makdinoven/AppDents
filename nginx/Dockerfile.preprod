@@ -1,66 +1,7 @@
-name: Deploy to Preprod
+FROM nginx:stable-alpine
 
-on:
-  push:
-    branches: [ "preprod" ]
-  workflow_dispatch:
+# Удаляем дефолтный конфиг
+RUN rm /etc/nginx/conf.d/default.conf
 
-concurrency:
-  group: preprod-deploy
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: SSH Deploy (preprod)
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.PREPROD_SERVER_HOST }}
-          username: ${{ secrets.PREPROD_SERVER_USER }}
-          key: ${{ secrets.PREPROD_SSH_KEY }}
-          port: 22
-          debug: true
-          command_timeout: 30m
-          script: |
-            #!/usr/bin/env bash
-            set -Eeuo pipefail
-            set -x
-
-            cd var/www/AppDents
-
-            export COMPOSE_PROJECT_NAME=appdents_preprod
-            export COMPOSE_FILE=docker-compose.preprod.yaml
-            export GIT_SSH_COMMAND='ssh -o StrictHostKeyChecking=accept-new'
-
-            # 1) git pull
-            git config --local core.hooksPath /dev/null || true
-            git config --local pull.rebase false
-            git pull --no-rebase --no-edit -s recursive -X theirs origin preprod
-
-            # 2) .env
-            if [ ! -f .env ]; then
-              if [ -f /etc/appdents/preprod.env ]; then
-                ln -sfn /etc/appdents/preprod.env .env
-              elif [ -f /etc/appdents/prod.env ]; then
-                ln -sfn /etc/appdents/prod.env .env
-              else
-                echo "[env] .env missing and no /etc/appdents/{preprod,prod}.env found"
-                exit 1
-              fi
-            fi
-
-            # 3) билдим и поднимаем все сервисы
-            docker compose -f docker-compose.preprod.yaml down --remove-orphans
-            docker compose -f docker-compose.preprod.yaml build
-            docker compose -f docker-compose.preprod.yaml up -d
-
-            # 4) чистим кэш
-            docker builder prune -f || true
-
-            echo "[done] Preprod deploy complete."
+# Кладём наш preprod-конфиг
+COPY preprod.conf /etc/nginx/conf.d/default.conf
