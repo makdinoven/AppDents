@@ -3,22 +3,21 @@ from pathlib import Path
 
 
 def load_logo_with_opacity(logo_path: str, opacity_logo: float) -> fitz.Pixmap:
+    """
+    Загружает PNG и применяет к нему прозрачность (0..1),
+    возвращает Pixmap, который можно передать в insert_image.
+    """
     pix = fitz.Pixmap(logo_path)
 
-    # гарантируем наличие альфы
+    # если нет альфа-канала — добавляем
     if not pix.alpha:
         pix = fitz.Pixmap(pix, 1)
 
-    # читаем текущий альфа-канал
-    alphas = bytearray(pix.get_alpha())  # список байтов 0..255
-    factor = max(0, min(1, opacity_logo))
-
-    for i, a in enumerate(alphas):
-        alphas[i] = int(a * factor)
-
-    pix.set_alpha(bytes(alphas))
+    alpha_val = int(max(0, min(1, opacity_logo)) * 255)
+    pixel_count = pix.width * pix.height
+    alphas = bytes([alpha_val] * pixel_count)
+    pix.set_alpha(alphas)
     return pix
-
 
 
 def apply_watermark(
@@ -27,7 +26,7 @@ def apply_watermark(
     logo_path: Path,
     text: str | None,
     opacity: float = 0.3,       # прозрачность текста
-    opacity_logo: float = 0.3,  # прозрачность логотипа
+    opacity_logo: float = 0.03,  # прозрачность логотипа
 ) -> None:
     """
     Накладывает логотип как вотермарку на каждую 10-ю страницу PDF.
