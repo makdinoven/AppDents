@@ -44,7 +44,7 @@ def apply_watermark(
             fitz.Rect(x0, y0, x1, y1),
             stream=logo_bytes,
             keep_proportion=True,
-            overlay=True,
+            overlay=False,
         )
 
         if text:
