@@ -28,14 +28,14 @@ def apply_watermark(
         page = doc[i]
         rect = page.rect
 
-        # размер логотипа: 25% ширины страницы
+
         # фиксированные размеры логотипа
-        logo_width = 120  # ширина логотипа
-        logo_height = 120  # высота логотипа
+        logo_width = 90  # ширина логотипа
+        logo_height = 90  # высота логотипа
 
         # фиксированные отступы от правого и нижнего краёв
-        margin_right = 30  # отступ от правого края
-        margin_bottom = 30  # отступ от нижнего края
+        margin_right = 10  # отступ от правого края
+        margin_bottom = 10 # отступ от нижнего края
 
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
