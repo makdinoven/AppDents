@@ -23,7 +23,7 @@ def apply_watermark(
 
     for i in range(len(doc)):
         page_num = i + 1  # 1-based
-        if page_num % 10 != 0:
+        if page_num % 10 != 0 | page_num != 1:
             continue
 
         page = doc[i]
@@ -44,7 +44,8 @@ def apply_watermark(
             fitz.Rect(x0, y0, x1, y1),
             stream=logo_bytes,
             keep_proportion=True,
-            overlay=False,
+            overlay=True,
+            fill_opacity=opacity,
         )
 
         if text:
