@@ -38,11 +38,11 @@ s3v4 = boto3.client(
 
 # ─────────────────────────── Watermark config ───────────────────────────
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent  # /app
-FRONTEND_PUBLIC = BASE_DIR.parent / "frontend" / "public"
+BACKEND_APP_DIR = Path(__file__).resolve().parent.parent  # /app/app
+ICON_DIR = BACKEND_APP_DIR / "icon"
 
-DENT_S_LOGO = FRONTEND_PUBLIC / "apple-touch-icon.png"
-MED_G_LOGO  = FRONTEND_PUBLIC / "apple-touch-icon-medg.png"
+DENT_S_LOGO = ICON_DIR / "logo-dents.png"
+MED_G_LOGO  = ICON_DIR / "logo-medg.png"
 
 SITE_CONFIG = {
     "dent-s": {
