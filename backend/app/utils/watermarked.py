@@ -34,8 +34,8 @@ def apply_watermark(
         logo_height = 90  # высота логотипа
 
         # фиксированные отступы от правого и нижнего краёв
-        margin_right = 10  # отступ от правого края
-        margin_bottom = 10 # отступ от нижнего края
+        margin_right = 20  # отступ от правого края
+        margin_bottom = 0 # отступ от нижнего края
 
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
