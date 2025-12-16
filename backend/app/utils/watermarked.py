@@ -45,7 +45,6 @@ def apply_watermark(
             stream=logo_bytes,
             keep_proportion=True,
             overlay=True,
-            opacity=opacity,
         )
 
         if text:
