@@ -363,6 +363,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Temporary password",
             "login": "Log In",
+            "access_info": "You can log in anytime, from any device or browser, using your email and password to access your purchased content:",
         },
         "RU": {
             "heading_new": "Добро пожаловать и поздравляем!",
@@ -375,6 +376,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Временный пароль",
             "login": "Войти",
+            "access_info": "Вы можете войти в любое время, с любого устройства и браузера, используя вашу почту и пароль для доступа к приобретённому контенту:",
         },
         "IT": {
             "heading_new": "Benvenuto e congratulazioni!",
@@ -387,6 +389,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Password temporanea",
             "login": "Accedi",
+            "access_info": "Puoi accedere in qualsiasi momento, da qualsiasi dispositivo o browser, utilizzando la tua email e password per accedere ai contenuti acquistati:",
         },
         "ES": {
             "heading_new": "¡Bienvenido y felicitaciones!",
@@ -399,6 +402,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Contraseña temporal",
             "login": "Iniciar sesión",
+            "access_info": "Puede iniciar sesión en cualquier momento, desde cualquier dispositivo o navegador, utilizando su correo electrónico y contraseña para acceder al contenido adquirido:",
         },
         "PT": {
             "heading_new": "Bem-vindo e parabéns!",
@@ -411,6 +415,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Senha temporária",
             "login": "Entrar",
+            "access_info": "Você pode fazer login a qualquer momento, de qualquer dispositivo ou navegador, usando seu e-mail e senha para acessar o conteúdo adquirido:",
         },
         "AR": {
             "heading_new": "مرحبًا وتهانينا!",
@@ -423,6 +428,7 @@ def send_successful_purchase_email(
             "email": "البريد الإلكتروني",
             "password": "كلمة المرور المؤقتة",
             "login": "تسجيل الدخول",
+            "access_info": "يمكنك تسجيل الدخول في أي وقت، من أي جهاز أو متصفح، باستخدام بريدك الإلكتروني وكلمة المرور للوصول إلى المحتوى الذي اشتريته:",
         },
     }.get(region.upper(), {})
 
@@ -456,6 +462,15 @@ def send_successful_purchase_email(
         <div style="margin-top:12px;">
           <h3 style="margin:0 0 6px;">{loc["books"]}</h3>
           <p style="margin:0;">{loc["purchased_books"]} <b>{books_str}</b></p>
+        </div>
+        """
+
+    access_block = f"""
+        <div style="margin-top:16px;padding:12px;background-color:#e8f5e9;border-radius:8px;border-left:4px solid #28a745;">
+          <p style="margin:0;font-size:14px;color:#2e7d32;">
+            {loc.get("access_info", "You can log in anytime, from any device or browser, using your email and password to access your purchased content:")}
+            <a href="https://dent-s.com" style="color:#01433d;font-weight:600;">dent-s.com</a>
+          </p>
         </div>
         """
 
@@ -504,6 +519,7 @@ def send_successful_purchase_email(
         {account_block}
         {courses_block}
         {books_block}
+        {access_block}
         <p style="text-align:center;">
           <a href="{login_url}" class="btn">{loc["login"]}</a>
         </p>

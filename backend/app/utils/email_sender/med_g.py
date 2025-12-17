@@ -129,6 +129,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Temporary password",
             "login": "Log In",
+            "access_info": "You can log in anytime, from any device or browser, using your email and password to access your purchased content:",
         },
         "IT": {
             "heading_new": "Benvenuto e congratulazioni!",
@@ -141,6 +142,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Password temporanea",
             "login": "Accedi",
+            "access_info": "Puoi accedere in qualsiasi momento, da qualsiasi dispositivo o browser, utilizzando la tua email e password per accedere ai contenuti acquistati:",
         },
         "RU": {
             "heading_new": "Добро пожаловать и поздравляем!",
@@ -153,6 +155,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Временный пароль",
             "login": "Войти",
+            "access_info": "Вы можете войти в любое время, с любого устройства и браузера, используя вашу почту и пароль для доступа к приобретённому контенту:",
         },
     }.get(region.upper(), {})
 
@@ -186,6 +189,15 @@ def send_successful_purchase_email(
         </div>
         """
 
+    access_block = f"""
+        <div style="margin-top:16px;padding:12px;background-color:#e0f4f4;border-radius:8px;border-left:4px solid {MED_G_COLOR};">
+          <p style="margin:0;font-size:14px;color:{MED_G_COLOR};">
+            {loc.get("access_info", "You can log in anytime, from any device or browser, using your email and password to access your purchased content:")}
+            <a href="{MED_G_DOMAIN}" style="color:#004d5c;font-weight:600;">med-g.com</a>
+          </p>
+        </div>
+        """
+
     html = f"""
     <html{html_dir}>
       <body style="margin:0;padding:0;background-color:#f3f7f8;font-family:'Segoe UI',sans-serif;">
@@ -203,6 +215,7 @@ def send_successful_purchase_email(
                   {account_block}
                   {courses_block}
                   {books_block}
+                  {access_block}
                   <p style="text-align:center;margin:30px 0;">
                     <a href="{MED_G_DOMAIN}/login"
                        style="background:{MED_G_COLOR};color:#fff;padding:12px 28px;
