@@ -10,9 +10,14 @@ from sqlalchemy.orm import Session
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
 from ..dependencies.role_checker import require_roles
-from ..models.models_v2 import User, BookFile
+from ..models.models_v2 import User, BookFile, BookFileFormat
 from ..utils.watermarked import apply_watermark
 from ..utils.s3 import generate_presigned_url  # если понадобится
+from ..tasks.pdf_watermark import watermark_book_task
+from  ..celery_app import celery
+from celery.result import AsyncResult
+from celery import group
+
 
 from botocore.config import Config
 import boto3
@@ -138,28 +143,20 @@ def _watermark_single_book(
     }
 
 
-@router.post(
-    "/book/{book_id}",
-    status_code=status.HTTP_200_OK,
-)
+@router.post("/book/{book_id}")
 def watermark_book_endpoint(
     book_id: int,
     site: Literal["dent-s", "med-g"] = Query(...),
     opacity: float = Query(0.3, ge=0.05, le=1.0),
-    db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
     """
-    Наложить вотермарку (логотип + текст) на каждую 10-ю страницу PDF книги
-    и сохранить копию в /watermarked/.
+    Ставит Celery-таску на вотермарку одной книги.
     """
-    return _watermark_single_book(db, book_id, site, opacity)
+    task = watermark_book_task.delay(book_id, site, float(opacity))
+    return {"task_id": task.id, "status": "queued"}
 
-
-@router.post(
-    "/all",
-    status_code=status.HTTP_200_OK,
-)
+@router.post("/all")
 def watermark_all_books_endpoint(
     site: Literal["dent-s", "med-g"] = Query(...),
     opacity: float = Query(0.3, ge=0.05, le=1.0),
@@ -168,13 +165,10 @@ def watermark_all_books_endpoint(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_roles("admin")),
 ):
-    """
-    Применить вотермарку ко всем PDF (батчом по limit/offset).
-    """
     pdf_files: list[BookFile] = (
         db.query(BookFile)
         .filter(
-            BookFile.file_format == "PDF",
+            BookFile.file_format == BookFileFormat.PDF,
             BookFile.s3_url.contains("/original/"),
         )
         .order_by(BookFile.book_id)
@@ -183,29 +177,23 @@ def watermark_all_books_endpoint(
         .all()
     )
 
-    results: list[dict] = []
-    seen_books: set[int] = set()
+    book_ids = sorted({bf.book_id for bf in pdf_files})
+    if not book_ids:
+        return {"group_id": None, "book_ids": [], "detail": "no books in this slice"}
 
-    for bf in pdf_files:
-        if bf.book_id in seen_books:
-            continue
-        seen_books.add(bf.book_id)
+    job = group(
+        watermark_book_task.s(bid, site, float(opacity))
+        for bid in book_ids
+    )()
 
-        try:
-            res = _watermark_single_book(db, bf.book_id, site, opacity)
-            results.append(res)
-        except Exception as exc:
-            log.exception("Failed to watermark book %s: %s", bf.book_id, exc)
-            results.append(
-                {
-                    "book_id": bf.book_id,
-                    "error": str(exc),
-                }
-            )
+    return {"group_id": job.id, "book_ids": book_ids}
 
+
+@router.get("/task/{task_id}")
+def watermark_task_status(task_id: str):
+    res = AsyncResult(task_id, app=celery)
     return {
-        "site": site,
-        "opacity": opacity,
-        "processed": len(results),
-        "items": results,
+        "task_id": task_id,
+        "state": res.state,
+        "result": res.result if res.successful() else None,
     }

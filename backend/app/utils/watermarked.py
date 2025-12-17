@@ -28,14 +28,13 @@ def apply_watermark(
         page = doc[i]
         rect = page.rect
 
-
-        # фиксированные размеры логотипа
-        logo_width = 75  # ширина логотипа
-        logo_height = 75  # высота логотипа
+        # фиксированные размеры логотипа (в «пикселях» PDF)
+        logo_width = 75
+        logo_height = 75
 
         # фиксированные отступы от правого и нижнего краёв
-        margin_right = 20  # отступ от правого края
-        margin_bottom = 0 # отступ от нижнего края
+        margin_right = 20
+        margin_bottom = 0
 
         x1 = rect.width - margin_right
         x0 = x1 - logo_width
@@ -44,6 +43,7 @@ def apply_watermark(
 
         logo_rect = fitz.Rect(x0, y0, x1, y1)
 
+        # один раз вставляем логотип поверх текста
         page.insert_image(
             logo_rect,
             pixmap=logo_pix,
@@ -51,17 +51,9 @@ def apply_watermark(
             overlay=True,
         )
 
-        # вставляем картинку поверх текста
-        page.insert_image(
-            logo_rect,
-            pixmap=logo_pix,
-            keep_proportion=True,
-            overlay=True,   # логотип сверху
-        )
-
         if text:
             # Текст по центру внизу страницы
-            text_box_height = rect.height * 0.03  # высота области под текст
+            text_box_height = rect.height * 0.03
             margin_bottom_text = rect.height * 0.015
 
             text_y1 = rect.height - margin_bottom_text
@@ -70,10 +62,10 @@ def apply_watermark(
             page.insert_textbox(
                 fitz.Rect(0, text_y0, rect.width, text_y1),
                 text,
-                fontsize=14,  # крупнее шрифт
-                align=1,  # 1 = центр
+                fontsize=14,
+                align=1,          # центр
                 color=(0, 0, 0),
-                fill_opacity=0.4,  # можно подстроить по вкусу
+                fill_opacity=opacity,
             )
 
     doc.save(output_path, garbage=3, deflate=True)
