@@ -9,6 +9,7 @@ from ..db.database import get_db
 from ..services_v2.search_service import search_everything
 from ..schemas_v2.search import SearchResponse, SearchTypeEnum
 from ..models.models_v2 import SearchQuery
+from ..utils.ip_utils import get_client_ip
 
 router = APIRouter()
 
@@ -53,7 +54,7 @@ def search_v2(
 
     # 3. Идентификаторы пользователя
     user_id = getattr(getattr(request, "state", None), "user_id", None)
-    ip_address = request.client.host if request.client else None
+    ip_address = ip_address = get_client_ip(request)
     path = str(request.url.path)
 
     now = datetime.utcnow()
