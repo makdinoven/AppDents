@@ -18,8 +18,7 @@
   width: 100%;
 }
 
-.profile,
-.settings {
+.profile {
   position: relative;
   @include flex-column();
   gap: 10px;
@@ -186,8 +185,7 @@
     gap: 5px;
   }
 
-  .profile,
-  .settings {
+  .profile {
     padding: 10px 12px;
   }
 

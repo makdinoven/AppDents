@@ -1,11 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
-import { useEffect, useRef, useState } from "react";
-import {
-  AppDispatchType,
-  AppRootStateType,
-} from "../../../../shared/store/store.ts";
+import { useEffect } from "react";
+import { AppDispatchType, AppRootStateType } from "@/shared/store/store.ts";
 import {
   LogoutIcon,
   Mail,
@@ -13,32 +10,25 @@ import {
   User,
 } from "../../../../shared/assets/icons";
 import { Trans } from "react-i18next";
-import PasswordReset from "./modules/PasswordReset/PasswordReset.tsx";
 import {
   getBooks,
   getCourses,
   logoutAsync,
-} from "../../../../shared/store/actions/userActions.ts";
-import { clearCart } from "../../../../shared/store/slices/cartSlice.ts";
-import { logout } from "../../../../shared/store/slices/userSlice.ts";
+} from "@/shared/store/actions/userActions.ts";
+import { clearCart } from "@/shared/store/slices/cartSlice.ts";
+import { logout } from "@/shared/store/slices/userSlice.ts";
 import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
-import FriendMailInput from "./modules/FriendMailInput/FriendMailInput.tsx";
-import ModalOverlay from "../../../../shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
-import useOutsideClick from "../../../../shared/common/hooks/useOutsideClick.ts";
 import MyContent from "../modules/MyContent/MyContent.tsx";
-import { PATHS } from "../../../../app/routes/routes.ts";
+import { PATHS } from "@/app/routes/routes.ts";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
   const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
   const books = useSelector((state: AppRootStateType) => state.user.books);
-  const [showInviteFriendModal, setShowInviteFriendModal] = useState(false);
   const email = useSelector((state: AppRootStateType) => state.user.email);
   const location = useLocation();
   const childKey = location.pathname.slice(1);
-  const closeModalRef = useRef<() => void>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!courses.length) dispatch(getCourses());
@@ -53,15 +43,6 @@ const ProfileMain = () => {
       navigate(PATHS.MAIN);
     }, 0);
   };
-
-  const handleModalClose = () => {
-    setShowInviteFriendModal(false);
-  };
-
-  useOutsideClick(modalRef, () => {
-    handleModalClose();
-    closeModalRef.current?.();
-  });
 
   return (
     <div className={s.page_content}>
@@ -102,32 +83,11 @@ const ProfileMain = () => {
               </div>
             </div>
           </div>
-          <div className={s.settings}>
-            <p className={s.section_title}>
-              <Trans i18nKey="profile.settings" />
-            </p>
-
-            <PasswordReset />
-          </div>
         </div>
-        <ReferralSection
-          openInviteFriendModal={() => setShowInviteFriendModal(true)}
-        />
+        <ReferralSection />
       </div>
       <MyContent key="books" items={books} type="book" />
       <MyContent key="courses" items={courses} />
-
-      <ModalOverlay
-        isVisibleCondition={showInviteFriendModal}
-        modalPosition="top"
-        customHandleClose={handleModalClose}
-        onInitClose={(fn) => (closeModalRef.current = fn)}
-      >
-        <FriendMailInput
-          closeModal={() => closeModalRef.current?.()}
-          ref={modalRef}
-        />
-      </ModalOverlay>
     </div>
   );
 };

@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        "@": path.resolve("src"),
+        "@": path.resolve(__dirname, "./src"),
         "@locales": path.resolve(__dirname, `src/app/i18n/locales`),
 
         "@hero-bg": path.resolve(
