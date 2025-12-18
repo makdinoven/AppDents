@@ -1,6 +1,5 @@
 import s from "./ProfilePage.module.scss";
 import { NavLink, Outlet } from "react-router-dom";
-import BackButton from "../../../shared/components/ui/BackButton/BackButton.tsx";
 import { t } from "i18next";
 import { PATHS } from "../../../app/routes/routes.ts";
 
@@ -17,11 +16,23 @@ const ProfilePage = () => {
       path: PATHS.PROFILE_INVITED_USERS,
       title: "profile.purchaseHistory.invitedUsers",
     },
+    {
+      path: PATHS.PROFILE_SUPPORT,
+      title: "profile.support",
+    },
+    {
+      path: PATHS.PROFILE_NOTIFICATIONS,
+      title: "profile.notifications",
+    },
+    {
+      path: PATHS.PROFILE_SETTINGS,
+      title: "profile.settings",
+    },
   ];
 
   return (
-    <>
-      <BackButton />
+    <div className={s.profile_page_container}>
+      {/*<BackButton />*/}
       <div className={s.btns_container}>
         {tabs.map((tab) => {
           const isFull = tab.path === PATHS.PROFILE ? s.full : "";
@@ -39,7 +50,7 @@ const ProfilePage = () => {
         })}
       </div>
       <Outlet />
-    </>
+    </div>
   );
 };
 

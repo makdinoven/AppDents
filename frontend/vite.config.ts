@@ -48,7 +48,9 @@ export default defineConfig(({ mode }) => {
         "@logo": path.resolve(
           brand === "medg"
             ? "src/shared/assets/logos/logo-medg.svg?react"
-            : "src/shared/assets/logos/logo.svg?react",
+            : buildMode === "preprod"
+              ? "src/shared/assets/logos/logo-preprod.svg?react"
+              : "src/shared/assets/logos/logo.svg?react",
         ),
       },
 
