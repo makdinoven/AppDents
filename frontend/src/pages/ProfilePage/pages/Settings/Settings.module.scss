@@ -1,0 +1,9 @@
+.settings {
+  position: relative;
+  @include flex-column();
+  gap: 10px;
+  padding: 10px 15px;
+  border: 1px solid $hover-color;
+  border-radius: 20px;
+  @include clamped-p3();
+}

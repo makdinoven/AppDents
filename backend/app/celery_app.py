@@ -20,6 +20,7 @@ celery = Celery(
             "app.tasks.book_previews",
             "app.tasks.book_formats",
             "app.tasks.book_covers",
+            "app.tasks.pdf_watermark",
             "app.tasks.creatives",
             "app.tasks.video_summary",
             "app.tasks.clip_tasks",
@@ -142,7 +143,7 @@ celery.conf.task_routes = {
     "app.tasks.creatives.*": {"queue": "book"},
     "app.tasks.clip_tasks.*": {"queue": "default"},
     "app.tasks.video_summary.*": {"queue": "default"},
-    # Email tasks → отдельная очередь email
+    "app.tasks.pdf_watermark.*": {"queue": "book"},
     "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"queue": "email"},
     "app.tasks.big_cart_reminder.process_big_cart_reminders": {"queue": "email"},
     "app.tasks.referral_campaign.send_referral_campaign_batch": {"queue": "email"},

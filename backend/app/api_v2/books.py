@@ -7,12 +7,14 @@ from typing import Optional, List, Dict, Union
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 
+from collections import defaultdict
 import boto3
 from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy import or_, desc, func, cast, Integer, Numeric as SqlNumeric
 from sqlalchemy.orm import Session, selectinload
 from pydantic import BaseModel
+from ..api_v2.book_assets import _generate_filename,_choose_pdf_file
 
 from ..db.database import get_db
 from ..dependencies.auth import get_current_user
@@ -30,6 +32,8 @@ from ..models.models_v2 import (
     book_authors,
     book_publishers,
     book_tags,
+    BookFile,
+    BookFileFormat
 )
 from ..utils.ip_utils import is_bot_request
 from ..schemas_v2.book import (
@@ -1408,6 +1412,16 @@ def get_my_book_detail(
         except Exception:
             return None
 
+    def _choose_pdf_file(files: list[BookFile]) -> BookFile | None:
+        """Вернуть один PDF: сначала watermarked, потом original."""
+        pdfs = [f for f in files if f.file_format == BookFileFormat.PDF]
+        if not pdfs:
+            return None
+        wm = next((f for f in pdfs if "/watermarked/" in (f.s3_url or "")), None)
+        if wm:
+            return wm
+        return next((f for f in pdfs if "/original/" in (f.s3_url or "")), None)
+
     def _generate_filename(format: str) -> str:
         """Генерирует безопасное имя файла для скачивания"""
         import re
@@ -1418,15 +1432,25 @@ def get_my_book_detail(
         else:
             base_name = f"book-{book.id}"
         return f"{base_name}.{format.lower()}"
-    
+
+    by_format: dict[BookFileFormat, list[BookFile]] = defaultdict(list)
+    for f in book.files or []:
+        by_format[f.file_format].append(f)
+
     files_download = []
-    for f in (book.files or []):
-        fmt = getattr(f.file_format, "value", f.file_format)
-        filename = _generate_filename(fmt)
+    for fmt, flist in by_format.items():
+        if fmt == BookFileFormat.PDF:
+            chosen = _choose_pdf_file(flist)
+        else:
+            chosen = flist[0] if flist else None
+        if not chosen:
+            continue
+        fmt_val = getattr(chosen.file_format, "value", chosen.file_format)
+        filename = _generate_filename(fmt_val)
         files_download.append({
-            "file_format": fmt,
-            "download_url": _sign_with_filename(f.s3_url, filename),
-            "size_bytes": f.size_bytes,
+            "file_format": fmt_val,
+            "download_url": _sign_with_filename(chosen.s3_url, filename),
+            "size_bytes": chosen.size_bytes,
         })
 
     audio_download = []
@@ -1510,10 +1534,24 @@ def patch_book(
     db.commit()
     db.refresh(book)
 
+    by_format: dict[BookFileFormat, list[BookFile]] = defaultdict(list)
+    for f in book.files or []:
+        by_format[f.file_format].append(f)
+
     files = []
-    for f in (book.files or []):
-        fmt = getattr(f.file_format, "value", f.file_format)
-        files.append({"file_format": fmt, "s3_url": f.s3_url, "size_bytes": f.size_bytes})
+    for fmt, flist in by_format.items():
+        if fmt == BookFileFormat.PDF:
+            chosen = _choose_pdf_file(flist)
+        else:
+            chosen = flist[0] if flist else None
+        if not chosen:
+            continue
+        val = getattr(chosen.file_format, "value", chosen.file_format)
+        files.append({
+            "file_format": val,
+            "s3_url": chosen.s3_url,
+            "size_bytes": chosen.size_bytes,
+        })
 
     audio_files = []
     for a in (book.audio_files or []):

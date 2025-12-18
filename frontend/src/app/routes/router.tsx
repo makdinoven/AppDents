@@ -53,6 +53,9 @@ import UserDetail from "../../pages/Admin/pages/detail/UserDetail.tsx";
 import BookDetail from "../../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
 import { AUTH_MODAL_ROUTES } from "../../shared/common/helpers/commonConstants.ts";
 import AnalyticsSearchQueries from "../../pages/Admin/pages/analytics/AnalyticsSearchQueries.tsx";
+import Support from "../../pages/ProfilePage/pages/Support/Support.tsx";
+import Settings from "../../pages/ProfilePage/pages/Settings/Settings.tsx";
+import Notifications from "../../pages/ProfilePage/pages/Notifications/Notifications.tsx";
 
 export const routesConfig = (hasBg: boolean) => [
   {
@@ -113,7 +116,20 @@ export const routesConfig = (hasBg: boolean) => [
                 path: PATHS.PROFILE_INVITED_USERS,
                 element: <InvitedUsers />,
               },
+              {
+                path: PATHS.PROFILE_SETTINGS,
+                element: <Settings />,
+              },
+              {
+                path: PATHS.PROFILE_NOTIFICATIONS,
+                element: <Notifications />,
+              },
             ],
+          },
+
+          {
+            path: PATHS.PROFILE_SUPPORT,
+            element: <Support />,
           },
 
           {

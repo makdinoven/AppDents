@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
     health_checkers, smart_validations, clip_generator, slider, books, book_admin, media, search, book_metadata, \
     ad_control, book_ad_control, policy, video_repair, creatives, book_assets, summary_generator, course_request, filters, \
-    surveys, restore_photos, migrate_landing_photos, mailgun_webhooks, video_diagnostics
+    surveys, restore_photos, migrate_landing_photos, mailgun_webhooks, video_diagnostics, books_watermarked
 
 from fastapi.middleware.cors import CORSMiddleware
 from .middlewares.rate_limiter import RateLimitMiddleware
@@ -50,6 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(wallet.router, prefix="/api/wallet", tags=["wallet"])
     app.include_router(cart.router, prefix="/api/cart", tags=["cart"])
     app.include_router(books.router, prefix="/api/books", tags=["books"])
+    app.include_router(books_watermarked.router, prefix="/api/watermarked", tags=["watermarked"])
     app.include_router(book_admin.router, prefix="/api/book_admin", tags=["book_admin"])
     app.include_router(filters.router, prefix="/api", tags=["filters"])
     app.include_router(book_metadata.router, prefix="/api/book-metadata", tags=["book_metadata"])

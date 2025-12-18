@@ -18,8 +18,7 @@
   width: 100%;
 }
 
-.profile,
-.settings {
+.profile {
   position: relative;
   @include flex-column();
   gap: 10px;
@@ -62,47 +61,6 @@
   width: 100%;
   display: flex;
   justify-content: space-between;
-}
-
-.logout {
-  @include flex-center();
-  flex-direction: row;
-  gap: 5px;
-  flex-shrink: 0;
-  @include transition();
-
-  svg {
-    width: 20px;
-    height: 20px;
-
-    path {
-      @include transition();
-    }
-  }
-
-  @media (hover: hover) {
-    &:hover {
-      color: $error-color;
-
-      svg {
-        path {
-          fill: $error-color;
-          stroke: $error-color;
-        }
-      }
-    }
-  }
-
-  &:active {
-    color: $error-color;
-
-    svg {
-      path {
-        fill: $error-color;
-        stroke: $error-color;
-      }
-    }
-  }
 }
 
 .profile_info {
@@ -164,17 +122,6 @@
     flex-direction: column;
     gap: 5px;
   }
-
-  .logout {
-    svg {
-      width: 16px;
-      height: 16px;
-
-      path {
-        stroke-width: 1.5;
-      }
-    }
-  }
 }
 
 @media (max-width: $mobile-breakpoint) {
@@ -186,8 +133,7 @@
     gap: 5px;
   }
 
-  .profile,
-  .settings {
+  .profile {
     padding: 10px 12px;
   }
 
@@ -211,16 +157,5 @@
 
   .support {
     row-gap: 5px;
-  }
-
-  .logout {
-    svg {
-      width: 16px;
-      height: 16px;
-
-      path {
-        stroke-width: 1.5;
-      }
-    }
   }
 }

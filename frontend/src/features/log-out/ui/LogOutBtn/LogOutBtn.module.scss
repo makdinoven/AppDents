@@ -1,0 +1,66 @@
+.logout {
+  @include flex-center();
+  flex-direction: row;
+  gap: 5px;
+  flex-shrink: 0;
+  @include transition();
+
+  svg {
+    width: 20px;
+    height: 20px;
+
+    path {
+      @include transition();
+    }
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      color: $error-color;
+
+      svg {
+        path {
+          fill: $error-color;
+          stroke: $error-color;
+        }
+      }
+    }
+  }
+
+  &:active {
+    color: $error-color;
+
+    svg {
+      path {
+        fill: $error-color;
+        stroke: $error-color;
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .logout {
+    svg {
+      width: 16px;
+      height: 16px;
+
+      path {
+        stroke-width: 1.5;
+      }
+    }
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .logout {
+    svg {
+      width: 16px;
+      height: 16px;
+
+      path {
+        stroke-width: 1.5;
+      }
+    }
+  }
+}

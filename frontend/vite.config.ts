@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        "@": path.resolve("src"),
+        "@": path.resolve(__dirname, "./src"),
         "@locales": path.resolve(__dirname, `src/app/i18n/locales`),
 
         "@hero-bg": path.resolve(
@@ -48,7 +48,9 @@ export default defineConfig(({ mode }) => {
         "@logo": path.resolve(
           brand === "medg"
             ? "src/shared/assets/logos/logo-medg.svg?react"
-            : "src/shared/assets/logos/logo.svg?react",
+            : buildMode === "preprod"
+              ? "src/shared/assets/logos/logo-preprod.svg?react"
+              : "src/shared/assets/logos/logo.svg?react",
         ),
       },
 
