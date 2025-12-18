@@ -60,7 +60,7 @@ def _cdn_url_for_key(key: str) -> str:
 BACKEND_APP_DIR = Path(__file__).resolve().parent.parent  # /app/app
 ICON_DIR = BACKEND_APP_DIR / "icon"
 
-DENT_S_LOGO = ICON_DIR / "logo-dents-transparent.svg"
+DENT_S_LOGO = ICON_DIR / "logo-dents-transparent.png"
 MED_G_LOGO  = ICON_DIR / "logo-medg.png"
 
 
