@@ -106,17 +106,16 @@ def _generate_filename(book: Book, fmt: str) -> str:
     return f"{base_name}.{fmt.lower()}"
 
 
-def _choose_pdf_file(files: List[BookFile]) -> Optional[BookFile]:
-    """Вернуть один PDF: watermarked → fallback на original → иначе None."""
+def _choose_pdf_file(files: list[BookFile]) -> BookFile | None:
+    """Вернуть один PDF: watermarked → original → None."""
     pdfs = [f for f in files if f.file_format == BookFileFormat.PDF]
     if not pdfs:
         return None
-
     wm = next((f for f in pdfs if "/watermarked/" in (f.s3_url or "")), None)
     if wm:
         return wm
-
     return next((f for f in pdfs if "/original/" in (f.s3_url or "")), None)
+
 
 
 # ── API ─────────────────────────────────────────────────────────────────────
@@ -129,9 +128,7 @@ def get_book_assets(
 ):
     """
     Отдаёт метаданные по доступным файлам и аудио.
-
-    • Если пользователь владеет книгой (или админ) — добавляем presigned `download_url`.
-    • Иначе — только список форматов/аудио без ссылок (для UI).
+    • Если пользователь владеет книгой (или админ) — добавляем presigned download_url.
     """
     book = (
         db.query(Book)
@@ -146,8 +143,8 @@ def get_book_assets(
 
     owns = _is_admin(user) or _user_owns_book(db, user.id, book_id)
 
-    # Группируем файлы по формату, чтобы для каждого формата отдать ровно один файл
-    by_format: dict[BookFileFormat, List[BookFile]] = defaultdict(list)
+    # Группируем файлы по формату, чтобы не дублировать
+    by_format: dict[BookFileFormat, list[BookFile]] = defaultdict(list)
     for f in book.files or []:
         by_format[f.file_format].append(f)
 
