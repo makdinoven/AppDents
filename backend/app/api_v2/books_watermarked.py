@@ -17,7 +17,7 @@ from ..tasks.pdf_watermark import watermark_book_task
 from  ..celery_app import celery
 from celery.result import AsyncResult
 from celery import group
-
+from ..api_v2.book_assets import _choose_pdf_file
 
 from botocore.config import Config
 import boto3
@@ -202,3 +202,61 @@ def watermark_task_status(task_id: str):
         "state": res.state,
         "result": res.result if res.successful() else None,
     }
+
+
+from typing import Optional, List
+from sqlalchemy.orm import selectinload
+from ..models.models_v2 import Book, BookFileFormat, BookFile
+
+@router.get(
+    "/watermark/status",
+    summary="Статус вотермарки по книгам",
+)
+def watermark_status(
+    book_ids: Optional[List[int]] = Query(
+        None,
+        description="Список ID книг; если не указан, берём последние N",
+    ),
+    limit: int = Query(100, ge=1, le=1000, description="Сколько книг вернуть, если book_ids не заданы"),
+    db: Session = Depends(get_db),
+):
+    """
+    Для каждой книги показывает, есть ли watermarked / original PDF.
+    """
+    query = db.query(Book).options(selectinload(Book.files))
+
+    if book_ids:
+        query = query.filter(Book.id.in_(book_ids))
+    else:
+        query = query.order_by(Book.id.desc()).limit(limit)
+
+    books = query.all()
+
+    items = []
+    for b in books:
+        files = b.files or []
+        has_watermarked = any(
+            f.file_format == BookFileFormat.PDF
+            and "/watermarked/" in (f.s3_url or "")
+            for f in files
+        )
+        has_original = any(
+            f.file_format == BookFileFormat.PDF
+            and "/original/" in (f.s3_url or "")
+            for f in files
+        )
+
+        pdf_file = _choose_pdf_file(files)
+
+        items.append(
+            {
+                "book_id": b.id,
+                "title": b.title,
+                "slug": b.slug,
+                "has_watermarked_pdf": has_watermarked,
+                "has_original_pdf": has_original,
+                "effective_pdf_url": pdf_file.s3_url if pdf_file else None,
+            }
+        )
+
+    return {"items": items}
