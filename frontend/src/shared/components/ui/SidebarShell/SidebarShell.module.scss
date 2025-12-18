@@ -1,0 +1,87 @@
+.sidebar_shell {
+  border: 1px solid $hover-color;
+  @include flex-column();
+  min-width: fit-content;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.sidebar_item {
+  padding: 15px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  @include transition();
+}
+
+.item_content {
+  @include flex-center();
+  gap: 15px;
+}
+
+.icon {
+  width: 26px;
+  height: 26px;
+  svg {
+    width: 100%;
+    height: 100%;
+    path {
+      stroke: $accent;
+      stroke-width: 1.5;
+      opacity: 1;
+      @include transition();
+    }
+  }
+}
+
+.title {
+  @include clamped-p2();
+  @include transition();
+}
+
+.arrow {
+  width: 26px;
+  height: 26px;
+  transform: rotate(90deg);
+  path {
+    stroke-width: 1.5;
+    stroke: $hover-color-darken;
+    stroke-opacity: 1;
+    @include transition();
+  }
+}
+
+.active {
+  background-color: $primary;
+  color: $text-color;
+
+  svg {
+    path {
+      stroke: $text-color;
+    }
+  }
+
+  .arrow {
+    visibility: hidden;
+  }
+}
+
+@media (hover: hover) {
+  .sidebar_item:hover {
+    background-color: $primary;
+
+    .title {
+      color: $text-color;
+    }
+
+    .arrow,
+    .icon {
+      path {
+        stroke: $text-color;
+      }
+    }
+  }
+}

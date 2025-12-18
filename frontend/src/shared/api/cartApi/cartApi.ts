@@ -1,5 +1,4 @@
-import { instance } from "../api-instance.ts";
-import { getAuthHeaders } from "../../common/helpers/helpers.ts";
+import { getAuthHeaders, instance } from "@/shared/api";
 
 export const cartApi = {
   getCart() {

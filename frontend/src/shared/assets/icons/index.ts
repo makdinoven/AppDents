@@ -90,3 +90,7 @@ export { default as FilterIcon } from "./filter.svg?react";
 export { default as PlusIcon } from "./plus.svg?react";
 export { default as MinusIcon } from "./minus.svg?react";
 export { default as Interaction } from "./interaction.svg?react";
+export { default as HistoryList } from "./history-list.svg?react";
+export { default as ItemsIcon } from "./items.svg?react";
+export { default as NotificationIcon } from "./notification.svg?react";
+export { default as AdminIcon } from "./admin.svg?react";

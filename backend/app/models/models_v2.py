@@ -1028,6 +1028,7 @@ class SuppressionType(str, PyEnum):
     COMPLAINT = "complaint"          # жалобы на спам → навсегда
     UNSUBSCRIBE = "unsubscribe"      # отписка → навсегда
     INVALID = "invalid"              # невалидный при проверке → навсегда
+    THROTTLED = "throttled"          # rate limit от сервера → временно (24ч)
 
 
 class EmailSuppression(Base):

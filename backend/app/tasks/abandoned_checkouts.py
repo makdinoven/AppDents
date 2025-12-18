@@ -40,7 +40,7 @@ CDN_PLACEHOLDER_URL = os.getenv(
     "https://cdn.med-g.com/assets/img/placeholder.png",
 )
 
-REMINDER_INTERVAL = timedelta(days=2)   # пауза между письмами
+REMINDER_INTERVAL = timedelta(days=5)   # пауза между письмами
 MAX_SENDS = 7                           # максимум писем на одного лида
 
 # задержка между отправками писем (секунды) — защита от Gmail rate limit

@@ -1,29 +1,17 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import s from "./ProfileMain.module.scss";
 import { useEffect } from "react";
 import { AppDispatchType, AppRootStateType } from "@/shared/store/store.ts";
-import {
-  LogoutIcon,
-  Mail,
-  Support,
-  User,
-} from "../../../../shared/assets/icons";
+import { Mail, Support, User } from "../../../../shared/assets/icons";
 import { Trans } from "react-i18next";
-import {
-  getBooks,
-  getCourses,
-  logoutAsync,
-} from "@/shared/store/actions/userActions.ts";
-import { clearCart } from "@/shared/store/slices/cartSlice.ts";
-import { logout } from "@/shared/store/slices/userSlice.ts";
+import { getBooks, getCourses } from "@/shared/store/actions/userActions.ts";
 import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import MyContent from "../modules/MyContent/MyContent.tsx";
-import { PATHS } from "@/app/routes/routes.ts";
+import { LogOutBtn } from "@/features/log-out";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
-  const navigate = useNavigate();
   const courses = useSelector((state: AppRootStateType) => state.user.courses);
   const books = useSelector((state: AppRootStateType) => state.user.books);
   const email = useSelector((state: AppRootStateType) => state.user.email);
@@ -35,15 +23,6 @@ const ProfileMain = () => {
     if (!books.length) dispatch(getBooks());
   }, []);
 
-  const handleLogout = async () => {
-    await dispatch(logoutAsync());
-    dispatch(clearCart());
-    dispatch(logout());
-    setTimeout(() => {
-      navigate(PATHS.MAIN);
-    }, 0);
-  };
-
   return (
     <div className={s.page_content}>
       <div key={childKey} className={s.main_content}>
@@ -53,10 +32,7 @@ const ProfileMain = () => {
               <p className={s.section_title}>
                 <Trans i18nKey="profile.profile" />
               </p>
-              <button className={s.logout} onClick={() => handleLogout()}>
-                <LogoutIcon />
-                <Trans i18nKey="logout" />
-              </button>
+              <LogOutBtn />
             </div>
             <div className={s.profile_content}>
               <User className={s.user} />

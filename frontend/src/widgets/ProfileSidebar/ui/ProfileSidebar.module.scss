@@ -1,0 +1,8 @@
+.profile_sidebar {
+  @include flex-column();
+  padding: 15px;
+  gap: 10px;
+  border-radius: 20px;
+  border: 1px solid $hover-color;
+  height: fit-content;
+}

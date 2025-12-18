@@ -2,25 +2,12 @@ import { t } from "i18next";
 import {
   CDN_ORIGIN,
   LANGUAGES,
-  LS_TOKEN_KEY,
   PAGE_SOURCES,
   PAYMENT_SOURCES,
   PAYMENT_TYPES,
 } from "./commonConstants.ts";
 import { ResultLandingData } from "../../store/slices/mainSlice.ts";
-import { PATHS } from "../../../app/routes/routes.ts";
-
-export const getAuthHeaders = () => {
-  const accessToken = localStorage.getItem(LS_TOKEN_KEY);
-
-  if (!accessToken) {
-    throw new Error("No access token found");
-  }
-
-  return {
-    Authorization: `Bearer ${accessToken}`,
-  };
-};
+import { PATHS } from "@/app/routes/routes.ts";
 
 export const generateId = () => Math.floor(Math.random() * 100000);
 

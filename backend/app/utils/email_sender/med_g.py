@@ -129,6 +129,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Temporary password",
             "login": "Log In",
+            "access_info": "You can log in anytime, from any device or browser, using your email and password to access your purchased content:",
         },
         "IT": {
             "heading_new": "Benvenuto e congratulazioni!",
@@ -141,6 +142,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Password temporanea",
             "login": "Accedi",
+            "access_info": "Puoi accedere in qualsiasi momento, da qualsiasi dispositivo o browser, utilizzando la tua email e password per accedere ai contenuti acquistati:",
         },
         "RU": {
             "heading_new": "Добро пожаловать и поздравляем!",
@@ -153,6 +155,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Временный пароль",
             "login": "Войти",
+            "access_info": "Вы можете войти в любое время, с любого устройства и браузера, используя вашу почту и пароль для доступа к приобретённому контенту:",
         },
     }.get(region.upper(), {})
 
@@ -186,6 +189,15 @@ def send_successful_purchase_email(
         </div>
         """
 
+    access_block = f"""
+        <div style="margin-top:16px;padding:12px;background-color:#e0f4f4;border-radius:8px;border-left:4px solid {MED_G_COLOR};">
+          <p style="margin:0;font-size:14px;color:{MED_G_COLOR};">
+            {loc.get("access_info", "You can log in anytime, from any device or browser, using your email and password to access your purchased content:")}
+            <a href="{MED_G_DOMAIN}" style="color:#004d5c;font-weight:600;">med-g.com</a>
+          </p>
+        </div>
+        """
+
     html = f"""
     <html{html_dir}>
       <body style="margin:0;padding:0;background-color:#f3f7f8;font-family:'Segoe UI',sans-serif;">
@@ -203,6 +215,7 @@ def send_successful_purchase_email(
                   {account_block}
                   {courses_block}
                   {books_block}
+                  {access_block}
                   <p style="text-align:center;margin:30px 0;">
                     <a href="{MED_G_DOMAIN}/login"
                        style="background:{MED_G_COLOR};color:#fff;padding:12px 28px;
@@ -607,7 +620,7 @@ def send_referral_program_email(
 
     translations = {
         "EN": {
-            "subject": "Med.G Referral Program — Earn from every friend's purchase!",
+            "subject": "Your Med.G referral link",
             "heading": "Referral Program",
             "greeting": "Hello!",
             "intro": f"Great news! You can now earn <strong>{bonus_percent}% cashback</strong> from every purchase made by your invited friends and colleagues.",
@@ -629,7 +642,7 @@ def send_referral_program_email(
             "footer": "This is an automated message. Please do not reply."
         },
         "IT": {
-            "subject": "Programma Referral Med.G — Guadagna da ogni acquisto dei tuoi amici!",
+            "subject": "Il tuo link referral Med.G",
             "heading": "Programma Referral",
             "greeting": "Ciao!",
             "intro": f"Ottime notizie! Ora puoi guadagnare <strong>{bonus_percent}% di cashback</strong> da ogni acquisto effettuato dai tuoi amici e colleghi invitati.",
@@ -651,7 +664,7 @@ def send_referral_program_email(
             "footer": "Questo è un messaggio automatico. Si prega di non rispondere."
         },
         "RU": {
-            "subject": "Реферальная программа Med.G — зарабатывайте с каждой покупки друзей!",
+            "subject": "Ваша реферальная ссылка Med.G",
             "heading": "Реферальная программа",
             "greeting": "Здравствуйте!",
             "intro": f"У нас отличные новости! Теперь вы можете получать <strong>{bonus_percent}% кешбэка</strong> с каждой покупки ваших приглашённых друзей и коллег.",
@@ -673,7 +686,7 @@ def send_referral_program_email(
             "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте на него."
         },
         "ES": {
-            "subject": "Programa de referidos Med.G — ¡Gana con cada compra de tus amigos!",
+            "subject": "Tu enlace de referidos de Med.G",
             "heading": "Programa de Referidos",
             "greeting": "¡Hola!",
             "intro": f"¡Grandes noticias! Ahora puedes ganar <strong>{bonus_percent}% de cashback</strong> de cada compra realizada por tus amigos y colegas invitados.",
@@ -763,4 +776,33 @@ def send_referral_program_email(
 </body>
 </html>
 """
-    return send_html_email(recipient_email, loc["subject"], html_body=body_html)
+    text_body = "\n".join(
+        [
+            f"{loc['heading']}",
+            "",
+            loc["greeting"],
+            "",
+            f"You can earn {bonus_percent}% cashback from invited users' purchases."
+            if region.upper() != "RU"
+            else f"Вы можете получать {bonus_percent}% кешбэка с покупок приглашённых пользователей.",
+            "",
+            f"{loc['your_link']}",
+            referral_link,
+            "",
+            loc["footer"],
+        ]
+    )
+
+    mailgun_options = {
+        "o:tracking": "no",
+        "o:tracking-clicks": "no",
+        "o:tracking-opens": "no",
+    }
+
+    return send_html_email(
+        recipient_email,
+        loc["subject"],
+        body_html=body_html,
+        text_body=text_body,
+        mailgun_options=mailgun_options,
+    )

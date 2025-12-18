@@ -13,8 +13,8 @@ from ..utils import email_sender
 from ..models.models_v2 import User, Invitation, ReferralCampaignEmail
 from ..utils.user_language import get_user_preferred_language
 
-# лимит за один прогон (~26 писем/час для 80 писем/час суммарно)
-MAX_HOURLY_REFERRAL_EMAILS = 26
+# лимит за один прогон (~55 писем/час для 165 писем/час суммарно)
+MAX_HOURLY_REFERRAL_EMAILS = 55
 
 # задержка между отправками писем (секунды) — защита от Gmail rate limit
 EMAIL_SEND_DELAY_SECONDS = 3

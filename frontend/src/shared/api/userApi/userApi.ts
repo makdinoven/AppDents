@@ -1,6 +1,5 @@
-import { instance } from "../api-instance.ts";
-import { ChangePasswordType, SignUpType } from "./types.ts";
-import { getAuthHeaders } from "../../common/helpers/helpers.ts";
+import { getAuthHeaders, instance } from "@/shared/api";
+import { SignUpType } from "./types.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { cartStorage } from "../cartApi/cartStorage.ts";
 import { AnswerType } from "../../components/FloatingTools/types.ts";
@@ -8,20 +7,6 @@ import { AnswerType } from "../../components/FloatingTools/types.ts";
 export const userApi = {
   getMe() {
     return instance.get("users/me", { headers: getAuthHeaders() });
-  },
-
-  forgotPassword(data: ChangePasswordType, language: string) {
-    return instance.post(`users/forgot-password`, data, {
-      params: {
-        region: language,
-      },
-    });
-  },
-
-  resetPassword(newPassword: any, id: number) {
-    return instance.put(`users/${id}/password`, newPassword, {
-      headers: getAuthHeaders(),
-    });
   },
 
   signUp(data: SignUpType, language: string) {
