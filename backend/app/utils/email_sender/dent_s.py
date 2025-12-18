@@ -363,6 +363,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Temporary password",
             "login": "Log In",
+            "access_info": "You can log in anytime, from any device or browser, using your email and password to access your purchased content:",
         },
         "RU": {
             "heading_new": "Добро пожаловать и поздравляем!",
@@ -375,6 +376,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Временный пароль",
             "login": "Войти",
+            "access_info": "Вы можете войти в любое время, с любого устройства и браузера, используя вашу почту и пароль для доступа к приобретённому контенту:",
         },
         "IT": {
             "heading_new": "Benvenuto e congratulazioni!",
@@ -387,6 +389,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Password temporanea",
             "login": "Accedi",
+            "access_info": "Puoi accedere in qualsiasi momento, da qualsiasi dispositivo o browser, utilizzando la tua email e password per accedere ai contenuti acquistati:",
         },
         "ES": {
             "heading_new": "¡Bienvenido y felicitaciones!",
@@ -399,6 +402,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Contraseña temporal",
             "login": "Iniciar sesión",
+            "access_info": "Puede iniciar sesión en cualquier momento, desde cualquier dispositivo o navegador, utilizando su correo electrónico y contraseña para acceder al contenido adquirido:",
         },
         "PT": {
             "heading_new": "Bem-vindo e parabéns!",
@@ -411,6 +415,7 @@ def send_successful_purchase_email(
             "email": "Email",
             "password": "Senha temporária",
             "login": "Entrar",
+            "access_info": "Você pode fazer login a qualquer momento, de qualquer dispositivo ou navegador, usando seu e-mail e senha para acessar o conteúdo adquirido:",
         },
         "AR": {
             "heading_new": "مرحبًا وتهانينا!",
@@ -423,6 +428,7 @@ def send_successful_purchase_email(
             "email": "البريد الإلكتروني",
             "password": "كلمة المرور المؤقتة",
             "login": "تسجيل الدخول",
+            "access_info": "يمكنك تسجيل الدخول في أي وقت، من أي جهاز أو متصفح، باستخدام بريدك الإلكتروني وكلمة المرور للوصول إلى المحتوى الذي اشتريته:",
         },
     }.get(region.upper(), {})
 
@@ -456,6 +462,15 @@ def send_successful_purchase_email(
         <div style="margin-top:12px;">
           <h3 style="margin:0 0 6px;">{loc["books"]}</h3>
           <p style="margin:0;">{loc["purchased_books"]} <b>{books_str}</b></p>
+        </div>
+        """
+
+    access_block = f"""
+        <div style="margin-top:16px;padding:12px;background-color:#e8f5e9;border-radius:8px;border-left:4px solid #28a745;">
+          <p style="margin:0;font-size:14px;color:#2e7d32;">
+            {loc.get("access_info", "You can log in anytime, from any device or browser, using your email and password to access your purchased content:")}
+            <a href="https://dent-s.com" style="color:#01433d;font-weight:600;">dent-s.com</a>
+          </p>
         </div>
         """
 
@@ -504,6 +519,7 @@ def send_successful_purchase_email(
         {account_block}
         {courses_block}
         {books_block}
+        {access_block}
         <p style="text-align:center;">
           <a href="{login_url}" class="btn">{loc["login"]}</a>
         </p>
@@ -1400,7 +1416,7 @@ def send_referral_program_email(
 
     translations = {
         "RU": {
-            "subject": "Реферальная программа Dent-S — зарабатывайте с каждой покупки друзей!",
+            "subject": "Ваша реферальная ссылка Dent-S",
             "heading": "Реферальная программа",
             "greeting": "Здравствуйте!",
             "intro": f"У нас отличные новости! Теперь вы можете получать <strong>{bonus_percent}% кешбэка</strong> с каждой покупки ваших приглашённых друзей и коллег.",
@@ -1422,7 +1438,7 @@ def send_referral_program_email(
             "footer": "Это автоматическое сообщение. Пожалуйста, не отвечайте на него."
         },
         "EN": {
-            "subject": "Dent-S Referral Program — Earn from every friend's purchase!",
+            "subject": "Your Dent-S referral link",
             "heading": "Referral Program",
             "greeting": "Hello!",
             "intro": f"Great news! You can now earn <strong>{bonus_percent}% cashback</strong> from every purchase made by your invited friends and colleagues.",
@@ -1444,7 +1460,7 @@ def send_referral_program_email(
             "footer": "This is an automated message. Please do not reply."
         },
         "ES": {
-            "subject": "Programa de referidos Dent-S — ¡Gana con cada compra de tus amigos!",
+            "subject": "Tu enlace de referidos de Dent-S",
             "heading": "Programa de Referidos",
             "greeting": "¡Hola!",
             "intro": f"¡Grandes noticias! Ahora puedes ganar <strong>{bonus_percent}% de cashback</strong> de cada compra realizada por tus amigos y colegas invitados.",
@@ -1466,7 +1482,7 @@ def send_referral_program_email(
             "footer": "Este es un mensaje automático. Por favor, no responda."
         },
         "IT": {
-            "subject": "Programma Referral Dent-S — Guadagna da ogni acquisto dei tuoi amici!",
+            "subject": "Il tuo link referral Dent-S",
             "heading": "Programma Referral",
             "greeting": "Ciao!",
             "intro": f"Ottime notizie! Ora puoi guadagnare <strong>{bonus_percent}% di cashback</strong> da ogni acquisto effettuato dai tuoi amici e colleghi invitati.",
@@ -1488,7 +1504,7 @@ def send_referral_program_email(
             "footer": "Questo è un messaggio automatico. Si prega di non rispondere."
         },
         "PT": {
-            "subject": "Programa de Indicação Dent-S — Ganhe com cada compra dos seus amigos!",
+            "subject": "Seu link de indicação Dent-S",
             "heading": "Programa de Indicação",
             "greeting": "Olá!",
             "intro": f"Ótimas notícias! Agora você pode ganhar <strong>{bonus_percent}% de cashback</strong> de cada compra feita pelos seus amigos e colegas convidados.",
@@ -1510,7 +1526,7 @@ def send_referral_program_email(
             "footer": "Esta é uma mensagem automática. Por favor, não responda."
         },
         "AR": {
-            "subject": "برنامج الإحالة Dent-S — اربح من كل عملية شراء لأصدقائك!",
+            "subject": "رابط الإحالة الخاص بك من Dent-S",
             "heading": "برنامج الإحالة",
             "greeting": "مرحبًا!",
             "intro": f"أخبار رائعة! يمكنك الآن كسب <strong>{bonus_percent}% استرداد نقدي</strong> من كل عملية شراء يقوم بها أصدقاؤك وزملاؤك المدعوون.",
@@ -1596,4 +1612,37 @@ def send_referral_program_email(
 </body>
 </html>
 """
-    return send_html_email(recipient_email, loc["subject"], body_html)
+    # Важно: нормальная текстовая версия повышает deliverability (вместо заглушки)
+    text_body = "\n".join(
+        [
+            f"{loc['heading']}",
+            "",
+            loc["greeting"],
+            "",
+            # Убираем HTML-теги в тексте — оставляем смысл
+            f"You can earn {bonus_percent}% cashback from invited users' purchases."
+            if region.upper() != "RU"
+            else f"Вы можете получать {bonus_percent}% кешбэка с покупок приглашённых пользователей.",
+            "",
+            f"{loc['your_link']}",
+            referral_link,
+            "",
+            loc["footer"],
+        ]
+    )
+
+    # Для Gmail трекинг opens/clicks (пиксели/редиректы) часто усиливает “Promotions”.
+    # Сохраняем как опциональную отправку: отключаем на уровне Mailgun per-message.
+    mailgun_options = {
+        "o:tracking": "no",
+        "o:tracking-clicks": "no",
+        "o:tracking-opens": "no",
+    }
+
+    return send_html_email(
+        recipient_email,
+        loc["subject"],
+        body_html,
+        text_body=text_body,
+        mailgun_options=mailgun_options,
+    )

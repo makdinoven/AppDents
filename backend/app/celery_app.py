@@ -55,10 +55,10 @@ celery.conf.update(
         "app.tasks.ensure_faststart":    {"rate_limit": "50/m"},
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
-        # === Email tasks: суммарно 80 писем/час (27 + 27 + 26) ===
-        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "100/h"},
-        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "100/h"},
-        "app.tasks.referral_campaign.send_referral_campaign_batch": {"rate_limit": "100/h"},
+        # === Email tasks: суммарно 165 писем/час (55 + 55 + 55) ===
+        "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "200/h"},
+        "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "200/h"},
+        "app.tasks.referral_campaign.send_referral_campaign_batch": {"rate_limit": "200/h"},
     },
     beat_schedule={
         "special-offers-every-hour": {
@@ -92,11 +92,11 @@ celery.conf.update(
             "kwargs": {"limit": 500},
             "options": {"queue": "special"},
         },
-        # === Email tasks: каждый час, ~27 писем каждая = 80/час суммарно ===
+        # === Email tasks: каждый час, ~55 писем каждая = 165/час суммарно ===
         "process-abandoned-checkouts-hourly": {
             "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
             "schedule": 3600,
-            "kwargs": {"batch_size": 27},
+            "kwargs": {"batch_size": 55},
             "options": {"queue": "email"},
         },
         "process-big-cart-reminders-hourly": {
@@ -107,7 +107,7 @@ celery.conf.update(
         "process-referrals-hourly": {
             "task": "app.tasks.referral_campaign.send_referral_campaign_batch",
             "schedule": 3600,
-            "kwargs": {"max_per_run": 26},
+            "kwargs": {"max_per_run": 55},
             "options": {"queue": "email"},
         },
     },
