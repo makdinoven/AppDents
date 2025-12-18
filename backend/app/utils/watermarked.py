@@ -29,8 +29,8 @@ def apply_watermark(
         rect = page.rect
 
         # фиксированные размеры логотипа (в «пикселях» PDF)
-        logo_width = 75
-        logo_height = 75
+        logo_width = 50
+        logo_height = 50
 
         # фиксированные отступы от правого и нижнего краёв
         margin_right = 20
@@ -49,6 +49,7 @@ def apply_watermark(
             pixmap=logo_pix,
             keep_proportion=True,
             overlay=True,
+            opacity=opacity,
         )
 
         if text:
