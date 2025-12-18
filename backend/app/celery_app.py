@@ -86,6 +86,12 @@ celery.conf.update(
             "schedule": 86400,      # 1 раз в сутки
             "options": {"queue": "special"},
         },
+        "fix-hls-legacy-aliases-hourly": {
+            "task": "app.tasks.ensure_hls.fix_missing_legacy_aliases",
+            "schedule": 3600,       # каждый час
+            "kwargs": {"limit": 500},
+            "options": {"queue": "special"},
+        },
         # === Email tasks: каждый час, ~27 писем каждая = 80/час суммарно ===
         "process-abandoned-checkouts-hourly": {
             "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
@@ -130,6 +136,7 @@ celery.conf.task_routes = {
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
+    "app.tasks.ensure_hls.fix_missing_legacy_aliases": {"queue": "special"},
     "app.tasks.book_formats.*": {"queue": "book"},
     "app.tasks.book_previews.*": {"queue": "book"},
     "app.tasks.book_covers.*": {"queue": "book"},

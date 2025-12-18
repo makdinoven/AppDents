@@ -325,7 +325,7 @@ def generate_preview(self, video_link: str) -> None:
             for ts in FFMPEG_SEEKS:
                 for attempt in range(1, FFMPEG_RETRIES + 1):
                     cmd = [
-                        "ffmpeg", "-y", "-loglevel", "error", "-threads", "1",
+                        "ffmpeg", "-y", "-loglevel", "fatal", "-threads", "1",
                         "-ss", ts, "-i", safe_url,
                         "-frames:v", "1", "-q:v", "4", tmp_path,
                     ]

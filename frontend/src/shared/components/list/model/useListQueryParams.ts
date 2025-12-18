@@ -128,6 +128,9 @@ export function useListQueryParams(options?: Options) {
 
       setSearch(newSearch, {
         replace: !onlyPageChange,
+        ...(location.state?.backgroundLocation
+          ? { state: { backgroundLocation: location.state.backgroundLocation } }
+          : {}),
       });
     },
     [search, setSearch, options?.resetToFirstPage],

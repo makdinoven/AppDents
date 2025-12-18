@@ -39,15 +39,16 @@ const SurveyModal = ({
 
   return (
     <div className={s.survey_modal} ref={modalRef}>
-      <ModalCloseButton
-        className={s.close_button}
-        onClick={() => closeModal()}
-      />
-      <Form handleSubmit={handleFormSubmit}>
+      <div className={s.modal_header}>
         <p className={s.title}>
           <Trans i18nKey={surveyData.titleKey} />
         </p>
-
+        <ModalCloseButton
+          className={s.close_button}
+          onClick={() => closeModal()}
+        />
+      </div>
+      <Form handleSubmit={handleFormSubmit}>
         <ul className={s.survey_questions}>
           <p className={s.description}>
             <Trans
@@ -126,16 +127,15 @@ const SurveyModal = ({
                   </div>
                 );
               })}
-
-            <Button
-              type="submit"
-              variant="filled"
-              text="send"
-              className={s.submit_btn}
-              iconLeft={<SendIcon />}
-              loading={loading}
-            />
           </div>
+          <Button
+            type="submit"
+            variant="filled"
+            text="send"
+            className={s.submit_btn}
+            iconLeft={<SendIcon />}
+            loading={loading}
+          />
         </ul>
       </Form>
     </div>

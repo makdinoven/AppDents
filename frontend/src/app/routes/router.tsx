@@ -52,6 +52,7 @@ import BookLandingDetail from "../../pages/Admin/pages/detail/BookLandingDetail.
 import UserDetail from "../../pages/Admin/pages/detail/UserDetail.tsx";
 import BookDetail from "../../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
 import { AUTH_MODAL_ROUTES } from "../../shared/common/helpers/commonConstants.ts";
+import AnalyticsSearchQueries from "../../pages/Admin/pages/analytics/AnalyticsSearchQueries.tsx";
 
 export const routesConfig = (hasBg: boolean) => [
   {
@@ -241,6 +242,10 @@ export const routesConfig = (hasBg: boolean) => [
           {
             path: PATHS.ADMIN_ANALYTICS_TRAFFIC,
             element: <AnalyticsTraffic />,
+          },
+          {
+            path: PATHS.ADMIN_ANALYTICS_SEARCH_QUERIES,
+            element: <AnalyticsSearchQueries />,
           },
 
           {

@@ -148,7 +148,7 @@ def _make_presigned(bucket: str, key: str, ttl: int = 3600) -> str:
 def _ffprobe_duration_url(url: str, timeout: int = 25) -> Tuple[Optional[float], Optional[str]]:
     try:
         cp = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_format", "-of", "json", url],
+            ["ffprobe", "-v", "fatal", "-show_format", "-of", "json", url],
             capture_output=True, timeout=timeout
         )
         if cp.returncode != 0:
@@ -162,7 +162,7 @@ def _ffprobe_duration_url(url: str, timeout: int = 25) -> Tuple[Optional[float],
 def _ffprobe_duration_file(path: str, timeout: int = 25) -> Optional[float]:
     try:
         cp = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_format", "-of", "json", path],
+            ["ffprobe", "-v", "fatal", "-show_format", "-of", "json", path],
             capture_output=True, timeout=timeout
         )
         if cp.returncode != 0:
@@ -229,7 +229,7 @@ def _ffprobe_codecs(url_or_path: str, timeout: int = 20) -> Tuple[Optional[str],
     a = v = None
     try:
         p = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "a:0",
+            ["ffprobe", "-v", "fatal", "-select_streams", "a:0",
              "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
         )
@@ -242,7 +242,7 @@ def _ffprobe_codecs(url_or_path: str, timeout: int = 20) -> Tuple[Optional[str],
         pass
     try:
         p2 = subprocess.run(
-            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+            ["ffprobe", "-v", "fatal", "-select_streams", "v:0",
              "-show_entries", "stream=codec_name", "-of", "json", url_or_path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout
         )
@@ -272,6 +272,63 @@ def _validate_clip_s3(bucket: str, key: str) -> Tuple[bool, str]:
     if dur < MIN_OK_DURATION_SEC:
         return False, f"too short: {dur:.3f}s < {MIN_OK_DURATION_SEC}s"
     return True, f"ok:{size}bytes,{dur:.3f}s"
+
+
+def _apply_faststart(bucket: str, key: str, mime: str) -> Tuple[bool, str]:
+    """
+    Скачивает клип из S3, применяет faststart (перемещает moov атом в начало),
+    загружает обратно. Без перекодирования — только ремуксинг.
+    Возвращает (success, message).
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        src_path = os.path.join(tmp, "frag.mp4")
+        dst_path = os.path.join(tmp, "fast.mp4")
+
+        # 1. Скачиваем текущий клип
+        try:
+            s3.download_file(bucket, key, src_path, Config=TRANSFER_CFG_DOWNLOAD)
+        except Exception as e:
+            return False, f"download failed: {e}"
+
+        if not os.path.exists(src_path) or os.path.getsize(src_path) < MIN_OK_BYTES:
+            return False, f"downloaded file missing or too small"
+
+        # 2. Ремуксинг с faststart (без перекодирования)
+        cmd = [
+            "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "error",
+            "-i", src_path,
+            "-c", "copy",
+            "-movflags", "+faststart",
+            "-y", dst_path,
+        ]
+        try:
+            cp = subprocess.run(cmd, capture_output=True, timeout=120)
+            if cp.returncode != 0:
+                err = cp.stderr.decode("utf-8", "ignore")[:500]
+                return False, f"ffmpeg remux failed: {err}"
+        except subprocess.TimeoutExpired:
+            return False, "ffmpeg remux timeout"
+        except Exception as e:
+            return False, f"ffmpeg remux error: {e}"
+
+        if not os.path.exists(dst_path) or os.path.getsize(dst_path) < MIN_OK_BYTES:
+            return False, "remuxed file missing or too small"
+
+        # 3. Загружаем обратно в S3 (перезаписываем)
+        try:
+            s3.upload_file(
+                dst_path,
+                bucket,
+                key,
+                ExtraArgs={"ContentType": mime, "ContentDisposition": "inline"},
+                Config=TRANSFER_CFG_UPLOAD,
+            )
+        except Exception as e:
+            return False, f"upload failed: {e}"
+
+        final_size = os.path.getsize(dst_path)
+        return True, f"faststart applied: {final_size} bytes"
+
 
 # =========================
 # Multipart upload из pipe (ручной)
@@ -379,7 +436,7 @@ def _spawn_ffmpeg_http(in_url: str, length_sec: int, audio_codec: Optional[str])
     cmd = [
         "nice", "-n", "10",
         "ffmpeg",
-        "-hide_banner", "-nostdin", "-loglevel", "error",
+        "-hide_banner", "-nostdin", "-loglevel", "fatal",
         "-threads", "1",
 
         # сетевые страховки
@@ -579,7 +636,7 @@ def _ffmpeg_local_clip(src_path: str, dst_path: str):
 
     a_codec, _ = _ffprobe_codecs(src_path, timeout=15)
     cmd = [
-        "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "error",
+        "ffmpeg", "-hide_banner", "-nostdin", "-loglevel", "fatal",
         "-threads", "2",
         "-i", src_path,
         "-t", "300",
@@ -653,15 +710,27 @@ def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_downloa
         if uploaded > 0 and ret == 0:
             ok, why = _validate_clip_s3(S3_BUCKET, clip_key)
             if ok:
-                clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-                return {
-                    "clip_url": clip_url,
-                    "length_sec": 300,
-                    "uploaded_bytes": uploaded,
-                    "elapsed_sec": int(time.time() - t0),
-                    "path": "presigned",
-                    "validated": why,
-                }
+                # Пост-обработка: применяем faststart для корректных метаданных
+                self.update_state(task_id=task_id, state="PROGRESS",
+                                  meta={"stage": "applying_faststart"})
+                fs_ok, fs_msg = _apply_faststart(S3_BUCKET, clip_key, mime)
+                if fs_ok:
+                    clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
+                    return {
+                        "clip_url": clip_url,
+                        "length_sec": 300,
+                        "uploaded_bytes": uploaded,
+                        "elapsed_sec": int(time.time() - t0),
+                        "path": "presigned",
+                        "validated": why,
+                        "postprocessed": True,
+                        "faststart": fs_msg,
+                    }
+                # faststart не удался — удаляем и уходим на fallback
+                try:
+                    s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+                except Exception:
+                    pass
             else:
                 # подчищаем мусор и продолжаем
                 try:
@@ -678,15 +747,27 @@ def clip_video(self, src_url: str, dest_key: Optional[str] = None, force_downloa
             if uploaded2 > 0 and ret2 == 0:
                 ok2, why2 = _validate_clip_s3(S3_BUCKET, clip_key)
                 if ok2:
-                    clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
-                    return {
-                        "clip_url": clip_url,
-                        "length_sec": 300,
-                        "uploaded_bytes": uploaded2,
-                        "elapsed_sec": int(time.time() - t0),
-                        "path": "presigned-retry",
-                        "validated": why2,
-                    }
+                    # Пост-обработка: применяем faststart для корректных метаданных
+                    self.update_state(task_id=task_id, state="PROGRESS",
+                                      meta={"stage": "applying_faststart"})
+                    fs_ok2, fs_msg2 = _apply_faststart(S3_BUCKET, clip_key, mime)
+                    if fs_ok2:
+                        clip_url = f"{S3_PUBLIC_HOST}/{_encode_for_url(clip_key)}"
+                        return {
+                            "clip_url": clip_url,
+                            "length_sec": 300,
+                            "uploaded_bytes": uploaded2,
+                            "elapsed_sec": int(time.time() - t0),
+                            "path": "presigned-retry",
+                            "validated": why2,
+                            "postprocessed": True,
+                            "faststart": fs_msg2,
+                        }
+                    # faststart не удался — удаляем и уходим на fallback
+                    try:
+                        s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
+                    except Exception:
+                        pass
                 else:
                     try:
                         s3.delete_object(Bucket=S3_BUCKET, Key=clip_key)
