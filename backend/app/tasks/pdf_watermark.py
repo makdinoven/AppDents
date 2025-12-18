@@ -70,7 +70,7 @@ SITE_CONFIG = {
 }
 
 
-@shared_task(name="app.tasks.book_watermark.watermark_book", rate_limit="10/m")
+@shared_task(name="app.tasks.pdf_watermark.watermark_book_task",rate_limit="10/m")
 def watermark_book_task(book_id: int, site: str, opacity: float = 0.3) -> dict:
     """
     Ставит логотип+текст на каждую 10-ю страницу PDF книги и заливает

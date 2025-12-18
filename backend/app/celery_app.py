@@ -136,7 +136,7 @@ celery.conf.task_routes = {
     "app.tasks.creatives.*": {"queue": "book"},
     "app.tasks.clip_tasks.*": {"queue": "default"},
     "app.tasks.video_summary.*": {"queue": "default"},
-    "app.tasks.book_watermark.*": {"queue": "book"},
+    "app.tasks.pdf_watermark.*": {"queue": "book"},
     "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"queue": "email"},
     "app.tasks.big_cart_reminder.process_big_cart_reminders": {"queue": "email"},
     "app.tasks.referral_campaign.send_referral_campaign_batch": {"queue": "email"},

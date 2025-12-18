@@ -143,6 +143,10 @@ def _watermark_single_book(
     }
 
 
+# books_watermarked.py
+
+# books_watermarked.py
+
 @router.post("/book/{book_id}")
 def watermark_book_endpoint(
     book_id: int,
@@ -150,11 +154,12 @@ def watermark_book_endpoint(
     opacity: float = Query(0.3, ge=0.05, le=1.0),
     current_admin: User = Depends(require_roles("admin")),
 ):
-    """
-    Ставит Celery-таску на вотермарку одной книги.
-    """
-    task = watermark_book_task.delay(book_id, site, float(opacity))
+    task = watermark_book_task.apply_async(  # вместо .delay(...)
+        args=(book_id, site, float(opacity)),
+        queue="book",  # явное указание, как у рабочего воркера book_formats
+    )
     return {"task_id": task.id, "status": "queued"}
+
 
 @router.post("/all")
 def watermark_all_books_endpoint(
