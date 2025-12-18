@@ -24,9 +24,11 @@ const externalHosts = [
 // Таймауты HLS: базовые НЕ меняем (обычное воспроизведение), расширяем только на время seekMode
 const NORMAL_TIMEOUT_MS = 10000; // текущий базовый таймаут фрагмента
 const SEEK_TIMEOUT_MS = 30000; // увеличенный таймаут в режиме перемотки
-const SEEK_GRACE_MS = 18000; // максимум времени в seekMode без прогресса
+// Максимальная «длительность seek-окна» не должна быть меньше, чем один полный цикл фрагмента + несколько retry
+// SEEK_TIMEOUT_MS(30s) + retryDelay(1s)*2 + запас => минимум ~35s; ставим 45s как дефолт
+const SEEK_MAX_DURATION_MS = 45000;
 const SEEK_FAILS_BEFORE_FALLBACK = 2; // диагностический счётчик подряд таймаутов в seekMode
-const SEEK_NO_PROGRESS_MS = 8000; // нет роста буфера около currentTime за последние X мс => считаем, что прогресса нет
+const SEEK_NO_PROGRESS_MS = 12000; // нет роста буфера около currentTime за последние X мс => считаем, что прогресса нет
 const SEEK_QUIET_MS = 1500; // «тихое окно» после seeking: не считаем ошибки/фейлы сразу
 
 // АГРЕССИВНАЯ конфигурация - при ошибке БЫСТРО fallback на MP4
@@ -90,6 +92,7 @@ const HlsVideo: React.FC<Props> = ({
   const seekQuietUntilRef = useRef(0);
   const seekLastProgressAtRef = useRef(0);
   const seekLastBufferedAheadRef = useRef(0);
+  const seekSoftExpiredRef = useRef(false);
   const normalFragConfigRef = useRef<{
     fragLoadingTimeOut: number;
     fragLoadingMaxRetry: number;
@@ -203,6 +206,7 @@ const HlsVideo: React.FC<Props> = ({
     seekQuietUntilRef.current = 0;
     seekLastProgressAtRef.current = 0;
     seekLastBufferedAheadRef.current = 0;
+    seekSoftExpiredRef.current = false;
     normalFragConfigRef.current = null;
 
     // Очищаем предыдущий hls instance
@@ -273,16 +277,18 @@ const HlsVideo: React.FC<Props> = ({
         if (ahead > prevAhead + 0.25) {
           seekLastBufferedAheadRef.current = ahead;
           seekLastProgressAtRef.current = Date.now();
+          seekSoftExpiredRef.current = false;
           console.log(`[HLS] seek buffer progress ahead=${ahead.toFixed(2)}s reason=${reason}`);
           exitSeekMode("BUFFER_GROWTH");
         }
       };
 
-      const exitSeekMode = (reason: "BUFFER_GROWTH" | "TIMER" | "PLAYING") => {
+      const exitSeekMode = (reason: "BUFFER_GROWTH" | "PLAYING" | "FALLBACK") => {
         if (!seekModeRef.current) return;
         console.log(`[HLS] seekMode EXIT reason=${reason}`);
         seekModeRef.current = false;
         seekFailsRef.current = 0;
+        seekSoftExpiredRef.current = false;
         clearSeekGraceTimer();
         clearSeekMonitorTimer();
 
@@ -305,6 +311,7 @@ const HlsVideo: React.FC<Props> = ({
         console.log("[HLS] seekMode ENTER");
         seekModeRef.current = true;
         seekFailsRef.current = 0;
+        seekSoftExpiredRef.current = false;
         seekQuietUntilRef.current = Date.now() + SEEK_QUIET_MS;
         seekLastProgressAtRef.current = Date.now();
         seekLastBufferedAheadRef.current = getBufferedAheadSeconds();
@@ -331,9 +338,22 @@ const HlsVideo: React.FC<Props> = ({
         seekGraceTimerRef.current = window.setTimeout(() => {
           if (destroyed) return;
           if (!seekModeRef.current) return;
-          // Правило 1: grace window НЕ должен делать fallback — только выйти из seekMode
-          exitSeekMode("TIMER");
-        }, SEEK_GRACE_MS);
+          // ВАЖНО: таймер не должен «выбивать» из seekMode до окончания реальных попыток hls.js.
+          // Делаем мягкую деградацию: возвращаем normal-конфиг, но seekMode оставляем включенным,
+          // чтобы следующий FRAG_LOAD_TIMEOUT / fatal не привёл к мгновенному MP4 fallback.
+          seekSoftExpiredRef.current = true;
+          console.warn("[HLS] seekMode SOFT_EXPIRE (restore normal config, keep seekMode=true)");
+          const normal = normalFragConfigRef.current;
+          if (normal) {
+            try {
+              hls.config.fragLoadingTimeOut = normal.fragLoadingTimeOut;
+              hls.config.fragLoadingMaxRetry = normal.fragLoadingMaxRetry;
+              hls.config.fragLoadingRetryDelay = normal.fragLoadingRetryDelay;
+            } catch (e) {
+              console.warn("[HLS] Failed to restore normal frag config (soft-expire):", e);
+            }
+          }
+        }, SEEK_MAX_DURATION_MS);
 
         // Монитор прогресса по video.buffered (правило 3)
         clearSeekMonitorTimer();
@@ -414,6 +434,7 @@ const HlsVideo: React.FC<Props> = ({
               `[HLS] seek fallback to MP4 reason=timeout+no-progress fails=${seekFailsRef.current} noProgressMs=${noProgressForMs}`,
             );
             destroyed = true;
+            exitSeekMode("FALLBACK");
             fallbackToMp4();
           }
           return;
