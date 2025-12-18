@@ -364,6 +364,66 @@ export const adminApi = {
       headers: getAuthHeaders(),
     });
   },
+  // Video Diagnostics
+  diagnoseVideo(videoUrl: string) {
+    return instance.get("/video_diagnostics/diagnose", {
+      params: { video_url: videoUrl },
+      headers: getAuthHeaders(),
+    });
+  },
+  quickCheckVideo(videoUrl: string) {
+    return instance.get("/video_diagnostics/quick-check", {
+      params: { video_url: videoUrl },
+      headers: getAuthHeaders(),
+    });
+  },
+  applyFaststart(videoUrl: string, force: boolean = false) {
+    return instance.post(
+      "/video_diagnostics/apply-faststart",
+      { video_url: videoUrl, force },
+      { headers: getAuthHeaders() },
+    );
+  },
+  fullRepairVideo(videoUrl: string) {
+    return instance.post(
+      "/video_diagnostics/full-repair",
+      { video_url: videoUrl },
+      { headers: getAuthHeaders() },
+    );
+  },
+  forceRebuildHls(videoUrl: string) {
+    return instance.post(
+      "/video_diagnostics/force-rebuild-hls",
+      { video_url: videoUrl },
+      { headers: getAuthHeaders() },
+    );
+  },
+  checkMoov(videoUrl: string) {
+    return instance.get("/video_diagnostics/check-moov", {
+      params: { video_url: videoUrl },
+      headers: getAuthHeaders(),
+    });
+  },
+  cleanupHls(videoUrl: string, dryRun: boolean = true) {
+    return instance.post(
+      "/video_diagnostics/cleanup-hls",
+      { video_url: videoUrl, dry_run: dryRun },
+      { headers: getAuthHeaders() },
+    );
+  },
+  listAllHls(videoUrl: string) {
+    return instance.get("/video_diagnostics/list-all-hls", {
+      params: { video_url: videoUrl },
+      headers: getAuthHeaders(),
+    });
+  },
+  fixVideoAcl(videoUrl: string, dryRun: boolean = false) {
+    return instance.post(
+      "/video_diagnostics/fix-video-acl",
+      { video_url: videoUrl, dry_run: dryRun },
+      { headers: getAuthHeaders() },
+    );
+  },
   getVideoSummary({ video_url, context, answer_format }: SummaryToolDataType) {
     return instance.post(
       "/summary_generator/video-summary",
@@ -535,5 +595,11 @@ export const adminApi = {
         headers: getAuthHeaders(),
       },
     );
+  },
+  getSearchQueries(params: any) {
+    return instance.get("users/analytics/search/top", {
+      params,
+      headers: getAuthHeaders(),
+    });
   },
 };

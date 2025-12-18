@@ -48,6 +48,10 @@ const ADMIN_SIDEBAR_LINKS = [
         link: PATHS.ADMIN_ANALYTICS_FREEWEBS,
       },
       { label: "admin.analytics.traffic", link: PATHS.ADMIN_ANALYTICS_TRAFFIC },
+      {
+        label: "admin.analytics.searchQueries",
+        link: PATHS.ADMIN_ANALYTICS_SEARCH_QUERIES,
+      },
     ],
   },
   {

@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     MAILGUN_API_KEY: str = ""
     MAILGUN_DOMAIN: str = ""
     MAILGUN_REGION: str = "EU"
+    MAILGUN_WEBHOOK_SIGNING_KEY: str = ""  # Webhook signing key from Mailgun dashboard
 
     # Facebook
     FACEBOOK_PIXEL_ID : str

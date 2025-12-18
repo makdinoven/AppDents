@@ -85,10 +85,13 @@ def _s3_v4():
 # ───────────────────────────── HELPERS ───────────────────────────────────────
 def _copy_with_metadata(key: str, meta: dict) -> None:
     """Copy the object onto itself, replacing metadata (UTF-8–safe)."""
+    # ВАЖНО: когда CopySource передаётся как словарь, ключ должен быть БЕЗ URL encoding.
+    # boto3 сам выполнит нужное кодирование. quote() здесь вызывал ошибку NoSuchKey
+    # для файлов с пробелами/спецсимволами в имени.
     _s3_copy.copy_object(
         Bucket=S3_BUCKET,
         Key=key,
-        CopySource={"Bucket": S3_BUCKET, "Key": quote(key, safe="")},
+        CopySource={"Bucket": S3_BUCKET, "Key": key},
         Metadata=meta,
         MetadataDirective="REPLACE",
         ACL="public-read",
@@ -166,7 +169,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
       B) фолбэк: полная перекодировка (x264 + AAC)
     """
     fast_cmd = [
-        "ffmpeg", "-v", "error", "-y",
+        "ffmpeg", "-v", "fatal", "-y",
         "-threads", "1",
         "-i", in_mp4,
 
@@ -192,7 +195,7 @@ def _make_hls(in_mp4: str, playlist: str, seg_pat: str) -> bool:
         logger.warning("[HLS] fast path (vcopy+aac) failed (%s) — fallback to full re-encode", e)
 
     full_cmd = [
-        "ffmpeg", "-v", "error", "-y",
+        "ffmpeg", "-v", "fatal", "-y",
         "-threads", "1",
         "-i", in_mp4,
 
@@ -267,7 +270,7 @@ def _mark_hls_error(key: str, note: str) -> None:
 def _ffprobe_streams(path: str) -> dict:
     """Возвращает {'vcodec': 'h264'|'hevc'|..., 'acodec': 'aac'|'mp3'|...}."""
     cmd = [
-        "ffprobe", "-v", "error",
+        "ffprobe", "-v", "fatal",
         "-select_streams", "v:0", "-show_entries", "stream=codec_name",
         "-of", "json", path
     ]
@@ -280,7 +283,7 @@ def _ffprobe_streams(path: str) -> dict:
         pass
 
     cmd = [
-        "ffprobe", "-v", "error",
+        "ffprobe", "-v", "fatal",
         "-select_streams", "a:0", "-show_entries", "stream=codec_name",
         "-of", "json", path
     ]
@@ -400,6 +403,32 @@ def ensure_hls() -> None:
 
 # ──────────────────────────────────────────────────────────────────────────────
 
+def _ensure_legacy_alias(legacy_pl_key: str, new_pl_key: str, new_pl_url: str, key: str) -> None:
+    """
+    Гарантируем, что legacy alias существует и указывает на canonical.
+    Это критично: фронтенд ищет плейлист по legacy slug!
+    """
+    if legacy_pl_key == new_pl_key:
+        return  # slug'и совпадают, alias не нужен
+
+    # Проверяем, существует ли legacy alias
+    try:
+        resp = s3.get_object(Bucket=S3_BUCKET, Key=legacy_pl_key)
+        body = resp["Body"].read(500).decode("utf-8", errors="ignore")
+        # Если это уже alias (содержит ссылку на canonical) — всё ок
+        if new_pl_url in body or new_pl_key in body:
+            return
+        # Если это полноценный плейлист (с сегментами) — перезаписываем на alias
+    except ClientError as e:
+        if e.response["Error"]["Code"] not in ("NoSuchKey", "404"):
+            raise
+        # Не существует — создадим
+
+    # Создаём/перезаписываем alias
+    put_alias_master(legacy_pl_key, new_pl_url)
+    logger.info("[HLS] created legacy alias: %s → %s", legacy_pl_key, new_pl_url)
+
+
 @shared_task(name="app.tasks.process_hls_video", rate_limit=RATE_LIMIT_HLS)
 def process_hls_video(key: str) -> None:
     try:
@@ -408,15 +437,25 @@ def process_hls_video(key: str) -> None:
         new_pl_key    = f"{new_prefix}playlist.m3u8"
         new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
 
-        # Ранний выход — ТОЛЬКО если есть канонический
+        # Проверяем, есть ли canonical
+        canonical_exists = False
         try:
             s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
+            canonical_exists = True
+        except ClientError:
+            pass
+
+        if canonical_exists:
+            # Canonical есть — но ОБЯЗАТЕЛЬНО проверяем/создаём legacy alias!
+            try:
+                _ensure_legacy_alias(legacy_pl_key, new_pl_key, new_pl_url, key)
+            except ClientError as e:
+                logger.error("[HLS] CRITICAL: failed to ensure legacy alias for %s: %s", key, e)
             _mark_hls_ready(key)
             logger.info("[HLS] already exists (canonical) for %s", key)
             return
-        except ClientError:
-            pass  # нет canonical → строим
 
+        # Нет canonical → строим HLS
         with tempfile.TemporaryDirectory() as tmp:
             in_mp4   = os.path.join(tmp, "in.mp4")
             seg_pat  = os.path.join(tmp, "segment_%03d.ts")
@@ -441,17 +480,96 @@ def process_hls_video(key: str) -> None:
 
         _mark_hls_ready(key)
 
-        # Перезаписываем legacy на alias-master → укажет на canonical
-        if legacy_pl_key != new_pl_key:
-            try:
-                put_alias_master(legacy_pl_key, new_pl_url)
-            except ClientError as e:
-                logger.warning("[HLS] put alias failed for %s → %s: %s", key, legacy_pl_key, e)
+        # Создаём legacy alias → укажет на canonical (критично для фронтенда!)
+        try:
+            _ensure_legacy_alias(legacy_pl_key, new_pl_key, new_pl_url, key)
+        except ClientError as e:
+            logger.error("[HLS] CRITICAL: failed to create legacy alias for %s: %s", key, e)
 
         logger.info("[HLS] ready → %s", new_pl_url)
 
     finally:
         rds.srem(R_SET_QUEUED, key)
+
+
+@shared_task(name="app.tasks.ensure_hls.fix_missing_legacy_aliases")
+def fix_missing_legacy_aliases(limit: int = 200) -> dict:
+    """
+    Находит все mp4, у которых есть canonical HLS, но нет legacy alias.
+    Создаёт недостающие alias'ы.
+
+    Это нужно для исправления видео, которые были сконвертированы,
+    но фронтенд не может их найти (ищет по legacy slug).
+
+    Оптимизировано для минимальной нагрузки:
+    - Сначала фильтруем локально (только файлы с разными slug'ами)
+    - Потом делаем S3 запросы с паузами
+    """
+    fixed = 0
+    checked = 0
+    skipped_same_slug = 0
+    s3_checks = 0
+    errors = []
+
+    for key in _each_mp4_objects():
+        if "/.hls/" in key:
+            continue
+
+        checked += 1
+        if checked > limit:
+            break
+
+        legacy_prefix, new_prefix = hls_prefixes_for(key)
+
+        # Пропускаем если slug'и совпадают (alias не нужен) — БЕЗ S3 запросов!
+        if legacy_prefix == new_prefix:
+            skipped_same_slug += 1
+            continue
+
+        legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
+        new_pl_key    = f"{new_prefix}playlist.m3u8"
+        new_pl_url    = f"{S3_PUBLIC_HOST}/{new_pl_key}"
+
+        # Throttling: пауза каждые 10 S3 запросов
+        s3_checks += 1
+        if s3_checks % 10 == 0:
+            time.sleep(0.1)  # 100ms пауза
+
+        # Проверяем: есть ли canonical?
+        try:
+            s3.head_object(Bucket=S3_BUCKET, Key=new_pl_key)
+        except ClientError:
+            continue  # нет canonical — пропускаем
+
+        # Проверяем: есть ли корректный legacy alias?
+        try:
+            resp = s3.get_object(Bucket=S3_BUCKET, Key=legacy_pl_key)
+            body = resp["Body"].read(500).decode("utf-8", errors="ignore")
+            if new_pl_url in body or new_pl_key in body:
+                continue  # alias уже есть и корректен
+        except ClientError as e:
+            if e.response["Error"]["Code"] not in ("NoSuchKey", "404"):
+                errors.append(f"get {legacy_pl_key}: {e}")
+                continue
+
+        # Создаём alias
+        try:
+            put_alias_master(legacy_pl_key, new_pl_url)
+            fixed += 1
+            logger.info("[HLS][FIX] created missing alias: %s → %s", legacy_pl_key, new_pl_url)
+        except ClientError as e:
+            errors.append(f"put {legacy_pl_key}: {e}")
+
+    result = {
+        "checked": checked,
+        "skipped_same_slug": skipped_same_slug,
+        "s3_checks": s3_checks,
+        "fixed": fixed,
+        "errors": errors[:20]
+    }
+    logger.info("[HLS][FIX] done: checked=%d skipped_same_slug=%d s3_checks=%d fixed=%d errors=%d",
+                checked, skipped_same_slug, s3_checks, fixed, len(errors))
+    return result
 
 
 # Клиент только для листинга — V4
@@ -837,4 +955,136 @@ def validate_and_fix_hls(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         "duration_sec": elapsed,
     }
     self.update_state(state="SUCCESS" if result["status"] == "ok" else "FAILURE", meta=result)
+    return result
+
+
+@shared_task(bind=True, max_retries=1, time_limit=3600, soft_time_limit=3000)
+def force_rebuild_hls_task(self, video_url: str) -> Dict[str, Any]:
+    """
+    Принудительная пересборка HLS:
+    1. Удаляет ВСЕ HLS файлы (включая с %20 в именах)
+    2. Сбрасывает метаданные HLS
+    3. Генерирует новый HLS с правильными путями
+    """
+    t0 = time.time()
+    s3_key = key_from_url(video_url)
+    deleted_files = []
+    errors = []
+    
+    self.update_state(state="PROGRESS", meta={"step": "cleanup", "message": "Deleting old HLS files..."})
+    
+    # 1) Находим и удаляем ВСЕ HLS файлы
+    base_dir = s3_key.rsplit("/", 1)[0] if "/" in s3_key else ""
+    
+    # Проверяем несколько вариантов prefix (с пробелами и с %20)
+    prefixes_to_check = [f"{base_dir}/.hls/"]
+    if " " in base_dir:
+        encoded_base = base_dir.replace(" ", "%20")
+        prefixes_to_check.append(f"{encoded_base}/.hls/")
+    
+    for hls_prefix in prefixes_to_check:
+        try:
+            paginator = _s3_v4().get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=S3_BUCKET, Prefix=hls_prefix):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    try:
+                        s3.delete_object(Bucket=S3_BUCKET, Key=key)
+                        deleted_files.append(key)
+                    except Exception as e:
+                        logger.warning(f"Failed to delete {key}: {e}")
+        except Exception as e:
+            logger.warning(f"Failed to list prefix {hls_prefix}: {e}")
+    
+    self.update_state(state="PROGRESS", meta={
+        "step": "cleanup_done", 
+        "deleted_count": len(deleted_files),
+        "message": f"Deleted {len(deleted_files)} files"
+    })
+    
+    # 2) Сбрасываем метаданные HLS на MP4
+    try:
+        s3.copy_object(
+            Bucket=S3_BUCKET,
+            CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
+            Key=s3_key,
+            Metadata={"hls": "false"},
+            MetadataDirective="REPLACE",
+            ContentType="video/mp4"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to reset metadata: {e}")
+        errors.append(f"Metadata reset: {e}")
+    
+    # 3) Генерируем новый HLS
+    self.update_state(state="PROGRESS", meta={"step": "rebuild", "message": "Generating new HLS..."})
+    
+    try:
+        # Используем ту же логику что и validate_and_fix_hls, но форсируем rebuild
+        paths: HLSPaths = discover_hls_for_src(s3_key)
+        
+        # Выбираем директорию для нового HLS (new_pl_key)
+        hls_dir_key = paths.new_pl_key.rsplit("/", 1)[0] if paths.new_pl_key else None
+        
+        if hls_dir_key:
+            fix_rebuild_hls(
+                src_mp4_key=s3_key,
+                hls_dir_key=hls_dir_key,
+                ffmpeg_timeout=1800,
+                prefer_in_url=True,
+                forbid_full_reencode=True,
+            )
+            
+            # Создаём alias если нужен
+            if paths.legacy_pl_key and paths.new_pl_key:
+                legacy_dir = paths.legacy_pl_key.rsplit("/", 1)[0]
+                new_url = url_from_key(paths.new_pl_key)
+                alias_content = f"#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-STREAM-INF:BANDWIDTH=2000000\n{new_url}\n"
+                s3.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=paths.legacy_pl_key,
+                    Body=alias_content.encode("utf-8"),
+                    ContentType="application/vnd.apple.mpegurl",
+                    CacheControl="public, max-age=60",
+                    ACL='public-read'  # Делаем файлы публичными
+                )
+            
+            # Записываем статус
+            write_status_json(hls_dir_key, {
+                "rebuilt_at": datetime.utcnow().isoformat(),
+                "src_mp4_key": s3_key,
+                "deleted_old_files": len(deleted_files),
+            })
+            
+            # Обновляем метаданные MP4
+            s3.copy_object(
+                Bucket=S3_BUCKET,
+                CopySource={"Bucket": S3_BUCKET, "Key": s3_key},
+                Key=s3_key,
+                Metadata={"hls": "true"},
+                MetadataDirective="REPLACE",
+                ContentType="video/mp4"
+            )
+        else:
+            errors.append("Could not determine HLS directory")
+            
+    except Exception as e:
+        logger.exception(f"Force rebuild failed: {e}")
+        errors.append(f"Rebuild: {type(e).__name__}: {e}")
+    
+    elapsed = int(time.time() - t0)
+    result = {
+        "status": "ok" if not errors else "error",
+        "deleted_files": deleted_files,
+        "deleted_count": len(deleted_files),
+        "errors": errors,
+        "duration_sec": elapsed,
+        "src_mp4_key": s3_key,
+        "new_hls_key": paths.new_pl_key if 'paths' in dir() else None,
+    }
+    
+    self.update_state(
+        state="SUCCESS" if not errors else "FAILURE",
+        meta=result
+    )
     return result

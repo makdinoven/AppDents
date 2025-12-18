@@ -1,15 +1,24 @@
+import logging
+import smtplib
+import ssl
 import threading
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
+import dns.resolver
 import requests
+from email_validator import EmailNotValidError, validate_email
 
 from ...core.config import settings
+from ...db.database import SessionLocal
+from ...models.models_v2 import SuppressionType
+
+logger = logging.getLogger(__name__)
 
 
 # ─────────────────────── Rate Limiter ───────────────────────
-# Защита от Gmail rate limit: минимум MIN_INTERVAL секунд между отправками
-MIN_INTERVAL_SECONDS = 2.0  # минимальный интервал между письмами
+# Защита от rate limit: минимум MIN_INTERVAL секунд между отправками
+MIN_INTERVAL_SECONDS = 5.0  # увеличено с 2 до 5 секунд для снижения throttling
 
 _last_send_time: float = 0.0
 _rate_limit_lock = threading.Lock()
@@ -33,6 +42,102 @@ def _wait_for_rate_limit() -> None:
         _last_send_time = time.time()
 
 
+# ─────────────────────── Email Validation ───────────────────────
+
+# Доверенные домены - для них достаточно проверить MX записи
+TRUSTED_DOMAINS = {
+    "gmail.com", "googlemail.com",
+    "yahoo.com", "yahoo.co.uk", "yahoo.fr",
+    "outlook.com", "hotmail.com", "hotmail.co.uk", "hotmail.it",
+    "live.com", "msn.com",
+    "icloud.com", "me.com", "mac.com",
+    "mail.ru", "yandex.ru", "yandex.com",
+    "aol.com", "protonmail.com", "proton.me",
+    "comcast.net", "san.rr.com",
+}
+
+VALIDATION_TIMEOUT = 3  # секунды
+
+
+def _check_suppression_list(email: str) -> bool:
+    """
+    Проверяет, заблокирован ли email в suppression list.
+    Возвращает True если email в списке и должен быть пропущен.
+    """
+    try:
+        from ...services_v2.email_suppression_service import is_email_suppressed
+        db = SessionLocal()
+        try:
+            return is_email_suppressed(db, email)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning("Error checking suppression list for %s: %s", email, e)
+        return False  # При ошибке не блокируем отправку
+
+
+def _add_to_suppression(email: str, suppression_type: SuppressionType, error: str = None) -> None:
+    """Добавляет email в suppression list."""
+    try:
+        from ...services_v2.email_suppression_service import add_to_suppression
+        db = SessionLocal()
+        try:
+            add_to_suppression(
+                db=db,
+                email=email,
+                suppression_type=suppression_type,
+                error=error,
+                source="validation"
+            )
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning("Error adding %s to suppression: %s", email, e)
+
+
+def _validate_email_sync(email: str) -> Tuple[bool, str]:
+    """
+    Синхронная валидация email перед отправкой.
+    Проверяет синтаксис и наличие MX записей.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    email_lower = email.lower().strip()
+    
+    # 1. Синтаксическая проверка
+    try:
+        validate_email(email_lower, check_deliverability=False)
+    except EmailNotValidError as e:
+        return False, f"Invalid syntax: {e}"
+    
+    # 2. Извлекаем домен
+    if "@" not in email_lower:
+        return False, "Invalid email format"
+    
+    domain = email_lower.split("@", 1)[1]
+    
+    # 3. Проверка MX записей
+    try:
+        answers = dns.resolver.resolve(domain, "MX", lifetime=VALIDATION_TIMEOUT)
+        if not answers:
+            return False, f"No MX records for domain {domain}"
+    except dns.resolver.NXDOMAIN:
+        return False, f"Domain {domain} does not exist"
+    except dns.resolver.NoAnswer:
+        return False, f"No MX records for domain {domain}"
+    except dns.resolver.Timeout:
+        # При таймауте пропускаем проверку - не блокируем отправку
+        logger.warning("MX lookup timeout for %s", domain)
+        return True, ""
+    except Exception as e:
+        # При других ошибках DNS пропускаем проверку
+        logger.warning("MX lookup error for %s: %s", domain, e)
+        return True, ""
+    
+    return True, ""
+
+
 # ────────────────────────────────────────────────────────────
 
 
@@ -41,16 +146,32 @@ def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
     Отправка HTML-писем через Mailgun API.
     Если Mailgun не настроен или не работает — fallback на SMTP.
 
-    Включён rate limiter: минимум MIN_INTERVAL_SECONDS между отправками
-    для защиты от Gmail rate limit.
+    Включает:
+    - Проверку suppression list (bounce, complaint, unsubscribe)
+    - Валидацию email (синтаксис, MX записи)
+    - Rate limiter для защиты от throttling
     """
-    # Проверяем наличие Mailgun настроек
+    email_lower = recipient_email.lower().strip()
+    
+    # 1. Проверяем suppression list
+    if _check_suppression_list(email_lower):
+        logger.info("Skipping suppressed email: %s", email_lower)
+        return False
+    
+    # 2. Валидация email
+    is_valid, error_msg = _validate_email_sync(email_lower)
+    if not is_valid:
+        logger.info("Invalid email %s: %s", email_lower, error_msg)
+        _add_to_suppression(email_lower, SuppressionType.INVALID, error_msg)
+        return False
+    
+    # 3. Отправляем через Mailgun или SMTP
     if settings.MAILGUN_API_KEY and settings.MAILGUN_DOMAIN:
         result = _send_via_mailgun(recipient_email, subject, html_body)
         if result:
             return True
         # Fallback на SMTP если Mailgun не сработал
-        print("Mailgun failed, falling back to SMTP...")
+        logger.warning("Mailgun failed for %s, falling back to SMTP...", email_lower)
         return _send_via_smtp(recipient_email, subject, html_body)
     else:
         # SMTP если Mailgun не настроен
@@ -92,13 +213,14 @@ def _send_via_mailgun(recipient_email: str, subject: str, html_body: str) -> boo
         )
 
         if response.status_code == 200:
+            logger.debug("Email sent via Mailgun to %s", recipient_email)
             return True
         else:
-            print(f"Mailgun error: {response.status_code} - {response.text}")
+            logger.error("Mailgun error for %s: %s - %s", recipient_email, response.status_code, response.text)
             return False
 
     except Exception as e:
-        print(f"Mailgun request error: {repr(e)}")
+        logger.error("Mailgun request error for %s: %s", recipient_email, repr(e))
         return False
 
 
@@ -111,8 +233,6 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
     # Rate limit: ждём если слишком частые отправки
     _wait_for_rate_limit()
 
-    import smtplib
-    import ssl
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     from email.header import Header
@@ -124,7 +244,7 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
     sender_email = settings.EMAIL_SENDER
 
     if not smtp_server:
-        print("SMTP error: EMAIL_HOST not configured")
+        logger.error("SMTP error: EMAIL_HOST not configured")
         return False
 
     text_body = "If you see this text, your email client does not support HTML."
@@ -160,8 +280,9 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
                     s.login(smtp_username, smtp_password)
                 s.sendmail(sender_email, [recipient_email], msg.as_string())
 
+        logger.debug("Email sent via SMTP to %s", recipient_email)
         return True
 
     except Exception as e:
-        print("SMTP error:", repr(e))
+        logger.error("SMTP error for %s: %s", recipient_email, repr(e))
         return False

@@ -147,8 +147,20 @@ def update_author(db: Session, author_id: int, update_data: AuthorUpdate) -> Aut
     author = db.query(Author).filter(Author.id == author_id).first()
     if not author:
         raise HTTPException(status_code=404, detail="Author not found")
-    if update_data.name is not None:
+    
+    # Проверка на дублирование имени (если имя меняется)
+    if update_data.name is not None and update_data.name != author.name:
+        existing_author = db.query(Author).filter(
+            Author.name == update_data.name,
+            Author.id != author_id
+        ).first()
+        if existing_author:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Автор с именем '{update_data.name}' уже существует (id={existing_author.id})"
+            )
         author.name = update_data.name
+    
     if update_data.description is not None:
         author.description = update_data.description
     if update_data.photo is not None:
