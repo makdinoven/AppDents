@@ -1,8 +1,14 @@
+# API для файлов и аудио книг:
+# - GET /api/books/{book_id}/assets — список форматов и аудио; у владельца есть download_url
+# - GET /api/books/{book_id}/download — выдать presigned URL по формату (PDF/EPUB/...)
+# - GET /api/books/{book_id}/pdf — потоковая раздача PDF с поддержкой Range (200 OK → 206 Partial)
+# - GET /api/books/audios/{audio_id}/download — presigned URL аудиодорожки
+
 import logging
 import os
-from datetime import timedelta
-from typing import Optional
 from collections import defaultdict
+from datetime import timedelta
+from typing import Optional, List
 from urllib.parse import urlparse, unquote
 
 import boto3
@@ -100,14 +106,16 @@ def _generate_filename(book: Book, fmt: str) -> str:
     return f"{base_name}.{fmt.lower()}"
 
 
-def _choose_pdf_file(files: list[BookFile]) -> Optional[BookFile]:
-    """Вернуть PDF: сначала watermarked, затем original, иначе None."""
+def _choose_pdf_file(files: List[BookFile]) -> Optional[BookFile]:
+    """Вернуть один PDF: watermarked → fallback на original → иначе None."""
     pdfs = [f for f in files if f.file_format == BookFileFormat.PDF]
     if not pdfs:
         return None
-    w = next((f for f in pdfs if "/watermarked/" in (f.s3_url or "")), None)
-    if w:
-        return w
+
+    wm = next((f for f in pdfs if "/watermarked/" in (f.s3_url or "")), None)
+    if wm:
+        return wm
+
     return next((f for f in pdfs if "/original/" in (f.s3_url or "")), None)
 
 
@@ -121,7 +129,9 @@ def get_book_assets(
 ):
     """
     Отдаёт метаданные по доступным файлам и аудио.
-    • Владельцу / админу добавляем presigned `download_url`.
+
+    • Если пользователь владеет книгой (или админ) — добавляем presigned `download_url`.
+    • Иначе — только список форматов/аудио без ссылок (для UI).
     """
     book = (
         db.query(Book)
@@ -136,8 +146,8 @@ def get_book_assets(
 
     owns = _is_admin(user) or _user_owns_book(db, user.id, book_id)
 
-    # Группируем файлы по формату
-    by_format: dict[BookFileFormat, list[BookFile]] = defaultdict(list)
+    # Группируем файлы по формату, чтобы для каждого формата отдать ровно один файл
+    by_format: dict[BookFileFormat, List[BookFile]] = defaultdict(list)
     for f in book.files or []:
         by_format[f.file_format].append(f)
 
@@ -197,6 +207,10 @@ def download_book_file(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """
+    Возвращает presigned URL на файл книги `fmt`.
+    Для PDF выбирает сначала watermarked, затем original.
+    """
     if not (_is_admin(user) or _user_owns_book(db, user.id, book_id)):
         raise HTTPException(status_code=403, detail="No access to this book")
 
@@ -226,6 +240,9 @@ def download_book_audio(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    """
+    Возвращает presigned URL на аудиофайл книги (глава или полная версия).
+    """
     audio = (
         db.query(BookAudio)
         .options(selectinload(BookAudio.book))
@@ -248,7 +265,8 @@ def stream_book_pdf(
     db: Session = Depends(get_db),
 ):
     """
-    Отдаём PDF: если есть watermarked — его, иначе original.
+    Возвращает PDF с поддержкой HTTP Range, проксируя запрос в S3.
+    Для PDF выбирается watermarked → иначе original.
     """
     book = (
         db.query(Book)
@@ -344,3 +362,54 @@ def stream_book_pdf(
         headers=headers,
         media_type=content_type,
     )
+
+
+@router.get(
+    "/watermark/status",
+    summary="Статус вотермарки по книгам",
+)
+def watermark_status(
+    book_ids: Optional[List[int]] = Query(
+        None,
+        description="Список ID книг; если не указан, берём последние N",
+    ),
+    limit: int = Query(100, ge=1, le=1000, description="Сколько книг вернуть, если book_ids не заданы"),
+    db: Session = Depends(get_db),
+):
+    """
+    Для каждой книги показывает, есть ли watermarked / original PDF.
+    """
+    query = db.query(Book).options(selectinload(Book.files))
+
+    if book_ids:
+        query = query.filter(Book.id.in_(book_ids))
+    else:
+        query = query.order_by(Book.id.desc()).limit(limit)
+
+    books = query.all()
+
+    items = []
+    for b in books:
+        files = b.files or []
+        has_watermarked = any(
+            f.file_format == BookFileFormat.PDF and "/watermarked/" in (f.s3_url or "")
+            for f in files
+        )
+        has_original = any(
+            f.file_format == BookFileFormat.PDF and "/original/" in (f.s3_url or "")
+            for f in files
+        )
+        pdf_file = _choose_pdf_file(files)
+
+        items.append(
+            {
+                "book_id": b.id,
+                "title": b.title,
+                "slug": b.slug,
+                "has_watermarked_pdf": has_watermarked,
+                "has_original_pdf": has_original,
+                "effective_pdf_url": pdf_file.s3_url if pdf_file else None,
+            }
+        )
+
+    return {"items": items}
