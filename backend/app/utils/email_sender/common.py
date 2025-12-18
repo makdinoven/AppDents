@@ -76,7 +76,7 @@ def _check_suppression_list(email: str) -> bool:
         return False  # При ошибке не блокируем отправку
 
 
-def _add_to_suppression(email: str, suppression_type: SuppressionType, error: str = None) -> None:
+def _add_to_suppression(email: str, suppression_type: SuppressionType, error: str = None, source: str = "validation") -> None:
     """Добавляет email в suppression list."""
     try:
         from ...services_v2.email_suppression_service import add_to_suppression
@@ -87,12 +87,38 @@ def _add_to_suppression(email: str, suppression_type: SuppressionType, error: st
                 email=email,
                 suppression_type=suppression_type,
                 error=error,
-                source="validation"
+                source=source
             )
         finally:
             db.close()
     except Exception as e:
         logger.warning("Error adding %s to suppression: %s", email, e)
+
+
+def _is_throttling_error(error_message: str) -> bool:
+    """
+    Проверяет, является ли ошибка throttling (rate limit).
+    Comcast: "4.2.0 Throttled"
+    Gmail: "421 4.7.0 Try again later"
+    Yahoo: "421 Message temporarily deferred"
+    """
+    if not error_message:
+        return False
+    
+    error_lower = error_message.lower()
+    throttle_patterns = [
+        "throttl",           # throttled, throttling
+        "4.2.0",             # Comcast throttle code
+        "4.7.0",             # Gmail rate limit
+        "try again later",
+        "temporarily deferred",
+        "rate limit",
+        "too many",
+        "sending rate",
+        "slow down",
+    ]
+    
+    return any(pattern in error_lower for pattern in throttle_patterns)
 
 
 def _validate_email_sync(email: str) -> Tuple[bool, str]:
@@ -141,7 +167,15 @@ def _validate_email_sync(email: str) -> Tuple[bool, str]:
 # ────────────────────────────────────────────────────────────
 
 
-def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
+def send_html_email(
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    headers: dict[str, str] | None = None,
+    mailgun_options: dict[str, str] | None = None,
+) -> bool:
     """
     Отправка HTML-писем через Mailgun API.
     Если Mailgun не настроен или не работает — fallback на SMTP.
@@ -167,18 +201,37 @@ def send_html_email(recipient_email: str, subject: str, html_body: str) -> bool:
     
     # 3. Отправляем через Mailgun или SMTP
     if settings.MAILGUN_API_KEY and settings.MAILGUN_DOMAIN:
-        result = _send_via_mailgun(recipient_email, subject, html_body)
+        result = _send_via_mailgun(
+            recipient_email,
+            subject,
+            html_body,
+            text_body=text_body,
+            headers=headers,
+            mailgun_options=mailgun_options,
+        )
         if result:
             return True
         # Fallback на SMTP если Mailgun не сработал
         logger.warning("Mailgun failed for %s, falling back to SMTP...", email_lower)
-        return _send_via_smtp(recipient_email, subject, html_body)
+        return _send_via_smtp(
+            recipient_email, subject, html_body, text_body=text_body, headers=headers
+        )
     else:
         # SMTP если Mailgun не настроен
-        return _send_via_smtp(recipient_email, subject, html_body)
+        return _send_via_smtp(
+            recipient_email, subject, html_body, text_body=text_body, headers=headers
+        )
 
 
-def _send_via_mailgun(recipient_email: str, subject: str, html_body: str) -> bool:
+def _send_via_mailgun(
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    headers: dict[str, str] | None = None,
+    mailgun_options: dict[str, str] | None = None,
+) -> bool:
     """
     Отправка через Mailgun HTTP API.
     Включён rate limiter для защиты от rate limit.
@@ -194,15 +247,26 @@ def _send_via_mailgun(recipient_email: str, subject: str, html_body: str) -> boo
 
     url = f"{api_base}/{settings.MAILGUN_DOMAIN}/messages"
 
-    text_body = "If you see this text, your email client does not support HTML."
-
     data = {
         "from": settings.EMAIL_SENDER,
         "to": recipient_email,
         "subject": subject,
-        "text": text_body,
+        "text": text_body
+        or "If you see this text, your email client does not support HTML.",
         "html": html_body,
     }
+
+    # Mailgun message options (o:tracking, o:tag, o:dkim, etc.)
+    if mailgun_options:
+        for k, v in mailgun_options.items():
+            if k:
+                data[str(k)] = "" if v is None else str(v)
+
+    # Custom MIME headers via Mailgun HTTP API: h:Header-Name
+    if headers:
+        for name, value in headers.items():
+            if name:
+                data[f"h:{name}"] = "" if value is None else str(value)
 
     try:
         response = requests.post(
@@ -224,7 +288,14 @@ def _send_via_mailgun(recipient_email: str, subject: str, html_body: str) -> boo
         return False
 
 
-def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
+def _send_via_smtp(
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    headers: dict[str, str] | None = None,
+) -> bool:
     """
     Fallback: SMTP-отправка HTML-писем.
     Работает с портами 25 (без TLS), 465 (SMTPS), 587 (STARTTLS).
@@ -247,13 +318,23 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
         logger.error("SMTP error: EMAIL_HOST not configured")
         return False
 
-    text_body = "If you see this text, your email client does not support HTML."
-
     msg = MIMEMultipart("alternative")
     msg["From"] = sender_email
     msg["To"] = recipient_email
     msg["Subject"] = Header(subject, "utf-8")
-    msg.attach(MIMEText(text_body, "plain", "utf-8"))
+    if headers:
+        for name, value in headers.items():
+            if name and value is not None:
+                msg[str(name)] = str(value)
+
+    msg.attach(
+        MIMEText(
+            text_body
+            or "If you see this text, your email client does not support HTML.",
+            "plain",
+            "utf-8",
+        )
+    )
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     ctx = ssl.create_default_context()
@@ -283,6 +364,32 @@ def _send_via_smtp(recipient_email: str, subject: str, html_body: str) -> bool:
         logger.debug("Email sent via SMTP to %s", recipient_email)
         return True
 
+    except smtplib.SMTPResponseException as e:
+        error_msg = f"{e.smtp_code} {e.smtp_error}"
+        logger.error("SMTP error for %s: %s", recipient_email, error_msg)
+        
+        # Проверяем на throttling
+        if _is_throttling_error(str(e.smtp_error)):
+            logger.warning("Throttling detected for %s, adding to suppression (24h)", recipient_email)
+            _add_to_suppression(
+                recipient_email, 
+                SuppressionType.THROTTLED, 
+                error=error_msg,
+                source="smtp_throttle"
+            )
+        return False
+
     except Exception as e:
-        logger.error("SMTP error for %s: %s", recipient_email, repr(e))
+        error_msg = repr(e)
+        logger.error("SMTP error for %s: %s", recipient_email, error_msg)
+        
+        # Проверяем на throttling в общем случае
+        if _is_throttling_error(error_msg):
+            logger.warning("Throttling detected for %s, adding to suppression (24h)", recipient_email)
+            _add_to_suppression(
+                recipient_email, 
+                SuppressionType.THROTTLED, 
+                error=error_msg,
+                source="smtp_throttle"
+            )
         return False

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # Константы
 SOFT_BOUNCE_THRESHOLD = 3          # После 3 soft bounce → hard bounce
 SOFT_BOUNCE_WINDOW_DAYS = 7        # Окно для подсчета soft bounce
+THROTTLE_WINDOW_HOURS = 24         # Throttling suppression истекает через 24 часа
 
 
 def is_email_suppressed(db: Session, email: str) -> bool:
@@ -25,8 +26,9 @@ def is_email_suppressed(db: Session, email: str) -> bool:
     Проверяет, заблокирован ли email для отправки.
     
     Возвращает True если:
-    - email в suppression list с типом != SOFT_BOUNCE
+    - email в suppression list с типом HARD_BOUNCE, COMPLAINT, UNSUBSCRIBE, INVALID
     - email в suppression list с SOFT_BOUNCE и soft_bounce_count >= 3
+    - email в suppression list с THROTTLED и запись создана менее 24 часов назад
     """
     email_lower = email.lower().strip()
     
@@ -37,15 +39,29 @@ def is_email_suppressed(db: Session, email: str) -> bool:
     if not suppression:
         return False
     
-    # Hard bounce, complaint, unsubscribe, invalid → всегда блокируем
-    if suppression.type != SuppressionType.SOFT_BOUNCE:
+    # Throttled → проверяем время (временная блокировка на 24 часа)
+    if suppression.type == SuppressionType.THROTTLED:
+        now = datetime.utcnow()
+        throttle_window = timedelta(hours=THROTTLE_WINDOW_HOURS)
+        
+        # Если прошло больше 24 часов → можно пробовать снова
+        if suppression.created_at < now - throttle_window:
+            # Удаляем устаревшую throttle запись
+            db.delete(suppression)
+            db.commit()
+            logger.info("Throttle suppression expired for %s, removed", email_lower)
+            return False
+        
         return True
     
     # Soft bounce → проверяем счетчик
-    if suppression.soft_bounce_count >= SOFT_BOUNCE_THRESHOLD:
-        return True
+    if suppression.type == SuppressionType.SOFT_BOUNCE:
+        if suppression.soft_bounce_count >= SOFT_BOUNCE_THRESHOLD:
+            return True
+        return False
     
-    return False
+    # Hard bounce, complaint, unsubscribe, invalid → всегда блокируем
+    return True
 
 
 def add_to_suppression(
@@ -91,6 +107,24 @@ def add_to_suppression(
                     "Email %s converted to hard_bounce after %d soft bounces",
                     email_lower, existing.soft_bounce_count
                 )
+        elif suppression_type == SuppressionType.THROTTLED:
+            # Throttled: обновляем время только если текущий тип тоже THROTTLED
+            # Не перезаписываем постоянные типы (hard_bounce, complaint, etc.)
+            if existing.type == SuppressionType.THROTTLED:
+                # Продлеваем блокировку - обновляем created_at
+                existing.created_at = now
+                existing.error = error or existing.error
+                existing.source = source
+                db.commit()
+                logger.info("Extended throttle suppression for %s", email_lower)
+                return existing
+            else:
+                # Уже есть более серьезная блокировка, не меняем
+                logger.debug(
+                    "Skip throttle for %s, already has %s suppression",
+                    email_lower, existing.type.value
+                )
+                return existing
         else:
             # Hard bounce, complaint, etc. → перезаписываем тип
             existing.type = suppression_type
