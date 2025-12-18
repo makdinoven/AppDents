@@ -57,15 +57,21 @@ def _cdn_url_for_key(key: str) -> str:
     key = key.lstrip("/")
     return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
 
+BACKEND_APP_DIR = Path(__file__).resolve().parent.parent  # /app/app
+ICON_DIR = BACKEND_APP_DIR / "icon"
+
+DENT_S_LOGO = ICON_DIR / "logo-dents-transparent.svg"
+MED_G_LOGO  = ICON_DIR / "logo-medg.png"
+
 
 SITE_CONFIG = {
     "dent-s": {
-        "logo": Path("app/icon/logo-dents.png"),
-        "text": "Dent.S Dental Online School",
+        "logo": DENT_S_LOGO,
+        "text": "dent-s.com Dental Online School",
     },
     "med-g": {
-        "logo": Path("app/icon/logo-medg.png"),
-        "text": "Med.G Online Medical Group",
+        "logo": MED_G_LOGO,
+        "text": "med-g.com Medical Group",
     },
 }
 
