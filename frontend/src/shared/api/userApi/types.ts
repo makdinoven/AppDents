@@ -10,15 +10,8 @@ export interface LoginType {
   password: string;
 }
 
-export interface ChangePasswordType {
-  email: string;
-}
 export interface EnterEmailType {
   email: string;
-}
-
-export interface ResetPasswordType {
-  password: string;
 }
 
 export interface PaymentType {
