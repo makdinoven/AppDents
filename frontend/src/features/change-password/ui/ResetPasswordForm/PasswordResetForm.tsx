@@ -1,21 +1,21 @@
-import s from "./PasswordReset.module.scss";
+import s from "./PasswordResetForm.module.scss";
 import { Trans } from "react-i18next";
-import Form from "../../../../../../shared/components/Modals/modules/Form/Form.tsx";
+import Form from "../../../../shared/components/Modals/modules/Form/Form.tsx";
 import { t } from "i18next";
-import Button from "../../../../../../shared/components/ui/Button/Button.tsx";
-import { userApi } from "../../../../../../shared/api/userApi/userApi.ts";
+import Button from "../../../../shared/components/ui/Button/Button.tsx";
+import { userApi } from "@/shared/api/userApi/userApi.ts";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../../shared/store/store.ts";
-import { resetPasswordSchema } from "../../../../../../shared/common/schemas/resetPasswordSchema.ts";
-import { ResetPasswordType } from "../../../../../../shared/api/userApi/types.ts";
+import { AppRootStateType } from "@/shared/store/store.ts";
+import { resetPasswordSchema } from "@/shared/common/schemas/resetPasswordSchema.ts";
+import { ResetPasswordType } from "@/shared/api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
-import { Alert } from "../../../../../../shared/components/ui/Alert/Alert.tsx";
-import { AlertCirceIcon, CheckMark } from "../../../../../../shared/assets/icons";
-import PasswordInput from "../../../../../../shared/components/ui/Inputs/PasswordInput/PasswordInput.tsx";
+import { Alert } from "@/shared/components/ui/Alert/Alert.tsx";
+import { AlertCirceIcon, CheckMark } from "../../../../shared/assets/icons";
+import PasswordInput from "../../../../shared/components/ui/Inputs/PasswordInput/PasswordInput.tsx";
 import { useState } from "react";
 
-const PasswordReset = () => {
+export const PasswordResetForm = () => {
   const { id } = useSelector((state: AppRootStateType) => state.user);
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
@@ -73,5 +73,3 @@ const PasswordReset = () => {
     </Form>
   );
 };
-
-export default PasswordReset;

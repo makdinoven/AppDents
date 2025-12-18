@@ -1,7 +1,7 @@
 import s from "./ProfilePage.module.scss";
 import { NavLink, Outlet } from "react-router-dom";
 import { t } from "i18next";
-import { PATHS } from "../../../app/routes/routes.ts";
+import { PATHS } from "@/app/routes/routes.ts";
 
 const ProfilePage = () => {
   const tabs: { path: string; title: string }[] = [
