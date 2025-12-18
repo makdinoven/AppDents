@@ -46,7 +46,7 @@ s3v4 = boto3.client(
 BACKEND_APP_DIR = Path(__file__).resolve().parent.parent  # /app/app
 ICON_DIR = BACKEND_APP_DIR / "icon"
 
-DENT_S_LOGO = ICON_DIR / "logo-dents.png"
+DENT_S_LOGO = ICON_DIR / "logo-dents-transparent.svg"
 MED_G_LOGO  = ICON_DIR / "logo-medg.png"
 
 SITE_CONFIG = {
