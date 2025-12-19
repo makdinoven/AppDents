@@ -8,7 +8,7 @@ from ..dependencies.auth import get_current_user_optional
 from ..models.models_v2 import User
 
 # Переиспользуем проверенные хелперы из admin video_diagnostics (они уже умеют доставать key из URL и читать S3 metadata)
-from .video_diagnostics import key_from_url, check_s3_object
+from .video_diagnostics import key_from_url, check_s3_object, safe_cdn_url, check_moov_position
 
 
 router = APIRouter()
@@ -37,8 +37,8 @@ def request_faststart(
     - Не требует admin роли, но требует авторизацию (иначе легко абьюзить).
     - Делает дедуп/кулдаун по s3_key на уровне процесса.
     """
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    # Важно: видео может быть доступно до логина. Поэтому endpoint допускает анонимный вызов,
+    # но защищён кулдауном по s3_key (best-effort, на уровне процесса).
 
     s3_key = key_from_url(payload.video_url)
     low = s3_key.lower()
@@ -78,6 +78,69 @@ def request_faststart(
     }
 
 
+@router.post("/ensure-faststart")
+def ensure_faststart(
+    payload: RequestFaststartPayload,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+) -> Dict[str, Any]:
+    """
+    Более надёжный user-endpoint:
+    - Проверяет S3 metadata faststart
+    - Если faststart неизвестен/false — делает server-side check moov-position (ffprobe)
+    - Ставит задачу в очередь только если moov после mdat (т.е. faststart реально нужен)
+
+    Не требует admin роли и допускает анонимный вызов (видео может быть доступно до логина),
+    но защищён кулдауном по s3_key.
+    """
+    s3_key = key_from_url(payload.video_url)
+    low = s3_key.lower()
+    if not (low.endswith(".mp4") or low.endswith(".mov")):
+        raise HTTPException(status_code=400, detail="Only mp4/mov supported")
+
+    check = check_s3_object(s3_key)
+    if check.status == "error":
+        raise HTTPException(status_code=404, detail=f"Video not found: {check.message}")
+    if check.details.get("faststart") == "true":
+        return {"status": "skipped", "message": "Already faststart", "s3_key": s3_key}
+
+    now = time.time()
+    last = _RECENT_FASTSTART_REQUESTS.get(s3_key, 0.0)
+    if now - last < _FASTSTART_COOLDOWN_SEC:
+        return {"status": "cooldown", "message": "Faststart already requested recently", "s3_key": s3_key}
+
+    # Server-side moov check
+    cdn_url = safe_cdn_url(s3_key)
+    moov = check_moov_position(cdn_url)
+    details = moov.details or {}
+    moov_pos = details.get("moov_position")
+    mdat_pos = details.get("mdat_position")
+
+    if isinstance(moov_pos, int) and isinstance(mdat_pos, int) and moov_pos < mdat_pos:
+        return {"status": "skipped", "message": "faststart OK (moov before mdat)", "s3_key": s3_key}
+
+    # Если moov после mdat — очередь
+    if isinstance(moov_pos, int) and isinstance(mdat_pos, int) and moov_pos > mdat_pos:
+        _RECENT_FASTSTART_REQUESTS[s3_key] = now
+        from ..tasks.fast_start import process_faststart_video
+
+        task = process_faststart_video.apply_async(args=[s3_key], queue="special")
+        return {
+            "status": "queued",
+            "task_id": task.id,
+            "s3_key": s3_key,
+            "reason": payload.reason,
+            "message": "Faststart task queued (moov after mdat)",
+        }
+
+    # Не смогли определить — не создаём задач автоматически, чтобы не штормить.
+    return {
+        "status": "unknown",
+        "message": moov.message,
+        "s3_key": s3_key,
+        "details": details,
+    }
+
+
 class FaststartStatusResponse(BaseModel):
     video_url: str
     s3_key: str
@@ -96,8 +159,7 @@ def faststart_status(
     task_id: Optional[str] = Query(default=None, description="Celery task id (если есть)"),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> FaststartStatusResponse:
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    # допускаем анонимный polling
 
     s3_key = key_from_url(video_url)
     check = check_s3_object(s3_key)
