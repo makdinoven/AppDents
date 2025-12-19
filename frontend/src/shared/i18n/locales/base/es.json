@@ -59,7 +59,6 @@
   "registrationSuccess": "¡Registro exitoso! Tu contraseña ha sido enviada a tu correo electrónico. Ahora puedes iniciar sesión. Si no ves el mensaje, revisa la carpeta de spam.",
   "showLess": "Mostrar menos",
   "readMore": "Leer más",
-  "support": "Soporte",
   "copy": "Copiar",
   "copied": "¡Copiado!",
   "successPaymentWithBalance": "¡Pago exitoso! Ahora tienes acceso a tu compra. Saldo restante: ${{balance}}.",
@@ -580,5 +579,11 @@
     "alreadyCompleted": "Ya completaste esta encuesta",
     "close": "Cerrar",
     "skip": "Más tarde"
+  },
+  "support": {
+    "supportCenter": "Centro de soporte"
+  },
+  "notifications": {
+    "notifications": "Notificaciones"
   }
 }

@@ -16,7 +16,7 @@
 
 .buttons {
   display: flex;
-  column-gap: 20px;
+  column-gap: 15px;
   margin-left: auto;
 }
 
@@ -26,7 +26,7 @@
   @include clamped-p3;
   background-color: $accent;
   color: $text-color;
-  padding: 5px 30px;
+  padding: 5px 25px;
   border-radius: 30px;
   @include flex-center();
   gap: 5px;
@@ -69,7 +69,7 @@
   svg {
     path {
       stroke: $accent;
-      stroke-width: 2.5;
+      stroke-width: 1.5;
       @include transition();
     }
   }
@@ -89,14 +89,10 @@
   }
 }
 
-.section_part {
-  padding: 10px 20px;
-}
-
 .section_header,
 .section_bottom,
 .section_middle {
-  padding: 20px;
+  padding: 15px;
 }
 
 .section_middle {
@@ -116,9 +112,10 @@
   @include clamped-p3;
   border-radius: 30px;
   margin-left: auto;
-  padding: 5px 30px;
+  padding: 5px 25px;
   text-align: center;
   height: 40px;
+  text-wrap: nowrap;
 }
 
 .invite_row {
@@ -238,6 +235,41 @@
     border-bottom-right-radius: 20px;
     box-shadow: 15px 15px 0 2px $primary;
     pointer-events: none;
+  }
+}
+
+@media (max-width: $sm-breakpoint) {
+  .section_bottom {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .section_middle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .friends {
+    text-align: center;
+  }
+
+  .section_header {
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .spend {
+    margin: 0;
+  }
+
+  .buttons {
+    margin-left: unset;
+  }
+
+  .invite_link_wrapper {
+    flex-wrap: nowrap;
+    text-wrap: nowrap;
   }
 }
 

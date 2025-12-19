@@ -29,7 +29,7 @@
   &:hover {
     svg {
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }
@@ -37,7 +37,7 @@
   &.active {
     svg {
       path {
-        fill: $primary;
+        stroke: $primary;
       }
     }
   }

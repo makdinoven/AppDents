@@ -6,9 +6,10 @@ import { t } from "i18next";
 
 interface SidebarShellProps {
   data: SidebarData[];
+  onClick?: () => void;
 }
 
-export const SidebarShell = ({ data }: SidebarShellProps) => {
+export const SidebarShell = ({ data, onClick }: SidebarShellProps) => {
   return (
     <div className={s.sidebar_shell}>
       {data.length > 0 &&
@@ -19,6 +20,7 @@ export const SidebarShell = ({ data }: SidebarShellProps) => {
             className={({ isActive }) =>
               `${s.sidebar_item} ${isActive ? s.active : ""}`
             }
+            onClick={onClick}
           >
             <div className={s.item_content}>
               <span className={s.icon}>{item.icon}</span>

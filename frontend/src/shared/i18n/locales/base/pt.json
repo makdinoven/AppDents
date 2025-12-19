@@ -59,7 +59,6 @@
   "registrationSuccess": "Cadastro realizado com sucesso! Sua senha foi enviada para seu e-mail. Agora você pode fazer login. Se não encontrar o e-mail, verifique a pasta de spam.",
   "showLess": "Mostrar menos",
   "readMore": "Leia mais",
-  "support": "Suporte",
   "copy": "Copiar",
   "copied": "Copiado!",
   "successPaymentWithBalance": "Pagamento realizado com sucesso! Agora você tem acesso à sua compra. Saldo restante: ${{balance}}.",
@@ -572,5 +571,11 @@
     "alreadyCompleted": "Você já completou esta pesquisa",
     "close": "Fechar",
     "skip": "Mais tarde"
+  },
+  "support": {
+    "supportCenter": "Central de suporte"
+  },
+  "notifications": {
+    "notifications": "Notificações"
   }
 }

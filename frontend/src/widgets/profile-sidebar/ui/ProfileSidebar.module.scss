@@ -1,0 +1,75 @@
+.profile_sidebar_wrapper {
+  @include flex-column();
+  gap: 15px;
+
+  .burger_menu_icon,
+  .close_menu_icon {
+    width: 30px;
+    height: 30px;
+    display: none;
+
+    path {
+      stroke: $accent;
+    }
+  }
+}
+
+.profile_sidebar_content {
+  position: relative;
+}
+
+.profile_sidebar {
+  @include flex-column();
+  padding: 10px;
+  gap: 10px;
+  border-radius: 20px;
+  border: 1px solid $hover-color;
+  height: fit-content;
+  width: fit-content;
+  background-color: $background-color;
+}
+
+.logout_wrapper {
+  align-self: flex-end;
+  padding: 10px 15px 0 0;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profile_sidebar_wrapper {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999;
+    left: 0;
+    pointer-events: auto;
+
+    .burger_menu_icon,
+    .close_menu_icon {
+      display: block;
+      margin-left: 10px;
+
+      @media (hover: hover) {
+      }
+      &:active path {
+        stroke: $primary;
+      }
+    }
+  }
+
+  .profile_sidebar_content {
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+  }
+
+  .profile_sidebar {
+    width: 100%;
+    height: 100%;
+    transform: translateX(-100%);
+    @include transition();
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+}

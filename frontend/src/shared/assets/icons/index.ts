@@ -94,3 +94,4 @@ export { default as HistoryList } from "./history-list.svg?react";
 export { default as ItemsIcon } from "./items.svg?react";
 export { default as NotificationIcon } from "./notification.svg?react";
 export { default as AdminIcon } from "./admin.svg?react";
+export { default as BurgerMenuIcon } from "./burger-menu-icon.svg?react";

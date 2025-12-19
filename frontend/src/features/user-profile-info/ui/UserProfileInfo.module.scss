@@ -1,0 +1,24 @@
+.user_profile_info {
+  @include flex-center();
+  gap: 15px;
+  align-self: flex-start;
+  max-width: 100%;
+  text-overflow: ellipsis;
+
+  svg {
+    width: 40px;
+    height: 40px;
+    circle {
+      fill: $hover-color-darken-analogue;
+      stroke: $hover-color-darken-analogue;
+    }
+  }
+
+  span {
+    @include clamped-p2();
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
