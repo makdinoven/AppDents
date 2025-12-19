@@ -12,7 +12,7 @@ type Props = {
   controls?: boolean;
   loop?: boolean;
   muted?: boolean;
-  preferHls?: boolean; // по умолчанию false (стримим MP4; HLS включаем явно)
+  preferHls?: boolean; // если не задано: Safari/iOS → HLS, остальные → MP4
 };
 
 const externalHosts = [
@@ -411,9 +411,10 @@ const HlsVideo: React.FC<Props> = ({
   controls = true,
   loop,
   muted = true,
-  // По умолчанию: без HLS (чтобы не дёргать m3u8/сегменты и опираться на стабильный MP4 Range=206)
-  preferHls = false,
+  preferHls: preferHlsProp,
 }) => {
+  // Дефолт: Safari/iOS лучше работает с HLS (нативно), десктоп — с MP4 (через media.*).
+  const preferHls = preferHlsProp ?? isProbablySafari();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [useMp4Fallback, setUseMp4Fallback] = useState(!preferHls);
@@ -743,7 +744,8 @@ const HlsVideo: React.FC<Props> = ({
       setUseMp4Fallback(false);
       
       try {
-        const url = await resolveHlsUrl(srcMp4);
+        // HLS тоже берём через media.* (DNS only), чтобы не зависеть от Cloudflare proxy.
+        const url = await resolveHlsUrl(mp4PlaybackUrl);
         if (cancelled) return;
 
         if (url) {

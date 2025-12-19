@@ -1,4 +1,4 @@
-import { CDN_ORIGIN } from "../helpers/commonConstants.ts";
+//import { CDN_ORIGIN } from "../helpers/commonConstants.ts";
 
 /** SHA-1 для fallback слуга (как на бэке) */
 async function sha1Hex(input: string): Promise<string> {
@@ -58,6 +58,7 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
     return null;
   }
 
+  const baseOrigin = u.origin;
   const pathnameDecoded = decodeURIComponent(u.pathname); // ключи у вас юникод
   if (!pathnameDecoded.toLowerCase().endsWith(".mp4")) return null;
 
@@ -101,7 +102,8 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
     new Set(
       slugCandidates
         .filter(Boolean)
-        .map((s) => `${CDN_ORIGIN}/${basePath}/.hls/${s}/playlist.m3u8`),
+        // Важно: origin берём из mp4Url (например media.dent-s.com), чтобы HLS плейлист/сегменты шли с того же хоста.
+        .map((s) => `${baseOrigin}/${basePath}/.hls/${s}/playlist.m3u8`),
     ),
   );
   return uniq;
