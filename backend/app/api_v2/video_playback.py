@@ -1,8 +1,8 @@
 import time
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from ..dependencies.auth import get_current_user_optional
 from ..models.models_v2 import User
@@ -92,8 +92,8 @@ class FaststartStatusResponse(BaseModel):
 
 @router.get("/faststart-status", response_model=FaststartStatusResponse)
 def faststart_status(
-    video_url: str,
-    task_id: Optional[str] = Field(default=None, description="Celery task id (если есть)"),
+    video_url: str = Query(..., description="URL видео"),
+    task_id: Optional[str] = Query(default=None, description="Celery task id (если есть)"),
     current_user: Optional[User] = Depends(get_current_user_optional),
 ) -> FaststartStatusResponse:
     if current_user is None:
