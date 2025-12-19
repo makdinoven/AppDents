@@ -113,6 +113,22 @@ export const mainApi = {
     });
   },
 
+  // Video Playback (user)
+  requestFaststart(videoUrl: string, reason?: string) {
+    return instance.post(
+      "video_playback/request-faststart",
+      { video_url: videoUrl, ...(reason ? { reason } : {}) },
+      { headers: getAuthHeaders() },
+    );
+  },
+
+  getFaststartStatus(videoUrl: string, taskId?: string) {
+    return instance.get("video_playback/faststart-status", {
+      params: { video_url: videoUrl, ...(taskId ? { task_id: taskId } : {}) },
+      headers: getAuthHeaders(),
+    });
+  },
+
   searchProfessors(params: ParamsType) {
     return instance.get("authors/search", {
       params: params,

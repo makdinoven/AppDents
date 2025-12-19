@@ -47,6 +47,7 @@
   "mail": "correo",
   "successPayment": "Tu compra ha sido exitosa. Serás redirigido a tu perfil en breve, donde podrás acceder al curso y comenzar a aprender.",
   "videoFailedToLoad": "No se pudo cargar el video. Intenta verlo directamente",
+  "videoPlaybackNotice": "Si tienes problemas con el video, te pedimos disculpas. Estamos mejorando activamente los videos en la plataforma, por lo que algunos usuarios pueden tener fallos temporales. Lo solucionaremos pronto — y será aún mejor que antes.",
   "watchHere": "aquí.",
   "total": "Total:",
   "emailGrant": "Este correo electrónico se utilizará para otorgarle acceso a su curso comprado inmediatamente después del pago.",

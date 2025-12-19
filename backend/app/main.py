@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from .api_v2 import users, courses, landings, authors, photo, stripe, wallet, boomstream_migration, cart, helpers, \
     health_checkers, smart_validations, clip_generator, slider, books, book_admin, media, search, book_metadata, \
     ad_control, book_ad_control, policy, video_repair, creatives, book_assets, summary_generator, course_request, filters, \
-    surveys, restore_photos, migrate_landing_photos, mailgun_webhooks, video_diagnostics
+    surveys, restore_photos, migrate_landing_photos, mailgun_webhooks, video_diagnostics, video_playback
 
 from fastapi.middleware.cors import CORSMiddleware
 from .middlewares.rate_limiter import RateLimitMiddleware
@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(migrate_landing_photos.router, prefix="/api", tags=["migrate_landing_photos"])
     app.include_router(mailgun_webhooks.router, prefix="/api", tags=["mailgun"])
     app.include_router(video_diagnostics.router, prefix="/api/video_diagnostics", tags=["Video Diagnostics"])
+    app.include_router(video_playback.router, prefix="/api/video_playback", tags=["Video Playback"])
 
 
     @app.on_event("startup")

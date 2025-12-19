@@ -147,6 +147,8 @@ const LessonPage = () => {
               >
                 {t("watchHere")}
               </a>
+              <br />
+              {t("videoPlaybackNotice")}
             </p>
           )}
         </div>
