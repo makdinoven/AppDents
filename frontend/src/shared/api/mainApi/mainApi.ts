@@ -118,14 +118,23 @@ export const mainApi = {
     return instance.post(
       "video_playback/request-faststart",
       { video_url: videoUrl, ...(reason ? { reason } : {}) },
-      { headers: getAuthHeaders() },
+      // Важно: видео может открываться до логина → endpoint допускает anonymous.
+      // Поэтому НЕ используем getAuthHeaders(), который бросает исключение без токена.
+      undefined,
+    );
+  },
+
+  ensureFaststart(videoUrl: string, reason?: string) {
+    return instance.post(
+      "video_playback/ensure-faststart",
+      { video_url: videoUrl, ...(reason ? { reason } : {}) },
+      undefined,
     );
   },
 
   getFaststartStatus(videoUrl: string, taskId?: string) {
     return instance.get("video_playback/faststart-status", {
       params: { video_url: videoUrl, ...(taskId ? { task_id: taskId } : {}) },
-      headers: getAuthHeaders(),
     });
   },
 

@@ -25,6 +25,25 @@ const externalHosts = [
 
 const DEBUG_HLS_RANGE = Boolean(import.meta.env?.DEV);
 
+const MP4_MEDIA_HOST = "media.dent-s.com";
+const CDN_HOST = "cdn.dent-s.com";
+
+const toMediaHostMp4Url = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // Не трогаем внешние плееры
+    if (externalHosts.some((h) => u.hostname.includes(h))) return url;
+    if (u.hostname === MP4_MEDIA_HOST) return url;
+    if (u.hostname === CDN_HOST) {
+      u.hostname = MP4_MEDIA_HOST;
+      return u.toString();
+    }
+    return url;
+  } catch {
+    return url;
+  }
+};
+
 const findAscii = (buf: ArrayBuffer, ascii: string): number => {
   const needle = new TextEncoder().encode(ascii);
   const hay = new Uint8Array(buf);
@@ -49,12 +68,14 @@ const parseTotalFromContentRange = (cr: string | null): number | null => {
 type FaststartProbeResult = "faststart_ok" | "no_faststart" | "unknown";
 
 const probeFaststartByRange = async (url: string): Promise<FaststartProbeResult> => {
+  const PROBE_BYTES = 2 * 1024 * 1024; // 2MB
+
   // 1) небольшой кусок с начала — ищем 'moov'
   const headResp = await fetch(url, {
     method: "GET",
     mode: "cors",
     cache: "no-store",
-    headers: { Range: "bytes=0-524287" }, // 512KB
+    headers: { Range: `bytes=0-${PROBE_BYTES - 1}` }, // 2MB
   });
   if (!headResp.ok && headResp.status !== 206) return "unknown";
   const headBuf = await headResp.arrayBuffer();
@@ -72,7 +93,7 @@ const probeFaststartByRange = async (url: string): Promise<FaststartProbeResult>
   if (!total) return "unknown";
 
   // 3) кусок с хвоста — если там есть 'moov', то это почти наверняка “moov в конце”
-  const tailStart = Math.max(total - 524288, 0);
+  const tailStart = Math.max(total - PROBE_BYTES, 0);
   const tailResp = await fetch(url, {
     method: "GET",
     mode: "cors",
@@ -362,6 +383,9 @@ const HlsVideo: React.FC<Props> = ({
   const [useMp4Fallback, setUseMp4Fallback] = useState(!preferHls);
   const [hlsUrl, setHlsUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // MP4 должен идти через отдельный поддомен (DNS only), чтобы не проксироваться через Cloudflare
+  const mp4PlaybackUrl = toMediaHostMp4Url(srcMp4);
   
   // Ref для таймеров чтобы очищать их
   const fallbackTimerRef = useRef<number | null>(null);
@@ -403,6 +427,7 @@ const HlsVideo: React.FC<Props> = ({
   const faststartProbeTimerRef = useRef<number | null>(null);
   const faststartRequestedRef = useRef<Set<string>>(new Set());
   const faststartPollTimerRef = useRef<number | null>(null);
+  const faststartStartupTimerRef = useRef<number | null>(null);
 
   const [faststartUi, setFaststartUi] = useState<{
     phase: "idle" | "queued" | "running" | "done" | "error";
@@ -446,8 +471,15 @@ const HlsVideo: React.FC<Props> = ({
     }
   }, []);
 
+  const clearFaststartStartupTimer = useCallback(() => {
+    if (faststartStartupTimerRef.current) {
+      window.clearTimeout(faststartStartupTimerRef.current);
+      faststartStartupTimerRef.current = null;
+    }
+  }, []);
+
   const maybeRequestFaststart = useCallback(
-    (reason: string) => {
+    (reason: string, delayMs: number = 4000) => {
       const video = videoRef.current;
       if (!video) return;
       // Только для MP4-режима
@@ -455,6 +487,8 @@ const HlsVideo: React.FC<Props> = ({
       if (playbackStartedRef.current) return;
       if ((video.currentTime || 0) > 0.5) return;
       if (faststartRequestedRef.current.has(srcMp4)) return;
+
+      console.warn("[Video][MP4] maybeRequestFaststart scheduled:", { reason, delayMs, src: srcMp4 });
 
       // не штурмим — ставим задержку, чтобы не реагировать на краткие "waiting"
       clearFaststartProbeTimer();
@@ -466,22 +500,41 @@ const HlsVideo: React.FC<Props> = ({
           if (playbackStartedRef.current) return;
           if ((v.currentTime || 0) > 0.5) return;
 
-          const probe = await probeFaststartByRange(srcMp4);
-          if (probe !== "no_faststart") return;
+          // Важно: client-side probe может не сработать (CORS/Range/preflight, moov вне окна и т.п.).
+          // Поэтому всегда дергаем backend ensure-faststart: он сам проверит moov/mdat (ffprobe) и решит, ставить задачу или нет.
+          let probe: FaststartProbeResult = "unknown";
+          try {
+            probe = await probeFaststartByRange(mp4PlaybackUrl);
+          } catch {
+            // ignore
+          }
 
           faststartRequestedRef.current.add(srcMp4);
-          console.warn("[Video][MP4] Suspected NO faststart (moov in tail). Requesting backend faststart job...", {
+          console.warn("[Video][MP4] Requesting backend ensure-faststart...", {
             reason,
-            src: srcMp4,
+            probe,
+            src: mp4PlaybackUrl,
           });
           setFaststartUi({
             phase: "queued",
             message: "Прямо сейчас исправляем видео (переносим метаданные MP4 для быстрого старта)…",
           });
-          const resp = await mainApi.requestFaststart(srcMp4, reason);
+          const resp = await mainApi.ensureFaststart(mp4PlaybackUrl, reason);
+          const status = String(resp?.data?.status || "");
           const taskId = resp?.data?.task_id as string | undefined;
-          if (taskId) {
+          console.warn("[Video][MP4] ensure-faststart response:", { status, taskId });
+          if (status === "queued" && taskId) {
             setFaststartUi((s) => ({ ...s, phase: "queued", taskId }));
+          } else if (status === "skipped") {
+            setFaststartUi({ phase: "idle" });
+          } else if (status === "cooldown") {
+            // уже запрашивали недавно — просто оставляем UI и ждём polling без task_id (по metadata)
+            setFaststartUi((s) => ({ ...s, phase: "queued" }));
+          } else if (status === "unknown") {
+            setFaststartUi({
+              phase: "error",
+              message: "Не удалось определить, нужен ли faststart. Попробуйте позже.",
+            });
           }
         } catch (e) {
           // не ломаем воспроизведение из-за диагностики
@@ -491,9 +544,9 @@ const HlsVideo: React.FC<Props> = ({
             message: "Не удалось запустить автоматическое исправление. Попробуйте обновить страницу или повторить позже.",
           });
         }
-      }, 4000);
+      }, delayMs);
     },
-    [clearFaststartProbeTimer, preferHls, srcMp4, useMp4Fallback],
+    [clearFaststartProbeTimer, preferHls, srcMp4, mp4PlaybackUrl, useMp4Fallback],
   );
 
   // Polling статуса faststart: показываем пользователю прогресс и по завершению обновляем страницу
@@ -570,7 +623,7 @@ const HlsVideo: React.FC<Props> = ({
 
   // БЫСТРЫЙ fallback на MP4
   const fallbackToMp4 = useCallback(() => {
-    console.log("[HLS] FAST fallback to MP4:", srcMp4);
+    console.log("[HLS] FAST fallback to MP4:", mp4PlaybackUrl);
     
     clearFallbackTimer();
     playbackStartedRef.current = false;
@@ -590,10 +643,10 @@ const HlsVideo: React.FC<Props> = ({
     
     // Устанавливаем MP4 напрямую
     if (videoRef.current) {
-      videoRef.current.src = srcMp4;
+      videoRef.current.src = mp4PlaybackUrl;
       videoRef.current.load();
     }
-  }, [srcMp4, clearFallbackTimer]);
+  }, [mp4PlaybackUrl, clearFallbackTimer]);
 
   // 1) Резолвим реальный playlist.m3u8
   useEffect(() => {
@@ -676,9 +729,22 @@ const HlsVideo: React.FC<Props> = ({
 
     // MP4 фолбэк или HLS не найден
     if (!preferHls || useMp4Fallback || !hlsUrl) {
-      console.log("[Video] Using MP4 source:", srcMp4);
-      video.src = srcMp4;
+      console.log("[Video] Using MP4 source:", mp4PlaybackUrl);
+      video.src = mp4PlaybackUrl;
       video.load();
+
+      // Если MP4 не стартует “в начале” за разумное время — запускаем faststart probe сами (не дожидаясь waiting/stalled).
+      // Это покрывает случаи, когда браузер не генерирует события, но всё равно пытается читать хвост файла.
+      clearFaststartStartupTimer();
+      faststartStartupTimerRef.current = window.setTimeout(() => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (playbackStartedRef.current) return;
+        if ((v.currentTime || 0) > 0.5) return;
+        // Быстрый запуск probe без дополнительной задержки
+        maybeRequestFaststart("startup_timeout", 0);
+      }, 9000);
+
       return;
     }
 
@@ -1370,7 +1436,7 @@ const HlsVideo: React.FC<Props> = ({
     if (externalHosts.some((host) => u.hostname.includes(host))) {
       return (
         <div className={className}>
-          <iframe src={srcMp4} width="100%" height="100%" allowFullScreen />
+          <iframe src={mp4PlaybackUrl} width="100%" height="100%" allowFullScreen />
         </div>
       );
     }
@@ -1390,7 +1456,9 @@ const HlsVideo: React.FC<Props> = ({
     // video.onerror для HLS часто “шумный” и не должен инициировать fallback.
     // Источник истины для ошибок HLS — Hls.Events.ERROR (для hls.js). Здесь только логируем.
     console.log("[Video] onError: no fallback (HLS ошибки обрабатываются в hls.js handler)");
-  }, []);
+    // Для MP4: если ошибка на старте, попробуем запустить server-side ensure-faststart
+    maybeRequestFaststart("error", 0);
+  }, [maybeRequestFaststart]);
 
   // Обработчик начала воспроизведения - отменяем таймаут
   const handlePlaying = useCallback(() => {
