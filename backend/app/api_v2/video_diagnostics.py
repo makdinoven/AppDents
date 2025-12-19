@@ -72,6 +72,18 @@ class VideoHealth:
 
 def key_from_url(url: str) -> str:
     """Извлекает S3 key из CDN URL."""
+    # В реальности video_url часто попадает к нам как query-параметр и может быть
+    # уже URL-encoded (например "%20"), а затем кодируется второй раз ("%2520").
+    # Поэтому делаем unquote несколько раз (с ограничением), чтобы стабилизировать ключ.
+    def _unquote_n(s: str, n: int = 2) -> str:
+        out = s
+        for _ in range(max(1, n)):
+            nxt = unquote(out)
+            if nxt == out:
+                break
+            out = nxt
+        return out
+
     prefix = S3_PUBLIC_HOST.rstrip("/") + "/"
     if url.startswith(prefix):
         key = url[len(prefix):]
@@ -79,7 +91,7 @@ def key_from_url(url: str) -> str:
         parsed = urlparse(url)
         key = parsed.path.lstrip("/")
     # Декодируем URL encoding
-    return unquote(key)
+    return _unquote_n(key, 2)
 
 
 def safe_cdn_url(key: str) -> str:
