@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { AUTH_MODAL_ROUTES } from "../../../shared/common/helpers/commonConstants.ts";
+import { AUTH_MODAL_ROUTES } from "@/shared/common/helpers/commonConstants.ts";
 import { PATHS } from "../routes.ts";
 
 export const ScrollToTopProvider = ({ children }: { children: ReactNode }) => {
@@ -14,6 +14,9 @@ export const ScrollToTopProvider = ({ children }: { children: ReactNode }) => {
     PATHS.PROFILE_MY_COURSES,
     PATHS.PROFILE_MY_BOOKS,
     PATHS.PROFILE_PURCHASE_HISTORY,
+    PATHS.SUPPORT,
+    PATHS.SUPPORT_CHAT.pattern,
+    PATHS.PROFILE_COURSE_LESSON.pattern,
     ...AUTH_MODAL_ROUTES,
   ];
 

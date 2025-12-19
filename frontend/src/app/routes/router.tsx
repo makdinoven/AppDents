@@ -3,59 +3,62 @@ import MainLayout from "./layouts/MainLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./protected/ProtectedRoute";
 import AdminRoute from "./protected/AdminRoute";
-import MainPage from "../../pages/MainPage/MainPage";
-import Courses from "../../pages/Courses/Courses";
-import Books from "../../pages/Books/Books";
-import Professors from "../../pages/Professors/Professors";
-import ProfessorPage from "../../pages/ProfessorPage/ProfessorPage";
-import UniversalPage from "../../pages/UniversalPage/UniversalPage";
-import SuccessPayment from "../../pages/SuccessPayment/SuccessPayment";
-import Landing from "../../pages/Landing/Landing";
-import BookLanding from "../../pages/BookLanding/BookLanding";
+import MainPage from "@/pages/MainPage/MainPage";
+import Courses from "@/pages/Courses/Courses";
+import Books from "@/pages/Books/Books";
+import Professors from "@/pages/Professors/Professors";
+import ProfessorPage from "@/pages/ProfessorPage/ProfessorPage";
+import UniversalPage from "@/pages/UniversalPage/UniversalPage";
+import SuccessPayment from "@/pages/SuccessPayment/SuccessPayment";
+import Landing from "@/pages/Landing/Landing";
+import BookLanding from "@/pages/BookLanding/BookLanding";
 import ProfileLayout from "./layouts/ProfileLayout.tsx";
-import ProfilePage from "../../pages/ProfilePage/layout/ProfilePage";
-import ProfileMain from "../../pages/ProfilePage/pages/ProfileMain/ProfileMain";
-import YourCourses from "../../pages/ProfilePage/pages/YourCourses";
-import YourBooks from "../../pages/ProfilePage/pages/YourBooks";
-import PurchaseHistory from "../../pages/ProfilePage/pages/PurchaseHistory";
-import InvitedUsers from "../../pages/ProfilePage/pages/InvitedUsers";
-import CoursePage from "../../pages/ProfilePage/pages/CoursePage/CoursePage";
-import LessonPage from "../../pages/ProfilePage/pages/LessonPage/LessonPage";
-import BookPage from "../../pages/ProfilePage/pages/BookPage/BookPage";
-import AdminPage from "../../pages/Admin/AdminPage";
-import AdminCoursesListing from "../../pages/Admin/pages/content/AdminCoursesListing";
-import AdminLandingsListing from "../../pages/Admin/pages/content/AdminLandingsListing";
-import AdminAuthorsListing from "../../pages/Admin/pages/content/AdminAuthorsListing";
-import AdminUsersListing from "../../pages/Admin/pages/content/AdminUsersListing";
-import AdminBooksListing from "../../pages/Admin/pages/content/AdminBooksListing";
-import AdminBookLandingsListing from "../../pages/Admin/pages/content/AdminBookLandingsListing";
-import AnalyticsPurchases from "../../pages/Admin/pages/analytics/AnalyticsPurchases";
-import AnalyticsLanguageStats from "../../pages/Admin/pages/analytics/AnalyticsLanguageStats";
-import AnalyticsAdListing from "../../pages/Admin/pages/analytics/AnalyticsAdListing";
-import AnalyticsReferrals from "../../pages/Admin/pages/analytics/AnalyticsReferrals";
-import AnalyticsUserGrowth from "../../pages/Admin/pages/analytics/AnalyticsUserGrowth";
-import AnalyticsFreewebs from "../../pages/Admin/pages/analytics/AnalyticsFreewebs";
-import AnalyticsTraffic from "../../pages/Admin/pages/analytics/AnalyticsTraffic";
-import NotFoundPage from "../../pages/NotFoundPage/NotFoundPage";
-import ClipTool from "../../pages/Admin/pages/tools/ClipTool/ClipTool.tsx";
-import MagicVideoTool from "../../pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
-import VideoSummaryTool from "../../pages/Admin/pages/tools/VideoSummaryTool/VideoSummaryTool.tsx";
-import BookLandingAnalytics from "../../pages/Admin/pages/analytics/LandingAnalytics/BookLandingAnalytics.tsx";
-import LandingAnalytics from "../../pages/Admin/pages/analytics/LandingAnalytics/LandingAnalytics.tsx";
-import AdControlStaff from "../../pages/Admin/pages/ad-control/AdControlStaff.tsx";
-import AdControlListing from "../../pages/Admin/pages/ad-control/AdControlListing/AdControlListing.tsx";
-import AdControlAccounts from "../../pages/Admin/pages/ad-control/AdControlAccounts.tsx";
-import CourseDetail from "../../pages/Admin/pages/detail/CourseDetail.tsx";
-import LandingDetail from "../../pages/Admin/pages/detail/LandingDetail.tsx";
-import AuthorDetail from "../../pages/Admin/pages/detail/AuthorDetail.tsx";
-import BookLandingDetail from "../../pages/Admin/pages/detail/BookLandingDetail..tsx";
-import UserDetail from "../../pages/Admin/pages/detail/UserDetail.tsx";
-import BookDetail from "../../pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
-import { AUTH_MODAL_ROUTES } from "../../shared/common/helpers/commonConstants.ts";
-import AnalyticsSearchQueries from "../../pages/Admin/pages/analytics/AnalyticsSearchQueries.tsx";
-import Support from "../../pages/ProfilePage/pages/Support/Support.tsx";
-import Settings from "../../pages/ProfilePage/pages/Settings/Settings.tsx";
-import Notifications from "../../pages/ProfilePage/pages/Notifications/Notifications.tsx";
+import ProfilePage from "@/pages/profile/layout/ProfilePage";
+import ProfileMain from "@/pages/profile/ProfileMain/ProfileMain";
+import YourCourses from "@/pages/profile/YourCourses.tsx";
+import YourBooks from "@/pages/profile/YourBooks.tsx";
+import PurchaseHistory from "@/pages/profile/PurchaseHistory.tsx";
+import InvitedUsers from "@/pages/profile/InvitedUsers.tsx";
+import CoursePage from "@/pages/profile/CoursePage/CoursePage";
+import LessonPage from "@/pages/profile/LessonPage/LessonPage";
+import BookPage from "@/pages/profile/BookPage/BookPage";
+import AdminPage from "@/pages/Admin/AdminPage";
+import AdminCoursesListing from "@/pages/Admin/pages/content/AdminCoursesListing";
+import AdminLandingsListing from "@/pages/Admin/pages/content/AdminLandingsListing";
+import AdminAuthorsListing from "@/pages/Admin/pages/content/AdminAuthorsListing";
+import AdminUsersListing from "@/pages/Admin/pages/content/AdminUsersListing";
+import AdminBooksListing from "@/pages/Admin/pages/content/AdminBooksListing";
+import AdminBookLandingsListing from "@/pages/Admin/pages/content/AdminBookLandingsListing";
+import AnalyticsPurchases from "@/pages/Admin/pages/analytics/AnalyticsPurchases";
+import AnalyticsLanguageStats from "@/pages/Admin/pages/analytics/AnalyticsLanguageStats";
+import AnalyticsAdListing from "@/pages/Admin/pages/analytics/AnalyticsAdListing";
+import AnalyticsReferrals from "@/pages/Admin/pages/analytics/AnalyticsReferrals";
+import AnalyticsUserGrowth from "@/pages/Admin/pages/analytics/AnalyticsUserGrowth";
+import AnalyticsFreewebs from "@/pages/Admin/pages/analytics/AnalyticsFreewebs";
+import AnalyticsTraffic from "@/pages/Admin/pages/analytics/AnalyticsTraffic";
+import NotFoundPage from "@/pages/NotFoundPage/NotFoundPage";
+import ClipTool from "@/pages/Admin/pages/tools/ClipTool/ClipTool.tsx";
+import MagicVideoTool from "@/pages/Admin/pages/tools/MagicVideoTool/MagicVideoTool.tsx";
+import VideoSummaryTool from "@/pages/Admin/pages/tools/VideoSummaryTool/VideoSummaryTool.tsx";
+import BookLandingAnalytics from "@/pages/Admin/pages/analytics/LandingAnalytics/BookLandingAnalytics.tsx";
+import LandingAnalytics from "@/pages/Admin/pages/analytics/LandingAnalytics/LandingAnalytics.tsx";
+import AdControlStaff from "@/pages/Admin/pages/ad-control/AdControlStaff.tsx";
+import AdControlListing from "@/pages/Admin/pages/ad-control/AdControlListing/AdControlListing.tsx";
+import AdControlAccounts from "@/pages/Admin/pages/ad-control/AdControlAccounts.tsx";
+import CourseDetail from "@/pages/Admin/pages/detail/CourseDetail.tsx";
+import LandingDetail from "@/pages/Admin/pages/detail/LandingDetail.tsx";
+import AuthorDetail from "@/pages/Admin/pages/detail/AuthorDetail.tsx";
+import BookLandingDetail from "@/pages/Admin/pages/detail/BookLandingDetail..tsx";
+import UserDetail from "@/pages/Admin/pages/detail/UserDetail.tsx";
+import BookDetail from "@/pages/Admin/pages/detail/BookDetail/BookDetail.tsx";
+import { AUTH_MODAL_ROUTES } from "@/shared/common/helpers/commonConstants.ts";
+import AnalyticsSearchQueries from "@/pages/Admin/pages/analytics/AnalyticsSearchQueries.tsx";
+import Support from "@/pages/profile/Support/Support.tsx";
+import Settings from "@/pages/profile/Settings/Settings.tsx";
+import Notifications from "@/pages/profile/Notifications/Notifications.tsx";
+import { SupportIndexPage } from "@/pages/profile/Support/SupportIndexPage.tsx";
+import { SupportChatPage } from "@/pages/profile/Support/SupportChatPage.tsx";
+import { CreateSupportChatPage } from "@/pages/profile/Support/CreateSupportChatPage.tsx";
 
 export const routesConfig = (hasBg: boolean) => [
   {
@@ -121,15 +124,29 @@ export const routesConfig = (hasBg: boolean) => [
                 element: <Settings />,
               },
               {
-                path: PATHS.PROFILE_NOTIFICATIONS,
+                path: PATHS.NOTIFICATIONS,
                 element: <Notifications />,
               },
             ],
           },
 
           {
-            path: PATHS.PROFILE_SUPPORT,
+            path: PATHS.SUPPORT,
             element: <Support />,
+            children: [
+              {
+                index: true,
+                element: <SupportIndexPage />,
+              },
+              {
+                path: PATHS.SUPPORT_CHAT.pattern,
+                element: <SupportChatPage />,
+              },
+              {
+                path: PATHS.SUPPORT_CREATE_CHAT,
+                element: <CreateSupportChatPage />,
+              },
+            ],
           },
 
           {

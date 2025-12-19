@@ -19,13 +19,6 @@ export const PATHS = {
   PROFILE_MY_COURSES: "/my-courses",
   PROFILE_MY_BOOKS: "/my-books",
   PROFILE_SETTINGS: "/settings",
-  PROFILE_SUPPORT: "/support",
-  PROFILE_NOTIFICATIONS: "/notifications",
-  PROFILE_SUPPORT_CHAT: {
-    clearPattern: "/support/c",
-    pattern: "/support/c/:id",
-    build: (id: string) => `/support/c/${id}`,
-  },
   PROFILE_MY_COURSE: {
     clearPattern: "/my-course",
     pattern: "/my-course/:id",
@@ -40,6 +33,16 @@ export const PATHS = {
     pattern: "lesson/:sectionId/:lessonId",
     build: (sectionId: string, lessonId: string) =>
       `lesson/${sectionId}/${lessonId}`,
+  },
+
+  NOTIFICATIONS: "/notifications",
+
+  SUPPORT: "/support",
+  SUPPORT_CREATE_CHAT: "/support/create-question",
+  SUPPORT_CHAT: {
+    clearPattern: "/support/c",
+    pattern: "/support/c/:id",
+    build: (id: string) => `/support/c/${id}`,
   },
 
   PROFESSOR_PAGE: {

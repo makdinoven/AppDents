@@ -1,10 +1,10 @@
-import s from "../../../pages/ProfilePage/layout/ProfilePage.module.scss";
+import s from "@/pages/profile/layout/ProfilePage.module.scss";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../shared/store/store.ts";
+import { AppRootStateType } from "@/shared/store/store.ts";
 import { Outlet, useNavigate } from "react-router-dom";
-import PrettyButton from "../../../shared/components/ui/PrettyButton/PrettyButton.tsx";
-import ProductsSection from "../../../shared/components/ProductsSection/ProductsSection.tsx";
-import CustomOrder from "../../../shared/components/CustomOrder/CustomOrder.tsx";
+import PrettyButton from "@/shared/components/ui/PrettyButton/PrettyButton.tsx";
+import ProductsSection from "@/shared/components/ProductsSection/ProductsSection.tsx";
+import CustomOrder from "@/shared/components/CustomOrder/CustomOrder.tsx";
 import { PATHS } from "../routes.ts";
 
 const ProfileLayout = () => {
