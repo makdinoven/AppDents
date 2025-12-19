@@ -28,6 +28,16 @@ const DEBUG_HLS_RANGE = Boolean(import.meta.env?.DEV);
 const MP4_MEDIA_HOST = "media.dent-s.com";
 const CDN_HOST = "cdn.dent-s.com";
 
+const normalizeVideoKey = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // ключ стабилен между cdn/media и не зависит от query
+    return `${u.hostname}${u.pathname}`.toLowerCase();
+  } catch {
+    return String(url || "").toLowerCase();
+  }
+};
+
 const toMediaHostMp4Url = (url: string): string => {
   try {
     const u = new URL(url);
@@ -386,6 +396,7 @@ const HlsVideo: React.FC<Props> = ({
 
   // MP4 должен идти через отдельный поддомен (DNS only), чтобы не проксироваться через Cloudflare
   const mp4PlaybackUrl = toMediaHostMp4Url(srcMp4);
+  const mp4Key = normalizeVideoKey(mp4PlaybackUrl);
   
   // Ref для таймеров чтобы очищать их
   const fallbackTimerRef = useRef<number | null>(null);
@@ -425,9 +436,10 @@ const HlsVideo: React.FC<Props> = ({
 
   // MP4 faststart: авто-триггер задачи переноса moov atom, если старт MP4 не идёт
   const faststartProbeTimerRef = useRef<number | null>(null);
-  const faststartRequestedRef = useRef<Set<string>>(new Set());
+  const faststartRequestedRef = useRef<Set<string>>(new Set()); // mp4Key
   const faststartPollTimerRef = useRef<number | null>(null);
   const faststartStartupTimerRef = useRef<number | null>(null);
+  const faststartEnsureInFlightRef = useRef(false);
 
   const [faststartUi, setFaststartUi] = useState<{
     phase: "idle" | "queued" | "running" | "done" | "error";
@@ -478,6 +490,23 @@ const HlsVideo: React.FC<Props> = ({
     }
   }, []);
 
+  const shouldThrottleFaststartRequest = useCallback((key: string): boolean => {
+    try {
+      const LS_KEY = "video_faststart_requested_v1";
+      const raw = localStorage.getItem(LS_KEY);
+      const map = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+      const now = Date.now();
+      const last = map[key] || 0;
+      const COOLDOWN_MS = 10 * 60 * 1000; // 10 минут
+      if (now - last < COOLDOWN_MS) return true;
+      map[key] = now;
+      localStorage.setItem(LS_KEY, JSON.stringify(map));
+      return false;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const maybeRequestFaststart = useCallback(
     (reason: string, delayMs: number = 4000) => {
       const video = videoRef.current;
@@ -486,12 +515,19 @@ const HlsVideo: React.FC<Props> = ({
       if (!useMp4Fallback || preferHls) return;
       if (playbackStartedRef.current) return;
       if ((video.currentTime || 0) > 0.5) return;
-      if (faststartRequestedRef.current.has(srcMp4)) return;
+      if (faststartRequestedRef.current.has(mp4Key)) return;
+      if (faststartEnsureInFlightRef.current) return;
+      if (faststartUi.phase !== "idle") return;
+
+      // Доп. дедуп на уровне localStorage, чтобы не спамить при перезагрузках/ремонтах/повторах.
+      if (shouldThrottleFaststartRequest(mp4Key)) return;
 
       console.warn("[Video][MP4] maybeRequestFaststart scheduled:", { reason, delayMs, src: srcMp4 });
 
       // не штурмим — ставим задержку, чтобы не реагировать на краткие "waiting"
       clearFaststartProbeTimer();
+      // Считаем “запрошено” уже на стадии планирования, чтобы серия событий не создала пачку POST.
+      faststartRequestedRef.current.add(mp4Key);
       faststartProbeTimerRef.current = window.setTimeout(async () => {
         try {
           // перепроверяем состояние
@@ -509,7 +545,7 @@ const HlsVideo: React.FC<Props> = ({
             // ignore
           }
 
-          faststartRequestedRef.current.add(srcMp4);
+          faststartEnsureInFlightRef.current = true;
           console.warn("[Video][MP4] Requesting backend ensure-faststart...", {
             reason,
             probe,
@@ -543,10 +579,21 @@ const HlsVideo: React.FC<Props> = ({
             phase: "error",
             message: "Не удалось запустить автоматическое исправление. Попробуйте обновить страницу или повторить позже.",
           });
+        } finally {
+          faststartEnsureInFlightRef.current = false;
         }
       }, delayMs);
     },
-    [clearFaststartProbeTimer, preferHls, srcMp4, mp4PlaybackUrl, useMp4Fallback],
+    [
+      clearFaststartProbeTimer,
+      preferHls,
+      srcMp4,
+      mp4PlaybackUrl,
+      mp4Key,
+      shouldThrottleFaststartRequest,
+      useMp4Fallback,
+      faststartUi.phase,
+    ],
   );
 
   // Polling статуса faststart: показываем пользователю прогресс и по завершению обновляем страницу
@@ -565,6 +612,7 @@ const HlsVideo: React.FC<Props> = ({
     const MAX_POLL_MS = 20 * 60 * 1000; // 20 минут
 
     clearFaststartPollTimer();
+    const pollIntervalMs = faststartUi.taskId ? 5000 : 30000; // без taskId (cooldown) проверяем метаданные реже
     faststartPollTimerRef.current = window.setInterval(async () => {
       try {
         if (Date.now() - startedAt > MAX_POLL_MS) {
@@ -577,7 +625,7 @@ const HlsVideo: React.FC<Props> = ({
           return;
         }
 
-        const st = await mainApi.getFaststartStatus(srcMp4, faststartUi.taskId);
+        const st = await mainApi.getFaststartStatus(mp4PlaybackUrl, faststartUi.taskId);
         const data = st?.data;
         const faststart = Boolean(data?.faststart);
         const state = String(data?.task_state || "");
@@ -609,17 +657,19 @@ const HlsVideo: React.FC<Props> = ({
           message:
             state === "STARTED"
               ? "Исправляем видео (это может занять несколько минут)…"
-              : "Готовим исправление для видео…",
+              : faststartUi.taskId
+                ? "Готовим исправление для видео…"
+                : "Исправление уже запущено. Проверяем статус…",
         }));
       } catch (e) {
         // временные ошибки polling не валим сразу — просто оставляем текущий статус
       }
-    }, 5000);
+    }, pollIntervalMs);
 
     return () => {
       clearFaststartPollTimer();
     };
-  }, [clearFaststartPollTimer, faststartUi.phase, faststartUi.taskId, preferHls, srcMp4, useMp4Fallback]);
+  }, [clearFaststartPollTimer, faststartUi.phase, faststartUi.taskId, preferHls, mp4PlaybackUrl, useMp4Fallback]);
 
   // БЫСТРЫЙ fallback на MP4
   const fallbackToMp4 = useCallback(() => {
@@ -1467,6 +1517,7 @@ const HlsVideo: React.FC<Props> = ({
     clearFallbackTimer();
     clearFaststartProbeTimer();
     clearFaststartPollTimer();
+    clearFaststartStartupTimer();
     setFaststartUi({ phase: "idle" });
   }, [clearFallbackTimer]);
 
@@ -1477,6 +1528,7 @@ const HlsVideo: React.FC<Props> = ({
       clearFallbackTimer();
       clearFaststartProbeTimer();
       clearFaststartPollTimer();
+      clearFaststartStartupTimer();
       setFaststartUi({ phase: "idle" });
     }
   }, [clearFallbackTimer]);
