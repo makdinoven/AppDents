@@ -8,7 +8,7 @@ import { Trans } from "react-i18next";
 export const NavigateToSupport = () => {
   return (
     <div className={s.navigate_container}>
-      <Link to={PATHS.PROFILE_SUPPORT} className={s.navigate_button}>
+      <Link to={PATHS.SUPPORT} className={s.navigate_button}>
         <span>
           <Support />
           {t("support.supportCenter")}

@@ -43,12 +43,12 @@ export const subPagesTabs: SidebarData[] = [
 ];
 export const pagesTabs: SidebarData[] = [
   {
-    path: PATHS.PROFILE_SUPPORT,
+    path: PATHS.SUPPORT,
     title: "support.supportCenter",
     icon: <Support />,
   },
   {
-    path: PATHS.PROFILE_NOTIFICATIONS,
+    path: PATHS.NOTIFICATIONS,
     title: "notifications.notifications",
     icon: <NotificationIcon />,
   },
