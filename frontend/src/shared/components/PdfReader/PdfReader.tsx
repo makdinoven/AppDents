@@ -12,6 +12,7 @@ import { RemoveScroll } from "react-remove-scroll";
 import { usePdfScrollSync } from "./hooks/usePdfScrollSync.ts";
 import { usePdfReaderFullscreen } from "./hooks/usePdfReaderFullscreen.ts";
 import { usePdfReaderScale } from "./hooks/usePdfReaderScale.ts";
+import { rewriteCdnLinkToMedia } from "../../common/helpers/helpers.ts";
 
 interface PdfReaderProps {
   url: string | null;
@@ -29,6 +30,10 @@ const PdfReader = ({ url, fromProfile = false }: PdfReaderProps) => {
   const [isThumbNailsOpen, setIsThumbNailsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+
+  const mediaUrl = useMemo(() => (url ? rewriteCdnLinkToMedia(url) : null), [url]);
+  // react-pdf рекомендует мемоизировать объект file, чтобы избежать лишних перезагрузок
+  const file = useMemo(() => (mediaUrl ? { url: mediaUrl } : null), [mediaUrl]);
 
   const { scale, handleResizePage } = usePdfReaderScale();
   const { fullScreen } = usePdfReaderFullscreen();
@@ -84,9 +89,9 @@ const PdfReader = ({ url, fromProfile = false }: PdfReaderProps) => {
           className={s.document}
           style={{ overflow: isThumbNailsOpen ? "hidden" : "" }}
         >
-          {url && (
+          {file && (
             <Document
-              file={url}
+              file={file}
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}
               options={options}
@@ -120,8 +125,8 @@ const PdfReader = ({ url, fromProfile = false }: PdfReaderProps) => {
             </Document>
           )}
 
-          {url && loading && <Loader className={s.loading} />}
-          {(!url || error) && (
+          {file && loading && <Loader className={s.loading} />}
+          {(!file || error) && (
             <p className={s.error}>{t("bookLanding.pdfReader.error")}</p>
           )}
         </div>

@@ -9,6 +9,7 @@ import ViewLink from "../../../../shared/components/ui/ViewLink/ViewLink.tsx";
 import { usePaymentPageHandler } from "../../../../shared/common/hooks/usePaymentPageHandler.ts";
 import HlsVideo from "../../../../shared/components/HlsVideo/HlsVideo.tsx";
 import { PATHS } from "../../../../app/routes/routes.ts";
+import { rewriteCdnLinkToMedia } from "../../../../shared/common/helpers/helpers.ts";
 
 type OutletContextType = {
   course: any;
@@ -90,7 +91,7 @@ const LessonPage = () => {
               <ViewLink
                 className={s.pdf_link}
                 text={"profile.openPdf"}
-                link={lesson.video_link}
+                link={lesson.video_link ? rewriteCdnLinkToMedia(lesson.video_link) : ""}
                 isExternal={true}
               />
             </p>

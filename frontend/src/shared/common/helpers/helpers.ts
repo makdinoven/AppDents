@@ -293,6 +293,24 @@ export const rewriteStorageLinkToCDN = (link: string) => {
   return link.replace(/^https:\/\/[^/]+\.s3\.twcstorage\.ru/, CDN_ORIGIN);
 };
 
+const CDN_HOST = "cdn.dent-s.com";
+const MEDIA_HOST = "media.dent-s.com";
+
+/**
+ * Переводит ссылки с cdn.dent-s.com на media.dent-s.com (DNS only),
+ * чтобы обходить Cloudflare proxy для тяжёлых файлов (PDF/MP4/HLS и т.п.).
+ */
+export const rewriteCdnLinkToMedia = (link: string) => {
+  try {
+    const u = new URL(link);
+    if (u.hostname === CDN_HOST) u.hostname = MEDIA_HOST;
+    return u.toString();
+  } catch {
+    // На случай относительных/нестандартных строк — делаем безопасную подмену только для ожидаемого префикса
+    return link.replace(/^https:\/\/cdn\.dent-s\.com\//, "https://media.dent-s.com/");
+  }
+};
+
 export const arraysEqual = (a?: any[] | null, b?: any[] | null) => {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
   if (a.length !== b.length) return false;

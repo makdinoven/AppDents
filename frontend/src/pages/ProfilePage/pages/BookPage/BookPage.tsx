@@ -11,6 +11,7 @@ import BackButton from "../../../../shared/components/ui/BackButton/BackButton.t
 import { mainApi } from "../../../../shared/api/mainApi/mainApi.ts";
 import BookHeroSkeleton from "../../../../shared/components/ui/Skeletons/BookHeroSkeleton/BookHeroSkeleton.tsx";
 import PdfReader from "../../../../shared/components/PdfReader/PdfReader.tsx";
+import { rewriteCdnLinkToMedia } from "../../../../shared/common/helpers/helpers.ts";
 import DownloadSection from "./DownloadSection/DownloadSection.tsx";
 import { NoPictures } from "../../../../shared/assets";
 import { PATHS } from "../../../../app/routes/routes.ts";
@@ -145,12 +146,15 @@ const BookPage = () => {
             <section id={"book-page-reader"} className={s.section_wrapper}>
               <SectionHeader name={t("profile.bookPage.readOnline")} />
 
-              <PdfReader fromProfile url={pdf_link} />
+              <PdfReader
+                fromProfile
+                url={pdf_link ? rewriteCdnLinkToMedia(pdf_link) : null}
+              />
               {pdf_link && (
                 <p className={s.failed_to_load}>
                   {t("readerFailedToLoad")}{" "}
                   <a
-                    href={pdf_link}
+                    href={rewriteCdnLinkToMedia(pdf_link)}
                     target="_blank"
                     className="highlight"
                     rel="noopener noreferrer"
