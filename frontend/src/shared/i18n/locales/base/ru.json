@@ -591,7 +591,8 @@
   },
 
   "support": {
-    "supportCenter": "Центр поддержки"
+    "supportCenter": "Центр поддержки",
+    "reserveEmail": "Дополнительный email:"
   },
   "notifications": {
     "notifications": "Уведомления"

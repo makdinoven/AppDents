@@ -1,3 +1,14 @@
+.settings_page {
+  @include flex-column();
+  gap: 30px;
+  width: 100%;
+}
+
+.page_title {
+  @include clamped-h3();
+  text-transform: uppercase;
+}
+
 .settings {
   position: relative;
   @include flex-column();
@@ -6,4 +17,18 @@
   border: 1px solid $hover-color;
   border-radius: 20px;
   @include clamped-p3();
+  width: 100%;
+  flex: 1;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .settings_page {
+    gap: 15px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .settings_page {
+    gap: 10px;
+  }
 }

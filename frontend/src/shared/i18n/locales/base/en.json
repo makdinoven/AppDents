@@ -608,7 +608,8 @@
   },
 
   "support": {
-    "supportCenter": "Support center"
+    "supportCenter": "Support center",
+    "reserveEmail": "Additional email:"
   },
   "notifications": {
     "notifications": "Notifications"

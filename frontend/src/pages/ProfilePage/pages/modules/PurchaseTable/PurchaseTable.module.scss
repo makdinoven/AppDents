@@ -2,7 +2,7 @@
   @include flex-column;
   justify-content: flex-start;
   align-items: flex-start;
-  gap: 5px;
+  gap: 30px;
   width: 100%;
   height: fit-content;
 }
@@ -10,7 +10,6 @@
 .container_title {
   @include clamped-h3;
   text-transform: uppercase;
-  margin-left: 30px;
 }
 
 .table {
@@ -20,7 +19,7 @@
   width: 100%;
   height: fit-content;
   border: 2px solid $hover-color;
-  border-radius: 40px;
+  border-radius: 20px;
 }
 
 .no_data_message {
@@ -38,6 +37,12 @@
     &:hover {
       color: $accent;
     }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .table_container {
+    gap: 15px;
   }
 }
 

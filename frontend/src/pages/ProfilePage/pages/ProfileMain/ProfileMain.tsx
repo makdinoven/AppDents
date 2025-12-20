@@ -6,6 +6,8 @@ import { AppDispatchType, AppRootStateType } from "@/shared/store/store.ts";
 import { getBooks, getCourses } from "@/shared/store/actions/userActions.ts";
 import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import MyContent from "../modules/MyContent/MyContent.tsx";
+import { t } from "i18next";
+import { NavigateToSupport } from "@/features/navigate-to-support";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -22,20 +24,9 @@ const ProfileMain = () => {
   return (
     <div className={s.page_content}>
       <div key={childKey} className={s.main_content}>
+        <p className={s.page_title}>{t("profile.main")}</p>
         <ReferralSection />
-
-        {/*<div className={s.support}>*/}
-        {/*  <Support />*/}
-        {/*  <span>*/}
-        {/*    <Trans i18nKey="support.support" />:*/}
-        {/*  </span>{" "}*/}
-        {/*  <a*/}
-        {/*    className={s.mail_link}*/}
-        {/*    href="mailto:info.dis.org@gmail.com"*/}
-        {/*  >*/}
-        {/*    info.dis.org@gmail.com*/}
-        {/*  </a>*/}
-        {/*</div>*/}
+        <NavigateToSupport />
       </div>
       <MyContent key="books" items={books} type="book" />
       <MyContent key="courses" items={courses} />

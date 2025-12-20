@@ -2,13 +2,12 @@
   @include flex-column;
   justify-content: flex-start;
   align-items: flex-start;
-  gap: 5px;
+  gap: 30px;
   width: 100%;
   height: fit-content;
 }
 
 .purchase_item_header {
-  margin-left: 30px;
   @include skeleton(
     $pos: relative,
     $h: clamp(20px, 4vw, 30px),
@@ -24,7 +23,7 @@
   width: 100%;
   height: fit-content;
   background-color: $light-grey;
-  border-radius: 40px;
+  border-radius: 20px;
 }
 
 .purchase {
@@ -106,6 +105,10 @@
 }
 
 @media (max-width: $tablet-breakpoint) {
+  .purchase_item {
+    gap: 15px;
+  }
+
   .purchase_type {
     @include skeleton($pos: relative, $h: 15px, $w: 30%);
   }
@@ -132,12 +135,7 @@
   }
 
   .purchase_item_header {
-    @include skeleton(
-      $pos: relative,
-      $h: 20px,
-      $w: 30%,
-      $color: $light-grey
-    );
+    @include skeleton($pos: relative, $h: 20px, $w: 30%, $color: $light-grey);
     margin-left: 15px;
   }
 

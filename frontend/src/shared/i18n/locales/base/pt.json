@@ -573,7 +573,8 @@
     "skip": "Mais tarde"
   },
   "support": {
-    "supportCenter": "Central de suporte"
+    "supportCenter": "Central de suporte",
+    "reserveEmail": "E-mail adicional:"
   },
   "notifications": {
     "notifications": "Notificações"

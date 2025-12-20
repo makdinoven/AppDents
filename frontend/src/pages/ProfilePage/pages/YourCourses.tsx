@@ -1,5 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatchType, AppRootStateType } from "../../../shared/store/store.ts";
+import {
+  AppDispatchType,
+  AppRootStateType,
+} from "../../../shared/store/store.ts";
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { getCourses } from "../../../shared/store/actions/userActions.ts";
@@ -16,7 +19,13 @@ const YourCourses = () => {
   }, []);
 
   return (
-    <MyContent key={childKey} showSearch={true} items={courses} type="course" />
+    <MyContent
+      key={childKey}
+      showSearch={true}
+      items={courses}
+      type="course"
+      prettyTitle={false}
+    />
   );
 };
 

@@ -16,9 +16,29 @@
   margin-bottom: 200px;
 }
 
+.profile_page_wrapper {
+  @include flex-column();
+  gap: 140px;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .profile_page_wrapper {
+    gap: 100px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .profile_page_wrapper {
+    gap: 80px;
+  }
+}
 @media (max-width: $mobile-breakpoint) {
   .content {
     margin-bottom: 100px;
     padding: 0 10px;
+  }
+
+  .profile_page_wrapper {
+    gap: 40px;
   }
 }

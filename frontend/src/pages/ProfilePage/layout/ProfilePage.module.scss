@@ -1,10 +1,38 @@
 .profile_page_container {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 15px;
+  height: 715px;
+}
+
+.profile_content_container {
+  border: 1px solid $hover-color;
+  padding: 15px;
+  border-radius: 20px;
+  height: 100%;
+  overflow: auto;
+  width: 100%;
+  @include custom-scrollbar();
 }
 
 @media (max-width: $tablet-breakpoint) {
   .profile_page_container {
     gap: 10px;
+  }
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .profile_page_container {
+    padding-top: 45px;
+    height: fit-content;
+    grid-template-columns: 1fr;
+  }
+
+  .profile_content_container {
+    border: none;
+    padding: unset;
+    border-radius: unset;
+    height: fit-content;
+    overflow: unset;
   }
 }

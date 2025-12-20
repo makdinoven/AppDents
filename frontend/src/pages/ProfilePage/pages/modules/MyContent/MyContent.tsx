@@ -2,21 +2,24 @@ import s from "./MyContent.module.scss";
 import { Trans } from "react-i18next";
 import SectionHeader from "../../../../../shared/components/ui/SectionHeader/SectionHeader.tsx";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "../../../../../shared/store/store.ts";
+import { AppRootStateType } from "@/shared/store/store.ts";
 import CourseCardSkeletons from "../../../../../shared/components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import ProfileEntityCard from "../ProfileEntityCard/ProfileEntityCard.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Search from "../../../../../shared/components/ui/Search/Search.tsx";
-import { PATHS } from "../../../../../app/routes/routes.ts";
+import { PATHS } from "@/app/routes/routes.ts";
+import { t } from "i18next";
 
 const MyContent = ({
   items,
   type = "course",
   showSearch = false,
+  prettyTitle = true,
 }: {
   items: any[];
   showSearch?: boolean;
   type?: "book" | "course";
+  prettyTitle?: boolean;
 }) => {
   const searchKey = `${type}-search`;
   const loading = useSelector((state: AppRootStateType) =>
@@ -30,6 +33,7 @@ const MyContent = ({
     const field = type === "book" ? item.title : item.name;
     return field?.toLowerCase().includes(searchValue);
   });
+  const title = type === "course" ? "profile.yourCourses" : "profile.yourBooks";
 
   const handleSearch = (val: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -39,9 +43,11 @@ const MyContent = ({
 
   return (
     <section className={s.content}>
-      <SectionHeader
-        name={type === "course" ? "profile.yourCourses" : "profile.yourBooks"}
-      />
+      {prettyTitle ? (
+        <SectionHeader name={title} />
+      ) : (
+        <p className={s.page_title}>{t(title)}</p>
+      )}
       {showSearch && items.length > 0 && (
         <Search
           valueFromUrl={searchValue ?? ""}

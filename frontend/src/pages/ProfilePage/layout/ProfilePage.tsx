@@ -6,7 +6,9 @@ const ProfilePage = () => {
   return (
     <div className={s.profile_page_container}>
       <ProfileSidebar />
-      <Outlet />
+      <div className={s.profile_content_container}>
+        <Outlet />
+      </div>
     </div>
   );
 };

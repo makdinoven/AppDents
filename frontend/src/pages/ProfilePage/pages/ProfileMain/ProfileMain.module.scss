@@ -5,14 +5,25 @@
 
 .main_content {
   @include flex-column();
-  gap: 10px;
+  gap: 30px;
   max-width: 100%;
   width: 100%;
+}
+
+.page_title {
+  @include clamped-h3();
+  text-transform: uppercase;
 }
 
 @media (max-width: $middle-breakpoint) {
   .page_content {
     gap: 60px;
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .main_content {
+    gap: 15px;
   }
 }
 
@@ -22,7 +33,6 @@
   }
 
   .main_content {
-    gap: 5px;
-    margin-top: 45px;
+    gap: 10px;
   }
 }

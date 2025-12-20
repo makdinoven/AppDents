@@ -1,12 +1,12 @@
 .content {
-  @include flex-column;
+  @include flex-column();
   gap: 30px;
 }
 
 .content_list {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: 15px;
 }
 
 .no_items_container {
@@ -36,6 +36,22 @@
   }
 }
 
+.page_title {
+  @include clamped-h3();
+  text-transform: uppercase;
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .content {
+    gap: 15px;
+  }
+
+  .content_list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .content {
     gap: 10px;
@@ -47,7 +63,6 @@
 
   .content_list {
     display: flex;
-    gap: 10px;
     flex-direction: column;
 
     &.book {

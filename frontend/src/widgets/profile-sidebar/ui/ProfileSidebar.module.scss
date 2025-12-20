@@ -1,6 +1,7 @@
 .profile_sidebar_wrapper {
   @include flex-column();
   gap: 15px;
+  width: fit-content;
 
   .burger_menu_icon,
   .close_menu_icon {
@@ -16,6 +17,7 @@
 
 .profile_sidebar_content {
   position: relative;
+  width: fit-content;
 }
 
 .profile_sidebar {
@@ -41,12 +43,15 @@
     height: 100vh;
     z-index: 999;
     left: 0;
-    pointer-events: auto;
+    top: 0;
+    pointer-events: none;
 
     .burger_menu_icon,
     .close_menu_icon {
       display: block;
       margin-left: 10px;
+      pointer-events: auto;
+      cursor: pointer;
 
       @media (hover: hover) {
       }
@@ -59,17 +64,23 @@
   .profile_sidebar_content {
     width: 100%;
     height: 100%;
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   .profile_sidebar {
     width: 100%;
     height: 100%;
-    transform: translateX(-100%);
+    transform: translateY(100%);
     @include transition();
+    opacity: 0;
+    box-shadow: 0 -2px 15px 0 rgba(1, 67, 61, 0.2);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 
     &.open {
-      transform: translateX(0);
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
     }
   }
 }

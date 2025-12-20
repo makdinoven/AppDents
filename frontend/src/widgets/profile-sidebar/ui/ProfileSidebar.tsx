@@ -6,18 +6,22 @@ import { AppRootStateType } from "@/shared/store/store.ts";
 import { LogOutBtn } from "@/features/log-out";
 import { UserProfileInfo } from "@/features/user-profile-info";
 import { ArrowX, BurgerMenuIcon } from "@/shared/assets/icons";
-import { useScreenWidth } from "@/shared/common/hooks/useScreenWidth.ts";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import useOutsideClick from "@/shared/common/hooks/useOutsideClick.ts";
 
 export const ProfileSidebar = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
-  const screenWidth = useScreenWidth();
-  const isMobile = screenWidth < 576;
   const [isOpen, setIsOpen] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const handleSidebarClose = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(false);
   };
+  const handleSidebarOpen = () => {
+    setIsOpen(true);
+  };
+
+  useOutsideClick(sidebarRef, handleSidebarClose);
 
   return (
     <div className={s.profile_sidebar_wrapper}>
@@ -26,11 +30,14 @@ export const ProfileSidebar = () => {
       ) : (
         <BurgerMenuIcon
           className={s.burger_menu_icon}
-          onClick={handleSidebarClose}
+          onClick={handleSidebarOpen}
         />
       )}
       <div className={s.profile_sidebar_content}>
-        <div className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}>
+        <div
+          className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}
+          ref={sidebarRef}
+        >
           <UserProfileInfo />
           <SidebarShell
             data={
@@ -38,7 +45,7 @@ export const ProfileSidebar = () => {
             }
             onClick={handleSidebarClose}
           />
-          <SidebarShell data={pagesTabs} />
+          <SidebarShell data={pagesTabs} onClick={handleSidebarClose} />
           <div className={s.logout_wrapper}>
             <LogOutBtn />
           </div>

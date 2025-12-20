@@ -1,0 +1,101 @@
+.navigate_container {
+  @include flex-column();
+  gap: 15px;
+  padding: 15px;
+  border: 1px solid $hover-color;
+  border-radius: 15px;
+  height: fit-content;
+  align-items: center;
+}
+
+.navigate_button {
+  background-color: $primary;
+  border-radius: 30px;
+  padding: 10px 30px;
+  @include clamped-p3();
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  color: $text-color;
+  @include transition();
+  border: 1px solid $primary;
+  max-width: 500px;
+  width: 100%;
+
+  svg {
+    width: 24px;
+    height: 24px;
+
+    path {
+      fill: $text-color;
+      @include transition();
+    }
+  }
+
+  span {
+    @include flex-center();
+    gap: 15px;
+
+    svg {
+      path {
+        fill: none;
+        stroke: $text-color;
+        stroke-width: 2;
+        opacity: 1;
+      }
+    }
+  }
+}
+
+.reserve_email {
+  @include clamped-p5();
+  text-align: center;
+
+  span {
+    color: $primary;
+  }
+}
+
+@media (hover: hover) {
+  .navigate_button {
+    &:hover {
+      background-color: transparent;
+      color: $primary;
+
+      svg {
+        path {
+          fill: $primary;
+        }
+      }
+
+      span {
+        svg {
+          path {
+            stroke: $primary;
+            fill: none;
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .navigate_button {
+    padding: 5px 25px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+@media (max-width: $tablet-breakpoint) {
+  .navigate_container {
+    padding: 10px;
+    gap: 10px;
+  }
+}

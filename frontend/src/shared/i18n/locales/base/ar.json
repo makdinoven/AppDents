@@ -618,7 +618,8 @@
     "skip": "لاحقاً"
   },
   "support": {
-    "supportCenter": "مركز الدعم"
+    "supportCenter": "مركز الدعم",
+    "reserveEmail": "البريد الإلكتروني الإضافي:"
   },
   "notifications": {
     "notifications": "الإشعارات"
