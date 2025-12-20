@@ -1,8 +1,8 @@
 import { Route, Routes, useLocation } from "react-router-dom";
-import { AUTH_MODAL_ROUTES } from "../../../shared/common/helpers/commonConstants.ts";
-import AuthModalManager from "../../../shared/components/AuthModalManager/AuthModalManager.tsx";
-import Cart from "../../../pages/Cart/Cart.tsx";
-import SearchPage from "../../../pages/SearchPage/SearchPage.tsx";
+import { AUTH_MODAL_ROUTES } from "@/shared/common/helpers/commonConstants.ts";
+import AuthModalManager from "@/shared/components/AuthModalManager/AuthModalManager.tsx";
+import Cart from "@/pages/Cart/Cart.tsx";
+import SearchPage from "@/pages/SearchPage/SearchPage.tsx";
 import { PATHS } from "../routes.ts";
 import { routesConfig } from "../router.tsx";
 
