@@ -4,8 +4,8 @@ import Button from "@/shared/components/ui/Button/Button.tsx";
 import { ArrowX, BurgerMenuIcon } from "@/shared/assets/icons";
 import { ReactNode, useRef, useState } from "react";
 import useOutsideClick from "@/shared/common/hooks/useOutsideClick.ts";
-import { SidebarShellData } from "@/shared/common/types/commonTypes.ts";
-import { SidebarShell } from "@/shared/components/ui/sidebar/sidebar-shell/SidebarShell.tsx";
+import { SidebarShellData } from "../model/types.ts";
+import { SidebarShell } from "./SidebarShell.tsx";
 
 interface SidebarProps {
   menuButtonText?: string;
@@ -55,6 +55,7 @@ export const Sidebar = ({
                 <SidebarShell
                   data={[...shell]}
                   onItemClick={handleSidebarClose}
+                  key={shell[0].title}
                 />
               ))}
             {bottomSlot && bottomSlot}

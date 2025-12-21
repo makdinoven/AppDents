@@ -1,7 +1,7 @@
 import s from "./ProfileSidebar.module.scss";
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "@/shared/store/store.ts";
-import { Sidebar } from "@/shared/components/ui/sidebar/Sidebar.tsx";
+import { Sidebar } from "@/shared/components/ui/sidebar";
 import { UserProfileInfo } from "@/features/user-profile-info";
 import { LogOutBtn } from "@/features/log-out";
 import {

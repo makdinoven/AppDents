@@ -1,8 +1,8 @@
 import s from "./SidebarShell.module.scss";
-import { SidebarShellData } from "@/shared/common/types/commonTypes.ts";
 import { NavLink } from "react-router-dom";
 import { Chevron } from "@/shared/assets/icons";
 import { t } from "i18next";
+import { SidebarShellData } from "../model/types.ts";
 
 interface SidebarShellProps {
   data: SidebarShellData[];
@@ -14,7 +14,7 @@ export const SidebarShell = ({ data, onItemClick }: SidebarShellProps) => {
     <div className={s.sidebar_shell}>
       {data.map((item) => {
         if (item.type === "custom") {
-          return <div key={item.type}>{item.render()}</div>;
+          return <div key={item.title}>{item.render()}</div>;
         }
 
         if (item.type === "action") {
