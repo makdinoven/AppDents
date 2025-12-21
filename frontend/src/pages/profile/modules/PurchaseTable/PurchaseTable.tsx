@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import s from "./PurchaseTable.module.scss";
 import PurchaseItem from "./PurchaseItem/PurchaseItem.tsx";
 import { PATHS } from "../../../../app/routes/routes.ts";
+import { ProfilePageTitle } from "@/shared/components/ui/profile-page-title/ProfilePageTitle.tsx";
 
 type HistoryTableProps = {
   content: any[];
@@ -15,7 +16,7 @@ const PurchaseTable = ({ content, isReferral, title }: HistoryTableProps) => {
 
   return (
     <div className={s.table_container}>
-      <h3 className={s.container_title}>{title}</h3>
+      <ProfilePageTitle title={title} />
       {content.length > 0 ? (
         <ul className={s.table}>
           {content.map((item, i) => (

@@ -8,6 +8,7 @@ import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import MyContent from "../modules/MyContent/MyContent.tsx";
 import { t } from "i18next";
 import { NavigateToSupport } from "@/features/navigate-to-support";
+import { ProfilePageTitle } from "@/shared/components/ui/profile-page-title/ProfilePageTitle.tsx";
 
 const ProfileMain = () => {
   const dispatch = useDispatch<AppDispatchType>();
@@ -24,7 +25,7 @@ const ProfileMain = () => {
   return (
     <div className={s.page_content}>
       <div key={childKey} className={s.main_content}>
-        <p className={s.page_title}>{t("profile.main")}</p>
+        <ProfilePageTitle title={"profile.main"} />
         <ReferralSection />
         <NavigateToSupport />
       </div>

@@ -6,10 +6,10 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  @include clamped-p3;
+  @include clamped-p3();
 
   h4 {
-    @include clamped-h3;
+    @include clamped-h4();
     text-transform: uppercase;
   }
 }
@@ -23,10 +23,10 @@
 .copy_button,
 .invite_button {
   width: fit-content;
-  @include clamped-p3;
+  @include clamped-p4();
   background-color: $accent;
   color: $text-color;
-  padding: 5px 25px;
+  padding: 2px 20px;
   border-radius: 30px;
   @include flex-center();
   gap: 5px;
@@ -92,7 +92,7 @@
 .section_header,
 .section_bottom,
 .section_middle {
-  padding: 15px;
+  padding: 12px;
 }
 
 .section_middle {
@@ -109,10 +109,10 @@
 }
 
 .spend {
-  @include clamped-p3;
+  @include clamped-p4();
   border-radius: 30px;
   margin-left: auto;
-  padding: 5px 25px;
+  padding: 2px 20px;
   text-align: center;
   height: 40px;
   text-wrap: nowrap;
@@ -122,21 +122,59 @@
   display: flex;
   gap: 5px;
   align-items: center;
+  @include clamped-p4();
+
+  svg {
+    width: 30px;
+    height: 30px;
+    transform: scaleY(-1);
+    @include transition();
+
+    &.open {
+      transform: scaleY(1);
+    }
+
+    path {
+      stroke: $primary-accent;
+      stroke-opacity: 1;
+      stroke-width: 1;
+      @include transition();
+    }
+  }
+
+  @media (hover: hover) {
+    svg:hover {
+      cursor: pointer;
+      path {
+        stroke: $accent;
+      }
+    }
+  }
+
+  svg:active {
+    path {
+      stroke: $accent;
+    }
+  }
+}
+
+.invite_link_wrapper {
+  @include clamped-p4();
 }
 
 .invite_link {
   cursor: pointer;
   color: $text-color;
   text-decoration: underline 1.5px;
-  @include clamped-p3;
+  @include clamped-p4();
   align-self: center;
 }
 
 .info_circle {
   @include transition();
   @include flex-center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   border-radius: 50%;
   font-size: 16px;
@@ -165,7 +203,7 @@
   padding: 0 15px;
   border-top: 0 solid $primary;
   border-bottom: 0 solid $primary;
-  @include clamped-p4;
+  @include clamped-p4();
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -185,6 +223,7 @@
 }
 
 .friends {
+  @include clamped-p4();
   span {
     font-weight: 500;
     color: $primary-accent;
@@ -353,6 +392,7 @@
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
+    flex-direction: row;
   }
 
   .spend {
@@ -385,5 +425,10 @@
   .info_circle {
     width: 20px;
     height: 20px;
+  }
+
+  .section_bottom {
+    flex-direction: row;
+    justify-content: center;
   }
 }

@@ -1,12 +1,11 @@
 .profile_page_container {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: minmax(0, max-content) 1fr;
   gap: 15px;
-  height: 715px;
 }
 
 .profile_content_container {
-  border: 1px solid $hover-color;
+  border: 1px solid $hover-color-darken;
   padding: 15px;
   border-radius: 20px;
   height: 100%;
@@ -23,7 +22,7 @@
 
 @media (max-width: $mobile-breakpoint) {
   .profile_page_container {
-    padding-top: 45px;
+    padding-top: 55px;
     height: fit-content;
     grid-template-columns: 1fr;
   }

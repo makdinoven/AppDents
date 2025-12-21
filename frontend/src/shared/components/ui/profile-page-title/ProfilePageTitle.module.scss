@@ -1,0 +1,20 @@
+.title {
+  width: 100%;
+  padding: 2px 0;
+  border-top: 2px solid $hover-color;
+  border-bottom: 2px solid $hover-color;
+}
+
+.title_text {
+  @include clamped-h3();
+  text-transform: uppercase;
+  width: fit-content;
+  text-wrap: nowrap;
+  position: relative;
+}
+
+@media (max-width: $middle-breakpoint) {
+  .title {
+    padding: 4px 0;
+  }
+}

@@ -6,9 +6,9 @@ import { AppRootStateType } from "../../../../shared/store/store.ts";
 import CourseCardSkeletons from "../../../../shared/components/ui/Skeletons/CourseCardSkeletons/CourseCardSkeletons.tsx";
 import ProfileEntityCard from "../ProfileEntityCard/ProfileEntityCard.tsx";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { t } from "i18next";
 import Search from "../../../../shared/components/ui/Search/Search.tsx";
 import { PATHS } from "../../../../app/routes/routes.ts";
+import { ProfilePageTitle } from "@/shared/components/ui/profile-page-title/ProfilePageTitle.tsx";
 
 const MyContent = ({
   items,
@@ -46,7 +46,7 @@ const MyContent = ({
       {prettyTitle ? (
         <SectionHeader name={title} />
       ) : (
-        <p className={s.page_title}>{t(title)}</p>
+        <ProfilePageTitle title={title} />
       )}
       {showSearch && items.length > 0 && (
         <Search

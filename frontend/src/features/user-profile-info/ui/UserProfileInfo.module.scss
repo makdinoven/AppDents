@@ -4,10 +4,11 @@
   align-self: flex-start;
   max-width: 100%;
   text-overflow: ellipsis;
+  min-width: 0;
 
   svg {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     circle {
       fill: $hover-color-darken-analogue;
       stroke: $hover-color-darken-analogue;
@@ -15,10 +16,12 @@
   }
 
   span {
-    @include clamped-p2();
+    @include clamped-p3();
     display: block;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+    font-weight: 500;
+    min-width: 0;
   }
 }

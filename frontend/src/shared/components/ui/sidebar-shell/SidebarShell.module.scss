@@ -27,8 +27,8 @@
 }
 
 .icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   @include flex-center();
   svg {
@@ -44,14 +44,14 @@
 }
 
 .title {
-  @include clamped-p2();
+  @include clamped-p3();
   @include transition();
   text-wrap: nowrap;
 }
 
 .arrow {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   transform: rotate(90deg);
   flex-shrink: 0;
 

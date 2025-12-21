@@ -8,6 +8,8 @@ import { UserProfileInfo } from "@/features/user-profile-info";
 import { ArrowX, BurgerMenuIcon } from "@/shared/assets/icons";
 import { useRef, useState } from "react";
 import useOutsideClick from "@/shared/common/hooks/useOutsideClick.ts";
+import { RemoveScroll } from "react-remove-scroll";
+import Button from "@/shared/components/ui/Button/Button.tsx";
 
 export const ProfileSidebar = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
@@ -17,40 +19,43 @@ export const ProfileSidebar = () => {
   const handleSidebarClose = () => {
     setIsOpen(false);
   };
-  const handleSidebarOpen = () => {
-    setIsOpen(true);
+  const handleChangeSidebarState = () => {
+    setIsOpen((prev) => !prev);
   };
 
   useOutsideClick(sidebarRef, handleSidebarClose);
 
   return (
-    <div className={s.profile_sidebar_wrapper}>
-      {isOpen ? (
-        <ArrowX className={s.close_menu_icon} onClick={handleSidebarClose} />
-      ) : (
-        <BurgerMenuIcon
-          className={s.burger_menu_icon}
-          onClick={handleSidebarOpen}
+    <RemoveScroll enabled={isOpen}>
+      <div className={s.profile_sidebar_wrapper}>
+        <Button
+          iconLeft={isOpen ? <ArrowX /> : <BurgerMenuIcon />}
+          onClick={handleChangeSidebarState}
+          text="profile.menu"
+          className={s.menu_button}
+          type="button"
         />
-      )}
-      <div className={s.profile_sidebar_content}>
-        <div
-          className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}
-          ref={sidebarRef}
-        >
-          <UserProfileInfo />
-          <SidebarShell
-            data={
-              role === "admin" ? [adminPanelTab, ...subPagesTabs] : subPagesTabs
-            }
-            onClick={handleSidebarClose}
-          />
-          <SidebarShell data={pagesTabs} onClick={handleSidebarClose} />
-          <div className={s.logout_wrapper}>
-            <LogOutBtn />
+        <div className={s.profile_sidebar_content}>
+          <div
+            className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}
+            ref={sidebarRef}
+          >
+            <UserProfileInfo />
+            <SidebarShell
+              data={
+                role === "admin"
+                  ? [adminPanelTab, ...subPagesTabs]
+                  : subPagesTabs
+              }
+              onClick={handleChangeSidebarState}
+            />
+            <SidebarShell data={pagesTabs} onClick={handleChangeSidebarState} />
+            <div className={s.logout_wrapper}>
+              <LogOutBtn />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </RemoveScroll>
   );
 };

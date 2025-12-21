@@ -11,7 +11,7 @@ import {
   REF_CODE_PARAM,
 } from "@/shared/common/helpers/commonConstants.ts";
 import { userApi } from "@/shared/api/userApi/userApi.ts";
-import { Clipboard, UserPlusIcon } from "@/shared/assets/icons";
+import { Chevron, Clipboard, UserPlusIcon } from "@/shared/assets/icons";
 import ModalOverlay from "@/shared/components/Modals/ModalOverlay/ModalOverlay.tsx";
 import FriendMailInput from "../FriendMailInput/FriendMailInput.tsx";
 import useOutsideClick from "@/shared/common/hooks/useOutsideClick.ts";
@@ -111,6 +111,10 @@ const ReferralSection = () => {
         <div className={s.section_middle}>
           <p className={s.invite_row}>
             <Trans i18nKey="profile.referral.invite" />
+            <Chevron
+              onClick={() => setIsStepsOpen(!isStepsOpen)}
+              className={`${isStepsOpen ? s.open : ""}`}
+            />
             <button
               onClick={() => setIsStepsOpen(!isStepsOpen)}
               className={s.info_circle}

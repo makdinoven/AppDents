@@ -4,11 +4,15 @@
   gap: 5px;
   flex-shrink: 0;
   @include transition();
-  @include clamped-p2();
+  @include clamped-p3();
+  background-color: $hover-color;
+  padding: 5px 25px;
+  border-radius: 30px;
+  border: 1px solid $hover-color;
 
   svg {
-    width: 22px;
-    height: 22px;
+    width: 18px;
+    height: 18px;
 
     path {
       @include transition();
@@ -44,8 +48,8 @@
 @media (max-width: $tablet-breakpoint) {
   .logout {
     svg {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
     }
   }
 }
