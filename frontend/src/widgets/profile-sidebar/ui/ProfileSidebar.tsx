@@ -19,27 +19,27 @@ export const ProfileSidebar = () => {
   const handleSidebarClose = () => {
     setIsOpen(false);
   };
-  const handleChangeSidebarState = () => {
+
+  const toggleSidebar = () => {
     setIsOpen((prev) => !prev);
   };
 
-  useOutsideClick(sidebarRef, handleSidebarClose);
+  useOutsideClick(sidebarRef, () => {
+    if (isOpen) handleSidebarClose();
+  });
 
   return (
     <RemoveScroll enabled={isOpen}>
-      <div className={s.profile_sidebar_wrapper}>
+      <div className={s.profile_sidebar_wrapper} ref={sidebarRef}>
         <Button
           iconLeft={isOpen ? <ArrowX /> : <BurgerMenuIcon />}
-          onClick={handleChangeSidebarState}
+          onClick={toggleSidebar}
           text="profile.menu"
           className={s.menu_button}
           type="button"
         />
         <div className={s.profile_sidebar_content}>
-          <div
-            className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}
-            ref={sidebarRef}
-          >
+          <div className={`${s.profile_sidebar} ${isOpen ? s.open : ""}`}>
             <UserProfileInfo />
             <SidebarShell
               data={
@@ -47,9 +47,9 @@ export const ProfileSidebar = () => {
                   ? [adminPanelTab, ...subPagesTabs]
                   : subPagesTabs
               }
-              onClick={handleChangeSidebarState}
+              onClick={handleSidebarClose}
             />
-            <SidebarShell data={pagesTabs} onClick={handleChangeSidebarState} />
+            <SidebarShell data={pagesTabs} onClick={handleSidebarClose} />
             <div className={s.logout_wrapper}>
               <LogOutBtn />
             </div>
