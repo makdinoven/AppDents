@@ -381,6 +381,13 @@
   }
 }
 
+@media (max-width: 625px) {
+  .spend {
+    max-width: 100%;
+    @include clamped-p5();
+  }
+}
+
 @media (max-width: $mobile-breakpoint) {
   .section {
     gap: 0;
