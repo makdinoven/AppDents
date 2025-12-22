@@ -98,6 +98,13 @@ const AdminPage = () => {
       className={`${showSidebar ? s.admin_page : ""} ${isSidebarMinimized ? s.minimized_sidebar : ""}`}
     >
       {showSidebar && (
+        // <Sidebar
+        //     sections={profileSidebarData}
+        //     topSlot={<div>Admin panel</div>}
+        //     renderItem={(item, close) => (
+        //         <SidebarItem key={item.path} item={item} onClick={close} />
+        //     )}
+        // />
         <AdminSidebar
           links={ADMIN_SIDEBAR_LINKS}
           isMinimized={isSidebarMinimized}

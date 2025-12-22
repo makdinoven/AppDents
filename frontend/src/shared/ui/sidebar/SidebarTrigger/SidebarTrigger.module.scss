@@ -1,0 +1,51 @@
+.menu_button {
+  display: none;
+  pointer-events: none;
+}
+
+@media (max-width: $mobile-breakpoint) {
+  .menu_button {
+    border: 1px solid $hover-color;
+    @include flex-center();
+    gap: 10px;
+    color: $accent;
+    background-color: $hover-color;
+    padding: 6px 10px;
+    width: calc(100% - 20px);
+    align-self: center;
+    text-transform: uppercase;
+    @include transition();
+    pointer-events: auto;
+    min-height: fit-content;
+    margin: 0 auto;
+
+    svg {
+      height: 22px;
+      width: 22px;
+
+      path {
+        @include transition();
+        stroke: $accent;
+      }
+    }
+
+    span {
+      @include clamped-p2();
+      @include transition();
+    }
+  }
+
+  .menu_button:active {
+    border: 1px solid $primary;
+
+    svg {
+      path {
+        stroke: $primary;
+      }
+    }
+
+    span {
+      color: $primary;
+    }
+  }
+}
