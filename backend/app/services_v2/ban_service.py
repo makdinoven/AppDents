@@ -144,6 +144,14 @@ def _reloader_url() -> str:
 def _reloader_token() -> str:
     return os.getenv("NGINX_RELOAD_TOKEN", "")
 
+def _reload_required() -> bool:
+    """
+    Если включено, то при любой ошибке reload (включая отсутствие токена)
+    будем падать, чтобы не создавать ложное ощущение «IP уже заблокирован на Nginx».
+    По умолчанию выключено (dev-friendly).
+    """
+    return os.getenv("NGINX_RELOAD_REQUIRED", "0").strip().lower() in {"1", "true", "yes", "on"}
+
 
 def _write_ban_file(ips: list[str]) -> None:
     path = _ban_file_path()
@@ -199,6 +207,9 @@ def sync_nginx_ban_file_and_reload(db: Session) -> None:
 
     ok, err = _reload_nginx()
     if not ok:
-        raise RuntimeError(f"nginx reload failed: {err}")
+        if _reload_required():
+            raise RuntimeError(f"nginx reload failed: {err}")
+        logger.warning("nginx reload skipped/failed (non-fatal): %s", err)
+        return
 
 
