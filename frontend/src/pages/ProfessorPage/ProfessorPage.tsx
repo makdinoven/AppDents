@@ -132,6 +132,8 @@ const ProfessorPage = () => {
         paymentItems = transformedBooks;
         break;
       case "BOTH":
+        data.course_ids = course_ids;
+        data.landing_ids = landing_ids;
         data.book_ids = book_ids;
         data.book_landing_ids = book_landing_ids;
         data.price_cents = total_courses_books_price * 100;
