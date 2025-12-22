@@ -8,7 +8,6 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from requests import Request
 from sqlalchemy import func, Float, and_, case
 from sqlalchemy.orm import Session, joinedload, aliased, selectinload
 
