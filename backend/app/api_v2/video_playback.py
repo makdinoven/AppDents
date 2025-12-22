@@ -7,8 +7,7 @@ from pydantic import BaseModel
 from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User
 
-# Переиспользуем проверенные хелперы из admin video_diagnostics
-# (они уже умеют доставать key из URL и читать S3 metadata)
+# Хелперы из admin video_diagnostics (уже умеют доставать key из URL и читать S3 metadata)
 from .video_diagnostics import (
     key_from_url,
     check_s3_object,
@@ -16,14 +15,12 @@ from .video_diagnostics import (
     check_moov_position,
 )
 
-# Имена функций ниже приведи к тем, что реально есть в проекте (как в users.py)
-from ..services_v2.ban_service import getclientip  # в users.py: getclientip [file:1]
-from ..services_v2.ratelimit_service import ratelimit  # предположительное имя, см. свой файл
+# IP берём так же, как в users.py (аналог getclientip)
+from ..services_v2.ban_service import get_client_ip
 
 router = APIRouter()
 
-# Простой анти-спам/дедуп на уровне процесса (достаточно, чтобы не штормить Celery от одного пользователя/страницы).
-# Для полного “single-flight” по всему кластеру нужен Redis/DO, но сейчас это уже сильно помогает.
+# Простой анти-спам/дедуп на уровне процесса — как локальный кулдаун по s3_key
 _RECENT_FASTSTART_REQUESTS: Dict[str, float] = {}
 _FASTSTART_COOLDOWN_SEC = 10 * 60  # 10 минут
 
@@ -50,18 +47,15 @@ def request_faststart(
     payload: RequestFaststartPayload,
     request: Request,
     current_user: User = Depends(get_current_user),
-    _: None = Depends(ratelimit(scope="video_faststart_request")),
 ) -> Dict[str, Any]:
     """
-    Пользовательский endpoint: ставит задачу "faststart" (перенос moov atom в начало) в очередь,
-    если видео ещё не помечено metadata faststart=true.
+    Пользовательский endpoint: ставит задачу "faststart" (перенос moov atom в начало)
+    в очередь, если видео ещё не помечено metadata faststart=true.
 
-    Важно:
-    - Не требует admin роли, но требует авторизацию (иначе легко абьюзить).
-    - Делает дедуп/кулдаун по s3_key на уровне процесса.
+    Требует авторизацию (как и остальные пользовательские ручки).
+    Локальный кулдаун по s3_key — чтобы не заспамить очередь.
     """
-
-    client_ip = getclientip(request)  # используется для логирования/внутри ratelimit, если нужно
+    client_ip = get_client_ip(request)  # пока только для логов/диагностики
 
     s3_key = key_from_url(payload.video_url)
     low = s3_key.lower()
@@ -70,7 +64,10 @@ def request_faststart(
 
     check = check_s3_object(s3_key)
     if check.status == "error":
-        raise HTTPException(status_code=404, detail=f"Video not found: {check.message}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Video not found: {check.message}",
+        )
 
     if check.details.get("faststart") == "true":
         return {
@@ -87,11 +84,13 @@ def request_faststart(
             "message": "Faststart already requested recently",
             "s3_key": s3_key,
         }
+
     _RECENT_FASTSTART_REQUESTS[s3_key] = now
 
     from ..tasks.fast_start import process_faststart_video
 
     task = process_faststart_video.apply_async(args=[s3_key], queue="special")
+
     return {
         "status": "queued",
         "task_id": task.id,
@@ -106,19 +105,17 @@ def ensure_faststart(
     payload: RequestFaststartPayload,
     request: Request,
     current_user: User = Depends(get_current_user),
-    _: None = Depends(ratelimit(scope="video_faststart_ensure")),
 ) -> Dict[str, Any]:
     """
     Более надёжный user-endpoint:
+
     - Проверяет S3 metadata faststart
-    - Если faststart неизвестен/false — делает server-side check moov-position (ffprobe)
-    - Ставит задачу в очередь только если moov после mdat (т.е. faststart реально нужен)
+    - Если faststart неизвестен/false — делает server-side check moov-position
+    - Ставит задачу только если moov после mdat (faststart реально нужен)
 
-    Требует авторизацию, чтобы нельзя было абьюзить.
-    Кулдаун по s3_key — на уровне процесса.
+    Требует авторизацию. Локальный кулдаун по s3_key.
     """
-
-    client_ip = getclientip(request)
+    client_ip = get_client_ip(request)
 
     s3_key = key_from_url(payload.video_url)
     low = s3_key.lower()
@@ -127,9 +124,17 @@ def ensure_faststart(
 
     check = check_s3_object(s3_key)
     if check.status == "error":
-        raise HTTPException(status_code=404, detail=f"Video not found: {check.message}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"Video not found: {check.message}",
+        )
+
     if check.details.get("faststart") == "true":
-        return {"status": "skipped", "message": "Already faststart", "s3_key": s3_key}
+        return {
+            "status": "skipped",
+            "message": "Already faststart",
+            "s3_key": s3_key,
+        }
 
     now = time.time()
     last = _RECENT_FASTSTART_REQUESTS.get(s3_key, 0.0)
@@ -154,12 +159,14 @@ def ensure_faststart(
             "s3_key": s3_key,
         }
 
-    # Если moov после mdat — очередь
+    # moov после mdat — faststart нужен, ставим задачу
     if isinstance(moov_pos, int) and isinstance(mdat_pos, int) and moov_pos > mdat_pos:
         _RECENT_FASTSTART_REQUESTS[s3_key] = now
+
         from ..tasks.fast_start import process_faststart_video
 
         task = process_faststart_video.apply_async(args=[s3_key], queue="special")
+
         return {
             "status": "queued",
             "task_id": task.id,
@@ -168,7 +175,7 @@ def ensure_faststart(
             "message": "Faststart task queued (moov after mdat)",
         }
 
-    # Не смогли определить — не создаём задач автоматически, чтобы не штормить.
+    # Не смогли надёжно определить — не создаём задач автоматически
     return {
         "status": "unknown",
         "message": moov.message,
@@ -186,13 +193,14 @@ def faststart_status(
     ),
     current_user: User = Depends(get_current_user),
 ) -> FaststartStatusResponse:
-    # Авторизованный polling статуса faststart
-
+    """
+    Авторизованный polling статуса faststart по video_url и (опционально) task_id.
+    """
     s3_key = key_from_url(video_url)
     check = check_s3_object(s3_key)
     faststart = check.details.get("faststart") == "true"
 
-    # Если faststart уже появился в metadata — считаем “готово” независимо от task state.
+    # Если faststart уже появился в metadata — считаем готово независимо от task state
     if faststart:
         return FaststartStatusResponse(
             video_url=video_url,
