@@ -1,15 +1,24 @@
 import time
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
-from ..dependencies.auth import get_current_user_optional
+from ..dependencies.auth import get_current_user
 from ..models.models_v2 import User
 
-# Переиспользуем проверенные хелперы из admin video_diagnostics (они уже умеют доставать key из URL и читать S3 metadata)
-from .video_diagnostics import key_from_url, check_s3_object, safe_cdn_url, check_moov_position
+# Переиспользуем проверенные хелперы из admin video_diagnostics
+# (они уже умеют доставать key из URL и читать S3 metadata)
+from .video_diagnostics import (
+    key_from_url,
+    check_s3_object,
+    safe_cdn_url,
+    check_moov_position,
+)
 
+# Имена функций ниже приведи к тем, что реально есть в проекте (как в users.py)
+from ..services_v2.ban_service import getclientip  # в users.py: getclientip [file:1]
+from ..services_v2.ratelimit_service import ratelimit  # предположительное имя, см. свой файл
 
 router = APIRouter()
 
@@ -24,10 +33,24 @@ class RequestFaststartPayload(BaseModel):
     reason: Optional[str] = None  # диагностическая причина (stalled/startup/etc)
 
 
+class FaststartStatusResponse(BaseModel):
+    video_url: str
+    s3_key: str
+    faststart: bool
+    task_id: Optional[str] = None
+    task_state: Optional[str] = None
+    task_ready: Optional[bool] = None
+    task_successful: Optional[bool] = None
+    task_failed: Optional[bool] = None
+    message: Optional[str] = None
+
+
 @router.post("/request-faststart")
 def request_faststart(
     payload: RequestFaststartPayload,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(ratelimit(scope="video_faststart_request")),
 ) -> Dict[str, Any]:
     """
     Пользовательский endpoint: ставит задачу "faststart" (перенос moov atom в начало) в очередь,
@@ -37,8 +60,8 @@ def request_faststart(
     - Не требует admin роли, но требует авторизацию (иначе легко абьюзить).
     - Делает дедуп/кулдаун по s3_key на уровне процесса.
     """
-    # Важно: видео может быть доступно до логина. Поэтому endpoint допускает анонимный вызов,
-    # но защищён кулдауном по s3_key (best-effort, на уровне процесса).
+
+    client_ip = getclientip(request)  # используется для логирования/внутри ratelimit, если нужно
 
     s3_key = key_from_url(payload.video_url)
     low = s3_key.lower()
@@ -81,7 +104,9 @@ def request_faststart(
 @router.post("/ensure-faststart")
 def ensure_faststart(
     payload: RequestFaststartPayload,
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    _: None = Depends(ratelimit(scope="video_faststart_ensure")),
 ) -> Dict[str, Any]:
     """
     Более надёжный user-endpoint:
@@ -89,9 +114,12 @@ def ensure_faststart(
     - Если faststart неизвестен/false — делает server-side check moov-position (ffprobe)
     - Ставит задачу в очередь только если moov после mdat (т.е. faststart реально нужен)
 
-    Не требует admin роли и допускает анонимный вызов (видео может быть доступно до логина),
-    но защищён кулдауном по s3_key.
+    Требует авторизацию, чтобы нельзя было абьюзить.
+    Кулдаун по s3_key — на уровне процесса.
     """
+
+    client_ip = getclientip(request)
+
     s3_key = key_from_url(payload.video_url)
     low = s3_key.lower()
     if not (low.endswith(".mp4") or low.endswith(".mov")):
@@ -106,7 +134,11 @@ def ensure_faststart(
     now = time.time()
     last = _RECENT_FASTSTART_REQUESTS.get(s3_key, 0.0)
     if now - last < _FASTSTART_COOLDOWN_SEC:
-        return {"status": "cooldown", "message": "Faststart already requested recently", "s3_key": s3_key}
+        return {
+            "status": "cooldown",
+            "message": "Faststart already requested recently",
+            "s3_key": s3_key,
+        }
 
     # Server-side moov check
     cdn_url = safe_cdn_url(s3_key)
@@ -116,7 +148,11 @@ def ensure_faststart(
     mdat_pos = details.get("mdat_position")
 
     if isinstance(moov_pos, int) and isinstance(mdat_pos, int) and moov_pos < mdat_pos:
-        return {"status": "skipped", "message": "faststart OK (moov before mdat)", "s3_key": s3_key}
+        return {
+            "status": "skipped",
+            "message": "faststart OK (moov before mdat)",
+            "s3_key": s3_key,
+        }
 
     # Если moov после mdat — очередь
     if isinstance(moov_pos, int) and isinstance(mdat_pos, int) and moov_pos > mdat_pos:
@@ -141,25 +177,16 @@ def ensure_faststart(
     }
 
 
-class FaststartStatusResponse(BaseModel):
-    video_url: str
-    s3_key: str
-    faststart: bool
-    task_id: Optional[str] = None
-    task_state: Optional[str] = None
-    task_ready: Optional[bool] = None
-    task_successful: Optional[bool] = None
-    task_failed: Optional[bool] = None
-    message: Optional[str] = None
-
-
 @router.get("/faststart-status", response_model=FaststartStatusResponse)
 def faststart_status(
     video_url: str = Query(..., description="URL видео"),
-    task_id: Optional[str] = Query(default=None, description="Celery task id (если есть)"),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    task_id: Optional[str] = Query(
+        default=None,
+        description="Celery task id (если есть)",
+    ),
+    current_user: User = Depends(get_current_user),
 ) -> FaststartStatusResponse:
-    # допускаем анонимный polling
+    # Авторизованный polling статуса faststart
 
     s3_key = key_from_url(video_url)
     check = check_s3_object(s3_key)
@@ -209,7 +236,11 @@ def faststart_status(
         task_ready=ready,
         task_successful=successful if ready else None,
         task_failed=failed if ready else None,
-        message="queued" if state in ("PENDING", "RECEIVED") else "running" if state in ("STARTED", "RETRY") else None,
+        message=(
+            "queued"
+            if state in ("PENDING", "RECEIVED")
+            else "running"
+            if state in ("STARTED", "RETRY")
+            else None
+        ),
     )
-
-
