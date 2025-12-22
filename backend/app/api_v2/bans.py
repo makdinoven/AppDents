@@ -85,21 +85,27 @@ def create_email(
     db.add(obj)
     db.flush()
 
+    ip_changed = False
     for ip in payload.ips or []:
+        if not (ip or "").strip():
+            continue
         ip_n = _norm_ip(ip)
         ip_obj = db.query(BanIP).filter(BanIP.ip == ip_n).first()
         if not ip_obj:
             ip_obj = BanIP(ip=ip_n, is_manual=True, created_by_admin_id=admin.id)
             db.add(ip_obj)
             db.flush()
+            ip_changed = True
         if ip_obj not in obj.ips:
             obj.ips.append(ip_obj)
+            ip_changed = True
 
     db.commit()
     db.refresh(obj)
 
-    # если добавили/создали новые IP — пересоберём ban-файл и сделаем reload
-    sync_nginx_ban_file_and_reload(db)
+    # Пересобираем ban-файл и reload только если реально меняли IP-состав
+    if ip_changed:
+        sync_nginx_ban_file_and_reload(db)
     return obj
 
 
@@ -165,6 +171,8 @@ def create_ip(
     db.flush()
 
     for email in payload.emails or []:
+        if not (email or "").strip():
+            continue
         e_n = _norm_email(email)
         e_obj = db.query(BanEmail).filter(BanEmail.email == e_n).first()
         if not e_obj:
