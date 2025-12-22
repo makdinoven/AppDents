@@ -1,7 +1,7 @@
 import s from "./UserProfileInfo.module.scss";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "@/shared/store/store.ts";
 import { UserFilled } from "@/shared/assets/icons";
+import { AppRootStateType } from "@/shared/store/store";
 
 export const UserProfileInfo = () => {
   const email = useSelector((state: AppRootStateType) => state.user.email);

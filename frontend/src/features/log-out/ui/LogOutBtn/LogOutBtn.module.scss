@@ -1,5 +1,6 @@
 .logout {
   @include flex-center();
+  width: 100%;
   flex-direction: row;
   gap: 5px;
   flex-shrink: 0;
@@ -23,6 +24,7 @@
   @media (hover: hover) {
     &:hover {
       color: $error-color;
+      border-color: $error-color;
 
       svg {
         path {

@@ -8,7 +8,7 @@
 }
 
 .sidebar_item {
-  padding: 15px;
+  padding: 10px 15px;
   min-width: fit-content;
   display: flex;
   flex-direction: row;
@@ -19,6 +19,38 @@
   gap: 15px;
   flex: 1;
   height: fit-content;
+
+  @media (hover: hover) {
+      &:hover:not(.active) {
+        background-color: $hover-color;
+
+        .title {
+          //color: $text-color;
+        }
+
+        .arrow,
+        .icon {
+          path {
+            //stroke: $text-color;
+          }
+        }
+      }
+  }
+
+  &:active {
+    background-color: $primary;
+
+    .title {
+      //color: $text-color;
+    }
+
+    .arrow,
+    .icon {
+      path {
+        //stroke: $text-color;
+      }
+    }
+  }
 }
 
 .item_content {
@@ -52,8 +84,10 @@
 .arrow {
   width: 24px;
   height: 24px;
+  opacity: 1;
   transform: rotate(90deg);
   flex-shrink: 0;
+  @include transition();
 
   path {
     stroke-width: 1.5;
@@ -74,41 +108,8 @@
   }
 
   .arrow {
-    visibility: hidden;
-  }
-}
-
-@media (hover: hover) {
-  .sidebar_item {
-    &:hover {
-      background-color: $primary;
-
-      .title {
-        color: $text-color;
-      }
-
-      .arrow,
-      .icon {
-        path {
-          stroke: $text-color;
-        }
-      }
-    }
-  }
-}
-
-.sidebar_item:active {
-  background-color: $primary;
-
-  .title {
-    color: $text-color;
-  }
-
-  .arrow,
-  .icon {
-    path {
-      stroke: $text-color;
-    }
+    pointer-events: none;
+    opacity: 0;
   }
 }
 

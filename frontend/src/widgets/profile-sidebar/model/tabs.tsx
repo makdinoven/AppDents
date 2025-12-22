@@ -10,7 +10,7 @@ import {
   UserPlusIcon,
   UserStrokeIcon,
 } from "@/shared/assets/icons";
-import { SidebarShellData } from "@/shared/components/ui/sidebar";
+import { SidebarShellData } from "@/shared/ui/sidebar";
 
 export const adminPanelTab: SidebarShellData = {
   type: "link",

@@ -1,14 +1,10 @@
 import s from "./ProfileSidebar.module.scss";
 import { useSelector } from "react-redux";
-import { AppRootStateType } from "@/shared/store/store.ts";
-import { Sidebar } from "@/shared/components/ui/sidebar";
+import { AppRootStateType } from "@/shared/store/store";
+import { Sidebar } from "@/shared/ui/sidebar";
 import { UserProfileInfo } from "@/features/user-profile-info";
 import { LogOutBtn } from "@/features/log-out";
-import {
-  adminPanelTab,
-  pagesTabs,
-  subPagesTabs,
-} from "@/widgets/profile-sidebar/model/tabs.tsx";
+import { adminPanelTab, pagesTabs, subPagesTabs } from "../../model/tabs";
 
 export const ProfileSidebar = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
@@ -23,9 +19,9 @@ export const ProfileSidebar = () => {
       sidebarShellsData={profileSidebarData}
       topSlot={<UserProfileInfo />}
       bottomSlot={
-        <div className={s.logout_wrapper}>
-          <LogOutBtn />
-        </div>
+        // <div className={s.logout_wrapper}>
+        <LogOutBtn />
+        // </div>
       }
     />
   );

@@ -110,17 +110,17 @@ const ReferralSection = () => {
 
         <div className={s.section_middle}>
           <p className={s.invite_row}>
-            <Trans i18nKey="profile.referral.invite" />
-            <Chevron
-              onClick={() => setIsStepsOpen(!isStepsOpen)}
-              className={`${isStepsOpen ? s.open : ""}`}
-            />
             <button
               onClick={() => setIsStepsOpen(!isStepsOpen)}
               className={s.info_circle}
             >
               i
             </button>
+            <Trans i18nKey="profile.referral.invite" />
+            <Chevron
+              onClick={() => setIsStepsOpen(!isStepsOpen)}
+              className={`${isStepsOpen ? s.open : ""}`}
+            />
           </p>
           <ul className={`${s.steps} ${isStepsOpen ? s.open : ""}`}>
             {steps.map((step, i) => (

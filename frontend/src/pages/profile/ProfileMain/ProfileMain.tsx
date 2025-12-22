@@ -6,8 +6,7 @@ import { AppDispatchType, AppRootStateType } from "@/shared/store/store.ts";
 import { getBooks, getCourses } from "@/shared/store/actions/userActions.ts";
 import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import MyContent from "../modules/MyContent/MyContent.tsx";
-import { t } from "i18next";
-import { NavigateToSupport } from "@/features/navigate-to-support";
+import { NavigateToSupport } from "../../../features/support/navigate-to-support";
 import { ProfilePageTitle } from "@/shared/components/ui/profile-page-title/ProfilePageTitle.tsx";
 
 const ProfileMain = () => {

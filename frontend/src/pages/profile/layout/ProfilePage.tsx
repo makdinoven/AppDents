@@ -1,6 +1,6 @@
 import s from "./ProfilePage.module.scss";
 import { Outlet } from "react-router-dom";
-import { ProfileSidebar } from "@/widgets/profile-sidebar/ui/ProfileSidebar.tsx";
+import { ProfileSidebar } from "@/widgets/profile-sidebar/ui/ProfileSidebar/ProfileSidebar.tsx";
 
 const ProfilePage = () => {
   return (
