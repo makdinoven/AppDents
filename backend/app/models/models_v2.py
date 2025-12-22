@@ -243,45 +243,7 @@ class User(Base):
         lazy="selectin",
     )
 
-
-class BanEmail(Base):
-    __tablename__ = "ban_emails"
-
-    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
-    email = Column(String(255), nullable=False, unique=True, index=True)
-    note = Column(Text, nullable=True)
-    is_manual = Column(Boolean, nullable=False, server_default="1")
-    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-    )
-
-    ips = relationship("BanIP", secondary=ban_email_ip, back_populates="emails", lazy="selectin")
-
-
-class BanIP(Base):
-    __tablename__ = "ban_ips"
-
-    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
-    ip = Column(String(45), nullable=False, unique=True, index=True)  # IPv4/IPv6
-    note = Column(Text, nullable=True)
-    is_manual = Column(Boolean, nullable=False, server_default="1")
-    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-    updated_at = Column(
-        DateTime,
-        nullable=False,
-        server_default=func.current_timestamp(),
-        onupdate=func.current_timestamp(),
-    )
-
-    emails = relationship("BanEmail", secondary=ban_email_ip, back_populates="ips", lazy="selectin")
     books = relationship("Book", secondary=users_books, backref="users")
-
 
     @hybrid_property
     def active_special_offer_ids(self) -> list[int]:
@@ -1118,3 +1080,43 @@ class EmailSuppression(Base):
         Index("ix_email_suppressions_type", "type"),
         Index("ix_email_suppressions_created_at", "created_at"),
     )
+
+
+# ───────────────── Ban Email/IP ─────────────────
+
+class BanEmail(Base):
+    __tablename__ = "ban_emails"
+
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    note = Column(Text, nullable=True)
+    is_manual = Column(Boolean, nullable=False, server_default="1")
+    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
+    ips = relationship("BanIP", secondary=ban_email_ip, back_populates="emails", lazy="selectin")
+
+
+class BanIP(Base):
+    __tablename__ = "ban_ips"
+
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    ip = Column(String(45), nullable=False, unique=True, index=True)  # IPv4/IPv6
+    note = Column(Text, nullable=True)
+    is_manual = Column(Boolean, nullable=False, server_default="1")
+    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
+    emails = relationship("BanEmail", secondary=ban_email_ip, back_populates="ips", lazy="selectin")
