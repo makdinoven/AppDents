@@ -4,6 +4,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import declarative_base, relationship, backref
 from enum import Enum as PyEnum
 import datetime as _dt
+from sqlalchemy.dialects.mysql import BIGINT
 
 Base = declarative_base()
 
@@ -67,6 +68,25 @@ book_landing_tags = Table(
     Base.metadata,
     Column("book_landing_id", Integer, ForeignKey("book_landings.id"), primary_key=True),
     Column("tag_id",          Integer, ForeignKey("tags.id"),          primary_key=True),
+)
+
+ban_email_ip = Table(
+    "ban_email_ip",
+    Base.metadata,
+    Column(
+        "ban_email_id",
+        BIGINT(unsigned=True),
+        ForeignKey("ban_emails.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "ban_ip_id",
+        BIGINT(unsigned=True),
+        ForeignKey("ban_ips.id", ondelete="CASCADE", onupdate="CASCADE"),
+        primary_key=True,
+    ),
+    Column("created_at", DateTime, nullable=False, server_default=func.current_timestamp()),
+    Index("ix_ban_email_ip_ip", "ban_ip_id"),
 )
 
 
@@ -222,6 +242,44 @@ class User(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+
+class BanEmail(Base):
+    __tablename__ = "ban_emails"
+
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    note = Column(Text, nullable=True)
+    is_manual = Column(Boolean, nullable=False, server_default="1")
+    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
+    ips = relationship("BanIP", secondary=ban_email_ip, back_populates="emails", lazy="selectin")
+
+
+class BanIP(Base):
+    __tablename__ = "ban_ips"
+
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True)
+    ip = Column(String(45), nullable=False, unique=True, index=True)  # IPv4/IPv6
+    note = Column(Text, nullable=True)
+    is_manual = Column(Boolean, nullable=False, server_default="1")
+    created_by_admin_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+    updated_at = Column(
+        DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
+    emails = relationship("BanEmail", secondary=ban_email_ip, back_populates="ips", lazy="selectin")
     books = relationship("Book", secondary=users_books, backref="users")
 
 

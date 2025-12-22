@@ -6,7 +6,7 @@ import secrets
 import string
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks, Form, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from requests import Request
 from sqlalchemy import func, Float, and_, case
@@ -30,6 +30,7 @@ from ..services_v2.user_service import (
 )
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 from ..utils.s3 import generate_presigned_url
+from ..services_v2.ban_service import enforce_not_banned, get_client_ip
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
@@ -92,6 +93,7 @@ def _parse_cart_ids(raw: str | None) -> list[int]:
 def register(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     region: str = "EN",
     ref: str | None = Query(None, description="Referral code"),
     transfer_cart: bool = False,
@@ -102,6 +104,7 @@ def register(
     """
     При регистрации можно передать ?ref=ABCD1234 – код пригласителя.
     """
+    enforce_not_banned(db, email=user_data.email, ip=get_client_ip(request), source="register")
     existing_user = get_user_by_email(db, user_data.email)
     if existing_user:
         raise HTTPException(
@@ -140,7 +143,12 @@ def register(
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestFormExt = Depends(), db: Session = Depends(get_db)):
+async def login(
+    request: Request,
+    form_data: OAuth2PasswordRequestFormExt = Depends(),
+    db: Session = Depends(get_db),
+):
+    enforce_not_banned(db, email=form_data.username, ip=get_client_ip(request), source="login")
     user = db.query(User).filter(User.email == form_data.username).first()
 
     if not user:

@@ -20,6 +20,7 @@ from ..utils.email_sender import (
     send_already_owned_course_email,
 )
 from ..services_v2 import cart_service as cs
+from ..services_v2.ban_service import enforce_not_banned, get_client_ip
 
 router = APIRouter()
 
@@ -68,6 +69,9 @@ def stripe_checkout(
             raise HTTPException(status_code=400, detail="Email is required for unauthenticated checkout")
         email = data.user_email
         logging.info("Неавторизованный пользователь, email: %s", email)
+
+    # Бан по email/IP: запрещаем checkout, а при частичном совпадении дописываем связку
+    enforce_not_banned(db, email=email, ip=get_client_ip(request), source="stripe_checkout")
 
     if data.use_balance and current_user is None:
         raise HTTPException(400, "use_balance=true доступно только авторизованным")
