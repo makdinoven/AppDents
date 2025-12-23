@@ -835,6 +835,13 @@ def aggregate_book_filters(
         selected.publishers, selected.authors, selected.tags, selected.formats,
         selected.year, selected.price, selected.pages
     ])
+
+    # Важно: порядок ключей в `filters` используется фронтендом при отображении.
+    # Хотим показывать: tags → publishers → authors → (остальные как были).
+    preferred_order = ["tags", "publishers", "authors"]
+    ordered_head = {k: filters[k] for k in preferred_order if k in filters}
+    ordered_tail = {k: v for k, v in filters.items() if k not in preferred_order}
+    filters = {**ordered_head, **ordered_tail}
     
     return CatalogFiltersMetadata(
         filters=filters,
