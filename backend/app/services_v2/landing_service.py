@@ -791,21 +791,29 @@ def track_ad_visit(
     db.commit()
 
 
-def get_cheapest_landing_for_course(db: Session, course_id: int) -> Landing | None:
+def get_cheapest_landing_for_course(
+    db: Session,
+    course_id: int,
+    *,
+    tags: list[str] | None = None,
+) -> Landing | None:
     """
     Возвращает объект Landing с минимальным new_price
     для заданного course_id. Скрытые лендинги (is_hidden=True)
     игнорируются.  new_price приводим к float для корректного сравнения.
     """
-    rows = (
+    query = (
         db.query(Landing)
-          .join(Landing.courses)
-          .filter(
-              Course.id == course_id,
-              Landing.is_hidden == False,
-          )
-          .all()
+        .join(Landing.courses)
+        .filter(
+            Course.id == course_id,
+            Landing.is_hidden == False,
+        )
     )
+    if tags:
+        query = query.join(Landing.tags).filter(Tag.name.in_(tags))
+
+    rows = query.all()
     if not rows:
         return None
 
@@ -843,13 +851,16 @@ def get_recommended_landing_cards(
     skip: int = 0,
     limit: int = 20,
     language: str | None = None,
+    tags: list[str] | None = None,
 ) -> dict:
     b_courses  = _user_course_ids(db, user_id)
     b_landings = _user_landing_ids(db, user_id)
 
     # --- FALLBACK, если покупок нет: только popular, total = реальное кол-во ---
     if not b_courses:
-        query = _apply_common_filters(_base_landing_query(db), language=language)
+        query = _apply_common_filters(
+            _base_landing_query(db), language=language, tags=tags
+        )
         query = _exclude_bought(query, b_courses, b_landings)
         query = _apply_sort(query, "popular")
 
@@ -886,7 +897,7 @@ def get_recommended_landing_cards(
     seen_cf: set[int] = set()
 
     for row in rec_q.yield_per(200):
-        landing = get_cheapest_landing_for_course(db, row.cid)
+        landing = get_cheapest_landing_for_course(db, row.cid, tags=tags)
         if not landing:
             continue
         if language and landing.language != language.upper():
@@ -900,7 +911,9 @@ def get_recommended_landing_cards(
         cf_ids.append(landing.id)
 
     # 2) фолбэк‑запрос popular по языку, исключая купленные и уже найденные CF
-    query_fb = _apply_common_filters(_base_landing_query(db), language=language)
+    query_fb = _apply_common_filters(
+        _base_landing_query(db), language=language, tags=tags
+    )
     query_fb = _exclude_bought(query_fb, b_courses, b_landings)
     query_fb = query_fb.filter(~Landing.id.in_(cf_ids))   # <-- импортируйте вашу модель Landing
     query_fb = _apply_sort(query_fb, "popular")
@@ -950,7 +963,12 @@ def get_personalized_landing_cards(
 ) -> dict:
     if sort.lower() == "recommend":
         return get_recommended_landing_cards(
-            db, user_id=user_id, skip=skip, limit=limit, language=language
+            db,
+            user_id=user_id,
+            skip=skip,
+            limit=limit,
+            language=language,
+            tags=tags,
         )
 
     b_courses = _user_course_ids(db, user_id)
