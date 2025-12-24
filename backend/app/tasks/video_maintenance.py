@@ -14,7 +14,13 @@ import redis
 from botocore.exceptions import ClientError
 from celery import shared_task
 
-from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client, key_from_public_or_endpoint_url
+from ..core.storage import (
+    S3_BUCKET,
+    S3_PUBLIC_HOST,
+    s3_client,
+    key_from_public_or_endpoint_url,
+    public_url_for_key,
+)
 from ..core.video_maintenance_config import VIDEO_MAINTENANCE
 from ..db.database import SessionLocal
 from ..utils.db_url_rewrite import rewrite_references_for_key
@@ -98,6 +104,23 @@ def _ffprobe(path: str) -> dict:
     return json.loads(out)
 
 
+def _ffprobe_url(url: str) -> Optional[dict]:
+    """
+    Dry-run helper: ffprobe по HTTP(S) URL.
+    Обычно ffprobe умеет читать заголовки/метаданные через range-requests,
+    не скачивая файл целиком.
+    """
+    try:
+        out = subprocess.check_output(
+            ["ffprobe", "-v", "fatal", "-print_format", "json", "-show_streams", "-show_format", url],
+        ).decode("utf-8", "ignore")
+        import json
+
+        return json.loads(out)
+    except Exception:
+        return None
+
+
 def _pick_stream(meta: dict, codec_type: str) -> Optional[dict]:
     for s in meta.get("streams", []) or []:
         if s.get("codec_type") == codec_type:
@@ -137,7 +160,50 @@ def _fix_mp4_to_compatible(
     - если нужно — full transcode в H.264 + yuv420p
     """
     if dry_run:
-        return {"status": "dry_run", "action": "skip_mp4_fix"}
+        meta_faststart = None
+        try:
+            head = s3.head_object(Bucket=S3_BUCKET, Key=src_key)
+            meta_faststart = (head.get("Metadata", {}) or {}).get("faststart")
+        except Exception:
+            pass
+
+        url = public_url_for_key(src_key, public_host=S3_PUBLIC_HOST)
+        m = _ffprobe_url(url) or {}
+        v = _pick_stream(m, "video")
+        a = _pick_stream(m, "audio")
+
+        full = _needs_full_transcode(v)
+        audio_re = _needs_audio_reencode(a)
+        would_faststart = (meta_faststart != "true")
+
+        if full:
+            action = "would_full_transcode_h264_aac_faststart"
+        elif audio_re:
+            action = "would_remux_vcopy_audio_aac_faststart"
+        elif would_faststart:
+            action = "would_remux_copy_faststart"
+        else:
+            action = "would_skip_already_compatible"
+
+        return {
+            "status": "dry_run",
+            "action": action,
+            "faststart_metadata": meta_faststart,
+            "would_faststart_remux": bool(would_faststart),
+            "would_full_transcode": bool(full),
+            "would_audio_reencode": bool(audio_re),
+            "detected": {
+                "vcodec": (v or {}).get("codec_name"),
+                "pix_fmt": (v or {}).get("pix_fmt"),
+                "acodec": (a or {}).get("codec_name"),
+            },
+            "target": {
+                "vcodec": "h264",
+                "pix_fmt": VIDEO_MAINTENANCE.target_pixel_format,
+                "acodec": "aac",
+            },
+            "probe_url": url,
+        }
 
     head = s3.head_object(Bucket=S3_BUCKET, Key=src_key)
     meta = dict(head.get("Metadata", {}) or {})
@@ -485,8 +551,8 @@ def _process_one(
             "hls": hls,
             "db": db_report,
             "delete_old_key": bool(delete_old_key and (new_key != old_key)),
-            "public_old": f"{S3_PUBLIC_HOST}/{old_key}",
-            "public_new": f"{S3_PUBLIC_HOST}/{new_key}",
+            "public_old": public_url_for_key(old_key, public_host=S3_PUBLIC_HOST),
+            "public_new": public_url_for_key(new_key, public_host=S3_PUBLIC_HOST),
         }
         _audit({"ts": int(time.time()), "result": result})
         return result
