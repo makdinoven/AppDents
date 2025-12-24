@@ -168,7 +168,22 @@ def _fix_mp4_to_compatible(
             pass
 
         url = public_url_for_key(src_key, public_host=S3_PUBLIC_HOST)
-        m = _ffprobe_url(url) or {}
+        m = _ffprobe_url(url)
+        if not m:
+            # Не смогли определить кодеки по URL (например, URL недоступен или ключ не существует).
+            # В таком случае не делаем выводов про transcode/audio, только показываем faststart по метадате.
+            would_faststart = (meta_faststart != "true")
+            return {
+                "status": "dry_run",
+                "action": "probe_failed",
+                "faststart_metadata": meta_faststart,
+                "would_faststart_remux": bool(would_faststart),
+                "would_full_transcode": None,
+                "would_audio_reencode": None,
+                "detected": {"vcodec": None, "pix_fmt": None, "acodec": None},
+                "target": {"vcodec": "h264", "pix_fmt": VIDEO_MAINTENANCE.target_pixel_format, "acodec": "aac"},
+                "probe_url": url,
+            }
         v = _pick_stream(m, "video")
         a = _pick_stream(m, "audio")
 
@@ -523,7 +538,13 @@ def _process_one(
         new_key = rename.get("new_key") or old_key
 
         # 2) mp4 fix (faststart + codecs)
-        mp4_fix = _fix_mp4_to_compatible(src_key=new_key, dry_run=dry_run)
+        # В dry-run новый ключ ещё не создан, поэтому кодеки нужно определять по реальному (старому) объекту.
+        probe_key = old_key if dry_run else new_key
+        mp4_fix = _fix_mp4_to_compatible(src_key=probe_key, dry_run=dry_run)
+        if dry_run and probe_key != new_key:
+            mp4_fix = dict(mp4_fix)
+            mp4_fix["probe_key"] = probe_key
+            mp4_fix["would_apply_to_key"] = new_key
 
         # 3) HLS validate/repair + alias
         hls = _validate_and_fix_hls_for(new_key, dry_run=dry_run)
