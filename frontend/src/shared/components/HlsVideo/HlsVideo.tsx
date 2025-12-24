@@ -39,6 +39,26 @@ const normalizeVideoKey = (url: string): string => {
 // Если ссылка пришла с CDN (VITE_CDN_URL), подменяем origin на Cloud (VITE_CLOUD_URL),
 // чтобы и HLS (playlist/segments), и MP4 шли с нужного домена.
 // Backward-compat: если VITE_CLOUD_URL не задан, используем VITE_MEDIA_URL (как раньше).
+const urlFromMaybeOrigin = (raw: string): URL | null => {
+  const v = String(raw || "").trim();
+  if (!v) return null;
+  try {
+    return new URL(v);
+  } catch {
+    // ignore
+  }
+  try {
+    if (v.startsWith("//")) return new URL(`https:${v}`);
+  } catch {
+    // ignore
+  }
+  try {
+    return new URL(`https://${v.replace(/^https?:\/\//i, "")}`);
+  } catch {
+    return null;
+  }
+};
+
 const rewriteCdnToCloudUrl = (url: string): string => {
   try {
     const u = new URL(url);
@@ -51,11 +71,12 @@ const rewriteCdnToCloudUrl = (url: string): string => {
       ((import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined);
     if (!cdnOrigin || !cloudOrigin) return url;
 
-    const cdnHost = new URL(cdnOrigin).hostname;
-    const cloud = new URL(cloudOrigin);
-    if (cdnHost && u.hostname === cdnHost) {
+    const cdn = urlFromMaybeOrigin(cdnOrigin);
+    const cloud = urlFromMaybeOrigin(cloudOrigin);
+    if (!cdn || !cloud) return url;
+    if (cdn.hostname && u.hostname === cdn.hostname) {
       u.protocol = cloud.protocol;
-      u.hostname = cloud.hostname;
+      u.host = cloud.host;
       return u.toString();
     }
     return url;
@@ -864,8 +885,21 @@ const HlsVideo: React.FC<Props> = ({
             }
             load(context: any, config: any, callbacks: any) {
               const rawUrl = String(context?.url ?? "");
+              // ВАЖНО: даже если плейлист содержит абсолютные ссылки на CDN,
+              // переписываем их на cloud/media прямо перед запросом (manifest/level/segment).
+              try {
+                const rewritten = rewriteCdnToCloudUrl(rawUrl);
+                if (rewritten && rewritten !== rawUrl) {
+                  if (DEBUG_HLS_RANGE) {
+                    console.debug("[HLS][RewriteHost] url rewritten:", rawUrl, "->", rewritten);
+                  }
+                  context.url = rewritten;
+                }
+              } catch {
+                // ignore
+              }
               const isFragType = String(context?.type ?? "").toLowerCase() === "fragment";
-              const segmentLike = isFragType || isSegmentUrl(rawUrl);
+              const segmentLike = isFragType || isSegmentUrl(String(context?.url ?? rawUrl));
 
               const stripRangeFromContext = (ctx: any) => {
                 hardStripRangeFromContext(ctx);

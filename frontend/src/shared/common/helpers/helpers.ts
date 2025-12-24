@@ -301,12 +301,33 @@ export const rewriteCdnLinkToMedia = (link: string) => {
   const mediaOrigin = (import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined;
   if (!mediaOrigin) return link;
   try {
+    const urlFromMaybeOrigin = (raw: string): URL | null => {
+      const v = String(raw || "").trim();
+      if (!v) return null;
+      try {
+        return new URL(v);
+      } catch {
+        // ignore
+      }
+      try {
+        if (v.startsWith("//")) return new URL(`https:${v}`);
+      } catch {
+        // ignore
+      }
+      try {
+        return new URL(`https://${v.replace(/^https?:\/\//i, "")}`);
+      } catch {
+        return null;
+      }
+    };
+
     const u = new URL(link);
-    const cdnHost = CDN_ORIGIN ? new URL(CDN_ORIGIN).hostname : "";
-    const media = new URL(mediaOrigin);
-    if (cdnHost && u.hostname === cdnHost) {
+    const cdn = CDN_ORIGIN ? urlFromMaybeOrigin(CDN_ORIGIN) : null;
+    const media = urlFromMaybeOrigin(mediaOrigin);
+    if (!cdn || !media) return link;
+    if (cdn.hostname && u.hostname === cdn.hostname) {
       u.protocol = media.protocol;
-      u.hostname = media.hostname;
+      u.host = media.host;
       return u.toString();
     }
     return link;

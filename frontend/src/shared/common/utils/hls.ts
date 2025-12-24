@@ -55,6 +55,29 @@ async function stableSlugForHls(stem: string): Promise<string> {
  *
  * Backward-compat: если VITE_CLOUD_URL не задан, используем VITE_MEDIA_URL (как раньше).
  */
+function urlFromMaybeOrigin(raw: string): URL | null {
+  const v = String(raw || "").trim();
+  if (!v) return null;
+  // 1) полноценный URL
+  try {
+    return new URL(v);
+  } catch {
+    // ignore
+  }
+  // 2) schema-relative: //cdn.example.com
+  try {
+    if (v.startsWith("//")) return new URL(`https:${v}`);
+  } catch {
+    // ignore
+  }
+  // 3) host-only / host+path: cdn.example.com или cdn.example.com/
+  try {
+    return new URL(`https://${v.replace(/^https?:\/\//i, "")}`);
+  } catch {
+    return null;
+  }
+}
+
 function rewriteCdnToCloudUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -64,11 +87,13 @@ function rewriteCdnToCloudUrl(url: string): string {
       ((import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined);
     if (!cdnOrigin || !cloudOrigin) return url;
 
-    const cdnHost = new URL(cdnOrigin).hostname;
-    const cloud = new URL(cloudOrigin);
-    if (cdnHost && u.hostname === cdnHost) {
+    const cdn = urlFromMaybeOrigin(cdnOrigin);
+    const cloud = urlFromMaybeOrigin(cloudOrigin);
+    if (!cdn || !cloud) return url;
+    if (cdn.hostname && u.hostname === cdn.hostname) {
       u.protocol = cloud.protocol;
-      u.hostname = cloud.hostname;
+      // host включает порт (если задан)
+      u.host = cloud.host;
       return u.toString();
     }
     return url;
