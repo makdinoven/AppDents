@@ -24,7 +24,13 @@ def run_video_maintenance(payload: VideoMaintenanceRunPayload) -> Dict[str, Any]
     """
     from ..tasks.video_maintenance import process_list
 
-    task = process_list.apply_async(kwargs={"payload": payload.model_dump()}, queue="special")
+    # Pydantic v1/v2 compatibility
+    if hasattr(payload, "model_dump"):
+        data = payload.model_dump()  # type: ignore[attr-defined]
+    else:
+        data = payload.dict()  # pydantic v1
+
+    task = process_list.apply_async(kwargs={"payload": data}, queue="special")
     return {"status": "queued", "task_id": task.id, "dry_run": payload.dry_run, "delete_old_key": payload.delete_old_key}
 
 
