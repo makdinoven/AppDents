@@ -4,6 +4,7 @@ from .fast_start       import ensure_faststart, process_faststart_video
 from .storage_links    import replace_storage_links
 from .book_previews import generate_book_preview
 from .book_formats import generate_book_formats
+from .video_maintenance import tick as video_maintenance_tick, process_list as video_maintenance_process_list  # noqa: F401
 
 __all__ = [
     "ensure_faststart",
@@ -13,4 +14,6 @@ __all__ = [
     "replace_storage_links",
     "generate_book_preview",
     "generate_book_formats",
+    "video_maintenance_tick",
+    "video_maintenance_process_list",
 ]

@@ -25,17 +25,42 @@ const externalHosts = [
 
 const DEBUG_HLS_RANGE = Boolean(import.meta.env?.DEV);
 
-const MP4_MEDIA_HOST = "media.dent-s.com";
-const CDN_HOST = "cdn.dent-s.com";
-
 const normalizeVideoKey = (url: string): string => {
   try {
     const u = new URL(url);
-    // ключ должен быть стабилен между cdn/media и не зависеть от query/host
-    // (host меняется cdn↔media, а pathname указывает на один и тот же объект)
+    // ключ должен быть стабилен между доменами и не зависеть от query/host
+    // (host может отличаться, а pathname указывает на один и тот же объект)
     return `${u.pathname}`.toLowerCase();
   } catch {
     return String(url || "").toLowerCase();
+  }
+};
+
+// Если ссылка пришла с CDN (VITE_CDN_URL), подменяем origin на Cloud (VITE_CLOUD_URL),
+// чтобы и HLS (playlist/segments), и MP4 шли с нужного домена.
+// Backward-compat: если VITE_CLOUD_URL не задан, используем VITE_MEDIA_URL (как раньше).
+const rewriteCdnToCloudUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // Не трогаем внешние плееры
+    if (externalHosts.some((h) => u.hostname.includes(h))) return url;
+
+    const cdnOrigin = (import.meta as any)?.env?.VITE_CDN_URL as string | undefined;
+    const cloudOrigin =
+      ((import.meta as any)?.env?.VITE_CLOUD_URL as string | undefined) ??
+      ((import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined);
+    if (!cdnOrigin || !cloudOrigin) return url;
+
+    const cdnHost = new URL(cdnOrigin).hostname;
+    const cloud = new URL(cloudOrigin);
+    if (cdnHost && u.hostname === cdnHost) {
+      u.protocol = cloud.protocol;
+      u.hostname = cloud.hostname;
+      return u.toString();
+    }
+    return url;
+  } catch {
+    return url;
   }
 };
 
@@ -61,22 +86,6 @@ const isMp4Ok = (key: string): boolean => {
     return Date.now() - ts < 24 * 60 * 60 * 1000;
   } catch {
     return false;
-  }
-};
-
-const toMediaHostMp4Url = (url: string): string => {
-  try {
-    const u = new URL(url);
-    // Не трогаем внешние плееры
-    if (externalHosts.some((h) => u.hostname.includes(h))) return url;
-    if (u.hostname === MP4_MEDIA_HOST) return url;
-    if (u.hostname === CDN_HOST) {
-      u.hostname = MP4_MEDIA_HOST;
-      return u.toString();
-    }
-    return url;
-  } catch {
-    return url;
   }
 };
 
@@ -145,7 +154,8 @@ const probeFaststartByRange = async (url: string): Promise<FaststartProbeResult>
 const isSegmentUrl = (url: string): boolean => {
   const u = (url || "").toLowerCase();
   // учитываем query-string: ".ts?x=1"
-  return u.includes(".ts") || u.includes(".m4s") || u.includes(".aac");
+  // иногда CMAF сегменты могут быть с расширением ".mp4"
+  return u.includes(".ts") || u.includes(".m4s") || u.includes(".aac") || u.includes(".mp4");
 };
 
 const addCacheBustParam = (url: string): string => {
@@ -413,16 +423,17 @@ const HlsVideo: React.FC<Props> = ({
   muted = true,
   preferHls: preferHlsProp,
 }) => {
-  // Дефолт: Safari/iOS лучше работает с HLS (нативно), десктоп — с MP4 (через media.*).
-  const preferHls = preferHlsProp ?? isProbablySafari();
+  // Дефолт: для внутренних видео предпочитаем HLS (сегменты) во всех браузерах.
+  // При проблемах/отсутствии HLS — отработает fallback на MP4.
+  const preferHls = preferHlsProp ?? true;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [useMp4Fallback, setUseMp4Fallback] = useState(!preferHls);
   const [hlsUrl, setHlsUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // MP4 должен идти через отдельный поддомен (DNS only), чтобы не проксироваться через Cloudflare
-  const mp4PlaybackUrl = toMediaHostMp4Url(srcMp4);
+  // Если прилетело с CDN — переводим на cloud/media домен (DNS only), чтобы не проксироваться через Cloudflare
+  const mp4PlaybackUrl = rewriteCdnToCloudUrl(srcMp4);
   const mp4Key = normalizeVideoKey(mp4PlaybackUrl);
   
   // Ref для таймеров чтобы очищать их

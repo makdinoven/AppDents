@@ -14,42 +14,21 @@ from urllib.parse import urlparse, unquote, quote
 
 import boto3
 import requests
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Query, Depends, HTTPException
 from pydantic import BaseModel
 
 from ..dependencies.role_checker import require_roles
 from ..models.models import User
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# S3 Config
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-# S3 клиенты: v2 для чтения/записи объектов, v4 для листинга
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
-
-s3_v4 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+# S3 client (R2/S3-compatible): SigV4
+s3 = s3_client(signature_version="s3v4")
+s3_v4 = s3
 
 
 @dataclass
@@ -1183,8 +1162,8 @@ def quick_check(
     if hls_playlists:
         pl_cdn_url = safe_cdn_url(hls_playlists[0])
         results["hls_url"] = pl_cdn_url
-        hls_cdn = check_cdn_access(pl_cdn_url, timeout=5)
-        results["hls_cdn_status"] = hls_cdn.status
+        hls_cdn_result = check_cdn_access(pl_cdn_url, timeout=5)
+        results["hls_cdn_status"] = hls_cdn_result.status
     
     return results
 

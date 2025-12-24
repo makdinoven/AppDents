@@ -18,16 +18,14 @@ from botocore.exceptions import ClientError
 from celery import shared_task
 from sqlalchemy.orm import Session
 
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, public_url_for_key, s3_client
 from ..db.database import SessionLocal
 from ..models.models_v2 import Book, BookFile, BookFileFormat
 
 # ──────────────────── Конфигурация ────────────────────
 
 # S3 хранилище для загрузки/скачивания файлов
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+# (перенесено в core.storage)
 
 # Redis для хранения статусов конверсии и логов
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
@@ -59,14 +57,7 @@ MAX_FORMAT_TIMEOUT_SECS = int(os.getenv("CALIBRE_MAX_FORMAT_TIMEOUT_SECS", "3600
 
 logger = logging.getLogger(__name__)
 rds    = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-s3     = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
+s3     = s3_client(signature_version="s3v4")
 
 _PROGRESS_RE = re.compile(r"(\d{1,3})%")
 CALIBRE_SUPPORTS_JOBS_OVERRIDE = os.getenv("CALIBRE_SUPPORTS_JOBS")
@@ -483,7 +474,7 @@ def _safe_cdn_url(key: str) -> str:
 def _key_from_url(url: str) -> str:
     """
     s3://bucket/key                  → key
-    https://cdn.host/key             → key
+    https://cloud.host/key           → key
     https://s3.host/bucket/key       → key
     (или уже «сырой» key)
     """

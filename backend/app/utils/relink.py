@@ -1,10 +1,11 @@
 import re
+import os
 from urllib.parse import urlparse, urlunparse
 
 _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
 
 def convert_storage_url(url: str) -> str:
-    """Меняет хост *selstorage* или *s3.twcstorage* на cdn.dent-s.com
+    """Меняет хост *selstorage* или *s3.twcstorage* на публичный хост из S3_PUBLIC_HOST
     и, если надо, выбрасывает первый сегмент-UUID."""
     if not url:
         return url
@@ -25,5 +26,8 @@ def convert_storage_url(url: str) -> str:
         return url
 
     # Собираем новый url
-    new_parts = p._replace(netloc="cdn.dent-s.com", path="/" + new_path)
+    public_host = (urlparse(os.getenv("S3_PUBLIC_HOST", "https://cloud.dent-s.com")).netloc or "").strip()
+    if not public_host:
+        return url
+    new_parts = p._replace(netloc=public_host, path="/" + new_path)
     return urlunparse(new_parts)

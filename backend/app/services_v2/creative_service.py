@@ -606,22 +606,9 @@ def _s3_key(book_id: int, code: str) -> str:
 
 def _upload_to_s3(key: str, data: bytes) -> str:
     # используем такой же подход как в api_v2/media.py
-    import os
-    import boto3
-    from botocore.config import Config
-    S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-    S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-    S3_REGION = os.getenv("S3_REGION", "ru-1")
-    S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+    from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, public_url_for_key, s3_client
 
-    s3 = boto3.client(
-        "s3",
-        endpoint_url=S3_ENDPOINT,
-        region_name=S3_REGION,
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-    )
+    s3 = s3_client(signature_version="s3v4")
     # Агрессивно отключаем кэш у CDN/браузера для предотвращения отдачи старых версий
     from datetime import datetime, timezone
     cache_control = "no-cache, no-store, must-revalidate, max-age=0"
@@ -641,7 +628,7 @@ def _upload_to_s3(key: str, data: bytes) -> str:
 
     # Добавляем cache-busting параметр, чтобы обойти CDN кеш по тому же ключу
     version = int(time.time())
-    return f"{S3_PUBLIC_HOST}/{key}?v={version}"
+    return f"{public_url_for_key(key, public_host=S3_PUBLIC_HOST)}?v={version}"
 
 
 def _require_book_fields(book: Book) -> None:

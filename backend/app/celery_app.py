@@ -16,6 +16,7 @@ celery = Celery(
             "app.tasks.special_offers",
             "app.tasks.storage_links",
             "app.tasks.ensure_hls",
+            "app.tasks.video_maintenance",
             "app.tasks.abandoned_checkouts",
             "app.tasks.book_previews",
             "app.tasks.book_formats",
@@ -54,6 +55,7 @@ celery.conf.update(
         "app.tasks.ensure_faststart":    {"rate_limit": "50/m"},
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
+        "app.tasks.video_maintenance.tick": {"rate_limit": "12/m"},
         # === Email tasks: суммарно 165 писем/час (55 + 55 + 55) ===
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "200/h"},
         "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "200/h"},
@@ -70,27 +72,37 @@ celery.conf.update(
             "schedule": 3600,
             "options": {"queue": "special"},
         },
-        "ensure_faststart": {
-            "task": "app.tasks.ensure_faststart",
-            "schedule": 10800,              # 3 ч * 3600 с
-            "options": {"queue": "special"},
-        },
-        "ensure_hls": {
-            "task": "app.tasks.ensure_hls",
-            "schedule": 1800,
-            "options": {"queue": "special"},
-        },
-        "recount-hls-daily": {
-            "task": "app.tasks.ensure_hls.recount_hls_counters",
-            "schedule": 86400,      # 1 раз в сутки
-            "options": {"queue": "special"},
-        },
-        "fix-hls-legacy-aliases-hourly": {
-            "task": "app.tasks.ensure_hls.fix_missing_legacy_aliases",
-            "schedule": 3600,       # каждый час
-            "kwargs": {"limit": 500},
-            "options": {"queue": "special"},
-        },
+        # NOTE: legacy video maintenance tasks disabled (replaced by video_maintenance pipeline)
+        # "ensure_faststart": {
+        #     "task": "app.tasks.ensure_faststart",
+        #     "schedule": 10800,              # 3 ч * 3600 с
+        #     "options": {"queue": "special"},
+        # },
+        # "ensure_hls": {
+        #     "task": "app.tasks.ensure_hls",
+        #     "schedule": 1800,
+        #     "options": {"queue": "special"},
+        # },
+        # HLS legacy maintenance disabled вместе с ensure_hls, чтобы не было гонок
+        # (новая video_maintenance сама валидирует/чинит HLS и alias)
+        # "recount-hls-daily": {
+        #     "task": "app.tasks.ensure_hls.recount_hls_counters",
+        #     "schedule": 86400,      # 1 раз в сутки
+        #     "options": {"queue": "special"},
+        # },
+        # "fix-hls-legacy-aliases-hourly": {
+        #     "task": "app.tasks.ensure_hls.fix_missing_legacy_aliases",
+        #     "schedule": 3600,       # каждый час
+        #     "kwargs": {"limit": 500},
+        #     "options": {"queue": "special"},
+        # },
+
+        # ВКЛЮЧИМ ПОСЛЕ РУЧНОГО ТЕСТА на 2-3 видео:
+        # "video-maintenance": {
+        #     "task": "app.tasks.video_maintenance.tick",
+        #     "schedule": 600,  # каждые 10 минут (батч N видео за тик)
+        #     "options": {"queue": "special"},
+        # },
         # === Email tasks: каждый час, ~55 писем каждая = 165/час суммарно ===
         "process-abandoned-checkouts-hourly": {
             "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",

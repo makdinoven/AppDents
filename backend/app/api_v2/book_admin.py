@@ -22,25 +22,13 @@ from ..tasks.book_formats import _k_job as fmt_k_job, _k_log as fmt_k_log, _k_fm
 from ..celery_app import celery
 
 # S3/Redis
-import boto3
-from botocore.config import Config
 from botocore.exceptions import ClientError
 
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, public_url_for_key, s3_client
 REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-s3  = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
+s3  = s3_client(signature_version="s3v4")
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -64,12 +52,10 @@ def _preview_pdf_url(book_id: int, check_exists: bool = False) -> str:
     if check_exists and not _check_s3_file_exists(key):
         return ""
     
-    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+    return public_url_for_key(key, public_host=S3_PUBLIC_HOST)
 
 def _cdn_url(key: str) -> str:
-    # кодируем path, чтобы URL был валидным (пробелы → %20 и т.д.)
-    safe_key = quote(key.lstrip('/'), safe="/-._~()")
-    return f"{S3_PUBLIC_HOST}/{safe_key}"
+    return public_url_for_key(key, public_host=S3_PUBLIC_HOST)
 
 def _check_s3_file_exists(key: str) -> bool:
     """
@@ -332,7 +318,7 @@ def upload_book_audio(
     s3.upload_file(tmp_path, S3_BUCKET, key, ExtraArgs={"ACL": "public-read", "ContentType": ct})
     os.unlink(tmp_path)
 
-    cdn_url = f"{S3_PUBLIC_HOST}/{key}"
+    cdn_url = public_url_for_key(key, public_host=S3_PUBLIC_HOST)
 
     audio = BookAudio(
         book_id=book.id,
@@ -527,7 +513,7 @@ def select_cover(
         raise HTTPException(status_code=500, detail=f"S3 upload failed: {e}")
 
     from urllib.parse import quote as _q
-    cdn_url = f"{S3_PUBLIC_HOST}/{_q(key, safe='/-._~()')}"
+    cdn_url = public_url_for_key(key, public_host=S3_PUBLIC_HOST)
     book.cover_url = cdn_url
     db.commit()
     db.refresh(book)

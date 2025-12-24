@@ -17,22 +17,9 @@ from ..schemas_v2.book import (
 )
 
 # S3
-import boto3
-from botocore.config import Config
+from ..core.storage import S3_BUCKET, s3_client
 
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
+s3 = s3_client(signature_version="s3v4")
 
 router = APIRouter()
 log = logging.getLogger(__name__)

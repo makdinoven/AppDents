@@ -22,6 +22,7 @@ from fastapi import APIRouter, HTTPException, Depends, Body
 from ..db.database import get_async_db                   # ваша обёртка
 from ..models.models_v2 import Course, Landing        # ваши модели
 from ..celery_app import celery
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
 
 router = APIRouter()
 
@@ -187,30 +188,8 @@ async def check_videos_stream(db: AsyncSession = Depends(get_async_db)):
 # ---------------------------------------------------------------------------
 # Configuration (env)
 # ---------------------------------------------------------------------------
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET = os.getenv("S3_BUCKET", "")
-S3_REGION = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-# Основной клиент (V2) для Head/Get/Put
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
-
-# Отдельный клиент с подписью V4 — только для листинга (ListObjectsV2)
-s3_list = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+s3 = s3_client(signature_version="s3v4")
+s3_list = s3
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -218,17 +197,16 @@ s3_list = boto3.client(
 
 ALLOWED_ORIGIN_SUFFIXES = (
     ".s3.twcstorage.ru",
-    ".s3.timeweb.com",          # на случай других endpoint'ов
+    ".s3.timeweb.com",          # legacy (может встречаться в старых ссылках)
 )
 
-CDN_HOSTS = (
-    "cdn.dent-s.com",
-)
+_PUBLIC_HOSTNAME = (urlparse(S3_PUBLIC_HOST).hostname or "").lower()
+CDN_HOSTS = tuple([h for h in [_PUBLIC_HOSTNAME] if h])
 
 def key_from_url(url_or_key: str) -> str:
     """
     Принимает:
-      * полный CDN URL (https://cdn.dent-s.com/Path/Video.mp4)
+      * полный публичный URL (<S3_PUBLIC_HOST>/Path/Video.mp4)
       * origin URL (https://<bucket>.s3.twcstorage.ru/Каталог/Видео.mp4)
       * просто ключ / путь (percent-encoded или сырой)
     Возвращает unicode object key без ведущего '/'.
@@ -240,7 +218,7 @@ def key_from_url(url_or_key: str) -> str:
     host = p.netloc.lower()
     raw_path = unquote(p.path.lstrip("/"))
 
-    if host in CDN_HOSTS:
+    if CDN_HOSTS and host in CDN_HOSTS:
         return raw_path
 
     if any(host.endswith(suf) for suf in ALLOWED_ORIGIN_SUFFIXES):

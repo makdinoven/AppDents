@@ -293,21 +293,25 @@ export const rewriteStorageLinkToCDN = (link: string) => {
   return link.replace(/^https:\/\/[^/]+\.s3\.twcstorage\.ru/, CDN_ORIGIN);
 };
 
-const CDN_HOST = "cdn.dent-s.com";
-const MEDIA_HOST = "media.dent-s.com";
-
 /**
- * Переводит ссылки с cdn.dent-s.com на media.dent-s.com (DNS only),
- * чтобы обходить Cloudflare proxy для тяжёлых файлов (PDF/MP4/HLS и т.п.).
+ * Опционально переводит ссылки с публичного хоста (VITE_CDN_URL) на альтернативный (VITE_MEDIA_URL),
+ * если в проекте используется отдельный домен для тяжёлых файлов (DNS-only).
  */
 export const rewriteCdnLinkToMedia = (link: string) => {
+  const mediaOrigin = (import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined;
+  if (!mediaOrigin) return link;
   try {
     const u = new URL(link);
-    if (u.hostname === CDN_HOST) u.hostname = MEDIA_HOST;
-    return u.toString();
+    const cdnHost = CDN_ORIGIN ? new URL(CDN_ORIGIN).hostname : "";
+    const media = new URL(mediaOrigin);
+    if (cdnHost && u.hostname === cdnHost) {
+      u.protocol = media.protocol;
+      u.hostname = media.hostname;
+      return u.toString();
+    }
+    return link;
   } catch {
-    // На случай относительных/нестандартных строк — делаем безопасную подмену только для ожидаемого префикса
-    return link.replace(/^https:\/\/cdn\.dent-s\.com\//, "https://media.dent-s.com/");
+    return link;
   }
 };
 

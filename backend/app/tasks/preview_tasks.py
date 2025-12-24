@@ -21,23 +21,22 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 from botocore.config import Config
 
+from ..core.storage import S3_PUBLIC_HOST, public_url_for_key, s3_client
 from ..db.database import SessionLocal
 from ..models.models_v2 import LessonPreview, PreviewStatus
 
 logger = logging.getLogger(__name__)
 
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
+# S3 конфиг теперь централизован в core.storage
+S3_BUCKET      = os.getenv("S3_BUCKET", "dent-s")  # оставляем для SQL/БД логики, но клиент берём из core.storage
 REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 S3_DIR         = "previews"
 PLACEHOLDER_NAME = "placeholder.jpg"
-PLACEHOLDER_URL  = f"{S3_PUBLIC_HOST}/{S3_DIR}/{PLACEHOLDER_NAME}"
+PLACEHOLDER_URL  = public_url_for_key(f"{S3_DIR}/{PLACEHOLDER_NAME}", public_host=S3_PUBLIC_HOST)
 
 # Для проверки CDN-источников (извлекаем хост из S3_PUBLIC_HOST)
 from urllib.parse import urlparse as _urlparse
-_CDN_HOST = _urlparse(S3_PUBLIC_HOST).hostname or "cdn.dent-s.com"
+_CDN_HOST = _urlparse(S3_PUBLIC_HOST).hostname or "cloud.dent-s.com"
 NEW_TASKS_WINDOW = 300
 NEW_TASKS_LIMIT  = 30
 SAFE_CHARS = "/()[]_,-."
@@ -51,17 +50,7 @@ REQUEST_TIMEOUT = 10
 
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=False)
 
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(
-        signature_version="s3",
-        s3={"addressing_style": "path"},
-    ),
-)
+s3 = s3_client(signature_version="s3v4")
 
 def _key(prefix: str, video_link: str) -> str:
     h = hashlib.sha1(video_link.encode()).hexdigest()

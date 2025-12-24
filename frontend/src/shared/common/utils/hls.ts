@@ -49,11 +49,40 @@ async function stableSlugForHls(stem: string): Promise<string> {
   return `${base.slice(0, keep)}-${suffix}`;
 }
 
+/**
+ * Если ссылка пришла с CDN (VITE_CDN_URL), подменяем origin на Cloud (VITE_CLOUD_URL),
+ * чтобы HLS playlist/segments грузились с нужного хоста.
+ *
+ * Backward-compat: если VITE_CLOUD_URL не задан, используем VITE_MEDIA_URL (как раньше).
+ */
+function rewriteCdnToCloudUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const cdnOrigin = (import.meta as any)?.env?.VITE_CDN_URL as string | undefined;
+    const cloudOrigin =
+      ((import.meta as any)?.env?.VITE_CLOUD_URL as string | undefined) ??
+      ((import.meta as any)?.env?.VITE_MEDIA_URL as string | undefined);
+    if (!cdnOrigin || !cloudOrigin) return url;
+
+    const cdnHost = new URL(cdnOrigin).hostname;
+    const cloud = new URL(cloudOrigin);
+    if (cdnHost && u.hostname === cdnHost) {
+      u.protocol = cloud.protocol;
+      u.hostname = cloud.hostname;
+      return u.toString();
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 /** Кандидаты путей к m3u8 из mp4-URL с учётом нарезок */
 async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
   let u: URL;
   try {
-    u = new URL(mp4Url);
+    // важно: сначала применяем cdn -> cloud (если нужно)
+    u = new URL(rewriteCdnToCloudUrl(mp4Url));
   } catch {
     return null;
   }

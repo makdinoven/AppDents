@@ -7,34 +7,22 @@ from datetime import datetime
 from urllib.parse import quote, urlparse, unquote
 import base64
 
-import boto3
 import redis
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task
 from sqlalchemy.orm import Session
 
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, public_url_for_key, s3_client
 from ..db.database import SessionLocal
 from ..models.models_v2 import Book, BookFile, BookFileFormat
 
 logger = logging.getLogger(__name__)
 
 # ENV / S3 / Redis
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
 REDIS_URL      = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-s3  = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+s3  = s3_client(signature_version="s3v4")
 
 # Redis-ключи
 def _k_job(book_id: int) -> str:        return f"bookcover:{book_id}"       # hash: status, started_at, finished_at, candidates_count
@@ -68,8 +56,7 @@ def _key_from_url(url: str) -> str:
     return path
 
 def _cdn_url_for_key(key: str) -> str:
-    key = key.lstrip("/")
-    return f"{S3_PUBLIC_HOST}/{quote(key, safe='/-._~()')}"
+    return public_url_for_key(key, public_host=S3_PUBLIC_HOST)
 
 def _run(cmd: str) -> tuple[int, str, str]:
     proc = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

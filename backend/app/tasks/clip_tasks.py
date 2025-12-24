@@ -24,10 +24,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 # =========================
 # S3 / ENV
 # =========================
-S3_BUCKET      = os.getenv("S3_BUCKET", "604b5d90-c6193c9d-2b0b-4d55-83e9-d8732c532254")
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
 
 # =========================
 # Жёстко вшитые настройки (без ENV)
@@ -59,23 +56,8 @@ HARD_SLOW_GUARD_SEC = 45          # жёсткий предохранитель
 # =========================
 # S3 clients
 # =========================
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
-
-s3_v4 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+s3 = s3_client(signature_version="s3v4")
+s3_v4 = s3
 
 # ===== NEW: разные конфиги для upload / download =====
 TRANSFER_CFG_UPLOAD = TransferConfig(

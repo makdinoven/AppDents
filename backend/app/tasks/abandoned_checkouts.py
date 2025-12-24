@@ -37,7 +37,7 @@ MAIL_BONUS = 5.0  # $5 – фиксированный бонус
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://med-g.com")
 CDN_PLACEHOLDER_URL = os.getenv(
     "CDN_PLACEHOLDER_URL",
-    "https://cdn.med-g.com/assets/img/placeholder.png",
+    "https://cloud.med-g.com/assets/img/placeholder.png",
 )
 
 REMINDER_INTERVAL = timedelta(days=5)   # пауза между письмами

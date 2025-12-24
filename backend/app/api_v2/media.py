@@ -6,13 +6,12 @@ from typing import Literal, Optional
 from datetime import datetime
 from urllib.parse import quote
 
-import boto3
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 from PIL import Image, ImageOps
 
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, public_url_for_key, s3_client
 from ..db.database import get_db
 from ..dependencies.role_checker import require_roles
 from ..models.models_v2 import (
@@ -22,20 +21,7 @@ from ..models.models_v2 import (
 
 router = APIRouter()
 
-# ─────────────── S3/ENV ───────────────
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
+s3 = s3_client(signature_version="s3v4")
 
 ALLOWED_IMAGE_CT = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 ALLOWED_AUDIO_CT = {"audio/mpeg", "audio/ogg", "audio/mp4", "audio/aac", "audio/x-m4a"}
@@ -48,7 +34,8 @@ WEBP_METHOD  = int(os.getenv("WEBP_METHOD",  "5"))
 MAX_DIM      = int(os.getenv("IMAGES_MAX_DIM", "4096"))
 
 def _cdn_url(key: str) -> str:
-    return f"{S3_PUBLIC_HOST}/{quote(key.lstrip('/'), safe='/-._~()')}"
+    # сохраняем публичный URL (cloud.*) в БД
+    return public_url_for_key(key, public_host=S3_PUBLIC_HOST)
 
 # ───────────────── entity_type без usage ─────────────────
 EntityType = Literal[

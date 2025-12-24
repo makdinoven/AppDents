@@ -307,7 +307,8 @@ async def _process_single_record(
     detail["fuzzy_score"] = round(score, 2)
     
     # Проверяем, не обновлена ли уже фотография
-    if matched_landing.preview_photo and "cdn.dent-s.com" in matched_landing.preview_photo:
+    # Если уже проставлена ссылка на старый публичный домен (cdn) — не трогаем
+    if matched_landing.preview_photo and re.search(r"c(?:dn|loud)\.dent-s\.com", matched_landing.preview_photo):
         detail["action"] = "skip_cdn_exists"
         detail["new_url"] = matched_landing.preview_photo
         return detail

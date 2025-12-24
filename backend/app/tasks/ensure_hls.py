@@ -17,7 +17,6 @@ from urllib.parse import unquote, quote, urlparse
 import boto3
 import redis
 import requests
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task
 from sqlalchemy.orm import Session
@@ -25,6 +24,7 @@ from sqlalchemy.orm import Session
 from ..services_v2.video_repair_service import HLSPaths, build_fix_plan, fix_rebuild_hls, \
     fix_force_audio_reencode, s3_exists, fix_write_alias_master, url_from_key, write_status_json, key_from_url, \
     discover_hls_for_src, Fix
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
 
 # ──────────────────────────── ENV / CONST ────────────────────────────────────
 logger = logging.getLogger(__name__)
@@ -38,10 +38,7 @@ R_SET_QUEUED        = "hls:queued"         # стоят в расписании 
 R_TOTAL             = "hls:total_mp4"
 R_LAST_RECOUNT_TS   = "hls:last_recount_ts"
 
-S3_ENDPOINT         = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET           = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION           = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST      = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+# S3 конфиг централизован в core.storage
 _NO_KEY = ("NoSuchKey", "404")
 
 SPACING             = int(os.getenv("HLS_TASK_SPACING", 360))   # сек. между ETA
@@ -52,35 +49,12 @@ R_SET_BAD = "hls:bad"
 FFMPEG_TIMEOUT_S = int(os.getenv("FFMPEG_TIMEOUT_S", "1800"))   # 30 мин
 
 
-# основной S3‑клиент (V2 signature)
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3", s3={"addressing_style": "path"}),
-)
+# единый клиент (SigV4) для R2
+s3 = s3_client(signature_version="s3v4")
+_s3_copy = s3
 
-_s3_copy = boto3.client(        # v4-подпись
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
-
-# эксклюзивно для листинга (V4 signature)
 def _s3_v4():
-    return boto3.client(
-        "s3",
-        endpoint_url=S3_ENDPOINT,
-        region_name=S3_REGION,
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-    )
+    return s3
 
 # ───────────────────────────── HELPERS ───────────────────────────────────────
 def _copy_with_metadata(key: str, meta: dict) -> None:
@@ -572,15 +546,8 @@ def fix_missing_legacy_aliases(limit: int = 200) -> dict:
     return result
 
 
-# Клиент только для листинга — V4
-s3v4 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+# Клиент для листинга — V4 (для R2 используем общий SigV4)
+s3v4 = s3
 
 @shared_task(name="app.tasks.ensure_hls.recount_hls_counters")
 def recount_hls_counters():
@@ -597,14 +564,7 @@ def recount_hls_counters():
     """
     logger.info("[HLS][RECOUNT] start (improved)")
 
-    s3v4 = boto3.client(
-        "s3",
-        endpoint_url=S3_ENDPOINT,
-        region_name=S3_REGION,
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-    )
+    s3v4 = s3
 
     paginator = s3v4.get_paginator("list_objects_v2")
 

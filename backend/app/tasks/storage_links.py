@@ -18,19 +18,19 @@ PAT_OLD = (
 PAT_BAD = (
     r'https?://'
     r'[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}'
-    r'-cdn\.dent-s\.com'
+    r'-c(?:dn|loud)\.dent-s\.com'
     r'(?:/|\?|#|$)'
 )
 
 # Используем S3_PUBLIC_HOST из окружения (с fallback для совместимости)
-REPLACEMENT = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com").rstrip('/') + '/'
+REPLACEMENT = os.getenv("S3_PUBLIC_HOST", "https://cloud.dent-s.com").rstrip('/') + '/'
 REGEXP_TIME_LIMIT_MS = 5000
 USE_HINT = True  # выключи, если MariaDB или MySQL < 8.0.21
 
 
 def _update_table(db, table: str, column: str):
     hint = f"/*+ SET_VAR(regexp_time_limit={REGEXP_TIME_LIMIT_MS}) */ " if USE_HINT else ""
-    # два прохода: сначала старые домены, затем «uuid-cdn.dent-s.com»
+    # два прохода: сначала старые домены, затем «uuid-<public-host>»
     sql = f"""
         UPDATE {table}
            SET {column} = CAST(
@@ -65,9 +65,9 @@ def replace_storage_links(self):
     Заменяет:
       https://<uuid>.selstorage.ru/...  или  https://<uuid>.s3.twcstorage.ru/...
     и чинит:
-      https://<uuid>-cdn.dent-s.com/...
+      https://<uuid>-<public-host>/...
     на:
-      https://cdn.dent-s.com/...
+      <S3_PUBLIC_HOST>/...
     в landings.lessons_info и courses.sections
     """
     db = SessionLocal()

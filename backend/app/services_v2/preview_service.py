@@ -1,16 +1,16 @@
 import logging
 import hashlib
 import datetime as _dt
+import os
 import requests
 import redis
 from sqlalchemy.orm import Session
 
 from ..models.models_v2 import LessonPreview, PreviewStatus
-from ..tasks.preview_tasks import generate_preview, check_preview_url
+from ..tasks.preview_tasks import generate_preview, check_preview_url, PLACEHOLDER_URL
 
 logger = logging.getLogger(__name__)
 
-PLACEHOLDER_URL = "https://cdn.dent-s.com/previews/placeholder.jpg"
 CHECK_TTL = _dt.timedelta(hours=6)
 HEAD_TIMEOUT = 4
 

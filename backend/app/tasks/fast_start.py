@@ -7,15 +7,12 @@ import io
 
 import redis
 import boto3
-from botocore.config import Config
 from botocore.exceptions import ClientError
 from celery import shared_task, current_app
 
 # --- Configuration (from your environment) ---
-S3_ENDPOINT     = os.getenv("S3_ENDPOINT",     "https://s3.timeweb.com")
-S3_BUCKET       = os.getenv("S3_BUCKET",       "cdn.dent-s.com")
-S3_PUBLIC_HOST  = os.getenv("S3_PUBLIC_HOST",  "https://cdn.dent-s.com")
-S3_REGION       = os.getenv("S3_REGION",       "ru-1")
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
+
 REDIS_URL       = os.getenv("REDIS_URL",       "redis://redis:6379/0")
 NEW_TASKS_LIMIT = int(os.getenv("NEW_TASKS_LIMIT", 15))
 FFMPEG_RETRIES  = int(os.getenv("FFMPEG_RETRIES", 3))
@@ -24,17 +21,7 @@ PRESIGN_EXPIRY  = 3600  # seconds
 # --- Clients ---
 logger = logging.getLogger(__name__)
 rds    = redis.Redis.from_url(REDIS_URL, decode_responses=False)
-s3     = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(
-        signature_version="s3",
-        s3={"addressing_style": "path"},
-    ),
-)
+s3     = s3_client(signature_version="s3v4")
 
 @shared_task(name="app.tasks.ensure_faststart")
 def ensure_faststart():

@@ -17,17 +17,9 @@ from botocore.exceptions import ClientError
 import requests
 
 # =============== S3 / ENV =================
+from ..core.storage import S3_BUCKET, S3_PUBLIC_HOST, s3_client
 
-S3_BUCKET      = os.getenv("S3_BUCKET")
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-s3 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-)
+s3 = s3_client(signature_version="s3v4")
 
 # =============== Problem / Fix ============
 
@@ -386,7 +378,7 @@ def key_from_url(url: str) -> str:
     Важно: декодируем URL-encoded символы (%20 -> пробел).
     
     Пример:
-      https://cdn.dent-s.com/Spark%20MasterCoip/file.mp4
+      https://cloud.dent-s.com/Spark%20MasterCoip/file.mp4
       -> Spark MasterCoip/file.mp4
     """
     prefix = S3_PUBLIC_HOST.rstrip("/") + "/"

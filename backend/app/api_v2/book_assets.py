@@ -20,26 +20,9 @@ from ..utils.s3 import generate_presigned_url
 from ..services_v2.book_service import PDF_CACHE_CONTROL, PDF_CONTENT_DISPOSITION
 
 # S3 client для стриминга
-import os
-import boto3
-from botocore.config import Config
+from ..core.storage import S3_BUCKET, s3_client
 
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-
-s3_client = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(
-        signature_version="s3",
-        s3={"addressing_style": "path"},
-        max_pool_connections=50,  # увеличиваем пул соединений (по умолчанию 10)
-    ),
-)
+s3_client = s3_client(signature_version="s3v4", max_pool_connections=50)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

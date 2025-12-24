@@ -7,8 +7,6 @@ from typing import Optional, List, Dict, Union
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
 
-import boto3
-from botocore.config import Config
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy import or_, desc, func, cast, Integer, Numeric as SqlNumeric
 from sqlalchemy.orm import Session, selectinload
@@ -55,21 +53,10 @@ from ..services_v2.filter_aggregation_service import (
     aggregate_book_filters
 )
 from ..utils.s3 import generate_presigned_url
+from ..core.storage import S3_PUBLIC_HOST, s3_client
 
-# ─────────────────────────── S3 config ───────────────────────────
-S3_ENDPOINT    = os.getenv("S3_ENDPOINT", "https://s3.timeweb.com")
-S3_BUCKET      = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-S3_REGION      = os.getenv("S3_REGION", "ru-1")
-S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
-
-s3v4 = boto3.client(
-    "s3",
-    endpoint_url=S3_ENDPOINT,
-    region_name=S3_REGION,
-    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-    config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
-)
+# ─────────────────────────── S3 client ───────────────────────────
+s3v4 = s3_client(signature_version="s3v4")
 
 log = logging.getLogger(__name__)
 router = APIRouter()

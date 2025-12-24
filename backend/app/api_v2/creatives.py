@@ -99,8 +99,8 @@ def ai_process(book_id: int, language: str = Query(...), db: Session = Depends(g
     from urllib.parse import urlparse, unquote, quote
     import time
 
-    S3_BUCKET = os.getenv("S3_BUCKET", "cdn.dent-s.com")
-    S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cdn.dent-s.com")
+    S3_BUCKET = os.getenv("S3_BUCKET", "dent-s")
+    S3_PUBLIC_HOST = os.getenv("S3_PUBLIC_HOST", "https://cloud.dent-s.com")
 
     def _key_from_url(url: str) -> str:
         if url.startswith("s3://"):
