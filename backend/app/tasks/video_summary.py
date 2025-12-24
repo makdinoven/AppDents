@@ -2,74 +2,21 @@
 from typing import Optional, Dict, Any, Literal
 import os
 import re
+import time
 import assemblyai as aai
 from celery import shared_task
+import requests
+
+from ..core.config import settings
 
 # ================== ENV / конфиг ==================
 AAI_API_KEY = os.getenv("AAI_API_KEY")
-
-DEFAULT_LEMUR_MODEL_FALLBACK = "anthropic/claude-3-7-sonnet-20250219"
-
-VALID_LEMUR_MODELS = {
-    "anthropic/claude-3-opus",
-    "anthropic/claude-3-haiku",
-    "anthropic/claude-3-7-sonnet-20250219",
-    "anthropic/claude-3-5-haiku-20241022",
-    "anthropic/claude-sonnet-4-20250514",
-    "anthropic/claude-opus-4-20250514",
-}
-
-LEMUR_MODEL_ALIASES = {
-    "anthropic/claude-3-5-sonnet": "anthropic/claude-3-7-sonnet-20250219",
-    "anthropic/claude-3-5-sonnet-20240620": "anthropic/claude-3-7-sonnet-20250219",
-    "anthropic/claude-3-5-sonnet-20241014": "anthropic/claude-3-7-sonnet-20250219",
-}
-
-
-def _normalize_final_model(model: Optional[str], *, default: str = DEFAULT_LEMUR_MODEL_FALLBACK) -> str:
-    candidate = (model or "").strip()
-    if not candidate:
-        return default
-    if candidate in VALID_LEMUR_MODELS:
-        return candidate
-    if candidate in LEMUR_MODEL_ALIASES:
-        return LEMUR_MODEL_ALIASES[candidate]
-    return default
-
-
-DEFAULT_LEMUR_MODEL = _normalize_final_model(os.getenv("AAI_LEMUR_MODEL"), default=DEFAULT_LEMUR_MODEL_FALLBACK)
 
 if not AAI_API_KEY:
     raise RuntimeError("AAI_API_KEY is not set")
 
 LangCode = Literal["auto", "ru", "en", "it", "es"]
 OutLang = Literal["auto", "ru", "en", "it", "es"]
-
-# ================== Мультибрендовый промпт ==================
-PROJECT_BRAND = os.getenv("PROJECT_BRAND", "").upper().strip()
-
-def _load_prompt(env_key: str, path_key: str) -> str | None:
-    """Пробует сначала путь, потом текст в .env"""
-    path = os.getenv(path_key)
-    if path and os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    text = os.getenv(env_key)
-    return text.strip() if text else None
-
-
-if PROJECT_BRAND == "DENTS":
-    DEFAULT_MARKETING_PROMPT = _load_prompt("AAI_PROMPT_DENTS", "AAI_PROMPT_DENTS_PATH")
-    if not DEFAULT_MARKETING_PROMPT:
-        raise RuntimeError("Не найден промпт для DENT-S (AAI_PROMPT_DENTS / AAI_PROMPT_DENTS_PATH).")
-
-elif PROJECT_BRAND == "MEDG":
-    DEFAULT_MARKETING_PROMPT = _load_prompt("AAI_PROMPT_MEDG", "AAI_PROMPT_MEDG_PATH")
-    if not DEFAULT_MARKETING_PROMPT:
-        raise RuntimeError("Не найден промпт для MEDG (AAI_PROMPT_MEDG / AAI_PROMPT_MEDG_PATH).")
-
-else:
-    raise RuntimeError("PROJECT_BRAND должен быть DENTS или MEDG.")
 
 
 # ================== Хелперы ==================
@@ -80,86 +27,74 @@ def _to_target_language(detected: Optional[str], forced: LangCode, output: OutLa
         return forced
     return (detected or "ru").split("_")[0]  # 'en_us' → 'en'
 
-def _fallback_summary(text: str) -> Optional[str]:
-    try:
-        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
-        return " ".join(sentences[:5]) if sentences else None
-    except Exception:
-        return None
-
-def _build_effective_prompt(target_lang: str, extra_context: Optional[str]) -> str:
-    """Всегда берём базовый промпт; контекст админа добавляем как уточнение."""
-    prompt = DEFAULT_MARKETING_PROMPT.format(target_lang=target_lang)
-    extra = (extra_context or "").strip()
-    if extra:
-        prompt = f"{prompt}\n\nУточнение от редактора: {extra}"
-    return prompt
-
-def _combine_answer_format(answer_format: Optional[str], target_lang: str) -> str:
+def _bookai_full_url(path_or_url: str) -> str:
     """
-    Даже если админ задал свой формат, добавляем наши жёсткие ограничения
-    (без списков, без «Это видео…», без личных оборотов и пр.).
+    Склеиваем URL для BookAI.
+    settings.BOOKAI_BASE_URL может уже содержать '/api'.
+    path_or_url может быть абсолютным URL или относительным путём.
     """
-    base_constraints = (
-        "Единый абзац (2–5 предложений), без списков и нумерации; "
-        "обобщённо, без деталей и конкретных параметров; "
-        "без упоминания ведущего и формулировок вроде «в видео/вебинаре». "
-        "Без markdown-форматирования (никаких звёздочек **, подчёркиваний __, заголовков # и т.п.). "
-        f"Ответ на языке: {target_lang}."
-    )
-    user_fmt = (answer_format or "").strip()
-    return f"{user_fmt}\n\nТребования к стилю: {base_constraints}" if user_fmt else base_constraints
+    raw = (path_or_url or "").strip()
+    if raw.startswith("http://") or raw.startswith("https://"):
+        return raw
+    base = settings.BOOKAI_BASE_URL.rstrip("/")
+    # Если base уже с '/api', а путь тоже начинается с '/api/...', не дублируем.
+    if base.endswith("/api") and raw.startswith("/api/"):
+        raw = raw[len("/api"):]  # оставляем ведущий '/'
+    if raw.startswith("/"):
+        return f"{base}{raw}"
+    return f"{base}/{raw}"
 
-def _apply_style_guards(s: Optional[str]) -> Optional[str]:
+
+def _bookai_enqueue(*, language: str, text: str) -> Dict[str, Any]:
+    url = _bookai_full_url("/api/v1/video-summary")
+    resp = requests.post(url, json={"language": language, "text": text}, timeout=30)
+    resp.raise_for_status()
+    data = resp.json() if resp.content else {}
+    task_id = data.get("task_id")
+    if not task_id:
+        raise RuntimeError(f"BookAI enqueue: no task_id in response: {data}")
+    status_url = data.get("status_url") or f"/api/v1/video-summary/{task_id}"
+    return {"task_id": task_id, "status_url": status_url}
+
+
+def _bookai_poll(*, status_url: str, max_wait_s: int, poll_interval_s: float, on_progress):
     """
-    Мягкая зачистка ответа: убираем буллеты/нумерацию, стартовые «Это видео…» и личные обороты.
-    Держим один абзац.
+    Ожидаем SUCCESS/FAILURE от BookAI, прокидывая прогресс наружу.
+    on_progress: callable(meta: dict) -> None
     """
-    if not s:
-        return s
-    import re
+    started = time.time()
+    last_state = None
+    while True:
+        elapsed = int(time.time() - started)
+        if elapsed > max_wait_s:
+            raise TimeoutError(f"BookAI poll timeout after {elapsed}s")
 
-    # 1) Убираем markdown-форматирование (**, __, #, и т.п.)
-    s = re.sub(r'\*\*([^*]+)\*\*', r'\1', s)  # **bold** → bold
-    s = re.sub(r'\*([^*]+)\*', r'\1', s)       # *italic* → italic
-    s = re.sub(r'__([^_]+)__', r'\1', s)       # __bold__ → bold
-    s = re.sub(r'_([^_]+)_', r'\1', s)         # _italic_ → italic
-    s = re.sub(r'^#+\s*', '', s, flags=re.MULTILINE)  # # заголовки
+        url = _bookai_full_url(status_url)
+        resp = requests.get(url, timeout=30)
+        resp.raise_for_status()
+        data = resp.json() if resp.content else {}
 
-    # 2) Сносим буллеты/нумерацию построчно
-    lines = []
-    for ln in s.splitlines():
-        ln = re.sub(r'^\s*[-•–—]\s*', '', ln)
-        ln = re.sub(r'^\s*\d+[\.\)]\s*', '', ln)
-        lines.append(ln)
-    s = ' '.join(l.strip() for l in lines if l.strip())
+        state = (data.get("state") or "").upper().strip()
+        if state:
+            last_state = state
 
-    # 3) Удаляем вступления «Это видео…/В видео…/Вебинар…/Урок…» в самом начале
-    s = re.sub(r'^(?:это\s+видео|в\s+видео|вебинар|урок)\s+[^.]*\.\s*', '', s, flags=re.IGNORECASE)
+        if last_state == "SUCCESS":
+            summary = (data.get("summary") or "").strip()
+            if not summary:
+                raise RuntimeError("BookAI returned SUCCESS but summary is empty")
+            return summary
 
-    # 4) Убираем предложения с «Лектор/Докладчик/Автор ...»
-    s = re.sub(r'\b(?:лектор|докладчик|автор)\b[^.]*\.\s*', '', s, flags=re.IGNORECASE)
+        if last_state == "FAILURE":
+            raise RuntimeError(data.get("error") or "BookAI failure")
 
-    # 5) Схлопываем пробелы
-    s = re.sub(r'\s{2,}', ' ', s).strip()
-    return s
-
-# Совместимость с разными версиями SDK (input_text vs input)
-def _lemur_task(lemur, *, model: str, prompt: str, text: str):
-    try:
-        return lemur.task(final_model=model, prompt=prompt, input_text=text)
-    except TypeError as e:
-        if "input_text" in str(e) or "unexpected keyword argument 'input_text'" in str(e):
-            return lemur.task(final_model=model, prompt=prompt, input=text)
-        raise
-
-def _lemur_summarize(lemur, *, model: str, context: str, answer_format: str, text: str):
-    try:
-        return lemur.summarize(final_model=model, context=context, answer_format=answer_format, input_text=text)
-    except TypeError as e:
-        if "input_text" in str(e) or "unexpected keyword argument 'input_text'" in str(e):
-            return lemur.summarize(final_model=model, context=context, answer_format=answer_format, input=text)
-        raise
+        progress = data.get("progress") if isinstance(data.get("progress"), dict) else {}
+        on_progress({
+            "stage": "bookai_polling",
+            "bookai_state": last_state or "UNKNOWN",
+            "progress": progress,
+            "elapsed_s": elapsed,
+        })
+        time.sleep(poll_interval_s)
 
 # ================== Celery task ==================
 @shared_task(
@@ -256,78 +191,64 @@ def summarize_video_task(
             },
         }
 
-    # 4) LeMUR: всегда базовый промпт + добавки админа
-    self.update_state(state="PROGRESS", meta={"stage": "lemur_requested"})
+    # 4) BookAI (LLM-саммари): отправляем язык+текст и ждём готовности, прокидывая прогресс.
+    self.update_state(state="PROGRESS", meta={"stage": "bookai_enqueue"})
 
     target_lang = _to_target_language(lang, language_code, output_language)
-    model = _normalize_final_model(final_model)
-    lemur = aai.Lemur()  # конструктор без final_model для совместимости
-
-    eff_prompt = _build_effective_prompt(target_lang, context)  # база + уточнение редактора
 
     try:
-        if (answer_format or "").strip():
-            eff_answer_format = _combine_answer_format(answer_format, target_lang)
-            res = _lemur_summarize(
-                lemur,
-                model=model,
-                context=eff_prompt,
-                answer_format=eff_answer_format,
-                text=text,
-            )
-            summary = (res.response or "").strip()
-        else:
-            res = _lemur_task(
-                lemur,
-                model=model,
-                prompt=eff_prompt,
-                text=text,
-            )
-            summary = (res.response or "").strip()
+        enq = _bookai_enqueue(language=target_lang, text=text)
+        bookai_task_id = enq["task_id"]
+        status_url = enq["status_url"]
     except Exception as e:
         return {
             "summary": None,
             "language_code": lang,
             "language_confidence": conf,
-            "status": "lemur_error",
+            "status": "bookai_error",
             "transcript_id": getattr(tr, "id", None),
             "diagnostics": {
-                "error": str(e),
-                "suggestions": [
-                    "Проверьте final_model (см. список в сообщении ошибки).",
-                    "Попробуйте более простой формат ответа.",
-                    "Убедитесь, что AAI_API_KEY имеет доступ к LeMUR.",
-                ],
+                "error": f"BookAI enqueue failed: {e}",
+                "bookai_base_url": settings.BOOKAI_BASE_URL,
             },
         }
 
-    # 5) Пост-обработка формы (убрать списки/вступления/личные обороты)
-    summary = _apply_style_guards(summary)
+    self.update_state(state="PROGRESS", meta={
+        "stage": "bookai_queued",
+        "bookai_task_id": bookai_task_id,
+    })
 
-    # 6) Пустой ответ → фолбэк
-    if not summary:
-        fb = _fallback_summary(text)
-        self.update_state(state="PROGRESS", meta={"stage": "fallback_used", "fallback": bool(fb)})
+    def _progress(meta: Dict[str, Any]):
+        # meta включает progress от bookai (stage/percent/message)
+        self.update_state(state="PROGRESS", meta={
+            "stage": meta.get("stage") or "bookai_polling",
+            "bookai_task_id": bookai_task_id,
+            "bookai_state": meta.get("bookai_state"),
+            "bookai_progress": meta.get("progress"),
+            "elapsed_s": meta.get("elapsed_s"),
+        })
+
+    try:
+        summary = _bookai_poll(
+            status_url=status_url,
+            max_wait_s=25 * 60,      # 25 минут (внутри time_limit=45 мин)
+            poll_interval_s=2.0,     # частый polling внутри воркера
+            on_progress=_progress,
+        )
+    except Exception as e:
         return {
-            "summary": fb,
+            "summary": None,
             "language_code": lang,
             "language_confidence": conf,
-            "status": "ok_but_summary_empty_fallback_used" if fb else "ok_but_summary_empty",
+            "status": "bookai_error",
             "transcript_id": getattr(tr, "id", None),
             "diagnostics": {
-                "reason": "LeMUR вернул пустой ответ.",
-                "text_len": text_len,
-                "language_detected": lang,
-                "language_confidence": conf,
-                "suggestions": [
-                    "Уточните формулировки (context/answer_format).",
-                    "Попробуйте другой final_model (например, anthropic/claude-3-5-haiku-20241022).",
-                ],
+                "error": f"BookAI polling failed: {e}",
+                "bookai_task_id": bookai_task_id,
             },
         }
 
-    # 7) Успех
-    self.update_state(state="PROGRESS", meta={"stage": "lemur_done"})
+    self.update_state(state="PROGRESS", meta={"stage": "bookai_done", "bookai_task_id": bookai_task_id})
     return {
         "summary": summary,
         "language_code": lang,

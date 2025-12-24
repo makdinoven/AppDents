@@ -59,7 +59,7 @@ class VideoSummaryRequest(BaseModel):
         description="Опционально: формат ответа; добавим наши ограничения стиля",
     )
     final_model: Optional[str] = Field(
-        DEFAULT_LEMUR_MODEL, description="LeMUR final_model"
+        DEFAULT_LEMUR_MODEL, description="(устарело) ранее LeMUR final_model; теперь саммари делается через BookAI и это поле игнорируется"
     )
 
 
@@ -93,6 +93,7 @@ def enqueue_video_summary(
                 "output_language": body.output_language,
                 "context": body.context or "",  # None → ""
                 "answer_format": body.answer_format or "",  # None → ""
+                # LeMUR в задаче отключён (постоянный фолбэк), оставляем поле для обратной совместимости.
                 "final_model": _normalize_final_model(body.final_model),
             },
             queue="default",
