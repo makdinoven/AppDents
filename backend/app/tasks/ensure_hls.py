@@ -82,6 +82,7 @@ def _each_mp4_objects():
                 yield key
 
 SLUG_MAX = 60
+SLUG_MIN_DISTINCT = 6  # если base слишком короткий/общий → добавляем hash для уникальности
 
 def legacy_slug(name: str) -> str:
     """Старый способ (для совместимости с фронтом): просто обрезать до 60."""
@@ -93,12 +94,24 @@ def legacy_slug(name: str) -> str:
     return base[:SLUG_MAX]
 
 def stable_slug(name: str) -> str:
-    """Новый устойчивый слуг: truncate + короткий sha1-хвост (без коллизий)."""
+    """
+    Новый устойчивый слуг:
+    - если base пустой → sha1(stem)[:60]
+    - если base слишком длинный → truncate + sha1-хвост
+    - если base слишком короткий/общий (например "2") → добавляем sha1-хвост, чтобы убрать коллизии
+    """
     stem = Path(name).stem
     ascii_name = unicodedata.normalize("NFKD", stem).encode("ascii","ignore").decode()
     base = re.sub(r"[^A-Za-z0-9]+","-", ascii_name).strip("-").lower()
     if not base:
         return hashlib.sha1(stem.encode()).hexdigest()[:SLUG_MAX]
+    # Слишком общий slug (часто при кириллице остаётся только "1"/"2"/"3")
+    if base.isdigit() or len(base) < SLUG_MIN_DISTINCT:
+        suffix = hashlib.sha1(stem.encode()).hexdigest()[:8]
+        # гарантируем <= SLUG_MAX
+        keep = min(len(base), SLUG_MAX - 1 - len(suffix))
+        base2 = base[:keep] if keep > 0 else hashlib.sha1(stem.encode()).hexdigest()[:SLUG_MIN_DISTINCT]
+        return f"{base2}-{suffix}"
     if len(base) <= SLUG_MAX:
         return base
     suffix = hashlib.sha1(stem.encode()).hexdigest()[:8]

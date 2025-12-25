@@ -36,16 +36,27 @@ async function stableSlugForHls(stem: string): Promise<string> {
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
   
+  const SLUG_MAX = 60;
+  const SLUG_MIN_DISTINCT = 6; // если base слишком короткий/общий → добавляем hash
+
   if (!base) {
     const hex = await sha1Hex(stem);
-    return hex.slice(0, 60);
+    return hex.slice(0, SLUG_MAX);
   }
   
-  if (base.length <= 60) return base;
+  // Слишком общий slug (частый кейс для кириллицы: остаётся только "2")
+  if (/^\d+$/.test(base) || base.length < SLUG_MIN_DISTINCT) {
+    const suffix = (await sha1Hex(stem)).slice(0, 8);
+    const keep = Math.min(base.length, SLUG_MAX - 1 - suffix.length);
+    const base2 = keep > 0 ? base.slice(0, keep) : (await sha1Hex(stem)).slice(0, SLUG_MIN_DISTINCT);
+    return `${base2}-${suffix}`;
+  }
+
+  if (base.length <= SLUG_MAX) return base;
   
   // Для длинных имён добавляем sha1-хвост как на бэке
   const suffix = (await sha1Hex(stem)).slice(0, 8);
-  const keep = 60 - 1 - suffix.length; // место под "-{suffix}"
+  const keep = SLUG_MAX - 1 - suffix.length; // место под "-{suffix}"
   return `${base.slice(0, keep)}-${suffix}`;
 }
 
@@ -125,21 +136,20 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
   // Генерируем все возможные слуги
   const slugCandidates: string[] = [];
 
-  // slug #1 — legacy (как есть, max 60)
-  const slug1 = await slugForHls(stem);
-  slugCandidates.push(slug1);
+  // ВАЖНО: сначала пробуем STABLE (с хэш-суффиксом при коллизиях), потом legacy.
+  const slugStable = await stableSlugForHls(stem);
+  slugCandidates.push(slugStable);
 
-  // slug #2 — stable (с sha1-хвостом для длинных имён)
-  const slug2 = await stableSlugForHls(stem);
-  if (slug2 !== slug1) slugCandidates.push(slug2);
+  const slugLegacy = await slugForHls(stem);
+  if (slugLegacy !== slugStable) slugCandidates.push(slugLegacy);
 
   // slug #3 — для нарезок: отрежем хвост "_clip_<uuid-hex>"
   const stem3 = stem.replace(/_clip_[0-9a-f]{32}$/i, "");
   if (stem3 !== stem) {
-    const slug3a = await slugForHls(stem3);
     const slug3b = await stableSlugForHls(stem3);
-    slugCandidates.push(slug3a);
-    if (slug3b !== slug3a) slugCandidates.push(slug3b);
+    const slug3a = await slugForHls(stem3);
+    slugCandidates.push(slug3b);
+    if (slug3a !== slug3b) slugCandidates.push(slug3a);
   }
 
   // slug #4 — агрессивный: только a-z0-9 (помогает при нестандартных символах)

@@ -522,6 +522,14 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
         """
         if legacy_pl_key == new_pl_key:
             return
+        # Защита от коллизий: если legacy slug слишком общий (например "2"),
+        # НЕ переписываем его, иначе можем сломать другие видео.
+        try:
+            legacy_slug_dir = legacy_pl_key.rstrip("/").split("/")[-2]
+            if legacy_slug_dir.isdigit() or len(legacy_slug_dir) < 6:
+                return
+        except Exception:
+            pass
         canonical_url = public_url_for_key(new_pl_key, public_host=S3_PUBLIC_HOST)
         put_alias_master(legacy_pl_key, canonical_url)
 
