@@ -399,6 +399,20 @@ export const adminApi = {
       { headers: getAuthHeaders() },
     );
   },
+  runVideoMaintenanceForCourse(payload: { course_id: number; dry_run: boolean; delete_old_key: boolean }) {
+    return instance.post(
+      "/video_maintenance/run-course",
+      payload,
+      { headers: getAuthHeaders() },
+    );
+  },
+  runVideoMaintenanceForLanding(payload: { landing_id: number; dry_run: boolean; delete_old_key: boolean }) {
+    return instance.post(
+      "/video_maintenance/run-landing",
+      payload,
+      { headers: getAuthHeaders() },
+    );
+  },
   getVideoMaintenanceStatus(taskId: string) {
     return instance.get("/video_maintenance/status", {
       params: { task_id: taskId },

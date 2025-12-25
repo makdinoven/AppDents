@@ -290,7 +290,70 @@ export const getPaymentType = (
 };
 
 export const rewriteStorageLinkToCDN = (link: string) => {
-  return link.replace(/^https:\/\/[^/]+\.s3\.twcstorage\.ru/, CDN_ORIGIN);
+  const raw = String(link || "").trim();
+  if (!raw) return raw;
+
+  // Для видео хотим всегда публичный origin вида https://cloud.<brand-domain>,
+  // даже если общий CDN_ORIGIN у проекта указывает на cdn.<...>.
+  // Можно переопределить через VITE_CLOUD_URL, иначе используем brand-based fallback.
+  const BRAND_TO_CLOUD: Record<string, string> = {
+    dents: "https://cloud.dent-s.com",
+    medg: "https://cloud.med-g.com",
+  };
+  const cloudOrigin =
+    ((import.meta as any)?.env?.VITE_CLOUD_URL as string | undefined) ||
+    BRAND_TO_CLOUD[(import.meta as any)?.env?.VITE_BRAND || "dents"] ||
+    BRAND_TO_CLOUD.dents;
+
+  const bucket =
+    ((import.meta as any)?.env?.VITE_S3_BUCKET as string | undefined) ||
+    (((import.meta as any)?.env?.VITE_BRAND || "dents") === "medg"
+      ? "med-g"
+      : "dent-s");
+
+  const normalizeKeyFromPath = (pathname: string) => {
+    const p = String(pathname || "").replace(/^\/+/, "");
+    if (!p) return "";
+    // R2/S3 endpoint URL обычно path-style: /<bucket>/<key>
+    if (p.toLowerCase().startsWith(`${bucket.toLowerCase()}/`)) {
+      return p.slice(bucket.length + 1);
+    }
+    return p;
+  };
+
+  try {
+    const u = new URL(raw);
+    const host = (u.hostname || "").toLowerCase();
+
+    // 1) Прямая ссылка на R2 endpoint:
+    // https://<accountid>.r2.cloudflarestorage.com/<bucket>/<key>
+    if (host.endsWith(".r2.cloudflarestorage.com")) {
+      const key = normalizeKeyFromPath(u.pathname);
+      if (!key) return raw;
+      return `${cloudOrigin.replace(/\/$/, "")}/${key}`;
+    }
+
+    // 2) Старые S3-хосты (TWC/Selectel) -> cloud origin
+    if (host.endsWith(".s3.twcstorage.ru") || host.endsWith(".selstorage.ru")) {
+      const key = normalizeKeyFromPath(u.pathname);
+      if (!key) return raw;
+      return `${cloudOrigin.replace(/\/$/, "")}/${key}`;
+    }
+
+    // 3) Если вставили старый публичный cdn.* домен — перепишем на cloud.*
+    // (или если уже cloud.* — оставим как есть)
+    if (host.startsWith("cdn.")) {
+      const key = normalizeKeyFromPath(u.pathname);
+      if (!key) return raw;
+      return `${cloudOrigin.replace(/\/$/, "")}/${key}`;
+    }
+
+    return raw;
+  } catch {
+    // Если пришёл не-URL, оставляем как есть (не ломаем ввод)
+    // Дополнительно поддержим старый кейс, где вставляли host без нормального URL.
+    return raw.replace(/^https:\/\/[^/]+\.s3\.twcstorage\.ru/i, cloudOrigin);
+  }
 };
 
 /**

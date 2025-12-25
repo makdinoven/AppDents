@@ -17,6 +17,7 @@ import {
 } from "../../../../shared/common/helpers/helpers.ts";
 import { ErrorIcon } from "../../../../shared/assets/icons";
 import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
+import { CheckMark } from "../../../../shared/assets/icons";
 
 const LandingDetail = () => {
   const { id } = useParams();
@@ -26,6 +27,10 @@ const LandingDetail = () => {
   const [tags, setTags] = useState<any | null>(null);
   const [courses, setCourses] = useState<any | null>(null);
   const navigate = useNavigate();
+  const [fixLoading, setFixLoading] = useState(false);
+  const [fixTaskId, setFixTaskId] = useState<string | null>(null);
+  const [fixTaskState, setFixTaskState] = useState<string | null>(null);
+  const [fixResult, setFixResult] = useState<any | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -119,6 +124,53 @@ const LandingDetail = () => {
     }
   };
 
+  const fixAllVideos = async () => {
+    if (!id) return;
+    try {
+      setFixLoading(true);
+      setFixResult(null);
+      setFixTaskState(null);
+      const res = await adminApi.runVideoMaintenanceForLanding({
+        landing_id: Number(id),
+        dry_run: false,
+        delete_old_key: true,
+      });
+      Alert(`Video maintenance started. Task: ${res.data.task_id}`, <CheckMark />);
+      setFixTaskId(res.data.task_id);
+    } catch (e) {
+      console.error(e);
+      Alert("Failed to start FIX ALL VIDEOS", <ErrorIcon />);
+      setFixLoading(false);
+      setFixTaskId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!fixTaskId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await adminApi.getVideoMaintenanceStatus(fixTaskId);
+        setFixTaskState(res.data.state);
+        const st = String(res.data.state || "").toLowerCase();
+        if (st === "success" || st === "failure") {
+          setFixResult(res.data.result);
+          setFixLoading(false);
+          setFixTaskId(null);
+          setFixTaskState(null);
+          clearInterval(interval);
+        }
+      } catch (e) {
+        console.error(e);
+        Alert("Error checking status", <ErrorIcon />);
+        setFixLoading(false);
+        setFixTaskId(null);
+        setFixTaskState(null);
+        clearInterval(interval);
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [fixTaskId]);
+
   const moveLessonUp = (lessonId: number) => {
     setLanding((prev: any) => {
       if (!prev) return prev;
@@ -167,6 +219,22 @@ const LandingDetail = () => {
             landing={landing}
             setLanding={setLanding}
           />
+          <div style={{ marginTop: 12, marginBottom: 12 }}>
+            <PrettyButton
+              text={fixTaskState ? fixTaskState : "FIX ALL VIDEOS"}
+              variant={"default"}
+              onClick={!fixLoading ? fixAllVideos : undefined}
+              loading={fixLoading && !fixTaskState}
+            />
+          </div>
+          {fixResult && (
+            <details style={{ marginBottom: 12 }}>
+              <summary>FIX ALL VIDEOS: Full JSON</summary>
+              <pre style={{ whiteSpace: "pre-wrap" }}>
+                {JSON.stringify(fixResult, null, 2)}
+              </pre>
+            </details>
+          )}
           <div className={s.list}>
             <div className={s.list_header}>
               <h2>
