@@ -20,7 +20,7 @@ interface DiagnosticResult {
   recommendations: string[];
 }
 
-type TaskType = "fix_hls" | "full_repair" | "force_rebuild" | null;
+type TaskType = "full_repair" | null;
 
 const MagicVideoTool = () => {
   const [loading, setLoading] = useState(false);
@@ -58,30 +58,6 @@ const MagicVideoTool = () => {
     }
   };
 
-  const fixVideo = async () => {
-    if (!srcUrl) {
-      Alert("Enter source URL");
-      return;
-    }
-
-    const dataToSend = {
-      video_url: srcUrl,
-      prefer_new: true,
-      sync: false,
-    };
-
-    try {
-      setLoading(true);
-      setTaskType("fix_hls");
-      const res = await adminApi.validateVideoFix(dataToSend);
-      setTaskId(res.data.task_id);
-    } catch (e) {
-      console.error(e);
-      setLoading(false);
-      setTaskType(null);
-    }
-  };
-
   const fullRepair = async () => {
     if (!srcUrl) {
       Alert("Enter source URL");
@@ -91,11 +67,12 @@ const MagicVideoTool = () => {
     try {
       setLoading(true);
       setTaskType("full_repair");
-      // Новый пайплайн: запускаем video_maintenance (реально, без dry-run)
+      setMaintenanceResult(null);
+      // Новый пайплайн: запускаем video_maintenance (реально, без dry-run, с удалением старого key)
       const res = await adminApi.runVideoMaintenance({
         videos: [srcUrl],
         dry_run: false,
-        delete_old_key: false, // на тестовом этапе НЕ удаляем старый key
+        delete_old_key: true,
       });
       Alert(`Video maintenance started. Task: ${res.data.task_id}`, <CheckMark />);
       setTaskId(res.data.task_id);
@@ -107,140 +84,31 @@ const MagicVideoTool = () => {
     }
   };
 
-  const forceRebuild = async () => {
-    if (!srcUrl) {
-      Alert("Enter source URL");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setTaskType("force_rebuild");
-      const res = await adminApi.forceRebuildHls(srcUrl);
-      Alert(`Rebuild started. Task queued.`, <CheckMark />);
-      setTaskId(res.data.task_id);
-      console.log("Force rebuild result:", res.data);
-    } catch (e) {
-      console.error(e);
-      Alert("Failed to start force rebuild", <ErrorIcon />);
-      setLoading(false);
-      setTaskType(null);
-    }
-  };
-
-  const cleanupBrokenHls = async (dryRun: boolean) => {
-    if (!srcUrl) {
-      Alert("Enter source URL");
-      return;
-    }
-
-    try {
-      setDiagnosing(true);
-      const res = await adminApi.cleanupHls(srcUrl, dryRun);
-      const data = res.data;
-      
-      if (dryRun) {
-        if (data.to_delete?.length > 0) {
-          Alert(`Found ${data.to_delete.length} broken HLS to delete. Click "Cleanup" again with dry_run=false.`);
-        } else {
-          Alert("No broken HLS found", <CheckMark />);
-        }
-      } else {
-        Alert(`Deleted ${data.deleted?.length || 0} broken HLS folders`, <CheckMark />);
-        // Обновляем диагностику
-        setTimeout(() => diagnoseVideo(), 1000);
-      }
-      
-      // Показываем результаты в консоли для отладки
-      console.log("Cleanup result:", data);
-    } catch (e) {
-      console.error(e);
-      Alert("Cleanup failed", <ErrorIcon />);
-    } finally {
-      setDiagnosing(false);
-    }
-  };
-
-  const fixVideoAcl = async () => {
-    if (!srcUrl) {
-      Alert("Enter source URL");
-      return;
-    }
-
-    try {
-      setDiagnosing(true);
-      const res = await adminApi.fixVideoAcl(srcUrl, false);
-      const data = res.data;
-      const summary = data.summary || {};
-      
-      if (summary.fixed > 0) {
-        Alert(`Fixed ACL for ${summary.fixed} files`, <CheckMark />);
-        // Обновляем диагностику
-        setTimeout(() => diagnoseVideo(), 1000);
-      } else if (summary.already_public > 0) {
-        Alert(`All ${summary.already_public} files already public`, <CheckMark />);
-      } else {
-        Alert("No HLS files found to fix", <ErrorIcon />);
-      }
-      
-      console.log("Fix ACL result:", data);
-    } catch (e) {
-      console.error(e);
-      Alert("Fix ACL failed", <ErrorIcon />);
-    } finally {
-      setDiagnosing(false);
-    }
-  };
-
   useEffect(() => {
     if (!taskId) return;
 
     const interval = setInterval(async () => {
       try {
-        // Для Full Repair теперь используем status нового maintenance
-        if (taskType === "full_repair") {
-          const res = await adminApi.getVideoMaintenanceStatus(taskId);
-          setTaskState(res.data.state);
-          const st = String(res.data.state || "").toLowerCase();
-          if (st === "success") {
-            Alert(`Full repair completed successfully`, <CheckMark />);
-            setMaintenanceResult(res.data.result);
-            setTaskState(null);
-            setLoading(false);
-            setTaskId(null);
-            setTaskType(null);
-            clearInterval(interval);
-            setTimeout(() => diagnoseVideo(), 2000);
-          } else if (st === "failure") {
-            Alert(`Full repair failed. Check logs.`, <ErrorIcon />);
-            setMaintenanceResult(res.data.result);
-            setTaskState(null);
-            setLoading(false);
-            setTaskId(null);
-            setTaskType(null);
-            clearInterval(interval);
-          }
-        } else {
-        const res = await adminApi.getValidateVideoFixStatus(taskId);
+        if (taskType !== "full_repair") return;
+        const res = await adminApi.getVideoMaintenanceStatus(taskId);
         setTaskState(res.data.state);
-        if (res.data.state.toLowerCase() === "success") {
-            const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
-          Alert(`${taskLabel} completed successfully`, <CheckMark />);
+        const st = String(res.data.state || "").toLowerCase();
+        if (st === "success") {
+          Alert(`Full repair completed successfully`, <CheckMark />);
+          setMaintenanceResult(res.data.result);
           setTaskState(null);
           setLoading(false);
           setTaskId(null);
           setTaskType(null);
           clearInterval(interval);
-          setTimeout(() => diagnoseVideo(), 2000);
-        } else if (res.data.state.toLowerCase() === "failure") {
-            const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
-          Alert(`${taskLabel} failed. Check logs.`, <ErrorIcon />);
+        } else if (st === "failure") {
+          Alert(`Full repair failed. Check logs.`, <ErrorIcon />);
+          setMaintenanceResult(res.data.result);
           setTaskState(null);
           setLoading(false);
           setTaskId(null);
           setTaskType(null);
           clearInterval(interval);
-          }
         }
       } catch (e) {
         Alert("Error checking status", <ErrorIcon />);
@@ -293,43 +161,11 @@ const MagicVideoTool = () => {
           loading={diagnosing}
         />
         <PrettyButton
-          className={taskState && taskType === "fix_hls" ? s[taskState.toLowerCase()] : ""}
-          text={taskType === "fix_hls" && taskState ? taskState : "Fix HLS"}
-          variant={"default"}
-          onClick={!loading && !diagnosing ? fixVideo : undefined}
-          loading={loading && taskType === "fix_hls" && !taskState}
-        />
-        <PrettyButton
           className={taskState && taskType === "full_repair" ? s[taskState.toLowerCase()] : ""}
           text={taskType === "full_repair" && taskState ? taskState : "Full Repair"}
           variant={"default"}
           onClick={!loading && !diagnosing ? fullRepair : undefined}
           loading={loading && taskType === "full_repair" && !taskState}
-        />
-        <PrettyButton
-          className={taskState && taskType === "force_rebuild" ? s[taskState.toLowerCase()] : ""}
-          text={taskType === "force_rebuild" && taskState ? taskState : "Force Rebuild"}
-          variant={"danger"}
-          onClick={!loading && !diagnosing ? forceRebuild : undefined}
-          loading={loading && taskType === "force_rebuild" && !taskState}
-        />
-        <PrettyButton
-          text={"Find Broken HLS"}
-          variant={"default_white_hover"}
-          onClick={!diagnosing && !loading ? () => cleanupBrokenHls(true) : undefined}
-          loading={diagnosing}
-        />
-        <PrettyButton
-          text={"Delete Broken HLS"}
-          variant={"danger"}
-          onClick={!diagnosing && !loading ? () => cleanupBrokenHls(false) : undefined}
-          loading={diagnosing}
-        />
-        <PrettyButton
-          text={"Fix ACL"}
-          variant={"default_white_hover"}
-          onClick={!diagnosing && !loading ? fixVideoAcl : undefined}
-          loading={diagnosing}
         />
       </div>
 
@@ -391,21 +227,6 @@ const MagicVideoTool = () => {
               DONE
             </span>
           </div>
-          <details className={s.check_details} open>
-            <summary>Important fields</summary>
-            <pre>
-              {JSON.stringify(
-                {
-                  status: maintenanceResult?.status,
-                  dry_run: maintenanceResult?.dry_run,
-                  delete_old_key: maintenanceResult?.delete_old_key,
-                  first: maintenanceResult?.results?.[0],
-                },
-                null,
-                2,
-              )}
-            </pre>
-          </details>
           <details className={s.check_details}>
             <summary>Full JSON</summary>
             <pre>{JSON.stringify(maintenanceResult, null, 2)}</pre>
