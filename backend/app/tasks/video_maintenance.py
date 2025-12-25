@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import unquote
 
 import redis
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ReadTimeoutError, EndpointConnectionError
 from celery import shared_task
 
 from ..core.storage import (
@@ -44,7 +44,12 @@ logger = logging.getLogger(__name__)
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
-s3 = s3_client(signature_version="s3v4")
+s3 = s3_client(
+    signature_version="s3v4",
+    connect_timeout_sec=VIDEO_MAINTENANCE.s3_connect_timeout_sec,
+    read_timeout_sec=VIDEO_MAINTENANCE.s3_read_timeout_sec,
+    max_attempts=VIDEO_MAINTENANCE.s3_max_attempts,
+)
 
 # ───────────────────────────── ACL helpers ─────────────────────────────
 def _acl_is_public_read(key: str) -> Optional[bool]:
@@ -696,15 +701,62 @@ def _rename_key_if_needed(
     meta = dict(head.get("Metadata", {}) or {})
     ct = head.get("ContentType") or "video/mp4"
 
-    s3.copy_object(
-        Bucket=S3_BUCKET,
-        Key=new_key,
-        CopySource={"Bucket": S3_BUCKET, "Key": old_key},
-        Metadata=meta,
-        MetadataDirective="REPLACE",
-        ACL="public-read",
-        ContentType=ct,
-    )
+    # R2 иногда держит copy_object дольше 60с => ReadTimeout. При таймауте проверяем,
+    # не успела ли копия всё-таки создаться, и ретраим.
+    t0 = time.time()
+    max_tries = max(1, int(VIDEO_MAINTENANCE.s3_max_attempts or 3))
+    for attempt in range(1, max_tries + 1):
+        try:
+            s3.copy_object(
+                Bucket=S3_BUCKET,
+                Key=new_key,
+                CopySource={"Bucket": S3_BUCKET, "Key": old_key},
+                Metadata=meta,
+                MetadataDirective="REPLACE",
+                ACL="public-read",
+                ContentType=ct,
+            )
+            break
+        except (ReadTimeoutError, EndpointConnectionError) as e:
+            # возможно, копирование на стороне R2 уже завершилось, а клиент просто не дождался ответа
+            try:
+                if _s3_exists(new_key):
+                    logger.warning(
+                        "[video_maintenance] copy_object timeout but new_key exists; assuming success. old=%s new=%s",
+                        old_key,
+                        new_key,
+                    )
+                    break
+            except Exception:
+                pass
+            if attempt >= max_tries:
+                raise
+            sleep_s = min(20.0, 1.5 * attempt)
+            logger.warning(
+                "[video_maintenance] copy_object timeout (attempt %s/%s, %.1fs). old=%s new=%s err=%s",
+                attempt,
+                max_tries,
+                time.time() - t0,
+                old_key,
+                new_key,
+                e,
+            )
+            time.sleep(sleep_s)
+        except ClientError as e:
+            code = (e.response or {}).get("ResponseMetadata", {}).get("HTTPStatusCode")
+            if code in (500, 502, 503, 504) and attempt < max_tries:
+                sleep_s = min(20.0, 1.5 * attempt)
+                logger.warning(
+                    "[video_maintenance] copy_object transient %s (attempt %s/%s). old=%s new=%s",
+                    code,
+                    attempt,
+                    max_tries,
+                    old_key,
+                    new_key,
+                )
+                time.sleep(sleep_s)
+                continue
+            raise
     return {"status": "renamed", "old_key": old_key, "new_key": new_key}
 
 
@@ -742,6 +794,8 @@ def _process_one(
         return {"status": "skipped", "reason": "locked", "old_key": old_key}
 
     try:
+        t0 = time.time()
+        logger.info("[video_maintenance] start old_key=%s dry_run=%s delete_old_key=%s", old_key, dry_run, delete_old_key)
         # 0) Идемпотентность: если старого key уже нет (например, delete_old_key=true в прошлом запуске),
         # пытаемся работать по ожидаемому нормализованному key.
         old_exists = _s3_exists(old_key)
@@ -762,6 +816,7 @@ def _process_one(
         else:
             rename = _rename_key_if_needed(old_key=old_key, dry_run=dry_run)
             new_key = rename.get("new_key") or old_key
+        logger.info("[video_maintenance] rename=%s old=%s new=%s", rename.get("status"), old_key, new_key)
 
         # 2) mp4 fix (faststart + codecs)
         # В dry-run новый ключ ещё не создан, поэтому кодеки нужно определять по реальному (старому) объекту.
@@ -771,9 +826,11 @@ def _process_one(
             mp4_fix = dict(mp4_fix)
             mp4_fix["probe_key"] = probe_key
             mp4_fix["would_apply_to_key"] = new_key
+        logger.info("[video_maintenance] mp4_action=%s key=%s", mp4_fix.get("action"), probe_key)
 
         # 3) HLS validate/repair + alias
         hls = _validate_and_fix_hls_for(new_key, dry_run=dry_run)
+        logger.info("[video_maintenance] hls_status=%s key=%s", hls.get("status"), new_key)
 
         # 4) DB rewrite old->new (только если rename был)
         db_report = None
@@ -784,10 +841,15 @@ def _process_one(
                     db_report = rewrite_references_for_key(db, old_key=old_key, new_key=new_key, dry_run=dry_run)
             finally:
                 db.close()
+            try:
+                logger.info("[video_maintenance] db_updated=%s old=%s new=%s", (db_report or {}).get("updated"), old_key, new_key)
+            except Exception:
+                pass
 
         # 5) delete old
         if (new_key != old_key) and delete_old_key and old_exists:
             _delete_old_key(old_key=old_key, dry_run=dry_run)
+            logger.info("[video_maintenance] deleted_old=%s", old_key)
 
         result = {
             "status": "ok",
@@ -802,6 +864,7 @@ def _process_one(
             "public_new": public_url_for_key(new_key, public_host=S3_PUBLIC_HOST),
         }
         _audit({"ts": int(time.time()), "result": result})
+        logger.info("[video_maintenance] done old=%s new=%s sec=%.1f", old_key, new_key, time.time() - t0)
         return result
     finally:
         _unlock(old_key)
@@ -885,11 +948,48 @@ def process_list(
     for v in videos:
         key = _normalize_incoming_video_ref(str(v))
         try:
-            self.update_state(state="PROGRESS", meta={"current": key, "done": len(results), "total": len(videos)})
-            results.append(_process_one(old_key=key, dry_run=dry_run, delete_old_key=delete_old_key))
+            self.update_state(
+                state="PROGRESS",
+                meta={"phase": "processing", "current": key, "done": len(results), "total": len(videos)},
+            )
+            r = _process_one(old_key=key, dry_run=dry_run, delete_old_key=delete_old_key)
+            results.append(r)
+            # обновим meta, чтобы UI видел “что только что сделали”
+            try:
+                last = {
+                    "key": key,
+                    "status": r.get("status"),
+                    "new_key": r.get("new_key"),
+                    "rename": (r.get("rename") or {}).get("status") if isinstance(r.get("rename"), dict) else None,
+                    "mp4": (r.get("mp4") or {}).get("action") if isinstance(r.get("mp4"), dict) else None,
+                    "hls": (r.get("hls") or {}).get("status") if isinstance(r.get("hls"), dict) else None,
+                    "db_updated": (r.get("db") or {}).get("updated") if isinstance(r.get("db"), dict) else None,
+                }
+            except Exception:
+                last = {"key": key, "status": "unknown"}
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "phase": "processed_one",
+                    "current": key,
+                    "done": len(results),
+                    "total": len(videos),
+                    "last": last,
+                },
+            )
         except Exception as e:
             logger.exception("[video_maintenance] manual failed for %s: %s", key, e)
             results.append({"status": "error", "old_key": key, "error": f"{type(e).__name__}: {e}"})
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "phase": "error",
+                    "current": key,
+                    "done": len(results),
+                    "total": len(videos),
+                    "last_error": f"{type(e).__name__}: {e}",
+                },
+            )
 
     return {"status": "ok", "dry_run": dry_run, "delete_old_key": delete_old_key, "results": results, "duration_sec": int(time.time() - t0)}
 

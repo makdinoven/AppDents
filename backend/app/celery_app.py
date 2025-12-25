@@ -67,11 +67,12 @@ celery.conf.update(
             "schedule": 3600,
             "options": {"queue": "special"},
         },
-        "replace-storage-links-every-1-hours": {
-            "task": "app.tasks.storage_links.replace_storage_links",
-            "schedule": 3600,
-            "options": {"queue": "special"},
-        },
+        # disabled: manual-only maintenance (опасно гонять массовую замену ссылок по расписанию)
+        # "replace-storage-links-every-1-hours": {
+        #     "task": "app.tasks.storage_links.replace_storage_links",
+        #     "schedule": 3600,
+        #     "options": {"queue": "special"},
+        # },
         # NOTE: legacy video maintenance tasks disabled (replaced by video_maintenance pipeline)
         # "ensure_faststart": {
         #     "task": "app.tasks.ensure_faststart",
@@ -143,6 +144,8 @@ celery.conf.task_queues = (
 celery.conf.task_routes = {
     "app.tasks.preview_tasks.*": {"queue": "default"},
     "app.tasks.special_offers.process_special_offers": {"queue": "special"},
+    # storage_links.replace_storage_links — оставляем роутинг на special,
+    # если вдруг вызовете вручную через apply_async
     "app.tasks.storage_links.replace_storage_links": {"queue": "special"},
     "app.tasks.process_faststart_video": {"queue": "special"},
     "app.tasks.ensure_faststart": {"queue": "special"},

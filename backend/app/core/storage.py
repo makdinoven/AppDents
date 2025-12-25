@@ -112,15 +112,25 @@ def s3_client(
     *,
     signature_version: str = "s3v4",
     max_pool_connections: int | None = None,
+    connect_timeout_sec: int | None = None,
+    read_timeout_sec: int | None = None,
+    max_attempts: int | None = None,
 ):
     """
     Единый boto3 client. Для Cloudflare R2 должен быть SigV4.
     """
     cfg = _cfg()
+    retries = None
+    if max_attempts:
+        retries = {"max_attempts": int(max_attempts), "mode": "standard"}
+
     botocore_cfg = Config(
         signature_version=signature_version,
         s3={"addressing_style": "path"},
         **({"max_pool_connections": max_pool_connections} if max_pool_connections else {}),
+        **({"connect_timeout": float(connect_timeout_sec)} if connect_timeout_sec else {}),
+        **({"read_timeout": float(read_timeout_sec)} if read_timeout_sec else {}),
+        **({"retries": retries} if retries else {}),
     )
     return boto3.client(
         "s3",

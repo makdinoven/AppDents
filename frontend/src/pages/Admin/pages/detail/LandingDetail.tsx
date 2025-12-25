@@ -31,6 +31,7 @@ const LandingDetail = () => {
   const [fixTaskId, setFixTaskId] = useState<string | null>(null);
   const [fixTaskState, setFixTaskState] = useState<string | null>(null);
   const [fixResult, setFixResult] = useState<any | null>(null);
+  const [fixMeta, setFixMeta] = useState<any | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -151,12 +152,14 @@ const LandingDetail = () => {
       try {
         const res = await adminApi.getVideoMaintenanceStatus(fixTaskId);
         setFixTaskState(res.data.state);
+        setFixMeta(res.data.meta ?? null);
         const st = String(res.data.state || "").toLowerCase();
         if (st === "success" || st === "failure") {
           setFixResult(res.data.result);
           setFixLoading(false);
           setFixTaskId(null);
           setFixTaskState(null);
+          setFixMeta(null);
           clearInterval(interval);
         }
       } catch (e) {
@@ -165,6 +168,7 @@ const LandingDetail = () => {
         setFixLoading(false);
         setFixTaskId(null);
         setFixTaskState(null);
+        setFixMeta(null);
         clearInterval(interval);
       }
     }, 5000);
@@ -221,11 +225,62 @@ const LandingDetail = () => {
           />
           <div style={{ marginTop: 12, marginBottom: 12 }}>
             <PrettyButton
-              text={fixTaskState ? fixTaskState : "FIX ALL VIDEOS"}
+              text={"FIX ALL VIDEOS"}
               variant={"default"}
               onClick={!fixLoading ? fixAllVideos : undefined}
-              loading={fixLoading && !fixTaskState}
+              loading={fixLoading}
             />
+            {fixTaskId && (
+              <div style={{ marginTop: 8, fontSize: 14 }}>
+                <div><strong>Task:</strong> {fixTaskId}</div>
+                <div><strong>Status:</strong> {fixTaskState || "..."}</div>
+                {fixMeta?.phase && (
+                  <div><strong>Phase:</strong> {String(fixMeta.phase)}</div>
+                )}
+                {fixMeta && (
+                  <>
+                    <div>
+                      <strong>Progress:</strong>{" "}
+                      {typeof fixMeta.done === "number" && typeof fixMeta.total === "number"
+                        ? `${fixMeta.done}/${fixMeta.total}`
+                        : ""}
+                    </div>
+                    {fixMeta.current && (
+                      <div style={{ wordBreak: "break-word" }}>
+                        <strong>Current:</strong> {String(fixMeta.current)}
+                      </div>
+                    )}
+                    {fixMeta.last_error && (
+                      <div style={{ marginTop: 6, color: "#b91c1c", wordBreak: "break-word" }}>
+                        <strong>Error:</strong> {String(fixMeta.last_error)}
+                      </div>
+                    )}
+                    {fixMeta.last && (
+                      <div style={{ marginTop: 6, wordBreak: "break-word" }}>
+                        <strong>Last:</strong>{" "}
+                        <pre style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
+                          {JSON.stringify(fixMeta.last, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                    {typeof fixMeta.done === "number" &&
+                      typeof fixMeta.total === "number" &&
+                      fixMeta.total > 0 && (
+                        <div style={{ marginTop: 6, height: 8, background: "#e5e7eb", borderRadius: 6 }}>
+                          <div
+                            style={{
+                              height: 8,
+                              width: `${Math.min(100, Math.max(0, Math.round((fixMeta.done / fixMeta.total) * 100)))}%`,
+                              background: "#7FDFD5",
+                              borderRadius: 6,
+                            }}
+                          />
+                        </div>
+                      )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
           {fixResult && (
             <details style={{ marginBottom: 12 }}>

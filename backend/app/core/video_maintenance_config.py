@@ -27,6 +27,11 @@ class VideoMaintenanceConfig:
     # Режимы ffmpeg/ffprobe
     ffmpeg_timeout_sec: int = 60 * 30  # 30 минут
 
+    # S3/R2: таймауты и ретраи (copy_object/head_object иногда >60с на больших файлах)
+    s3_connect_timeout_sec: int = 30
+    s3_read_timeout_sec: int = 300
+    s3_max_attempts: int = 8
+
     # Таргет для совместимости
     target_video_codec: str = "libx264"
     target_audio_codec: str = "aac"

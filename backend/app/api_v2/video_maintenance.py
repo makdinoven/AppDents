@@ -231,12 +231,20 @@ def video_maintenance_status(task_id: str) -> Dict[str, Any]:
     from ..celery_app import celery
 
     r = AsyncResult(task_id, app=celery)
+    meta = None
+    if not r.ready():
+        # Celery кладёт сюда то, что мы передаём в update_state(meta=...)
+        try:
+            meta = r.info
+        except Exception:
+            meta = None
     return {
         "task_id": task_id,
         "state": r.state,
         "ready": r.ready(),
         "successful": r.successful() if r.ready() else None,
         "result": r.result if r.ready() else None,
+        "meta": meta,
     }
 
 
