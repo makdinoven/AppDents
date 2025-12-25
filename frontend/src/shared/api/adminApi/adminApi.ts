@@ -391,6 +391,20 @@ export const adminApi = {
       { headers: getAuthHeaders() },
     );
   },
+  // Video Maintenance (new pipeline)
+  runVideoMaintenance(payload: { videos: string[]; dry_run: boolean; delete_old_key: boolean }) {
+    return instance.post(
+      "/video_maintenance/run",
+      payload,
+      { headers: getAuthHeaders() },
+    );
+  },
+  getVideoMaintenanceStatus(taskId: string) {
+    return instance.get("/video_maintenance/status", {
+      params: { task_id: taskId },
+      headers: getAuthHeaders(),
+    });
+  },
   forceRebuildHls(videoUrl: string) {
     return instance.post(
       "/video_diagnostics/force-rebuild-hls",

@@ -6,6 +6,7 @@ import os
 import subprocess
 import tempfile
 import time
+from datetime import timedelta
 from dataclasses import asdict
 from typing import Any, Dict, List, Optional
 from urllib.parse import unquote
@@ -24,10 +25,13 @@ from ..core.storage import (
 from ..core.video_maintenance_config import VIDEO_MAINTENANCE
 from ..db.database import SessionLocal
 from ..utils.db_url_rewrite import rewrite_references_for_key
+from ..utils.s3 import generate_presigned_url
 from ..utils.video_key_normalizer import canonicalize_s3_key
 
-# HLS helpers (переиспользуем существующую логику alias/canonical)
-from .ensure_hls import hls_prefixes_for, ensure_aliases_to_canonical  # noqa: E402
+# HLS helpers (переиспользуем существующую логику slug/canonical)
+# ВАЖНО: НЕ используем ensure_aliases_to_canonical(), т.к. она переписывает ВСЕ legacy playlist.m3u8
+# под base_dir/.hls/ и может «перекрестно» сломать другие видео в том же каталоге.
+from .ensure_hls import hls_prefixes_for, put_alias_master  # noqa: E402
 from ..services_v2.video_repair_service import (
     Problem,
     check_master_and_variants,
@@ -41,6 +45,112 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 rds = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 
 s3 = s3_client(signature_version="s3v4")
+
+# ───────────────────────────── ACL helpers ─────────────────────────────
+def _acl_is_public_read(key: str) -> Optional[bool]:
+    """
+    Возвращает:
+    - True/False если удалось проверить ACL
+    - None если хранилище/права не позволяют читать ACL (тогда не считаем ошибкой)
+    """
+    try:
+        resp = s3.get_object_acl(Bucket=S3_BUCKET, Key=key)
+        grants = resp.get("Grants", []) or []
+        for g in grants:
+            gr = g.get("Grantee", {}) or {}
+            if gr.get("URI") == "http://acs.amazonaws.com/groups/global/AllUsers":
+                perm = (g.get("Permission") or "").upper()
+                if perm in ("READ", "FULL_CONTROL"):
+                    return True
+        return False
+    except Exception:
+        return None
+
+
+def _ensure_public_read_acl(keys: list[str], *, dry_run: bool) -> dict:
+    """
+    Делает public-read ACL для набора ключей (best-effort).
+    """
+    fixed: list[str] = []
+    skipped_private_unknown: list[str] = []
+    errors: list[str] = []
+
+    for k in keys[: VIDEO_MAINTENANCE.hls_fix_acl_max_files]:
+        st = _acl_is_public_read(k)
+        if st is True:
+            continue
+        if st is None:
+            skipped_private_unknown.append(k)
+            continue
+        # st is False -> приватный
+        if dry_run:
+            fixed.append(k)
+            continue
+        try:
+            s3.put_object_acl(Bucket=S3_BUCKET, Key=k, ACL="public-read")
+            fixed.append(k)
+        except Exception as e:
+            errors.append(f"{k}: {type(e).__name__}: {e}")
+
+    return {"would_fix_or_fixed": fixed, "acl_check_unsupported": skipped_private_unknown[:10], "errors": errors[:10]}
+
+
+def _copy_replace_metadata(key: str, meta: dict, *, content_type: str = "video/mp4") -> None:
+    """
+    Быстрый способ обновить metadata без перезаливки файла: copy_object на себя с REPLACE.
+    """
+    s3.copy_object(
+        Bucket=S3_BUCKET,
+        Key=key,
+        CopySource={"Bucket": S3_BUCKET, "Key": key},
+        Metadata=meta,
+        MetadataDirective="REPLACE",
+        ACL="public-read",
+        ContentType=content_type,
+    )
+
+
+def _check_moov_position(url: str) -> dict:
+    """
+    Проверка faststart «по факту»: moov перед mdat = OK.
+    Используем ffprobe -v trace и парсим позиции atom'ов.
+    """
+    try:
+        proc = subprocess.run(
+            ["ffprobe", "-v", "trace", "-show_format", "-i", url],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        stderr = proc.stderr or ""
+        moov_pos = None
+        mdat_pos = None
+        for line in stderr.splitlines():
+            if ("type:'moov'" in line or "type: moov" in line) and "pos:" in line:
+                try:
+                    moov_pos = int(line.split("pos:")[1].split()[0])
+                except Exception:
+                    pass
+            if ("type:'mdat'" in line or "type: mdat" in line) and "pos:" in line:
+                try:
+                    mdat_pos = int(line.split("pos:")[1].split()[0])
+                except Exception:
+                    pass
+            if moov_pos is not None and mdat_pos is not None:
+                break
+
+        ok = None
+        if isinstance(moov_pos, int) and isinstance(mdat_pos, int):
+            ok = moov_pos < mdat_pos
+
+        return {
+            "ok": ok,  # True/False/None
+            "moov_position": moov_pos,
+            "mdat_position": mdat_pos,
+            "stderr_snip": stderr[:200] if proc.returncode != 0 else None,
+        }
+    except Exception as e:
+        return {"ok": None, "error": f"{type(e).__name__}: {e}"}
 
 # Redis keys
 R_CURSOR = "video_maint:cursor_token"
@@ -121,6 +231,27 @@ def _ffprobe_url(url: str) -> Optional[dict]:
         return None
 
 
+def _ffprobe_url_debug(url: str) -> tuple[Optional[dict], Optional[str]]:
+    """
+    То же, что _ffprobe_url, но возвращает краткую причину ошибки (для dry-run отчёта).
+    """
+    try:
+        proc = subprocess.run(
+            ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", url],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if proc.returncode != 0:
+            err = (proc.stderr or proc.stdout or "").strip()
+            return None, (err[:400] if err else f"ffprobe_exit={proc.returncode}")
+        import json
+
+        return json.loads(proc.stdout), None
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
+
+
 def _pick_stream(meta: dict, codec_type: str) -> Optional[dict]:
     for s in meta.get("streams", []) or []:
         if s.get("codec_type") == codec_type:
@@ -167,12 +298,33 @@ def _fix_mp4_to_compatible(
         except Exception:
             pass
 
-        url = public_url_for_key(src_key, public_host=S3_PUBLIC_HOST)
-        m = _ffprobe_url(url)
+        cdn_url = public_url_for_key(src_key, public_host=S3_PUBLIC_HOST)
+        presigned_url = generate_presigned_url(f"s3://{S3_BUCKET}/{src_key}", expires=timedelta(minutes=10))
+
+        # faststart по факту: пробуем presigned (обычно стабильнее)
+        moov = _check_moov_position(presigned_url) if presigned_url else {"ok": None}
+
+        m = None
+        probe_error = None
+        used_url = None
+
+        # Сначала пробуем CDN (дешевле), потом presigned endpoint (обычно надёжнее для ffprobe)
+        for u in (cdn_url, presigned_url):
+            m, probe_error = _ffprobe_url_debug(u)
+            if m:
+                used_url = u
+                break
+
         if not m:
             # Не смогли определить кодеки по URL (например, URL недоступен или ключ не существует).
             # В таком случае не делаем выводов про transcode/audio, только показываем faststart по метадате.
-            would_faststart = (meta_faststart != "true")
+            # если moov известно и ok=True, faststart ремакс не нужен
+            if moov.get("ok") is True:
+                would_faststart = False
+            elif moov.get("ok") is False:
+                would_faststart = True
+            else:
+                would_faststart = (meta_faststart != "true")
             return {
                 "status": "dry_run",
                 "action": "probe_failed",
@@ -182,14 +334,22 @@ def _fix_mp4_to_compatible(
                 "would_audio_reencode": None,
                 "detected": {"vcodec": None, "pix_fmt": None, "acodec": None},
                 "target": {"vcodec": "h264", "pix_fmt": VIDEO_MAINTENANCE.target_pixel_format, "acodec": "aac"},
-                "probe_url": url,
+                "probe_url": cdn_url,
+                "probe_url_presigned": presigned_url,
+                "probe_error": probe_error,
+                "faststart_fact": moov,
             }
         v = _pick_stream(m, "video")
         a = _pick_stream(m, "audio")
 
         full = _needs_full_transcode(v)
         audio_re = _needs_audio_reencode(a)
-        would_faststart = (meta_faststart != "true")
+        if moov.get("ok") is True:
+            would_faststart = False
+        elif moov.get("ok") is False:
+            would_faststart = True
+        else:
+            would_faststart = (meta_faststart != "true")
 
         if full:
             action = "would_full_transcode_h264_aac_faststart"
@@ -217,11 +377,18 @@ def _fix_mp4_to_compatible(
                 "pix_fmt": VIDEO_MAINTENANCE.target_pixel_format,
                 "acodec": "aac",
             },
-            "probe_url": url,
+            "probe_url": used_url or cdn_url,
+            "probe_url_presigned": presigned_url,
+            "faststart_fact": moov,
         }
 
     head = s3.head_object(Bucket=S3_BUCKET, Key=src_key)
     meta = dict(head.get("Metadata", {}) or {})
+    ct = head.get("ContentType") or "video/mp4"
+
+    # Проверяем faststart «по факту» до тяжёлых операций (по URL, без скачивания)
+    presigned_url = generate_presigned_url(f"s3://{S3_BUCKET}/{src_key}", expires=timedelta(minutes=10))
+    moov = _check_moov_position(presigned_url) if presigned_url else {"ok": None}
 
     with tempfile.TemporaryDirectory() as tmp:
         in_mp4 = os.path.join(tmp, "in.mp4")
@@ -234,6 +401,15 @@ def _fix_mp4_to_compatible(
 
         full = _needs_full_transcode(v)
         audio_re = _needs_audio_reencode(a)
+        need_faststart = (moov.get("ok") is False)
+
+        # Если всё уже совместимо и faststart ok — только проставим метадату (если её нет), без перезаливки
+        if (not full) and (not audio_re) and (need_faststart is False):
+            if meta.get("faststart") != "true":
+                meta["faststart"] = "true"
+                _copy_replace_metadata(src_key, meta, content_type=ct)
+                return {"status": "ok", "action": "mark_faststart_metadata", "faststart_fact": moov}
+            return {"status": "ok", "action": "skip_already_ok", "faststart_fact": moov}
 
         if full:
             cmd = [
@@ -318,12 +494,12 @@ def _fix_mp4_to_compatible(
             src_key,
             ExtraArgs={
                 "ACL": "public-read",
-                "ContentType": "video/mp4",
+                "ContentType": ct,
                 "Metadata": meta,
             },
         )
 
-    return {"status": "ok", "action": action, "full_transcode": full, "audio_reencode": audio_re}
+    return {"status": "ok", "action": action, "full_transcode": full, "audio_reencode": audio_re, "faststart_fact": moov}
 
 
 def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
@@ -337,6 +513,17 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
     if dry_run:
         exists = _s3_exists(master_key)
         return {"status": "dry_run", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key, "master_exists": exists}
+
+    def _ensure_legacy_alias_only() -> None:
+        """
+        Создаём/перезаписываем legacy playlist.m3u8 ТОЛЬКО для текущего видео,
+        чтобы он указывал на canonical new_pl_key.
+        Это предотвращает ситуацию «ссылка на видео ведёт на другое видео» из‑за коллизий.
+        """
+        if legacy_pl_key == new_pl_key:
+            return
+        canonical_url = public_url_for_key(new_pl_key, public_host=S3_PUBLIC_HOST)
+        put_alias_master(legacy_pl_key, canonical_url)
 
     def _parse_variant_paths(master_text: str) -> list[str]:
         lines = [l.strip() for l in (master_text or "").splitlines() if l.strip()]
@@ -409,6 +596,8 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
                     too_small += 1
             except ClientError:
                 missing += 1
+        # сохраним список сегментов (первые N) — пригодится для ACL fix
+        details["segment_keys"] = [_join(variant_key, s) for s in segs[:10]]
         details.update({"segments_checked": checked, "segments_missing": missing, "segments_too_small": too_small})
         ok = (missing == 0) and (too_small == 0)
         return ok, details
@@ -416,11 +605,11 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
     # 1) если мастера нет — rebuild
     if not _s3_exists(master_key):
         fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
-        # гарантируем alias'ы под legacy (важно для фронта/исторических путей)
+        # гарантируем legacy alias (только для этого видео)
         try:
-            ensure_aliases_to_canonical(src_key, new_pl_key)
+            _ensure_legacy_alias_only()
         except Exception:
-            logger.exception("[video_maintenance] ensure_aliases_to_canonical failed for %s", src_key)
+            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
         return {"status": "rebuilt", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
 
     # 2) проверяем master/variants + аудио
@@ -431,9 +620,9 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
     if problems & {Problem.MISSING_MASTER, Problem.MISSING_VARIANT, Problem.UNDECODABLE_SEGMENT}:
         fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
         try:
-            ensure_aliases_to_canonical(src_key, new_pl_key)
+            _ensure_legacy_alias_only()
         except Exception:
-            logger.exception("[video_maintenance] ensure_aliases_to_canonical failed for %s", src_key)
+            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
         return {"status": "rebuilt", "reason": [p.name for p in problems], "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
 
     # NO_AUDIO: считаем некритичным для некоторых видео, но по вашим требованиям лучше чинить
@@ -444,9 +633,9 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
             ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec,
         )
         try:
-            ensure_aliases_to_canonical(src_key, new_pl_key)
+            _ensure_legacy_alias_only()
         except Exception:
-            logger.exception("[video_maintenance] ensure_aliases_to_canonical failed for %s", src_key)
+            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
         return {"status": "rebuilt_audio", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
 
     # 2.5) проверка «первые сегменты существуют»
@@ -454,18 +643,30 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
     if not ok:
         fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
         try:
-            ensure_aliases_to_canonical(src_key, new_pl_key)
+            _ensure_legacy_alias_only()
         except Exception:
-            logger.exception("[video_maintenance] ensure_aliases_to_canonical failed for %s", src_key)
+            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
         return {"status": "rebuilt_segments", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key, "segments": seg_details}
+
+    # 2.6) ACL (public-read) — важная проверка из video_diagnostics:
+    # если файлы приватные, S3 head_object работает, но браузер не сможет скачать через CDN.
+    acl_report = None
+    if VIDEO_MAINTENANCE.hls_fix_acl_public_read:
+        keys_to_fix = [master_key, seg_details.get("variant_key")]
+        keys_to_fix += list(seg_details.get("segment_keys") or [])
+        keys_to_fix = [k for k in keys_to_fix if isinstance(k, str) and k]
+        acl_report = _ensure_public_read_acl(keys_to_fix, dry_run=False)
 
     # 3) всё ок, но alias всё равно поддерживаем
     try:
-        ensure_aliases_to_canonical(src_key, new_pl_key)
+        _ensure_legacy_alias_only()
     except Exception:
-        logger.exception("[video_maintenance] ensure_aliases_to_canonical failed for %s", src_key)
+        logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
 
-    return {"status": "ok", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key, "segments": seg_details}
+    out = {"status": "ok", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key, "segments": seg_details}
+    if acl_report:
+        out["acl"] = acl_report
+    return out
 
 
 def _rename_key_if_needed(

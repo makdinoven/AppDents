@@ -46,6 +46,11 @@ class VideoMaintenanceConfig:
     # Минимальный размер сегмента в байтах (грубая защита от «пустышек»)
     hls_min_segment_size_bytes: int = 512
 
+    # ACL: если HLS существует, но файлы приватные — браузер не сможет их скачать.
+    # Чиним ACL на public-read для master/variant и нескольких первых сегментов.
+    hls_fix_acl_public_read: bool = True
+    hls_fix_acl_max_files: int = 50
+
 
 VIDEO_MAINTENANCE = VideoMaintenanceConfig()
 

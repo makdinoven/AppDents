@@ -30,11 +30,13 @@ const MagicVideoTool = () => {
   const [taskType, setTaskType] = useState<TaskType>(null);
   const [taskState, setTaskState] = useState<string | null>(null);
   const [diagnostic, setDiagnostic] = useState<DiagnosticResult | null>(null);
+  const [maintenanceResult, setMaintenanceResult] = useState<any | null>(null);
 
   const handleInputChange = (e: any) => {
     if (loading || diagnosing) return;
     setSrcUrl(e.value);
     setDiagnostic(null); // Сброс диагностики при изменении URL
+    setMaintenanceResult(null);
   };
 
   const diagnoseVideo = async () => {
@@ -89,16 +91,14 @@ const MagicVideoTool = () => {
     try {
       setLoading(true);
       setTaskType("full_repair");
-      const res = await adminApi.fullRepairVideo(srcUrl);
-      Alert(`Full repair started. Tasks: ${res.data.tasks?.length || 0}, ACL fixed: ${res.data.acl_fixed || 0}`, <CheckMark />);
-      // Начинаем отслеживать первую HLS задачу
-      const hlsTask = res.data.tasks?.find((t: any) => t.type === "hls_repair");
-      if (hlsTask) {
-        setTaskId(hlsTask.task_id);
-      } else {
-        setLoading(false);
-        setTaskType(null);
-      }
+      // Новый пайплайн: запускаем video_maintenance (реально, без dry-run)
+      const res = await adminApi.runVideoMaintenance({
+        videos: [srcUrl],
+        dry_run: false,
+        delete_old_key: false, // на тестовом этапе НЕ удаляем старый key
+      });
+      Alert(`Video maintenance started. Task: ${res.data.task_id}`, <CheckMark />);
+      setTaskId(res.data.task_id);
     } catch (e) {
       console.error(e);
       Alert("Failed to start full repair", <ErrorIcon />);
@@ -197,28 +197,50 @@ const MagicVideoTool = () => {
 
     const interval = setInterval(async () => {
       try {
-        const res = await adminApi.getValidateVideoFixStatus(taskId);
-        setTaskState(res.data.state);
-        if (res.data.state.toLowerCase() === "success") {
-          const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : 
-                           taskType === "full_repair" ? "Full repair" : "Video fix";
-          Alert(`${taskLabel} completed successfully`, <CheckMark />);
-          setTaskState(null);
-          setLoading(false);
-          setTaskId(null);
-          setTaskType(null);
-          clearInterval(interval);
-          // Автоматически запускаем диагностику после исправления
-          setTimeout(() => diagnoseVideo(), 2000);
-        } else if (res.data.state.toLowerCase() === "failure") {
-          const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : 
-                           taskType === "full_repair" ? "Full repair" : "Video fix";
-          Alert(`${taskLabel} failed. Check logs.`, <ErrorIcon />);
-          setTaskState(null);
-          setLoading(false);
-          setTaskId(null);
-          setTaskType(null);
-          clearInterval(interval);
+        // Для Full Repair теперь используем status нового maintenance
+        if (taskType === "full_repair") {
+          const res = await adminApi.getVideoMaintenanceStatus(taskId);
+          setTaskState(res.data.state);
+          const st = String(res.data.state || "").toLowerCase();
+          if (st === "success") {
+            Alert(`Full repair completed successfully`, <CheckMark />);
+            setMaintenanceResult(res.data.result);
+            setTaskState(null);
+            setLoading(false);
+            setTaskId(null);
+            setTaskType(null);
+            clearInterval(interval);
+            setTimeout(() => diagnoseVideo(), 2000);
+          } else if (st === "failure") {
+            Alert(`Full repair failed. Check logs.`, <ErrorIcon />);
+            setMaintenanceResult(res.data.result);
+            setTaskState(null);
+            setLoading(false);
+            setTaskId(null);
+            setTaskType(null);
+            clearInterval(interval);
+          }
+        } else {
+          const res = await adminApi.getValidateVideoFixStatus(taskId);
+          setTaskState(res.data.state);
+          if (res.data.state.toLowerCase() === "success") {
+            const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
+            Alert(`${taskLabel} completed successfully`, <CheckMark />);
+            setTaskState(null);
+            setLoading(false);
+            setTaskId(null);
+            setTaskType(null);
+            clearInterval(interval);
+            setTimeout(() => diagnoseVideo(), 2000);
+          } else if (res.data.state.toLowerCase() === "failure") {
+            const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
+            Alert(`${taskLabel} failed. Check logs.`, <ErrorIcon />);
+            setTaskState(null);
+            setLoading(false);
+            setTaskId(null);
+            setTaskType(null);
+            clearInterval(interval);
+          }
         }
       } catch (e) {
         Alert("Error checking status", <ErrorIcon />);
@@ -358,6 +380,36 @@ const MagicVideoTool = () => {
               </ul>
             </div>
           )}
+        </div>
+      )}
+
+      {maintenanceResult && (
+        <div className={s.diagnostic_results}>
+          <div className={s.diagnostic_header}>
+            <h4>Maintenance Result</h4>
+            <span className={s.status_badge} style={{ backgroundColor: "#4caf50" }}>
+              DONE
+            </span>
+          </div>
+          <details className={s.check_details} open>
+            <summary>Important fields</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  status: maintenanceResult?.status,
+                  dry_run: maintenanceResult?.dry_run,
+                  delete_old_key: maintenanceResult?.delete_old_key,
+                  first: maintenanceResult?.results?.[0],
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+          <details className={s.check_details}>
+            <summary>Full JSON</summary>
+            <pre>{JSON.stringify(maintenanceResult, null, 2)}</pre>
+          </details>
         </div>
       )}
     </div>
