@@ -507,7 +507,12 @@ def _fix_mp4_to_compatible(
     return {"status": "ok", "action": action, "full_transcode": full, "audio_reencode": audio_re, "faststart_fact": moov}
 
 
-def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
+def _validate_and_fix_hls_for(
+    src_key: str,
+    *,
+    dry_run: bool,
+    fallback_src_keys: list[str] | None = None,
+) -> dict:
     legacy_prefix, new_prefix = hls_prefixes_for(src_key)
     legacy_pl_key = f"{legacy_prefix}playlist.m3u8"
     new_pl_key = f"{new_prefix}playlist.m3u8"
@@ -656,16 +661,54 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
         except Exception:
             return None
 
-    # 1) если мастера нет — rebuild
+    # 1) если мастера нет — сначала пробуем найти уже существующий HLS по "старому" ключу
+    # (частый кейс: mp4 переименовали, а HLS остался в старом каталоге; rebuild тогда лишний).
     master_exists_before = _s3_exists(master_key)
     if not master_exists_before:
-        fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
-        # гарантируем legacy alias (только для этого видео)
+        fb = [k for k in (fallback_src_keys or []) if isinstance(k, str) and k and k != src_key]
+        for k in fb[:3]:
+            try:
+                legacy_p, new_p = hls_prefixes_for(k)
+                candidates = [f"{new_p}playlist.m3u8", f"{legacy_p}playlist.m3u8"]
+                for cand in candidates:
+                    if not _s3_exists(cand):
+                        continue
+                    ok, _details = _segments_ok(cand)
+                    if ok:
+                        # создаём alias по новому месту на найденный плейлист (без ffmpeg)
+                        target_url = public_url_for_key(cand, public_host=S3_PUBLIC_HOST)
+                        put_alias_master(new_pl_key, target_url)
+                        try:
+                            _ensure_legacy_alias_only()
+                        except Exception:
+                            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
+                        return {
+                            "status": "aliased_existing",
+                            "reason": "missing_master_reused_old_hls",
+                            "source_playlist_key": cand,
+                            "new_pl_key": new_pl_key,
+                            "legacy_pl_key": legacy_pl_key,
+                        }
+            except Exception:
+                # fallback — best effort
+                continue
+
+        # не нашли — делаем rebuild
+        fix_rebuild_hls(
+            src_mp4_key=src_key,
+            hls_dir_key=new_prefix.rstrip("/"),
+            ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec,
+        )
         try:
             _ensure_legacy_alias_only()
         except Exception:
             logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
-        return {"status": "rebuilt", "reason": "missing_master", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+        return {
+            "status": "rebuilt",
+            "reason": "missing_master",
+            "new_pl_key": new_pl_key,
+            "legacy_pl_key": legacy_pl_key,
+        }
 
     # 2) Проверяем, что HLS воспроизводим:
     # - если это master playlist с variants — используем существующие проверки
@@ -899,7 +942,11 @@ def _process_one(
         logger.info("[video_maintenance] mp4_action=%s key=%s", mp4_fix.get("action"), probe_key)
 
         # 3) HLS validate/repair + alias
-        hls = _validate_and_fix_hls_for(new_key, dry_run=dry_run)
+        hls = _validate_and_fix_hls_for(
+            new_key,
+            dry_run=dry_run,
+            fallback_src_keys=[old_key, resolved_old_key],
+        )
         logger.info(
             "[video_maintenance] hls_status=%s reason=%s key=%s",
             hls.get("status"),

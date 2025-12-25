@@ -16,6 +16,23 @@ logger = logging.getLogger(__name__)
 
 _CANDIDATE_COLS_CACHE: list["ColumnRef"] | None = None
 
+# Оптимизация: в этом проекте ссылки на медиа/видео ожидаются только в ограниченном наборе колонок.
+# Это резко ускоряет rewrite (вместо скана information_schema и апдейтов по сотням колонок).
+_ALLOWLIST_COLS: list["ColumnRef"] = [
+    # core content
+    ColumnRef("courses", "sections", "json"),
+    ColumnRef("landings", "lessons_info", "json"),
+    ColumnRef("landings", "course_program", "text"),
+    ColumnRef("landings", "preview_photo", "varchar"),
+    ColumnRef("lesson_previews", "video_link", "text"),
+    ColumnRef("lesson_previews", "preview_url", "varchar"),
+    # books / creatives
+    ColumnRef("book_creatives", "s3_url", "varchar"),
+    ColumnRef("book_files", "s3_url", "varchar"),
+    ColumnRef("books", "cover_url", "varchar"),
+]
+_USE_ALLOWLIST_ONLY: bool = True
+
 
 @dataclass(frozen=True)
 class ColumnRef:
@@ -57,6 +74,10 @@ def _load_candidate_columns(db) -> list[ColumnRef]:
 
 def discover_candidate_columns(db) -> list[ColumnRef]:
     global _CANDIDATE_COLS_CACHE
+    if _USE_ALLOWLIST_ONLY:
+        # Не кэшируем через information_schema вообще — используем фиксированный список.
+        # Если какой-то таблицы нет (например courses_backup), ошибки отлавливаются ниже и таблица будет пропущена.
+        return _ALLOWLIST_COLS
     if _CANDIDATE_COLS_CACHE is None:
         _CANDIDATE_COLS_CACHE = _load_candidate_columns(db)
     return _CANDIDATE_COLS_CACHE
