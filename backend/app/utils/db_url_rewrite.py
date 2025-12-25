@@ -109,16 +109,23 @@ def rewrite_references_for_key(
     old_urls = [f"{h}/{old_key_enc}" for h in hosts] + [f"{h}/{old_key_raw}" for h in hosts]
     new_urls = [f"{h}/{new_key_enc}" for h in hosts] + [f"{h}/{new_key_raw}" for h in hosts]
 
+    # В JSON-колонках слеши часто экранируются как '\/' (пример: https:\/\/cdn.dent-s.com\/...)
+    old_urls_json = [u.replace("/", r"\/") for u in old_urls]
+    new_urls_json = [u.replace("/", r"\/") for u in new_urls]
+
     # Для отчёта: основной (канонический) URL
     old_url = public_url_for_key(old_key, public_host=S3_PUBLIC_HOST)
     new_url = public_url_for_key(new_key, public_host=S3_PUBLIC_HOST)
 
-    like_patterns = []
+    # Паттерны для LIKE (важен порядок: сначала наиболее вероятные)
+    like_patterns: list[str] = []
     for u in old_urls:
         like_patterns.append(f"%{u}%")
-    # также пробуем key как raw и encoded (если без хоста)
-    like_patterns.append(f"%{old_key_raw}%")
+    for u in old_urls_json:
+        like_patterns.append(f"%{u}%")
+    # также пробуем key как raw и encoded (если где-то хранится без хоста)
     like_patterns.append(f"%{old_key_enc}%")
+    like_patterns.append(f"%{old_key_raw}%")
 
     cols = discover_candidate_columns(db)
     updated_total = 0
@@ -131,7 +138,7 @@ def rewrite_references_for_key(
         # Собираем OR по всем паттернам (ограниченно, чтобы не раздувать запрос)
         where_parts = []
         params = {}
-        for i, pat in enumerate(like_patterns[:8]):  # разумный лимит
+        for i, pat in enumerate(like_patterns[:14]):  # чуть шире, чтобы хватало и JSON-escaped вариантов
             pname = f"like_{i}"
             where_parts.append(f"CAST({col} AS CHAR CHARACTER SET utf8mb4) LIKE :{pname}")
             params[pname] = pat
@@ -150,24 +157,26 @@ def rewrite_references_for_key(
                 per_col.append({"table": c.table_name, "column": c.column_name, "would_touch": cnt})
             continue
 
-        # Готовим цепочку REPLACE: сначала все URL варианты, потом key варианты
-        # Важно: encoded key -> encoded new key, raw key -> raw new key
+        # Готовим цепочку REPLACE: сначала URL варианты (обычные и JSON-escaped), потом key варианты.
+        # Важно: используем детерминированные имена параметров (без hash()).
         def _chain_replace(expr: str) -> str:
             out = expr
-            # URL замены
-            for ou, nu in zip(old_urls, new_urls):
-                out = f"REPLACE({out}, :ou_{abs(hash(ou)) % 100000}, :nu_{abs(hash(ou)) % 100000})"
-            # key замены
+            for i in range(len(old_urls)):
+                out = f"REPLACE({out}, :old_url_{i}, :new_url_{i})"
+            for i in range(len(old_urls_json)):
+                out = f"REPLACE({out}, :old_url_json_{i}, :new_url_json_{i})"
             out = f"REPLACE({out}, :old_key_raw, :new_key_raw)"
             out = f"REPLACE({out}, :old_key_enc, :new_key_enc)"
             return out
 
         # Параметры для REPLACE
         repl_params = dict(params)
-        for ou, nu in zip(old_urls, new_urls):
-            k = f"{abs(hash(ou)) % 100000}"
-            repl_params[f"ou_{k}"] = ou
-            repl_params[f"nu_{k}"] = nu
+        for i, (ou, nu) in enumerate(zip(old_urls, new_urls)):
+            repl_params[f"old_url_{i}"] = ou
+            repl_params[f"new_url_{i}"] = nu
+        for i, (ou, nu) in enumerate(zip(old_urls_json, new_urls_json)):
+            repl_params[f"old_url_json_{i}"] = ou
+            repl_params[f"new_url_json_{i}"] = nu
         repl_params.update(
             {
                 "old_key_raw": old_key_raw,

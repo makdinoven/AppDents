@@ -221,25 +221,25 @@ const MagicVideoTool = () => {
             clearInterval(interval);
           }
         } else {
-          const res = await adminApi.getValidateVideoFixStatus(taskId);
-          setTaskState(res.data.state);
-          if (res.data.state.toLowerCase() === "success") {
+        const res = await adminApi.getValidateVideoFixStatus(taskId);
+        setTaskState(res.data.state);
+        if (res.data.state.toLowerCase() === "success") {
             const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
-            Alert(`${taskLabel} completed successfully`, <CheckMark />);
-            setTaskState(null);
-            setLoading(false);
-            setTaskId(null);
-            setTaskType(null);
-            clearInterval(interval);
-            setTimeout(() => diagnoseVideo(), 2000);
-          } else if (res.data.state.toLowerCase() === "failure") {
+          Alert(`${taskLabel} completed successfully`, <CheckMark />);
+          setTaskState(null);
+          setLoading(false);
+          setTaskId(null);
+          setTaskType(null);
+          clearInterval(interval);
+          setTimeout(() => diagnoseVideo(), 2000);
+        } else if (res.data.state.toLowerCase() === "failure") {
             const taskLabel = taskType === "force_rebuild" ? "Force rebuild" : "Video fix";
-            Alert(`${taskLabel} failed. Check logs.`, <ErrorIcon />);
-            setTaskState(null);
-            setLoading(false);
-            setTaskId(null);
-            setTaskType(null);
-            clearInterval(interval);
+          Alert(`${taskLabel} failed. Check logs.`, <ErrorIcon />);
+          setTaskState(null);
+          setLoading(false);
+          setTaskId(null);
+          setTaskType(null);
+          clearInterval(interval);
           }
         }
       } catch (e) {
