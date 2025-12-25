@@ -74,7 +74,7 @@ const MagicVideoTool = () => {
         dry_run: false,
         delete_old_key: true,
       });
-      Alert(`Video maintenance started. Task: ${res.data.task_id}`, <CheckMark />);
+      // Не спамим алертами: просто начинаем polling и покажем результат по завершению.
       setTaskId(res.data.task_id);
     } catch (e) {
       console.error(e);
@@ -118,7 +118,7 @@ const MagicVideoTool = () => {
         setTaskType(null);
         clearInterval(interval);
       }
-    }, 5000); // Проверяем каждые 5 секунд
+    }, 30000); // Проверяем каждые 30 секунд
 
     return () => clearInterval(interval);
   }, [taskId, taskType]);

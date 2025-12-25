@@ -56,6 +56,7 @@ celery.conf.update(
         "app.tasks.process_hls_video": {"rate_limit": "15/m"},
         "app.tasks.ensure_hls":        {"rate_limit": "10/m"},
         "app.tasks.video_maintenance.tick": {"rate_limit": "12/m"},
+        "app.tasks.video_maintenance.tick_db": {"rate_limit": "30/m"},
         # === Email tasks: суммарно 165 писем/час (55 + 55 + 55) ===
         "app.tasks.abandoned_checkouts.process_abandoned_checkouts": {"rate_limit": "200/h"},
         "app.tasks.big_cart_reminder.process_big_cart_reminders": {"rate_limit": "200/h"},
@@ -104,6 +105,15 @@ celery.conf.update(
         #     "schedule": 600,  # каждые 10 минут (батч N видео за тик)
         #     "options": {"queue": "special"},
         # },
+        # DB-driven tick: постоянная нагрузка без раздувания очереди:
+        # - запускаем часто
+        # - expires чуть меньше schedule, чтобы задачи “протухали”, если воркер занят
+        # - внутри таски есть lock и max_runtime
+        "video-maintenance-db-tick": {
+            "task": "app.tasks.video_maintenance.tick_db",
+            "schedule": 15,
+            "options": {"queue": "special", "expires": 14},
+        },
         # === Email tasks: каждый час, ~55 писем каждая = 165/час суммарно ===
         "process-abandoned-checkouts-hourly": {
             "task": "app.tasks.abandoned_checkouts.process_abandoned_checkouts",
@@ -135,6 +145,7 @@ default_exc = Exchange("celery", type="direct")
 
 celery.conf.task_queues = (
     Queue("default",      default_exc, routing_key="celery"),
+    Queue("special_priority", default_exc, routing_key="special_priority"),
     Queue("special",      default_exc, routing_key="special"),
     Queue("special_hls",  default_exc, routing_key="special_hls"),
     Queue("book",         default_exc, routing_key="book"),
@@ -151,6 +162,8 @@ celery.conf.task_routes = {
     "app.tasks.ensure_faststart": {"queue": "special"},
     "app.tasks.ensure_hls.recount_hls_counters": {"queue": "special"},
     "app.tasks.ensure_hls.fix_missing_legacy_aliases": {"queue": "special"},
+    # manual video maintenance (API/админка) — высокий приоритет
+    "app.tasks.video_maintenance.process_list": {"queue": "special_priority"},
     "app.tasks.book_formats.*": {"queue": "book"},
     "app.tasks.book_previews.*": {"queue": "book"},
     "app.tasks.book_covers.*": {"queue": "book"},

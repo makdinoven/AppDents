@@ -161,6 +161,8 @@ def _check_moov_position(url: str) -> dict:
 R_CURSOR = "video_maint:cursor_token"
 R_LOCK_PREFIX = "video_maint:lock:"
 R_AUDIT = "video_maint:audit"
+R_DB_TICK_CURSOR = "video_maint:dbtick_cursor"
+R_DB_TICK_LOCK = "video_maint:dbtick_lock"
 
 
 def _lock(key: str, ttl_sec: int = 60 * 30) -> bool:
@@ -194,6 +196,106 @@ def _audit(event: dict, keep_last: int = 200) -> None:
         rds.ltrim(R_AUDIT, 0, max(0, keep_last - 1))
     except Exception:
         pass
+
+
+def _is_our_video_ref(v: str) -> bool:
+    """
+    Фильтр ссылок из БД (courses.sections / landings.lessons_info):
+    - только mp4
+    - только наши домены (cloud/cdn) или r2 endpoint
+    - сторонние источники (boomstream/youtube/...) игнорируем
+    """
+    if not v:
+        return False
+    s = str(v).strip()
+    if not s:
+        return False
+    if "://" not in s:
+        return s.lower().endswith(".mp4")
+    try:
+        from urllib.parse import urlparse
+
+        u = urlparse(s)
+        host = (u.hostname or "").lower()
+        path = (u.path or "").lower()
+        if not path.endswith(".mp4"):
+            return False
+        if host.endswith(".r2.cloudflarestorage.com"):
+            return True
+        if host.endswith(".dent-s.com") or host.endswith(".med-g.com"):
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _normalize_ref_to_key(v: str) -> str:
+    """
+    Превращает URL/ключ из БД в key, понятный video_maintenance:
+    - для публичных cloud/cdn URL -> key_from_public_or_endpoint_url
+    - для r2 endpoint URL: /<bucket>/<key> -> <key>
+    - снимаем %xx
+    """
+    s = str(v).strip()
+    if not s:
+        return s
+    if "://" not in s:
+        return unquote(s.lstrip("/"))
+    try:
+        from urllib.parse import unquote as _unq, urlparse
+
+        u = urlparse(s)
+        host = (u.hostname or "").lower()
+        if host.endswith(".r2.cloudflarestorage.com"):
+            path = _unq((u.path or "").lstrip("/"))
+            # ожидаемый path-style: /<bucket>/<key>
+            if path.lower().startswith(f"{S3_BUCKET.lower()}/"):
+                return path[len(S3_BUCKET) + 1 :]
+            return path
+        k = key_from_public_or_endpoint_url(s)
+        return _unq(k.lstrip("/"))
+    except Exception:
+        return unquote(key_from_public_or_endpoint_url(s).lstrip("/"))
+
+
+def _extract_course_video_refs(sections: Any) -> list[str]:
+    refs: list[str] = []
+    if isinstance(sections, dict):
+        section_objs = list(sections.values())
+    elif isinstance(sections, list):
+        section_objs = sections
+    else:
+        section_objs = []
+
+    for sec in section_objs:
+        if not isinstance(sec, dict):
+            continue
+        lessons = sec.get("lessons") or []
+        if not isinstance(lessons, list):
+            continue
+        for lesson in lessons:
+            if not isinstance(lesson, dict):
+                continue
+            v = lesson.get("video_link")
+            if isinstance(v, str) and v.strip():
+                refs.append(v.strip())
+    return refs
+
+
+def _extract_landing_video_refs(lessons_info: Any) -> list[str]:
+    refs: list[str] = []
+    if not isinstance(lessons_info, list):
+        return refs
+    for item in lessons_info:
+        if not isinstance(item, dict):
+            continue
+        for _, payload in item.items():
+            if not isinstance(payload, dict):
+                continue
+            v = payload.get("link")
+            if isinstance(v, str) and v.strip():
+                refs.append(v.strip())
+    return refs
 
 
 def _unique_key_if_exists(candidate_key: str, *, salt: str) -> str:
@@ -669,7 +771,15 @@ def _validate_and_fix_hls_for(
         for k in fb[:3]:
             try:
                 legacy_p, new_p = hls_prefixes_for(k)
-                candidates = [f"{new_p}playlist.m3u8", f"{legacy_p}playlist.m3u8"]
+                # Исторически плейлист мог называться по-разному. Пробуем несколько имён.
+                candidates = [
+                    f"{new_p}playlist.m3u8",
+                    f"{new_p}master.m3u8",
+                    f"{new_p}index.m3u8",
+                    f"{legacy_p}playlist.m3u8",
+                    f"{legacy_p}master.m3u8",
+                    f"{legacy_p}index.m3u8",
+                ]
                 for cand in candidates:
                     if not _s3_exists(cand):
                         continue
@@ -1114,5 +1224,140 @@ def process_list(
             )
 
     return {"status": "ok", "dry_run": dry_run, "delete_old_key": delete_old_key, "results": results, "duration_sec": int(time.time() - t0)}
+
+
+@shared_task(name="app.tasks.video_maintenance.tick_db", bind=True)
+def tick_db(self) -> dict:
+    """
+    Периодическая DB-driven таска:
+    - идёт по courses.sections и landings.lessons_info (по id asc)
+    - берёт небольшой батч видео за тик
+    - хранит курсор в Redis (entity/id/offset)
+    - использует lock + max_runtime, чтобы держать ровную нагрузку и не копить очередь
+    """
+    t0 = time.time()
+    if not _lock(R_DB_TICK_LOCK, ttl_sec=60 * 20):
+        return {"status": "skipped", "reason": "locked"}
+
+    import json
+    from ..models.models_v2 import Course, Landing
+
+    processed: list[dict] = []
+    cursor_raw = rds.get(R_DB_TICK_CURSOR)
+    if cursor_raw:
+        try:
+            cursor = json.loads(cursor_raw)
+        except Exception:
+            cursor = {}
+    else:
+        cursor = {}
+
+    entity = cursor.get("entity") or "course"  # course|landing
+    last_id = int(cursor.get("last_id") or 0)
+    current_id = int(cursor.get("current_id") or 0)
+    offset = int(cursor.get("offset") or 0)
+
+    max_videos = int(VIDEO_MAINTENANCE.db_tick_max_videos_per_run)
+    max_runtime = int(VIDEO_MAINTENANCE.db_tick_max_runtime_sec)
+
+    def _save_cursor(*, entity_: str, last_id_: int, current_id_: int, offset_: int) -> None:
+        try:
+            rds.set(
+                R_DB_TICK_CURSOR,
+                json.dumps(
+                    {"entity": entity_, "last_id": last_id_, "current_id": current_id_, "offset": offset_},
+                    ensure_ascii=False,
+                ),
+            )
+        except Exception:
+            pass
+
+    try:
+        db = SessionLocal()
+        try:
+            while len(processed) < max_videos and (time.time() - t0) < max_runtime:
+                # 1) найти текущую сущность, если current_id=0 (или закончились refs)
+                if entity == "course":
+                    if current_id:
+                        obj = db.query(Course).filter(Course.id == current_id).first()
+                    else:
+                        obj = db.query(Course).filter(Course.id > last_id).order_by(Course.id.asc()).first()
+                        current_id = int(getattr(obj, "id", 0) or 0) if obj else 0
+                    if not obj:
+                        # закончились курсы -> переходим на лендинги
+                        entity = "landing"
+                        last_id = 0
+                        current_id = 0
+                        offset = 0
+                        _save_cursor(entity_=entity, last_id_=last_id, current_id_=current_id, offset_=offset)
+                        continue
+
+                    refs_raw = _extract_course_video_refs(getattr(obj, "sections", None))
+                else:
+                    if current_id:
+                        obj = db.query(Landing).filter(Landing.id == current_id).first()
+                    else:
+                        obj = db.query(Landing).filter(Landing.id > last_id).order_by(Landing.id.asc()).first()
+                        current_id = int(getattr(obj, "id", 0) or 0) if obj else 0
+                    if not obj:
+                        # закончились лендинги -> начинаем с курсов сначала
+                        entity = "course"
+                        last_id = 0
+                        current_id = 0
+                        offset = 0
+                        _save_cursor(entity_=entity, last_id_=last_id, current_id_=current_id, offset_=offset)
+                        continue
+
+                    refs_raw = _extract_landing_video_refs(getattr(obj, "lessons_info", None))
+
+                # 2) фильтруем и нормализуем
+                refs = [_normalize_ref_to_key(v) for v in refs_raw if _is_our_video_ref(v)]
+                # дедуп, сохраняя порядок
+                refs = list(dict.fromkeys([r for r in refs if r]))
+
+                if offset >= len(refs):
+                    # сущность закончилась -> к следующей
+                    last_id = current_id
+                    current_id = 0
+                    offset = 0
+                    _save_cursor(entity_=entity, last_id_=last_id, current_id_=current_id, offset_=offset)
+                    continue
+
+                # 3) обработаем один элемент из текущей сущности (батч маленький, но равномерный)
+                key = refs[offset]
+                self.update_state(
+                    state="PROGRESS",
+                    meta={
+                        "phase": "db_tick",
+                        "entity": entity,
+                        "entity_id": current_id,
+                        "done": len(processed),
+                        "total": max_videos,
+                        "current": key,
+                        "offset": offset,
+                        "refs_in_entity": len(refs),
+                    },
+                )
+                try:
+                    r = _process_one(old_key=key, dry_run=False, delete_old_key=True)
+                except Exception as e:
+                    logger.exception("[video_maintenance] db_tick failed for %s", key)
+                    r = {"status": "error", "old_key": key, "error": f"{type(e).__name__}: {e}"}
+                processed.append(r)
+
+                offset += 1
+                _save_cursor(entity_=entity, last_id_=last_id, current_id_=current_id, offset_=offset)
+        finally:
+            db.close()
+    finally:
+        _unlock(R_DB_TICK_LOCK)
+
+    return {
+        "status": "ok",
+        "processed_count": len(processed),
+        "processed": processed,
+        "cursor": {"entity": entity, "last_id": last_id, "current_id": current_id, "offset": offset},
+        "duration_sec": int(time.time() - t0),
+    }
 
 

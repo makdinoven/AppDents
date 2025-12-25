@@ -17,7 +17,6 @@ import {
 } from "../../../../shared/common/helpers/helpers.ts";
 import { ErrorIcon } from "../../../../shared/assets/icons";
 import { Alert } from "../../../../shared/components/ui/Alert/Alert.tsx";
-import { CheckMark } from "../../../../shared/assets/icons";
 
 const CourseDetail = () => {
   const { id } = useParams();
@@ -155,7 +154,7 @@ const CourseDetail = () => {
         dry_run: false,
         delete_old_key: true,
       });
-      Alert(`Video maintenance started. Task: ${res.data.task_id}`, <CheckMark />);
+      // Не спамим алертами: просто показываем блок статуса и продолжаем polling.
       setFixTaskId(res.data.task_id);
     } catch (e) {
       console.error(e);
@@ -190,7 +189,7 @@ const CourseDetail = () => {
         setFixMeta(null);
         clearInterval(interval);
       }
-    }, 10000);
+    }, 30000);
     return () => clearInterval(interval);
   }, [fixTaskId]);
 

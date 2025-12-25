@@ -53,8 +53,9 @@ services:
   celery_worker_special:
     build: {context: ./backend, dockerfile: Dockerfile}
     container_name: celery_worker_preprod_special
+    # ВАЖНО: special_priority читается первым — ручные задачи обрабатываются раньше periodic tick'ов.
     command: >
-      celery -A app.celery_app worker -l info -Q special -n special@%h --concurrency=1
+      celery -A app.celery_app worker -l info -Q special_priority,special -n special@%h --concurrency=1
     env_file: [.env]
     working_dir: /app
     environment: [PYTHONPATH=/app]

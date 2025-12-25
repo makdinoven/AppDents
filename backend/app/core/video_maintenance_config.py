@@ -56,6 +56,15 @@ class VideoMaintenanceConfig:
     hls_fix_acl_public_read: bool = True
     hls_fix_acl_max_files: int = 50
 
+    # ───────── DB-driven tick (по courses/landings) ─────────
+    # Запускать часто, но с expires и lock'ом, чтобы не копить очередь.
+    db_tick_schedule_sec: int = 15
+    db_tick_expires_sec: int = 14
+    # Сколько видео максимум трогаем за один запуск (batched, чтобы курс с 300 видео не стал одной огромной задачей)
+    db_tick_max_videos_per_run: int = 3
+    # Ограничение времени выполнения одного тика (сек), чтобы держать “ровный” ритм
+    db_tick_max_runtime_sec: int = 40
+
 
 VIDEO_MAINTENANCE = VideoMaintenanceConfig()
 

@@ -14,6 +14,64 @@ from ..models.models_v2 import Course, Landing
 router = APIRouter()
 
 
+def _redis():
+    import os
+    import redis
+
+    return redis.Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+
+
+def _active_task_id_for_lock(lock_key: str) -> Optional[str]:
+    """
+    Возвращает активный task_id, если он уже запущен и ещё не завершился.
+    Если task завершился — чистим lock и возвращаем None.
+    """
+    rds = _redis()
+    task_id = rds.get(lock_key)
+    if not task_id:
+        return None
+    try:
+        from celery.result import AsyncResult
+        from ..celery_app import celery
+
+        r = AsyncResult(task_id, app=celery)
+        if r.ready():
+            rds.delete(lock_key)
+            return None
+        return task_id
+    except Exception:
+        # если не смогли проверить — пусть будет “активным”, чтобы не плодить дубликаты
+        return task_id
+
+
+def _remember_lock(lock_key: str, task_id: str, *, ttl_sec: int = 6 * 3600) -> None:
+    try:
+        _redis().set(lock_key, task_id, ex=ttl_sec)
+    except Exception:
+        pass
+
+
+def _lock_key_for_course(course_id: int) -> str:
+    return f"video_maint:inflight:course:{int(course_id)}"
+
+
+def _lock_key_for_landing(landing_id: int) -> str:
+    return f"video_maint:inflight:landing:{int(landing_id)}"
+
+
+def _lock_key_for_single_video(video_ref: str) -> str:
+    """
+    Lock per *normalized* key (hash), чтобы безопасно хранить в Redis.
+    """
+    import hashlib
+    from urllib.parse import unquote
+    from ..core.storage import key_from_public_or_endpoint_url
+
+    key = unquote(key_from_public_or_endpoint_url(video_ref).lstrip("/"))
+    h = hashlib.sha1(key.encode("utf-8", "ignore")).hexdigest()[:16]
+    return f"video_maint:inflight:video:{h}"
+
+
 class VideoMaintenanceRunPayload(BaseModel):
     videos: List[str] = Field(..., description="Список video_url или s3 key")
     dry_run: bool = Field(default=True, description="Если true — только отчёт, без изменений")
@@ -144,13 +202,27 @@ def run_video_maintenance(payload: VideoMaintenanceRunPayload) -> Dict[str, Any]
     """
     from ..tasks.video_maintenance import process_list
 
+    # Дедупликация: если запускают фикс одного и того же видео вручную, возвращаем уже запущенную таску.
+    if payload.videos and len(payload.videos) == 1:
+        lock_key = _lock_key_for_single_video(payload.videos[0])
+        active = _active_task_id_for_lock(lock_key)
+        if active:
+            return {
+                "status": "already_running",
+                "task_id": active,
+                "dry_run": payload.dry_run,
+                "delete_old_key": payload.delete_old_key,
+            }
+
     # Pydantic v1/v2 compatibility
     if hasattr(payload, "model_dump"):
         data = payload.model_dump()  # type: ignore[attr-defined]
     else:
         data = payload.dict()  # pydantic v1
 
-    task = process_list.apply_async(kwargs={"payload": data}, queue="special")
+    task = process_list.apply_async(kwargs={"payload": data}, queue="special_priority")
+    if payload.videos and len(payload.videos) == 1:
+        _remember_lock(_lock_key_for_single_video(payload.videos[0]), task.id)
     return {"status": "queued", "task_id": task.id, "dry_run": payload.dry_run, "delete_old_key": payload.delete_old_key}
 
 
@@ -165,6 +237,18 @@ def run_video_maintenance_for_course(
     """
     from ..tasks.video_maintenance import process_list
 
+    lock_key = _lock_key_for_course(payload.course_id)
+    active = _active_task_id_for_lock(lock_key)
+    if active:
+        return {
+            "status": "already_running",
+            "task_id": active,
+            "entity": "course",
+            "entity_id": payload.course_id,
+            "dry_run": payload.dry_run,
+            "delete_old_key": payload.delete_old_key,
+        }
+
     course = db.query(Course).filter(Course.id == payload.course_id).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -174,7 +258,8 @@ def run_video_maintenance_for_course(
     uniq: list[str] = list(dict.fromkeys(vids))  # дедуп с сохранением порядка
 
     data = {"videos": uniq, "dry_run": payload.dry_run, "delete_old_key": payload.delete_old_key}
-    task = process_list.apply_async(kwargs={"payload": data}, queue="special")
+    task = process_list.apply_async(kwargs={"payload": data}, queue="special_priority")
+    _remember_lock(lock_key, task.id)
     return {
         "status": "queued",
         "task_id": task.id,
@@ -199,6 +284,18 @@ def run_video_maintenance_for_landing(
     """
     from ..tasks.video_maintenance import process_list
 
+    lock_key = _lock_key_for_landing(payload.landing_id)
+    active = _active_task_id_for_lock(lock_key)
+    if active:
+        return {
+            "status": "already_running",
+            "task_id": active,
+            "entity": "landing",
+            "entity_id": payload.landing_id,
+            "dry_run": payload.dry_run,
+            "delete_old_key": payload.delete_old_key,
+        }
+
     landing = db.query(Landing).filter(Landing.id == payload.landing_id).first()
     if not landing:
         raise HTTPException(status_code=404, detail="Landing not found")
@@ -208,7 +305,8 @@ def run_video_maintenance_for_landing(
     uniq: list[str] = list(dict.fromkeys(vids))
 
     data = {"videos": uniq, "dry_run": payload.dry_run, "delete_old_key": payload.delete_old_key}
-    task = process_list.apply_async(kwargs={"payload": data}, queue="special")
+    task = process_list.apply_async(kwargs={"payload": data}, queue="special_priority")
+    _remember_lock(lock_key, task.id)
     return {
         "status": "queued",
         "task_id": task.id,
