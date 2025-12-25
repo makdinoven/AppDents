@@ -190,7 +190,7 @@ const CourseDetail = () => {
         setFixMeta(null);
         clearInterval(interval);
       }
-    }, 5000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [fixTaskId]);
 

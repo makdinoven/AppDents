@@ -79,13 +79,25 @@ def rewrite_references_for_key(
     # Учитываем, что в БД ссылки могут быть:
     # - на разных доменах (cloud vs cdn)
     # - с key в сыром виде (пробелы/юникод) или percent-encoded
-    def _encoded_key(k: str) -> str:
-        return quote(unquote((k or "").lstrip("/")), safe="/-._~()")
+    def _encoded_key_variants(k: str) -> list[str]:
+        """
+        В проекте встречаются разные варианты percent-encoding для URL:
+        - иногда `(` и `)` остаются как есть
+        - иногда они кодируются как %28/%29 (например, когда URL копируют из браузера)
+        Поэтому делаем несколько вариантов encoding, чтобы надёжно матчить старые записи.
+        """
+        raw = unquote((k or "").lstrip("/"))
+        variants = [
+            quote(raw, safe="/-._~()"),  # "мягкий" (скобки как есть)
+            quote(raw, safe="/-._~"),    # "строгий" (скобки тоже кодируются)
+        ]
+        # уникализируем, сохраняя порядок
+        return list(dict.fromkeys([v for v in variants if v]))
 
     old_key_raw = unquote(old_key.lstrip("/"))
     new_key_raw = unquote(new_key.lstrip("/"))
-    old_key_enc = _encoded_key(old_key)
-    new_key_enc = _encoded_key(new_key)
+    old_key_enc_variants = _encoded_key_variants(old_key)
+    new_key_enc_variants = _encoded_key_variants(new_key)
 
     def _host_variants(base: str) -> list[str]:
         base = (base or "").rstrip("/")
@@ -106,8 +118,19 @@ def rewrite_references_for_key(
     hosts = _host_variants(S3_PUBLIC_HOST)
 
     # URL варианты: encoded и “сырой” (иногда в БД хранится без %20)
-    old_urls = [f"{h}/{old_key_enc}" for h in hosts] + [f"{h}/{old_key_raw}" for h in hosts]
-    new_urls = [f"{h}/{new_key_enc}" for h in hosts] + [f"{h}/{new_key_raw}" for h in hosts]
+    old_urls: list[str] = []
+    new_urls: list[str] = []
+    for h in hosts:
+        for ok in old_key_enc_variants:
+            old_urls.append(f"{h}/{ok}")
+        for nk in new_key_enc_variants:
+            new_urls.append(f"{h}/{nk}")
+        old_urls.append(f"{h}/{old_key_raw}")
+        new_urls.append(f"{h}/{new_key_raw}")
+    # выравниваем длины old/new (для zip ниже) — берём попарно только общие варианты
+    pair_count = min(len(old_urls), len(new_urls))
+    old_urls = old_urls[:pair_count]
+    new_urls = new_urls[:pair_count]
 
     # В JSON-колонках слеши часто экранируются как '\/' (пример: https:\/\/cdn.dent-s.com\/...)
     old_urls_json = [u.replace("/", r"\/") for u in old_urls]
@@ -124,7 +147,8 @@ def rewrite_references_for_key(
     for u in old_urls_json:
         like_patterns.append(f"%{u}%")
     # также пробуем key как raw и encoded (если где-то хранится без хоста)
-    like_patterns.append(f"%{old_key_enc}%")
+    for ok in old_key_enc_variants:
+        like_patterns.append(f"%{ok}%")
     like_patterns.append(f"%{old_key_raw}%")
 
     cols = discover_candidate_columns(db)
@@ -181,8 +205,10 @@ def rewrite_references_for_key(
             {
                 "old_key_raw": old_key_raw,
                 "new_key_raw": new_key_raw,
-                "old_key_enc": old_key_enc,
-                "new_key_enc": new_key_enc,
+                # Берём первый вариант в качестве "основного" для replace raw key.
+                # (остальные варианты закрываются URL-заменами выше)
+                "old_key_enc": old_key_enc_variants[0] if old_key_enc_variants else old_key_raw,
+                "new_key_enc": new_key_enc_variants[0] if new_key_enc_variants else new_key_raw,
             }
         )
 
@@ -223,7 +249,7 @@ def rewrite_references_for_key(
         "by_column": per_col,
         "old_url": old_url,
         "new_url": new_url,
-        "old_urls_considered": old_urls[:4],
+        "old_urls_considered": old_urls[:8],
     }
 
 
