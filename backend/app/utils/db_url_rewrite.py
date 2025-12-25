@@ -16,6 +16,14 @@ logger = logging.getLogger(__name__)
 
 _CANDIDATE_COLS_CACHE: list["ColumnRef"] | None = None
 
+
+@dataclass(frozen=True)
+class ColumnRef:
+    table_name: str
+    column_name: str
+    data_type: str
+
+
 # Оптимизация: в этом проекте ссылки на медиа/видео ожидаются только в ограниченном наборе колонок.
 # Это резко ускоряет rewrite (вместо скана information_schema и апдейтов по сотням колонок).
 _ALLOWLIST_COLS: list["ColumnRef"] = [
@@ -32,13 +40,6 @@ _ALLOWLIST_COLS: list["ColumnRef"] = [
     ColumnRef("books", "cover_url", "varchar"),
 ]
 _USE_ALLOWLIST_ONLY: bool = True
-
-
-@dataclass(frozen=True)
-class ColumnRef:
-    table_name: str
-    column_name: str
-    data_type: str
 
 
 def _q_ident(name: str) -> str:
