@@ -157,7 +157,8 @@ async function candidatesForPlaylist(mp4Url: string): Promise<string[] | null> {
     .replace(/[^A-Za-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
-  if (onlyAZ && onlyAZ !== slug1) {
+  // slugLegacy/slugStable уже рассчитаны выше; slug1 больше не существует
+  if (onlyAZ && onlyAZ !== slugLegacy && onlyAZ !== slugStable) {
     const slug4 = await slugForHls(onlyAZ);
     if (!slugCandidates.includes(slug4)) slugCandidates.push(slug4);
   }

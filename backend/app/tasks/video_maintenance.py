@@ -742,13 +742,30 @@ def _process_one(
         return {"status": "skipped", "reason": "locked", "old_key": old_key}
 
     try:
+        # 0) Идемпотентность: если старого key уже нет (например, delete_old_key=true в прошлом запуске),
+        # пытаемся работать по ожидаемому нормализованному key.
+        old_exists = _s3_exists(old_key)
+        resolved_old_key = old_key
+        if not old_exists:
+            candidate = canonicalize_s3_key(old_key)
+            if candidate and _s3_exists(candidate):
+                resolved_old_key = candidate
+            else:
+                # нечего чинить: файла нет ни по old_key, ни по canonical
+                return {"status": "error", "old_key": old_key, "error": "NotFound: source mp4 key missing"}
+
         # 1) rename key
-        rename = _rename_key_if_needed(old_key=old_key, dry_run=dry_run)
-        new_key = rename.get("new_key") or old_key
+        if (not dry_run) and (resolved_old_key != old_key):
+            # Уже переименовано ранее
+            rename = {"status": "already_renamed", "old_key": old_key, "new_key": resolved_old_key}
+            new_key = resolved_old_key
+        else:
+            rename = _rename_key_if_needed(old_key=old_key, dry_run=dry_run)
+            new_key = rename.get("new_key") or old_key
 
         # 2) mp4 fix (faststart + codecs)
         # В dry-run новый ключ ещё не создан, поэтому кодеки нужно определять по реальному (старому) объекту.
-        probe_key = old_key if dry_run else new_key
+        probe_key = (old_key if dry_run else new_key)
         mp4_fix = _fix_mp4_to_compatible(src_key=probe_key, dry_run=dry_run)
         if dry_run and probe_key != new_key:
             mp4_fix = dict(mp4_fix)
@@ -769,7 +786,7 @@ def _process_one(
                 db.close()
 
         # 5) delete old
-        if (new_key != old_key) and delete_old_key:
+        if (new_key != old_key) and delete_old_key and old_exists:
             _delete_old_key(old_key=old_key, dry_run=dry_run)
 
         result = {
