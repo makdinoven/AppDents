@@ -551,6 +551,30 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
                 last_inf = False
         return out
 
+    def _is_media_playlist(text: str) -> bool:
+        """
+        HLS может быть:
+        - master playlist (с #EXT-X-STREAM-INF и ссылками на variant *.m3u8)
+        - media playlist (с #EXTINF и прямыми сегментами *.ts/*.m4s)
+        Наша rebuild-логика (ffmpeg) сейчас генерирует media playlist, и это нормально для hls.js.
+        """
+        t = text or ""
+        if "#EXT-X-STREAM-INF" in t:
+            return False
+        return "#EXTINF" in t
+
+    def _parse_media_segments(media_text: str) -> list[str]:
+        segs: list[str] = []
+        for l in (media_text or "").splitlines():
+            l = l.strip()
+            if not l or l.startswith("#"):
+                continue
+            if l.endswith(".ts") or l.endswith(".m4s"):
+                segs.append(l)
+            if len(segs) >= VIDEO_MAINTENANCE.hls_segment_head_limit:
+                break
+        return segs
+
     def _read_text(key: str) -> str:
         obj = s3.get_object(Bucket=S3_BUCKET, Key=key)
         return obj["Body"].read().decode("utf-8", errors="replace")
@@ -573,34 +597,32 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
         except Exception as e:
             return False, {"error": f"read_master: {type(e).__name__}: {e}"}
 
+        # Вариант A: master playlist -> variant -> segments
         variants = _parse_variant_paths(master_text)
-        if not variants:
-            return False, {"error": "no_variants"}
-        # берём первый variant
-        variant_key = _join(master_k, variants[0])
-        details["variant_key"] = variant_key
-        try:
-            variant_text = _read_text(variant_key)
-        except Exception as e:
-            return False, {"error": f"read_variant: {type(e).__name__}: {e}", "variant_key": variant_key}
-
-        segs = []
-        for l in variant_text.splitlines():
-            l = l.strip()
-            if not l or l.startswith("#"):
-                continue
-            if l.endswith(".ts") or l.endswith(".m4s"):
-                segs.append(l)
-            if len(segs) >= VIDEO_MAINTENANCE.hls_segment_head_limit:
-                break
-        if not segs:
-            return False, {"error": "no_segments", "variant_key": variant_key}
+        if variants:
+            variant_key = _join(master_k, variants[0])
+            details["variant_key"] = variant_key
+            try:
+                variant_text = _read_text(variant_key)
+            except Exception as e:
+                return False, {"error": f"read_variant: {type(e).__name__}: {e}", "variant_key": variant_key}
+            segs = _parse_media_segments(variant_text)
+            if not segs:
+                return False, {"error": "no_segments", "variant_key": variant_key}
+        else:
+            # Вариант B: media playlist (ffmpeg rebuild по умолчанию) -> segments прямо в master_k
+            if not _is_media_playlist(master_text):
+                return False, {"error": "no_variants"}
+            details["variant_key"] = master_k
+            segs = _parse_media_segments(master_text)
+            if not segs:
+                return False, {"error": "no_segments", "variant_key": master_k}
 
         missing = 0
         too_small = 0
         checked = 0
         for seg_rel in segs:
-            seg_key = _join(variant_key, seg_rel)
+            seg_key = _join(details["variant_key"], seg_rel)
             try:
                 h = s3.head_object(Bucket=S3_BUCKET, Key=seg_key)
                 checked += 1
@@ -610,46 +632,94 @@ def _validate_and_fix_hls_for(src_key: str, *, dry_run: bool) -> dict:
             except ClientError:
                 missing += 1
         # сохраним список сегментов (первые N) — пригодится для ACL fix
-        details["segment_keys"] = [_join(variant_key, s) for s in segs[:10]]
+        details["segment_keys"] = [_join(details["variant_key"], s) for s in segs[:10]]
         details.update({"segments_checked": checked, "segments_missing": missing, "segments_too_small": too_small})
         ok = (missing == 0) and (too_small == 0)
         return ok, details
 
+    def _first_segment_has_audio(seg_key: str) -> Optional[bool]:
+        """
+        Быстрая проверка аудио по первому сегменту (best-effort).
+        Возвращает True/False/None (если не смогли проверить).
+        """
+        try:
+            obj = s3.get_object(Bucket=S3_BUCKET, Key=seg_key)
+            data = obj["Body"].read()
+            if not data:
+                return None
+            with tempfile.NamedTemporaryFile(suffix=".ts", delete=True) as tmp:
+                tmp.write(data)
+                tmp.flush()
+                meta = _ffprobe(tmp.name)
+            a = _pick_stream(meta, "audio")
+            return bool(a)
+        except Exception:
+            return None
+
     # 1) если мастера нет — rebuild
-    if not _s3_exists(master_key):
+    master_exists_before = _s3_exists(master_key)
+    if not master_exists_before:
         fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
         # гарантируем legacy alias (только для этого видео)
         try:
             _ensure_legacy_alias_only()
         except Exception:
             logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
-        return {"status": "rebuilt", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+        return {"status": "rebuilt", "reason": "missing_master", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
 
-    # 2) проверяем master/variants + аудио
-    c1 = check_master_and_variants(master_key)
-    c2 = check_audio_present(master_key)
-    problems = set(c1.problems + c2.problems)
+    # 2) Проверяем, что HLS воспроизводим:
+    # - если это master playlist с variants — используем существующие проверки
+    # - если это media playlist (частый кейс после ffmpeg rebuild) — НЕ считаем отсутствие variants ошибкой
+    try:
+        master_text = _read_text(master_key)
+    except Exception:
+        master_text = ""
 
-    if problems & {Problem.MISSING_MASTER, Problem.MISSING_VARIANT, Problem.UNDECODABLE_SEGMENT}:
-        fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
-        try:
-            _ensure_legacy_alias_only()
-        except Exception:
-            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
-        return {"status": "rebuilt", "reason": [p.name for p in problems], "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+    if _is_media_playlist(master_text):
+        # media playlist: проверим первые сегменты и (по возможности) аудио в первом сегменте
+        segs = _parse_media_segments(master_text)
+        if not segs:
+            fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
+            try:
+                _ensure_legacy_alias_only()
+            except Exception:
+                logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
+            return {"status": "rebuilt", "reason": "no_segments_in_media_playlist", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+        first_seg_key = _join(master_key, segs[0])
+        audio_ok = _first_segment_has_audio(first_seg_key)
+        if audio_ok is False:
+            fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
+            try:
+                _ensure_legacy_alias_only()
+            except Exception:
+                logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
+            return {"status": "rebuilt_audio", "reason": "no_audio_media_playlist", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+    else:
+        # master playlist: строгая проверка
+        c1 = check_master_and_variants(master_key)
+        c2 = check_audio_present(master_key)
+        problems = set(c1.problems + c2.problems)
 
-    # NO_AUDIO: считаем некритичным для некоторых видео, но по вашим требованиям лучше чинить
-    if Problem.NO_AUDIO in problems:
-        fix_rebuild_hls(
-            src_mp4_key=src_key,
-            hls_dir_key=new_prefix.rstrip("/"),
-            ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec,
-        )
-        try:
-            _ensure_legacy_alias_only()
-        except Exception:
-            logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
-        return {"status": "rebuilt_audio", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+        if problems & {Problem.MISSING_MASTER, Problem.MISSING_VARIANT, Problem.UNDECODABLE_SEGMENT}:
+            fix_rebuild_hls(src_mp4_key=src_key, hls_dir_key=new_prefix.rstrip("/"), ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec)
+            try:
+                _ensure_legacy_alias_only()
+            except Exception:
+                logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
+            return {"status": "rebuilt", "reason": [p.name for p in problems], "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
+
+        # NO_AUDIO: считаем некритичным для некоторых видео, но по вашим требованиям лучше чинить
+        if Problem.NO_AUDIO in problems:
+            fix_rebuild_hls(
+                src_mp4_key=src_key,
+                hls_dir_key=new_prefix.rstrip("/"),
+                ffmpeg_timeout=VIDEO_MAINTENANCE.ffmpeg_timeout_sec,
+            )
+            try:
+                _ensure_legacy_alias_only()
+            except Exception:
+                logger.exception("[video_maintenance] legacy alias write failed for %s", src_key)
+            return {"status": "rebuilt_audio", "reason": "no_audio", "new_pl_key": new_pl_key, "legacy_pl_key": legacy_pl_key}
 
     # 2.5) проверка «первые сегменты существуют»
     ok, seg_details = _segments_ok(master_key)
@@ -830,7 +900,12 @@ def _process_one(
 
         # 3) HLS validate/repair + alias
         hls = _validate_and_fix_hls_for(new_key, dry_run=dry_run)
-        logger.info("[video_maintenance] hls_status=%s key=%s", hls.get("status"), new_key)
+        logger.info(
+            "[video_maintenance] hls_status=%s reason=%s key=%s",
+            hls.get("status"),
+            hls.get("reason"),
+            new_key,
+        )
 
         # 4) DB rewrite old->new (только если rename был)
         db_report = None

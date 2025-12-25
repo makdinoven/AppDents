@@ -6,6 +6,7 @@ from typing import Iterable
 from urllib.parse import quote, unquote, urlparse
 
 from sqlalchemy import text
+from sqlalchemy import exc as sa_exc
 
 from ..core.config import settings
 from ..core.storage import S3_PUBLIC_HOST, public_url_for_key
@@ -59,6 +60,18 @@ def discover_candidate_columns(db) -> list[ColumnRef]:
     if _CANDIDATE_COLS_CACHE is None:
         _CANDIDATE_COLS_CACHE = _load_candidate_columns(db)
     return _CANDIDATE_COLS_CACHE
+
+
+def _drop_table_from_cache(table_name: str) -> None:
+    """
+    Если таблицу удалили/переименовали во время работы процесса, то кэш information_schema
+    становится неактуальным. Удаляем все колонки этой таблицы из кэша, чтобы не падать.
+    """
+    global _CANDIDATE_COLS_CACHE
+    if not _CANDIDATE_COLS_CACHE:
+        return
+    tn = (table_name or "").lower()
+    _CANDIDATE_COLS_CACHE = [c for c in _CANDIDATE_COLS_CACHE if (c.table_name or "").lower() != tn]
 
 
 def rewrite_references_for_key(
@@ -154,6 +167,7 @@ def rewrite_references_for_key(
     cols = discover_candidate_columns(db)
     updated_total = 0
     per_col: list[dict] = []
+    skipped_missing_tables: set[str] = set()
 
     for c in cols:
         table = _q_ident(c.table_name)
@@ -169,16 +183,25 @@ def rewrite_references_for_key(
         where_sql = " OR ".join(where_parts) if where_parts else "1=0"
 
         if dry_run:
-            count_sql = text(f"SELECT COUNT(*) FROM {table} WHERE {where_sql}")
-            cnt = int(
-                db.execute(
-                    count_sql,
-                    params,
-                ).scalar()
-                or 0
-            )
-            if cnt:
-                per_col.append({"table": c.table_name, "column": c.column_name, "would_touch": cnt})
+            try:
+                count_sql = text(f"SELECT COUNT(*) FROM {table} WHERE {where_sql}")
+                cnt = int(
+                    db.execute(
+                        count_sql,
+                        params,
+                    ).scalar()
+                    or 0
+                )
+                if cnt:
+                    per_col.append({"table": c.table_name, "column": c.column_name, "would_touch": cnt})
+            except sa_exc.ProgrammingError as e:
+                # (1146) Table doesn't exist — например, вы удалили courses_backup на лету
+                msg = str(getattr(e, "orig", e))
+                if "1146" in msg or "doesn't exist" in msg:
+                    skipped_missing_tables.add(c.table_name)
+                    _drop_table_from_cache(c.table_name)
+                    continue
+                raise
             continue
 
         # Готовим цепочку REPLACE: сначала URL варианты (обычные и JSON-escaped), потом key варианты.
@@ -230,10 +253,26 @@ def rewrite_references_for_key(
                 """
             )
 
-        res = db.execute(
-            update_sql,
-            repl_params,
-        )
+        try:
+            res = db.execute(
+                update_sql,
+                repl_params,
+            )
+        except sa_exc.ProgrammingError as e:
+            msg = str(getattr(e, "orig", e))
+            if "1146" in msg or "doesn't exist" in msg:
+                skipped_missing_tables.add(c.table_name)
+                _drop_table_from_cache(c.table_name)
+                continue
+            raise
+        except sa_exc.OperationalError as e:
+            # На некоторых MySQL/MariaDB "table doesn't exist" может прилетать как OperationalError
+            msg = str(getattr(e, "orig", e))
+            if "1146" in msg or "doesn't exist" in msg:
+                skipped_missing_tables.add(c.table_name)
+                _drop_table_from_cache(c.table_name)
+                continue
+            raise
         try:
             rowcount = int(getattr(res, "rowcount", 0) or 0)
         except Exception:
@@ -250,6 +289,7 @@ def rewrite_references_for_key(
         "old_url": old_url,
         "new_url": new_url,
         "old_urls_considered": old_urls[:8],
+        "skipped_missing_tables": sorted(skipped_missing_tables)[:20],
     }
 
 
