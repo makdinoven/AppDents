@@ -457,60 +457,126 @@ def check_hls_segments_cdn(playlist_key: str, sample_count: int = 5, timeout: in
     import time
     import concurrent.futures
     
+    def _is_master_playlist(text: str) -> bool:
+        return "#EXT-X-STREAM-INF" in (text or "")
+
+    def _parse_master_variants(text: str) -> List[str]:
+        """
+        Парсит master playlist: после #EXT-X-STREAM-INF следующая строка содержит URI variant.m3u8
+        """
+        out: List[str] = []
+        last_inf = False
+        for raw in (text or "").splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith("#EXT-X-STREAM-INF"):
+                last_inf = True
+                continue
+            if last_inf and not line.startswith("#"):
+                out.append(line)
+                last_inf = False
+        return out
+
+    def _parse_media_segments(text: str) -> List[str]:
+        segs: List[str] = []
+        for raw in (text or "").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.endswith(".ts") or line.endswith(".m4s"):
+                segs.append(line)
+        return segs
+
+    def _join_key(base_playlist_key: str, ref: str) -> str:
+        """
+        ref может быть:
+        - абсолютным URL (https://...) -> извлекаем key_from_url
+        - относительным путём -> присоединяем к каталогу base_playlist_key
+        """
+        if ref.startswith("http://") or ref.startswith("https://"):
+            return key_from_url(ref)
+        base_dir = base_playlist_key.rsplit("/", 1)[0] if "/" in base_playlist_key else ""
+        return f"{base_dir}/{ref}" if base_dir else ref
+
+    def _resolve_to_media_playlist(start_key: str, max_depth: int = 5) -> Dict[str, Any]:
+        """
+        Резолвит цепочку плейлистов до того, который реально содержит сегменты:
+        alias -> master -> variant -> media
+
+        Возвращает:
+          {
+            "resolved_key": <key>,
+            "kind": "media"|"master"|"alias"|"unknown",
+            "chain": [<keys...>],
+            "segments": [<seg names...>],
+          }
+        """
+        chain: List[str] = []
+        current = start_key
+        last_text = ""
+
+        for _ in range(max_depth):
+            chain.append(current)
+            try:
+                obj = s3.get_object(Bucket=S3_BUCKET, Key=current)
+                last_text = obj["Body"].read().decode("utf-8", errors="replace")
+            except ClientError as e:
+                code = e.response["Error"]["Code"]
+                return {"resolved_key": current, "kind": "error", "chain": chain, "error_code": code, "segments": []}
+
+            # 1) media playlist?
+            segs = _parse_media_segments(last_text)
+            if segs:
+                return {"resolved_key": current, "kind": "media", "chain": chain, "segments": segs}
+
+            # 2) master playlist?
+            if _is_master_playlist(last_text):
+                variants = _parse_master_variants(last_text)
+                if variants:
+                    current = _join_key(current, variants[0])
+                    continue
+                return {"resolved_key": current, "kind": "master", "chain": chain, "segments": []}
+
+            # 3) alias / nested alias (плейлист без сегментов, но со ссылками на .m3u8)
+            m3u8_refs: List[str] = []
+            for raw in (last_text or "").splitlines():
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.endswith(".m3u8"):
+                    m3u8_refs.append(line)
+            if m3u8_refs:
+                current = _join_key(current, m3u8_refs[0])
+                continue
+
+            return {"resolved_key": current, "kind": "unknown", "chain": chain, "segments": []}
+
+        return {"resolved_key": current, "kind": "loop", "chain": chain, "segments": []}
+
     try:
         # Читаем плейлист из S3
-        try:
-            obj = s3.get_object(Bucket=S3_BUCKET, Key=playlist_key)
-            content = obj["Body"].read().decode("utf-8", errors="replace")
-        except ClientError as e:
-            code = e.response["Error"]["Code"]
+        resolved = _resolve_to_media_playlist(playlist_key, max_depth=6)
+        resolved_key = resolved.get("resolved_key", playlist_key)
+        segments = list(resolved.get("segments") or [])
+
+        if resolved.get("kind") == "error":
             return DiagnosticResult(
                 status="error",
-                message=f"Cannot read playlist: {code}",
-                details={"playlist_key": playlist_key}
+                message=f"Cannot read playlist chain: {resolved.get('error_code')}",
+                details={"playlist_key": playlist_key, "chain": resolved.get("chain", [])},
             )
-        
-        resolved_key = playlist_key
-        
-        # Проверяем, является ли это alias'ом
-        m3u8_target = None
-        for line in content.strip().split("\n"):
-            line = line.strip()
-            if line and not line.startswith("#") and line.endswith(".m3u8"):
-                m3u8_target = line
-                break
-        
-        if m3u8_target:
-            # Резолвим alias
-            if m3u8_target.startswith("http://") or m3u8_target.startswith("https://"):
-                target_key = key_from_url(m3u8_target)
-            else:
-                base_dir = playlist_key.rsplit("/", 1)[0] if "/" in playlist_key else ""
-                target_key = f"{base_dir}/{m3u8_target}" if base_dir else m3u8_target
-            
-            try:
-                obj = s3.get_object(Bucket=S3_BUCKET, Key=target_key)
-                content = obj["Body"].read().decode("utf-8", errors="replace")
-                resolved_key = target_key
-            except ClientError:
-                return DiagnosticResult(
-                    status="error",
-                    message="Alias target not found",
-                    details={"alias": playlist_key, "target": m3u8_target}
-                )
-        
-        # Собираем сегменты
-        segments = []
-        for line in content.strip().split("\n"):
-            line = line.strip()
-            if line and not line.startswith("#") and (line.endswith(".ts") or line.endswith(".m4s")):
-                segments.append(line)
-        
+
         if not segments:
             return DiagnosticResult(
                 status="warning",
                 message="No segments to check via CDN",
-                details={"resolved_key": resolved_key}
+                details={
+                    "playlist_key": playlist_key,
+                    "resolved_kind": resolved.get("kind"),
+                    "chain": resolved.get("chain", []),
+                    "resolved_key": resolved_key,
+                },
             )
         
         # Берём первые 5-7 сегментов подряд - это имитирует начало воспроизведения
@@ -1025,6 +1091,10 @@ def diagnose_video(video_url: str) -> VideoHealth:
             return False
         # ffprobe timeout для больших файлов - не критично
         if "codecs" in key and "timed out" in check.message:
+            return False
+        # moov позицию по CDN/ffprobe иногда нельзя определить (зависит от сервера/range/ffprobe).
+        # Это не должно деградировать статус, если остальное ок.
+        if key == "moov" and "could not determine" in check.message.lower():
             return False
         # Alias плейлист: "No segments to check via CDN" — это нормально, если это master/alias без сегментов
         if "segments_cdn" in key and "No segments to check via CDN" in check.message:
