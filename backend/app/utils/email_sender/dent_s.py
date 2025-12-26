@@ -1413,8 +1413,9 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
     # Keep `region` for backward compatibility (it's passed from the task).
     _ = region
 
-    subject = "Your New Year gift is already in your account"
-    site_url = "https://dent-s.com/sign-up"
+    # Slightly less "spammy" phrasing than "gift"
+    subject = "Your $20 New Year bonus is already in your account"
+    site_url = "https://dent-s.com"
     login_url = "https://dent-s.com/sign-up"
 
     body_html = f"""\
@@ -1426,11 +1427,21 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
     <title>{subject}</title>
   </head>
   <body style="margin:0;padding:20px;background:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+    <!-- Preheader (hidden) -->
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+      Your $20 bonus is ready — choose any 1 course from 426 and get lifetime access.
+    </div>
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td align="center">
           <a href="{site_url}" style="text-decoration:none;">
-            <img src="https://cloud.dent-s.com/logo-dents.png" alt="Dent-S" width="150" style="width:100%;max-width:150px;">
+            <img
+              src="https://cloud.dent-s.com/logo-dents.png"
+              alt="Dent-S"
+              width="150"
+              height="150"
+              style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;width:150px;max-width:150px;height:auto;"
+            >
           </a>
         </td>
       </tr>
@@ -1462,7 +1473,7 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
                     $20 has been added to your balance (account: <span style="color:#017f74;font-weight:700;">{recipient_email}</span>).
                   </p>
                   <p style="margin:0;font-size:16px;line-height:24px;color:#334155;">
-                    You can use this amount to purchase any one course out of <strong>426</strong> available.
+                    These <strong>$20</strong> are enough to purchase <strong>any 1 course</strong> from our catalog of <strong>426</strong> courses.
                   </p>
                 </div>
               </td>
@@ -1524,16 +1535,26 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
             "Happy upcoming 2026! Wishing you health, peace of mind, and confident growth in your work!",
             "",
             f"$20 has been added to your balance (account: {recipient_email}).",
-            "You can use this amount to purchase any one course out of 426 available.",
+            "These $20 are enough to purchase ANY 1 course from our catalog of 426 courses.",
             "",
             "Sign in with this email, choose a course, and use your balance to get full lifetime access to all materials.",
             f"Sign in: {login_url}",
             "",
             "Lecturers: JEFFREY P. OKESON, Ivan Chicchon, Chris Chang, Arnaldo Castellucci, Tomas Linkevicius… and many more",
             "",
-            "This is an automated email. Please do not reply.",
+            "This is an automated email. Please do not reply."
         ]
     )
+
+    # Helps deliverability for bulk/marketing emails (less tracking, unsubscribe header).
+    mailgun_options = {
+        "o:tracking": "no",
+        "o:tracking-clicks": "no",
+        "o:tracking-opens": "no",
+    }
+    headers = {
+        "List-Unsubscribe": f"<{unsubscribe_mailto}>",
+    }
 
     mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
     marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
@@ -1543,6 +1564,8 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
             subject,
             body_html,
             text_body=text_body,
+            headers=headers,
+            mailgun_options=mailgun_options,
             mailgun_domain_override=mg_domain,
             from_override=marketing_from,
         )
