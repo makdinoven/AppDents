@@ -1120,14 +1120,15 @@ class SurveyView(Base):
 
 class SuppressionType(str, PyEnum):
     """Тип suppression для email адресов."""
-    # ВАЖНО: в БД enum-значения ожидаются в UPPER_CASE (судя по ошибке SQLAlchemy).
-    # Поэтому значения Enum делаем такими же, чтобы записи в email_suppressions работали.
-    HARD_BOUNCE = "HARD_BOUNCE"      # 5.x.x ошибки → навсегда
-    SOFT_BOUNCE = "SOFT_BOUNCE"      # 4.x.x ошибки → счетчик
-    COMPLAINT = "COMPLAINT"          # жалобы на спам → навсегда
-    UNSUBSCRIBE = "UNSUBSCRIBE"      # отписка → навсегда
-    INVALID = "INVALID"              # невалидный при проверке → навсегда
-    THROTTLED = "THROTTLED"          # rate limit от сервера → временно (24ч)
+    # ВАЖНО: фактические значения в БД уже в нижнем регистре (например 'invalid'),
+    # поэтому .value оставляем lowercase. А чтобы SQLAlchemy не использовал ИМЕНА enum
+    # (HARD_BOUNCE/...), ниже в колонке Enum(...) задаём values_callable.
+    HARD_BOUNCE = "hard_bounce"      # 5.x.x ошибки → навсегда
+    SOFT_BOUNCE = "soft_bounce"      # 4.x.x ошибки → счетчик
+    COMPLAINT = "complaint"          # жалобы на спам → навсегда
+    UNSUBSCRIBE = "unsubscribe"      # отписка → навсегда
+    INVALID = "invalid"              # невалидный при проверке → навсегда
+    THROTTLED = "throttled"          # rate limit от сервера → временно (24ч)
 
 
 class EmailSuppression(Base):
@@ -1143,7 +1144,12 @@ class EmailSuppression(Base):
 
     email = Column(String(255), primary_key=True)
     type = Column(
-        Enum(SuppressionType, name="suppression_type"),
+        Enum(
+            SuppressionType,
+            name="suppression_type",
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],
+        ),
         nullable=False
     )
     code = Column(String(20), nullable=True)              # "5.1.1", "550"
