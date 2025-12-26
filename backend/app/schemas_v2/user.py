@@ -51,7 +51,8 @@ class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
 class UserRegistrationResponse(UserRead):
-    password: str
+    access_token: str
+    token_type: str = "bearer"
 
 class UserCreateAdmin(BaseModel):
     email: EmailStr

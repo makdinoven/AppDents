@@ -1,9 +1,17 @@
 import logging
 from datetime import datetime
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..models.models_v2 import Lead, EmailCampaign, EmailCampaignRecipient, WalletTxTypes
+from ..models.models_v2 import (
+    Lead,
+    EmailCampaign,
+    EmailCampaignRecipient,
+    WalletTxTypes,
+    EmailCampaignRecipientStatus,
+    User,
+)
 from ..services_v2.user_service import credit_balance
 
 logger = logging.getLogger(__name__)
@@ -30,6 +38,31 @@ def delete_lead_by_email(db: Session, email: str) -> int:
     return deleted
 
 
+def skip_send_and_cleanup_if_user_exists(db: Session, *, email: str) -> bool:
+    """
+    Для рассылок по `leads`:
+      - если пользователь уже зарегистрирован (есть users.email) → удаляем lead и ВОЗВРАЩАЕМ True (т.е. письмо пропускаем)
+      - если пользователя нет → False (можно слать письмо)
+    """
+    n_email = normalize_email(email)
+    if not n_email:
+        return True
+
+    # более устойчиво к регистру/мусорным хвостам в users.email
+    user = (
+        db.query(User)
+        .filter(func.lower(func.trim(User.email)) == n_email)
+        .first()
+    )
+    if user:
+        try:
+            delete_lead_by_email(db, n_email)
+        except Exception:
+            db.rollback()
+        return True
+    return False
+
+
 def grant_active_campaign_bonuses_for_user(db: Session, *, email: str, user_id: int) -> list[dict]:
     """
     Начисляет бонусы по активным кампаниам, если:
@@ -52,6 +85,8 @@ def grant_active_campaign_bonuses_for_user(db: Session, *, email: str, user_id: 
         .join(EmailCampaign, EmailCampaign.id == EmailCampaignRecipient.campaign_id)
         .filter(
             EmailCampaignRecipient.email == n_email,
+            # бонус выдаём только тем, кому письмо реально ОТПРАВЛЕНО
+            EmailCampaignRecipient.status == EmailCampaignRecipientStatus.SENT,
             EmailCampaign.is_active == True,  # noqa: E712
             EmailCampaign.bonus_amount > 0,
             EmailCampaignRecipient.bonus_granted_at.is_(None),

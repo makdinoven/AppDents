@@ -1,8 +1,14 @@
-export interface SignUpType {
-  id: number;
+export interface SignUpRequest {
   email: string;
-  password: string;
-  role: string;
+}
+
+export interface SignUpResponse {
+  access_token: string;
+  token_type?: string;
+  id?: number;
+  email?: string;
+  role?: string;
+  balance?: number;
 }
 
 export interface LoginType {

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 
 from kombu import Queue, Exchange
+from .core.config import settings
 
 load_dotenv()
 
@@ -27,6 +28,7 @@ celery = Celery(
             "app.tasks.big_cart_reminder",
             "app.tasks.referral_campaign",
             "app.tasks.migrate_abandoned_to_leads",
+            "app.tasks.ny2026_leads",
         ],
 )
 
@@ -142,6 +144,15 @@ celery.conf.update(
         },
     },
 )
+
+# NY2026 — акция только для Dent-S. На Med-G не запускаем тик вовсе, чтобы не было шума/лишних запросов к БД.
+if (getattr(settings, "PROJECT_BRAND", "") or "").upper() == "DENTS":
+    celery.conf.beat_schedule["ny2026-leads-tick"] = {
+        "task": "app.tasks.ny2026_leads.send_ny2026_tick",
+        "schedule": 5,
+        "kwargs": {"max_per_run": 1},
+        "options": {"queue": "email", "expires": 4},
+    }
 
 celery.conf.update(
     task_track_started=True,

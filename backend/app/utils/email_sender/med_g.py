@@ -5,6 +5,7 @@ Med.G шаблоны.
 
 from .common import send_html_email
 from .dent_s_courses_html import COURSES_BLOCK as BASE_COURSES_BLOCK
+from ...core.config import settings
 
 MED_G_DOMAIN = "https://med.g"
 MED_G_COLOR = "#006d8d"
@@ -94,6 +95,91 @@ def send_recovery_email(recipient_email: str, new_password: str, region: str):
     </html>
     """
     send_html_email(recipient_email, subject, html_body=html)
+
+
+def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bool:
+    """
+    NY2026: заглушка письма для рассылки по таблице leads (Med.G бренд).
+    Текст вы замените позже — здесь только каркас и кнопка.
+    """
+    region = (region or "EN").upper()
+
+    subject = {
+        "RU": "Новогодний бонус: +20 на баланс",
+        "EN": "New Year bonus: +20 to your balance",
+        "ES": "Bono de Año Nuevo: +20 a tu saldo",
+        "IT": "Bonus di Capodanno: +20 sul saldo",
+        "PT": "Bônus de Ano Novo: +20 no saldo",
+        "AR": "مكافأة رأس السنة: +20 إلى رصيدك",
+    }.get(region, "New Year bonus: +20 to your balance")
+
+    heading = {
+        "RU": "С Новым годом!",
+        "EN": "Happy New Year!",
+        "ES": "¡Feliz Año Nuevo!",
+        "IT": "Buon anno!",
+        "PT": "Feliz Ano Novo!",
+        "AR": "سنة جديدة سعيدة!",
+    }.get(region, "Happy New Year!")
+
+    text = {
+        "RU": "Мы подготовили для вас новогодний бонус. Подробности — скоро.",
+        "EN": "We have a New Year bonus for you. Details are coming soon.",
+        "ES": "Tenemos un bono de Año Nuevo para ti. Los detalles llegarán pronto.",
+        "IT": "Abbiamo un bonus di Capodanno per te. I dettagli arriveranno presto.",
+        "PT": "Temos um bônus de Ano Novo para você. Em breve, mais detalhes.",
+        "AR": "لدينا مكافأة رأس السنة لك. التفاصيل قريبًا.",
+    }.get(region, "We have a New Year bonus for you. Details are coming soon.")
+
+    cta = {
+        "RU": "Перейти на сайт",
+        "EN": "Open website",
+        "ES": "Abrir sitio",
+        "IT": "Apri il sito",
+        "PT": "Abrir site",
+        "AR": "افتح الموقع",
+    }.get(region, "Open website")
+
+    html = f"""
+    <html>
+      <body style="margin:0;padding:0;background-color:#f3f7f8;font-family:'Segoe UI',sans-serif;">
+        <table width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f7f8">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="border-radius:12px;margin:30px 0;">
+              <tr>
+                <td align="center" style="padding:30px 0 20px 0;">
+                  <img src="{MED_G_DOMAIN}/static/logo-medg.png" alt="Med.G" width="150" />
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:20px 40px;color:{MED_G_COLOR};">
+                  <h2 style="margin:0 0 14px 0;">{heading}</h2>
+                  <p style="margin:0 0 18px 0;color:#334155;">{text}</p>
+                  <p style="text-align:center;margin:26px 0;">
+                    <a href="{MED_G_DOMAIN}"
+                       style="background:{MED_G_COLOR};color:#fff;padding:12px 28px;
+                       text-decoration:none;border-radius:25px;">{cta}</a>
+                  </p>
+                  <p style="margin:0;color:#94a3b8;font-size:12px;">(NY2026 placeholder email)</p>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+    </html>
+    """
+    mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
+    marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
+    return bool(
+        send_html_email(
+            recipient_email,
+            subject,
+            html_body=html,
+            mailgun_domain_override=mg_domain,
+            from_override=marketing_from,
+        )
+    )
 
 
 def send_successful_purchase_email(

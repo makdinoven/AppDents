@@ -85,7 +85,10 @@ def process_abandoned_checkouts(
     try:
         # Формируем выборку
         q = db.query(AbandonedCheckout).filter(
-            AbandonedCheckout.send_count < MAX_SENDS
+            AbandonedCheckout.send_count < MAX_SENDS,
+            # unified_payments import: записи добавляем в abandoned_checkouts,
+            # но письма им НЕ отправляем (нет данных о course_ids / просмотренном курсе).
+            ~AbandonedCheckout.session_id.like("unified_payments:%"),
         )
 
         if target_email:

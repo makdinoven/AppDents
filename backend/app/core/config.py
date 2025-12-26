@@ -38,10 +38,13 @@ class Settings(BaseSettings):
     EMAIL_USERNAME: str = ""
     EMAIL_PASSWORD: str = ""
     EMAIL_SENDER: str
+    # Маркетинговые/рекламные письма (можно отправлять с отдельного домена/поддомена)
+    EMAIL_MARKETING_SENDER: str = ""
 
     # Mailgun
     MAILGUN_API_KEY: str = ""
     MAILGUN_DOMAIN: str = ""
+    MAILGUN_MARKETING_DOMAIN: str = ""
     MAILGUN_REGION: str = "EU"
     MAILGUN_WEBHOOK_SIGNING_KEY: str = ""  # Webhook signing key from Mailgun dashboard
 

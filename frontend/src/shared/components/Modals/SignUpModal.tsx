@@ -11,18 +11,22 @@ import { useNavigate } from "react-router-dom";
 import { ChangePasswordType } from "../../api/userApi/types.ts";
 import { joiResolver } from "@hookform/resolvers/joi";
 import { useForm } from "react-hook-form";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppRootStateType } from "../../store/store.ts";
 import { REF_CODE_LS_KEY } from "../../common/helpers/commonConstants.ts";
 import { Alert } from "../ui/Alert/Alert.tsx";
 import { CheckMark } from "../../assets/icons";
 import EmailInput from "../ui/Inputs/EmailInput/EmailInput.tsx";
 import { PATHS } from "../../../app/routes/routes.ts";
+import { LS_TOKEN_KEY } from "../../common/helpers/commonConstants.ts";
+import { getMe } from "../../store/actions/userActions.ts";
+import { AppDispatchType } from "../../store/store.ts";
 
 const SignUpModal = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<any>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatchType>();
   const language = useSelector(
     (state: AppRootStateType) => state.user.language,
   );
@@ -42,9 +46,17 @@ const SignUpModal = () => {
   const handleSignUp = async (email: any) => {
     setLoading(true);
     try {
-      await userApi.signUp(email, language);
+      const res = await userApi.signUp(email, language);
+      localStorage.setItem(LS_TOKEN_KEY, res.data.access_token);
+      const meRes = await dispatch(getMe());
+      if (meRes.meta.requestStatus !== "fulfilled") {
+        throw new Error("Failed to fetch user profile after registration");
+      }
+
       Alert(t("registrationSuccess"), <CheckMark />);
-      navigate(PATHS.LOGIN);
+      // Если регистрация была не в модалке, вручную отправим в ЛК.
+      // Если в модалке — AuthModalManager тоже сделает редирект при isLogged=true (дубль не страшен).
+      navigate(PATHS.PROFILE, { replace: true });
       localStorage.removeItem(REF_CODE_LS_KEY);
     } catch (error) {
       setError(error);

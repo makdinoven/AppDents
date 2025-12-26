@@ -175,6 +175,8 @@ def send_html_email(
     text_body: str | None = None,
     headers: dict[str, str] | None = None,
     mailgun_options: dict[str, str] | None = None,
+    mailgun_domain_override: str | None = None,
+    from_override: str | None = None,
 ) -> bool:
     """
     Отправка HTML-писем через Mailgun API.
@@ -200,7 +202,8 @@ def send_html_email(
         return False
     
     # 3. Отправляем через Mailgun или SMTP
-    if settings.MAILGUN_API_KEY and settings.MAILGUN_DOMAIN:
+    mg_domain = (mailgun_domain_override or settings.MAILGUN_DOMAIN or "").strip()
+    if settings.MAILGUN_API_KEY and mg_domain:
         result = _send_via_mailgun(
             recipient_email,
             subject,
@@ -208,6 +211,8 @@ def send_html_email(
             text_body=text_body,
             headers=headers,
             mailgun_options=mailgun_options,
+            mailgun_domain_override=mg_domain,
+            from_override=from_override,
         )
         if result:
             return True
@@ -231,6 +236,8 @@ def _send_via_mailgun(
     text_body: str | None = None,
     headers: dict[str, str] | None = None,
     mailgun_options: dict[str, str] | None = None,
+    mailgun_domain_override: str | None = None,
+    from_override: str | None = None,
 ) -> bool:
     """
     Отправка через Mailgun HTTP API.
@@ -245,10 +252,11 @@ def _send_via_mailgun(
     else:
         api_base = "https://api.mailgun.net/v3"
 
-    url = f"{api_base}/{settings.MAILGUN_DOMAIN}/messages"
+    domain = (mailgun_domain_override or settings.MAILGUN_DOMAIN or "").strip()
+    url = f"{api_base}/{domain}/messages"
 
     data = {
-        "from": settings.EMAIL_SENDER,
+        "from": (from_override or settings.EMAIL_SENDER),
         "to": recipient_email,
         "subject": subject,
         "text": text_body

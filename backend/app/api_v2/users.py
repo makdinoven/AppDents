@@ -145,7 +145,8 @@ def register(
                     cs.add_landing(db, user, lid)
                 except Exception as e:
                     logger.warning("Cannot transfer landing %s: %s", lid, e)
-    return {**UserRead.from_orm(user).dict(), "password": random_pass}
+    token = create_access_token({"user_id": user.id})
+    return {**UserRead.from_orm(user).dict(), "access_token": token, "token_type": "bearer"}
 
 logger = logging.getLogger("auth")
 @router.post("/login", response_model=Token)

@@ -1401,6 +1401,153 @@ def send_big_cart_reminder_email(
 """
     return send_html_email(recipient_email, loc["subject"], body_html)
 
+
+def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bool:
+    """
+    NY2026 campaign email for leads (Dent-S).
+
+    Notes:
+    - Language is fixed (does not depend on `region`).
+    - Uses the real email from `recipient_email`.
+    """
+    # Keep `region` for backward compatibility (it's passed from the task).
+    _ = region
+
+    subject = "Your New Year gift is already in your account"
+    site_url = "https://dent-s.com/sign-up"
+    login_url = "https://dent-s.com/sign-up"
+
+    body_html = f"""\
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>{subject}</title>
+  </head>
+  <body style="margin:0;padding:20px;background:#7fdfd5;font-family:Arial,sans-serif;color:#01433d;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center">
+          <a href="{site_url}" style="text-decoration:none;">
+            <img src="https://cloud.dent-s.com/logo-dents.png" alt="Dent-S" width="150" style="width:100%;max-width:150px;">
+          </a>
+        </td>
+      </tr>
+
+      <tr>
+        <td align="center" style="padding-top:14px;">
+          <table cellpadding="0" cellspacing="0" border="0"
+                 style="max-width:600px;width:100%;background:#edf8ff;border-radius:20px;padding:22px 18px;box-shadow:0 0 10px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="padding:6px 10px 0 10px;">
+                <h2 style="margin:0;color:#01433d;font-size:28px;line-height:1.2;">
+                  Your New Year gift is already in your account
+                </h2>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 10px 0 10px;font-size:18px;line-height:28px;color:#01433d;font-weight:500;">
+                <p style="margin:0 0 14px 0;">
+                  Happy upcoming 2026! Wishing you health, peace of mind, and confident growth in your work!
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 10px;">
+                <div style="background:#ffffff;border:1px solid rgba(100,116,139,0.2);border-radius:16px;padding:16px 16px;">
+                  <p style="margin:0 0 10px 0;font-size:18px;line-height:28px;color:#01433d;font-weight:600;">
+                    $20 has been added to your balance (account: <span style="color:#017f74;font-weight:700;">{recipient_email}</span>).
+                  </p>
+                  <p style="margin:0;font-size:16px;line-height:24px;color:#334155;">
+                    You can use this amount to purchase any one course out of <strong>426</strong> available.
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:16px 10px 0 10px;">
+                <div style="border:1px solid rgba(100,116,139,0.2);border-radius:16px;padding:16px 16px;background:#ffffff;">
+                  <p style="margin:0 0 10px 0;font-size:16px;line-height:24px;color:#334155;">
+                    <strong>Sign in</strong> with this email, choose a course, and use your balance to get full lifetime access to all materials.
+                  </p>
+                  <p style="margin:14px 0 0 0;text-align:center;">
+                    <a href="{login_url}"
+                       style="display:inline-block;background:#01433d;color:#edf8ff;text-decoration:none;padding:12px 26px;border-radius:999px;font-weight:700;font-size:16px;">
+                      Sign in
+                    </a>
+                  </p>
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:16px 10px 0 10px;">
+                <p style="margin:0;font-size:16px;line-height:24px;color:#334155;">
+                  On our platform, you can find lecturers such as:
+                  <strong style="color:#01433d;">JEFFREY P. OKESON</strong>,
+                  <strong style="color:#01433d;">Ivan Chicchon</strong>,
+                  <strong style="color:#01433d;">Chris Chang</strong>,
+                  <strong style="color:#01433d;">Arnaldo Castellucci</strong>,
+                  <strong style="color:#01433d;">Tomas Linkevicius</strong>… and many more.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:20px 10px 6px 10px;">
+                <div style="height:1px;background:rgba(100,116,139,0.2);"></div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 10px 0 10px;color:#64748b;font-size:12px;line-height:18px;">
+                <p style="margin:0;">
+                  This is an automated email. Please do not reply.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
+
+    text_body = "\n".join(
+        [
+            subject,
+            "",
+            "Happy upcoming 2026! Wishing you health, peace of mind, and confident growth in your work!",
+            "",
+            f"$20 has been added to your balance (account: {recipient_email}).",
+            "You can use this amount to purchase any one course out of 426 available.",
+            "",
+            "Sign in with this email, choose a course, and use your balance to get full lifetime access to all materials.",
+            f"Sign in: {login_url}",
+            "",
+            "Lecturers: JEFFREY P. OKESON, Ivan Chicchon, Chris Chang, Arnaldo Castellucci, Tomas Linkevicius… and many more",
+            "",
+            "This is an automated email. Please do not reply.",
+        ]
+    )
+
+    mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
+    marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
+    return bool(
+        send_html_email(
+            recipient_email,
+            subject,
+            body_html,
+            text_body=text_body,
+            mailgun_domain_override=mg_domain,
+            from_override=marketing_from,
+        )
+    )
+
 def send_referral_program_email(
     recipient_email: str,
     referral_link: str,
