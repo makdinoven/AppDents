@@ -27,6 +27,7 @@ from ..services_v2.user_service import (
     search_users_paginated, verify_password, get_referral_analytics, get_user_growth_stats, get_purchase_analytics,
     get_free_course_stats, get_purchases_by_source_timeseries,get_search_top_queries
 )
+from ..services_v2.lead_campaign_service import consume_lead_and_maybe_grant_bonus
 from ..utils.email_sender import send_password_to_user, send_recovery_email
 from ..utils.s3 import generate_presigned_url
 from ..services_v2.ban_service import enforce_not_banned, get_client_ip
@@ -126,6 +127,12 @@ def register(
         password=random_pass,
         invited_by=inviter
     )
+
+    # Если email был в лидах/получателях кампаний — чистим leads и (если нужно) начисляем бонус кампании (например NY2026)
+    try:
+        consume_lead_and_maybe_grant_bonus(db, email=user.email, user_id=user.id)
+    except Exception as e:
+        logger.warning("Lead/campaign consume failed for %s: %s", user.email, e)
 
     background_tasks.add_task(send_password_to_user, user.email, random_pass, region)
 

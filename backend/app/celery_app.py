@@ -26,6 +26,7 @@ celery = Celery(
             "app.tasks.clip_tasks",
             "app.tasks.big_cart_reminder",
             "app.tasks.referral_campaign",
+            "app.tasks.migrate_abandoned_to_leads",
         ],
 )
 
@@ -130,6 +131,13 @@ celery.conf.update(
             "task": "app.tasks.referral_campaign.send_referral_campaign_batch",
             "schedule": 3600,
             "kwargs": {"max_per_run": 55},
+            "options": {"queue": "email"},
+        },
+        # Ежедневный перенос «зависших» abandoned_checkouts → leads
+        "migrate-abandoned-to-leads-daily": {
+            "task": "app.tasks.migrate_abandoned_to_leads.migrate_abandoned_to_leads_daily",
+            "schedule": 86400,
+            "kwargs": {"batch_limit": 20000},
             "options": {"queue": "email"},
         },
     },

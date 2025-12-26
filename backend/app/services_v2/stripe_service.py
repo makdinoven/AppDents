@@ -30,6 +30,7 @@ from ..utils.email_sender import (
     send_successful_purchase_email,
 )
 from ..utils.facebook import send_facebook_events
+from ..services_v2.lead_campaign_service import consume_lead_and_maybe_grant_bonus
 
 logging.basicConfig(level=logging.INFO)
 
@@ -734,6 +735,12 @@ def handle_webhook_event(db: Session, payload: bytes, sig_header: str, region: s
             logging.info("С баланса пользователя %s списано %.2f USD (partial)", user.id, balance_used)
         except ValueError:
             logging.error("Не удалось снять %.2f USD с баланса user=%s", balance_used, user.id)
+
+    # 16.1) Leads/campaigns: удаляем lead и начисляем бонус (если email получал кампанию и бонус ещё не выдан)
+    try:
+        consume_lead_and_maybe_grant_bonus(db, email=email, user_id=user.id)
+    except Exception as e:
+        logging.warning("Lead/campaign consume failed for %s: %s", email, e)
 
     # 17) [CHANGE] Отправляем событие в FB ТОЛЬКО для рекламы (from_ad=True) и только после коммита
     purchase_lang = (metadata.get("purchase_lang") or region).upper()

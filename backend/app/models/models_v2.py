@@ -445,6 +445,83 @@ class AbandonedCheckout(Base):
     created_at = Column(DateTime, server_default=func.utc(), nullable=False)
     send_count = Column(Integer, nullable=False,server_default="0")
     last_sent_at = Column(DateTime, nullable=True)
+
+
+# ────────────────────────────────────────────────────────────────
+# Leads + Email Campaigns
+# ────────────────────────────────────────────────────────────────
+
+class Lead(Base):
+    """
+    Активные лиды (удаляются при регистрации/покупке).
+    Историю рассылок храним отдельно (EmailCampaignRecipient), поэтому удаление не ломает аналитику.
+    """
+    __tablename__ = "leads"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    language = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT', name='lead_language'), nullable=False, server_default='EN')
+    tags = Column(JSON, nullable=True)
+    source = Column(String(50), nullable=False, server_default="unknown")
+    created_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+    updated_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp(), onupdate=func.utc_timestamp())
+
+    __table_args__ = (
+        Index("ix_leads_language", "language"),
+        Index("ix_leads_created_at", "created_at"),
+    )
+
+
+class EmailCampaign(Base):
+    __tablename__ = "email_campaigns"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    code = Column(String(64), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=False)
+    bonus_amount = Column(Numeric(10, 2), nullable=False, server_default="0.00")
+    is_active = Column(Boolean, nullable=False, server_default="1")
+    created_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+
+    recipients = relationship("EmailCampaignRecipient", back_populates="campaign", cascade="all, delete-orphan")
+
+
+class EmailCampaignRecipientStatus(str, PyEnum):
+    UNKNOWN = "unknown"
+    SENT = "sent"
+    BOUNCED = "bounced"
+    COMPLAINED = "complained"
+
+
+class EmailCampaignRecipient(Base):
+    __tablename__ = "email_campaign_recipients"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    campaign_id = Column(BigInteger, ForeignKey("email_campaigns.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    email = Column(String(255), nullable=False, index=True)
+    language = Column(Enum('EN', 'RU', 'ES', 'PT', 'AR', 'IT', name='recipient_language'), nullable=False, server_default='EN')
+    sent_at = Column(DateTime, nullable=True)
+    status = Column(
+        Enum(
+            EmailCampaignRecipientStatus,
+            name="email_campaign_recipient_status",
+            validate_strings=True,
+            values_callable=lambda e: [x.value for x in e],
+        ),
+        nullable=False,
+        server_default=EmailCampaignRecipientStatus.UNKNOWN.value,
+    )
+    bonus_granted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.utc_timestamp())
+
+    campaign = relationship("EmailCampaign", back_populates="recipients")
+
+    __table_args__ = (
+        Index("ix_campaign_recipients_email", "email"),
+        Index("ix_campaign_recipients_bonus_granted_at", "bonus_granted_at"),
+        Index("uq_campaign_email", "campaign_id", "email", unique=True),
+    )
+
 class PreviewStatus(str, PyEnum):
     PENDING = "pending"
     RUNNING = "running"
