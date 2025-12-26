@@ -93,8 +93,8 @@ class Settings(BaseSettings):
     # === NY2026 campaign tuning (Celery beat) ===
     # Уменьшайте частоту тиков, если CPU/DB нагружены.
     # Сама отправка идёт батчами внутри тика.
-    NY2026_TICK_SECONDS: int = 60
-    NY2026_MAX_PER_RUN: int = 500
+    NY2026_TICK_SECONDS: int = 100
+    NY2026_MAX_PER_RUN: int = 250
 
     # BookAI / Placid
     BOOKAI_BASE_URL: str = "https://bookai.dent-s.com/api"
