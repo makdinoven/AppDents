@@ -366,6 +366,70 @@ def _pick_stream(meta: dict, codec_type: str) -> Optional[dict]:
     return None
 
 
+def _parse_h264_level(level_value: Any) -> Optional[float]:
+    """
+    ffprobe может отдавать level по-разному:
+    - как int 41 (означает 4.1)
+    - как str "41"
+    - иногда уже как "4.1"
+    Возвращаем float (например 4.1) или None.
+    """
+    if level_value is None:
+        return None
+    try:
+        s = str(level_value).strip()
+        if not s:
+            return None
+        # если уже "4.1"
+        if "." in s:
+            return float(s)
+        # если "41" -> 4.1, "51" -> 5.1
+        if s.isdigit() and len(s) >= 2:
+            return float(f"{s[0]}.{s[1:]}")
+        return float(s)
+    except Exception:
+        return None
+
+
+def _needs_h264_constraints_transcode(v: dict | None) -> bool:
+    """
+    Доп. ограничения для H.264 совместимости:
+    - pix_fmt должен быть yuv420p (устройства часто не декодируют yuv422p/yuv444p/10-bit)
+    - level не должен превышать target level (например 4.1) — иначе у части устройств будет "audio-only"
+    - профиль экзотический (не baseline/main/high) — тоже повод перекодировать
+    """
+    if not v:
+        return False
+    codec = (v.get("codec_name") or "").lower()
+    if codec not in ("h264", "avc1"):
+        return False
+
+    pix = (v.get("pix_fmt") or "").lower()
+    if pix and pix != VIDEO_MAINTENANCE.target_pixel_format:
+        return True
+
+    # 10-bit (часто yuv420p10le) — уже поймаем по pix_fmt != yuv420p, но подстрахуемся
+    bits = v.get("bits_per_raw_sample") or v.get("bits_per_sample")
+    try:
+        if bits is not None and int(str(bits)) > 8:
+            return True
+    except Exception:
+        pass
+
+    # level
+    target_level = _parse_h264_level(VIDEO_MAINTENANCE.h264_level)
+    src_level = _parse_h264_level(v.get("level"))
+    if target_level is not None and src_level is not None and src_level > target_level:
+        return True
+
+    # profile
+    profile = (v.get("profile") or "").strip().lower()
+    if profile and profile not in ("baseline", "main", "high"):
+        return True
+
+    return False
+
+
 def _needs_full_transcode(v: dict | None) -> bool:
     if not v:
         return False
@@ -375,6 +439,9 @@ def _needs_full_transcode(v: dict | None) -> bool:
         return True
     # 10-bit / 4:4:4 и т.п. часто ломают аппаратный декодер на части устройств
     if pix != VIDEO_MAINTENANCE.target_pixel_format:
+        return True
+    # Даже H.264+yuv420p может быть несовместимым из-за level/profile (частый кейс "звук без видео")
+    if _needs_h264_constraints_transcode(v):
         return True
     return False
 
@@ -477,11 +544,18 @@ def _fix_mp4_to_compatible(
             "detected": {
                 "vcodec": (v or {}).get("codec_name"),
                 "pix_fmt": (v or {}).get("pix_fmt"),
+                "profile": (v or {}).get("profile"),
+                "level": (v or {}).get("level"),
+                "width": (v or {}).get("width"),
+                "height": (v or {}).get("height"),
+                "bit_depth": (v or {}).get("bits_per_raw_sample") or (v or {}).get("bits_per_sample"),
                 "acodec": (a or {}).get("codec_name"),
             },
             "target": {
                 "vcodec": "h264",
                 "pix_fmt": VIDEO_MAINTENANCE.target_pixel_format,
+                "profile": VIDEO_MAINTENANCE.h264_profile,
+                "level": VIDEO_MAINTENANCE.h264_level,
                 "acodec": "aac",
             },
             "probe_url": used_url or cdn_url,

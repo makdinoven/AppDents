@@ -679,6 +679,7 @@ def check_hls_acl(playlist_keys: List[str], sample_count: int = 3) -> Diagnostic
     checked = []
     private_files = []
     errors = []
+    unsupported = []
     
     for pl_key in playlist_keys[:sample_count]:
         try:
@@ -708,7 +709,12 @@ def check_hls_acl(playlist_keys: List[str], sample_count: int = 3) -> Diagnostic
                 
         except ClientError as e:
             code = e.response["Error"]["Code"]
-            errors.append({"key": pl_key, "error": code})
+            # Частый кейс: ACL API может быть запрещён/не поддержан (например, AccessDenied/NotImplemented).
+            # Это НЕ означает, что файл приватный. Тогда не считаем это деградацией.
+            if code in ("AccessDenied", "NotImplemented", "MethodNotAllowed", "InvalidRequest"):
+                unsupported.append({"key": pl_key, "error": code})
+            else:
+                errors.append({"key": pl_key, "error": code})
         except Exception as e:
             errors.append({"key": pl_key, "error": str(e)})
     
@@ -724,11 +730,18 @@ def check_hls_acl(playlist_keys: List[str], sample_count: int = 3) -> Diagnostic
             }
         )
     
+    # Если есть только "unsupported" (ACL нельзя прочитать) — считаем OK, не деградируем.
     if errors:
         return DiagnosticResult(
             status="warning",
             message=f"ACL check had {len(errors)} errors",
-            details={"errors": errors, "checked": checked}
+            details={"errors": errors, "checked": checked, "unsupported": unsupported}
+        )
+    if unsupported:
+        return DiagnosticResult(
+            status="ok",
+            message="ACL check not supported or access denied (ignored)",
+            details={"unsupported": unsupported[:10], "checked": checked}
         )
     
     return DiagnosticResult(
@@ -764,11 +777,15 @@ def check_video_codecs(url: str) -> DiagnosticResult:
         
         video_codec = None
         audio_codec = None
+        video_stream = None
+        audio_stream = None
         for s in streams:
             if s.get("codec_type") == "video" and not video_codec:
                 video_codec = s.get("codec_name")
+                video_stream = s
             if s.get("codec_type") == "audio" and not audio_codec:
                 audio_codec = s.get("codec_name")
+                audio_stream = s
         
         # Проверяем moov atom (faststart)
         # Если format_name содержит "mov,mp4" и tags.encoder существует - скорее всего faststart ok
@@ -780,6 +797,15 @@ def check_video_codecs(url: str) -> DiagnosticResult:
             issues.append(f"Non-standard audio codec: {audio_codec}")
         if not audio_codec:
             issues.append("No audio track detected")
+
+        # Доп. диагностические поля для кейса "звук есть, картинки нет" на части устройств.
+        # Часто причина: H.264 level слишком высокий или pix_fmt != yuv420p (10-bit/4:2:2/4:4:4).
+        v_profile = (video_stream or {}).get("profile")
+        v_level = (video_stream or {}).get("level")
+        v_pix_fmt = (video_stream or {}).get("pix_fmt")
+        v_bits = (video_stream or {}).get("bits_per_raw_sample") or (video_stream or {}).get("bits_per_sample")
+        v_w = (video_stream or {}).get("width")
+        v_h = (video_stream or {}).get("height")
         
         return DiagnosticResult(
             status="warning" if issues else "ok",
@@ -787,6 +813,12 @@ def check_video_codecs(url: str) -> DiagnosticResult:
             details={
                 "video_codec": video_codec,
                 "audio_codec": audio_codec,
+                "video_profile": v_profile,
+                "video_level": v_level,
+                "video_pix_fmt": v_pix_fmt,
+                "video_bit_depth": v_bits,
+                "video_width": v_w,
+                "video_height": v_h,
                 "duration": format_info.get("duration"),
                 "bitrate": format_info.get("bit_rate"),
                 "issues": issues,
@@ -948,6 +980,8 @@ def diagnose_video(video_url: str) -> VideoHealth:
     
     # 5. Проверка кодеков (через CDN URL)
     health.checks["codecs"] = check_video_codecs(cdn_url)
+    # 5.1 Проверка faststart "по факту" (moov before mdat)
+    health.checks["moov"] = check_moov_position(cdn_url)
     
     # Определяем общий статус и рекомендации
     # НЕ считаем ошибкой: alias плейлисты, таймауты ffprobe, S3 ошибки когда CDN работает
@@ -991,6 +1025,12 @@ def diagnose_video(video_url: str) -> VideoHealth:
             return False
         # ffprobe timeout для больших файлов - не критично
         if "codecs" in key and "timed out" in check.message:
+            return False
+        # Alias плейлист: "No segments to check via CDN" — это нормально, если это master/alias без сегментов
+        if "segments_cdn" in key and "No segments to check via CDN" in check.message:
+            return False
+        # ACL check может быть недоступен (AccessDenied/NotImplemented) — не считаем деградацией
+        if key == "hls_acl" and ("not supported" in check.message.lower() or "ignored" in check.message.lower()):
             return False
         return True
     
