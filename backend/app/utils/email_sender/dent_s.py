@@ -1434,14 +1434,8 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
     <table width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td align="center">
-          <a href="{site_url}" style="text-decoration:none;">
-            <img
-              src="https://cloud.dent-s.com/logo-dents.png"
-              alt="Dent-S"
-              width="150"
-              height="150"
-              style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;width:150px;max-width:150px;height:auto;"
-            >
+          <a href="{site_url}" style="text-decoration:none;color:#01433d;font-weight:800;font-size:28px;line-height:1;">
+            dent-s.com
           </a>
         </td>
       </tr>
@@ -1546,14 +1540,11 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
         ]
     )
 
-    # Helps deliverability for bulk/marketing emails (less tracking, unsubscribe header).
+    # Helps deliverability for bulk/marketing emails (less tracking).
     mailgun_options = {
         "o:tracking": "no",
         "o:tracking-clicks": "no",
         "o:tracking-opens": "no",
-    }
-    headers = {
-        "List-Unsubscribe": f"<{unsubscribe_mailto}>",
     }
 
     mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
@@ -1564,7 +1555,6 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
             subject,
             body_html,
             text_body=text_body,
-            headers=headers,
             mailgun_options=mailgun_options,
             mailgun_domain_override=mg_domain,
             from_override=marketing_from,
