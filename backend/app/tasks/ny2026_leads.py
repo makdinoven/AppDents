@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from ..db.database import SessionLocal
 from ..models.models_v2 import Lead, EmailCampaign, EmailCampaignRecipient, EmailCampaignRecipientStatus
 from ..services_v2.lead_campaign_service import skip_send_and_cleanup_if_user_exists, normalize_email
+from ..services_v2.email_suppression_service import get_suppression
+from ..models.models_v2 import SuppressionType
 from ..utils import email_sender
 
 logger = logging.getLogger(__name__)
@@ -70,6 +72,15 @@ def send_ny2026_tick(max_per_run: int = 1) -> dict:
                 skipped_user_exists += 1
                 continue
 
+            # Если email уже в suppression (invalid/hard_bounce/complaint/unsubscribe)
+            # — удаляем из leads и больше не пытаемся слать.
+            sup = get_suppression(db, email)
+            if sup and sup.type in {SuppressionType.INVALID, SuppressionType.HARD_BOUNCE, SuppressionType.COMPLAINT, SuppressionType.UNSUBSCRIBE}:
+                db.query(Lead).filter(Lead.id == lead.id).delete(synchronize_session=False)
+                db.commit()
+                failed += 1
+                continue
+
             # 1) резервируем recipient (иначе при параллельной отправке возможны дубли)
             rec = EmailCampaignRecipient(
                 campaign_id=campaign.id,
@@ -104,6 +115,11 @@ def send_ny2026_tick(max_per_run: int = 1) -> dict:
                 db.commit()
                 sent += 1
             else:
+                # Если после попытки отправки email попал в suppression (например INVALID по MX)
+                # — удаляем его из leads, чтобы не ретраить бесконечно.
+                sup2 = get_suppression(db, email)
+                if sup2 and sup2.type in {SuppressionType.INVALID, SuppressionType.HARD_BOUNCE, SuppressionType.COMPLAINT, SuppressionType.UNSUBSCRIBE}:
+                    db.query(Lead).filter(Lead.id == lead.id).delete(synchronize_session=False)
                 # не оставляем запись (иначе бонус может быть выдан без реальной отправки)
                 db.query(EmailCampaignRecipient).filter(EmailCampaignRecipient.id == rec.id).delete(
                     synchronize_session=False
