@@ -63,6 +63,10 @@ def send_ny2026_tick(max_per_run: int = 1) -> dict:
         skipped_user_exists = 0
         failed = 0
 
+        # Собираем кандидатов на отправку (после чисток user_exists/suppression)
+        to_send_by_lang: dict[str, list[str]] = {}
+        lead_ids_by_email: dict[str, int] = {}
+
         for lead in leads:
             email = (lead.email or "").strip()
             if not email:
@@ -81,51 +85,68 @@ def send_ny2026_tick(max_per_run: int = 1) -> dict:
                 failed += 1
                 continue
 
-            # 1) резервируем recipient (иначе при параллельной отправке возможны дубли)
-            rec = EmailCampaignRecipient(
-                campaign_id=campaign.id,
-                email=email,
-                language=getattr(lead, "language", "EN") or "EN",
-                status=EmailCampaignRecipientStatus.UNKNOWN,
-                sent_at=None,
-            )
-            db.add(rec)
-            try:
-                db.commit()
-                db.refresh(rec)
-            except IntegrityError:
-                db.rollback()
-                # кто-то уже зарезервировал/отправил
+            lang = (getattr(lead, "language", "EN") or "EN").upper()
+            to_send_by_lang.setdefault(lang, []).append(email)
+            lead_ids_by_email[email] = lead.id
+
+        if not to_send_by_lang:
+            return {"status": "ok", "sent": 0, "skipped_user_exists": skipped_user_exists, "failed": failed}
+
+        # 1) Reserve recipients для всех выбранных email (одним коммитом, поштучно с дедупом)
+        reserved: list[str] = []
+        for lang, emails in to_send_by_lang.items():
+            for email in emails:
+                rec = EmailCampaignRecipient(
+                    campaign_id=campaign.id,
+                    email=email,
+                    language=lang,
+                    status=EmailCampaignRecipientStatus.UNKNOWN,
+                    sent_at=None,
+                )
+                db.add(rec)
+                try:
+                    db.flush()
+                    reserved.append(email)
+                except IntegrityError:
+                    db.rollback()
+                    # duplicate reserve → пропускаем
+                    continue
+        db.commit()
+
+        # 2) Bulk-send по языкам (валидация каждого email внутри send_html_email_bulk)
+        now = datetime.utcnow()
+        for lang, emails in to_send_by_lang.items():
+            if not emails:
                 continue
-
-            # 2) шлём письмо (заглушка)
-            ok = False
+            result = {}
             try:
-                ok = bool(email_sender.send_new_year_campaign_email(recipient_email=email, region=str(rec.language)))
+                result = email_sender.send_new_year_campaign_email_bulk(emails, region=lang)
             except Exception as e:
-                logger.warning("NY2026 send failed for %s: %s", email, e)
-                ok = False
+                logger.warning("NY2026 bulk send failed (lang=%s): %s", lang, e)
+                result = {"ok": False, "sent": 0}
 
-            now = datetime.utcnow()
-            if ok:
-                db.query(EmailCampaignRecipient).filter(EmailCampaignRecipient.id == rec.id).update(
+            if result.get("ok") and result.get("sent", 0) > 0:
+                # отмечаем sent для всех recipients этого языка, которые у нас есть в таблице
+                db.query(EmailCampaignRecipient).filter(
+                    EmailCampaignRecipient.campaign_id == campaign.id,
+                    EmailCampaignRecipient.language == lang,
+                    EmailCampaignRecipient.email.in_([e.strip().lower() for e in emails]),
+                ).update(
                     {"status": EmailCampaignRecipientStatus.SENT, "sent_at": now},
                     synchronize_session=False,
                 )
                 db.commit()
-                sent += 1
+                sent += int(result.get("sent", 0))
             else:
-                # Если после попытки отправки email попал в suppression (например INVALID по MX)
-                # — удаляем его из leads, чтобы не ретраить бесконечно.
-                sup2 = get_suppression(db, email)
-                if sup2 and sup2.type in {SuppressionType.INVALID, SuppressionType.HARD_BOUNCE, SuppressionType.COMPLAINT, SuppressionType.UNSUBSCRIBE}:
-                    db.query(Lead).filter(Lead.id == lead.id).delete(synchronize_session=False)
-                # не оставляем запись (иначе бонус может быть выдан без реальной отправки)
-                db.query(EmailCampaignRecipient).filter(EmailCampaignRecipient.id == rec.id).delete(
-                    synchronize_session=False
-                )
+                # если не отправилось (или sent=0 из-за валидации/suppression) — удаляем UNKNOWN recipients, чтобы был повтор позже
+                db.query(EmailCampaignRecipient).filter(
+                    EmailCampaignRecipient.campaign_id == campaign.id,
+                    EmailCampaignRecipient.language == lang,
+                    EmailCampaignRecipient.status == EmailCampaignRecipientStatus.UNKNOWN,
+                    EmailCampaignRecipient.email.in_([e.strip().lower() for e in emails]),
+                ).delete(synchronize_session=False)
                 db.commit()
-                failed += 1
+                failed += len(emails)
 
         return {"status": "ok", "sent": sent, "skipped_user_exists": skipped_user_exists, "failed": failed}
     finally:

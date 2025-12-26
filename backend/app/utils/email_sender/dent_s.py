@@ -1,5 +1,5 @@
 
-from .common import send_html_email
+from .common import send_html_email, send_html_email_bulk
 from .dent_s_courses_html import COURSES_BLOCK
 from ...core.config import settings
 
@@ -1413,7 +1413,29 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
     # Keep `region` for backward compatibility (it's passed from the task).
     _ = region
 
-    # Slightly less "spammy" phrasing than "gift"
+    subject, body_html, text_body, mailgun_options = _ny2026_render(recipient_email=recipient_email)
+
+    mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
+    marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
+    return bool(
+        send_html_email(
+            recipient_email,
+            subject,
+            body_html,
+            text_body=text_body,
+            mailgun_options=mailgun_options,
+            mailgun_domain_override=mg_domain,
+            from_override=marketing_from,
+        )
+    )
+
+
+def _ny2026_render(*, recipient_email: str) -> tuple[str, str, str, dict]:
+    """
+    Рендерит ОДИН И ТОТ ЖЕ шаблон NY2026 для:
+    - одиночной отправки (recipient_email = реальный email)
+    - bulk отправки (recipient_email = '%recipient.email%')
+    """
     subject = "Your $20 New Year bonus is already in your account"
     site_url = "https://dent-s.com"
     login_url = "https://dent-s.com/sign-up"
@@ -1546,19 +1568,33 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
         "o:tracking-clicks": "no",
         "o:tracking-opens": "no",
     }
+    return subject, body_html, text_body, mailgun_options
+
+
+def send_new_year_campaign_email_bulk(recipient_emails: list[str], region: str = "EN") -> dict:
+    """
+    NY2026 bulk-send:
+    - валидирует КАЖДЫЙ email (suppression + syntax + MX)
+    - отправляет пачками до 1000 recipients на один Mailgun API request
+    """
+    _ = region  # текущий шаблон на английском; region оставлен для совместимости
+
+    # В bulk режиме персонализацию делаем через mailgun placeholder:
+    # каждый получатель увидит свой email в письме.
+    subject, body_html, text_body, mailgun_options = _ny2026_render(recipient_email="%recipient.email%")
 
     mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
     marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
-    return bool(
-        send_html_email(
-            recipient_email,
-            subject,
-            body_html,
-            text_body=text_body,
-            mailgun_options=mailgun_options,
-            mailgun_domain_override=mg_domain,
-            from_override=marketing_from,
-        )
+
+    return send_html_email_bulk(
+        recipient_emails,
+        subject,
+        body_html,
+        text_body=text_body,
+        mailgun_options=mailgun_options,
+        mailgun_domain_override=mg_domain,
+        from_override=marketing_from,
+        chunk_size=1000,
     )
 
 def send_referral_program_email(

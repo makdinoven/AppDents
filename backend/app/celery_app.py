@@ -149,9 +149,10 @@ celery.conf.update(
 if (getattr(settings, "PROJECT_BRAND", "") or "").upper() == "DENTS":
     celery.conf.beat_schedule["ny2026-leads-tick"] = {
         "task": "app.tasks.ny2026_leads.send_ny2026_tick",
-        "schedule": 5,
-        "kwargs": {"max_per_run": 1},
-        "options": {"queue": "email", "expires": 4},
+        # Реже запускаем, но берём пачку (меньше overhead и CPU, лучше throughput)
+        "schedule": 10,
+        "kwargs": {"max_per_run": 500},
+        "options": {"queue": "email", "expires": 9},
     }
 
 celery.conf.update(

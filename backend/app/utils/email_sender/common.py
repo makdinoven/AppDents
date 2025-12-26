@@ -5,6 +5,7 @@ import threading
 import time
 from typing import Optional, Tuple
 
+from functools import lru_cache
 import dns.resolver
 import requests
 from email_validator import EmailNotValidError, validate_email
@@ -57,6 +58,15 @@ TRUSTED_DOMAINS = {
 }
 
 VALIDATION_TIMEOUT = 3  # секунды
+
+
+@lru_cache(maxsize=5000)
+def _domain_has_mx(domain: str) -> bool:
+    """
+    Кешируем MX lookup по домену, чтобы на массовых рассылках не делать одинаковые DNS запросы.
+    """
+    answers = dns.resolver.resolve(domain, "MX", lifetime=VALIDATION_TIMEOUT)
+    return bool(answers)
 
 
 def _check_suppression_list(email: str) -> bool:
@@ -145,8 +155,7 @@ def _validate_email_sync(email: str) -> Tuple[bool, str]:
     
     # 3. Проверка MX записей
     try:
-        answers = dns.resolver.resolve(domain, "MX", lifetime=VALIDATION_TIMEOUT)
-        if not answers:
+        if not _domain_has_mx(domain):
             return False, f"No MX records for domain {domain}"
     except dns.resolver.NXDOMAIN:
         return False, f"Domain {domain} does not exist"
@@ -294,6 +303,148 @@ def _send_via_mailgun(
     except Exception as e:
         logger.error("Mailgun request error for %s: %s", recipient_email, repr(e))
         return False
+
+
+def _send_via_mailgun_bulk(
+    recipient_emails: list[str],
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    headers: dict[str, str] | None = None,
+    mailgun_options: dict[str, str] | None = None,
+    mailgun_domain_override: str | None = None,
+    from_override: str | None = None,
+) -> bool:
+    """
+    Bulk-send один и тот же message на список получателей через Mailgun.
+    Ограничение: до 1000 recipients на один запрос.
+    """
+    if not recipient_emails:
+        return True
+
+    _wait_for_rate_limit()
+
+    if settings.MAILGUN_REGION.upper() == "EU":
+        api_base = "https://api.eu.mailgun.net/v3"
+    else:
+        api_base = "https://api.mailgun.net/v3"
+
+    domain = (mailgun_domain_override or settings.MAILGUN_DOMAIN or "").strip()
+    if not domain:
+        return False
+
+    url = f"{api_base}/{domain}/messages"
+
+    # Чтобы 'to' повторялся многократно, используем список кортежей.
+    data: list[tuple[str, str]] = [
+        ("from", (from_override or settings.EMAIL_SENDER)),
+        ("subject", subject),
+        ("text", text_body or "If you see this text, your email client does not support HTML."),
+        ("html", html_body),
+    ]
+    for r in recipient_emails:
+        data.append(("to", r))
+
+    if mailgun_options:
+        for k, v in mailgun_options.items():
+            if k:
+                data.append((str(k), "" if v is None else str(v)))
+
+    if headers:
+        for name, value in headers.items():
+            if name:
+                data.append((f"h:{name}", "" if value is None else str(value)))
+
+    try:
+        response = requests.post(
+            url,
+            auth=("api", settings.MAILGUN_API_KEY),
+            data=data,
+            timeout=30,
+        )
+        if response.status_code == 200:
+            logger.info("Mailgun bulk accepted: n=%s domain=%s", len(recipient_emails), domain)
+            return True
+        logger.error("Mailgun bulk error: %s - %s", response.status_code, response.text)
+        return False
+    except Exception as e:
+        logger.error("Mailgun bulk request error: %s", repr(e))
+        return False
+
+
+def send_html_email_bulk(
+    recipient_emails: list[str],
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    headers: dict[str, str] | None = None,
+    mailgun_options: dict[str, str] | None = None,
+    mailgun_domain_override: str | None = None,
+    from_override: str | None = None,
+    chunk_size: int = 1000,
+) -> dict:
+    """
+    Массовая отправка одинакового письма.
+    - suppression + email validation (включая MX) выполняется для КАЖДОГО адреса
+    - отправка пачками до chunk_size (<=1000)
+    """
+    # normalize + dedup preserve order
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for e in recipient_emails or []:
+        em = (e or "").strip().lower()
+        if not em or em in seen:
+            continue
+        seen.add(em)
+        normalized.append(em)
+
+    suppressed = 0
+    invalid = 0
+    valid: list[str] = []
+
+    for em in normalized:
+        if _check_suppression_list(em):
+            suppressed += 1
+            continue
+        ok, err = _validate_email_sync(em)
+        if not ok:
+            invalid += 1
+            logger.info("Invalid email %s: %s", em, err)
+            _add_to_suppression(em, SuppressionType.INVALID, err)
+            continue
+        valid.append(em)
+
+    if not valid:
+        return {"ok": True, "sent": 0, "suppressed": suppressed, "invalid": invalid}
+
+    # Prefer Mailgun bulk; SMTP fallback stays per-recipient (not suited for huge throughput).
+    if settings.MAILGUN_API_KEY and (mailgun_domain_override or settings.MAILGUN_DOMAIN):
+        sent = 0
+        for i in range(0, len(valid), chunk_size):
+            chunk = valid[i : i + chunk_size]
+            ok = _send_via_mailgun_bulk(
+                chunk,
+                subject,
+                html_body,
+                text_body=text_body,
+                headers=headers,
+                mailgun_options=mailgun_options,
+                mailgun_domain_override=mailgun_domain_override,
+                from_override=from_override,
+            )
+            if not ok:
+                return {"ok": False, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+            sent += len(chunk)
+        return {"ok": True, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+
+    # SMTP fallback (slow)
+    sent = 0
+    for em in valid:
+        if _send_via_smtp(em, subject, html_body, text_body=text_body, headers=headers):
+            sent += 1
+    return {"ok": sent == len(valid), "sent": sent, "suppressed": suppressed, "invalid": invalid}
 
 
 def _send_via_smtp(
