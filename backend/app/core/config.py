@@ -90,6 +90,12 @@ class Settings(BaseSettings):
     FACEBOOK_PIXEL_ID_MEDG_COSMETOLOGY: str = ""
     FACEBOOK_ACCESS_TOKEN_MEDG_COSMETOLOGY: str = ""
 
+    # === NY2026 campaign tuning (Celery beat) ===
+    # Уменьшайте частоту тиков, если CPU/DB нагружены.
+    # Сама отправка идёт батчами внутри тика.
+    NY2026_TICK_SECONDS: int = 60
+    NY2026_MAX_PER_RUN: int = 500
+
     # BookAI / Placid
     BOOKAI_BASE_URL: str = "https://bookai.dent-s.com/api"
     PLACID_API_KEY: str

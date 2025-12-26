@@ -147,12 +147,16 @@ celery.conf.update(
 
 # NY2026 — акция только для Dent-S. На Med-G не запускаем тик вовсе, чтобы не было шума/лишних запросов к БД.
 if (getattr(settings, "PROJECT_BRAND", "") or "").upper() == "DENTS":
+    ny2026_tick_seconds = int(getattr(settings, "NY2026_TICK_SECONDS", 60) or 60)
+    ny2026_max_per_run = int(getattr(settings, "NY2026_MAX_PER_RUN", 500) or 500)
+    # expires делаем чуть меньше schedule, чтобы тик не копился в очереди, если воркер занят
+    ny2026_expires = max(1, ny2026_tick_seconds - 1)
     celery.conf.beat_schedule["ny2026-leads-tick"] = {
         "task": "app.tasks.ny2026_leads.send_ny2026_tick",
         # Реже запускаем, но берём пачку (меньше overhead и CPU, лучше throughput)
-        "schedule": 10,
-        "kwargs": {"max_per_run": 500},
-        "options": {"queue": "email", "expires": 9},
+        "schedule": ny2026_tick_seconds,
+        "kwargs": {"max_per_run": ny2026_max_per_run},
+        "options": {"queue": "email", "expires": ny2026_expires},
     }
 
 celery.conf.update(
