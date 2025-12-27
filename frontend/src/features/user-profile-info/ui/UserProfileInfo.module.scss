@@ -1,7 +1,6 @@
 .user_profile_info {
   @include flex-center();
-  gap: 15px;
-  align-self: flex-start;
+  gap: 10px;
   max-width: 100%;
   text-overflow: ellipsis;
   min-width: 0;
@@ -17,7 +16,7 @@
   }
 
   span {
-    @include clamped-p3();
+    @include clamped-p4();
     display: block;
     overflow: hidden;
     white-space: nowrap;

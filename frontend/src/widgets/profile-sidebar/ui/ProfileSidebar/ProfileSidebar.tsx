@@ -1,10 +1,9 @@
 import { useSelector } from "react-redux";
 import { AppRootStateType } from "@/shared/store/store";
-import { Sidebar } from "@/shared/ui/sidebar";
+import { Sidebar, SidebarItem } from "@/shared/ui/sidebar";
 import { UserProfileInfo } from "@/features/user-profile-info";
 import { LogOutBtn } from "@/features/log-out";
 import { adminPanelTab, pagesTabs, subPagesTabs } from "../../model/tabs";
-import { SidebarItem } from "@/shared/ui/sidebar/SidebarItem/SidebarItem";
 
 export const ProfileSidebar = () => {
   const role = useSelector((state: AppRootStateType) => state.user.role);
@@ -17,8 +16,14 @@ export const ProfileSidebar = () => {
       sections={sections}
       topSlot={<UserProfileInfo />}
       bottomSlot={<LogOutBtn />}
-      renderItem={(item, close) => (
-        <SidebarItem key={item.path} item={item} onClick={close} />
+      persistKey="profile.sidebar.collapsed"
+      renderItem={(item, close, { isCollapsed }) => (
+        <SidebarItem
+          key={item.path}
+          item={item}
+          onClick={close}
+          isCollapsed={isCollapsed}
+        />
       )}
     />
   );

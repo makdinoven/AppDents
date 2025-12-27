@@ -3,7 +3,7 @@
   pointer-events: none;
 }
 
-@media (max-width: $mobile-breakpoint) {
+@media (max-width: $tablet-breakpoint) {
   .menu_button {
     border: 1px solid $hover-color;
     @include flex-center();

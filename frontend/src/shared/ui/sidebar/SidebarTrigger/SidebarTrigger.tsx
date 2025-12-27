@@ -7,16 +7,19 @@ type Props = {
   onClick?: () => void;
   text?: string;
   className?: string;
+  ref?: React.Ref<HTMLButtonElement>;
 };
 
 export const SidebarTrigger = ({
   isOpen,
   onClick,
+  ref,
   text = "profile.menu",
   className,
 }: Props) => {
   return (
     <Button
+      ref={ref}
       iconLeft={isOpen ? <ArrowX /> : <BurgerMenuIcon />}
       onClick={onClick}
       text={text}

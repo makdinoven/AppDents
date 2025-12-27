@@ -1,15 +1,15 @@
-
 .sidebar_item {
   padding: 10px 15px;
-  min-width: fit-content;
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   @include transition();
   position: relative;
   gap: 15px;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-transform: capitalize;
+  border-radius: 5px;
   height: fit-content;
 
   @media (hover: hover) {
@@ -45,11 +45,6 @@
   }
 }
 
-.item_content {
-  @include flex-center();
-  gap: 15px;
-}
-
 .icon {
   width: 24px;
   height: 24px;
@@ -70,10 +65,13 @@
 .title {
   @include clamped-p3();
   @include transition();
-  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .arrow {
+  margin-left: auto;
   width: 24px;
   height: 24px;
   opacity: 1;
@@ -102,16 +100,6 @@
   .arrow {
     pointer-events: none;
     opacity: 0;
-  }
-}
-
-@media (max-width: $middle-breakpoint) {
-  .sidebar_item {
-    padding: 10px;
-  }
-
-  .item_content {
-    gap: 10px;
   }
 }
 

@@ -780,8 +780,11 @@
         "getClip": "Get clip",
         "yourClipUrl": "Your clip url:"
       },
+      "magicVideoFix": {
+        "title": "Magic video fix"
+      },
       "videoSummary": {
-        "title": "Video summary tool",
+        "title": "Video summary",
         "placeholder": "Enter an URL...",
         "label": "Source video url *",
         "getSummary": "Get summary",

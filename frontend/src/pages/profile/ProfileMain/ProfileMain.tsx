@@ -6,7 +6,7 @@ import { AppDispatchType, AppRootStateType } from "@/shared/store/store.ts";
 import { getBooks, getCourses } from "@/shared/store/actions/userActions.ts";
 import ReferralSection from "./modules/ReferralSection/ReferralSection.tsx";
 import MyContent from "../modules/MyContent/MyContent.tsx";
-import { NavigateToSupport } from "../../../features/support/navigate-to-support";
+import { NavigateToSupport } from "@/features/support/navigate-to-support";
 import { ProfilePageTitle } from "@/shared/components/ui/profile-page-title/ProfilePageTitle.tsx";
 
 const ProfileMain = () => {
@@ -25,8 +25,10 @@ const ProfileMain = () => {
     <div className={s.page_content}>
       <div key={childKey} className={s.main_content}>
         <ProfilePageTitle title={"profile.main"} />
-        <ReferralSection />
-        <NavigateToSupport />
+        <div className={s.main_content}>
+          <ReferralSection />
+          <NavigateToSupport />
+        </div>
       </div>
       <MyContent key="books" items={books} type="book" />
       <MyContent key="courses" items={courses} />

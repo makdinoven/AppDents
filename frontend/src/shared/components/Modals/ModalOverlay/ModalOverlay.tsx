@@ -2,7 +2,7 @@ import s from "./ModalOverlay.module.scss";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { RemoveScroll } from "react-remove-scroll";
-import { PATHS } from "../../../../app/routes/routes.ts";
+import { PATHS } from "@/app/routes/routes.ts";
 
 const ModalOverlay = ({
   children,

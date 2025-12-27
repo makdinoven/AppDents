@@ -1,2 +1,2 @@
-export { Sidebar } from "@/shared/ui/sidebar/Sidebar/Sidebar.tsx";
-export type { SidebarShellData } from "./model/types.ts";
+export { Sidebar } from "./Sidebar/Sidebar";
+export { SidebarItem } from "./SidebarItem/SidebarItem";

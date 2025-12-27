@@ -1,19 +1,9 @@
 .admin_page {
   @include transition();
-  position: relative;
   display: flex;
   max-width: inherit;
   gap: 30px;
   width: 100%;
-
-  &.minimized_sidebar {
-    position: relative;
-    gap: 0;
-
-    .admin_content {
-      width: 100%;
-    }
-  }
 
   &_header {
     display: flex;
@@ -30,11 +20,12 @@
     @include flex-column;
     @include transition();
     gap: 10px;
-    width: calc(100% - 270px);
+    flex: 1;
+    min-width: 0;
     margin-left: auto;
   }
 
-  @media (max-width: $middle-breakpoint) {
+  @media (max-width: $tablet-breakpoint) {
     & {
       display: flex;
       flex-direction: column;

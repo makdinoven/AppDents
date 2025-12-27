@@ -22,6 +22,7 @@ interface ButtonProps {
   iconLeft?: React.ReactNode | null;
   iconRight?: React.ReactNode | null;
   className?: string;
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 const Button = ({
@@ -36,18 +37,20 @@ const Button = ({
   iconLeft,
   iconRight,
   className,
+  ref,
 }: ButtonProps) => {
   return link ? (
     <Link className={s.btn} to={link}></Link>
   ) : (
     <button
+      ref={ref}
       disabled={disabled}
       onClick={onClick}
       className={`${s.btn} ${variant ? s[variant] : ""} ${className ? className : ""} ${disabled ? s.disabled : ""} ${loading ? s.loading : ""}`}
       type={type}
     >
       {iconLeft && iconLeft}
-      {children && <span>{children}</span>}
+      {children && children}
       {text && (
         <span>
           <Trans i18nKey={text} />
