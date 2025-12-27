@@ -1612,6 +1612,7 @@ def send_new_year_campaign_email_bulk(
         return_email_lists=True,
         pause_seconds_between_chunks=pause_seconds_between_chunks,
         min_interval_seconds_override=ny2026_min_interval,
+        enable_recipient_variables=True,
     )
 
 def send_referral_program_email(

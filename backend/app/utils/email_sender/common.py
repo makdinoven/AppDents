@@ -3,6 +3,7 @@ import smtplib
 import ssl
 import threading
 import time
+import json
 from typing import Optional, Tuple
 
 from functools import lru_cache
@@ -353,6 +354,7 @@ def _send_via_mailgun_bulk(
     mailgun_domain_override: str | None = None,
     from_override: str | None = None,
     min_interval_seconds_override: float | None = None,
+    recipient_variables: dict[str, dict] | None = None,
 ) -> bool:
     """
     Bulk-send один и тот же message на список получателей через Mailgun.
@@ -383,6 +385,16 @@ def _send_via_mailgun_bulk(
     ]
     for r in recipient_emails:
         data.append(("to", r))
+
+    # Mailgun batch personalization:
+    # https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+    # `recipient-variables` is a JSON object: { "a@b.com": {"name":"A"}, ... }
+    if recipient_variables:
+        try:
+            data.append(("recipient-variables", json.dumps(recipient_variables)))
+        except Exception:
+            # не ломаем отправку из-за сериализации
+            pass
 
     if mailgun_options:
         for k, v in mailgun_options.items():
@@ -431,6 +443,7 @@ def send_html_email_bulk(
     return_email_lists: bool = False,
     pause_seconds_between_chunks: float = 0.0,
     min_interval_seconds_override: float | None = None,
+    enable_recipient_variables: bool = False,
 ) -> dict:
     """
     Массовая отправка одинакового письма.
@@ -483,6 +496,10 @@ def send_html_email_bulk(
         accepted_emails: list[str] = []
         for i in range(0, len(valid), chunk_size):
             chunk = valid[i : i + chunk_size]
+            rv = None
+            if enable_recipient_variables:
+                # Дадим шаблону доступ к %recipient.email% (и потенциально другим vars в будущем).
+                rv = {em: {"email": em} for em in chunk}
             ok = _send_via_mailgun_bulk(
                 chunk,
                 subject,
@@ -493,6 +510,7 @@ def send_html_email_bulk(
                 mailgun_domain_override=mailgun_domain_override,
                 from_override=from_override,
                 min_interval_seconds_override=min_interval_seconds_override,
+                recipient_variables=rv,
             )
             if not ok:
                 res = {"ok": False, "sent": sent, "suppressed": suppressed, "invalid": invalid}
