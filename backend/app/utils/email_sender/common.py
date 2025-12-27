@@ -18,26 +18,38 @@ logger = logging.getLogger(__name__)
 
 
 # ─────────────────────── Rate Limiter ───────────────────────
-# Защита от rate limit: минимум MIN_INTERVAL секунд между отправками
-MIN_INTERVAL_SECONDS = 5.0  # увеличено с 2 до 5 секунд для снижения throttling
+# Защита от rate limit: минимум N секунд между отправками (настраивается через env).
+# Важно: это ограничивает ЧАСТОТУ API запросов. При bulk-send скорость в emails/sec
+# будет примерно chunk_size / interval.
+DEFAULT_MIN_INTERVAL_SECONDS = 5.0
 
 _last_send_time: float = 0.0
 _rate_limit_lock = threading.Lock()
 
 
-def _wait_for_rate_limit() -> None:
+def _wait_for_rate_limit(min_interval_seconds: float | None = None) -> None:
     """
     Ждёт, если с последней отправки прошло меньше MIN_INTERVAL_SECONDS.
     Thread-safe для корректной работы в многопоточных Celery воркерах.
     """
     global _last_send_time
 
+    if min_interval_seconds is None:
+        min_interval = float(
+            getattr(settings, "EMAIL_SEND_MIN_INTERVAL_SECONDS", DEFAULT_MIN_INTERVAL_SECONDS)
+            or DEFAULT_MIN_INTERVAL_SECONDS
+        )
+    else:
+        min_interval = float(min_interval_seconds)
+    if min_interval < 0:
+        min_interval = 0.0
+
     with _rate_limit_lock:
         now = time.time()
         elapsed = now - _last_send_time
 
-        if elapsed < MIN_INTERVAL_SECONDS:
-            sleep_time = MIN_INTERVAL_SECONDS - elapsed
+        if elapsed < min_interval:
+            sleep_time = min_interval - elapsed
             time.sleep(sleep_time)
 
         _last_send_time = time.time()
@@ -186,6 +198,8 @@ def send_html_email(
     mailgun_options: dict[str, str] | None = None,
     mailgun_domain_override: str | None = None,
     from_override: str | None = None,
+    allow_smtp_fallback: bool = True,
+    min_interval_seconds_override: float | None = None,
 ) -> bool:
     """
     Отправка HTML-писем через Mailgun API.
@@ -222,18 +236,33 @@ def send_html_email(
             mailgun_options=mailgun_options,
             mailgun_domain_override=mg_domain,
             from_override=from_override,
+            min_interval_seconds_override=min_interval_seconds_override,
         )
         if result:
             return True
-        # Fallback на SMTP если Mailgun не сработал
+        # Для маркетинговых рассылок SMTP fallback часто ухудшает deliverability (и может
+        # слать с IP сервера напрямую). Поэтому умеем отключать fallback явно.
+        if not allow_smtp_fallback:
+            logger.warning("Mailgun failed for %s, SMTP fallback disabled", email_lower)
+            return False
         logger.warning("Mailgun failed for %s, falling back to SMTP...", email_lower)
         return _send_via_smtp(
-            recipient_email, subject, html_body, text_body=text_body, headers=headers
+            recipient_email,
+            subject,
+            html_body,
+            text_body=text_body,
+            headers=headers,
+            min_interval_seconds_override=min_interval_seconds_override,
         )
     else:
         # SMTP если Mailgun не настроен
         return _send_via_smtp(
-            recipient_email, subject, html_body, text_body=text_body, headers=headers
+            recipient_email,
+            subject,
+            html_body,
+            text_body=text_body,
+            headers=headers,
+            min_interval_seconds_override=min_interval_seconds_override,
         )
 
 
@@ -247,13 +276,14 @@ def _send_via_mailgun(
     mailgun_options: dict[str, str] | None = None,
     mailgun_domain_override: str | None = None,
     from_override: str | None = None,
+    min_interval_seconds_override: float | None = None,
 ) -> bool:
     """
     Отправка через Mailgun HTTP API.
     Включён rate limiter для защиты от rate limit.
     """
     # Rate limit: ждём если слишком частые отправки
-    _wait_for_rate_limit()
+    _wait_for_rate_limit(min_interval_seconds_override)
 
     # Выбираем API endpoint в зависимости от региона
     if settings.MAILGUN_REGION.upper() == "EU":
@@ -273,11 +303,18 @@ def _send_via_mailgun(
         "html": html_body,
     }
 
-    # Mailgun message options (o:tracking, o:tag, o:dkim, etc.)
+    # Mailgun message options (o:tracking, o:tag, o:dkim, v:*, etc.)
     if mailgun_options:
         for k, v in mailgun_options.items():
             if k:
-                data[str(k)] = "" if v is None else str(v)
+                # Поддерживаем как строковые значения, так и списки (например, o:tag).
+                if isinstance(v, (list, tuple)):
+                    # requests не умеет "повторяющиеся ключи" через dict, поэтому
+                    # в одиночной отправке берём первый tag (для множественных используйте bulk).
+                    if len(v) > 0:
+                        data[str(k)] = str(v[0])
+                else:
+                    data[str(k)] = "" if v is None else str(v)
 
     # Custom MIME headers via Mailgun HTTP API: h:Header-Name
     if headers:
@@ -315,6 +352,7 @@ def _send_via_mailgun_bulk(
     mailgun_options: dict[str, str] | None = None,
     mailgun_domain_override: str | None = None,
     from_override: str | None = None,
+    min_interval_seconds_override: float | None = None,
 ) -> bool:
     """
     Bulk-send один и тот же message на список получателей через Mailgun.
@@ -323,7 +361,7 @@ def _send_via_mailgun_bulk(
     if not recipient_emails:
         return True
 
-    _wait_for_rate_limit()
+    _wait_for_rate_limit(min_interval_seconds_override)
 
     if settings.MAILGUN_REGION.upper() == "EU":
         api_base = "https://api.eu.mailgun.net/v3"
@@ -348,7 +386,13 @@ def _send_via_mailgun_bulk(
 
     if mailgun_options:
         for k, v in mailgun_options.items():
-            if k:
+            if not k:
+                continue
+            # В bulk можно отправлять повторяющиеся параметры (например o:tag несколько раз)
+            if isinstance(v, (list, tuple)):
+                for vv in v:
+                    data.append((str(k), "" if vv is None else str(vv)))
+            else:
                 data.append((str(k), "" if v is None else str(v)))
 
     if headers:
@@ -384,6 +428,9 @@ def send_html_email_bulk(
     mailgun_domain_override: str | None = None,
     from_override: str | None = None,
     chunk_size: int = 1000,
+    return_email_lists: bool = False,
+    pause_seconds_between_chunks: float = 0.0,
+    min_interval_seconds_override: float | None = None,
 ) -> dict:
     """
     Массовая отправка одинакового письма.
@@ -403,25 +450,37 @@ def send_html_email_bulk(
     suppressed = 0
     invalid = 0
     valid: list[str] = []
+    suppressed_emails: list[str] = []
+    invalid_emails: list[str] = []
 
     for em in normalized:
         if _check_suppression_list(em):
             suppressed += 1
+            if return_email_lists:
+                suppressed_emails.append(em)
             continue
         ok, err = _validate_email_sync(em)
         if not ok:
             invalid += 1
             logger.info("Invalid email %s: %s", em, err)
             _add_to_suppression(em, SuppressionType.INVALID, err)
+            if return_email_lists:
+                invalid_emails.append(em)
             continue
         valid.append(em)
 
     if not valid:
-        return {"ok": True, "sent": 0, "suppressed": suppressed, "invalid": invalid}
+        res = {"ok": True, "sent": 0, "suppressed": suppressed, "invalid": invalid}
+        if return_email_lists:
+            res["accepted_emails"] = []
+            res["suppressed_emails"] = suppressed_emails
+            res["invalid_emails"] = invalid_emails
+        return res
 
     # Prefer Mailgun bulk; SMTP fallback stays per-recipient (not suited for huge throughput).
     if settings.MAILGUN_API_KEY and (mailgun_domain_override or settings.MAILGUN_DOMAIN):
         sent = 0
+        accepted_emails: list[str] = []
         for i in range(0, len(valid), chunk_size):
             chunk = valid[i : i + chunk_size]
             ok = _send_via_mailgun_bulk(
@@ -433,18 +492,41 @@ def send_html_email_bulk(
                 mailgun_options=mailgun_options,
                 mailgun_domain_override=mailgun_domain_override,
                 from_override=from_override,
+                min_interval_seconds_override=min_interval_seconds_override,
             )
             if not ok:
-                return {"ok": False, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+                res = {"ok": False, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+                if return_email_lists:
+                    res["accepted_emails"] = accepted_emails
+                    res["suppressed_emails"] = suppressed_emails
+                    res["invalid_emails"] = invalid_emails
+                return res
             sent += len(chunk)
-        return {"ok": True, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+            if return_email_lists:
+                accepted_emails.extend(chunk)
+            if pause_seconds_between_chunks and i + chunk_size < len(valid):
+                # Пауза между bulk API requests, чтобы не бомбить провайдеры резкими всплесками.
+                time.sleep(float(pause_seconds_between_chunks))
+        res = {"ok": True, "sent": sent, "suppressed": suppressed, "invalid": invalid}
+        if return_email_lists:
+            res["accepted_emails"] = accepted_emails
+            res["suppressed_emails"] = suppressed_emails
+            res["invalid_emails"] = invalid_emails
+        return res
 
     # SMTP fallback (slow)
     sent = 0
     for em in valid:
         if _send_via_smtp(em, subject, html_body, text_body=text_body, headers=headers):
             sent += 1
-    return {"ok": sent == len(valid), "sent": sent, "suppressed": suppressed, "invalid": invalid}
+    res = {"ok": sent == len(valid), "sent": sent, "suppressed": suppressed, "invalid": invalid}
+    if return_email_lists:
+        # SMTP fallback здесь поштучный: считаем accepted_emails теми, кто реально отправился.
+        # Понимание "delivered" всё равно приходит через webhooks.
+        res["accepted_emails"] = valid[:sent]
+        res["suppressed_emails"] = suppressed_emails
+        res["invalid_emails"] = invalid_emails
+    return res
 
 
 def _send_via_smtp(
@@ -454,6 +536,7 @@ def _send_via_smtp(
     *,
     text_body: str | None = None,
     headers: dict[str, str] | None = None,
+    min_interval_seconds_override: float | None = None,
 ) -> bool:
     """
     Fallback: SMTP-отправка HTML-писем.
@@ -461,7 +544,7 @@ def _send_via_smtp(
     Включён rate limiter для защиты от Gmail rate limit.
     """
     # Rate limit: ждём если слишком частые отправки
-    _wait_for_rate_limit()
+    _wait_for_rate_limit(min_interval_seconds_override)
 
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart

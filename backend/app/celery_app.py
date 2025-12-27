@@ -149,8 +149,10 @@ celery.conf.update(
 if (getattr(settings, "PROJECT_BRAND", "") or "").upper() == "DENTS":
     ny2026_tick_seconds = int(getattr(settings, "NY2026_TICK_SECONDS", 100) or 100)
     ny2026_max_per_run = int(getattr(settings, "NY2026_MAX_PER_RUN", 250) or 250)
-    # expires делаем чуть меньше schedule, чтобы тик не копился в очереди, если воркер занят
-    ny2026_expires = max(1, ny2026_tick_seconds - 1)
+    # ВАЖНО: expires не должен быть слишком маленьким, иначе при занятой очереди
+    # задачи начнут "протухать" (Too old/expired).
+    # Даём запас: минимум 60 секунд, либо 3x интервал.
+    ny2026_expires = max(60, ny2026_tick_seconds * 3)
     celery.conf.beat_schedule["ny2026-leads-tick"] = {
         "task": "app.tasks.ny2026_leads.send_ny2026_tick",
         # Реже запускаем, но берём пачку (меньше overhead и CPU, лучше throughput)

@@ -14,6 +14,7 @@ from ..services_v2.lead_campaign_service import skip_send_and_cleanup_if_user_ex
 from ..services_v2.email_suppression_service import get_suppression
 from ..models.models_v2 import SuppressionType
 from ..utils import email_sender
+from ..core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -118,35 +119,94 @@ def send_ny2026_tick(max_per_run: int = 1) -> dict:
         for lang, emails in to_send_by_lang.items():
             if not emails:
                 continue
-            result = {}
-            try:
-                result = email_sender.send_new_year_campaign_email_bulk(emails, region=lang)
-            except Exception as e:
-                logger.warning("NY2026 bulk send failed (lang=%s): %s", lang, e)
-                result = {"ok": False, "sent": 0}
 
-            if result.get("ok") and result.get("sent", 0) > 0:
-                # отмечаем sent для всех recipients этого языка, которые у нас есть в таблице
-                db.query(EmailCampaignRecipient).filter(
-                    EmailCampaignRecipient.campaign_id == campaign.id,
-                    EmailCampaignRecipient.language == lang,
-                    EmailCampaignRecipient.email.in_([e.strip().lower() for e in emails]),
-                ).update(
-                    {"status": EmailCampaignRecipientStatus.SENT, "sent_at": now},
-                    synchronize_session=False,
-                )
-                db.commit()
-                sent += int(result.get("sent", 0))
-            else:
-                # если не отправилось (или sent=0 из-за валидации/suppression) — удаляем UNKNOWN recipients, чтобы был повтор позже
+            # ── Provider-aware throttling ───────────────────────────────────────
+            # Yahoo режет сильнее всего, Gmail тоже чувствительный к всплескам.
+            # Поэтому дробим отправку по провайдерам с разными chunk_size.
+            yahoo_domains = {
+                "yahoo.com", "yahoo.co.uk", "yahoo.fr", "yahoo.de", "yahoo.es", "yahoo.it",
+                "ymail.com", "rocketmail.com",
+                "yahooinc.com",
+            }
+            gmail_domains = {"gmail.com", "googlemail.com"}
+
+            def _domain(email: str) -> str:
+                em = (email or "").strip().lower()
+                return em.split("@", 1)[1] if "@" in em else ""
+
+            yahoo_emails: list[str] = []
+            gmail_emails: list[str] = []
+            other_emails: list[str] = []
+
+            for e in emails:
+                d = _domain(e)
+                if d in yahoo_domains:
+                    yahoo_emails.append(e)
+                elif d in gmail_domains:
+                    gmail_emails.append(e)
+                else:
+                    other_emails.append(e)
+
+            chunk_default = int(getattr(settings, "NY2026_BULK_CHUNK_DEFAULT", 400) or 400)
+            chunk_gmail = int(getattr(settings, "NY2026_BULK_CHUNK_GMAIL", 150) or 150)
+            chunk_yahoo = int(getattr(settings, "NY2026_BULK_CHUNK_YAHOO", 80) or 80)
+            pause_s = float(getattr(settings, "NY2026_BULK_PAUSE_SECONDS", 1.0) or 0.0)
+
+            def _send_and_mark(batch: list[str], *, chunk_size: int) -> tuple[int, int]:
+                """Returns (sent_count_increment, not_sent_count_increment)."""
+                if not batch:
+                    return 0, 0
+                try:
+                    res = email_sender.send_new_year_campaign_email_bulk(
+                        batch,
+                        region=lang,
+                        chunk_size=max(1, min(1000, int(chunk_size))),
+                        pause_seconds_between_chunks=max(0.0, float(pause_s)),
+                    )
+                except Exception as e:
+                    logger.warning("NY2026 bulk send failed (lang=%s): %s", lang, e)
+                    res = {"ok": False, "sent": 0, "accepted_emails": []}
+
+                accepted_emails = [x.strip().lower() for x in (res.get("accepted_emails") or [])]
+                all_emails = [x.strip().lower() for x in batch]
+
+                if res.get("ok") and accepted_emails:
+                    db.query(EmailCampaignRecipient).filter(
+                        EmailCampaignRecipient.campaign_id == campaign.id,
+                        EmailCampaignRecipient.language == lang,
+                        EmailCampaignRecipient.email.in_(accepted_emails),
+                    ).update(
+                        {"status": EmailCampaignRecipientStatus.SENT, "sent_at": now},
+                        synchronize_session=False,
+                    )
+
+                    not_sent = [e for e in all_emails if e not in set(accepted_emails)]
+                    if not_sent:
+                        db.query(EmailCampaignRecipient).filter(
+                            EmailCampaignRecipient.campaign_id == campaign.id,
+                            EmailCampaignRecipient.language == lang,
+                            EmailCampaignRecipient.status == EmailCampaignRecipientStatus.UNKNOWN,
+                            EmailCampaignRecipient.email.in_(not_sent),
+                        ).delete(synchronize_session=False)
+                    db.commit()
+                    return int(res.get("sent", 0)), max(0, len(all_emails) - len(accepted_emails))
+
+                # Вообще не отправилось — удаляем UNKNOWN recipients, чтобы был повтор позже
                 db.query(EmailCampaignRecipient).filter(
                     EmailCampaignRecipient.campaign_id == campaign.id,
                     EmailCampaignRecipient.language == lang,
                     EmailCampaignRecipient.status == EmailCampaignRecipientStatus.UNKNOWN,
-                    EmailCampaignRecipient.email.in_([e.strip().lower() for e in emails]),
+                    EmailCampaignRecipient.email.in_(all_emails),
                 ).delete(synchronize_session=False)
                 db.commit()
-                failed += len(emails)
+                return 0, len(all_emails)
+
+            # Отправляем сначала Yahoo (самый строгий), потом Gmail, потом остальных
+            s1, f1 = _send_and_mark(yahoo_emails, chunk_size=chunk_yahoo)
+            s2, f2 = _send_and_mark(gmail_emails, chunk_size=chunk_gmail)
+            s3, f3 = _send_and_mark(other_emails, chunk_size=chunk_default)
+            sent += (s1 + s2 + s3)
+            failed += (f1 + f2 + f3)
 
         return {"status": "ok", "sent": sent, "skipped_user_exists": skipped_user_exists, "failed": failed}
     finally:

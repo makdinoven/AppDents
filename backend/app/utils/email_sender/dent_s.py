@@ -1417,6 +1417,7 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
 
     mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
     marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
+    ny2026_min_interval = float(getattr(settings, "NY2026_SEND_MIN_INTERVAL_SECONDS", 10.0) or 10.0)
     return bool(
         send_html_email(
             recipient_email,
@@ -1426,6 +1427,8 @@ def send_new_year_campaign_email(recipient_email: str, region: str = "EN") -> bo
             mailgun_options=mailgun_options,
             mailgun_domain_override=mg_domain,
             from_override=marketing_from,
+            allow_smtp_fallback=False,
+            min_interval_seconds_override=ny2026_min_interval,
         )
     )
 
@@ -1562,16 +1565,26 @@ def _ny2026_render(*, recipient_email: str) -> tuple[str, str, str, dict]:
         ]
     )
 
-    # Helps deliverability for bulk/marketing emails (less tracking).
+    # Helps deliverability for bulk/marketing emails (less tracking) + tagging for analytics/webhooks.
     mailgun_options = {
         "o:tracking": "no",
         "o:tracking-clicks": "no",
         "o:tracking-opens": "no",
+        # Tag used to correlate Mailgun events with our campaign stats.
+        "o:tag": "NY2026",
+        # Also duplicate into user-variables (shows up in webhook payload).
+        "v:campaign_code": "NY2026",
     }
     return subject, body_html, text_body, mailgun_options
 
 
-def send_new_year_campaign_email_bulk(recipient_emails: list[str], region: str = "EN") -> dict:
+def send_new_year_campaign_email_bulk(
+    recipient_emails: list[str],
+    region: str = "EN",
+    *,
+    chunk_size: int = 1000,
+    pause_seconds_between_chunks: float = 0.0,
+) -> dict:
     """
     NY2026 bulk-send:
     - валидирует КАЖДЫЙ email (suppression + syntax + MX)
@@ -1585,6 +1598,7 @@ def send_new_year_campaign_email_bulk(recipient_emails: list[str], region: str =
 
     mg_domain = (getattr(settings, "MAILGUN_MARKETING_DOMAIN", "") or "").strip() or None
     marketing_from = (getattr(settings, "EMAIL_MARKETING_SENDER", "") or "").strip() or None
+    ny2026_min_interval = float(getattr(settings, "NY2026_SEND_MIN_INTERVAL_SECONDS", 10.0) or 10.0)
 
     return send_html_email_bulk(
         recipient_emails,
@@ -1594,7 +1608,10 @@ def send_new_year_campaign_email_bulk(recipient_emails: list[str], region: str =
         mailgun_options=mailgun_options,
         mailgun_domain_override=mg_domain,
         from_override=marketing_from,
-        chunk_size=1000,
+        chunk_size=chunk_size,
+        return_email_lists=True,
+        pause_seconds_between_chunks=pause_seconds_between_chunks,
+        min_interval_seconds_override=ny2026_min_interval,
     )
 
 def send_referral_program_email(

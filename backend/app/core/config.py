@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     MAILGUN_REGION: str = "EU"
     MAILGUN_WEBHOOK_SIGNING_KEY: str = ""  # Webhook signing key from Mailgun dashboard
 
+    # Global email send throttling (rate limiter)
+    # Минимальный интервал между любыми попытками отправки (Mailgun API/SMTP).
+    # Увеличивайте, чтобы "растянуть" скорость и снизить вероятность throttling/Too old.
+    EMAIL_SEND_MIN_INTERVAL_SECONDS: float = 5.0
+
     # Facebook
     FACEBOOK_PIXEL_ID : str
     FACEBOOK_ACCESS_TOKEN : str
@@ -95,6 +100,16 @@ class Settings(BaseSettings):
     # Сама отправка идёт батчами внутри тика.
     NY2026_TICK_SECONDS: int = 200
     NY2026_MAX_PER_RUN: int = 10
+    # === NY2026 campaign tuning (deliverability) ===
+    # Мягкая “скорость” для снижения throttling от Gmail/Yahoo:
+    # - меньшие пачки
+    # - пауза между запросами Mailgun bulk
+    NY2026_BULK_CHUNK_DEFAULT: int = 400     # <= 1000
+    NY2026_BULK_CHUNK_GMAIL: int = 150       # <= 1000
+    NY2026_BULK_CHUNK_YAHOO: int = 80        # <= 1000
+    NY2026_BULK_PAUSE_SECONDS: float = 1.0   # пауза между bulk запросами
+    # Минимальный интервал между Mailgun API requests именно для NY2026 (чтобы не трогать транзакционные письма).
+    NY2026_SEND_MIN_INTERVAL_SECONDS: float = 10.0
 
     # BookAI / Placid
     BOOKAI_BASE_URL: str = "https://bookai.dent-s.com/api"

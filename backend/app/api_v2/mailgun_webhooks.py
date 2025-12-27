@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from ..core.config import settings
 from ..db.database import get_db
 from ..models.models_v2 import SuppressionType
+from ..models.models_v2 import EmailCampaign, EmailCampaignRecipient, EmailCampaignRecipientStatus
 from ..services_v2.email_suppression_service import add_to_suppression
 
 logger = logging.getLogger(__name__)
@@ -123,6 +124,7 @@ def determine_suppression_type(event_data: dict) -> tuple[SuppressionType, str, 
     delivery_status = event_data.get("delivery-status", {})
     
     code, error = parse_bounce_code(delivery_status)
+    error_lower = (error or "").lower()
     
     # Определяем тип на основе события
     if event == "complained":
@@ -132,6 +134,11 @@ def determine_suppression_type(event_data: dict) -> tuple[SuppressionType, str, 
         return SuppressionType.UNSUBSCRIBE, code, error
     
     if event in ("failed", "bounced", "dropped"):
+        # Mailgun "Too old" (часто code=602 или текст содержит "too old") — это результат
+        # длительных временных deferred/rate-limit. Это НЕ hard bounce адреса.
+        # Лучше трактовать как временное throttling (на 24 часа), а не навсегда блокировать.
+        if str(code).strip() == "602" or "too old" in error_lower:
+            return SuppressionType.THROTTLED, code, error
         # Проверяем severity для определения hard/soft bounce
         if severity == "permanent":
             return SuppressionType.HARD_BOUNCE, code, error
@@ -196,6 +203,53 @@ async def mailgun_webhook(request: Request, db: Session = Depends(get_db)):
     
     logger.info("Mailgun webhook received: event=%s, recipient=%s", event, recipient)
     
+    # ── Обновляем статусы получателей кампаний (минимально-инвазивно) ─────────────
+    # Сейчас в БД `status=sent` означает "мы отправили/приняли к отправке", но фактический delivery/fail
+    # может прийти позже. Чтобы статистика в БД не расходилась с Mailgun, обновляем статус по webhooks:
+    # - complained → COMPLAINED
+    # - permanent failed/bounced/dropped (5xx) → BOUNCED
+    #
+    # ВАЖНО: temporary (4xx / severity=temporary) НЕ считаем финальным фейлом и не портим статус.
+    try:
+        tags = event_data.get("tags") or []
+        if isinstance(tags, str):
+            tags = [tags]
+        tags = [str(t) for t in tags]
+
+        user_vars = event_data.get("user-variables") or {}
+        campaign_code = (user_vars.get("campaign_code") or "").strip()
+
+        is_ny2026 = ("NY2026" in tags) or (campaign_code == "NY2026")
+        if is_ny2026:
+            campaign = db.query(EmailCampaign).filter(EmailCampaign.code == "NY2026").first()
+            if campaign:
+                recipient_lower = (recipient or "").strip().lower()
+                if recipient_lower:
+                    # complained → финально
+                    if event == "complained":
+                        db.query(EmailCampaignRecipient).filter(
+                            EmailCampaignRecipient.campaign_id == campaign.id,
+                            EmailCampaignRecipient.email == recipient_lower,
+                        ).update(
+                            {"status": EmailCampaignRecipientStatus.COMPLAINED},
+                            synchronize_session=False,
+                        )
+                        db.commit()
+                    # failed/bounced/dropped: финально только если это hard/permanent
+                    elif event in ("failed", "bounced", "dropped"):
+                        suppression_type, _, _ = determine_suppression_type(event_data)
+                        if suppression_type == SuppressionType.HARD_BOUNCE:
+                            db.query(EmailCampaignRecipient).filter(
+                                EmailCampaignRecipient.campaign_id == campaign.id,
+                                EmailCampaignRecipient.email == recipient_lower,
+                            ).update(
+                                {"status": EmailCampaignRecipientStatus.BOUNCED},
+                                synchronize_session=False,
+                            )
+                            db.commit()
+    except Exception as e:
+        logger.warning("Failed to update campaign recipient status from webhook: %s", e)
+
     # Определяем тип suppression
     suppression_type, code, error = determine_suppression_type(event_data)
     
